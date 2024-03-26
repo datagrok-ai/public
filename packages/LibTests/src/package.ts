@@ -8,7 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import { CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration } from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
@@ -152,6 +152,8 @@ export function MockWrapper10() {}
 //name: MockWrapper11
 export function MockWrapper11() {}
 
+//name: MockWrapper12
+export function MockWrapper12() {}
 
 
 //name: MockHook1
@@ -292,7 +294,7 @@ export async function TestCompositionPipeline1() {
       id: 'link1',
       from: ['step1', 'res'],
       to: ['step2', 'a'],
-    }]
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -317,7 +319,7 @@ export async function TestCompositionPipeline2() {
       id: 'link1',
       from: ['step1', 'a'],
       to: ['step2', 'a'],
-    }]
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -344,9 +346,9 @@ export async function TestCompositionPipeline3() {
       to: ['step2', 'a'],
       handler: async ({controller}) => {
         const val = controller.getState(['step1', 'a']);
-        controller.updateState(['step2', 'a'], val * 2);
-      }
-    }]
+        controller.setState(['step2', 'a'], val * 2);
+      },
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -374,9 +376,9 @@ export async function TestCompositionPipeline4() {
       handler: async ({controller}) => {
         const val = controller.getState(['step1', 'a']);
         await delay(2000);
-        controller.updateState(['step2', 'a'], val * 2);
-      }
-    }]
+        controller.setState(['step2', 'a'], val * 2);
+      },
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -400,7 +402,7 @@ export async function TestCompositionPipeline5() {
           to: ['step2', 'b'],
           handler: async ({controller}) => {
             const val = controller.getState(['step1', 'state11']);
-            controller.updateState(['step2', 'b'], val * 2);
+            controller.setState(['step2', 'b'], val * 2);
           },
           position: 'buttons',
         }],
@@ -420,7 +422,7 @@ export async function TestCompositionPipeline5() {
       to: ['step1', 'state11'],
       enableOnLoadRun: true,
       enableOnStart: true,
-    }]
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -450,7 +452,7 @@ export async function TestCompositionPipeline6() {
       id: 'link2',
       from: ['step2', 'res'],
       to: ['testPipeline2', 'step1', 'a'],
-    }]
+    }],
   };
   const conf2 = {
     id: 'testPipeline2',
@@ -460,8 +462,8 @@ export async function TestCompositionPipeline6() {
         id: 'step1',
         nqName: 'LibTests:TestFn1',
       },
-    ]
-  }
+    ],
+  };
   const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -483,7 +485,7 @@ export async function TestCompositionPipeline7() {
         id: 'step2',
         nqName: 'LibTests:MulMock',
       },
-      ['testPipeline2', 'step1']
+      ['testPipeline2', 'step1'],
     ]],
     links: [{
       id: 'link1',
@@ -493,7 +495,7 @@ export async function TestCompositionPipeline7() {
       id: 'link2',
       from: ['testPipeline2', 'step1', 'res'],
       to: ['testPipeline2', 'step2', 'a'],
-    }]
+    }],
   };
   const conf2 = {
     id: 'testPipeline2',
@@ -503,8 +505,8 @@ export async function TestCompositionPipeline7() {
         id: 'step1',
         nqName: 'LibTests:TestFn1',
       },
-    ]
-  }
+    ],
+  };
   const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -539,7 +541,7 @@ export async function TestCompositionPipeline8() {
       id: 'link2',
       from: ['step1', 'popup1', 'res'],
       to: ['step1', 'b'],
-    }]
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -582,7 +584,7 @@ export async function TestCompositionPipeline9() {
       id: 'link2',
       from: ['step1', 'popup1', 'res'],
       to: ['step1', 'b'],
-    }]
+    }],
   });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
@@ -607,8 +609,8 @@ export async function TestCompositionPipeline10() {
       id: 'link1',
       from: ['step1', 'res'],
       to: ['step2', 'a'],
-    }]
-  }
+    }],
+  };
   const conf2: PipelineCompositionConfiguration = {
     id: 'testPipeline2',
     nqName: 'LibTests:MockWrapper10',
@@ -622,15 +624,14 @@ export async function TestCompositionPipeline10() {
       id: 'link1',
       from: ['step1', 'res'],
       to: ['testPipeline1', 'step1', 'a'],
-    }]
+    }],
 
-  }
+  };
   const conf = CompositionPipeline.compose(conf2, [conf1]);
   const pipeline = new CompositionPipeline(conf);
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
 }
-
 
 //name: TestCompositionPipeline11
 export async function TestCompositionPipeline11() {
@@ -651,8 +652,8 @@ export async function TestCompositionPipeline11() {
       id: 'link1',
       from: ['step1', 'res'],
       to: ['step2', 'a'],
-    }]
-  }
+    }],
+  };
   const conf2: PipelineCompositionConfiguration = {
     id: 'testPipeline2',
     nqName: 'LibTests:MockWrapper11',
@@ -668,9 +669,55 @@ export async function TestCompositionPipeline11() {
       to: ['testPipeline1', 'step2', 'a'],
     }],
     itemsToRemove: [['testPipeline1', 'step1'], ['testPipeline1', 'link1']],
-  }
+  };
   const conf = CompositionPipeline.compose(conf2, [conf1]);
   const pipeline = new CompositionPipeline(conf);
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline12
+export async function TestCompositionPipeline12() {
+  const pipeline = new CompositionPipeline({
+    id: 'testPipeline',
+    nqName: 'LibTests:MockWrapper12',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+        actions: [{
+          id: 'action1',
+          friendlyName: 'action1',
+          from: ['step1', 'a'],
+          to: ['step2', 'a'],
+          handler: async ({controller}) => {
+            const val = controller.getState(['step1', 'a']);
+            controller.setState(['step2', 'a'], val);
+          },
+          position: 'none',
+        }],
+      },
+    ],
+    links: [{
+      id: 'link1',
+      from: [['step1', 'a'], ['step2', 'a']],
+      to: ['step2', 'a'],
+      handler: async ({controller}) => {
+        const valS = controller.getState(['step1', 'a']);
+        const valC = controller.getState(['step2', 'a']);
+        if (valC !== valS) {
+          const action1 = controller.getValidationAction(['step2', 'action1'], `set to ${valS}`);
+          const adv1 = makeAdvice('Try using the provided value', [action1]);
+          controller.setValidation(['step2', 'a'], makeValidationResult({notifications: [adv1]}));
+        } else
+          controller.setValidation(['step2', 'a'], undefined);
+      },
+    }],
+  });
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
 }

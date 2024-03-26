@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -34,11 +35,13 @@ export function removeObservables<T>(config: T): T {
   });
 }
 
-function pickPipelineConfData(obj: any) {
+const IS_UPDATE = false;
+const ADD_VIEW = false;
+
+function pickPipelineConfData(obj: any): any {
   const res = {};
   Object.assign(res, ...['config', 'ioInfo', 'nodes', 'links', 'hooks', 'steps'].map((key) => ({[key]: obj[key]})));
-  // return serialize(removeObservables(res));
-  return removeObservables(res);
+  return IS_UPDATE ? new Blob([serialize(removeObservables(res))], {type: 'application/json'}) : removeObservables(res);
 }
 
 category('CompositionPipeline single config', async () => {
@@ -62,14 +65,19 @@ category('CompositionPipeline single config', async () => {
         id: 'link1',
         from: ['step1', 'a'],
         to: ['step2', 'a'],
-      }]
+      }],
     };
     const pipeline = new CompositionPipeline(config);
-    pipeline.makePipelineView();
+    const view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(simpleConfData));
+    if (IS_UPDATE)
+      DG.Utils.download('simple-conf-data.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(simpleConfData));
+
   });
 
   test('Complex Config', async () => {
@@ -98,7 +106,7 @@ category('CompositionPipeline single config', async () => {
             id: 'popup1',
             friendlyName: 'popup1',
             nqName: 'LibTests:TestFn1',
-            position: 'menu',
+            position: 'buttons',
           }],
         },
       ],
@@ -128,10 +136,15 @@ category('CompositionPipeline single config', async () => {
     };
     const pipeline = new CompositionPipeline(config);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(complexConfData));
+    if (IS_UPDATE)
+      DG.Utils.download('complex-conf-data.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(complexConfData));
+
   });
 });
 
@@ -153,7 +166,7 @@ category('CompositionPipeline composition config', async () => {
       id: 'link1',
       from: ['step1', 'a'],
       to: ['step2', 'a'],
-    }]
+    }],
   };
   const sconfig2: PipelineConfiguration = {
     id: 'testPipeline2',
@@ -172,7 +185,7 @@ category('CompositionPipeline composition config', async () => {
       id: 'link1',
       from: ['step1', 'a'],
       to: ['step2', 'a'],
-    }]
+    }],
 
   };
 
@@ -193,7 +206,7 @@ category('CompositionPipeline composition config', async () => {
       id: 'link1',
       from: ['step1', 'a'],
       to: ['step2', 'a'],
-    }]
+    }],
 
   };
 
@@ -217,7 +230,7 @@ category('CompositionPipeline composition config', async () => {
           id: 'popup1',
           friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
-          position: 'menu',
+          position: 'buttons',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
@@ -272,7 +285,7 @@ category('CompositionPipeline composition config', async () => {
           id: 'popup1',
           friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
-          position: 'menu',
+          position: 'buttons',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
@@ -327,7 +340,7 @@ category('CompositionPipeline composition config', async () => {
           id: 'popup1',
           friendlyName: 'popup1',
           nqName: 'LibTests:MockPopup1',
-          position: 'menu',
+          position: 'buttons',
           states: [{id: 'state111'}, {id: 'state112'}],
           actions: [{
             id: 'action11',
@@ -366,60 +379,90 @@ category('CompositionPipeline composition config', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig2, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(twoConfsSimple));
+    if (IS_UPDATE)
+      DG.Utils.download('2-confs-simple.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(twoConfsSimple));
+
   });
 
   test('3 configs simple configs', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig3, [sconfig1, sconfig2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsSimple));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-simple.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsSimple));
+
   });
 
-  test('3 configs simple nested composition',  async () => {
+  test('3 configs simple nested composition', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig3, [CompositionPipeline.compose(sconfig2, [sconfig1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    console.log(actual);
-    // expectDeepEqual(actual, applyTransformations(threeConfsSimpleNested));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-simple-nested.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsSimpleNested));
+
   });
 
   test('2 configs', async () => {
     const composedConfig = CompositionPipeline.compose(conf2, [conf1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(twoConfs));
+    if (IS_UPDATE)
+      DG.Utils.download('2-confs.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(twoConfs));
+
   });
 
   test('3 configs', async () => {
     const composedConfig = CompositionPipeline.compose(conf3, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfs));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfs));
+
   });
 
-  test('3 configs nested composition',  async () => {
+  test('3 configs nested composition', async () => {
     const composedConfig = CompositionPipeline.compose(conf3, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsNested));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-nested.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsNested));
+
   });
 
   test('3 configs remove items', async () => {
@@ -429,16 +472,21 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline1', 'step1', 'popup1', 'action11'],
         ['testPipeline1', 'step2'],
         ['testPipeline2', 'step1', 'popup1'],
-        ['testPipeline2', 'link1']
-      ]
+        ['testPipeline2', 'link1'],
+      ],
     };
     const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsRemove));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-remove-items.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsRemove));
+
   });
 
   test('3 configs nested remove items', async () => {
@@ -448,16 +496,21 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline2', 'testPipeline1', 'step1', 'popup1', 'action11'],
         ['testPipeline2', 'testPipeline1', 'step2'],
         ['testPipeline2', 'step1', 'popup1'],
-        ['testPipeline2', 'link1']
-      ]
+        ['testPipeline2', 'link1'],
+      ],
     };
     const composedConfig = CompositionPipeline.compose(cconf, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsRemoveNested));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-remove-nested-items.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsRemoveNested));
+
   });
 
   test('3 configs add items', async () => {
@@ -474,8 +527,8 @@ category('CompositionPipeline composition config', async () => {
           id: 'addedAction2',
           friendlyName: 'addedAction2',
           handler: 'LibTests:MockHandler2',
-          position: 'menu',
-        }, ['testPipeline2', 'step2', 'addedPopup1']]
+          position: 'buttons',
+        }, ['testPipeline2', 'step2', 'addedPopup1']],
       ],
       popupsToAdd: [
         [{
@@ -483,16 +536,21 @@ category('CompositionPipeline composition config', async () => {
           friendlyName: 'addedPopup1',
           nqName: 'LibTests:MockPopup2',
           position: 'buttons',
-        }, ['testPipeline2', 'step2']]
-      ]
+        }, ['testPipeline2', 'step2']],
+      ],
     };
     const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsAdd));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-add-items.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsAdd));
+
   });
 
   test('3 configs nested add items', async () => {
@@ -509,8 +567,8 @@ category('CompositionPipeline composition config', async () => {
           id: 'addedAction2',
           friendlyName: 'addedAction2',
           handler: 'LibTests:MockHandler2',
-          position: 'menu',
-        }, ['testPipeline2', 'testPipeline1', 'step2', 'addedPopup1']]
+          position: 'buttons',
+        }, ['testPipeline2', 'testPipeline1', 'step2', 'addedPopup1']],
       ],
     };
     const cconf2: PipelineCompositionConfiguration = {
@@ -521,16 +579,21 @@ category('CompositionPipeline composition config', async () => {
           friendlyName: 'addedPopup2',
           nqName: 'LibTests:MockPopup2',
           position: 'buttons',
-        }, ['testPipeline1', 'step2']]
-      ]
+        }, ['testPipeline1', 'step2']],
+      ],
     };
     const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsAddNested));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-add-nested-items.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsAddNested));
+
   });
 
   test('2 configs add steps', async () => {
@@ -539,18 +602,23 @@ category('CompositionPipeline composition config', async () => {
       stepsToAdd: [[
         {
           id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2'
+          nqName: 'LibTests:MockPopup2',
         },
         ['testPipeline1', 'step1'],
-      ]]
+      ]],
     };
     const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(twoConfsAddSteps));
+    if (IS_UPDATE)
+      DG.Utils.download('2-confs-add-steps.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(twoConfsAddSteps));
+
   });
 
   test('2 configs add/remove steps', async () => {
@@ -559,30 +627,35 @@ category('CompositionPipeline composition config', async () => {
       stepsToAdd: [[
         {
           id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2'
+          nqName: 'LibTests:MockPopup2',
         },
         ['testPipeline1', 'step2'],
       ]],
       itemsToRemove: [[
-        'testPipeline1', 'step2'
-      ]]
+        'testPipeline1', 'step2',
+      ]],
     };
     const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(twoConfsAddRemoveSteps));
+    if (IS_UPDATE)
+      DG.Utils.download('2-confs-add-remove-steps.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(twoConfsAddRemoveSteps));
+
   });
 
-  test('3 configs nested add steps',  async () => {
+  test('3 configs nested add steps', async () => {
     const cconf3: PipelineCompositionConfiguration = {
       ...conf3,
       stepsToAdd: [[
         {
           id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2'
+          nqName: 'LibTests:MockPopup2',
         },
         ['testPipeline2', 'step2'],
       ]],
@@ -592,7 +665,7 @@ category('CompositionPipeline composition config', async () => {
       stepsToAdd: [[
         {
           id: 'addedStep2',
-          nqName: 'LibTests:MockPopup2'
+          nqName: 'LibTests:MockPopup2',
         },
         ['testPipeline1', 'step2'],
       ]],
@@ -600,16 +673,21 @@ category('CompositionPipeline composition config', async () => {
     const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
     await pipeline.init();
     const actual = pickPipelineConfData(pipeline);
-    // console.log(actual);
-    expectDeepEqual(actual, applyTransformations(threeConfsAddNestedSteps));
+    if (IS_UPDATE)
+      DG.Utils.download('3-confs-nested-add-steps.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(threeConfsAddNestedSteps));
+
   });
 
 });
 
 category('CompositionPipeline reactivity', async () => {
-  test('simple link',  async () => {
+  test('simple link', async () => {
     const pipeline = new CompositionPipeline({
       id: 'testPipeline',
       nqName: 'LibTests:MockWrapper1',
@@ -627,17 +705,17 @@ category('CompositionPipeline reactivity', async () => {
         id: 'link1',
         from: ['step1', 'res'],
         to: ['step2', 'a'],
-      }]
+      }],
     });
     const view = pipeline.makePipelineView();
     await pipeline.init();
-    const rfv1 = view.getStepView('LibTests:AddMock');
+    const rfv1 = view.getStepView('testPipeline/step1');
     rfv1.setInput('a', 2);
     rfv1.setInput('b', 3);
     await delay(300);
     await rfv1.run();
     await delay(300);
-    const rfv2 = view.getStepView('LibTests:MulMock');
+    const rfv2 = view.getStepView('testPipeline/step2');
     rfv2.setInput('b', 4);
     await delay(300);
     await rfv2.run();
@@ -648,7 +726,7 @@ category('CompositionPipeline reactivity', async () => {
     expectDeepEqual(res, 20);
   });
 
-  test('composition links',  async () => {
+  test('composition links', async () => {
     const conf1: PipelineCompositionConfiguration = {
       id: 'testPipeline1',
       nqName: 'LibTests:MockWrapper7',
@@ -663,7 +741,7 @@ category('CompositionPipeline reactivity', async () => {
           id: 'step2',
           nqName: 'LibTests:MulMock',
         },
-        ['testPipeline2', 'step1']
+        ['testPipeline2', 'step1'],
       ]],
       links: [{
         id: 'link1',
@@ -673,7 +751,7 @@ category('CompositionPipeline reactivity', async () => {
         id: 'link2',
         from: ['testPipeline2', 'step1', 'res'],
         to: ['testPipeline2', 'step2', 'a'],
-      }]
+      }],
     };
     const conf2 = {
       id: 'testPipeline2',
@@ -683,24 +761,24 @@ category('CompositionPipeline reactivity', async () => {
           id: 'step1',
           nqName: 'LibTests:TestFn1',
         },
-      ]
-    }
+      ],
+    };
     const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
     const view = pipeline.makePipelineView();
     await pipeline.init();
-    const rfv1 = view.getStepView('LibTests:AddMock');
+    const rfv1 = view.getStepView('testPipeline1/step1');
     rfv1.setInput('a', 1);
     rfv1.setInput('b', 2);
     await delay(300);
     await rfv1.run();
     await delay(300);
-    const rfv2 = view.getStepView('LibTests:TestFn1');
+    const rfv2 = view.getStepView('testPipeline1/testPipeline2/step1');
     rfv2.setInput('b', 4);
     rfv2.setInput('c', 5);
     await delay(300);
     await rfv2.run();
     await delay(300);
-    const rfv3 = view.getStepView('LibTests:MulMock');
+    const rfv3 = view.getStepView('testPipeline1/testPipeline2/step2');
     rfv3.setInput('b', 10);
     await delay(300);
     await rfv3.run();

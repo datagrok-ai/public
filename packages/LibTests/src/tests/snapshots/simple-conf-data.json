@@ -145,7 +145,7 @@
           "pipelinePath": [
             "testPipeline"
           ],
-          "parrentNodePath": [
+          "parentNodePath": [
             "testPipeline"
           ],
           "pipelineState": {
@@ -248,7 +248,7 @@
           "pipelinePath": [
             "testPipeline"
           ],
-          "parrentNodePath": [
+          "parentNodePath": [
             "testPipeline"
           ],
           "pipelineState": {

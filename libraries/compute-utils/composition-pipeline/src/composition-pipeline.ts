@@ -5,7 +5,7 @@ import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, merge, of, from, Subject} from 'rxjs';
 import {PipelineView, RichFunctionView} from '../../function-views';
 import {withLatestFrom, filter, map, switchMap, debounceTime, takeUntil, take, sample, finalize} from 'rxjs/operators';
-import { ActionItem, ValidationResult, mergeValidationResults } from '../../shared-utils/validation';
+import {ActionItem, ValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 
 //
 // State values
@@ -33,7 +33,9 @@ export interface RuntimeController {
   enableStep(path: ItemPath): void;
   disableStep(path: ItemPath): void;
   getState<T = any>(path: ItemPath): T | void;
-  updateState<T>(path: ItemPath, state: T, inputState?: 'disabled' | 'restricted' | 'user input'): void;
+  setState<T>(path: ItemPath, state: T, inputState?: 'disabled' | 'restricted' | 'user input'): void;
+  getValidationAction(path: ItemPath, name?: string): ActionItem
+  setValidation(path: ItemPath, validation: ValidationResult | undefined): void
   getView(path: ItemPath): RichFunctionView | void;
   goToStep(path: ItemPath): void;
 }
@@ -65,6 +67,7 @@ export type PipelineLinkConfiguration = {
   handler?: Handler;
   enableOnStart?: boolean;
   enableOnLoadRun?: boolean;
+  ignoreNotifier?: boolean;
 }
 
 export type PipelineHookConfiguration = {
@@ -178,15 +181,17 @@ export function keyToPath(key: PathKey) {
   return key.split('/');
 }
 
+export function getParentKey(key: PathKey): PathKey {
+  const path = keyToPath(key);
+  const ppath = path.slice(0, path.length - 1);
+  return pathToKey(ppath);
+}
+
 export function normalizePaths(paths: ItemPath | ItemPath[]): ItemPath[] {
   if (Array.isArray(paths[0]))
     return paths as ItemPath[];
   else
     return [paths as ItemPath];
-}
-
-function getStepId(conf: PipelinePopupConfiguration | PipelineStepConfiguration) {
-  return conf.nqName;
 }
 
 export function traverseConfigPipelines<T>(
@@ -256,7 +261,6 @@ export class NodeItemState<T = any> {
 
   constructor(public conf: StateItemConfiguration, public pipelineState: PipelineState, public notifier?: Observable<true>) {
     this.valueChanges.pipe(
-      this.notifier ? sample(this.notifier) : map((x) => x),
       takeUntil(this.pipelineState.closed),
     ).subscribe((x) => {
       // console.log('state', this.conf.id, x);
@@ -288,7 +292,6 @@ export class NodeState {
     public conf: NodeConf,
     public type: SubNodeConfTypes,
     public pipelinePath: ItemPath,
-    public parentNodePath: ItemPath,
     public pipelineState: PipelineState,
   ) {
     if (type === 'step') {
@@ -423,9 +426,7 @@ export class PipelineRuntime {
 
   getView(path: ItemPath): RichFunctionView | void {
     const k = pathToKey(path);
-    const conf = this.nodes.get(k)?.conf;
-    if (conf)
-      return this.view.getStepView<RichFunctionView>((conf as PipelineStepConfiguration).nqName, k);
+    return this.view.getStepView<RichFunctionView>(k);
   }
 
   setValidation(targetPath: ItemPath, linkPath: ItemPath, validation: ValidationResult | undefined): void {
@@ -435,6 +436,11 @@ export class PipelineRuntime {
     targetState.set(linkId, validation);
     this.validationState.set(targetId, targetState);
     this.updateViewValidation(targetPath);
+  }
+
+  getViewNqName(path: ItemName): NqName | undefined {
+    const node = this.nodes.get(path);
+    return (node?.conf as PipelinePopupConfiguration | PipelineStepConfiguration)?.nqName;
   }
 
   getValidationAction(path: ItemPath, name?: string): ActionItem {
@@ -495,15 +501,13 @@ export class PipelineRuntime {
     }
   }
 
-  wireView() {
+  wireViews() {
     // wiring by nqName
     for (const [, node] of this.nodes) {
       for (const [, state] of node.states) {
         if ((node.type === 'popup' || node.type === 'step') && (state.conf.stateType === 'input' || state.conf.stateType === 'output')) {
-          const conf = node.conf as PipelinePopupConfiguration | PipelineStepConfiguration;
-          const stepId = getStepId(conf);
           const stateId = state.conf.id;
-          const {changes, setter} = this.view.getStateBindings(stepId, stateId, node.conf.id);
+          const {changes, setter} = this.view.getStateBindings(node.conf.id, stateId);
           state.linkState(changes, setter);
         }
       }
@@ -513,7 +517,12 @@ export class PipelineRuntime {
   wireLinks() {
     for (const [, link] of this.links) {
       const changes = link.controllerConfig.from.map((input) => {
-        return this.getNodeState(input)!.state.value;
+        const {state} = this.getNodeState(input)!
+        const value = state.value;
+        const notifier = state.notifier;
+        if (link.conf.ignoreNotifier || !notifier)
+          return value;
+        return value.pipe(sample(notifier));
       });
       const handler = link.conf.handler ?? (async () => {
         // console.log('default handler', link.conf.id);
@@ -650,7 +659,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.getState(fullPath);
   }
 
-  updateState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
+  setState<T>(path: ItemPath, value: T, inputState?: 'disabled' | 'restricted' | 'user input'): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkOutput(fullPath))
@@ -671,10 +680,10 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.goToStep(fullPath);
   }
 
-  setValidation(targetPath: ItemPath, linkPath: ItemPath, validation: ValidationResult | undefined): void {
+  setValidation(path: ItemPath, validation: ValidationResult | undefined): void {
     this.checkAborted();
-    const fullPathTarget = pathJoin(this.config.pipelinePath, targetPath);
-    const fullPathLinkPath = pathJoin(this.config.pipelinePath, linkPath);
+    const fullPathTarget = pathJoin(this.config.pipelinePath, path);
+    const fullPathLinkPath = keyToPath(this.handlerId);
     if (!this.checkValidation(fullPathTarget))
       return;
     this.rt.setValidation(fullPathTarget, fullPathLinkPath, validation);
@@ -727,13 +736,13 @@ export class RuntimeControllerImpl implements RuntimeController {
 
 export interface ICompositionView {
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
-  getStateBindings<T = any>(stepId: string, stateId: string, k: string): {changes: Observable<T>, setter: (x: any) => void};
+  getStateBindings<T = any>(viewId: PathKey, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
   isUpdating: BehaviorSubject<boolean>;
   getRunningUpdates(): string[];
-  showSteps(...id: string[]): void;
-  hideSteps(...id: string[]): void;
-  getStepView<T = RichFunctionView>(name: string, k?: string): T;
-  setExternalValidationResults(viewName: string, inputName: string, results: ValidationResult): void;
+  showSteps(...id: NqName[]): void;
+  hideSteps(...id: NqName[]): void;
+  getStepView<T = RichFunctionView>(viewId?: PathKey): T;
+  setExternalValidationResults(viewId: PathKey, stateId: string, results: ValidationResult): void;
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
@@ -755,23 +764,24 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     this.isUpdating = this.rt.isUpdating;
   }
 
-  public getStateBindings(stepId: string, stateId: string, k: string) {
-    const stepView = this.getStepView<RichFunctionView>(stepId, k);
+  public getStateBindings(viewId: PathKey, stateId: string) {
+    const stepView = this.getStepView<RichFunctionView>(viewId);
     const changes = stepView.getParamChanges(stateId);
     const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
     return {changes, setter};
   }
 
-  public setExternalValidationResults(viewName: string, inputName: string, results: ValidationResult) {
-    const view = this.getStepView(viewName);
+  public setExternalValidationResults(viewId: PathKey, inputName: string, results: ValidationResult) {
+    const view = this.getStepView(viewId);
     if (view)
       view.setExternalValidationResults(inputName, results);
   }
 
-  override getStepView<T = RichFunctionView>(name: string, k?: string) {
-    const view = super.getStepView<RichFunctionView>(name);
-    if (!view && k)
-      return this.customViews.get(k)! as T;
+  override getStepView<T = RichFunctionView>(viewId: PathKey) {
+    const nqName = this.rt?.getViewNqName(viewId);
+    const view = super.getStepView<RichFunctionView>(nqName ?? '');
+    if (!view)
+      return this.customViews.get(viewId)! as T;
 
     return view as T;
   }
@@ -799,13 +809,13 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   override async onAfterLoadRun(run: DG.FuncCall) {
     await super.onAfterLoadRun(run);
     this.rt!.pipelineState.runChanging.next(false);
-    this.rt!.wireView();
+    this.rt!.wireViews();
     await this.execHooks('afterLoadRun', {run});
   }
 
   override build() {
     super.build();
-    this.rt!.wireView();
+    this.rt!.wireViews();
     this.rt!.wireLinks();
     this.rt!.pipelineState.initialLoading.next(false);
     this.execHooks('onViewReady');
@@ -916,8 +926,8 @@ export class CompositionPipeline {
   }
 
   private addSystemHooks() {
-    const stepIdsToNodes = new Map<string, NodeState[]>();
-    const additionalViewNames = new Map<string, NqName>();
+    const stepIdsToNodes = new Map<PathKey, NodeState[]>();
+    const additionalViewNames = new Map<PathKey, NqName>();
     const additionalViews = this.viewInst!.customViews;
 
     for (const node of this.nodes.values()) {
@@ -931,10 +941,10 @@ export class CompositionPipeline {
         if (conf.position === 'none')
           continue;
 
-        const parrentPathKey = pathToKey(node.parentNodePath);
-        const nodes = stepIdsToNodes.get(parrentPathKey) ?? [];
+        const parentPathKey = getParentKey(node.conf.id);
+        const nodes = stepIdsToNodes.get(parentPathKey) ?? [];
         nodes.push(node);
-        stepIdsToNodes.set(parrentPathKey, nodes);
+        stepIdsToNodes.set(parentPathKey, nodes);
       }
     }
 
@@ -1112,24 +1122,22 @@ export class CompositionPipeline {
   private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
     this.updateFullPathLink(conf, pipelinePath, false);
     const nodePath = this.updateFullPathNode(conf, path);
-    const parrentPath = nodePath.slice(0, nodePath.length - 1);
     const nodeKey = pathToKey(nodePath);
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, parrentPath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, 'action', pipelinePath, this.pipelineState));
     return conf;
   }
 
   private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: SubNodeConfTypes) {
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
-    const parrentPath = nodePath.slice(0, nodePath.length - 1);
 
     if (toRemove.has(nodeKey))
       return;
 
-    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, parrentPath, this.pipelineState));
+    this.nodes.set(nodeKey, new NodeState(conf, type, pipelinePath, this.pipelineState));
     return conf;
   }
 

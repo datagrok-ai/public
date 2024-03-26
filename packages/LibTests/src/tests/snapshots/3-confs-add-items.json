@@ -74,7 +74,7 @@
             "id": "testPipeline3/step1/popup1",
             "friendlyName": "popup1",
             "nqName": "LibTests:MockPopup1",
-            "position": "menu",
+            "position": "buttons",
             "states": [
               {
                 "id": "state111"
@@ -289,7 +289,7 @@
                 "id": "testPipeline3/testPipeline1/step1/popup1",
                 "friendlyName": "popup1",
                 "nqName": "LibTests:MockPopup1",
-                "position": "menu",
+                "position": "buttons",
                 "states": [
                   {
                     "id": "state111"
@@ -499,7 +499,7 @@
                 "id": "testPipeline3/testPipeline2/step1/popup1",
                 "friendlyName": "popup1",
                 "nqName": "LibTests:MockPopup1",
-                "position": "menu",
+                "position": "buttons",
                 "states": [
                   {
                     "id": "state111"
@@ -624,7 +624,7 @@
                     "id": "testPipeline3/testPipeline2/step2/addedPopup1/addedAction2",
                     "friendlyName": "addedAction2",
                     "handler": "LibTests:MockHandler2",
-                    "position": "menu"
+                    "position": "buttons"
                   }
                 ]
               }
@@ -990,7 +990,7 @@
                 "id": "testPipeline3/testPipeline2/step1/popup1",
                 "friendlyName": "popup1",
                 "nqName": "LibTests:MockPopup1",
-                "position": "menu",
+                "position": "buttons",
                 "states": [
                   {
                     "id": "state111"
@@ -1054,10 +1054,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3",
-            "testPipeline2"
-          ],
-          "parrentNodePath": [
             "testPipeline3",
             "testPipeline2"
           ],
@@ -1269,7 +1265,7 @@
                     "id": "testPipeline3/testPipeline2/step2/addedPopup1/addedAction2",
                     "friendlyName": "addedAction2",
                     "handler": "LibTests:MockHandler2",
-                    "position": "menu"
+                    "position": "buttons"
                   }
                 ]
               }
@@ -1278,10 +1274,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3",
-            "testPipeline2"
-          ],
-          "parrentNodePath": [
             "testPipeline3",
             "testPipeline2"
           ],
@@ -1400,7 +1392,7 @@
             "id": "testPipeline3/testPipeline2/step1/popup1",
             "friendlyName": "popup1",
             "nqName": "LibTests:MockPopup1",
-            "position": "menu",
+            "position": "buttons",
             "states": [
               {
                 "id": "state111"
@@ -1464,11 +1456,6 @@
           "pipelinePath": [
             "testPipeline3",
             "testPipeline2"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "step1"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -1635,12 +1622,6 @@
             "testPipeline3",
             "testPipeline2"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "step1",
-            "popup1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -1730,11 +1711,6 @@
             "testPipeline3",
             "testPipeline2"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "step1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -1823,7 +1799,7 @@
                 "id": "testPipeline3/testPipeline2/step2/addedPopup1/addedAction2",
                 "friendlyName": "addedAction2",
                 "handler": "LibTests:MockHandler2",
-                "position": "menu"
+                "position": "buttons"
               }
             ]
           },
@@ -1831,11 +1807,6 @@
           "pipelinePath": [
             "testPipeline3",
             "testPipeline2"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "step2"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -1937,18 +1908,12 @@
             "id": "testPipeline3/testPipeline2/step2/addedPopup1/addedAction2",
             "friendlyName": "addedAction2",
             "handler": "LibTests:MockHandler2",
-            "position": "menu"
+            "position": "buttons"
           },
           "type": "action",
           "pipelinePath": [
             "testPipeline3",
             "testPipeline2"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "step2",
-            "addedPopup1"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -2045,7 +2010,7 @@
                 "id": "testPipeline3/testPipeline1/step1/popup1",
                 "friendlyName": "popup1",
                 "nqName": "LibTests:MockPopup1",
-                "position": "menu",
+                "position": "buttons",
                 "states": [
                   {
                     "id": "state111"
@@ -2109,10 +2074,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3",
-            "testPipeline1"
-          ],
-          "parrentNodePath": [
             "testPipeline3",
             "testPipeline1"
           ],
@@ -2275,10 +2236,6 @@
             "testPipeline3",
             "testPipeline1"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -2375,7 +2332,7 @@
             "id": "testPipeline3/testPipeline1/step1/popup1",
             "friendlyName": "popup1",
             "nqName": "LibTests:MockPopup1",
-            "position": "menu",
+            "position": "buttons",
             "states": [
               {
                 "id": "state111"
@@ -2439,11 +2396,6 @@
           "pipelinePath": [
             "testPipeline3",
             "testPipeline1"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline1",
-            "step1"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -2610,12 +2562,6 @@
             "testPipeline3",
             "testPipeline1"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline1",
-            "step1",
-            "popup1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -2704,11 +2650,6 @@
           "pipelinePath": [
             "testPipeline3",
             "testPipeline1"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline1",
-            "step1"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -2837,7 +2778,7 @@
                 "id": "testPipeline3/step1/popup1",
                 "friendlyName": "popup1",
                 "nqName": "LibTests:MockPopup1",
-                "position": "menu",
+                "position": "buttons",
                 "states": [
                   {
                     "id": "state111"
@@ -2898,9 +2839,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3"
-          ],
-          "parrentNodePath": [
             "testPipeline3"
           ],
           "pipelineState": {
@@ -3116,9 +3054,6 @@
           "pipelinePath": [
             "testPipeline3"
           ],
-          "parrentNodePath": [
-            "testPipeline3"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -3253,7 +3188,7 @@
             "id": "testPipeline3/step1/popup1",
             "friendlyName": "popup1",
             "nqName": "LibTests:MockPopup1",
-            "position": "menu",
+            "position": "buttons",
             "states": [
               {
                 "id": "state111"
@@ -3313,10 +3248,6 @@
           "type": "popup",
           "pipelinePath": [
             "testPipeline3"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "step1"
           ],
           "pipelineState": {
             "initialLoading": "$observable",
@@ -3479,11 +3410,6 @@
           "pipelinePath": [
             "testPipeline3"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "step1",
-            "popup1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -3565,10 +3491,6 @@
           "pipelinePath": [
             "testPipeline3"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "step1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -3630,10 +3552,6 @@
           "type": "action",
           "pipelinePath": [
             "testPipeline3"
-          ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "step2"
           ],
           "pipelineState": {
             "initialLoading": "$observable",

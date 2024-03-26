@@ -363,10 +363,6 @@
             "testPipeline3",
             "testPipeline2"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -492,10 +488,6 @@
             "testPipeline3",
             "testPipeline2"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline2"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -616,10 +608,6 @@
             "testPipeline3",
             "testPipeline1"
           ],
-          "parrentNodePath": [
-            "testPipeline3",
-            "testPipeline1"
-          ],
           "pipelineState": {
             "initialLoading": "$observable",
             "runChanging": "$observable",
@@ -718,10 +706,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3",
-            "testPipeline1"
-          ],
-          "parrentNodePath": [
             "testPipeline3",
             "testPipeline1"
           ],
@@ -828,9 +812,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3"
-          ],
-          "parrentNodePath": [
             "testPipeline3"
           ],
           "pipelineState": {
@@ -955,9 +936,6 @@
           },
           "type": "step",
           "pipelinePath": [
-            "testPipeline3"
-          ],
-          "parrentNodePath": [
             "testPipeline3"
           ],
           "pipelineState": {
