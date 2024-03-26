@@ -6,6 +6,12 @@
 
 * #2707: Add original and canonical to monomer
 
+## 2.11.41 (2024-03-26)
+
+### Features
+
+* Polytool: ability to use special engine to create molV3000 with CFG flags in the atoms block
+
 ## 2.11.40 (2024-03-22)
 
 ### Features
