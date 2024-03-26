@@ -363,10 +363,10 @@ export class SubstructureFilter extends DG.Filter {
     this.terminatePreviousSearch();
     const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-    super.detach();
-    this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
+    super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter 
+    this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {
