@@ -7,7 +7,7 @@ import {TAB, APP} from './const';
 import {TranslatorAppLayout} from '../../translator/view/app-ui';
 import {StructureAppLayout} from '../../structure/view/app-ui';
 import {PatternLayoutHandler} from '../../pattern/view/app-ui';
-import {PatternAppLayout} from '../../pattern/view/layout';
+import {PatternAppLayout} from '../../pattern/view/ui';
 import {MonomerLibViewer} from '../monomer-lib/viewer';
 import {_package} from '../../../package';
 import {tryCatch} from '../model/helpers';

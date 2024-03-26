@@ -6,7 +6,7 @@ import {SvgDisplayManager} from './svg-utils/svg-display-manager';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {isOverhangNucleotide} from '../model/utils';
-import {StrandType, PatternNameExistsError, PatternExistsError} from '../model/types';
+import {PatternNameExistsError, PatternExistsError} from '../model/types';
 
 import $ from 'cash-dom';
 import {BooleanInput} from './types';
@@ -74,7 +74,7 @@ export class PatternAppRightSection {
       })
       .catch((e) => {
         if (e instanceof PatternNameExistsError) {
-          grok.shell.warning(`Pattern with name ${patternName} already exists`);
+          new OverwritePatternDialog(this.eventBus).show();
         } else if (e instanceof PatternExistsError) {
           grok.shell.warning(ui.div([
             ui.divText(`Pattern already exists`),
@@ -84,6 +84,35 @@ export class PatternAppRightSection {
           console.error('Error while saving pattern', e);
         }
       });
+  }
+}
+
+class OverwritePatternDialog {
+  constructor(
+    private eventBus: EventBus
+  ) { }
+
+  show(): void {
+    const patternName = this.eventBus.getPatternName();
+    const dialog = ui.dialog(`Pattern ${patternName} already exists`);
+    dialog.add(ui.divText(
+      `Pattern ${patternName} already exists. Do you want to overwrite it?`
+    ));
+    dialog.show();
+
+    dialog.onOK(() => this.processOverwriteNamesakePattern());
+  }
+
+  private processOverwriteNamesakePattern(): void {
+    const patternName = this.eventBus.getPatternName();
+    grok.shell.info(`Pattern ${patternName} overwritten`);
+    // this.dataManager.overwritePatternInUserStorage()
+    //   .then(() => {
+    //     grok.shell.info(`Pattern ${patternName} overwritten`);
+    //   })
+    //   .catch((e) => {
+    //     console.error('Error while overwriting pattern', e);
+    //   });
   }
 }
 
@@ -106,31 +135,35 @@ class NumericLabelVisibilityControls {
     const newInputs = this.createInputs();
     $(this.togglesContainer).empty();
     $(this.togglesContainer).append(newInputs);
-    // this.togglesContainer.append(...newInputs);
   }
 
   private createInputs(): HTMLDivElement {
-    const inputBases = [] as BooleanInput[];
-
     const uniqueNucleotideBases = this.eventBus.getUniqueNucleotides();
     const nucleotidesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
 
-    nucleotidesWithoutOverhangs.forEach((nucleotide: string) => {
-      const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
-      const input = ui.boolInput(
-        nucleotide,
-        initialValue,
-        (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
-      );
-      $(input.root).css('padding-right', '20px');
-      inputBases.push(input);
-    });
+    const inputBases = nucleotidesWithoutOverhangs.map(
+      (nucleotide: string) => this.createSingleInput(nucleotide)
+    );
 
     inputBases.sort(
       (inputA, inputB) => inputA.captionLabel.textContent!.localeCompare(inputB.captionLabel.textContent!)
     );
 
     return ui.divH(inputBases.map((input) => input.root));
+  }
+
+  private createSingleInput(nucleotide: string): BooleanInput {
+    const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
+    const input = ui.boolInput(
+      nucleotide,
+      initialValue,
+      (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
+    );
+    $(input.root).css('padding-right', '20px');
+
+    input.setTooltip(`Show numeric labels for ${nucleotide}`);
+
+    return input;
   }
 
   private handleNumericLabelToggle(nucleotide: string, isVisible: boolean): void {

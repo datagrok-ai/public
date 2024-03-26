@@ -3,9 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-
 import {MAX_SEQUENCE_LENGTH, OTHER_USERS, STRAND, STRANDS, STRAND_LABEL} from '../model/const';
 import {StrandType} from '../model/types';
+import {SubscriptionManager} from '../model/subscription-manager';
 
 import './style.css';
 
@@ -183,7 +183,7 @@ class PatternEditControlsManager {
       sequenceBaseInput.value = this.eventBus.getSequenceBase();
     });
 
-    sequenceBaseInput.setTooltip('Most frequent nucleobase in the sequence');
+    sequenceBaseInput.setTooltip('Most frequent nucleobase in the strands');
     return sequenceBaseInput;
   }
 
@@ -228,6 +228,8 @@ class PatternEditControlsManager {
 }
 
 class PatternLoadControlsManager {
+  private subscriptions = new SubscriptionManager();
+
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager
@@ -264,17 +266,18 @@ class PatternLoadControlsManager {
   }
 
   private getPatternInputsContainer(): HTMLDivElement {
-    const inputsContainer = ui.divH(this.getPatternInputs());
+    const inputsContainer = ui.divH(this.createPatternInputs());
 
     this.eventBus.patternListUpdated$.subscribe(() => {
+      this.subscriptions.unsubscribeAll();
       $(inputsContainer).empty();
-      $(inputsContainer).append(this.getPatternInputs());
+      $(inputsContainer).append(this.createPatternInputs());
     });
 
     return inputsContainer;
   }
 
-  private getPatternInputs(): HTMLElement[] {
+  private createPatternInputs(): HTMLElement[] {
     const userChoiceInput = this.createUserChoiceInput();
     const patternChoiceInputContainer = this.createPatternChoiceInputContainer();
     const deletePatternButton = this.createDeletePatternButton();
@@ -289,10 +292,12 @@ class PatternLoadControlsManager {
   private createPatternChoiceInputContainer(): HTMLDivElement {
     const patternChoiceInput = this.createPatternChoiceInput();
     const patternChoiceInputContainer = ui.div([patternChoiceInput.root]);
-    this.eventBus.userSelection$.subscribe(() => {
+
+    const subscription = this.eventBus.userSelection$.subscribe(() => {
       $(patternChoiceInputContainer).empty();
       $(patternChoiceInputContainer).append(this.createPatternChoiceInput().root);
     });
+    this.subscriptions.add(subscription);
 
     return patternChoiceInputContainer;
   }
@@ -339,9 +344,11 @@ class PatternLoadControlsManager {
       'min-width': '100px',
     });
 
-    choiceInput.onInput(
+    const subscription = choiceInput.onInput(
       () => this.eventBus.requestPatternLoad(choiceInput.value!)
     );
+    this.subscriptions.add(subscription);
+
     return choiceInput;
   }
 
@@ -353,9 +360,10 @@ class PatternLoadControlsManager {
 
     ui.tooltip.bind(button, 'Delete pattern from user storage');
 
-    this.eventBus.userSelection$.subscribe(() => {
+    const subscription = this.eventBus.userSelection$.subscribe(() => {
       $(button).toggle(this.isCurrentUserSelected());
     });
+    this.subscriptions.add(subscription);
 
     return button;
   }

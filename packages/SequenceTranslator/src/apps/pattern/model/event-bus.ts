@@ -12,7 +12,8 @@ import {
   getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels, StrandEditingUtils
 } from './utils';
 
-/** Event bus for the application, central handler for all pattern state changes */
+/** Manager of all events in the application, *the* central state manager.
+ * Use for communication between app's components to avoid tight coupling. */
 export class EventBus {
   private _patternName$: rxjs.BehaviorSubject<string>;
 
@@ -26,6 +27,7 @@ export class EventBus {
   private _sequenceBase$: rxjs.BehaviorSubject<string>;
 
   private _patternListUpdated$ = new rxjs.Subject<string>();
+
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternLoaded$ = new rxjs.Subject<void>();
   private _uniqueNucleotides$ = new rxjs.BehaviorSubject<string[]>([]);
