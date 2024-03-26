@@ -17,12 +17,19 @@ enum PieChartStyle {
   Angle = 'Angle'
 }
 
+interface Subsector {
+  name: string;
+  radius: number;
+  lowThreshold: number;
+  highThreshold: number;
+}
+
 interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle;
   sectors: {
     sectorColor: string;
-    subsectors: { name: string; radius: number }[];
+    subsectors: Subsector[];
   }[];
 }
 
@@ -188,7 +195,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           const subsectorName = subsector.name;
           const subsectorCol = cols.find(col => col.name === subsectorName);
           if (subsectorCol) {
-            r = subsectorCol.scale(row) * (Math.min(box.width, box.height) / 2);
+            r = this.normalizeValue(df.cell(row, subsectorCol.name).value, subsector) * (Math.min(box.width, box.height) / 2);
             r = Math.max(r, minRadius);
           }
           g.beginPath();
@@ -250,5 +257,18 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           gc.grid.invalidate();
         }),
     ]);
+  }
+
+  normalizeValue(value: number, subsector: Subsector) {
+    const { lowThreshold, highThreshold } = subsector;
+    const isMax = highThreshold > lowThreshold;
+    if (isMax ? value < lowThreshold : value > lowThreshold)
+      return 0;
+    else if (isMax ? value > highThreshold : value < highThreshold)
+      return 1;
+    else
+      return isMax 
+        ? (value - lowThreshold) / (highThreshold - lowThreshold)
+        : (value - highThreshold) / (lowThreshold - highThreshold);
   }
 }
