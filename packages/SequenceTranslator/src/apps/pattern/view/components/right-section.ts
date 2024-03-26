@@ -1,15 +1,15 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {SvgDisplayManager} from './svg-utils/svg-display-manager';
+import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
 
-import {EventBus} from '../model/event-bus';
-import {PatternAppDataManager} from '../model/external-data-manager';
-import {isOverhangNucleotide} from '../model/utils';
-import {PatternNameExistsError, PatternExistsError} from '../model/types';
+import {EventBus} from '../../model/event-bus';
+import {PatternAppDataManager} from '../../model/external-data-manager';
+import {isOverhangNucleotide} from '../../model/utils';
+import {PatternNameExistsError, PatternExistsError} from '../../model/types';
 
 import $ from 'cash-dom';
-import {BooleanInput} from './types';
+import {BooleanInput} from '../types';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
