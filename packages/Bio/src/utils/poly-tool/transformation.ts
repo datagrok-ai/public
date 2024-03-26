@@ -221,7 +221,7 @@ function getHelmCycle(helm: string, source: ConnectionData): string {
 }
 
 export async function addTransformedColumn(
-  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[]
+  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[], chiralityEngine?: boolean
 ): Promise<void> {
   const df = molColumn.dataFrame;
   const uh = UnitsHandler.getOrCreate(molColumn);
@@ -243,7 +243,7 @@ export async function addTransformedColumn(
   addCommonTags(targetHelmCol);
   targetHelmCol.setTag('units', NOTATION.HELM);
 
-  const molCol = await getMolColumnFromHelm(df, targetHelmCol);
+  const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
 
   if (addHelm) {

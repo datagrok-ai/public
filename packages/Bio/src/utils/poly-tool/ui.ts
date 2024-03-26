@@ -121,10 +121,12 @@ export class PolyTool {
     const addButton = this.getAddButton();
     this.ruleFilesInputs = ui.div(await this.getRuleFilesBlock());
     //const rulesFiles = ui.div(this.ruleFilesInputs);
+    const chiralityEngineInput = ui.boolInput('Chirality engine', false);
 
     const div = ui.div([
       targetColumnInput,
       generateHelmChoiceInput,
+      chiralityEngineInput,
       'Rules used',
       this.ruleFilesInputs,
       addButton
@@ -138,7 +140,7 @@ export class PolyTool {
           grok.shell.warning('No marcomolecule column chosen!');
           return;
         }
-        addTransformedColumn(molCol!, generateHelmChoiceInput.value!, this.userRuleSettings.included);
+        addTransformedColumn(molCol!, generateHelmChoiceInput.value!, this.userRuleSettings.included, chiralityEngineInput.value!);
       });
 
     return this.dialog;
