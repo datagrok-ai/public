@@ -5,13 +5,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
 import {MonomerLibManager} from './monomer-lib/lib-manager';
 
 import {_package} from '../package';
+import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 const enum V2K_CONST {
   MAX_ATOM_COUNT = 999,
@@ -51,10 +52,10 @@ export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Pr
 
 /** Translate HELM column into molfile column and append to the dataframe */
 export async function getMolColumnFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
 ): Promise<DG.Column<string>> {
   const converter = new HelmToMolfileConverter(helmCol, df);
-  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn();
+  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn(chiralityEngine);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
 }
@@ -89,7 +90,56 @@ export class HelmToMolfileConverter {
     return smiles;
   }
 
-  async convertToRdKitBeautifiedMolfileColumn(): Promise<DG.Column<string>> {
+  async createSketcher(): Promise<any> {
+    const prevSketcher = DG.chem.currentSketcherType;
+    const func = await DG.Func.find({tags: ['moleculeSketcher'], name: 'openChemLibSketcher'})[0];
+    DG.chem.currentSketcherType = func.friendlyName;
+    const s = new DG.chem.Sketcher();
+    const d = ui.dialog().add(s);
+    d.root.style.display = 'none';
+    d.show();
+    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
+    DG.chem.currentSketcherType = prevSketcher;
+    return {sketcher: s.sketcher, dialog: d};
+}
+
+  async getMolfileV3000(sketcher: any, molFile: string, prevMolV3000: string) {
+    sketcher.molFile = molFile;
+    await awaitCheck(() => {
+      if (sketcher.molV3000 && sketcher.molV3000 !== prevMolV3000) {
+        return true;
+      }
+      return false;
+    },
+      'molecule has not been set', 10000);
+    return sketcher.molV3000;
+  }
+
+  async getMolV3000ViaSketcher(beautifiedMols: (RDMol | null)[], columnName: string) {
+    const beautifiedMolV2000 =  beautifiedMols.map((mol) => {
+      if (mol === null)
+        return '';
+      const molBlock = mol.get_molblock();
+      mol!.delete();
+      return molBlock;
+    });
+    const sketcherPb = DG.TaskBarProgressIndicator.create(`Starting chirality engine...`);
+    const {sketcher, dialog} = await this.createSketcher();
+    sketcherPb.close();
+    const molv3000Arr = new Array<string>(beautifiedMolV2000.length);
+    const chiralityPb = DG.TaskBarProgressIndicator.create(`Handling chirality...`);
+    for (let i = 0; i < beautifiedMolV2000.length; i++) {
+      const molV3000 = await this.getMolfileV3000(sketcher, beautifiedMolV2000[i], sketcher._molV3000);
+      molv3000Arr[i] = molV3000.replace('STERAC1', 'STEABS');
+      const progress = i/beautifiedMolV2000.length*100;
+      chiralityPb.update(progress, `${progress?.toFixed(2)}% of molecules completed`);
+    }
+    dialog.close();
+    chiralityPb.close();
+    return DG.Column.fromStrings(columnName, molv3000Arr); 
+  }
+
+  async convertToRdKitBeautifiedMolfileColumn(chiralityEngine?: boolean): Promise<DG.Column<string>> {
     const smiles = await this.getSmilesList();
     const rdKitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
     const beautifiedMols = smiles.map((item) =>{
@@ -103,13 +153,16 @@ export class HelmToMolfileConverter {
       return mol;
     });
     const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+
+    if (chiralityEngine)
+      return await this.getMolV3000ViaSketcher(beautifiedMols, columnName);
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
       const molBlock = mol.get_v3Kmolblock();
       mol!.delete();
       return molBlock;
-    }));
+    })); 
   }
 
   async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {
