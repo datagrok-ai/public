@@ -60,7 +60,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
 * Fixed:
    * [#2570](https://github.com/datagrok-ai/public/issues/2570): Viewers: legend does not show all categories after filtering in specific cases.
    * [#2590](https://github.com/datagrok-ai/public/issues/2590): Calculated columns dialog: not all functions are available in list, search is not working as expected.
-* [Grid](../../../visualize/viewers/grid.md):
+* [Grid](../../visualize/viewers/grid.md):
    * [#2645](https://github.com/datagrok-ai/public/issues/2645): Support single decimal place for rounding in calculated columns
    * Rendering table cells with any viewer.
    * Custom numeric format.
@@ -69,7 +69,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
      * [#2483](https://github.com/datagrok-ai/public/issues/2483): Order and hide columns and Tooltip dialogs: cosmetic issues.
      * [#2503](https://github.com/datagrok-ai/public/issues/2503): Order and Hide: Tooltip with null category shouldn’t be that big.
      * [#2523](https://github.com/datagrok-ai/public/issues/2523): Columns added after performing structure search cannot be shown again if hidden.
-* [Filter Panel](../../../visualize/viewers/filters.md):
+* [Filter Panel](../../visualize/viewers/filters.md):
    * [#2185](https://github.com/datagrok-ai/public/issues/2185): Fuzzy filter enhancements:
    * The filter header corresponds to the column name.
    * Ability to combine with free-text filter
@@ -79,7 +79,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
      * [#2504](https://github.com/datagrok-ai/public/issues/2504): The question mark hovering doesn’t show the filtering of the scaffold tree viewer.
      * [#2647](https://github.com/datagrok-ai/public/issues/2647): #2647: File refresh breaks structure filter
      * [#2684](https://github.com/datagrok-ai/public/issues/2684): #2684: Wrong filters are added if there are two views in some cases.
-* [Scatterplot](../../../visualize/viewers/scatter-plot.md):
+* [Scatterplot](../../visualize/viewers/scatter-plot.md):
    * [#2456](https://github.com/datagrok-ai/public/issues/2456): ignore negatives and zero values when switching to log scale.
    * [#2480](https://github.com/datagrok-ai/public/issues/2480):default range should take into account only the rows where both axes values are present.
    * Fixed:
@@ -93,7 +93,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
      * [#2665](https://github.com/datagrok-ai/public/issues/2665): Ctrl+Shift+Drag doesn't work for deselection.
      * [#2671](https://github.com/datagrok-ai/public/issues/2671): filtered out data is unexpectedly shown in some cases on filtering the plot further using markers legend.
      * [#671](https://github.com/datagrok-ai/public/issues/671): 'Formula lines' dialog preview is not updated if scatterplot configuration is changed
-* [Trellis plot](../../../visualize/viewers/trellis-plot.md):
+* [Trellis plot](../../visualize/viewers/trellis-plot.md):
    * [#2457](https://github.com/datagrok-ai/public/issues/2457): redesigning:
      * Move X and Y selectors to the corresponding axes.
      * Most relevant options of the inner viewer should be displayed at the top of the viewer
@@ -103,13 +103,13 @@ Datagrok 1.18 release focuses on usability improvements and stability:
    * Better auto-selection of columns for pie chart and bar chart.
    * Integrate sparklines (Beta version). For details, see [Trellis: sparklines](https://community.datagrok.ai/t/trellis-sparklines/818/1)
    
-* [Histogram](../../../visualize/viewers/histogram.md):
+* [Histogram](../../visualize/viewers/histogram.md):
    * [#2549](https://github.com/datagrok-ai/public/issues/2549): add highlighting for split lines as for line chart.
    * [#2685](https://github.com/datagrok-ai/public/issues/2685): add stacked view option when split is set.
    * Fixed:
      * [#2472](https://github.com/datagrok-ai/public/issues/2472): selected column is not synchronised between in-plot controls and properties panel.
      * [#2524](https://github.com/datagrok-ai/public/issues/2524): Split: no tooltip and Y axis when the values are not normalized.
-* [Line chart](../../../visualize/viewers/line-chart.md):
+* [Line chart](../../visualize/viewers/line-chart.md):
    * [#2357](https://github.com/datagrok-ai/public/issues/2357): custom tooltip.
    * [#2623](https://github.com/datagrok-ai/public/issues/2623): implement the one-click way to set the Split by columns.
    *  Interactivity on a stacked bar chart.
@@ -117,19 +117,19 @@ Datagrok 1.18 release focuses on usability improvements and stability:
      * [#2485](https://github.com/datagrok-ai/public/issues/2485): too much empty space if Y axis is logarithmic for specific data.
      * [#2577](https://github.com/datagrok-ai/public/issues/2577): colors in the legend do not match color in the plot in some cases.
      * [#2608](https://github.com/datagrok-ai/public/issues/2608): Line chart with row source = selected: all rows are deselected on clicking line in some cases.
-* [Box plot](../../../visualize/viewers/box-plot.md): [#2484](https://github.com/datagrok-ai/public/issues/2484): no indication what dot is hovered, wrong dot is selected in some cases.
-* [Bar chart](../../../visualize/viewers/bar-chart.md):
+* [Box plot](../../visualize/viewers/box-plot.md): [#2484](https://github.com/datagrok-ai/public/issues/2484): no indication what dot is hovered, wrong dot is selected in some cases.
+* [Bar chart](../../visualize/viewers/bar-chart.md):
    * [#2584](https://github.com/datagrok-ai/public/issues/2584): add new aggregations for time ranges such as weeks and days.
    * [#2298](https://github.com/datagrok-ai/public/issues/2298): squeeze the white space around the title.
   * Fixed: [#2562](https://github.com/datagrok-ai/public/issues/2562): error when date column is used as category and split function is non-default.
 * For pivot table fixed:
     * [#2535](https://github.com/datagrok-ai/public/issues/2535): non-default aggregations are not saved in layout.
     * [#2606](https://github.com/datagrok-ai/public/issues/2606): colours, formatting, shown/hidden columns are reset on filtering.
-*  [Tile viewer](../../../visualize/viewers/tile-viewer.md): ability to specify custom lane categories.
+*  [Tile viewer](../../visualize/viewers/tile-viewer.md): ability to specify custom lane categories.
 
-*  [Correlation plot](../../../visualize/viewers/tile-viewer.md): [#2653](https://github.com/datagrok-ai/public/issues/2653): tooltip issue.
+*  [Correlation plot](../../visualize/viewers/tile-viewer.md): [#2653](https://github.com/datagrok-ai/public/issues/2653): tooltip issue.
 
-*  [Forms viewer](../../../visualize/viewers/forms.md): [#2652](https://github.com/datagrok-ai/public/issues/2652): implemented an option to download a viewer as PNG.
+*  [Forms viewer](../../visualize/viewers/forms.md): [#2652](https://github.com/datagrok-ai/public/issues/2652): implemented an option to download a viewer as PNG.
 
 ### Data Access
 
@@ -1101,7 +1101,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 
 * Improvements:
   * Introduced a new feature for application developers. Now you can [place hints](https://community.datagrok.ai/t/javascript-api-updates/526/21) for users in the form of indicators, and popups, as well as describe a series of visual components in the wizard.  UI methods now come equipped with interactive hints, similar to those found in tutorials, that can be attached to various elements. With the addition of these methods, application authors are able to incorporate interactive hints in their app code, allowing them to introduce new features to their users, among other things.
-  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../../visualize/viewers/filters#column-tags) to learn more.
+  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../visualize/viewers/filters#column-tags) to learn more.
   * Provided `typeAhead`, `dropDown` and `breadcrumbs` controls for the platform.
   * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we've made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
   * Added classes for form viewers in the API: `Form` and `FormViewer`.
