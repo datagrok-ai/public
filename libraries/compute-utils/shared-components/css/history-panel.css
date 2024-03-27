@@ -1,55 +1,5 @@
-.hp-funccall-card:hover {
-    box-shadow: 0px 0px 3px #b8bac0;
-    cursor: pointer;
-}
-
-.hp-funccall-card {
-    margin: 2px 1px;
-    padding: 5px 12px 5px 5px;
-    justify-content: space-between;
-}
-
-.hp-funccall-card.clicked {
-    border: 1px solid var(--blue-1);
-}
-
-.hp-funccall-card-hover-icon {
-    display: none;
-}
-
 .hp-no-elements-label {
     margin: 12px;
-}
-
-.hp-funccall-card:hover .hp-funccall-card-hover-icon {
-    display: flex;
-}
-
-.hp-funccall-card .hp-card-content {
-    justify-content: space-around;
-    margin-left: 5px;
-}
-
-.hp-funccall-card .hp-card-content * {
-    margin-bottom: 3px;
-}
-
-.hp-funccall-card-def-icon {
-    margin: 5px;
-}
-
-.hp-funccall-card-icon {
-    margin: 2px 5px;
-}
-
-.hp-funccall-card .description {
-    margin-bottom: 2px;
-    color: var(--grey-3);
-}
-
-.hp-funccall-card .date {
-    color: var(--grey-3);
-    margin-left: 5px;
 }
 
 .grok-icon.hp-disabled {

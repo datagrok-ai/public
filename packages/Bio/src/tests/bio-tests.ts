@@ -16,6 +16,11 @@ import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {getStatsForCol} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
+import {GAP_SYMBOL} from '../const';
+
+/** GAP_SYMBOL */
+const g: string = GAP_SYMBOL;
+
 category('bio', () => {
   const csvDfN1: string = `seq
 ACGTCT
@@ -144,7 +149,7 @@ export async function _testGetAlphabetSimilarity() {
     'C': 3015,
     'G': 3015,
     'T': 2048,
-    '-': 1000,
+    [g]: 1000,
   };
   const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
   const res = getAlphabetSimilarity(freq, alphabet);

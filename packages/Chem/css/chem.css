@@ -552,3 +552,15 @@
   bottom: 455px!important;
   left: 360px!important;
 }
+
+.d4-filter-disabled > .chem-filter-sketcher-div{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-empty-filter{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-filter-search-options{
+  pointer-events: none;
+}

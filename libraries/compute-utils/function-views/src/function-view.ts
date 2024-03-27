@@ -17,7 +17,6 @@ import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-seriali
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
 import {properUpdateIndicator} from './shared/utils';
-import {HistoricalRunEdit} from '../../shared-components/src/history-dialogs';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -411,10 +410,8 @@ export abstract class FunctionView extends DG.ViewBase {
       }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened) {
-            grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
-            grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
-          }
+          if (isHistoryBlockOpened)
+            grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
@@ -428,7 +425,6 @@ export abstract class FunctionView extends DG.ViewBase {
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
-    this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
     this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
@@ -442,8 +438,9 @@ export abstract class FunctionView extends DG.ViewBase {
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
       if (!grok.shell.dockManager.findNode(this.historyRoot)) {
-        grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
-        grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+        grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+        this.historyRoot.parentElement!.classList.add('ui-box');
+        this.historyRoot.classList.add('ui-box');
       }
     });
 
@@ -770,7 +767,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public isHistorical = new BehaviorSubject<boolean>(false);
 
-  protected historyRoot: HTMLDivElement = ui.box(null, {style: {height: '100%'}});
+  protected historyRoot: HTMLDivElement = ui.div();
 
   public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 

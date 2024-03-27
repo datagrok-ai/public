@@ -25,8 +25,8 @@ class DatabaseService {
   }
 }
 
-const PICK_COLUMN_NAME = 'Pick' as const;
-const ID_COLUMN_NAME = 'ID' as const;
+export const PICK_COLUMN_NAME = 'Pick' as const;
+export const ID_COLUMN_NAME = 'ID' as const;
 
 export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T | null> {
   /**
@@ -148,7 +148,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     });
   }
 
-  private renderGridAndFilters() {
+  public renderGridAndFilters() {
     const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
     this._historyFilters.root.replaceWith(newHistoryFilters.root);
     this._historyFilters = newHistoryFilters;
