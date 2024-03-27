@@ -6,6 +6,8 @@
 			"models": [
 				{
 					"name": "Pgp-Substrate",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -51,6 +53,8 @@
 				},
 				{
 					"name": "Caco2",
+					"min": -6,
+					"max": -5.5,
 					"properties": [
 						{
 							"property": {
@@ -96,6 +100,8 @@
 				},
 				{
 					"name": "Lipophilicity",
+					"min": 0,
+					"max": 5,
 					"properties": [
 						{
 							"property": {
@@ -143,6 +149,8 @@
 				},
 				{
 					"name": "Solubility",
+					"min": -4.5,
+					"max": -1,
 					"properties": [
 						{
 							"property": {
@@ -193,6 +201,8 @@
 			"models": [
 				{
 					"name": "PPBR",
+					"min": 40,
+					"max": 90,
 					"properties": [
 						{
 							"property": {
@@ -252,6 +262,8 @@
 				},
 				{
 					"name": "VDss",
+					"min": 1,
+					"max": 2,
 					"properties": [
 						{
 							"property": {
@@ -316,6 +328,8 @@
 			"models": [
 				{
 					"name": "CYP1A2-Inhibitor",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -355,6 +369,8 @@
 				},
 				{
 					"name": "CYP2C19-Inhibitor",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -394,6 +410,8 @@
 				},
 				{
 					"name": "CYP2C9-Inhibitor",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -433,6 +451,8 @@
 				},
 				{
 					"name": "CYP2C9-Substrate",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -472,6 +492,8 @@
 				},
 				{
 					"name": "CYP2D6-Inhibitor",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -511,6 +533,8 @@
 				},
 				{
 					"name": "CYP2D6-Substrate",
+					"min": 0,
+					"max": 1,
 					"properties": [
 						{
 							"property": {
@@ -555,6 +579,8 @@
 			"models": [
 				{
 					"name": "CL-Hepa",
+					"min": 10,
+					"max": 100,
 					"properties": [
 						{
 							"property": {
@@ -614,6 +640,8 @@
 				},
 				{
 					"name": "CL-Micro",
+					"min": 10,
+					"max": 100,
 					"properties": [
 						{
 							"property": {
@@ -659,6 +687,8 @@
 				},
 				{
 					"name": "Half-Life",
+					"min": 2,
+					"max": 24,
 					"properties": [
 						{
 							"property": {
