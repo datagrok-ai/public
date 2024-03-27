@@ -9,9 +9,9 @@
 
 - [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview)
   is an abstraction on top of a Function call and is a part of Compute
-  package. RichFunctionView is resposible for building UI with inputs
+  package. RichFunctionView is responsible for building UI with inputs
   and outputs widgets and linking them to a function call instance,
-  ensuring that once exuted, function call inputs are immutable and a
+  ensuring that once executed, function call inputs are immutable and a
   fresh funcall is linked to UI inputs. Platform delegates
   scripts/functions inputs filling and running to RichFunctionView
   based on an editor annotation `editor: Compute:RichFunctionViewEditor`.
@@ -28,11 +28,11 @@
 ## Composition pipeline goal
 
 A subclassing based customization is not very flexible and practically
-cannot be reused directly over serveral pipelines. Composition
-pipeline goal is to provide a way of easily building new piplines from
-existing ones. To achive this goal, composition pipeline configuration
+cannot be reused directly over several pipelines. Composition
+pipeline goal is to provide a way of easily building new pipelines from
+existing ones. To achieve this goal, composition pipeline configuration
 contains both steps and input/output links specifications. This allows
-to compose multiple pipline configrations in a single pipeline
+to compose multiple pipeline configurations in a single pipeline
 configuration, which in turn can be composed with additional pipeline
 configurations.
 
@@ -53,27 +53,34 @@ configurations.
 
 - **link** - is a description of a connection between inputs and
   outputs. It is defined by an array of input **item paths** with the
-  correspoding array of output **item paths**. By default input[0]
+  corresponding array of output **item paths**. By default input[0]
   value is set to output[0] and so on. Any value change in any of link
   inputs will trigger the link, so an update of all outputs to the
   respective inputs values will happen. Note that links are triggered
   once if multiple inputs are changed synchronously.
 
 - **handler** - is an asynchronous function, if defined it can
-  override the default link behaviour when a link is triggered. It
-  will recieve an instance of `RuntimeController` as an argument for
+  override the default link behavior when a link is triggered. It
+  will receive an instance of `RuntimeController` as an argument for
   fetching and setting values. Only a single instance of a link
-  handler is acive at one time, other async handlers running will be
+  handler is active at one time, other async handlers running will be
   terminated when using any of RuntimeController methods.
 
-- **popup** - a button in RichFunctionView controlls area that
+- **validator** - is a link that targets some values as both input and
+  output, those inputs are validated. **handler** for such link can
+  use `RuntimeController` method `setValidation` and
+  `getValidationAction`. Validation data format is the same as for [RFV
+  validation](https://datagrok.ai/help/compute/scripting-advanced#validating-inputs).
+
+- **popup** - a button in RichFunctionView controls area that
   launches a new arbitrary RichFunctionView. This view is neither a
   part of step sequence nor a part of history, but it can reuse
   links. Note that links from popup will be triggers only when popup
   is confirmed. A path to a popup is prefixed by a step.
 
-- **action** - a button in RichFunctionView controlls area that will
-  triger it's own **handler**, also can be used in **popup**.
+- **action** - a button in RichFunctionView controls area that will
+  trigger it's own **handler**, also can be used in **popup** and in
+  **validator**.
 
 - **hook** - a **handler** that is triggered at a specific pipeline
   livecycle event, like run loading or initialization.
@@ -81,7 +88,7 @@ configurations.
 - **compose** is composition pipeline static method, it takes a
   composition configuration and an array of nested pipeline
   configurations. Composition configuration object has additional
-  fileds to add or remove steps, popups and actions for nestes
+  fields to add or remove steps, popups and actions for nested
   pipelines. The resulting pipeline steps are composition
   configuration steps first then nested pipelines steps.
 
@@ -264,5 +271,58 @@ to `MulMock` input `a`:
     }
     const conf = CompositionPipeline.compose(conf2, [conf1]);
     const pipeline = new CompositionPipeline(conf);
+    grok.shell.addView(pipeline.makePipelineView());
+    await pipeline.init();
+
+
+
+A more complicated example will be passing a suggestion for a user to
+consider, rather than setting a value directly. In the example below
+we suggest to set input `a` of `step2` to the same value as `step1`
+`a`. This is is achieved using a validator mechanism on `link1`, which
+will show a suggestion with an user executable action `action1` which
+will set the value.
+
+
+    const pipeline = new CompositionPipeline({
+      id: 'testPipeline',
+      nqName: 'MyPackage:MockWrapper1',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'MyPackage:AddMock',
+        },
+        {
+          id: 'step2',
+          nqName: 'MyPackage:MulMock',
+          actions: [{
+            id: 'action1',
+            friendlyName: 'action1',
+            from: ['step1', 'a'],
+            to: ['step2', 'a'],
+            handler: async ({controller}) => {
+              const val = controller.getState(['step1', 'a']);
+              controller.setState(['step2', 'a'], val);
+            },
+            position: 'none',
+          }],
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: [['step1', 'a'], ['step2', 'a']],
+        to: ['step2', 'a'],
+        handler: async ({controller}) => {
+          const valS = controller.getState(['step1', 'a']);
+          const valC = controller.getState(['step2', 'a']);
+          if (valC !== valS) {
+            const action1 = controller.getValidationAction(['step2', 'action1'], `set to ${valS}`);
+            const adv1 = makeAdvice('Try using the provided value', [action1]);
+            controller.setValidation(['step2', 'a'], makeValidationResult({notifications: [adv1]}));
+          } else
+            controller.setValidation(['step2', 'a'], undefined);
+        },
+      }],
+    });
     grok.shell.addView(pipeline.makePipelineView());
     await pipeline.init();
