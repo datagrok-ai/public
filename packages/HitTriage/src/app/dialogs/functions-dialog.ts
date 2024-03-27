@@ -83,6 +83,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.functions?.some(
@@ -112,6 +113,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.scripts?.some(
@@ -141,6 +143,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.queries?.some(
@@ -159,6 +162,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   }
 
   const tc = ui.tabControl(tabControlArgs, true);
+  tc.onTabChanged.subscribe(() => {try {tc.currentPane.content.style.removeProperty('max-width');} catch (e) {}});
   tc.header.style.overflow = 'scroll';
   tc.root.style.width = '100%';
   tc.root.style.minWidth = '350px';
