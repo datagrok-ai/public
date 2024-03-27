@@ -16,6 +16,11 @@ keywords:
   - calculate fingerprints
   - drug likeness
   - structural alerts
+  - Matched molecular pairs
+  - MMP
+  - docking
+  - admetox
+  - admet
 ---
 
 ```mdx-code-block
@@ -56,7 +61,7 @@ with chemical data:
   * [Substructure search](#substructure-search--filtering).
   * [Chemical space analysis](#similarity-and-diversity-search).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
-  * SAR: [activity cliffs](#structure-relationship-analysis).
+  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
   <!--* [ADME/Tox calculators](#admetox).-->
   * Property and descriptor [calculators](#calculators).
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
@@ -493,6 +498,60 @@ To explore the molecule pairs:
 
 As you browse the dataset, the **Context Panel** updates with relevant information.
 
+</details>
+
+### Matched molecular pairs
+
+:::note
+
+This feature is in Beta.
+
+:::
+
+The **Matched Molecular Pairs** ("MMP") tool uses the data in your dataset to calculate the mean difference in activity or property resulting from a fragment substitution. It then presents the results as a set of tables and visualizations.
+
+With **MMP**, you can:
+
+* View fragments and substitutions in your dataset 
+* Analyze the effect of specific fragments on the chosen activity or property of a lead compound
+* Generate new molecules based on the modifications present in your dataset and view their predicted properties and activities.
+
+<details>
+<summary>How to use</summary>
+
+To run MMP analysis:
+
+1. In the **Top Menu**, select **Chem** > **Analyze ** > **Matched Molecular Pairs...** A dialog opens.
+1. In the dialog, select the table you want to analyze (**Table**), the column containing molecules within this table (**Molecules**), and the activity/property columns (**Activity**). Click **OK**. An MMP section is added to the view. It has four tabs:
+
+<Tabs>
+<TabItem value="transformations" label="Transformations" default> 
+
+The **Transformations** tab has two tables:
+
+* **The upper table** shows all fragment substitutions found in the dataset for the current molecule. It includes the frequency of each substitution and the corresponding change in the analyzed activity or property.
+* **The lower table** shows all pairs of molecules associated with the substitution from the upper table.  It provides details about the analyzed activity or property for each pair of molecules.
+
+</TabItem>
+<TabItem value="fragments" label="Fragments">
+
+In the **Fragments** tab, a [trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified fragments on the x and y axes. Each intersection in the plot displays the change in the analyzed activity or property resulting from a fragment substitution.
+
+</TabItem>
+<TabItem value="cliffs" label="Cliffs"> 
+
+In the **Cliffs** tab, a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx) shows clusters of molecules with similar structures but significant differences in the analyzed activity or property. Arrows connecting molecules represent changes in the specified activity or property, with the arrow pointing toward the molecule with the higher value. Clicking an arrow shows both molecules in the **Context Panel**, along with the information about the analyzed activity or property.
+
+</TabItem>
+<TabItem value="generation" label="Generation">
+
+On the **Generation** tab, every scaffold is combined with each fragment to produce a molecule based on rules derived from the dataset. For each molecule, the table shows:
+
+* A predicted value for one of the selected activities or properties.
+* One possible fragment substitution, along with the resulting molecule and the predicted change in the specified activity or property.
+
+</TabItem>
+</Tabs>
 </details>
 
 <!--### ADME/Tox-->
