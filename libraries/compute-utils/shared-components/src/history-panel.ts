@@ -3,10 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {BehaviorSubject, Subject, merge} from 'rxjs';
+import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
-import {getObservable, properUpdateIndicator} from '../../function-views/src/shared/utils';
 import {HistoricalRunsList} from './history-list';
 
 export type FilterOptions = {
@@ -15,103 +14,6 @@ export type FilterOptions = {
   author?: DG.User,
   startedAfter?: dayjs.Dayjs,
   tags?: string[]
-}
-
-class HistoryFilter extends DG.Widget {
-  public onFilteringChanged = new BehaviorSubject<FilterOptions>({text: '', isOnlyFavorites: false});
-
-  private onFuncCallListChanged = new BehaviorSubject<DG.FuncCall[]>([]);
-
-  constructor() {
-    super(ui.div());
-
-    const favoritesInput = ui.switchInput('Only favorites', false);
-
-    const textInput = ui.stringInput('Search', '', null, {clearIcon: true, placeholder: 'Type here to filter...'});
-    const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'));
-    dateInput.addPatternMenu('datetime');
-    const tagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter']);
-
-    const filterTagEditor = DG.TagEditor.create();
-    const dummyInput = ui.stringInput(' ', '');
-    dummyInput.input.replaceWith(filterTagEditor.root);
-    ui.setDisplay(dummyInput.root, false);
-
-    const addTagSub = getObservable<string | null>(tagInput.onChanged.bind(tagInput))
-      .subscribe(() => {
-        const tag = tagInput.value;
-        //@ts-ignore
-        if (!!tag && tag !== 'Choose tag to filter' && !filterTagEditor.tags.includes(tag))
-          filterTagEditor.addTag(tag);
-        tagInput.notify = false;
-        tagInput.value = 'Choose tag to filter';
-        tagInput.notify = true;
-      });
-
-    const filterChangeSub = merge(
-      getObservable<boolean>(favoritesInput.onInput.bind(favoritesInput)),
-      DG.debounce(getObservable<string>(textInput.onInput.bind(textInput))),
-      getObservable<dayjs.Dayjs>(dateInput.onInput.bind(dateInput)),
-      getObservable<string[]>(filterTagEditor.onChanged.bind(filterTagEditor)),
-    ).subscribe(() => {
-      const isOnlyFavorites = favoritesInput.value;
-      const text = textInput.value;
-      const startedAfter = dateInput.value ?? undefined;
-      //@ts-ignore
-      const tags: string[] = filterTagEditor.tags.filter((tag) => !!tag) ?? [];
-      this.onFilteringChanged.next({isOnlyFavorites, text, startedAfter, tags});
-
-      if (tags.length === 0)
-        ui.setDisplay(dummyInput.root, false);
-      else
-        ui.setDisplay(dummyInput.root, true);
-    });
-
-    const updateInputsSub = this.onFuncCallListChanged.subscribe((newFuncCalls) => {
-      properUpdateIndicator(tagInput.root, true);
-      const newTags = newFuncCalls
-        .map((run) => run.options['tags'] as string[])
-        .reduce((acc, runTags) => {
-          if (!!runTags) runTags.forEach((runTag) => {if (!acc.includes(runTag)) acc.push(runTag);});
-          return acc;
-        }, [] as string[]);
-
-      tagInput.items = ['Choose tag to filter', ...newTags];
-      dateInput.value = newFuncCalls.reduce((minDate, call) => {
-        if (call.started < minDate)
-          minDate = call.started;
-
-        return minDate;
-      }, dayjs()).subtract(1, 'week');
-      properUpdateIndicator(tagInput.root, false);
-    });
-
-    this.subs.push(filterChangeSub, addTagSub, updateInputsSub);
-
-    const form = ui.divV([
-      favoritesInput,
-      textInput,
-      dateInput,
-      tagInput,
-      dummyInput,
-    ], 'ui-form ui-form-wide ui-form-left');
-
-    this.root.appendChild(ui.panel([form]));
-  }
-
-  public addTag(funccall: DG.FuncCall) {
-    const newFunccalls = this.onFuncCallListChanged.value.filter((fc) => fc.id !== funccall.id);
-    this.onFuncCallListChanged.next([...newFunccalls, funccall]);
-  }
-
-  public removeTag(funccall: DG.FuncCall) {
-    const newFunccalls = this.onFuncCallListChanged.value.filter((fc) => fc.id !== funccall.id);
-    this.onFuncCallListChanged.next(newFunccalls);
-  }
-
-  public updateTagList(funccalls: DG.FuncCall[]) {
-    this.onFuncCallListChanged.next(funccalls);
-  }
 }
 
 export class HistoryPanel extends DG.Widget {
@@ -129,17 +31,12 @@ export class HistoryPanel extends DG.Widget {
 
   public allRunsFetch = new Subject<true>();
 
-  private historyFilter = new HistoryFilter();
-  private historyList = new HistoricalRunsList([], {fallbackText: 'No runs are found in history',
-    showAuthorIcon: true, showDelete: true, showEdit: true, showFavorite: true, showCompare: true});
-  private panel = ui.divV([
-    this.historyFilter.root,
-    this.historyList.root,
-  ]);
+  private historyList = new HistoricalRunsList([], [], {fallbackText: 'No runs are found in history',
+    showActions: true, showBatchActions: true, isHistory: true});
+  private panel = this.historyList.root;
 
   private updateHistoryPane(historyRuns: DG.FuncCall[]) {
     this.historyList.updateRuns(historyRuns);
-    this.historyFilter.updateTagList(historyRuns);
   };
 
   public showEditDialog(editedCall: DG.FuncCall) {
@@ -157,9 +54,7 @@ export class HistoryPanel extends DG.Widget {
   constructor(
     private func: DG.Func,
   ) {
-    super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label'), {style: {height: '100%'}}));
-
-    const updateHistoryPaneSub = this.historyFilter.onFilteringChanged.subscribe((options) => this.historyList.setFiltering(options));
+    super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label')));
 
     const clickedSub = this.historyList.onClicked.subscribe((clickedCall) => this.onRunChosen.next(clickedCall.id));
 
@@ -167,7 +62,7 @@ export class HistoryPanel extends DG.Widget {
 
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])
+      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])
         .then((historicalRuns) => {
           ui.empty(this.root);
           this.root.appendChild(this.panel);
@@ -178,12 +73,10 @@ export class HistoryPanel extends DG.Widget {
     });
 
     const onMetadataEdit = this.historyList.onMetadataEdit.subscribe((editedCall) => {
-      this.historyFilter.addTag(editedCall);
       this.afterRunEdited.next(editedCall);
     });
 
     const onDeleteSub = this.historyList.onDelete.subscribe((deleteCall) => {
-      this.historyFilter.removeTag(deleteCall);
       this.afterRunDeleted.next(deleteCall);
     });
 
@@ -193,7 +86,6 @@ export class HistoryPanel extends DG.Widget {
       onMetadataEdit,
       comparisonSub,
       onDeleteSub,
-      updateHistoryPaneSub,
     );
 
     this.allRunsFetch.next();
