@@ -14,7 +14,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
 
   private readonly seqCol: DG.Column<string>;
 
-  private wlViewer: WebLogoViewer;
+  private wlViewer: WebLogoViewer | null = null;
 
   constructor(seqCol: DG.Column<string>) {
     super(ui.divV([]));
@@ -46,7 +46,10 @@ export class MacromoleculeColumnWidget extends DG.Widget {
   }
 
   override detach() {
-    this.wlViewer.detach();
+    if (this.wlViewer) {
+      this.wlViewer.detach();
+      this.wlViewer = null;
+    }
     super.detach();
   }
 }

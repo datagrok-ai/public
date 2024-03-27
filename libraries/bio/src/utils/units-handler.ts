@@ -34,6 +34,7 @@ export type JoinerFunc = (src: ISeqSplitted) => string;
 /** Class for handling notation units in Macromolecule columns and
  * conversion of notation systems in Macromolecule columns
  */
+// TODO: SeqHandler
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
   protected readonly _units: string; // units, of the form fasta, separator
@@ -41,6 +42,55 @@ export class UnitsHandler {
   protected readonly _defaultGapSymbol: string;
 
   private _splitter: SplitterFunc | null = null;
+
+  protected constructor(col: DG.Column<string>) {
+    if (col.type !== DG.TYPE.STRING)
+      throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
+    this._column = col;
+    const units = this._column.getTag(DG.TAGS.UNITS);
+    if (units !== null && units !== undefined)
+      this._units = units;
+    else
+      throw new Error('Units are not specified in column');
+    this._notation = this.getNotation();
+    this._defaultGapSymbol = (this.isFasta()) ? GapSymbols[NOTATION.FASTA] :
+      (this.isHelm()) ? GapSymbols[NOTATION.HELM] :
+        GapSymbols[NOTATION.SEPARATOR];
+
+    if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
+      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
+    ) {
+      // The following detectors and setters are to be called because the column is likely
+      // as the UnitsHandler constructor was called on the column.
+      if (this.isFasta())
+        UnitsHandler.setUnitsToFastaColumn(this);
+      else if (this.isSeparator()) {
+        const separator = col.getTag(TAGS.separator);
+        UnitsHandler.setUnitsToSeparatorColumn(this, separator);
+      } else if (this.isHelm())
+        UnitsHandler.setUnitsToHelmColumn(this);
+      else
+        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
+    }
+
+    // if (!this.column.tags.has(TAGS.alphabetSize)) {
+    //   if (this.isHelm())
+    //     throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
+    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
+    //   else if (['UN'].includes(this.alphabet))
+    //     throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
+    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
+    // }
+
+    if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
+      if (this.isHelm())
+        this.column.setTag(TAGS.alphabetIsMultichar, 'true');
+      else if (['UN'].includes(this.alphabet)) {
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
+          `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
+      }
+    }
+  }
 
   public static setUnitsToFastaColumn(uh: UnitsHandler) {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
@@ -154,16 +204,16 @@ export class UnitsHandler {
       return alphabetSize;
     } else {
       switch (this.alphabet) {
-        case ALPHABET.PT:
-          return 20;
-        case ALPHABET.DNA:
-        case ALPHABET.RNA:
-          return 4;
-        case 'NT':
-          console.warn(`Unexpected alphabet 'NT'.`);
-          return 4;
-        default:
-          throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+      case ALPHABET.PT:
+        return 20;
+      case ALPHABET.DNA:
+      case ALPHABET.RNA:
+        return 4;
+      case 'NT':
+        console.warn(`Unexpected alphabet 'NT'.`);
+        return 4;
+      default:
+        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
       }
     }
   }
@@ -180,6 +230,7 @@ export class UnitsHandler {
   private _splitted: ISeqSplitted[] | null = null;
   /** */
   public get splitted(): ISeqSplitted[] {
+    // TODO: Disable cache or invalidate on changing data
     if (this._splitted === null) {
       const splitter = this.getSplitter();
       const colLength: number = this._column.length;
@@ -421,16 +472,16 @@ export class UnitsHandler {
     if (this.isMsa())
       return MmDistanceFunctionsNames.HAMMING;
     switch (this.alphabet) {
-      // As DNA and RNA scoring matrices are same as identity matrices(mostly),
+    case ALPHABET.DNA:
+    case ALPHABET.RNA:
+      // As DNA and RNA scoring matrices are same as identity matrices (mostly),
       // we can use very fast and optimized Levenshtein distance library
-      case ALPHABET.DNA:
-      case ALPHABET.RNA:
-        return MmDistanceFunctionsNames.LEVENSHTEIN;
-      case ALPHABET.PT:
-        return MmDistanceFunctionsNames.LEVENSHTEIN;
+      return MmDistanceFunctionsNames.LEVENSHTEIN;
+    case ALPHABET.PT:
+      return MmDistanceFunctionsNames.LEVENSHTEIN;
       // For default case, let's use Levenshtein distance
-      default:
-        return MmDistanceFunctionsNames.LEVENSHTEIN;
+    default:
+      return MmDistanceFunctionsNames.LEVENSHTEIN;
     }
   }
 
@@ -622,57 +673,10 @@ export class UnitsHandler {
       throw new Error();
   }
 
-  protected constructor(col: DG.Column<string>) {
-    if (col.type !== DG.TYPE.STRING)
-      throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
-    this._column = col;
-    const units = this._column.getTag(DG.TAGS.UNITS);
-    if (units !== null && units !== undefined)
-      this._units = units;
-    else
-      throw new Error('Units are not specified in column');
-    this._notation = this.getNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? GapSymbols[NOTATION.FASTA] :
-      (this.isHelm()) ? GapSymbols[NOTATION.HELM] :
-        GapSymbols[NOTATION.SEPARATOR];
-
-    if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
-      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
-    ) {
-      // The following detectors and setters are to be called because the column is likely
-      // as the UnitsHandler constructor was called on the column.
-      if (this.isFasta())
-        UnitsHandler.setUnitsToFastaColumn(this);
-      else if (this.isSeparator()) {
-        const separator = col.getTag(TAGS.separator);
-        UnitsHandler.setUnitsToSeparatorColumn(this, separator);
-      } else if (this.isHelm())
-        UnitsHandler.setUnitsToHelmColumn(this);
-      else
-        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
-    }
-
-    // if (!this.column.tags.has(TAGS.alphabetSize)) {
-    //   if (this.isHelm())
-    //     throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
-    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
-    //   else if (['UN'].includes(this.alphabet))
-    //     throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
-    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
-    // }
-
-    if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
-      if (this.isHelm())
-        this.column.setTag(TAGS.alphabetIsMultichar, 'true');
-      else if (['UN'].includes(this.alphabet)) {
-        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
-          `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
-      }
-    }
-  }
-
   /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
+  // TODO: forColumn
   public static getOrCreate(col: DG.Column<string>): UnitsHandler {
+    // TODO: Invalidate col.temp[Temps.uh] checking column's metadata
     let res = col.temp[Temps.uh];
     if (!res) res = col.temp[Temps.uh] = new UnitsHandler(col);
     return res;
