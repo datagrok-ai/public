@@ -597,27 +597,31 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       : getChartData(gridCell);
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
-    const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
-    const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
-    const dataBox = layoutChart(screenBounds, showAxesLabels, showTitle)[0];
-    const dataBounds = getChartBounds(data);
-    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+    if (screenBounds.width >= MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH && screenBounds.height >= MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
+      const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
+      const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
+      const dataBox = layoutChart(screenBounds, showAxesLabels, showTitle)[0];
+      const dataBounds = getChartBounds(data);
+      const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
-    for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points' || screenBounds.width < MIN_AXES_CELL_PX_WIDTH ||
-        screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
-        continue;
-      for (let j = 0; j < data.series![i].points.length!; j++) {
-        const p = data.series![i].points[j];
-        const screenX = viewport.xToScreen(p.x);
-        const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
-        if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
-          e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
-          document.body.style.cursor = 'pointer';
-          return;
+      for (let i = 0; i < data.series?.length!; i++) {
+        if (data.series![i].showPoints !== 'points')
+          continue;
+        for (let j = 0; j < data.series![i].points.length!; j++) {
+          const p = data.series![i].points[j];
+          const screenX = viewport.xToScreen(p.x);
+          const screenY = viewport.yToScreen(p.y);
+          const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
+          if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
+              e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
+            ui.tooltip.show(ui.divV([ui.divText(`x: ${p.x}`), ui.divText(`y: ${p.y}`)]), e.x + 16, e.y + 16);
+            if (data.series![i].clickToToggle && screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT)
+              document.body.style.cursor = 'pointer';
+            return;
+          }
         }
       }
+      ui.tooltip.hide();
     }
     document.body.style.cursor = 'default';
   }
