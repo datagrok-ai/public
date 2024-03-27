@@ -7,7 +7,7 @@ import {PatternAppDataManager} from '../../model/external-data-manager';
 
 import {PatternEditControlsManager} from './edit-block-controls';
 import {PatternLoadControlsManager} from './load-block-controls';
-import {TableControlsManager} from './bulk-convert/bulk-convert';
+import {TableControlsManager} from './bulk-convert/table-controls';
 
 export class PatternAppLeftSection {
   constructor(
@@ -28,9 +28,9 @@ export class PatternAppLeftSection {
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
-    const loadControls = loadControlsManager.createUIComponents();
-    const editControls = editControlsManager.createUIComponents();
-    const tableControls = tableControlsManager.createUIComponents();
+    const loadControls = loadControlsManager.createControls();
+    const editControls = editControlsManager.createControls();
+    const tableControls = tableControlsManager.createControls();
 
     const loadControlsContainer = ui.div(loadControls);
     $(loadControlsContainer).css({'padding-bottom': '20px'});

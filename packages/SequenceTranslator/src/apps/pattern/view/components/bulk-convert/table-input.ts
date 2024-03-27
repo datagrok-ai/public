@@ -7,12 +7,10 @@ import $ from 'cash-dom';
 import '../../style.css';
 
 import {EventBus} from '../../../model/event-bus';
-import {SubscriptionManager} from '../../../model/subscription-manager';
 
 export class TableInputManager {
   private availableTables: DG.DataFrame[] = [];
   private tableInputContainer: HTMLDivElement = ui.div([]);
-  private subscriptions = new SubscriptionManager();
 
   constructor(private eventBus: EventBus) {
     this.subscribeToTableEvents();
@@ -46,11 +44,9 @@ export class TableInputManager {
   }
 
   private refreshTableInput(): void {
-    this.subscriptions.unsubscribeAll();
-
     const tableInput = this.createTableInput();
     $(this.tableInputContainer).empty();
-    this.tableInputContainer.append(tableInput.root);
+    $(this.tableInputContainer).append(tableInput.root);
   }
 
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {

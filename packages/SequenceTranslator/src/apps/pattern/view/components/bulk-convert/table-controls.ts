@@ -14,7 +14,7 @@ export class TableControlsManager {
     this.columnInputManager = new ColumnInputManager(eventBus);
   }
 
-  createUIComponents(): HTMLElement[] {
+  createControls(): HTMLElement[] {
     const title = ui.h1('Bulk convert');
     const tableInput = this.tableInputManager.getTableInputContainer();
     const columnControls = this.columnInputManager.getColumnControlsContainer();

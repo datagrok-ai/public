@@ -15,9 +15,9 @@ export class SubscriptionManager {
   }
 
   unsubscribeAll() {
-    this.rxjsSubscriptions.forEach((s) => s.unsubscribe());
-    this.rxjsSubscriptions = [];
-    this.dgSubscriptions.forEach((s) => s.unsubscribe());
-    this.dgSubscriptions = [];
+    for (const subs of [this.rxjsSubscriptions, this.dgSubscriptions]) {
+      subs.forEach((sub) => sub.unsubscribe());
+      subs.length = 0;
+    }
   }
 }

@@ -41,7 +41,7 @@ export class PatternLoadControlsManager {
     return this.eventBus.getSelectedUser() !== OTHER_USERS;
   }
 
-  createUIComponents(): HTMLElement[] {
+  createControls(): HTMLElement[] {
     const inputsContainer = this.getPatternInputsContainer();
     return [
       ui.h1('Load'),

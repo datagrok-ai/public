@@ -19,7 +19,7 @@ export class PatternEditControlsManager {
     private defaultState: PatternDefaultsProvider
   ) { }
 
-  createUIComponents(): HTMLElement[] {
+  createControls(): HTMLElement[] {
     const antisenseStrandToggle = this.createAntisenseStrandToggle();
     const strandLengthInputs = this.createStrandLengthInputs();
 

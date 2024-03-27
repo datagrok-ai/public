@@ -32,18 +32,18 @@ export class ColumnInputManager {
   }
 
   private refreshColumnControls(): void {
+    $(this.columnControlsContainer).empty();
+    $(this.columnControlsContainer).append(this.constructColumnControls());
+  }
+
+  private constructColumnControls(): HTMLElement[] {
     const strandColumnInput = this.createStrandColumnInput();
     const senseStrandColumnInput = strandColumnInput[STRAND.SENSE];
     const antisenseStrandColumnInput = strandColumnInput[STRAND.ANTISENSE];
 
     const idColumnInput = this.createIdColumnInput();
 
-    $(this.columnControlsContainer).empty();
-    this.columnControlsContainer.append(
-      senseStrandColumnInput,
-      antisenseStrandColumnInput,
-      idColumnInput
-    );
+    return [senseStrandColumnInput, antisenseStrandColumnInput, idColumnInput];
   }
 
   private createStrandColumnInput(): Record<StrandType, HTMLElement> {

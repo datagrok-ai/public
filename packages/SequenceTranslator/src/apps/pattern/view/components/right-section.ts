@@ -1,15 +1,11 @@
-import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-
-import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
+import * as ui from 'datagrok-api/ui';
 
 import {EventBus} from '../../model/event-bus';
 import {PatternAppDataManager} from '../../model/external-data-manager';
-import {isOverhangNucleotide} from '../../model/utils';
-import {PatternNameExistsError, PatternExistsError} from '../../model/types';
-
-import $ from 'cash-dom';
-import {BooleanInput} from '../types';
+import {PatternExistsError, PatternNameExistsError} from '../../model/types';
+import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
+import {NumericLabelVisibilityControls} from './numeric-label-visibility-controls';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -116,64 +112,3 @@ class OverwritePatternDialog {
   }
 }
 
-class NumericLabelVisibilityControls {
-  private togglesContainer: HTMLDivElement = ui.div([]);
-
-  constructor(
-    private eventBus: EventBus
-  ) {
-    this.eventBus.uniqueNucleotidesChanged$().subscribe(() => {
-      this.updateContainer();
-    });
-  }
-
-  getContainer(): HTMLDivElement {
-    return this.togglesContainer;
-  }
-
-  private updateContainer(): void {
-    const newInputs = this.createInputs();
-    $(this.togglesContainer).empty();
-    $(this.togglesContainer).append(newInputs);
-  }
-
-  private createInputs(): HTMLDivElement {
-    const uniqueNucleotideBases = this.eventBus.getUniqueNucleotides();
-    const nucleotidesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
-
-    const inputBases = nucleotidesWithoutOverhangs.map(
-      (nucleotide: string) => this.createSingleInput(nucleotide)
-    );
-
-    inputBases.sort(
-      (inputA, inputB) => inputA.captionLabel.textContent!.localeCompare(inputB.captionLabel.textContent!)
-    );
-
-    return ui.divH(inputBases.map((input) => input.root));
-  }
-
-  private createSingleInput(nucleotide: string): BooleanInput {
-    const initialValue = this.eventBus.getModificationsWithNumericLabels().includes(nucleotide);
-    const input = ui.boolInput(
-      nucleotide,
-      initialValue,
-      (value: boolean) => this.handleNumericLabelToggle(nucleotide, value)
-    );
-    $(input.root).css('padding-right', '20px');
-
-    input.setTooltip(`Show numeric labels for ${nucleotide}`);
-
-    return input;
-  }
-
-  private handleNumericLabelToggle(nucleotide: string, isVisible: boolean): void {
-    const labelledNucleotides = this.eventBus.getModificationsWithNumericLabels();
-    const hasNumericLabel = labelledNucleotides.includes(nucleotide);
-    if (hasNumericLabel === isVisible)
-      return;
-
-    const newArray = isVisible ? labelledNucleotides.concat(nucleotide) :
-      labelledNucleotides.filter((n) => n !== nucleotide);
-    this.eventBus.updateModificationsWithNumericLabels(newArray);
-  }
-}
