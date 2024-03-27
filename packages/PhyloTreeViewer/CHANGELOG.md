@@ -1,5 +1,11 @@
 # PhyloTreeViewer changelog
 
+## 1.2.11 (2024-03-07)
+
+### Bug fixes
+
+* Bump dependencies version, fix tests
+
 ## 1.2.9 (2023-07-24)
 
 *Dependency: datgarok-api >= 1.15.2*

@@ -21,9 +21,10 @@ export async function init() {
 //name: Bioreactor
 //description: Controlled fab-arm exchange mechanism simulation
 //tags: model
-//input: double initial = 0.0 {caption: Initial; category: Time, min}
-//input: double final = 1000.0 {caption: Final; category: Time, min}
-//input: double step = 0.1 {caption: Step; category: Time, min}
+//input: double initial = 0.0 {caption: Initial; category: Time; units: min}
+//input: double final = 1000.0 {caption: Final; category: Time; units: min; min: 500; max: 1000}
+//input: double step = 1 {caption: Step; category: Time; units: min; min: 0.01; max: 2}
+//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch at; category: Time; min: 70; max: 180}
 //input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values; min: 0.15; max: 0.25} 
 //input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values; min: 0.15; max: 0.25}
 //input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values; min: 0.098; max: 0.12}
@@ -43,18 +44,17 @@ export async function init() {
 //input: double _TVal = 300.0 {units: K; caption: System temperature; category: Parameters}
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
-//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)}
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true}
-export async function Bioreactor(initial: number, final: number, step: number,
+export async function Bioreactor(initial: number, final: number, step: number, _TimeToSwitchVal: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
   _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
   _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
-  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<any>
+  _RVal: number, _PVal: number): Promise<any>
 {
   return await _simulateBioreactor(initial, final, step,
     _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
@@ -65,9 +65,10 @@ export async function Bioreactor(initial: number, final: number, step: number,
 
 //name: Bioreactor Demo
 //description: Controlled fab-arm exchange mechanism simulation
-//input: double initial = 0.0 {caption: Initial; category: Time, min}
-//input: double final = 1000.0 {caption: Final; category: Time, min}
-//input: double step = 0.1 {caption: Step; category: Time, min}
+//input: double initial = 0.0 {caption: Initial; category: Time; units: min}
+//input: double final = 1000.0 {caption: Final; category: Time; units: min; min: 500; max: 1000}
+//input: double step = 1 {caption: Step; category: Time; units: min; min: 0.01; max: 2}
+//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch at; category: Time; min: 70; max: 180}
 //input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values; min: 0.15; max: 0.25} 
 //input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values; min: 0.15; max: 0.25}
 //input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values; min: 0.098; max: 0.12}
@@ -87,17 +88,16 @@ export async function Bioreactor(initial: number, final: number, step: number,
 //input: double _TVal = 300.0 {units: K; caption: System temperature; category: Parameters}
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
-//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
-export async function BioreactorDemo(initial: number, final: number, step: number,
+export async function BioreactorDemo(initial: number, final: number, step: number, _TimeToSwitchVal: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
   _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
   _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
-  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<DG.DataFrame>
+  _RVal: number, _PVal: number): Promise<DG.DataFrame>
 {
   return await _simulateBioreactor(initial, final, step,
     _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 

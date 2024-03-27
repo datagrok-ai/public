@@ -71,7 +71,7 @@ category('renderers', () => {
   }
 
   async function _rendererMacromoleculeSeparator() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_SEPARATOR_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/SEPARATOR_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const seqCol = df.getCol('sequence');
@@ -113,7 +113,7 @@ category('renderers', () => {
   }
 
   async function _testAfterMsa() {
-    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA.fasta');
+    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.fasta');
     const df: DG.DataFrame = importFasta(fastaTxt)[0];
 
     const srcSeqCol: DG.Column = df.getCol('sequence');
@@ -153,7 +153,7 @@ category('renderers', () => {
   }
 
   async function _testAfterConvert() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const srcCol: DG.Column = df.col('sequence')!;

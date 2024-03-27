@@ -17,6 +17,7 @@ import {TreeColorNames, TreeDefaultPalette} from '@datagrok-libraries/bio/src/tr
 import {DendrogramColorCodingTreeStyler, DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 
 export const LINE_WIDTH = 2;
 export const NODE_SIZE = 4;
@@ -78,8 +79,6 @@ export enum PROPS {
 }
 
 
-const newickDefault: string = ';';
-
 export interface IDendrogram {
   get placer(): RectangleTreePlacer<MarkupNodeType>;
 
@@ -128,7 +127,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     super();
 
     // -- Data --, not userEditable option is not displayed in Property panel, but can be set through setOptions()
-    this.newick = this.string(PROPS.newick, newickDefault,
+    this.newick = this.string(PROPS.newick, NEWICK_EMPTY,
       {category: PROPS_CATS.DATA/*, userEditable: false*/});
     this.newickTag = this.string(PROPS.newickTag, null,
       {category: PROPS_CATS.DATA, choices: []});
@@ -310,8 +309,8 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     // this.dataFrame.getTag(TREE_TAGS.NEWICK) // the lowest priority
     let newickTag: string = treeTAGS.NEWICK;
     if (this.newickTag) newickTag = this.newickTag;
-    this.treeNewick = this.dataFrame.getTag(newickTag);
-    if (this.newick && this.newick != newickDefault) this.treeNewick = this.newick;
+    this.treeNewick = this.dataFrame.getTag(newickTag) ?? NEWICK_EMPTY;
+    if (this.newick && this.newick != NEWICK_EMPTY) this.treeNewick = this.newick;
 
     if (!this.viewed) {
       this.buildView();
@@ -396,6 +395,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       this._renderer?.onResetZoom();
     });
   }
+
   // -- Handle controls events --
 
   private rootOnSizeChanged(): void {

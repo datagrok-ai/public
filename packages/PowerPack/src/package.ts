@@ -185,26 +185,24 @@ export function viewerGallery(): void {
 }
 
 function _viewerGallery(view: DG.ViewBase): void {
-  let addViewerIcon: HTMLDivElement | undefined;
-  if (view.type == 'TableView') {
-    for (const p of view.getRibbonPanels()) {
+  if (view?.type == 'TableView') {
+    const panels = view.getRibbonPanels();
+    for (const p of panels) {
       for (const d of p) {
         if (d instanceof HTMLDivElement) {
-          if (d.querySelector('.svg-add-viewer'))
-            addViewerIcon = d;
+          if (d.querySelector('.svg-add-viewer')) {
+            const icon = ui.iconFA('',
+              () => {
+                viewersDialog(view as DG.TableView, (view as DG.TableView).table!);
+              }, 'Add viewer');
+            icon.className = 'grok-icon svg-icon svg-add-viewer';
+            const btn = ui.div([icon]);
+            btn.className = 'd4-ribbon-item';
+            p[p.indexOf(d)] = btn;
+          }
         }
       }
     }
-    if (addViewerIcon != undefined) {
-      const icon = ui.iconFA('',
-        () => {
-          viewersDialog(view as DG.TableView, (view as DG.TableView).table!);
-        }, 'Add viewer');
-      icon.className = 'grok-icon svg-icon svg-add-viewer';
-      const btn = ui.div([icon]);
-      btn.className = 'd4-ribbon-item';
-      addViewerIcon.after(btn);
-      addViewerIcon.remove();
-    }
+    view.setRibbonPanels(panels);
   }
 }

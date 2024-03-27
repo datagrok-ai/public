@@ -4,8 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {checkSize} from './utils';
-
 const UNSUPPORTED_TYPE_ERROR_MSG = 'Unsupported output type.';
 const FUNCCALL_ARRAY_IS_EMPTY_MSG = 'Funccall array is empty.';
 const INCORRECT_ROW_MSG = 'Incorrect row number.';
@@ -15,49 +13,89 @@ type CellCoordinates = {
   columnName: string,
 };
 
+export type OutputDataFromUI = {
+  prop: DG.Property,
+  value: {
+    row: number | null,
+    colName: string,
+    colValue: number,
+  },
+};
+
 export type OutputInfo = {
   prop: DG.Property,
   elements: CellCoordinates [],
-  row: number,
 };
 
-export type SensitivityAnalysisResult ={
+export type SensitivityAnalysisResult = {
   funcEvalResults: DG.DataFrame,
   funcCalls: DG.FuncCall[],
 };
 
-function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinates[] {
+function getCellCoordinatesFromRow(df: DG.DataFrame, spec: OutputDataFromUI): CellCoordinates[] {
   const rowCount = df.rowCount;
-  let idx: number = 0;
+  const row = spec.value.row;
 
-  if ((row >= 1) && (row <= rowCount))
-    idx = row - 1;
-  else if (row == -1)
-    idx = rowCount - 1;
-  else
-    throw new Error(INCORRECT_ROW_MSG);
+  // Last/first row case
+  if (row !== null)
+    return df.columns.names().map((colName) => ({idx: row, columnName: colName}));
 
-  return df.columns.names().map((colName) => ({idx: idx, columnName: colName}));
-}
+  // By value in column
+  const col = df.col(spec.value.colName);
 
-function getExtendedOutputsSpecification(funcCall: DG.FuncCall, outputsSpecification: OutputInfo[]): OutputInfo[] {
+  if (col === null) {
+    // eslint-disable-next-line max-len
+    grok.shell.warning(`Output dataframe "${df.name}" doesn't contain the "${spec.value.colName}" column. The last row is analyzed.`);
+    return df.columns.names().map((colName) => ({idx: rowCount - 1, columnName: colName}));
+  }
+
+  if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT)) {
+    // eslint-disable-next-line max-len
+    grok.shell.warning(`Non-supported type of the "${spec.value.colName}" column: ${col.type}. Last row of the output dataframe "${df.name}" is analyzed.`);
+    return df.columns.names().map((colName) => ({idx: rowCount - 1, columnName: colName}));
+  }
+
+  const raw = col.getRawData();
+  const val = spec.value.colValue;
+  let closestIdx = 0;
+  let closestDist = Math.abs(raw[0] - val);
+  let curDist: number;
+
+  for (let i = 1; i < rowCount; ++i) {
+    curDist = Math.abs(raw[i] - val);
+
+    if (curDist < closestDist) {
+      closestDist = curDist;
+      closestIdx = i;
+    }
+  }
+
+  return df.columns.names().map((colName) => ({idx: closestIdx, columnName: colName}));
+} // getCellCoordinatesFromRow
+
+function getExtendedOutputsSpecification(funcCall: DG.FuncCall,
+  outputsSpecification: OutputDataFromUI[]): OutputInfo[] {
   const extendedOutputsSpecification = [] as OutputInfo[];
 
-  for (const item of outputsSpecification) {
-    if (item.prop.propertyType == DG.TYPE.DATA_FRAME) {
+  for (const spec of outputsSpecification) {
+    if (spec.prop.propertyType == DG.TYPE.DATA_FRAME) {
       extendedOutputsSpecification.push({
-        prop: item.prop,
-        elements: getCellCoordinatesFromRow(funcCall.outputs[item.prop.name], item.row),
-        row: item.row,
+        prop: spec.prop,
+        elements: getCellCoordinatesFromRow(funcCall.outputs[spec.prop.name], spec),
       });
-    } else
-      extendedOutputsSpecification.push(item);
+    } else {
+      extendedOutputsSpecification.push({
+        prop: spec.prop,
+        elements: [],
+      });
+    }
   }
 
   return extendedOutputsSpecification;
 }
 
-function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: OutputInfo[], rowCount: number): DG.DataFrame {
+function getEmptyOutputTable(funcCall: DG.FuncCall,
+  outputsSpecification: OutputInfo[], rowCount: number): DG.DataFrame {
   const columns = [] as DG.Column[];
 
   for (const item of outputsSpecification) {
@@ -78,8 +116,6 @@ function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: Output
           columns.push(DG.Column.fromType(
               df.col(elem.columnName)?.type as DG.COLUMN_TYPE,
               elem.columnName,
-              //`${elem.columnName} `, // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13415
-              //`${name}(${elem.columnName}, ${elem.idx})`,
               rowCount,
           ));
         }
@@ -92,7 +128,7 @@ function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: Output
   return DG.DataFrame.fromColumns(columns);
 }
 
-export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: OutputInfo[]): DG.DataFrame {
+export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: OutputDataFromUI[]): DG.DataFrame {
   if (funcCalls.length < 1)
     throw new Error(FUNCCALL_ARRAY_IS_EMPTY_MSG);
 
@@ -117,12 +153,13 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 
       case DG.TYPE.DATA_FRAME:
         const df = funcCall.outputs[name] as DG.DataFrame;
+        const lastIdx = df.rowCount - 1;
 
         if (item.elements) {
           for (const elem of item.elements) {
             table.col(elem.columnName)?.set(
               row,
-              df.col(elem.columnName)?.get(elem.idx),
+              df.col(elem.columnName)?.get((elem.idx !== -1) ? elem.idx : lastIdx),
             );
           }
         }
@@ -140,11 +177,11 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 export function getInputOutputColumns(inputs: DG.Column[], outputs: DG.Column[]): DG.Column[] {
   outputs.forEach((outCol) => {
     inputs.forEach((inCol) => {
-      if (inCol.name === outCol.name) {        
+      if (inCol.name === outCol.name) {
         inCol.name = `${inCol.name} (input)`;
         outCol.name = `${outCol.name} (output)`;
       }
-    })
+    });
   });
 
   return inputs.concat(outputs);

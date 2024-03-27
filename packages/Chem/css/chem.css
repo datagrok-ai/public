@@ -533,7 +533,7 @@
   color: var(--blue-1);
 }
 
-.chem-test {
+.chem-filter-sketcher-div {
   position: relative;
   width: 100%
 }
@@ -541,4 +541,26 @@
 /* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
 .gwt-DialogBox { 
   z-index: 10000;
+}
+
+.chem-rgroup-undo-icon {
+  padding-left: 80px;
+  padding-top: 6px
+}
+
+.grok-chem-filter-options {
+  bottom: 455px!important;
+  left: 360px!important;
+}
+
+.d4-filter-disabled > .chem-filter-sketcher-div{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-empty-filter{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-filter-search-options{
+  pointer-events: none;
 }

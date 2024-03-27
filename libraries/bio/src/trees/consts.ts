@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export const NEWICK_EMPTY: string = ';';
+
 export enum TAGS {
   NEWICK = '.newick',
   NEWICK_JSON = '.newick_json',
@@ -17,12 +19,12 @@ export enum TreeColorNames {
   Selection = 'Selection',
 }
 
-export enum DistanceMetric{
+export enum DistanceMetric {
   Euclidean = 'euclidean',
   Manhattan = 'manhattan',
 }
 
-export enum LinkageMethod{
+export enum LinkageMethod {
   Single = 'single',
   Complete = 'complete',
   Average = 'average',

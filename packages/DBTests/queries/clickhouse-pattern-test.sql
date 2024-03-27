@@ -14,21 +14,21 @@ SELECT * FROM mock_data WHERE id = @id;
 -- name: ClickHouseStringTypeIntPatternOpMore
 -- connection: ClickHouseDBTests
 -- input: string id = ">28" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMore(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMore('>28'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpMoreEq
 -- connection: ClickHouseDBTests
 -- input: string id = ">=29" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMoreEq('>=29'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpLessEq
 -- connection: ClickHouseDBTests
 -- input: string id = "<=1" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpLessEq(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpLessEq('<=1'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 --
 -- end
@@ -36,35 +36,35 @@ SELECT * FROM mock_data WHERE @id(id)
 -- name: ClickHouseStringTypeIntPatternOpLess
 -- connection: ClickHouseDBTests
 -- input: string id = "<2" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpLess(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpLess('<2'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpIn
 -- connection: ClickHouseDBTests
 -- input: string id = "in(29, 30)" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpIn(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpIn(id='in(29, 30)'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpNotIn
 -- connection: ClickHouseDBTests
 -- input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpNotIn(), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpNotIn(id='not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)'), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpMinMax
 -- connection: ClickHouseDBTests
 -- input: string id = "min-max 29-30" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMinMax(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpMinMax(id='min-max 29-30'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: ClickHouseStringTypeIntPatternOpNotEq
 -- connection: ClickHouseDBTests
 -- input: string id = "!=1" {pattern: int}
--- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpNotEq(), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypeIntPatternOpNotEq('!=1'), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
@@ -78,28 +78,28 @@ SELECT * FROM mock_data WHERE some_number = @some_number;
 -- name: ClickHouseStringTypePatternDoubleOpMore
 -- connection: ClickHouseDBTests
 -- input: string some_number = ">975" {pattern: double}
--- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpMore(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: ClickHouseStringTypePatternDoubleOpMoreEq
 -- connection: ClickHouseDBTests
 -- input: string some_number = ">=975" {pattern: double}
--- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: ClickHouseStringTypePatternDoubleOpLess
 -- connection: ClickHouseDBTests
 -- input: string some_number = "<20" {pattern: double}
--- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpLess(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpLess('<20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: ClickHouseStringTypePatternDoubleOpLessEq
 -- connection: ClickHouseDBTests
 -- input: string some_number = "<=20" {pattern: double}
--- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypePatternDoubleOpLessEq('<=20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
@@ -127,7 +127,7 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 -- name: ClickHouseStringTypePatternStringOpIn
 -- connection: ClickHouseDBTests
 -- input: string country = "in (Poland, Brazil)" {pattern: string}
--- test: Dbtests:expectTable(ClickHouseStringTypePatternStringOpIn(), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: ClickHouse
+-- test: Dbtests:expectTable(ClickHouseStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: ClickHouse
 SELECT * FROM mock_data WHERE @country(country);
 -- end
 

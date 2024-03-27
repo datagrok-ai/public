@@ -7,7 +7,7 @@
     "css/windows-manager.css",
     "css/formula-lines.css"
   ],
-  "version": "1.2.0",
+  "version": "1.1.5",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -21,7 +21,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.28",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.18.0",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5"
@@ -48,7 +48,7 @@
     "release-powerpack": "webpack && grok publish dev",
     "build-powerpack": "webpack && grok publish",
     "build": "webpack",
-    "debug-powerpack-dev": "webpack && grok publish dev",
+    "debug-powerpack-dev": "webpack && grok publish release --release",
     "release-powerpack-dev": "grok publish dev --release",
     "debug-powerpack-public": "grok publish public",
     "release-powerpack-public": "grok publish public --release",

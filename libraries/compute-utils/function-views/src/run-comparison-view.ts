@@ -3,7 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
+import {filter} from 'rxjs/operators';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE,
+  RUN_ID_COL_LABEL,
   SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {getDfFromRuns} from './shared/utils';
 import {RUN_NAME_COL_LABEL} from '../../shared-utils/consts';
@@ -46,10 +48,6 @@ export class RunComparisonView extends DG.TableView {
 
     const defaultView = new this(comparisonDf, options);
 
-    setTimeout(async () => {
-      defaultView.defaultCustomize();
-    }, 0);
-
     return defaultView;
   }
 
@@ -84,7 +82,7 @@ export class RunComparisonView extends DG.TableView {
     this.grid.columns.setVisible(changingColumns);
   }
 
-  private defaultCustomize(): void {
+  public defaultCustomize(): void {
     const showChangingColumnsIcon = ui.iconFA('compress-alt', () => {
       this.showChangingColumns();
       $(showAllColumnsIcon).show();
@@ -172,5 +170,95 @@ export class RunComparisonView extends DG.TableView {
         gc.element.style.height = '100%';
       }
     });
+
+    const unitedDfPlot = ui.box(ui.div([], {style: {'min-height': '100px'}}));
+
+    const currentViewSub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if ((grok.shell.v as DG.View).id === this.id)
+        grok.shell.dockManager.dock(unitedDfPlot, 'down', null, 'Comparison chart', 0.25);
+      else
+        grok.shell.dockManager.close(unitedDfPlot);
+    });
+
+    // Catching events to render context panel
+    const gridCellClickSub = this.grid.onCellClick.subscribe((cell) => {
+      if (
+        (grok.shell.v as DG.View).id === this.id &&
+        cell.isColHeader &&
+        cell.tableColumn?.type === DG.TYPE.DATA_FRAME &&
+        [
+          DG.VIEWER.LINE_CHART, DG.VIEWER.SCATTER_PLOT,
+          DG.VIEWER.HISTOGRAM, DG.VIEWER.BOX_PLOT,
+        ].includes(cell.tableColumn.temp[VIEWER_PATH]['type'])
+      ) {
+        if (!grok.shell.dockManager.findNode(unitedDfPlot))
+          grok.shell.dockManager.dock(unitedDfPlot, 'down', null, 'Comparison chart', 0.25);
+
+        const getAppendedDfs = (column: DG.Column) => {
+          // Workaround for https://reddata.atlassian.net/browse/GROK-14707
+          const appendedDf = DG.toJs(column.get(0)).clone() as DG.DataFrame;
+          appendedDf.columns.addNew(RUN_ID_COL_LABEL, DG.TYPE.STRING).init(column.dataFrame.get(RUN_NAME_COL_LABEL, 0));
+
+          for (let i = 1; i < column.length; i++) {
+            // Workaround for https://reddata.atlassian.net/browse/GROK-14707
+            const newRunDf = DG.toJs(column.get(i)).clone() as DG.DataFrame;
+            newRunDf.columns.addNew(RUN_ID_COL_LABEL, DG.TYPE.STRING).init(column.dataFrame.get(RUN_NAME_COL_LABEL, i));
+
+            // If one of the columns is parsed as int, it could be converted into double for proper append
+            const convertibleTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as DG.ColumnType[];
+            for (let j = 0; j < newRunDf.columns.length; j++) {
+              const newDfColumn = newRunDf.columns.byIndex(j);
+              const appendDfColumn = appendedDf.columns.byIndex(j);
+
+              if (
+                newDfColumn.type !== appendDfColumn.type &&
+                convertibleTypes.includes(newDfColumn.type) &&
+                convertibleTypes.includes(appendDfColumn.type)
+              ) {
+                if (newDfColumn.type !== DG.COLUMN_TYPE.FLOAT)
+                  newRunDf.columns.replace(newDfColumn, newDfColumn.convertTo(DG.COLUMN_TYPE.FLOAT));
+                if (appendDfColumn.type !== DG.COLUMN_TYPE.FLOAT)
+                  appendedDf.columns.replace(appendDfColumn, appendDfColumn.convertTo(DG.COLUMN_TYPE.FLOAT));
+              }
+            }
+
+            appendedDf.append(newRunDf, true);
+          }
+
+          return appendedDf;
+        };
+
+        const getUnitedPlot = (type: string, config: any, unitedDf: DG.DataFrame) => {
+          switch (cell.tableColumn?.temp[VIEWER_PATH]['type']) {
+          case DG.VIEWER.LINE_CHART:
+            return unitedDf.plot.line({...config, 'split': RUN_ID_COL_LABEL}).root;
+          case DG.VIEWER.SCATTER_PLOT:
+            return unitedDf.plot.scatter({...config, 'color': RUN_ID_COL_LABEL}).root;
+          case DG.VIEWER.HISTOGRAM:
+            return unitedDf.plot.histogram({...config, 'split': RUN_ID_COL_LABEL}).root;
+          case DG.VIEWER.BOX_PLOT:
+            return unitedDf.plot.box({...config, 'category': RUN_ID_COL_LABEL}).root;
+          }
+        };
+
+        ui.setUpdateIndicator(unitedDfPlot, true);
+        setTimeout(() => {
+          if (!cell.tableColumn!.temp['unitedPlot']) {
+            const config = cell.tableColumn!.temp[VIEWER_PATH]['look'];
+
+            const unitedDf = getAppendedDfs(cell.tableColumn!);
+
+            cell.tableColumn!.temp['unitedPlot'] =
+              getUnitedPlot(cell.tableColumn?.temp[VIEWER_PATH]['type'], config, unitedDf);
+            ui.setUpdateIndicator(unitedDfPlot, false);
+          }
+          ui.empty(unitedDfPlot);
+          unitedDfPlot.appendChild(cell.tableColumn!.temp['unitedPlot']);
+        }, 10);
+      } else
+        grok.shell.dockManager.close(unitedDfPlot);
+    });
+
+    this.subs.push(gridCellClickSub, currentViewSub);
   }
 }

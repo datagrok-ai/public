@@ -32,9 +32,12 @@ export class RadarViewer extends DG.JsViewer {
   backgroundMaxColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
+  title: string;
+  resizeScheduled: boolean = false;
 
   constructor() {
     super();
+    this.title = this.string('title', 'Radar');
     this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
@@ -53,7 +56,15 @@ export class RadarViewer extends DG.JsViewer {
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => {
+      if (!this.resizeScheduled) {
+        this.resizeScheduled = true;
+        requestAnimationFrame(() => {
+          this.chart.resize();
+          this.resizeScheduled = false;
+        });
+      }
+    }));
   }
 
   init() {
@@ -75,15 +86,15 @@ export class RadarViewer extends DG.JsViewer {
     this.updateRow();
 
     this.chart.on('mouseover', (params: any) => {
-      if (params.componentType === 'series') {
-        if (params.seriesIndex === 2) {
-          const divs: HTMLElement[] = [];
-          for (let i = 0; i < this.columns.length; ++i)
-            divs[i] = ui.divText(`${this.columns[i].name} : ${params.data.value[i]}`);
-
-          ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
-        }
-      }
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
+        if (i === currentRow)
+          return true;
+        return false;
+      }, params.event.event.x, params.event.event.y);
+      const tooltipText = this.getTooltip(params);
+      if (tooltipText)
+        ui.tooltip.root.innerText = tooltipText;
     });
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
@@ -96,6 +107,18 @@ export class RadarViewer extends DG.JsViewer {
         this.render();
       }
     });
+  }
+
+  getTooltip(params: any): string | null {
+    if (params.componentType === 'series') {
+      if (params.seriesIndex === 2) {
+        const rows: string[] = [];
+        for (let i = 0; i < this.columns.length; ++i)
+          rows[i] = `${this.columns[i].name} : ${params.data.value[i]}`;
+        return rows.join('\n');
+      }
+    }
+    return null;
   }
 
   onTableAttached() {
@@ -220,12 +243,13 @@ export class RadarViewer extends DG.JsViewer {
 
   updateShowValues() {
     option.series[2].data = [];
+    const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     option.series[2].data.push({
       value: this.columns.map((c) => {
-        const value = Number(c.get(this.dataFrame.currentRowIdx));
+        const value = Number(c.get(currentRow));
         return value != -2147483648 ? value : 0;
       }),
-      name: `row ${this.dataFrame.currentRowIdx + 1}`,
+      name: `row ${currentRow + 1}`,
       lineStyle: {
         width: 2,
         type: 'dashed',
@@ -274,14 +298,15 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   updateRow() {
+    const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     option.series[2].data[0] = {
       value: this.columns.map((c) => {
         if (c.type === 'datetime')
-          return this.getYearFromDate(c.getRawData()[this.dataFrame.currentRowIdx]);
-        const value = Number(c.get(this.dataFrame.currentRowIdx));
+          return this.getYearFromDate(c.getRawData()[currentRow]);
+        const value = Number(c.get(currentRow));
         return value != -2147483648 ? value : 0;
       }),
-      name: `row ${this.dataFrame.currentRowIdx + 1}`,
+      name: `row ${currentRow + 1}`,
       lineStyle: {
         width: 2,
         type: 'dashed',

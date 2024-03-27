@@ -38,7 +38,7 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Func>;
-  // TODO: add users and groups cache
+  const groupsCache = new DG.LruCache();
 
   export async function augmentCallWithFunc(call: DG.FuncCall, useCache: boolean = true) {
     const id = call.func.id;
@@ -79,20 +79,24 @@ export namespace historyUtils {
    */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
-      .include('inputs, outputs, session.user').find(funcCallId);
+      .include('session.user, inputs, outputs').find(funcCallId);
 
     await augmentCallWithFunc(pulledRun);
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
         .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-      for (const output of dfOutputs)
+      await Promise.all(dfOutputs.map(async (output) => {
         pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+        return Promise.resolve();
+      }));
 
       const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
         .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-      for (const input of dfInputs)
+      await Promise.all(dfInputs.map(async (input) => {
         pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+        return Promise.resolve();
+      }));
     }
 
     return pulledRun;
@@ -105,23 +109,28 @@ export namespace historyUtils {
    * @returns Saved FuncCall
    */
   export async function saveRun(callToSave: DG.FuncCall) {
-    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    let allGroup = groupsCache.get('All users');
+
+    if (!allGroup) {
+      allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+      groupsCache.set('All users', allGroup);
+    }
 
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs) {
+    await Promise.all(dfOutputs.map(async (output) => {
       callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
       await grok.dapi.permissions.grant(callToSave.outputs[output.name].getTableInfo(), allGroup, false);
-    }
+    }));
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs) {
+    await Promise.all(dfInputs.map(async (input) => {
       callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
       await grok.dapi.permissions.grant(callToSave.inputs[input.name].getTableInfo(), allGroup, false);
-    }
+    }));
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }

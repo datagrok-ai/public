@@ -14,7 +14,7 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
-const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
+const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
 export async function demoBio01bUI() {
   let treeHelper: ITreeHelper;

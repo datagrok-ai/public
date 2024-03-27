@@ -2,7 +2,7 @@ import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
-import {_identityInt32, _toIterable} from './utils';
+import {_identityInt32, _toIterable, MapProxy} from './utils';
 import {Observable} from 'rxjs';
 import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
@@ -702,6 +702,9 @@ export class GridColumn {
   /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
+  /** Returns null if column is editable, or the reason of not being editable, otherwise */
+  checkEditable(): string { return api.grok_GridColumn_CheckEditable(this.dart); }
+
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
 
@@ -1198,9 +1201,11 @@ export class GridCellRendererProxy extends GridCellRenderer {
 
 export class SemanticValue<T = any> {
   private readonly dart: any;
+  public tags: {[key: string]: any};
 
   constructor(dart: any) {
     this.dart = dart;
+    this.tags = new MapProxy(api.grok_SemanticValue_Get_Tags(this.dart), 'tags');
   }
 
   static fromValueType(value: any, semType: SemType | null, units?: string) {
@@ -1208,6 +1213,14 @@ export class SemanticValue<T = any> {
     if (units)
       v.units = units;
     return v;
+  }
+
+  static fromTableCell(cell: Cell) {
+    return new SemanticValue(api.grok_SemanticValue_FromTableCell(cell.dart));
+  }
+
+  static fromGridCell(gridCell: GridCell) {
+    return new SemanticValue(api.grok_SemanticValue_FromGridCell(gridCell.dart));
   }
 
   get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
@@ -1225,9 +1238,11 @@ export class SemanticValue<T = any> {
   setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(this.dart, name, toDart(value)); }
 
   get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
+  set cell(x: Cell) { api.grok_SemanticValue_Set_Cell(this.dart, toDart(x)); }
 
-  get gridCell(): GridCell { return this.getMeta('gridCell'); }
-  set gridCell(gc: GridCell) { this.setMeta('gridCell', gc); }
+  get gridCell(): GridCell { return api.grok_SemanticValue_Get_GridCell(this.dart); }
+  set gridCell(x: GridCell) { api.grok_SemanticValue_Set_GridCell(this.dart, toDart(x)); }
 
-  get viewer(): Viewer { return this.getMeta('viewer'); }
+  get viewer(): Viewer { return api.grok_SemanticValue_Get_Viewer(this.dart); }
+  set viewer(x: Viewer) { api.grok_SemanticValue_Set_Viewer(this.dart, toDart(x)); }
 }

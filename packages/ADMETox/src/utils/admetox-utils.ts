@@ -89,27 +89,33 @@ export function addColorCoding(table: DG.DataFrame, columnNames: string[]) {
   const tv = grok.shell.tableView(table.name);
   if (!tv)
     return;
-  
-  const nonSpecificModels = getNonSpecificModels(properties);
 
   for (const columnName of columnNames) {
     const col = tv.grid.col(columnName);
-    const isNonSpecific = nonSpecificModels.some((model) => columnName.includes(model));
-    if (col) {
-      col.isTextColorCoded = true;
+    const model = Object.values(properties)
+      .flatMap((category: any) => category.models)
+      .find((m: any) => columnName.includes(m.name));
+
+    if (!model.coloring || model.coloring === "") continue;
+
+    if (!col) continue;
+
+    col.isTextColorCoded = true;
+    if (model.coloring.type === 'Linear') {
+      const min = model.coloring.min;
+      const max = model.coloring.max;
+      const colors = model.coloring.colors;
       col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-      col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = isNonSpecific
-        ? `[${DG.Color.red}, ${DG.Color.green}]`
-        : `[${DG.Color.orange}, ${DG.Color.purple}]`;
+      col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
+      col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
+      col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;
+    } else if (model.coloring.type === 'Conditional') {
+      const conditionalColors = Object.entries(model.coloring).slice(1);
+      const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
+      col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+      col.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = conditionalColoring;
     }
   }
-}
-
-function getNonSpecificModels(properties: any): string[] {
-  return Object.keys(properties)
-    .flatMap(property => properties[property]['models'])
-    .filter(obj => obj['specific'] !== true)
-    .map(obj => obj['name']);
 }
 
 export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.DataFrame) {
@@ -121,12 +127,47 @@ export async function addAllModelPredictions(molCol: DG.Column, viewTable: DG.Da
   }
 }
 
-function getQueryParams(): string {
+export function getQueryParams(): string {
   return Object.keys(properties)
     .flatMap(property => properties[property]['models'])
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
+}
+
+function addCustomTooltip(table: string) {
+  const view = grok.shell.tableView(table);
+  view.grid.onCellTooltip(function (cell, x, y) {
+    if (cell.isTableCell) {
+      const subgroup = cell.tableColumn!.name;
+      const value = cell.cell.value;
+      const model = Object.values(properties).flatMap((category: any) => category.models).find((m: any) => m.name === subgroup);
+      if (!model) return;
+      const interpretation = model.interpretation;
+  
+      let tooltipContent = '';
+      if (interpretation && interpretation.range) {
+        for (let rangeKey in interpretation.range) {
+          const rangeParts = rangeKey.split('_');
+          const rangeType = rangeParts[0];
+          const rangeStart = parseFloat(rangeParts[1]);
+          const rangeEnd = parseFloat(rangeParts[2]);
+          if ((rangeType === 'to' && value >= rangeStart && value <= rangeEnd) ||
+              (rangeType === 'below' && value < rangeStart) ||
+              (rangeType === 'above' && value > rangeStart)) {
+            tooltipContent += `${interpretation.range[rangeKey]}\n`;
+            break;
+          }
+        }
+      } else
+        tooltipContent += `${interpretation}\n`;
+    
+      ui.tooltip.show(ui.divV([
+        ui.divText(tooltipContent)
+      ]), x, y);
+      return true;
+    }
+  });
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
@@ -148,6 +189,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
     for (const key in models) {
       if (modelNames[i].includes(key)) {
         column.setTag(DG.TAGS.DESCRIPTION, models[key]);
+        column.setTag(DG.TAGS.UNITS, getModelUnits(key));
         break;
       }
     }
@@ -157,7 +199,14 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame) {
   }
 
   addColorCoding(viewTable, updatedModelNames);
+  addCustomTooltip(viewTable.name);
 }
+
+export function getModelUnits(modelName: string): string {
+  const modelCategories = Object.values(properties);
+  const model = modelCategories.flatMap((category: any) => category.models).find((m: any) => m.name === modelName);
+  return model.units;
+};
 
 export function getModelsSingle(smiles: string): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');

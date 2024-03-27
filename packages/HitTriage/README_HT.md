@@ -44,7 +44,7 @@ The application will detect that the function/query requeires an input parameter
 
 Compute functions are used to calculate molecular properties. For example, mass, solubility, mutagenicity, partial charges, toxicity risks, etc. By default, Hit design will include compute functions from `Chem` package, which are molecular descriptors, Structural alerts, Toxicity risks and Chemical properties. Users can add additional compute functions by tagging them with `HitDesignFunction` tag and writing them in normal datagrok style. The First two inputs of these functions should be `Dataframe` `table` and `Column` `molecule`, and rest can be any other input. Function should perform a certain task, modify the dataframe in desired way and return the modified dataframe. For example, we can create a function that retrieves the `Chembl` mol registration number by smiles string:
 
-```
+```typescript
 //name: Chembl molregno
 //tags: HitTriageFunction
 //input: dataframe table [Input data table] {caption: Table}
@@ -72,7 +72,7 @@ This function will go through every molecule in the dataframe, convert them to c
 
 Datagrok scripts can also be used as compute functions. For example, you can create a js script that adds a new column to the dataframe. This script also needs to have `HitTriageFunction` tag and should accept `Dataframe` `table` and `Column` `molecules` as first two inputs:
 
-```
+```javascript
 //name: Demo script HT
 //description: Hello world script
 //language: javascript
@@ -87,9 +87,42 @@ res = df
 
 ```
 
+Or a python script that calculates the number of atoms in the molecule and multiplies it by a specified value. In case of python, you need to return the dataframe containing columns that you want to append:
+
+```python
+#name: HTPythonDemo
+#description: Calculates number of atoms in mulecule in python and also multiplies it by specified value 'multiplier'
+#language: python
+#tags: HitTriageFunction
+#input: dataframe table [Data table]
+#input: column col {semType: Molecule}
+#input: int multiplier
+#output: dataframe result
+
+from rdkit import Chem
+import numpy as np
+# in python, column is passed as column name and dataframes are in pandas format.
+# first, get the column.
+molecules = table[col]
+length = len(molecules)
+# create array of same length
+resCol = np.full(length, None, dtype=object)
+for n in range(0, length):
+	if molecules[n] == "":
+		continue
+	try:
+		mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+		if mol is None or mol.GetNumAtoms() == 0:
+			continue
+		resCol[n] = mol.GetNumAtoms() * multiplier
+	except:
+		continue
+result = pd.DataFrame({'Number of Atoms * mult': resCol})
+```
+
 Similarly, queries with same `HitTriageFunction` tag will be added to the compute functions list. The query needs to have at least one input, first of which must be `list<string>`, representing the list of molecules. The query must return a dataframe, which should contain column `molecules` in order to join result with initial dataframe. `molecules` column will be used as key for joining tables. For example, we can create a query that looks for the molecule in Chembl database and returns the molregno number:
 
-```
+```sql
 --name: ChemblMolregNoBySmilesDirect
 --friendlyName: Chembl Molregno by smiles direct
 --input: list<string> molecules
@@ -103,7 +136,7 @@ select molregno, molecules from compound_structures c
 
 Or a query that calculates fraction of sp3 hybridized carbons in the molecule using RDKit SQL cartridge:
 
-```
+```sql
 --name: SP3Fraction
 --friendlyName: SP3 fraction of carbons
 --input: list<string> molecules

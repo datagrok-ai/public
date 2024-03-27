@@ -1282,18 +1282,19 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private _onRendered: Subject<void> = new Subject<void>();
 
-  public get onRendered(): Observable<void> { return this._onRendered; }
+  get onRendered(): Observable<void> { return this._onRendered; }
 
-  public invalidate(): void {
-    const logPrefix = `${this.viewerToLog()}.invalidate()`;
+  invalidate(caller?: string): void {
+    const callLog = `invalidate(${caller ? ` <- ${caller} ` : ''})`;
+    const logPrefix = `${this.viewerToLog()}.${callLog}`;
     // Put the event trigger in the tail of the synced calls queue.
     this.viewSyncer.sync(`${logPrefix}`, async () => {
-      this.invalidate();
+      this.render(WlRenderLevel.None, callLog);
       this._onRendered.next();
     });
   }
 
-  public async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
     await testEvent(this.onRendered, () => {}, () => {
       this.invalidate();
     }, timeout);

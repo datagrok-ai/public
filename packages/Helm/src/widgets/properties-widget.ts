@@ -7,11 +7,12 @@ import $ from 'cash-dom';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
+import {removeGapsFromHelm} from '../utils';
+
 export function getPropertiesDict(seq: string, uh: UnitsHandler): {} {
   const helmString = uh.isHelm() ? seq : uh.getConverter(NOTATION.HELM)(seq);
   // Remove gap symbols for compatibility with WebEditor
-  const helmString2 = helmString.replaceAll(/\.(\*\.)+/g, '.')
-    .replaceAll(/\{(\*\.)+/g, '{').replaceAll(/(\.\*)+}/g, '}');
+  const helmString2 = removeGapsFromHelm(helmString);
 
   const host = ui.div([], {style: {width: '0', height: '0'}});
   document.documentElement.appendChild(host);

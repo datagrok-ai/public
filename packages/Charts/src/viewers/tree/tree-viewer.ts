@@ -129,7 +129,7 @@ export class TreeViewer extends EChartViewer {
     }
     if (p?.name === 'table') {
       this.updateTable();
-      this.onTableAttached(true);
+      this.onTableAttached();
       this.render();
     }
     if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
@@ -146,20 +146,23 @@ export class TreeViewer extends EChartViewer {
   }
 
   shouldApplyAggregation(columnName: string, aggrType: string): boolean {
-    const isColumnNumerical = this.dataFrame.columns.byName(columnName).matches('numerical');
+    const numericalColumns = this.dataFrame.columns.byName(columnName);
+    const isColumnNumerical = numericalColumns ? numericalColumns.matches('numerical') : false;
     const isAggregationApplicable = this.aggregationsStr.includes(aggrType);
     return isColumnNumerical || (!isColumnNumerical && isAggregationApplicable);
   }
   
-  onTableAttached(propertyChanged?: boolean) {
+  onTableAttached() {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
     if (categoricalColumns.length < 1)
       return;
 
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
-      this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+    this.filter = this.dataFrame.filter;
+    this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+    this.sizeColumnName = '';
+    this.colorColumnName = '';
 
     super.onTableAttached();
     this.initChartEventListeners();

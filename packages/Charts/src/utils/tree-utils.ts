@@ -7,7 +7,7 @@ export class TreeUtils {
 
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
-      aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
+      aggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean): treeDataType {
     const data: treeDataType = {
       name: 'All',
       value: 0,
@@ -90,7 +90,8 @@ export class TreeUtils {
             data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
             continue;
           }
-          node[prop] = node[prop] ?? paths[node.path][prop];
+          if (paths[node.path])
+            node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
@@ -104,15 +105,18 @@ export class TreeUtils {
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
+      if (idx === -1)
+        continue;
       const value = countCol.get(i);
       const aggrValues = aggrColumns.reduce((obj, col) =>
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
-      if (aggregated.selection.get(i))
+
+      if (aggregated.selection.get(i) && !selection)
         selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        const name = columns[colIdx].getString(i);
+        const name = columns[colIdx].get(i).toString();
         const node: treeDataType = {
           semType: columns[colIdx].semType,
           name: name,
@@ -150,8 +154,8 @@ export class TreeUtils {
     return data;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0);
+  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection?: boolean) {
+    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], true, selection);
     return tree.children;
   }
 

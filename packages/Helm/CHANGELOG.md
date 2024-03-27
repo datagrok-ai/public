@@ -1,5 +1,19 @@
 # Helm changelog
 
+## 2.1.30 (2024-03-13)
+
+### Features
+
+* Add tooltip for sequence with missed monomers
+
+## 2.1.29 (2024-02-21)
+
+* Fix Unknown monomers breaking grid rendering.
+
+## 2.1.28 (2024-02-19)
+
+* Fix TS config file.
+
 ## 2.1.27 (2024-02-15)
 
 ### Bug fixes

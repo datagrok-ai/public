@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 
 category('newickParser_phylocanvas', () => {
   const nwk0 = `;`;
@@ -27,7 +28,7 @@ category('newickParser_phylocanvas', () => {
 
   const data: { [test: string]: { nwk: string, obj: Object } } = {
     [Tests.nwk0]: {
-      nwk: ';',
+      nwk: NEWICK_EMPTY,
       obj: {},
     },
     [Tests.nwk1NoNameNoHeight]: {

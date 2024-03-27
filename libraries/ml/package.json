@@ -8,11 +8,11 @@
     "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.4.8",
+  "version": "6.4.12",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.0.7",
-    "@datagrok-libraries/utils": "^4.1.44",
+    "@datagrok-libraries/utils": "^4.1.45",
     "@keckelt/tsne": "^1.0.2",
     "@types/seedrandom": "^3.0.8",
     "cash-dom": "latest",
@@ -41,7 +41,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/math",
     "debug-ml": "grok publish",
     "release-ml": "grok publish --release",
     "build-ml": "git clean -f -X -d ./src && tsc",
@@ -52,6 +52,6 @@
     "release-ml-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm run build"
   }
 }

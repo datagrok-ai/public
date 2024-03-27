@@ -450,43 +450,49 @@ export class PeptidesModel {
 
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newView = ui.label('New view');
-        $(newView).addClass('d4-link-action');
-        newView.onclick = (): string => trueModel.createNewView();
-        newView.onmouseover = (ev): void =>
-          ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
-        if (trueLSTViewer === null)
-          return ui.divV([newView]);
-
-
-        const newCluster = ui.label('New cluster');
-        $(newCluster).addClass('d4-link-action');
-        newCluster.onclick = (): void => {
+        try {
+          const newView = ui.label('New view');
+          $(newView).addClass('d4-link-action');
+          newView.onclick = (): string => trueModel.createNewView();
+          newView.onmouseover = (ev): void =>
+            ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
           if (trueLSTViewer === null)
-            throw new Error('Logo summary table viewer is not found');
+            return ui.divV([newView]);
 
 
-          trueLSTViewer.clusterFromSelection();
-        };
-        newCluster.onmouseover = (ev): void =>
-          ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
-
-        const removeCluster = ui.label('Remove cluster');
-        $(removeCluster).addClass('d4-link-action');
-        removeCluster.onclick = (): void => {
-          const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-          if (lstViewer === null)
-            throw new Error('Logo summary table viewer is not found');
+          const newCluster = ui.label('New cluster');
+          $(newCluster).addClass('d4-link-action');
+          newCluster.onclick = (): void => {
+            if (trueLSTViewer === null)
+              throw new Error('Logo summary table viewer is not found');
 
 
-          lstViewer.removeCluster();
-        };
-        removeCluster.onmouseover = (ev): void =>
-          ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
-        removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
-          'visible';
+            trueLSTViewer.clusterFromSelection();
+          };
+          newCluster.onmouseover = (ev): void =>
+            ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
 
-        return ui.divV([newView, newCluster, removeCluster]);
+          const removeCluster = ui.label('Remove cluster');
+          $(removeCluster).addClass('d4-link-action');
+          removeCluster.onclick = (): void => {
+            const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+            if (lstViewer === null)
+              throw new Error('Logo summary table viewer is not found');
+
+
+            lstViewer.removeCluster();
+          };
+          removeCluster.onmouseover = (ev): void =>
+            ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+          removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
+            'visible';
+
+          return ui.divV([newView, newCluster, removeCluster]);
+        } catch (e) {
+          const errorDiv = ui.divText('Error in Actions');
+          ui.tooltip.bind(errorDiv, String(e));
+          return errorDiv;
+        }
       }, true);
     }
 
@@ -558,16 +564,24 @@ export class PeptidesModel {
       (requestSource instanceof MonomerPosition) ? requestSource.invariantMapSelection : {};
     const clusterSelection = (requestSource instanceof LogoSummaryTable) ? requestSource.clusterSelection :
       trueLSTViewer?.clusterSelection ?? {};
-    acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, {
-      peptideSelection: combinedBitset,
-      columns: isModelSource ? trueModel.settings!.columns ?? {} :
-        (requestSource as PeptideViewer).getAggregationColumns(),
-      activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
-        (requestSource as PeptideViewer).getScaledActivityColumn(),
-      monomerPositionSelection: totalMonomerPositionSelection,
-      clusterSelection: clusterSelection,
-      clusterColName: trueLSTViewer?.clustersColumnName,
-    }), true);
+    acc.addPane('Distribution', () => {
+      try {
+        return getDistributionWidget(trueModel.df, {
+          peptideSelection: combinedBitset,
+          columns: isModelSource ? trueModel.settings!.columns ?? {} :
+            (requestSource as PeptideViewer).getAggregationColumns(),
+          activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
+            (requestSource as PeptideViewer).getScaledActivityColumn(),
+          monomerPositionSelection: totalMonomerPositionSelection,
+          clusterSelection: clusterSelection,
+          clusterColName: trueLSTViewer?.clustersColumnName,
+        });
+      } catch (e) {
+        const errorDiv = ui.divText('Error in Distribution');
+        ui.tooltip.bind(errorDiv, String(e));
+        return errorDiv;
+      }
+    }, true);
     const areObjectsEqual = (o1?: AggregationColumns | null, o2?: AggregationColumns | null): boolean => {
       if (o1 == null || o2 == null)
         return false;
@@ -579,20 +593,28 @@ export class PeptidesModel {
       }
       return true;
     };
-    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, {
-      positionColumns: isModelSource ? trueModel.positionColumns! :
-        (requestSource as SARViewer | LogoSummaryTable).positionColumns,
-      columns: isModelSource ? trueModel.settings!.columns ?? {} :
-        (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
-      activityColumn: isModelSource ? trueModel.getScaledActivityColumn()! :
-        (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
-      gridColumns: trueModel.analysisView.grid.columns,
-      colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
-        (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
-      tableSelection: trueModel.getCombinedSelection(),
-      isAnalysis: trueModel.settings !== null && (isModelSource ||
+    acc.addPane('Selection', () => {
+      try {
+        return getSelectionWidget(trueModel.df, {
+          positionColumns: isModelSource ? trueModel.positionColumns! :
+            (requestSource as SARViewer | LogoSummaryTable).positionColumns,
+          columns: isModelSource ? trueModel.settings!.columns ?? {} :
+            (requestSource as SARViewer | LogoSummaryTable).getAggregationColumns(),
+          activityColumn: isModelSource ? trueModel.getScaledActivityColumn()! :
+            (requestSource as SARViewer | LogoSummaryTable).getScaledActivityColumn(),
+          gridColumns: trueModel.analysisView.grid.columns,
+          colorPalette: pickUpPalette(trueModel.df.getCol(isModelSource ? trueModel.settings!.sequenceColumnName :
+            (requestSource as SARViewer | LogoSummaryTable).sequenceColumnName)),
+          tableSelection: trueModel.getCombinedSelection(),
+          isAnalysis: trueModel.settings !== null && (isModelSource ||
         areObjectsEqual(trueModel.settings.columns, (requestSource as PeptideViewer).getAggregationColumns())),
-    }), true);
+        });
+      } catch (e) {
+        const errorDiv = ui.divText('Error in Selection');
+        ui.tooltip.bind(errorDiv, String(e));
+        return errorDiv;
+      }
+    }, true);
     return acc;
   }
 
@@ -793,12 +815,16 @@ export class PeptidesModel {
     const filter = this.df.filter;
 
     const showAccordion = (): void => {
-      const acc = this.createAccordion();
-      if (acc === null)
-        return;
+      try {
+        const acc = this.createAccordion();
+        if (acc === null)
+          return;
 
 
-      grok.shell.o = acc.root;
+        grok.shell.o = acc.root;
+      } catch (e) {
+        console.error(e);
+      }
     };
 
     selection.onChanged.subscribe(() => {
@@ -825,7 +851,8 @@ export class PeptidesModel {
         }
         const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
         if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
-          lstViewer.createLogoSummaryTableGrid();
+          lstViewer._logoSummaryTable = lstViewer.createLogoSummaryTable() ?? lstViewer._logoSummaryTable;
+          lstViewer._viewerGrid = lstViewer.createLogoSummaryTableGrid() ?? lstViewer._viewerGrid;
           lstViewer.render();
         }
       } catch (e) {
@@ -1099,6 +1126,7 @@ export class PeptidesModel {
       activityColumnName: this.settings!.activityColumnName,
       sequenceColumnName: this.settings!.sequenceColumnName,
       minActivityDelta: 0,
+      activityTarget: C.ACTIVITY_TARGET.HIGH,
     };
     const monomerPosition = await this.df.plot
       .fromType(VIEWER_TYPE.MONOMER_POSITION, viewerProperties) as MonomerPosition;
@@ -1120,6 +1148,7 @@ export class PeptidesModel {
       sequenceColumnName: this.settings!.sequenceColumnName,
       minActivityDelta: 0,
       maxMutations: 1,
+      activityTarget: C.ACTIVITY_TARGET.HIGH,
     };
     const mostPotentResidues =
       await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES, viewerProperties) as MostPotentResidues;
@@ -1178,7 +1207,7 @@ export class PeptidesModel {
     const epsilon = this.settings!.sequenceSpaceParams!.epsilon ?? 0.01;
     const minPts = this.settings!.sequenceSpaceParams!.minPts ?? 4;
     const clusterRes = await getDbscanWorker(embed1, embed2, epsilon, minPts);
-    const newClusterName = this.df.columns.getUnusedName('Cluster');
+    const newClusterName = this.df.columns.getUnusedName('Cluster (DBSCAN)');
     const clusterCol = this.df.columns.addNewString(newClusterName);
     clusterCol.init((i) => clusterRes[i].toString());
     if (this._sequenceSpaceViewer !== null)

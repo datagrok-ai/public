@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -853,6 +853,14 @@ export namespace input {
   export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Radio, name, options);
   }
+
+  export async function markdown(name: string): Promise<MarkdownInput> {
+    return (await MarkdownInput.create(name));
+  }
+
+  export function code(name: string, options?: CodeConfig): CodeInput {
+    return new CodeInput(name, options);
+  }
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -1049,7 +1057,7 @@ export class tools {
     });
   }
 
-  static async resizeFormLabels(element: HTMLElement): Promise<void> { 
+  static async resizeFormLabels(element: HTMLElement): Promise<void> {
     if (this.skipResizing(element)) return;
     
     //Default form width
@@ -1323,7 +1331,18 @@ export class tools {
 
     let label = buttons.querySelector('label') as HTMLElement;
     let editor = buttons.querySelector('div.ui-input-editor') as HTMLElement;
-    
+
+    if (element.querySelector('.ui-input-root:not(.ui-input-buttons)') == null) {
+      element.style.removeProperty('max-width');
+      buttons.style.removeProperty('max-width');
+      editor.style.removeProperty('max-width');
+      let totalWidth = 0;
+      for (let i = 0; i < editor.children.length; i++)
+        totalWidth += editor.children[i].getBoundingClientRect().width;
+      element.style.maxWidth = `${totalWidth}px`;
+      buttons.style.maxWidth = `${totalWidth}px`;
+    }
+
     if (label != null) label.remove();
 
     if (editor != null) {
@@ -2045,6 +2064,18 @@ export namespace forms {
       root.append(editor);
       form.append(root);
     }
+  }
+
+  export function addGroup(form: HTMLElement, title: string, children: InputBase[] = []) {
+    if (!Array.isArray(children))
+      children = [children];
+
+    if (children == null)
+      return;
+
+    form.append(h2(title), ...children.map(input => input.root))
+
+    tools.resizeFormLabels(form);
   }
 }
 

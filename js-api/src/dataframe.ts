@@ -640,6 +640,12 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
+  /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
+  static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
+    return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
+      (<any>window).grok_BigIntJs_To_BigInt(v.toString())));
+  }
+
   /**
    * Creates a {@link Column} from the list of values.
    * @param {string} type
@@ -650,6 +656,16 @@ export class Column<T = any> {
     if (type === TYPE.DATE_TIME)
       list = list.map((v) => v?.valueOf());
     return toJs(api.grok_Column_FromList(type, name, list));
+  }
+
+  /**
+   * Crates a {@link Column} of string type from categories and indexes
+   * @param name
+   * @param categories
+   * @param indexes
+   */
+  static fromIndexes(name: string, categories: string[], indexes: Int32Array): Column {
+    return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
   }
 
   /** Creates a {Column} from the bitset.

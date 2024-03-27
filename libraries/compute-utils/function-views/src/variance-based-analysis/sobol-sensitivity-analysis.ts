@@ -15,7 +15,7 @@
      [3] Negative Sobol indices, https://github.com/SALib/SALib/issues/102
 
      [4] Unexpected Sobol indices,
-         https://www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
+         www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
 */
 
 import * as grok from 'datagrok-api/grok';
@@ -24,7 +24,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput, SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
+import {getOutput, OutputDataFromUI,
+  SensitivityAnalysisResult, getDataFrameFromInputsOutputs} from './sa-outputs-routine';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -33,21 +34,7 @@ type SobolIndeces = {
   totalOrder: DG.Column
 };
 
-type OutputDataFromUI = {
-  prop: DG.Property,
-  value: {
-    row: number,
-    columns: string | null
-  },
-};
-
 const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
-
-/*export type ResultOfSobolAnalysis = {
-  funcEvalResults: DG.DataFrame,
-  firstOrderSobolIndices: DG.DataFrame,
-  totalOrderSobolIndices: DG.DataFrame
-};*/
 
 export type ResultOfSobolAnalysis = {
   firstOrderSobolIndices: DG.DataFrame,
@@ -64,7 +51,7 @@ export class SobolAnalysis {
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
 
-  private outputInfo: OutputInfo[];
+  private outputsOfInterest: OutputDataFromUI[];
 
   constructor(
     func: DG.Func,
@@ -116,17 +103,7 @@ export class SobolAnalysis {
       this.funcCalls.push(func.prepare(inputs));
     }
 
-    this.outputInfo = outputsOfInterest.map((output) => ({
-      prop: output.prop,
-      elements: [],
-      row: output.value.row,
-    }
-    ));
-  }
-
-  // Runs the function with each inputs set
-  private async run(): Promise<void> {
-    await Promise.all(this.funcCalls.map((call) => call.call()));
+    this.outputsOfInterest = outputsOfInterest;
   }
 
   // Returns 1-st and totoal order Sobol' indices.
@@ -200,7 +177,7 @@ export class SobolAnalysis {
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 
     // extract the required outputs
-    const outputCols = getOutput(this.funcCalls, this.outputInfo).columns.toList();
+    const outputCols = getOutput(this.funcCalls, this.outputsOfInterest).columns.toList();
 
     // create table with the varied inputs
     const funcEvalResults = getDataFrameFromInputsOutputs(inputCols, outputCols);

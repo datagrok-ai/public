@@ -62,6 +62,11 @@ export enum SCALING_METHODS {
   MINUS_LG = '-lg',
 }
 
+export enum ACTIVITY_TARGET {
+  HIGH = 'High',
+  LOW = 'Low',
+}
+
 export enum SUFFIXES {
   LST = 'lst-', // Logo Summary Table
   MP = 'mp-', // Monomer Position

@@ -1,5 +1,62 @@
 # Bio changelog
 
+## 2.11.41 (2024-03-26)
+
+### Features
+
+* Polytool: ability to use special engine to create molV3000 with CFG flags in the atoms block
+
+## 2.11.40 (2024-03-22)
+
+### Features
+
+* Polytool rules file handling
+
+## 2.11.39 (2024-03-11)
+
+### Bug fixes
+
+* GROK-15150: Fix display hidden/showed inputs
+
+## 2.11.38 (2024-03-08)
+
+### Bug fixes
+
+* GROK-14910: PepSeA verbose output
+* MSA ensures docker container for PepSeA
+* Sample files harmonized
+
+## 2.11.37 (2024-03-08)
+
+### Bug fixes
+
+* Check Bio publishing, PepSeA docker
+
+## 2.11.36 (2024-02-28)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: result column does not render
+
+## 2.11.35 (2024-02-26)
+
+### Features
+
+* #2706: Polytool: init rule based generation
+
+## 2.11.34 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version to 1.17.4
+
+## 2.11.32 (2024-02-20)
+
+### Bug fixes
+
+* GROK-11982: Bio: Fix duplicates WebLogo on layout, test
+* GROK-11983: Bio: Fix duplicates WebLogo on project, test
+
 ## 2.11.31 (2024-02-19)
 
 ### Features

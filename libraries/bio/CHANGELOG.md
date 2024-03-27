@@ -1,12 +1,36 @@
 # bio changelog
 
+## 5.39.29 (2024-03-07)
+
+### Features
+
+* Add NEWICK_EMPTY const
+
+## 5.39.28 (2024-03-04)
+
+### Bug fixes
+
+* GROK-15086: Fix GetRegion, Notation: doesn't work
+
+## 5.39.27 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version fixed to 1.17.4
+
+## 5.39.26 (2024-02-20)
+
+### Bug fixes
+
+* Downgrade datagrok-api dependency version to 1.17.4
+
 ## 5.39.24 (2024-02-14)
 
 ### Features
 
 * Add HelmHelper, types for Helm WebEditor
 
-## Bug fixes
+### Bug fixes
 
 * Fix To Atomic Level for sequences with gaps
 
@@ -88,7 +112,7 @@ This release introduces chemical sequence similarity functionality.
 Optimize with splitterAsFastaSimple returning ISeqSplitted allowing to speed up processing of
 single character alphabets.
 
-## Breaking changes
+### Breaking changes
 
 * SplitterFunc now returns `ISeqSplitted` instead of `string[]`.
 

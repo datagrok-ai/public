@@ -34,14 +34,6 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
   expect(table.columns.length > 0 && table.rowCount > 0, true);
 }
 
-/** Waits if container is not started
- * @param {number} ms - time to wait in milliseconds */
-export async function awaitContainerStart(ms: number = 30000): Promise<void> {
-  const dc = await grok.dapi.docker.dockerContainers.filter('bio').first();
-  const dcId = dc.id;
-  await startDockerContainer(dcId, ms);
-}
-
 export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {
   await delay(0);
   await testEvent(grid.onAfterDrawContent, () => {},

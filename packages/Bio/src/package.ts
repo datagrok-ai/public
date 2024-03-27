@@ -59,7 +59,8 @@ import {BioPackage, BioPackageProperties} from './package-types';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/ui';
+import {PolyTool} from './utils/poly-tool/ui';
+import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
@@ -162,6 +163,13 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
   return MonomerLibManager.instance.getBioLib();
+}
+
+//name: getUnitsHandler
+//input: column sequence { semType: Macromolecule }
+//output: object result
+export function getUnitsHandler(sequence: DG.Column<string>): UnitsHandler {
+  return UnitsHandler.getOrCreate(sequence);
 }
 
 // -- Panels --
@@ -681,10 +689,11 @@ export function convertDialog() {
 //top-menu: Bio | Convert | PolyTool
 //name: polyTool
 //description: Perform cyclization of polymers
-export function polyTool(): void {
+export async function polyTool(): Promise<void> {
+  const polytool = new PolyTool();
   let dialog: DG.Dialog;
   try {
-    dialog = getPolyToolDialog();
+    dialog = await polytool.getPolyToolDialog();
     dialog.show();
   } catch (err: any) {
     grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
@@ -904,7 +913,7 @@ export async function webLogoAggApp(): Promise<void> {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const app = new WebLogoApp(urlParams, 'webLogoAggApp');
-    const df: DG.DataFrame = await _package.files.readCsv('data/sample_FASTA_PT_activity.csv');
+    const df: DG.DataFrame = await _package.files.readCsv('samples/FASTA_PT_activity.csv');
     await grok.data.detectSemanticTypes(df);
     await app.init(df);
   } finally {
@@ -929,7 +938,7 @@ export async function getRegionHelmApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('getRegion ...');
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const df = await _package.files.readCsv('data/sample_HELM_empty_vals.csv');
+    const df = await _package.files.readCsv('samples/HELM_empty_vals.csv');
     const app = new GetRegionApp(urlParams, 'getRegionHelmApp');
     await app.init({df: df, colName: 'HELM'});
   } finally {
@@ -1009,6 +1018,17 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
 export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
   _setPeptideColumn(macroMolecule);
   await grok.data.detectSemanticTypes(df);
+}
+
+//name: createMonomerLibraryForPolyTool
+//input: file file
+export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
+  const fileContent = await file.readAsString();
+  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
+  const libObject = await libHandler.getJson();
+  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
+  const jsonFileContent = JSON.stringify(libObject, null, 2);
+  DG.Utils.download(jsonFileName, jsonFileContent);
 }
 
 //name: SDF to JSON Library

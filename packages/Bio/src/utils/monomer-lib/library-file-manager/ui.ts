@@ -208,7 +208,12 @@ class DialogWrapper {
   private async getDialog(): Promise<DG.Dialog> {
     const eventManager = MonomerLibFileEventManager.getInstance();
     const widget = await MonomerLibraryManagerWidget.getContent(eventManager);
-    const dialog = ui.dialog('Manage monomer libraries');
+    const dialog = ui.dialog(
+      {
+        title: 'Manage monomer libraries',
+        helpUrl: '/help/datagrok/solutions/domains/bio/bio.md#manage-monomer-libraries'
+      }
+    );
     $(dialog.root).css('width', '350px');
     dialog.clear();
     dialog.addButton(

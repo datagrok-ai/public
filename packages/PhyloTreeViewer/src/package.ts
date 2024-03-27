@@ -51,19 +51,13 @@ export async function phylocanvasGlViewerApp(): Promise<void> {
 
 //name: TreeToGrid
 //description: Test/demo app for TreeToGrid (PhylocanvasGL based)
-export async function treeToGridApp(): Promise<void> {
+//output: object result
+export async function treeToGridApp(): Promise<TreeToGridApp> {
   const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
     const app = new TreeToGridApp();
     await app.init();
-  } catch (err: unknown) {
-    const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
-      `${err instanceof Error ? err.message : (err as Object).toString()}`;
-    grok.shell.error(msg);
-    //@ts-ignore
-    console.error(err);
-    // if ('stack' in err)
-    //   console.error(err['stack']);
+    return app;
   } finally {
     pi.close();
   }

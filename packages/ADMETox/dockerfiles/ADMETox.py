@@ -5,6 +5,8 @@ import joblib
 import torch
 import chemprop
 import numpy as np
+import logging
+from time import time
 from numpy.linalg import norm
 import jaqpotpy
 from jaqpotpy import jaqpot
@@ -17,6 +19,9 @@ from flask import Flask, request
 from constants import mean_vectors
 
 app = Flask(__name__)
+
+logging_level = logging.DEBUG
+logging.basicConfig(level=logging_level)
 
 models_extensions = [
   "Pgp-Inhibitor.pkl", "Pgp-Substrate.pt", "Caco2.pt", "Lipophilicity.pt", 
@@ -44,22 +49,10 @@ def read_csv_and_return_string(file_path):
 def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
   current_path = os.path.dirname(os.path.realpath(__file__))
   print(f'Cuda available check: {torch.cuda.is_available()}')
-  malformed_indexes = []
-  with open(test_path, 'r') as file:
-    first_row = file.readline().strip()
-    smiles_list = [line.strip() for line in file.readlines()]
-    malformed_indexes = [i + 1 for i, smiles in enumerate(smiles_list) if is_malformed(smiles)]
-    
-  if malformed_indexes:
-    valid_smiles_list = [first_row] + [smiles for smiles in smiles_list if not is_malformed(smiles)]
-  valid_smiles_list = [first_row] + smiles_list
 
-  temp_file_path = 'temp'
-  with open(temp_file_path, 'w') as file:
-    file.write('\n'.join(valid_smiles_list))
   command = [
     "chemprop_predict",
-    "--test_path", temp_file_path,
+    "--test_path", test_path,
     "--checkpoint_path", checkpoint_path,
     "--preds_path", preds_path,
     "--batch_size", "1024",
@@ -69,7 +62,6 @@ def make_chemprop_predictions(test_path, checkpoint_path, preds_path):
   ]
 
   subprocess.call(command, cwd=current_path)
-  os.remove(temp_file_path)
 
   with open(preds_path, 'r') as preds_file:
     preds_data = preds_file.read()
@@ -91,7 +83,6 @@ def calculate_similarity(mean_vector, fingerprint):
 
 def calculate_chemprop_probability(smiles_list, model):
   mean_vector = mean_vectors[model]
-  print(f'Smiles list: {str(smiles_list)}')
   probabilities = [
     calculate_similarity(mean_vector, generate_fingerprint(smiles))
     if generate_fingerprint(smiles) is not None
@@ -125,7 +116,10 @@ def handle_model(model, test_data_path, add_probability):
   result_path = f'predictions-{model}.csv'
     
   if 'pt' in test_model_name:
+    start = time()
     make_chemprop_predictions(test_data_path, test_model_name, result_path)
+    end = time()
+    logging.debug(f'Chemprop prediction for {test_model_name} took {end - start}')
     current_df = pd.read_csv(result_path)
     smiles_list = current_df.iloc[:, 0].tolist()
     current_df = current_df.drop(current_df.columns[0], axis=1)
@@ -143,7 +137,7 @@ def handle_model(model, test_data_path, add_probability):
     
   return current_df
 
-def handle_uploaded_file(test_data_path, models, add_probability, batch_size=100):
+def handle_uploaded_file(test_data_path, models, add_probability, batch_size=1000):
   models_res = models.split(",")
   result_dfs = []
   with open(test_data_path, 'r') as file:
@@ -176,7 +170,10 @@ def df_upload():
     
   models = request.args.get('models')
   add_probability = request.args.get('probability', 'false')
+  start = time()
   response = handle_uploaded_file(test_data_path, models, add_probability)
+  end = time()
+  logging.debug(f'Time required: {end - start}')
   os.remove(test_data_path)
   return response
 

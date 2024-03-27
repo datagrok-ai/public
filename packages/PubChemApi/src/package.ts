@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {getBy} from './pubchem';
 import {getSearchWidget} from './widget';
 import {pubChemRest} from './tests/const';
+import { TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL } from './constants';
 
 export const _package = new DG.Package();
 
@@ -68,4 +69,18 @@ export async function inchiKeysToSmiles(id: string) {
   const cids = s['IdentifierList']['CID'][0];
   const smiles = await pubChemToSmiles(cids.toString());
   return smiles;
+}
+
+//name: GetIupacName
+//input: string smiles
+//output: string name
+//connection: PubChemApi
+export async function GetIupacName(smiles: string) {
+    // need to escape # sign (triple bond) in URL
+    const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
+    const response = await grok.dapi.fetchProxy(url);
+    const responseJson = await response.json();
+    const result = responseJson.PropertyTable?.Properties;
+    return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
 }

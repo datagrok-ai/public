@@ -1,0 +1,11 @@
+Cmpd_ID,SMILES
+BACE_1,CCCCNC(=O)[C@H](C)C[C@H](O)[C@@H]2C[C@H](C)CCCCCN(CC)C(=O)c1cc(cc(c1)C(=O)N2)OCC
+BACE_4,C[C@@H]1CCCCCCOCC(=O)N(C)[C@@H](C)C(=O)N[C@@H](C1)[C@H](O)CNC2(CC2)c3cc(ccc3)C(C)(C)C
+BACE_5,CCCC2=CC(CNC[C@@H](O)[C@@H]1C[C@H](C)CCCCCCOCC(=O)N(C)[C@@H](C)C(=O)N1)=NN2
+BACE_6,CCN2CCCCC[C@@H](C)C[C@H](NC(=O)c1cc(ccc1)C2=O)[C@H](O)CNCc3cc(ccc3)C(C)C
+BACE_7,CC(C)c5cc(CNC[C@@H](O)[C@@H]4C[C@H](C)CCCCCN([C@H](C)c1ccccc1)C(=O)c2cc(cc(c2)C3=NC=CO3)C(=O)N4)ccc5
+BACE_8,CC(C)c3cccc(CNC[C@@H](O)[C@@H]2C[C@H](C)CCOCCCCNc1cc(cc(Cl)n1)C(=O)N2)c3
+BACE_9,COCc1cc2cc(c1)C(=O)N[C@@H](C[C@H](C)CCCCCCCN2)[C@H](O)CNCc3cc(ccc3)C(C)C
+BACE_10,COCc1cc2cc(c1)C(=O)N[C@@H](C[C@H](C)CCOCCCCN2)[C@H](O)CNCc3cc(ccc3)C(C)C
+BACE_11,CC(C)c3cc(CNC[C@@H](O)[C@@H]2Cc1cc(ccc1)OCCCCCC(=O)N(C)[C@@H](C)C(=O)N2)ccc3
+BACE_12,COc4cc1cc(NCCCCc3cccc(C[C@H](NC1=O)[C@H](O)CNCc2cccc(c2)C(C)C)c3)n4

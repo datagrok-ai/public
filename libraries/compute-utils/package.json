@@ -1,25 +1,25 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.21.2",
+  "version": "1.28.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "",
+  "description": "Datagrok compute utils",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.19",
-    "@types/wu": "^2.1.42",
+    "fflate": "^0.7.4",
+    "rxjs": "^6.6.7",
+    "wu": "^2.1.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.17.0",
     "dayjs": "^1.11.10",
     "exceljs": "^4.3.0",
-    "fflate": "^0.7.4",
-    "html2canvas": "^1.4.1",
-    "rxjs": "^6.6.7",
-    "wu": "^2.1.0"
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
+    "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
