@@ -508,13 +508,13 @@ This feature is in Beta.
 
 :::
 
-The **Matched Molecular Pairs** ("MMP") tool uses the data in your dataset to calculate the mean difference in activity or property resulting from a fragment substitution. It then presents the results as a set of tables and visualizations.
+The **Matched Molecular Pairs** ("MMP") tool automatically identifies matched molecule pairs in your dataset and calculates the difference in property or activity values between them. The mean change in property or activity values across your dataset represents the expected size of the change when the transformation is applied to a molecule.
 
-With **MMP**, you can:
+The results of the MMP analysis are presented in a series of tables and visualizations, allowing you to:
 
 * View fragments and substitutions in your dataset 
 * Analyze the effect of specific fragments on the chosen activity or property of a lead compound
-* Generate new molecules based on the modifications present in your dataset and view their predicted properties and activities.
+* Generate new molecules based on the transformations present in your dataset and view their predicted properties and activities.
 
 <details>
 <summary>How to use</summary>
