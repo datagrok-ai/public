@@ -80,12 +80,6 @@ export class PositionMonomerInfo {
 }
 
 export class PositionInfo {
-  /** Position in sequence */
-  public readonly pos: number;
-
-  /** Position name from column tag*/
-  public readonly name: string;
-
   private readonly _label: string | undefined;
   public get label(): string { return !!this._label ? this._label : this.name; }
 
@@ -104,11 +98,12 @@ export class PositionInfo {
    * @param {number} rowCount Count of elements in column
    * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
-  constructor(pos: number, name: string, freqs?: { [m: string]: PositionMonomerInfo },
+  constructor(
+    /** Position in sequence */ public readonly pos: number,
+    /** Position name from column tag*/ public readonly name: string,
+    freqs?: { [m: string]: PositionMonomerInfo },
     options?: { sumRowCount?: number, sumValueForHeight?: number, label?: string }
   ) {
-    this.pos = pos;
-    this.name = name;
     this._freqs = freqs ?? {};
 
     if (options?.sumRowCount) this.sumRowCount = options.sumRowCount;
@@ -237,6 +232,8 @@ export class PositionInfo {
   }
 
   buildCompositionTable(palette: SeqPalette): HTMLTableElement {
+    if ('-' in this._freqs)
+      throw new Error(`Unexpected monomer symbol '-'.`);
     return buildCompositionTable(palette,
       Object.assign({}, ...Object.entries(this._freqs)
         .map(([m, pmi]) => ({[m]: pmi.rowCount})))
@@ -826,7 +823,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
       break;
     }
-
     case PROPS.valueColumnName:
     case PROPS.valueAggrType: {
       this.render(WlRenderLevel.Freqs, `onPropertyChanged( ${property.name} )`);
@@ -847,7 +843,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`);
       break;
     }
-
     case PROPS.backgroundColor: {
       this.render(WlRenderLevel.Render, `onPropertyChanged(${property.name})`);
       break;

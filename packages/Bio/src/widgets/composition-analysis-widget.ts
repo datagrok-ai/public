@@ -58,15 +58,21 @@ export function buildCompositionTable(palette: SeqPalette, counts: { [m: string]
   const maxRatio = maxValue! / sumValue;
   const elMap: { [m: string]: HTMLElement } = Object.assign({}, ...Array.from(Object.entries(counts))
     .sort((a, b) => b[1] - a[1])
-    .map(([m, value]) => {
+    .map(([cm, value]) => {
       const ratio = value / sumValue;
-      const color = palette.get(m);
+      const color = palette.get(cm);
       const barDiv = ui.div('', {classes: 'macromolecule-cell-comp-analysis-bar'});
       barDiv.style.width = `${50 * ratio / maxRatio}px`;
       barDiv.style.backgroundColor = color;
+      if (GAP_SYMBOL === cm) {
+        barDiv.style.borderWidth = '1px';
+        barDiv.style.borderStyle = 'solid';
+        barDiv.style.borderColor = DG.Color.toHtml(DG.Color.lightGray);
+      }
+      const displayMonomer: string = GAP_SYMBOL === cm ? '-' : cm;
       const valueDiv = ui.div(`${(100 * ratio).toFixed(2)}%`);
       const el = ui.div([barDiv, valueDiv], {classes: 'macromolecule-cell-comp-analysis-value'});
-      return ({[m]: el});
+      return ({[displayMonomer]: el});
     }));
 
   const table = ui.tableFromMap(elMap);
