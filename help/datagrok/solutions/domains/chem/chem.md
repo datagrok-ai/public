@@ -508,9 +508,11 @@ This feature is in Beta.
 
 :::
 
-The **Matched Molecular Pairs** ("MMP") tool automatically identifies matched
-molecule pairs in your dataset and calculates the difference in property or
-activity values between them. The mean change in property or activity values
+The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
+identify structural transformation rules that can be used to improve potency and
+ADMET properties during lead optimization. This tool automatically detects
+matched molecule pairs in your dataset and calculates the difference in property
+or activity values between them. The mean change in property or activity values
 across your dataset represents the expected size of the change when the
 transformation is applied to a molecule.
 
