@@ -1,7 +1,7 @@
 import {STRANDS, TERMINI} from './const';
 import {TerminalType, NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
 import {DEFAULT_PATTERN_CONFIG as DEFAULT} from './const';
-import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
+import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
 
 export class PatternDefaultsProvider {
   constructor() { }

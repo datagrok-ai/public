@@ -1,5 +1,5 @@
 import {NUCLEOTIDES} from '../const';
-import {MonomerLibWrapper} from '../../monomer-lib/lib-wrapper';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {sortByReverseLength} from '../helpers';
 import {DEFAULT_FORMATS} from '../const';
 

@@ -1,5 +1,5 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
-import {AXOLABS_STYLE_MAP as styleMap} from '../../../common/data-loader/json-loader';
+import {AXOLABS_STYLE_MAP as styleMap} from '../../../common/model/data-loader/json-loader';
 import {LUMINANCE_COEFFICIENTS, TEXT_COLOR, SVG_CIRCLE_SIZES} from './const';
 import {isOverhangNucleotide} from '../../model/utils';
 

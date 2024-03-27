@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {DEFAULT_FORMATS} from '../apps/common/model/const';
-import {loadJsonData} from '../apps/common/data-loader/json-loader';
+import {loadJsonData} from '../apps/common/model/data-loader/json-loader';
 import {formatsToHelm} from './const';
 import {SequenceValidator} from '../apps/common/model/parsing-validation/sequence-validator';
 import {getTranslatedSequences} from '../apps/translator/model/conversion-utils';

@@ -6,7 +6,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import $ from 'cash-dom';
 
-import {extractAtomDataV3000} from '../../structure/model/mol-transformations';
+import {extractAtomDataV3000} from '../../../structure/model/mol-transformations';
 
 /** Draw molecule on the canvas and append it to the specified div, with the
  * option of zoom-in */

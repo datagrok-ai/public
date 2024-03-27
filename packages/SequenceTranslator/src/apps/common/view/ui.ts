@@ -1,16 +1,15 @@
 /* Do not change these import lines to match external modules in webpack configuration */
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
-import {TAB, APP} from './const';
-import {TranslatorAppLayout} from '../../translator/view/app-ui';
-import {StructureAppLayout} from '../../structure/view/app-ui';
-import {PatternLayoutHandler} from '../../pattern/view/app-ui';
-import {PatternAppLayout} from '../../pattern/view/ui';
-import {MonomerLibViewer} from '../monomer-lib/viewer';
 import {_package} from '../../../package';
+import {PatternAppLayout} from '../../pattern/view/ui';
+import {StructureAppLayout} from '../../structure/view/app-ui';
+import {TranslatorAppLayout} from '../../translator/view/app-ui';
 import {tryCatch} from '../model/helpers';
+import {MonomerLibViewer} from './monomer-lib-viewer';
+import {APP_NAME, TAB_NAME} from './const';
 
 type ViewFactories = {[name: string]: () => DG.View};
 
@@ -19,7 +18,8 @@ export abstract class AppUIBase {
   abstract addView(): Promise<void>;
 
   async initializeAppLayout(): Promise<void> {
-    const progressIndicator: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
+    const progressIndicator: DG.TaskBarProgressIndicator =
+      DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
 
     const currentView = grok.shell.v?.root;
     if (currentView)
@@ -34,7 +34,7 @@ export abstract class AppUIBase {
   }
 }
 
-abstract class SimpleAppUIBase extends AppUIBase {
+abstract class IsolatedAppUIBase extends AppUIBase {
   constructor(appName: string) {
     super(appName);
     this.view = DG.View.create();
@@ -72,7 +72,7 @@ abstract class SimpleAppUIBase extends AppUIBase {
 
 export class CombinedAppUI extends AppUIBase {
   constructor(externalViewFactories: ViewFactories) {
-    super(APP.COMBINED);
+    super(APP_NAME.COMBINED);
     this.externalViewFactories = externalViewFactories;
     const factories = this.getViewFactories();
     this.multiView = new DG.MultiView({viewFactories: factories});
@@ -82,18 +82,19 @@ export class CombinedAppUI extends AppUIBase {
   private externalViewFactories?: ViewFactories;
 
   private getViewFactories(): ViewFactories {
-    function viewFactory(uiConstructor: new (view: DG.View) => SimpleAppUIBase): () => DG.View {
+    function viewFactory(UiConstructor: new (view: DG.View) => IsolatedAppUIBase): () => DG.View {
       const view = DG.View.create();
-      const translateUI = new uiConstructor(view);
-      // intentonally don't await for the promise
-      translateUI.initView();
+      const translateUI = new UiConstructor(view);
+      translateUI.initView().catch(
+        (e) => console.error(`Failed to initialize ${UiConstructor.name}: ${e}`)
+      );
       return () => translateUI.getView();
     }
 
     let result: {[key: string]: () => DG.View } = {
-      [TAB.TRANSLATOR]: viewFactory(OligoTranslatorUI),
-      [TAB.PATTERN]: viewFactory(OligoPatternUI),
-      [TAB.STRUCTRE]: viewFactory(OligoStructureUI),
+      [TAB_NAME.TRANSLATOR]: viewFactory(OligoTranslatorUI),
+      [TAB_NAME.PATTERN]: viewFactory(OligoPatternUI),
+      [TAB_NAME.STRUCTURE]: viewFactory(OligoStructureUI),
     };
 
     if (this.externalViewFactories)
@@ -121,7 +122,7 @@ export class CombinedAppUI extends AppUIBase {
 }
 
 /** For plugins from external packages */
-export class ExternalPluginUI extends SimpleAppUIBase {
+export class ExternalPluginUI extends IsolatedAppUIBase {
   constructor(viewName: string, layout: HTMLDivElement) {
     super(viewName);
     this.layout = layout;
@@ -136,13 +137,13 @@ export class ExternalPluginUI extends SimpleAppUIBase {
 export class AppUIFactory {
   private constructor() {}
 
-  static createAppUIInstance(appName: string): SimpleAppUIBase {
+  static createAppUIInstance(appName: string): IsolatedAppUIBase {
     switch (appName) {
-    case APP.TRANSLATOR:
+    case APP_NAME.TRANSLATOR:
       return new OligoTranslatorUI();
-    case APP.PATTERN:
+    case APP_NAME.PATTERN:
       return new OligoPatternUI();
-    case APP.STRUCTRE:
+    case APP_NAME.STRUCTURE:
       return new OligoStructureUI();
     default:
       throw new Error(`Unknown app name: ${appName}`);
@@ -150,12 +151,12 @@ export class AppUIFactory {
   }
 }
 
-class OligoTranslatorUI extends SimpleAppUIBase {
+class OligoTranslatorUI extends IsolatedAppUIBase {
   private readonly topPanel: HTMLElement[];
   private readonly layout = new TranslatorAppLayout();
 
   constructor() {
-    super(APP.TRANSLATOR);
+    super(APP_NAME.TRANSLATOR);
 
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
@@ -169,18 +170,18 @@ class OligoTranslatorUI extends SimpleAppUIBase {
   };
 }
 
-class OligoPatternUI extends SimpleAppUIBase {
+class OligoPatternUI extends IsolatedAppUIBase {
   constructor() {
-    super(APP.PATTERN);
+    super(APP_NAME.PATTERN);
   }
   protected getHtml(): Promise<HTMLDivElement> {
     return PatternAppLayout.generateHTML();
   }
 }
 
-class OligoStructureUI extends SimpleAppUIBase {
+class OligoStructureUI extends IsolatedAppUIBase {
   constructor() {
-    super(APP.STRUCTRE);
+    super(APP_NAME.STRUCTURE);
     this.layout = new StructureAppLayout();
   }
   private readonly layout: StructureAppLayout;

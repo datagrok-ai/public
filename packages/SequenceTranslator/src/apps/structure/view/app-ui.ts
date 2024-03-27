@@ -9,10 +9,10 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-import {highlightInvalidSubsequence} from '../../common/ui-components/colored-input/input-painters';
+import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
 import {getLinkedMolfile, saveSdf} from '../model/oligo-structure';
-import {ColoredTextInput} from '../../common/ui-components/colored-input/colored-text-input';
-import {MoleculeImage} from '../../common/ui-components/molecule-img';
+import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
+import {MoleculeImage} from '../../common/view/components/molecule-img';
 import {StrandData} from '../model/oligo-structure';
 
 const enum DIRECTION {

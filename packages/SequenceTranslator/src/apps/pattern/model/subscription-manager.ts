@@ -5,8 +5,6 @@ export class SubscriptionManager {
   private rxjsSubscriptions = [] as Subscription[];
   private dgSubscriptions = [] as DG.StreamSubscription[];
 
-  constructor() { }
-
   add(subscription: Subscription | DG.StreamSubscription) {
     if (subscription instanceof Subscription)
       this.rxjsSubscriptions.push(subscription);

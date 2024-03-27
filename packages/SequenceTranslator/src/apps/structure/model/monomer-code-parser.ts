@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {PHOSPHATE_SYMBOL} from './const';
 import {sortByReverseLength} from '../../common/model/helpers';
-import {MonomerLibWrapper} from '../../common/monomer-lib/lib-wrapper';
-import {MONOMERS_WITH_PHOSPHATE} from '../../common/data-loader/json-loader';
+import {MonomerLibWrapper} from '../../common/model/monomer-lib/lib-wrapper';
+import {MONOMERS_WITH_PHOSPHATE} from '../../common/model/data-loader/json-loader';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */

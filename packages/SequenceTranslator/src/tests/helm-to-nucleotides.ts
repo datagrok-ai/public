@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {getNucleotidesSequence} from '../apps/translator/model/conversion-utils';
-import {loadJsonData} from '../apps/common/data-loader/json-loader';
+import {loadJsonData} from '../apps/common/model/data-loader/json-loader';
 import {helmToNucleotides} from './const';
 import {_package} from '../package';
-import {MonomerLibWrapper} from '../apps/common/monomer-lib/lib-wrapper';
+import {MonomerLibWrapper} from '../apps/common/model/monomer-lib/lib-wrapper';
 
 category('HELM to Nucleotides', () => {
   before(async () => {

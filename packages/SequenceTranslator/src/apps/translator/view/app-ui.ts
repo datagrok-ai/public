@@ -9,18 +9,18 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as rxjs from 'rxjs';
 import './style.css';
 
-import {highlightInvalidSubsequence} from '../../common/ui-components/colored-input/input-painters';
-import {ColoredTextInput} from '../../common/ui-components/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
+import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
 import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
 import {getTranslatedSequences, convert, getSupportedTargetFormats} from '../model/conversion-utils';
-import {MoleculeImage} from '../../common/ui-components/molecule-img';
+import {MoleculeImage} from '../../common/view/components/molecule-img';
 import {download} from '../../common/model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
-import {DEFAULT_AXOLABS_INPUT} from '../../common/ui-components/const';
+import {DEFAULT_AXOLABS_INPUT} from '../../common/view/const';
 import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
 import {FormatConverter} from '../model/format-converter';
-import {CODES_TO_HELM_DICT} from '../../common/data-loader/json-loader';
+import {CODES_TO_HELM_DICT} from '../../common/model/data-loader/json-loader';
 import {DEFAULT_FORMATS} from '../../common/model/const';
 import {NUCLEOTIDES_FORMAT} from './const';
 

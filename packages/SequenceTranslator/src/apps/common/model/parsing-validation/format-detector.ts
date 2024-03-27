@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
 import {DEFAULT_FORMATS} from '../const';
-import {MonomerLibWrapper} from '../../monomer-lib/lib-wrapper';
-import {CODES_TO_HELM_DICT} from '../../data-loader/json-loader';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
+import {CODES_TO_HELM_DICT} from '../data-loader/json-loader';
 import {SequenceValidator} from './sequence-validator';
 
 export class FormatDetector {

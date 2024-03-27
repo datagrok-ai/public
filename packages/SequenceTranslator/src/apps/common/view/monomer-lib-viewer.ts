@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {drawZoomedInMolecule} from '../ui-components/draw-molecule';
-import {MonomerLibWrapper} from './lib-wrapper';
+import {drawZoomedInMolecule} from './components/draw-molecule';
+import {MonomerLibWrapper} from '../model/monomer-lib/lib-wrapper';
 
 export class MonomerLibViewer {
   static async view(): Promise<void> {

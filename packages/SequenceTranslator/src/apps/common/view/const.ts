@@ -1,14 +1,14 @@
-export const enum TAB {
+export const enum TAB_NAME {
   TRANSLATOR = 'TRANSLATOR',
   PATTERN = 'PATTERN',
-  STRUCTRE = 'STRUCTURE'
+  STRUCTURE = 'STRUCTURE'
 }
 
-export const enum APP {
+export const enum APP_NAME {
   COMBINED = 'Oligo Toolkit',
   TRANSLATOR = 'Oligo Translator',
   PATTERN = 'Oligo Pattern',
-  STRUCTRE = 'Oligo Structure',
+  STRUCTURE = 'Oligo Structure',
 }
 
 export const DEFAULT_AXOLABS_INPUT = 'Afcgacsu';

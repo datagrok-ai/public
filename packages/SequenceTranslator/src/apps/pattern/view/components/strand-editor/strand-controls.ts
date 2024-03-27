@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
 
-import {AXOLABS_STYLE_MAP} from '../../../../common/data-loader/json-loader';
+import {AXOLABS_STYLE_MAP} from '../../../../common/model/data-loader/json-loader';
 import {STRAND, STRANDS, STRAND_LABEL} from '../../../model/const';
 import {EventBus} from '../../../model/event-bus';
 import {StrandType} from '../../../model/types';

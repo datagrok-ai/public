@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {AXOLABS_STYLE_MAP} from '../../common/data-loader/json-loader';
+import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
 import {NucleotideSequences} from './types';
 
 

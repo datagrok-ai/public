@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {CODES_TO_HELM_DICT} from '../../data-loader/json-loader';
-import {CodesInfo} from '../../data-loader/types';
+import {CODES_TO_HELM_DICT} from '../data-loader/json-loader';
+import {CodesInfo} from '../data-loader/types';
 import {DEFAULT_FORMATS} from '../const';
 import {GROUP_TYPE, PHOSPHATE_SYMBOL} from '../../../translator/model/const';
 
