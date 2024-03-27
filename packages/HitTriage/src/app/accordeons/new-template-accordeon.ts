@@ -200,8 +200,8 @@ export function getCampaignFieldEditors(preset?: HitTriageCampaignField[]) {
   itemsGrid.root.style.maxWidth = '750px';
 
   let addingItem: ItemType = {};
-  itemsGrid.onItemAdded.subscribe((item) => {
-    addingItem = item ?? {};
+  itemsGrid.onItemAdded.subscribe((_) => {
+    addingItem = {};
   });
   itemsGrid.onAddingItemChanged.subscribe((item) => {
     if (item)
