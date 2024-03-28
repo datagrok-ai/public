@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-03-28 1.18.3
+
+### Addressed Issues
+
+* (Bug) GROK-15300: Table duplicates after changing ID 
+
+
 ## 2024-03-19 1.18.2
 
 ### Addressed Issues
