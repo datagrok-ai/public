@@ -1902,6 +1902,12 @@ export class Legend extends DartWidget {
   /** Position (left / right / top / bottom) */
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
   set position(pos: LegendPosition) { api.grok_Legend_Set_Position(this.dart, pos); }
+
+  set onViewerLegendChanged(handler: Function) {
+    api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
+  }
+
+  get filterBy() { return api.grok_Legend_Get_FilterBy(this.dart); }
 }
 
 

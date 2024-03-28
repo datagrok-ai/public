@@ -1276,7 +1276,7 @@ export interface IDartApi {
   grok_Notebook_Get_Description(n: any): any;
   grok_Notebook_Set_Description(n: any, d: String): any;
   grok_Notebook_ToHtml(n: any): Promise<any>;
-  grok_Notebook_Edit(n: any): any;
+  grok_Notebook_Edit(n: any): Promise<any>;
   grok_Package_Get_Credentials(packageName: String): Promise<any>;
   grok_Package_Get_Meta(p: any): any;
   grok_Package_GetModuleName(p: any, file: String): any;
@@ -1360,6 +1360,8 @@ export interface IDartApi {
   grok_Legend_Set_ShowNulls(legend: any, show: Bool): any;
   grok_Legend_Get_Position(legend: any): any;
   grok_Legend_Set_Position(legend: any, pos: any): any;
+  grok_Legend_Set_OnViewerLegendChanged(legend: any, handler: any): any;
+  grok_Legend_Get_FilterBy(legend: any): any;
   grok_Get_Settings(): any;
   grok_Get_StartUri(): any;
   grok_PropMixin_GetProperties(target: any): any;
