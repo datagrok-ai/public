@@ -8,13 +8,12 @@ and size, you can show up to three additional data dimensions. Use the
 scatterplot to explore patterns and relationships between variables in your
 data.
 
-<!--![Scatterplot](scatter-plot.png)-->
-
-A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot) and can be used to explore a chemical space.
+A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot)
+ and can be used to explore a chemical space.
 
 :::tip
 
-To show the relationship between three variables, use a [3D Scatterplot](3d-scatter-plot.md).
+To show the relationship between three variables, use a [3D Scatterplot](img/3d-scatter-plot.md).
 
 ::: 
 
@@ -40,10 +39,14 @@ To show the relationship between three variables, use a [3D Scatterplot](3d-scat
 
 To add a scatterplot, click the **Scatterplot** icon on the **Toolbox**.
 
-Use the viewer controls to select columns for each axis and marker color and size.
-For additional configurations, click the **Gear** icon on top of the viewer and set your preferences in the **Context Panel**. Here, you can change the background, adjust the legend position, add or remove labels, show drop lines, and more. You can also access key settings from the context menu by right-clicking.
+Use the viewer controls to select columns for each axis and marker color and
+size. For additional configurations, click the **Gear** icon on top of the
+viewer and set your preferences in the **Context Panel**. Here, you can change
+the background, adjust the legend position, add or remove labels, show drop
+lines, and more. You can also access key settings from the context menu by
+right-clicking.
 
-<img alt="Molecular structures rendering" src={require('./Axes.gif').default}
+<img alt="Molecular structures rendering" src={require('img/Axes.gif').default}
 width="800px"/>
 
 :::note developers
@@ -55,13 +58,19 @@ To add a scatterplot from the **Console**, use
 
 ### Calculations and trends
 
-A scatterplot can show reference lines that represent formulas or equations. These lines are used to emphasize specific areas on the chart or data. Common examples include a regression line, value bands, and so on. 
+A scatterplot can show reference lines that represent formulas or equations.
+These lines are used to emphasize specific areas on the chart or data. Common
+examples include a regression line, value bands, and so on. 
 
 To toggle a regression line, press the **R** key. 
 
-To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** This action opens a **Formula Lines** dialog. Here, enter your formula and configure the line settings. Your formula should refer to the columns on the **X** and **Y** axes. The syntax for the formula is similar to that used to [Add New Column](../../transform/add-new-column.md).
+To show a custom formula line, right-click a scatterplot, then choose **Tools**
+> **Formula Lines...** This action opens a **Formula Lines** dialog. Here, enter
+your formula and configure the line settings. Your formula should refer to the
+columns on the **X** and **Y** axes. The syntax for the formula is similar to
+that used to [Add New Column](../../transform/add-new-column.md).
 
-<img alt="Formula lines" src={require('./formula-lines.gif').default}
+<img alt="Formula lines" src={require('img/formula-lines.gif').default}
 width="800px"/>
 
 :::note developers
@@ -72,22 +81,22 @@ You can [add formula lines programmatically](https://datagrok.ai/help/develop/ho
 
 ### Filtering and selection
 
-To adjust the data display settings, use the **Data** info pane from the **Context Panel**. Here, you can specify which rows to show on the scatterplot, define zoom and filtering actions, and so on.
+To adjust the data display settings, use the **Data** info pane from the
+**Context Panel**. Here, you can specify which rows to show on the scatterplot,
+define zoom and filtering actions, and so on.
 
-<!--<img alt="Filtering" src={require('./filtering.gif').default} width="800px"/>-->
-
-For manual selection settings, use the **Misc** info pane. Here, you can choose the selector you want and define actions for the mouse drag. 
-
-<!--<img alt="Selection" src={require('./selection.gif').default}width="800px"/>-->
+For manual selection settings, use the **Misc** info pane. Here, you can choose
+the selector you want and define actions for the mouse drag. 
 
 ### Tooltip
 
-By default, a scatterplot inherits the tooltip from the grid. However, you can customize the scatterplot's 
-tooltip to show the data you want using the **Tooltip** info panel or via the context menu.
+By default, a scatterplot inherits the tooltip from the grid. However, you can
+customize the scatterplot's tooltip to show the data you want using the
+**Tooltip** info panel or via the context menu.
 
-<!--<img alt="Tooltip" src={require('./tooltip.gif').default} width="800px"/>-->
-
-In addition, a scatterplot itself can be used as a [group tooltip](viewers.md#group-tooltips), which may be especially useful when dealing with grouped or clustered data or when the screen space is limited.
+In addition, a scatterplot itself can be used as a 
+[group tooltip](viewers.md#group-tooltips), which may be especially useful when 
+dealing with grouped or clustered data or when the screen space is limited.
 
 ![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 

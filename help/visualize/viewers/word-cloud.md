@@ -6,7 +6,7 @@ Word cloud (a tag cloud) shows the frequency of individual words using font size
 and color. Use it to see the most popular concepts, highlight important textual
 data points, compare data, etc.
 
-![Word Cloud](word-cloud.png "Word Cloud")
+![Word Cloud](img/word-cloud.png "Word Cloud")
 
 ## Adding
 
@@ -40,7 +40,7 @@ properties
 A word cloud viewer doesn't respond to the row selection and data filtering. You
 can use it to filter other viewers.
 
-![Word Cloud](word-cloud.gif)
+![Word Cloud](img/word-cloud.gif)
 
 ## See also
 

@@ -7,7 +7,7 @@ table rows into nodes by categories in columns. Each column forms a new
 hierarchy level. For example, a tree viewer is commonly used to display sales by
 location.
 
-![Tree viewer](tree-viewer.png)
+![Tree viewer](img/tree-viewer.png)
 
 >Note: To use a tree viewer, install the package [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
 
@@ -51,7 +51,7 @@ A tree viewer responds to data filters but has limited interaction in rows
 selection. For the node to be selected, you need to select all rows comprising
 the node.
 
-![Tree viewer](tree-viewer.gif "Tree viewer")
+![Tree viewer](img/tree-viewer.gif "Tree viewer")
 
 ## Viewer controls
 

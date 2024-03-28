@@ -45,7 +45,7 @@ example, you can:
 * Synchronizes current record upon clicking on the point
 * Click on the rectangle selects rows
 
-![Treemap](tree-map.gif)
+![Treemap](img/tree-map.gif)
 
 ## Viewer controls
 
