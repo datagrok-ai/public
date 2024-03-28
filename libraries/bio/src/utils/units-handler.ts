@@ -56,9 +56,9 @@ export class UnitsHandler {
     else
       throw new Error('Units are not specified in column');
     this._notation = this.getNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? GapSymbols[NOTATION.FASTA] :
-      (this.isHelm()) ? GapSymbols[NOTATION.HELM] :
-        GapSymbols[NOTATION.SEPARATOR];
+    this._defaultGapOriginal = (this.isFasta()) ? GapOriginals[NOTATION.FASTA] :
+      (this.isHelm()) ? GapOriginals[NOTATION.HELM] :
+        GapOriginals[NOTATION.SEPARATOR];
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
       (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)

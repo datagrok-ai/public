@@ -10,6 +10,7 @@ import {
   WebLogoViewer,
 } from '../viewers/web-logo-viewer';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const g: string = GAP_SYMBOL;
 
