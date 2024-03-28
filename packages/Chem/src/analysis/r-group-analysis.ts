@@ -203,7 +203,7 @@ export function rGroupAnalysis(col: DG.Column): void {
               } else {
                 let mol: RDMol | null = null;
                 try {
-                  mol = module.get_mol(molStr!);
+                  mol = resCol.name === 'Core' && coreIsQMol ? module.get_qmol(molStr!) : module.get_mol(molStr!);
                   if (mol)
                     molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
                 } catch (e) {
@@ -295,10 +295,14 @@ export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule:
         highlightBondColors: {},
       };
       for (let j = 0; j < rGroupsNum; j++) {
-        res.atomsToHighLight[j][i].forEach((atom) => substr.highlightAtomColors![atom] = colors[j]);
-        res.bondsToHighLight[j][i].forEach((bond) => substr.highlightBondColors![bond] = colors[j]);
-        substr.atoms = substr.atoms!.concat(Array.from(res.atomsToHighLight[j][i]));
-        substr.bonds = substr.bonds!.concat(Array.from(res.bondsToHighLight[j][i]));
+        if(res.atomsToHighLight[j][i]) {
+          res.atomsToHighLight[j][i].forEach((atom) => substr.highlightAtomColors![atom] = colors[j]);
+          substr.atoms = substr.atoms!.concat(Array.from(res.atomsToHighLight[j][i]));
+        }
+        if(res.bondsToHighLight[j][i]) {
+          res.bondsToHighLight[j][i].forEach((bond) => substr.highlightBondColors![bond] = colors[j]);
+          substr.bonds = substr.bonds!.concat(Array.from(res.bondsToHighLight[j][i]));
+        }
       }
       return substr;
     });

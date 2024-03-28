@@ -326,22 +326,16 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (unmatches[counter] !== j) {
             const rgroup = cols[colNames[i]]!.at(j - counter);
             if (isRGroupCol) {
-              rgroup.has_prop(rgroupTargetAtomsPropName) ?
-                atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName))) :
-                new Uint32Array();
-              rgroup.has_prop(rgroupTargetBondsPropName) ?
-                bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName))) :
-                new Uint32Array();
+              if(rgroup.has_prop(rgroupTargetAtomsPropName))
+                atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName)));
+              if(rgroup.has_prop(rgroupTargetBondsPropName))
+                bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
             }
             col[j] = rgroup.get_smiles();
           }
           else {
             counter++;
             col[j] = '';
-            if (isRGroupCol) {
-              atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array();
-              bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array();
-            }
           }
         }
         resCols.push(col);
