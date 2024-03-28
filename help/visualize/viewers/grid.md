@@ -70,7 +70,7 @@ title: "Grid"
 | Right-click cell \|  Current column \|  Format |  Change datetime format |
 | Column Properties (F2) \|  Tags \|  format     |  Change datetime format |
 
-![Date and number formatting](grid-formatting.gif "Date and number formatting")
+![Date and number formatting](img/grid-formatting.gif "Date and number formatting")
 
 See also:
 
@@ -86,7 +86,7 @@ See also:
 | Menu \|  Color coding \|  On/Off  | Turn color-coding on/off for all columns  |
 | Menu \|  Color coding \|  Color scheme  | Select a palette  |
 
-![Color-coding](grid-color-coding.gif "Color-coding")
+![Color-coding](img/grid-color-coding.gif "Color-coding")
 
 ### Column color coding
 
@@ -116,16 +116,68 @@ or vice versa. This means that the column type is always taken into account. The
 remembered for a viewer instance (currently, they are not preserved through
 layout serialization).
 
-![Copy column color coding](pick-up-apply-commands-color-coding.gif "Copy column color coding")
+![Copy column color coding](img/pick-up-apply-commands-color-coding.gif "Copy column color coding")
 
-By default, color coding is applied to the column background. Optionaly you can apply it to the text:
+By default, color coding is applied to the column background. Optionaly, you can apply it to the text:
 
 1. Right-click the column's header and select **Color coding > Edit**. A dialog opens.
 2. In the dialog, set the **Apply to** setting to `text`.
 
 This option is available for all linear, categorical, and conditional schemas.
 
-## Row summary columns
+## Visualizing grid data
+
+<!--To visualize grid data, you have two options:
+
+* Add a standalone [viewer](viewers.md)
+* Visualize data within the grid cells.
+
+This section describes how to visualize data within a grid cell.
+
+To visualize data within a cell, you have four options:
+
+* Use a [cell renderer](#cell-renderers)
+* Add a [row summary column](#row-summary-columns)
+* Add an [info pane](link) as a column
+* [Visualize in-cell data from a linked table](link) using a viewer. -->
+
+### Cell renderers
+
+![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
+
+
+<!--Use cell renderers to visualize data within a single grid cell. For certain semantic types, like molecules or URLs, they are applied automatically. You can also define a custom cell renderer as follows:
+
+* In the column's properties, using the column's [tags](../govern/catalog/tags.md) or semantic type. In this case, a cell renderer will be applied 
+* 
+
+<details>
+<summary>Example</summary>
+
+
+</details>
+
+
+:::note developers
+
+[Create custom cell renderers](link)
+
+:::
+
+Clicking a column
+
+#### Available cell renderers
+
+| Cell render | Image | Description | Defined with tag/sem.type | Application |
+|:--|--|--|--|--|
+| Molecule |![alt text](../cell-renderer-molecule.png)|Molecule in 2D| `sem.type`: Molecule|Auto|
+| Tags |[img]|---| `cell.renderer`: Tags| Manual| 
+| Choices |[img]|---| `cell.renderer`: MultiChoice<br/><br/>`.choices`: Comma separated values, e.g., ["1","2","3"] | Manual|
+| Fit lines (curves)|||||
+
+-->
+
+### Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across the row. This feature is useful for quick visual
 profiling of values. In the following picture, each inline viewer visualizes the values of five numerical columns, which
@@ -143,6 +195,29 @@ The following summary column types are available:
 
 To add a summary column: **Menu | Add | Summary Columns**
 
+<!--
+
+#### Smart forms
+
+![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+
+* Smart forms show values from multiple columns in one cell
+* Adaptive rendering to fit the cell size
+* Values inherit color-coding from source columns
+* Cell renderers for different data and semantic types
+
+:::note
+
+Requires a [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md).
+
+:::
+
+### Data from linked tables
+
+Link tables and show data from one linked table in another
+
+![Linked table data in cell](../../deploy/releases/platform/img/grid-nested-linked-tables.gif) -->
+
 ### Forms
 
 An HTML (or Markdown) template that renders row values can be embedded in each row.
@@ -152,11 +227,7 @@ An HTML (or Markdown) template that renders row values can be embedded in each r
 To add a default form: **Menu | Add | Forms | Default**
 To add a custom form: **Menu | Add | Forms | Custom...**
 
-### Custom cell renderers
-
-![Molecules](../../uploads/viewers/grid-molecules.png "Molecule renderer")
-
-### Current rows
+## Current rows
 
 Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and
 highlights it in green. This indication is a neat and lightweight way to update information related to the current value
@@ -170,9 +241,9 @@ you move from one row to another you immediately see where the row values belong
 the most similar structure to the reference. This also works the other way around: by first clicking on a visual
 element, you will see the row it represents in the grid.
 
-![Current rows](../current-rows-2.gif "Current rows")
+![Current rows](img/current-rows-2.gif "Current rows")
 
-### Pinned rows
+## Pinned rows
 
 Datagrok supports pinned rows functionality, where each row can be pinned based on its column name and cell value.
 Pinned rows are also saved to the layout. If you pin a non-unique row, it will be pinned but it won't be saved in the layout.
@@ -180,9 +251,9 @@ Pinned rows are also saved to the layout. If you pin a non-unique row, it will b
 To pin a row, select the row you want to pin, right-click it and open: **Pin > Pin row**. To pin multiple rows,
 select the **Pin selected rows** option.
 
-![Pinned rows](../pinned-rows.gif "Pinned rows")
+![Pinned rows](img/pinned-rows.gif "Pinned rows")
 
-### Column edit permissions
+## Column edit permissions
 
 You can specify who can edit a specific column. There are few  ways to do it:
 
