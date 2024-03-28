@@ -762,7 +762,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected async executeTest(spec: any, updateMode = false) {
-    await testFunctionView(spec, this, {updateMode});
+    await testFunctionView(spec, this, {updateMode, interactive: true});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);

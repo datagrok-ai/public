@@ -765,7 +765,7 @@ export class PipelineView extends FunctionView {
   }
 
   public override async executeTest(spec: any, updateMode = false) {
-    await testPipeline(spec, this, {updateMode});
+    await testPipeline(spec, this, {updateMode, interactive: true});
   }
 
   public getStepViewRuns<T extends FunctionView>(name: string): Observable<T> {

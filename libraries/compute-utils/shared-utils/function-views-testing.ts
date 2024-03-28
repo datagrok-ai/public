@@ -11,6 +11,7 @@ export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
   initWaitTimeout?: number;
   validatorsWaitTimeout?: number;
   updateMode?: boolean;
+  interactive?: boolean;
   parent?: PipelineView;
   parentWaitTimeout?: number;
 }
@@ -18,6 +19,7 @@ export interface FunctionViewTestOptions extends ExpectDeepEqualOptions {
 export interface PipelineTestOptions {
   initWaitTimeout?: number;
   updateMode?: boolean;
+  interactive?: boolean;
   stepOptions?: Record<string, FunctionViewTestOptions>
 }
 
@@ -26,7 +28,8 @@ const defaultValidatorsTimeout = 5000;
 const defaultParentTimeout = 5000;
 
 export async function testPipeline(
-  spec: any, view: PipelineView, options: PipelineTestOptions = {}) {
+  spec: any, view: PipelineView, options: PipelineTestOptions = {}
+) {
   await waitForViewReady(view, options.initWaitTimeout ?? defaultInitTimeout);
   for (const [name, step] of Object.entries(view.steps)) {
     const stepSpec = spec[name];
@@ -39,10 +42,13 @@ export async function testPipeline(
       validatorsWaitTimeout: defaultValidatorsTimeout,
       initWaitTimeout: defaultInitTimeout,
       parent: view,
+      interactive: options.interactive,
       updateMode
     };
     await testFunctionView(stepSpec, step.view, {...defaultSettings, ...stepOptions, prefix});
   }
+  if (options.interactive)
+    grok.shell.info(`${view.name} test passed`);
 }
 
 export async function testFunctionView(
@@ -69,7 +75,10 @@ export async function testFunctionView(
       ).toPromise();
       if (runningUpdates?.length) {
         const msg = `{options.prefix}: parent updates failed to complete in ${parentWaitTimeout}ms, updates: ${runningUpdates.join(',')}`;
-        throw new Error(msg);
+        const err = new Error(msg);
+        if (options.interactive)
+          grok.shell.error(String(err))
+        throw err;
       }
     }
   }
@@ -97,7 +106,10 @@ export async function testFunctionView(
       ).toPromise();
       if (pendingValidators?.length) {
         const msg = `{options.prefix}: validators failed to accept input in ${validatorsWaitTimeout}ms, inputs: ${pendingValidators.join(',')}`;
-        throw new Error(msg);
+        const err = new Error(msg);
+        if (options.interactive)
+          grok.shell.error(String(err))
+        throw err;
       }
     }
   }
@@ -108,8 +120,11 @@ export async function testFunctionView(
     console.log(`checking ${view.func.nqName} results`);
     try {
       expectDeepEqual(view.funcCall.outputs, spec.outputs, options);
+      if (!options.parent && options.interactive)
+        grok.shell.info(`${view.name} test passed`);
     } catch (e) {
-      grok.shell.error(String(e));
+      if (options.interactive)
+        grok.shell.error(String(e));
       throw e;
     }
     console.log(`${view.func.nqName} ok`);

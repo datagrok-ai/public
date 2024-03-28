@@ -50,7 +50,7 @@ export function applyTransformations(obj: any) {
   return deserialize(JSON.stringify(obj));
 }
 
-// just apply df transform if the data
+// just apply data transformations if needed
 export function transform(_key: string, value: any) {
   if (value && value[customTypeKey] && value.value) {
     switch (value[customTypeKey]) {
