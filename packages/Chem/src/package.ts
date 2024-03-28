@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import {getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {getDescriptorsSingle, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
@@ -16,6 +16,7 @@ import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {calculateDescriptors, getDescriptorsTree} from "./docker/api";
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -56,7 +57,7 @@ import {generateScaffoldTree} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
-import {identifiersWidget} from './widgets/identifiers';
+import {getMapIdentifiers, identifiersWidget, openMapIdentifiersDialog} from './widgets/identifiers';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
@@ -414,6 +415,31 @@ export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
 }
 
+//top-menu: Chem | Calculate | Descriptors...
+//name: descriptorsDocker
+export async function descriptorsDocker(): Promise<void> {
+  await openDescriptorsDialogDocker();
+}
+
+//name: chemDescriptorsTree
+//output: object descriptors
+export async function chemDescriptorsTree(): Promise<object> {
+  return await getDescriptorsTree();
+}
+
+//top-menu: Chem | Calculate | Docker Map ids
+//name: getMapIdentifiers
+export async function getIdentifiers() {
+  await openMapIdentifiersDialog();
+}
+
+//name: chemDescriptors
+//input: dataframe table
+//input: column molecules
+//input: list<string> descriptors
+export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]): Promise<void> {
+  await calculateDescriptors(table, molecules, descriptors);
+}
 
 //name: SearchSubstructureEditor
 //tags: editor
