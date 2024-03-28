@@ -4,7 +4,7 @@
 4. Click the **Gear** icon on the top of the viewer.
 5. Change arbitrarily the values of parameters **Fingerprint** and **Distance metric.**
 
----
+***
 
 1. Open sample_FASTA.csv (sample_HELM.csv, sample_MSA.csv).
 2. On the menu ribbon, open **Bio** > **Search** > **Similarity Search**.
