@@ -34,6 +34,7 @@ const getVisibleStepName = (step: StepState) => {
 export class PipelineView extends FunctionView {
   public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
+  public isUpdating = new BehaviorSubject(false);
 
   private stepTabs!: DG.TabControl;
 
@@ -43,8 +44,12 @@ export class PipelineView extends FunctionView {
       this.stepTabs.currentPane = this.stepTabs.getPane(name);
   }
 
-  public getStepView<T extends FunctionView>(name: string) {
+  public getStepView<T extends FunctionView = RichFunctionView>(name: string) {
     return this.steps[name]?.view as T;
+  }
+
+  public getRunningUpdates(): string[] {
+    return [];
   }
 
   // PipelineView unites several export files into single ZIP file
@@ -141,7 +146,7 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: {
+    protected initialConfig: {
       funcName: string,
       friendlyName?: string,
       hiddenOnInit?: VISIBILITY_STATE,
@@ -150,7 +155,8 @@ export class PipelineView extends FunctionView {
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean,
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super(
       funcName,
@@ -759,7 +765,7 @@ export class PipelineView extends FunctionView {
   }
 
   public override async executeTest(spec: any, updateMode = false) {
-    await testPipeline(spec, this, {updateMode});
+    await testPipeline(spec, this, {updateMode, interactive: true});
   }
 
   public getStepViewRuns<T extends FunctionView>(name: string): Observable<T> {

@@ -1,0 +1,2 @@
+//name: MockWrapper
+//language: javascript

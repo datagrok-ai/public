@@ -64,7 +64,8 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super();
     this.box = true;
@@ -76,7 +77,8 @@ export abstract class FunctionView extends DG.ViewBase {
     this.parentView = this.parentCall?.parentCall?.aux?.['view'];
     this.basePath = `/${this.parentCall.func.name}`;
 
-    this.init();
+    if (!options.skipInit)
+      this.init();
   }
 
   /**
@@ -759,7 +761,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected async executeTest(spec: any, updateMode = false) {
-    await testFunctionView(spec, this, {updateMode});
+    await testFunctionView(spec, this, {updateMode, interactive: true});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);
