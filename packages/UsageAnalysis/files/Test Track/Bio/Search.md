@@ -11,7 +11,8 @@
 3. Click the structures in the Similarity Search viewer.
 4. Click the **Gear** icon on the top of the viewer.
 5. Change the viewer settings arbitrarily.
----
+
+***
 
 1. Open sample_FASTA.csv.
 2. On the menu ribbon, open **Bio** > **Search** > **Subsequence Search**.
