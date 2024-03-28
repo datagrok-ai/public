@@ -1,9 +1,16 @@
-1. Open sample_FASTA.
-2. Click the **Sequence** column’s header.
-3. Go to the **Context Pane** and click **Bio | Convert.**
-4. Set **Convert to** to *helm*
-5. Check the new **helm(Sequence)** column
+All fucntions should be tested on sample_FASTA.csv, sample_HELM.csv, and sample_MSA.csv.
+
+1. Go to **Bio > Convert**:
+   * **Get region**
+   * **Notation**
+   * **To Atomic level**
+   * **Split to monomers**
+4. Set options.
+5. Check a new column.
+---
+
+
 ---
 {
-  "order": 9
+  "order": 5
 }
