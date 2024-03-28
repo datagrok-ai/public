@@ -30,7 +30,9 @@ extern "C" {
 		   int predictionScoresColumnsColumnCount,
 	       float * predictionLoadingsColumns,
 	       int predictionLoadingsColumnsRowCount,
-	       int predictionLoadingsColumnsColumnCount);    
+	       int predictionLoadingsColumnsColumnCount,
+		   float * yLoadingsColumn,
+		   int yLoadingsColumnLength);    
 }
 
 #include "PLS\PLS.h"
@@ -45,30 +47,33 @@ extern "C" {
 //output: column_list tScores [new(predict.rowCount, componentsCount)]
 //output: column_list uScores [new(predict.rowCount, componentsCount)]
 //output: column_list xLoadings [new(features.columnCount, componentsCount)]
+//output: column yLoadings [new(componentsCount)]
 EMSCRIPTEN_KEEPALIVE
-int partialLeastSquareRegression(float * predictorColumns,
+int partialLeastSquareRegression(float * featuresColumns,
 	   int rowCount,
 	   int columnCount,
-	   float * responseColumn,
-	   int responceColumnLength,
+	   float * predictColumn,
+	   int predictColumnLength,
 	   int componentsCount,
 	   float * predictionColumn,
 	   int predictionColumnLength,
 	   float * regressionCoefficients,
 	   int regressionCoefficientsLength,
-	   float * predictorScoresColumns,
-	   int predictorScoresColumnsRowCount,
-	   int predictorScoresColumnsColumnCount,
-	   float * predictionScoresColumns,
-	   int predictionScoresColumnsRowCount,
-	   int predictionScoresColumnsColumnCount,
-	   float * predictionLoadingsColumns,
-	   int predictionLoadingsColumnsRowCount,
-	   int predictionLoadingsColumnsColumnCount)
+	   float * tScoresColumns,
+	   int tScoresColumnsRowCount,
+	   int tScoresColumnsColumnCount,
+	   float * uScoresColumns,
+	   int uScoresColumnsRowCount,
+	   int uScoresColumnsColumnCount,
+	   float * xLoadingsColumns,
+	   int xLoadingsColumnsRowCount,
+	   int xLoadingsColumnsColumnCount,
+	   float * yLoadingsColumn,
+	   int yLoadingsColumnLength)
 {
-	return pls::partialLeastSquareExtended(predictorColumns, rowCount, columnCount,
-		responseColumn, componentsCount, predictionColumn, regressionCoefficients,
-		predictorScoresColumns, predictionScoresColumns, predictionLoadingsColumns);
+	return pls::partialLeastSquareExtended(featuresColumns, rowCount, columnCount,
+		predictColumn, componentsCount, predictionColumn, regressionCoefficients,
+		tScoresColumns, uScoresColumns, xLoadingsColumns, yLoadingsColumn);
 } 
 
 

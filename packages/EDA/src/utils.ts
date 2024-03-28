@@ -32,10 +32,16 @@ const INCORRECT_STEPS_MES = 'steps must be non-negative.';
 const INCORRECT_CYCLES_MES = 'cycles must be positive.';
 const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.';
 
-// Check column type
+/** Check column type */
 export function checkColumnType(col: DG.Column): void {
   if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
     throw new Error(UNSUPPORTED_COLUMN_TYPE_MES + col.type);
+}
+
+/** Check missing values */
+export function checkMissingVals(col: DG.Column): void {
+  if (col.stats.missingValueCount > 0 )
+    throw new Error(`The column '${col.name}' has missing values.`);
 }
 
 // Check dimension reducer inputs
@@ -46,8 +52,10 @@ export function checkDimensionReducerInputs(features: DG.ColumnList, components:
   if (components > features.length)
     throw new Error(COMP_EXCESS);
 
-  for (const col of features)
+  for (const col of features) {
     checkColumnType(col);
+    checkMissingVals(col);
+  }
 }
 
 // Check UMAP inputs

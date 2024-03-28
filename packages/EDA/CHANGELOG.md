@@ -1,5 +1,10 @@
 # EDA changelog
 
+## 1.1.16 (2024-03-25)
+
+* PLS components computation
+* Update UI for `Multivariate Analysis` - main feature & demo app
+
 ## 1.1.15 (2024-02-27)
 
 Add support for post processing functions in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.

@@ -125,11 +125,18 @@ var partialLeastSquareRegression = {
         ref: 'componentsCount',
         value: 'data'
       }
+    },
+    yLoadings: {
+      type: 'newFloatColumn',
+      numOfRows: {
+        ref: 'componentsCount',
+        value: 'data'
+      }
     }
   },
   output: {
     type: 'objects',
-    source: ['prediction', 'regressionCoefficients', 'tScores', 'uScores', 'xLoadings']
+    source: ['prediction', 'regressionCoefficients', 'tScores', 'uScores', 'xLoadings', 'yLoadings']
   }
 }; // partialLeastSquareRegression
 

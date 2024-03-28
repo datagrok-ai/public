@@ -56,7 +56,8 @@ namespace pls {
 		Float * regressionCoefficientsPtr,
 		Float * predictorScoresPtr,
 		Float * responceScoresPtr,
-	    Float * predictorLoadingsPtr) noexcept;	
+	    Float * predictorLoadingsPtr,
+		Float * responceLoadingsPtr) noexcept;	
 };
 
 #endif

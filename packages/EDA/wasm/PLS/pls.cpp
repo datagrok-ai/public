@@ -33,7 +33,8 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	Float * regressionCoefficientsPtr,
 	Float * predictorScoresPtr,
 	Float * responceScoresPtr,
-	Float * predictorLoadingsPtr) noexcept
+	Float * predictorLoadingsPtr,
+	Float * responceLoadingsPtr) noexcept
 {
 	// check correctness of arguments
 	if (componentsCount <= 0 || componentsCount > columnCount)
@@ -108,7 +109,7 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> U(responceScoresPtr, rowCount, componentsCount);
 
 	// Y-loadings, q
-	Vector<Float, Dynamic> q(componentsCount);
+	Map<Vector<Float, Dynamic>> q(responceLoadingsPtr, componentsCount);
 
 	// PLS1 routine auxiliry vectors
 	Vector<Float, Dynamic> normTau(componentsCount);
