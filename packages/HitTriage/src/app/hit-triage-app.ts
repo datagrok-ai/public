@@ -80,8 +80,15 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     if (this._campaign?.columnSemTypes) {
       Object.entries(this._campaign.columnSemTypes).forEach(([colName, semtype]) => {
         const col = this.dataFrame!.columns.byName(colName);
-        if (col)
+        if (col && col.semType !== semtype)
           col.semType = semtype;
+      });
+    };
+    if (this._campaign?.columnTypes) {
+      Object.entries(this._campaign.columnTypes).forEach(([colName, type]) => {
+        const col = this.dataFrame!.columns.byName(colName);
+        if (col && col.type !== type)
+          try {col.convertTo(type);} catch (e) {console.error(e);}
       });
     }
     await this.dataFrame.meta.detectSemanticTypes();
@@ -321,6 +328,10 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
     const columnSemTypes: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+
+    const colTypeMap: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
+
     const campaign: HitTriageCampaign = {
       name: campaignName,
       templateName,
@@ -337,6 +348,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       rowCount: enrichedDf.rowCount,
       filteredRowCount: enrichedDf.filter.trueCount,
       template: this.template as HitDesignTemplate | undefined,
+      columnTypes: colTypeMap,
     };
     this.campaign = campaign;
 

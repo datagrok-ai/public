@@ -25,10 +25,8 @@ If it's machine-readable, we can work with it!
 * [40+ connectors](../access/databases/connectors/connectors.md) to all major
   databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))
 * Support for [OpenAPI](access/open-api.md) and access to [public datasets](../access/public-datasets.md)
-* [50+ file and data formats](../access/files/supported-formats.md), including
-  molecule structure formats. Drag-and-drop files to open
-* [Explore relational databases](../access/databases/databases.mdx#database-manager): 
-view schemas, tables, and column data
+* [20+ file formats, 30+ molecule structure formats](../access/files/supported-formats.md). Drag-and-drop files to open
+* [Browse relational database schemas](../access/databases/databases.mdx#schema-browser)
 * Create, edit, and debug queries with [visual tools](../access/databases/databases.mdx#working-with-queries)
 * [Annotate queries](../access/databases/databases.mdx#parameterized-queries)
   and save query results as [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results).
@@ -42,9 +40,9 @@ Your data is [FAIR](../govern/catalog/fair.md) and secure.
 * Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
 flexible [authentication](../govern/authentication.md), 
 [secrets managers](../access/data-connection-credentials.md)
-* Central [metadata](../govern/catalog/metadata.md)-annotated catalog of
+* Centralized [metadata](../govern/catalog/metadata.md)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
-navigating, viewing, and managing data, connections, users, and more
+managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
 * [Global search](../explore/search-filter-select/smart-search.md). 
 
@@ -100,8 +98,8 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 
 #### Collaborate
 
-Share anything with anyone. Collaborate on decision-making. Use open-source
-ecosystem to save cost and innovate.
+Share anything with anyone. Collaborate on decision-making. Use an open source
+ecosystem to save costs and innovate.
 
 * Share within Datagrok, as a URL link, or integrate: REST API, JS API, 
 or embed as an iframe

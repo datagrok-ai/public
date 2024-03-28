@@ -23,7 +23,7 @@ Context menu:
 
 Here is how to embed iframes:
 
-![Markup Viewer](markup-iframe-embedding.gif "iframe embedding")
+![Markup Viewer](img/markup-iframe-embedding.gif "iframe embedding")
 
 ## Videos
 
