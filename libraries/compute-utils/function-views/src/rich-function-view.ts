@@ -112,7 +112,6 @@ export class RichFunctionView extends FunctionView {
     await this.loadInputsOverrides();
     await this.loadInputsValidators();
     await super.onFuncCallReady();
-    this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
     const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
     this.subs.push(fcReplacedSub);
