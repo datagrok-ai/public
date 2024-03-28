@@ -449,10 +449,10 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, options?: string): Promise<IRGroupAnalysisResult> {
-    const t = this;
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): Promise<IRGroupAnalysisResult> {
+    /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      t.parallelWorkers[i].rGroupAnalysis(segment, coreMolecule, options),
+      t.parallelWorkers[i].rGroupAnalysis(segment, coreMolecule, coreIsQMol, options),
     (data: Array<IRGroupAnalysisResult>): IRGroupAnalysisResult => {
       const colNames = data[0].colNames;
       const cols = Array<Array<string>>(colNames.length).fill([]);
@@ -461,7 +461,10 @@ export class RdKitService {
           cols[i] = cols[i].concat(data[j].smiles[i]);
       }
       return {colNames: colNames, smiles: cols};
-    });
+    }); */
+
+    // R group analysis does not support parallelization, so we will use the first worker
+    const res = await this.parallelWorkers[0].rGroupAnalysis(molecules, coreMolecule, coreIsQMol, options);
     return res;
   }
 

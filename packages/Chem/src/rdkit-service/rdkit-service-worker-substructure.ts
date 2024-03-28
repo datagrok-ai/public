@@ -17,6 +17,8 @@ export enum MolNotation {
 export interface IRGroupAnalysisResult {
   colNames: string[];
   smiles: Array<string>[];
+  atomsToHighLight: Array<Array<Uint32Array>>;
+  bondsToHighLight: Array<Array<Uint32Array>>;
 }
 
 const MALFORMED_MOL_V2000 = `
@@ -272,59 +274,85 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 
-  rGroupAnalysis(molecules: string[], coreMolecule: string, options?: string): IRGroupAnalysisResult {
+  rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string): IRGroupAnalysisResult {
     let mols: MolList | null = null;
     let res: RGroupDecomp | null = null;
     let core: RDMol | null = null;
     let cols: {[colName: string] : MolList | null} = {};
-    let totalCols = 0;
+    let totalColsNum = 0;
     let colNames: string [] = [];
+    const rgroupTargetAtomsPropName = '_rgroupTargetAtoms';
+    const rgroupTargetBondsPropName = '_rgroupTargetBonds';
+    const numOfNonRGroupCols = 1; //Core column
+    const coreColName = 'Core';
+    const molColName = 'Mol';
     const resCols = [];
     try {
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
-        core = this._rdKitModule.get_qmol(coreMolecule);
+        core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
+          this._rdKitModule.get_mol(coreMolecule, JSON.stringify({
+            makeDummiesQueries: true,
+            mappedDummiesAreRGroups: true,
+          }));
       } catch (e) {
         throw new Error(`Core is possibly malformed`);
       }
 
       //res = this._rdKitModule.rgroups(core!, mols!, options ? options : '');
-      res = new this._rdKitModule.RGroupDecomp(core!, options ? options : '');
+      res = this._rdKitModule.get_rgd(core!, options ? options : '');
       const unmatches: number[] = [];
       for (let i = 0; i < molecules.length; i ++) {
-        const match = res.add(mols!.at(i));
+        const match = res!.add(mols!.at(i));
         if (match == -1)
           unmatches.push(i);
       }
 
-      res.process();
+      res!.process();
 
-      cols = res.get_rgroups_as_columns();
-      colNames = Object.keys(cols);
+      cols = res!.get_rgroups_as_columns();
+      colNames = Object.keys(cols).filter((it) => it !== molColName); //exclude Mol column from result since we do not need it
 
-
-      totalCols = colNames.length;
+      totalColsNum = colNames.length;
 
       let counter = 0;
-      for (let i = 0; i < totalCols; i++) {
+  
+      const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
+      const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
+      for (let i = 0; i < totalColsNum; i++) {
+        const isRGroupCol = colNames[i] !== coreColName;
         const col = Array<string>(molecules.length);
         for (let j = 0; j < molecules.length; j++) {
-          if (unmatches[counter] !== j)
-            col[j] = cols[colNames[i]]!.at(j - counter).get_smiles();
+          if (unmatches[counter] !== j) {
+            const rgroup = cols[colNames[i]]!.at(j - counter);
+            if (isRGroupCol) {
+              rgroup.has_prop(rgroupTargetAtomsPropName) ?
+                atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName))) :
+                new Uint32Array();
+              rgroup.has_prop(rgroupTargetBondsPropName) ?
+                bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName))) :
+                new Uint32Array();
+            }
+            col[j] = rgroup.get_smiles();
+          }
           else {
             counter++;
             col[j] = '';
+            if (isRGroupCol) {
+              atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array();
+              bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array();
+            }
           }
         }
         resCols.push(col);
         counter = 0;
       }
-      return {colNames: colNames, smiles: resCols};
+      return {colNames: colNames, smiles: resCols, atomsToHighLight: atomsToHighlight, bondsToHighLight: bondsToHighlight};
     } finally {
       core?.delete();
       mols?.delete();
       res?.delete();
-      for (let i = 0; i < totalCols; i ++)
+      for (let i = 0; i < totalColsNum; i ++)
         cols[colNames[i]]?.delete();
     }
   }

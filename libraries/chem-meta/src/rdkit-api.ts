@@ -13,6 +13,7 @@ export interface RDModule {
   get_mcs_as_smarts(mols: MolList, details?: string): string;
   set_log_tee(logName: string): RDLog;
   set_log_capture(logName: string): RDLog;
+  get_rgd(core: RDMol, options: string): RGroupDecomp;
   MolList: MolListConstructor;
   RGroupDecomp: RGroupDecompConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
