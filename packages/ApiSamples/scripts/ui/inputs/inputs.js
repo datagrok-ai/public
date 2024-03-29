@@ -5,7 +5,7 @@ let v = grok.shell.newView('demo: inputs');
 let search = ui.input.search('Search');
 let name = ui.input.string('Name', {value: 'Arthur Dent'});
 let age = ui.input.int('Age', {value: 30});
-let date = ui.dateInput('Birthday', dayjs('1970-5-10'));
+let date = ui.input.date('Birthday', {value: dayjs('1970-5-10')});
 let alien = ui.boolInput('Alien', false);
 let friends = ui.input.multiChoice('Friends', {items: ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast'],
   value: ['Ford', 'Fenchurch']});
