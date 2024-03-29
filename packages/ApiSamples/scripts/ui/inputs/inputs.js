@@ -13,12 +13,12 @@ let active = ui.switchInput('Active', true);
 let color = ui.colorInput('Favorite color', '#ff0000');
 let country = ui.typeAhead('Country', {source: {local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});
 let data = ui.tableInput('Data', null);
-let tags = ui.tagsInput('Skills', ['HTML', 'CSS', 'JS'], true);
+let tags = ui.input.tags('Skills', {tags: ['HTML', 'CSS', 'JS'], showBtn: true});
 let memo = ui.textInput('Memo', '');
 
 name.addValidator(s => s.length < 15 ? 'Too short' : null);
 
-let form = ui.form([search, data, name, age, date, alien, friends,bestFriend, active, color, country, tags, memo]);
+let form = ui.form([search, data, name, age, date, alien, friends, bestFriend, active, color, country, tags, memo]);
 
-form.append(ui.buttonsInput([ui.bigButton('Submit', ()=>{grok.shell.info('Submit')})]));
+form.append(ui.buttonsInput([ui.bigButton('Submit', ()=>{grok.shell.info('Submit');})]));
 v.append(form);

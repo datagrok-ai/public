@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput,
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -33,7 +33,7 @@ import {__obs, StreamSubscription} from './src/events';
 import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import {Entity, Property, User} from './src/entities';
+import {Entity, FileInfo, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -701,30 +701,85 @@ export function tree(): TreeViewGroup {
 
 // TODO: create a new file - inputs.ts for these inputs
 export namespace input {
+  interface Size {
+    height: number;
+    width: number;
+  }
+
+  const optionsMap: {[key: string]: (input: InputBase, inputType: d4.InputType, option: any) => void} = {
+    // nullable: (input, inputType, x) => input.nullable = x, // finish it?
+    value: (input, inputType, x) => input.value = inputType === d4.InputType.File ? toDart(x) : x,
+    property: (input, inputType, x) => input.property = x,
+    tooltipText: (input, inputType, x) => input.setTooltip(x),
+    onCreated: (input, inputType, x) => x(input),
+    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
+    clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
+    escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
+    size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
+    placeholder: (input, inputType, x) => (input.input as HTMLInputElement).placeholder = x,
+    // min:
+    // max:
+    // step:
+    items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+    icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
+    // table: (input, x) => input.table = x,
+    // grok_ColumnInput_ChangeTable
+    // filter: (input, x) => input.filter = x,
+
+    // available: (input, x) => input.available = x,
+    // grok_ColumnsInput_ChangeAvailableAndCheckedColumns
+    // checked: (input, x) => input.checked = x,
+  };
+
+  function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
+    if (options === null || options === undefined)
+      return;
+    const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
+    // const prop = options.property ?? Property.fromOptions({name: input.caption, inputType: inputType as string});
+    if (!options.property)
+      options.property = Property.fromOptions({name: input.caption, inputType: inputType as string});
+    for (let key of Object.keys(specificOptions)) {
+      if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key))
+        options.property[key] = specificOptions[key];
+      if (optionsMap[key] !== undefined)
+        optionsMap[key](input, inputType, specificOptions[key]);
+    }
+    const baseOptions = (({value, property, onCreated, onValueChanged}) => ({value, property, onCreated, onValueChanged}))(options);
+    for (let key of Object.keys(baseOptions)) {
+      if (key === 'value' && baseOptions[key] !== undefined)
+        options.property.defaultValue = toDart(baseOptions[key]);
+      if (baseOptions[key] !== undefined && optionsMap[key] !== undefined)
+        optionsMap[key](input, inputType, baseOptions[key]);
+    }
+  }
+
   // TODO: add label here
   interface IInputInitOptions<T = any> {
     value?: T;
     property?: Property;
+    nullable?: boolean;
     elementOptions?: ElementOptions;
+    tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (input: InputBase<T>) => void;
   }
 
   interface ITextBoxInputInitOptions<T> extends IInputInitOptions<T> {
-    clearIcon?: boolean;
-    escClears?: boolean;
-    placeholder?: string;
+
+    // typeahead options
   }
 
   interface INumberInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
     min?: number;
     max?: number;
     step?: number;
+    showSlider?: boolean;
+    showPlusMinus?: boolean;
   }
 
   interface IChoiceInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
     items?: T[];
-    nullable?: boolean;
   }
 
   interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
@@ -732,8 +787,15 @@ export namespace input {
   }
 
   interface IStringInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    clearIcon?: boolean;
+    escClears?: boolean;
     icon?: string | HTMLElement;
+    placeholder?: string;
     // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
+  }
+
+  interface ITextAreaInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+    size: Size;
   }
 
   interface IColumnInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
@@ -769,16 +831,10 @@ export namespace input {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
-  export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
-    const i = forInputType(d4.InputType.UserGroups);
-    if (value)
-      i.value = value;
-    return i;
-  }
-
   function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
     const input = forInputType(type);
     input.caption = name;
+    setInputOptions(input, type, options);
     // go through properties and set them
     _options(input.root, options?.elementOptions);
     return input;
@@ -786,6 +842,10 @@ export namespace input {
 
   export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
     return _create(d4.InputType.Int, name, options);
+  }
+
+  export function qNum(name: string, options?: IInputInitOptions): InputBase<number> {
+    return _create(d4.InputType.QNum, name, options);
   }
 
   export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
@@ -804,7 +864,7 @@ export namespace input {
     return _create(d4.InputType.Text, name, options);
   }
 
-  export function search(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function search(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Search, name, options);
   }
 
@@ -820,9 +880,12 @@ export namespace input {
     return _create(d4.InputType.Bool, name, options);
   }
 
-  // do we need this?
   export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Switch, name, options);
+  }
+
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo> {
+    return _create(d4.InputType.File, name, options);
   }
 
   export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
@@ -842,7 +905,7 @@ export namespace input {
     return _create(d4.InputType.Table, name, options);
   }
 
-  export function textArea(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+  export function textArea(name: string, options?: ITextAreaInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.TextArea, name, options);
   }
 
@@ -854,12 +917,20 @@ export namespace input {
     return _create(d4.InputType.Radio, name, options);
   }
 
+  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+    return _create(d4.InputType.UserGroups, name, options);
+  }
+
   export async function markdown(name: string): Promise<MarkdownInput> {
     return (await MarkdownInput.create(name));
   }
 
   export function code(name: string, options?: CodeConfig): CodeInput {
     return new CodeInput(name, options);
+  }
+
+  export function tags(name: string, config?: TagsInputConfig) {
+    return new TagsInput(name, config);
   }
 }
 
@@ -2154,10 +2225,6 @@ export function dropDown(label: string | Element, createElement: () => HTMLEleme
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
-}
-
-export function tagsInput(name: string, tags: string[], showBtn: boolean) {
-  return new TagsInput(name, tags, showBtn);
 }
 
 export let icons = {

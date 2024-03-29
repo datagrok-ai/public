@@ -37,7 +37,11 @@ export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'class
 export type CodeConfig = {
   script?: string;
   mode?: string;
-  placeholder?: string
+  placeholder?: string;
+};
+export type TagsInputConfig = {
+  tags?: string[];
+  showBtn?: boolean;
 };
 
 export class ObjectPropertyBag {
@@ -2071,15 +2075,15 @@ export class TagsInput extends InputBase {
   private _onTagRemoved: Subject<string> = new Subject<string>();
 
 
-  constructor(name: string, tags: string[], showBtn: boolean) {
+  constructor(name: string, config?: TagsInputConfig) {
     super(ui.stringInput(name, '').dart);
 
-    this._addTagIcon = showBtn ?
+    this._addTagIcon = (config?.showBtn ?? true) ?
       ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
       ui.iconFA('');
 
-    this._tags = tags;
-    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+    this._tags = config?.tags ?? [];
+    this._tagsDiv = ui.div(this._tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
 
     this._createRoot();
     this._initEventListeners();
