@@ -106,8 +106,10 @@ Press 'RUN' to perform multivariate analysis using partial least squares
 ([PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) regression.
 
 # Essence
-The method computes the latent factors that capture the maximum variance in the features 
-while maximizing correlation with the response variable.`;
+The method finds the latent factors that
+
+* capture the maximum variance in the features
+* maximize correlation with the response variable`;
 
 /** Results markdown for demo app */
 export const DEMO_RESULTS_MD = [
