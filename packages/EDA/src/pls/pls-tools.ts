@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY, DEMO_RESULTS} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -58,11 +58,6 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   };
 }
 
-/** Show demo results markdown in the context help */
-function showDemoResMD(idx: number) {
-  grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD.slice(0, idx + 1).join('\n\n')));
-}
-
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
   const result = await getPlsAnalysis(input);
@@ -81,7 +76,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     return;
 
   const view = grok.shell.tableView(input.table.name);
-  const viewers = [] as DG.Viewer[];
 
   // 0.1 Buffer table
   const buffer = DG.DataFrame.fromColumns([
@@ -99,7 +93,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const pred = result.prediction;
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
-  viewers.push(DG.Viewer.scatterPlot(input.table, {
+  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(input.table, {
     title: TITLE.MODEL,
     xColumnName: input.predict.name,
     yColumnName: pred.name,
@@ -111,17 +105,19 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // 2. Regression Coefficients Bar Chart
   result.regressionCoefficients.name = TITLE.REGR_COEFS;
-  viewers.push(DG.Viewer.barChart(buffer, {
+  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(buffer, {
     title: TITLE.REGR_COEFS,
     splitColumnName: TITLE.FEATURE,
     valueColumnName: result.regressionCoefficients.name,
     valueAggrType: DG.AGG.AVG,
     help: LINK.COEFFS,
+    showValueSelector: false,
+    showStackSelector: false,
   }));
 
   // 3. Loadings Scatter Plot
   result.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
-  viewers.push(DG.Viewer.scatterPlot(buffer, {
+  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(buffer, {
     title: TITLE.LOADINGS,
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
@@ -146,7 +142,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.2) create scatter
-  const scoresScatterPlt = DG.Viewer.scatterPlot(input.table, {
+  const scoresScatter = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
@@ -194,8 +190,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     });
   });
 
-  scoresScatterPlt.meta.formulaLines.addAll(lines);
-  viewers.push(scoresScatterPlt);
+  scoresScatter.meta.formulaLines.addAll(lines);
+  view.addViewer(scoresScatter);
 
   // 5. Explained Variances
 
@@ -231,28 +227,29 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
 
   // 5.3) bar chart
-  viewers.push(DG.Viewer.barChart(explVarsDF, {
+  const explVarsBar = view.addViewer(DG.Viewer.barChart(explVarsDF, {
     title: TITLE.EXPL_VAR,
     splitColumnName: TITLE.COMPONENTS,
     valueColumnName: input.predict.name,
     valueAggrType: DG.AGG.AVG,
     help: LINK.EXPL_VARS,
+    showCategorySelector: false,
+    showStackSelector: false,
   }));
 
-  // add viewers
-  if (analysisType !== PLS_ANALYSIS.DEMO)
-    viewers.forEach((v) => view.addViewer(v));
-  else {
-    // add viewer & update context help
-    viewers.forEach((v, i) => {
-      setTimeout(() => {
-        view.addViewer(v);
-        showDemoResMD(i);
-      }, DELAY * (i + 1));
+  // emphasize viewers in the demo case
+  if (analysisType === PLS_ANALYSIS.DEMO) {
+    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((viewer, idx) => {
+      return {
+        caption: ui.h2(DEMO_RESULTS[idx].caption),
+        text: DEMO_RESULTS[idx].text,
+        showNextTo: viewer.root,
+      }
     });
 
-    const len = DEMO_RESULTS_MD.length;
-    setTimeout(() => showDemoResMD(len), len * DELAY);
+    const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
+    wizard.helpUrl = LINK.MVA;
+    grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD));
   }
 } // performMVA
 

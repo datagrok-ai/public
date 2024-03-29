@@ -33,6 +33,7 @@ export enum TITLE {
   YSCORE = 'y.score.u',
   SCORES = 'Scores',
   EXPL_VAR = 'Explained Variance',
+  EXPLORE = 'Explore',
 }
 
 /** Tooltips */
@@ -111,20 +112,18 @@ The method finds the latent factors that
 * capture the maximum variance in the features
 * maximize correlation with the response variable`;
 
-/** Results markdown for demo app */
-export const DEMO_RESULTS_MD = [
-  `# ${TITLE.MODEL}
-  Closer to the line means better price prediction.`,
-  `# ${TITLE.REGR_COEFS}
-  The 'diesel' feature affects the price the most.`,
-  `# ${TITLE.LOADINGS}
-  The impact of each feature on the latent factors: higher loading means stronger influence.`,
-  `# ${TITLE.SCORES}
-  Similarities & dissimilarities: alfaromeo and mercedes are different.`,
-  `# ${TITLE.EXPL_VAR}
-  How well the latent components fit source data: closer to one means better fit.`,
-  `# Learn more
+/** Description of demo results: wizard components */
+export const DEMO_RESULTS = [
+  {caption: TITLE.MODEL, text: 'Closer to the line means better price prediction.'},
+  {caption: TITLE.SCORES, text: 'Similarities & dissimilarities: alfaromeo and mercedes are different.'},
+  {caption: TITLE.LOADINGS, text: 'The impact of each feature on the latent factors: higher loading means stronger influence.'},
+  {caption: TITLE.REGR_COEFS, text: 'Parameters of the obtained linear model: the "diesel" feature affects the price the most.'},
+  {caption: TITLE.EXPL_VAR, text: 'How well the latent components fit source data: closer to one means better fit.'},
+];
+
+/** Form results markdown for demo app */
+export const DEMO_RESULTS_MD = DEMO_RESULTS.map((item) => `# ${item.caption}\n\n${item.text}`)
+  .join('\n\n') + `\n\n# Learn more
   
   * [Multivariate analysis](${LINK.MVA}),
-  * [ANOVA](https://datagrok.ai/help/explore/anova)`,
-];
+  * [ANOVA](https://datagrok.ai/help/explore/anova)`;
