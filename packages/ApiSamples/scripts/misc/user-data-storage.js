@@ -6,7 +6,7 @@ let v = grok.shell.newView('demo: user data storage');
 
 let age = ui.input.int('Age', {value: 30});
 let sex = ui.input.choice('Sex', {items: ['Male', 'Female'], value: 'Male'});
-let music = ui.multiChoiceInput('Music genres', null, ['Classic', 'Rock', 'Pop', 'Jazz']);
+let music = ui.input.multiChoice('Music genres', {items: ['Classic', 'Rock', 'Pop', 'Jazz']});
 
 let inputs = [age, sex, music];
 v.append(ui.inputs(inputs));
