@@ -41,7 +41,7 @@ export type CodeConfig = {
 };
 export type TagsInputConfig = {
   tags?: string[];
-  showBtn?: boolean;
+  showButton?: boolean;
 };
 
 export class ObjectPropertyBag {
@@ -2078,7 +2078,7 @@ export class TagsInput extends InputBase {
   constructor(name: string, config?: TagsInputConfig) {
     super(ui.stringInput(name, '').dart);
 
-    this._addTagIcon = (config?.showBtn ?? true) ?
+    this._addTagIcon = (config?.showButton ?? true) ?
       ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
       ui.iconFA('');
 

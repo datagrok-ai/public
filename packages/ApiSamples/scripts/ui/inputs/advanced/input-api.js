@@ -30,7 +30,7 @@ const inputs = [
   // ui.input.dynamic('dynamic'), // doesn't work yet
   // ui.input.image('image'), // doesn't work yet
   // ui.input.jsInput('jsInput'), // doesn't work yet,
-  ui.input.tags('tags', {tags: ['Tag 1', 'Tag2', 'Tag3'], showBtn: true}),
+  ui.input.tags('tags', {tags: ['Tag 1', 'Tag2', 'Tag3'], showButton: true}),
   ui.input.code('code', {script: 'print(\'Hello world!\')', mode: 'python', placeholder: 'print(\'Hello world!\')'}),
   await ui.input.markdown('markdown'),
 ];
