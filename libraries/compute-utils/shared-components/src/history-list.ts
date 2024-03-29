@@ -208,9 +208,10 @@ export class HistoricalRunsList extends DG.Widget {
 
         const func = [...this.runs.values()][0].func;
 
+        const columnTypes = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
         if (this.visibleProps.length === 0) {
           this.visibleProps = func.inputs
-            .filter((input) => input.propertyType !== DG.TYPE.DATA_FRAME)
+            .filter((input) => columnTypes.includes(input.propertyType as any))
             .map((prop) => prop.name);
         }
 
