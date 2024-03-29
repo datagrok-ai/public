@@ -6,7 +6,7 @@ let search = ui.input.search('Search');
 let name = ui.input.string('Name', {value: 'Arthur Dent'});
 let age = ui.input.int('Age', {value: 30});
 let date = ui.input.date('Birthday', {value: dayjs('1970-5-10')});
-let alien = ui.boolInput('Alien', false);
+let alien = ui.input.bool('Alien', {value: false});
 let friends = ui.input.multiChoice('Friends', {items: ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast'],
   value: ['Ford', 'Fenchurch']});
 let bestFriend = ui.radioInput('Best friend', 'Ford', ['Ford', 'Fenchurch']);
