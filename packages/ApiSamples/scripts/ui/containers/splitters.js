@@ -6,7 +6,7 @@ let block = ui.splitV([
     ui.inputs([
       ui.input.string('Input'),
       ui.input.choice('Select', {items: ['item 1', 'item 2'], value: 'item 1'}),
-      ui.textInput('text', ' multi line /n text input'),
+      ui.input.textArea('text', {value: ' multi line /n text input'}),
     ]),
     DG.Viewer.grid(t).root
   ], {}, true),
