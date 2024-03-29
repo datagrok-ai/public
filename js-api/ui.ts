@@ -1287,7 +1287,7 @@ export class tools {
       
       if (label == null) return;
 
-      label.style.minWidth = String(Math.min(...labels))+'px';;
+      label.style.minWidth = String(Math.min(...labels))+'px';
       label.style.maxWidth = String(Math.max(...labels))+'px';
       label.style.width = '100%';
 
@@ -1856,7 +1856,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
       const rootHeight = b.getBoundingClientRect().height;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider') != true){
           let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
           $(b.childNodes[i]).css('height', String(height)+'px');
           //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
@@ -1923,7 +1923,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       const rootWidth = b.getBoundingClientRect().width;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider') != true){
           let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
@@ -2294,11 +2294,11 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
     }
   }, 100);
 
-  overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+  overlay.addEventListener('mousemove', (e: MouseEvent)=> {
     api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
   });
 
-  overlay.addEventListener('mouseleave', (e:MouseEvent) => {
+  overlay.addEventListener('mouseleave', (e: MouseEvent) => {
     setTimeout(() => {
       api.grok_Tooltip_Hide();
     }, 200)
