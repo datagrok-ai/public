@@ -10,7 +10,7 @@ let alien = ui.input.bool('Alien', {value: false});
 let friends = ui.input.multiChoice('Friends', {items: ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast'],
   value: ['Ford', 'Fenchurch']});
 let bestFriend = ui.radioInput('Best friend', 'Ford', ['Ford', 'Fenchurch']);
-let active = ui.switchInput('Active', true);
+let active = ui.input.toggle('Active', {value: true});
 let color = ui.colorInput('Favorite color', '#ff0000');
 let country = ui.typeAhead('Country', {source: {
   local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});

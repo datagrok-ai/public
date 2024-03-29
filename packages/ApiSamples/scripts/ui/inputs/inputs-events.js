@@ -9,7 +9,7 @@ let date = ui.input.date('Birthday', {value: dayjs('1970-5-10'), onValueChanged:
 let alien = ui.input.bool('Alien', {value: false, onValueChanged: v => msg(v)});
 let friends = ui.input.multiChoice('Friends', {items: ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast'],
   value: ['Ford', 'Fenchurch'], onValueChanged: v => msg(v)});
-let active = ui.switchInput('Active', true, (v)=>msg(v));
+let active = ui.input.toggle('Active', {value: true, onValueChanged: (v) => msg(v)});
 
 let inputs = [name, age, sex, date, alien, friends, active];
 let container = ui.div();
