@@ -13,12 +13,13 @@ import {PatternAppDataManager} from '../../model/external-data-manager';
 
 export class PatternLoadControlsManager {
   private subscriptions = new SubscriptionManager();
+  private authorSelectedByUser = false;
 
   constructor(
     private eventBus: EventBus,
     private dataManager: PatternAppDataManager
   ) {
-    this.eventBus.patternLoadRequested$.subscribe((value: string) => this.handlePatternChoice(value));
+    this.eventBus.patternLoadRequested$.subscribe((patternHash: string) => this.handlePatternChoice(patternHash));
 
     const defaultUser = this.dataManager.getCurrentUserName();
     this.eventBus.selectUser(defaultUser);
@@ -29,12 +30,14 @@ export class PatternLoadControlsManager {
 
   private selectedPattern: string;
 
-  private async handlePatternChoice(patternName: string): Promise<void> {
-    const patternConfiguration = await this.dataManager.getPatternConfig(patternName, this.isCurrentUserSelected());
+  private async handlePatternChoice(patternHash: string): Promise<void> {
+    const patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
     this.eventBus.setPatternConfig(patternConfiguration);
+
+    const patternName = this.dataManager.getPatternNameByHash(patternHash);
     this.selectedPattern = patternName;
 
-    this.eventBus.updateControlsUponPatternLoaded();
+    this.eventBus.updateControlsUponPatternLoaded(patternHash);
   }
 
   private isCurrentUserSelected(): boolean {
@@ -94,7 +97,10 @@ export class PatternLoadControlsManager {
       'Author',
       this.eventBus.getSelectedUser(),
       possibleValues,
-      (userName: string) => this.eventBus.selectUser(userName)
+      (userName: string) => {
+        this.authorSelectedByUser = true;
+        this.eventBus.selectUser(userName);
+      }
     );
     this.setUserChoiceInputStyle(userChoiceInput);
     userChoiceInput.setTooltip('Select pattern author');
@@ -115,10 +121,16 @@ export class PatternLoadControlsManager {
 
   private createPatternChoiceInput(): StringInput {
     const patternList = this.isCurrentUserSelected() ?
-      [' '].concat(this.dataManager.getCurrentUserPatternNames()) :
+      // [' '].concat(this.dataManager.getCurrentUserPatternNames()) :
+      this.dataManager.getCurrentUserPatternNames() :
       this.dataManager.getOtherUsersPatternNames();
     this.selectedPattern = patternList[0];
-    this.eventBus.requestPatternLoad(this.selectedPattern);
+
+    if (this.authorSelectedByUser) {
+      const patternHash = this.dataManager.getPatternHash(this.selectedPattern, this.isCurrentUserSelected());
+      this.eventBus.requestPatternLoad(patternHash);
+      this.authorSelectedByUser = false;
+    }
 
     const choiceInput = ui.choiceInput('Pattern', this.selectedPattern, patternList);
     choiceInput.setTooltip('Select pattern to load');
@@ -129,7 +141,10 @@ export class PatternLoadControlsManager {
     });
 
     const subscription = choiceInput.onInput(
-      () => this.eventBus.requestPatternLoad(choiceInput.value!)
+      () => {
+        const patternHash = this.dataManager.getPatternHash(choiceInput.value!, this.isCurrentUserSelected());
+        this.eventBus.requestPatternLoad(patternHash);
+      }
     );
     this.subscriptions.add(subscription);
 

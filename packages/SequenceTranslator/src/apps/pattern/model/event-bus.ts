@@ -29,7 +29,7 @@ export class EventBus {
   private _patternListUpdated$ = new rxjs.Subject<string>();
 
   private _patternLoadRequested$ = new rxjs.Subject<string>();
-  private _patternLoaded$ = new rxjs.Subject<void>();
+  private _patternLoaded$ = new rxjs.Subject<string>();
   private _uniqueNucleotides$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
@@ -193,8 +193,8 @@ export class EventBus {
     return this._patternLoadRequested$.asObservable();
   }
 
-  requestPatternLoad(patternName: string) {
-    this._patternLoadRequested$.next(patternName);
+  requestPatternLoad(patternHash: string) {
+    this._patternLoadRequested$.next(patternHash);
   }
 
   get patternListUpdated$(): rxjs.Observable<string> {
@@ -329,11 +329,11 @@ export class EventBus {
     ) as rxjs.Observable<void>;
   }
 
-  updateControlsUponPatternLoaded(): void {
-    this._patternLoaded$.next();
+  updateControlsUponPatternLoaded(patternHash: string) {
+    this._patternLoaded$.next(patternHash);
   }
 
-  get patternLoaded$(): rxjs.Observable<void> {
+  get patternLoaded$(): rxjs.Observable<string> {
     return this._patternLoaded$.asObservable();
   }
 

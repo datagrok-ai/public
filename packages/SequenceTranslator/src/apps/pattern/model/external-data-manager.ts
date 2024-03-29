@@ -47,12 +47,16 @@ export class PatternAppDataManager {
     }
   }
 
-  getPatternConfig(patternName: string, isCurrentUserPattern: boolean): Promise<PatternConfiguration> {
-    return this.patternConfigManager.getPatternConfig(patternName, isCurrentUserPattern);
+  getPatternHash(patternName: string, isCurrentUserPattern: boolean): string {
+    return this.patternConfigManager.getPatternHash(patternName, isCurrentUserPattern);
   }
 
-  async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
-    return await this.patternConfigManager.getPatternConfigByHash(hash);
+  async getPatternConfig(hash: string): Promise<PatternConfiguration> {
+    return await this.patternConfigManager.getPatternConfig(hash);
+  }
+
+  getPatternNameByHash(hash: string): string {
+    return this.patternConfigManager.getPatternNameByHash(hash);
   }
 }
 
@@ -170,20 +174,22 @@ class PatternConfigManager {
       throw new PatternExistsError(`Pattern with hash ${hash} already exists`);
   }
 
-  async getPatternConfig(patternName: string, isCurrentUserPattern: boolean): Promise<PatternConfiguration> {
+  getPatternHash(patternName: string, isCurrentUserPattern: boolean): string {
     const patternHash = isCurrentUserPattern ?
       this.currentUserPatternNameToHash.get(patternName) :
       this.otherUsersPatternNameToHash.get(patternName);
 
-    if (patternHash === undefined)
+    console.warn('pattern data', patternName, isCurrentUserPattern, patternHash);
+
+    if (patternHash === undefined) {
+      console.warn('pattern data', patternName, isCurrentUserPattern, patternHash);
       throw new Error(`Pattern with name ${patternName} not found`);
+    }
 
-    console.log(`loaded pattern with hash:`, patternHash);
-
-    return await this.getPatternConfigByHash(patternHash);
+    return patternHash;
   }
 
-  async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
+  async getPatternConfig(hash: string): Promise<PatternConfiguration> {
     const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
     const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
     return config;
@@ -206,7 +212,7 @@ class PatternConfigManager {
     return Array.from(this.otherUsersPatternNameToHash.values()).includes(hash);
   }
 
-  private getPatternNameByHash(hash: string): string {
+  getPatternNameByHash(hash: string): string {
     const maps = [this.currentUserPatternNameToHash, this.otherUsersPatternNameToHash];
     for (const map of maps) {
       for (const [patternName, patternHash] of map.entries()) {
@@ -226,8 +232,10 @@ class PatternConfigManager {
     this.eventBus.updatePatternList();
 
     const patternToBeLoaded = this.getCurrentUserPatternNames()[0];
-    if (patternToBeLoaded)
-      this.eventBus.requestPatternLoad(patternToBeLoaded);
+    const hashOfPatternToBeLoaded = this.currentUserPatternNameToHash.get(patternToBeLoaded);
+
+    if (hashOfPatternToBeLoaded && patternToBeLoaded)
+      this.eventBus.requestPatternLoad(hashOfPatternToBeLoaded);
 
     // todo: load default pattern in case there are no patterns left
   }

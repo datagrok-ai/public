@@ -6,6 +6,8 @@ export class Router {
 
   constructor(private eventBus: EventBus, private patternAppDataManager: PatternAppDataManager) {
     this.searchParams = new URLSearchParams(window.location.search);
+
+    this.eventBus.patternLoaded$.subscribe((hash) => this.setURL(hash));
   }
 
   async navigate(): Promise<void> {
@@ -16,15 +18,18 @@ export class Router {
     if (!patternHash)
       return;
 
-    console.log(`pattern hash:`, patternHash);
     try {
-      const patternConfig = await this.patternAppDataManager.getPatternConfigByHash(patternHash);
+      const patternConfig = await this.patternAppDataManager.getPatternConfig(patternHash);
       this.eventBus.setPatternConfig(patternConfig);
-      console.log(`pattern config:`, patternConfig);
     } catch (e) {
       this.searchParams.delete('pattern');
       window.history.pushState({}, '', window.location.pathname);
       console.warn('Error while getting pattern config by hash', e);
     }
+  }
+
+  private setURL(patternHash: string): void {
+    this.searchParams.set('pattern', patternHash);
+    window.history.pushState({}, '', `${window.location.pathname}?${this.searchParams}`);
   }
 }

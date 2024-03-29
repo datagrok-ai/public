@@ -144,7 +144,7 @@ export class PatternEditControlsManager {
   private createPatternCommentInput(): StringInput {
     const patternCommentInput = ui.textInput(
       'Comment',
-      ''
+      this.eventBus.getComment()
     );
 
     $(patternCommentInput.root).addClass('st-pattern-text-input');
