@@ -2,7 +2,7 @@
 
 let v = grok.shell.newView('demo: inputs');
 
-let search = ui.searchInput('Search', '');
+let search = ui.input.search('Search');
 let name = ui.input.string('Name', {value: 'Arthur Dent'});
 let age = ui.input.int('Age', {value: 30});
 let date = ui.dateInput('Birthday', dayjs('1970-5-10'));
