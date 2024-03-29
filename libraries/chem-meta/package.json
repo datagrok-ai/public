@@ -5,7 +5,7 @@
   },
   "friendlyName": "Datagrok chem-meta library",
   "version": "1.2.3",
-  "description": "",
+  "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
     "wu": "latest"
   },
