@@ -734,6 +734,7 @@ export namespace input {
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
+    /*
     if (options === null || options === undefined)
       return;
     const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
@@ -753,6 +754,7 @@ export namespace input {
       if (baseOptions[key] !== undefined && optionsMap[key] !== undefined)
         optionsMap[key](input, inputType, baseOptions[key]);
     }
+    */
   }
 
   // TODO: add label here

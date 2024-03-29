@@ -1406,6 +1406,10 @@ export interface IDartApi {
   grok_Test_GetTestDataGeneratorByType(type: String): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
+  grok_BrowseView_Get_LocalTree(view: any): any;
+  grok_BrowseView_Get_MainTree(view: any): any;
+  grok_BrowseView_Get_Preview(view: any): any;
+  grok_BrowseView_Set_Preview(view: any, preview: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from './app/hit-triage-app';
 import {HitDesignApp} from './app/hit-design-app';
 import {GasteigerPngRenderer} from './pngRenderers';
+import {tree} from "datagrok-api/ui";
+import {BrowseView} from "datagrok-api/dg";
 
 export const _package = new DG.Package();
 
@@ -15,6 +17,14 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
   const c = grok.functions.getCurrentCall();
   return new HitTriageApp(c).multiView;
 }
+
+//input: dynamic treeNode
+//input: view browseView
+export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  treeNode.item('Foo').onSelected.subscribe((_) => browseView.preview = DG.View.fromRoot(ui.divText('foo')));
+  treeNode.item('Bar').onSelected.subscribe((_) => browseView.preview = DG.View.fromRoot(ui.divText('bar')));
+}
+
 
 //tags: app
 //name: Hit Design
