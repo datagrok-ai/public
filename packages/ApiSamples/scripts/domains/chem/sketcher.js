@@ -1,7 +1,7 @@
 // Sketching a molecule
 
 let molfileInput = ui.textInput();
-let smilesInput = ui.stringInput();
+let smilesInput = ui.input.string('');
 
 function onChanged(smiles, molfile) {
   smilesInput.value = smiles;

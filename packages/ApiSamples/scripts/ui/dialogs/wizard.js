@@ -1,6 +1,6 @@
 // Creating custom dialogs, and add the help url
 
-let name = ui.stringInput('Title', '');
+let name = ui.input.string('Title');
 let type = ui.input.choice('Type', {items: ['Bio', 'Chem'], value: 'Bio'});
 
 new DG.Wizard({title: 'Onboard a model'})
