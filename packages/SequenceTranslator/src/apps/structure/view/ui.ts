@@ -1,19 +1,20 @@
 /* Do not change these import lines to match external modules in webpack configuration */
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
 import * as rxjs from 'rxjs';
 import './style.css';
-import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
-import {getLinkedMolfile, saveSdf} from '../model/oligo-structure';
 import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
 import {MoleculeImage} from '../../common/view/components/molecule-img';
-import {StrandData} from '../model/oligo-structure';
+import {APP_NAME} from '../../common/view/const';
+import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
+import {getLinkedMolfile, saveSdf, StrandData} from '../model/oligo-structure';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',
@@ -21,7 +22,7 @@ const enum DIRECTION {
 };
 const STRANDS = ['ss', 'as', 'as2'] as const;
 
-export class StructureAppLayout {
+class StructureAppLayout {
   constructor() {
     this.onInput = new rxjs.Subject<string>();
     this.onInvalidInput = new rxjs.Subject<string>();
@@ -106,7 +107,8 @@ export class StructureAppLayout {
     STRANDS.forEach((strand, idx) => {
       directionChoiceInput[strand].onChanged(() => {
         let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
-        // warning: the next line is necessary until the legacy notion of direction used in the molfile generation gets fixed
+        // warning: the next line is necessary
+        // until the legacy notion of direction used in the molfile generation gets fixed
         if (idx > 0) value = !value;
         this.directionInversion[strand] = value;
         this.onInput.next();
@@ -163,7 +165,7 @@ export class StructureAppLayout {
 
   private getStrandData() {
     return Object.fromEntries(
-      STRANDS.map((strand, idx) => {
+      STRANDS.map((strand) => {
         const invert = this.directionInversion[strand];
         return [strand, {
           strand: this.inputBase[strand].value.replace(/\s*/g, ''),
@@ -199,5 +201,17 @@ export class StructureAppLayout {
     await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
     // should the canvas be returned from the above function?
     $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
+  }
+}
+
+export class OligoStructureUI extends IsolatedAppUIBase {
+  constructor() {
+    super(APP_NAME.STRUCTURE);
+    this.layout = new StructureAppLayout();
+  }
+  private readonly layout: StructureAppLayout;
+
+  protected getContent(): Promise<HTMLDivElement> {
+    return this.layout.getHtmlDivElement();
   }
 }

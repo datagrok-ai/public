@@ -4,7 +4,8 @@ import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
 import {FormatDetector} from './apps/common/model/parsing-validation/format-detector';
 import {SequenceValidator} from './apps/common/model/parsing-validation/sequence-validator';
 import {APP_NAME} from './apps/common/view/const';
-import {AppUIFactory, CombinedAppUI} from './apps/common/view/ui';
+import {AppUIFactory} from './apps/common/view/ui';
+import {CombinedAppUI} from './apps/common/view/combined-app-ui';
 import {linkStrandsV3000} from './apps/structure/model/mol-transformations';
 import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-molfile';
 import {FormatConverter} from './apps/translator/model/format-converter';
@@ -12,13 +13,6 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
-
-async function buildLayout(appName: string): Promise<void> {
-  await initSequenceTranslatorLibData();
-  const appUI = AppUIFactory.createAppUIInstance(appName);
-  await appUI.initializeAppLayout();
-}
-
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
@@ -128,4 +122,10 @@ export async function translateOligonucleotideSequence(
 ): Promise<string> {
   await initSequenceTranslatorLibData();
   return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
+}
+
+async function buildLayout(appName: string): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const appUI = AppUIFactory.createSpecificAppUI(appName);
+  await appUI.initializeAppLayout();
 }

@@ -1,13 +1,15 @@
 import * as ui from 'datagrok-api/ui';
 
+import {APP_NAME} from '../../common/view/const';
+import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {PatternAppLeftSection} from './components/left-section';
 import {PatternAppRightSection} from './components/right-section';
 
-export class PatternAppLayout {
-  static async generateHTML(): Promise<HTMLDivElement> {
+class PatternApp {
+  static async getContent(): Promise<HTMLDivElement> {
     const defaultsProvider = new PatternDefaultsProvider();
     const eventBus = new EventBus(defaultsProvider);
     const dataManager = await PatternAppDataManager.getInstance(eventBus);
@@ -25,3 +27,14 @@ export class PatternAppLayout {
     return layout;
   }
 }
+
+export class OligoPatternUI extends IsolatedAppUIBase {
+  constructor() {
+    super(APP_NAME.PATTERN);
+  }
+
+  protected getContent(): Promise<HTMLDivElement> {
+    return PatternApp.getContent();
+  }
+}
+

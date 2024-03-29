@@ -1,35 +1,36 @@
 /* Do not change these import lines to match external modules in webpack configuration */
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import * as rxjs from 'rxjs';
-import './style.css';
 
-import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
-import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
-import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
-import {getTranslatedSequences, convert, getSupportedTargetFormats} from '../model/conversion-utils';
-import {MoleculeImage} from '../../common/view/components/molecule-img';
+import {DEFAULT_FORMATS} from '../../common/model/const';
+import {CODES_TO_HELM_DICT} from '../../common/model/data-loader/json-loader';
 import {download} from '../../common/model/helpers';
-import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
-import {DEFAULT_AXOLABS_INPUT} from '../../common/view/const';
 import {FormatDetector} from '../../common/model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../common/model/parsing-validation/sequence-validator';
+import {ColoredTextInput} from '../../common/view/components/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from '../../common/view/components/colored-input/input-painters';
+import {MoleculeImage} from '../../common/view/components/molecule-img';
+import {APP_NAME, DEFAULT_AXOLABS_INPUT} from '../../common/view/const';
+import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
+import {MonomerLibViewer} from '../../common/view/monomer-lib-viewer';
+import {SequenceToMolfileConverter} from '../../structure/model/sequence-to-molfile';
+import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../model/conversion-utils';
 import {FormatConverter} from '../model/format-converter';
-import {CODES_TO_HELM_DICT} from '../../common/model/data-loader/json-loader';
-import {DEFAULT_FORMATS} from '../../common/model/const';
-import {NUCLEOTIDES_FORMAT} from './const';
+import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
+import './style.css';
 
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
 }
 const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 
-export class TranslatorAppLayout {
+class TranslatorAppLayout {
   private eventBus: EventBus;
   private inputFormats = Object.keys(CODES_TO_HELM_DICT).concat(DEFAULT_FORMATS.HELM);
 
@@ -94,8 +95,19 @@ export class TranslatorAppLayout {
 
     const tableControlsManager = new TableControlsManager(this.eventBus);
     const tableControls = tableControlsManager.createUIComponents();
-    const inputFormats = ui.choiceInput('Input format', DEFAULT_FORMATS.AXOLABS, this.inputFormats, (value: string) => this.eventBus.selectInputFormat(value));
-    const outputFormats = ui.choiceInput('Output format', NUCLEOTIDES_FORMAT, getSupportedTargetFormats(), (value: string) => this.eventBus.selectOutputFormat(value));
+    const inputFormats = ui.choiceInput(
+      'Input format',
+      DEFAULT_FORMATS.AXOLABS,
+      this.inputFormats,
+      (value: string) => this.eventBus.selectInputFormat(value)
+    );
+
+    const outputFormats = ui.choiceInput(
+      'Output format',
+      NUCLEOTIDES_FORMAT,
+      getSupportedTargetFormats(),
+      (value: string) => this.eventBus.selectOutputFormat(value)
+    );
     const convertBulkButton = this.createConvertBulkButton();
 
     const tableControlsContainer = ui.div([
@@ -154,7 +166,8 @@ export class TranslatorAppLayout {
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.setTag(DG.TAGS.UNITS, units);
       const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? UnitsHandler.setUnitsToFastaColumn : UnitsHandler.setUnitsToHelmColumn;
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? UnitsHandler.setUnitsToFastaColumn :
+        UnitsHandler.setUnitsToHelmColumn;
       setUnits(unitsHandler);
     }
 
@@ -228,7 +241,8 @@ export class TranslatorAppLayout {
   private updateTable(): void {
     this.outputTableDiv.innerHTML = '';
     // todo: does not detect correctly (U-A)(U-A)
-    const indexOfInvalidChar = (!this.format) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
+    const indexOfInvalidChar = (!this.format) ? 0 :
+      (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
     const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format!);
     const tableRows = [];
 
@@ -514,3 +528,23 @@ export class EventBus {
     return this._outputFormatSelection$.getValue();
   }
 }
+
+export class OligoTranslatorUI extends IsolatedAppUIBase {
+  private readonly topPanel: HTMLElement[];
+  private readonly layout = new TranslatorAppLayout();
+
+  constructor() {
+    super(APP_NAME.TRANSLATOR);
+
+    const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
+    this.topPanel = [
+      viewMonomerLibIcon,
+    ];
+    this.view.setRibbonPanels([this.topPanel]);
+  }
+
+  protected getContent(): Promise<HTMLDivElement> {
+    return this.layout.getHtmlElement();
+  };
+}
+

@@ -1,10 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {APP_PATH, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME} from './const';
-import {AxolabsStyle, FormatToHELMDict, CodeToSymbol} from './types';
+import {
+  APP_PATH, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME,
+  CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME
+} from './const';
+import {AxolabsStyle, CodeToSymbol, FormatToHELMDict} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 
@@ -17,7 +18,9 @@ export async function loadJsonData(): Promise<void> {
   if (isAllJsonDataLoaded())
     return;
 
-  const jsonFileNames = [AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME];
+  const jsonFileNames = [
+    AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME
+  ];
 
   [
     AXOLABS_STYLE_MAP,
@@ -35,7 +38,6 @@ async function loadAndParseJson(filePath: string): Promise<any> {
     return JSON.parse(content);
   } catch (err) {
     console.error(`Error loading json from ${filePath}:`, err);
-    // throw err;
   }
 }
 
