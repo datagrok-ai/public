@@ -9,9 +9,9 @@ let date = ui.input.date('Birthday', {value: dayjs('1970-5-10')});
 let alien = ui.input.bool('Alien', {value: false});
 let friends = ui.input.multiChoice('Friends', {items: ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast'],
   value: ['Ford', 'Fenchurch']});
-let bestFriend = ui.radioInput('Best friend', 'Ford', ['Ford', 'Fenchurch']);
+let bestFriend = ui.input.radio('Best friend', {items: ['Ford', 'Fenchurch'], value: 'Ford'});
 let active = ui.input.toggle('Active', {value: true});
-let color = ui.colorInput('Favorite color', '#ff0000');
+let color = ui.input.color('Favorite color', {value: '#ff0000'});
 let country = ui.typeAhead('Country', {source: {
   local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});
 let data = ui.input.table('Data');
