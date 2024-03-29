@@ -712,7 +712,7 @@ export namespace input {
     property: (input, inputType, x) => input.property = x,
     tooltipText: (input, inputType, x) => input.setTooltip(x),
     onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
+    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input.value)),
     clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
     escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
     size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
@@ -721,6 +721,7 @@ export namespace input {
     // max:
     // step:
     items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
       inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
     // table: (input, x) => input.table = x,

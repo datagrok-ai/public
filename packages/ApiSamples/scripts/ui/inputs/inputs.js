@@ -14,7 +14,7 @@ let active = ui.input.toggle('Active', {value: true});
 let color = ui.colorInput('Favorite color', '#ff0000');
 let country = ui.typeAhead('Country', {source: {
   local: ['USA', 'Ukraine', 'Antigua', 'United Kingdom', 'United Arab Emirates']}});
-let data = ui.tableInput('Data', null);
+let data = ui.input.table('Data');
 let tags = ui.input.tags('Skills', {tags: ['HTML', 'CSS', 'JS'], showBtn: true});
 let memo = ui.textInput('Memo', '');
 
