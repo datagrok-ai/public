@@ -15,19 +15,15 @@ export class ExternalPluginUI extends IsolatedAppUIBase {
   }
 }
 
-export class AppUIFactory {
-  private constructor() {}
-
-  static createSpecificAppUI(appName: string): IsolatedAppUIBase {
-    switch (appName) {
-    case APP_NAME.TRANSLATOR:
-      return new OligoTranslatorUI();
-    case APP_NAME.PATTERN:
-      return new OligoPatternUI();
-    case APP_NAME.STRUCTURE:
-      return new OligoStructureUI();
-    default:
-      throw new Error(`Unknown app name: ${appName}`);
-    }
+export function getSpecifiedAppUI(appName: string): IsolatedAppUIBase {
+  switch (appName) {
+  case APP_NAME.TRANSLATOR:
+    return new OligoTranslatorUI();
+  case APP_NAME.PATTERN:
+    return new OligoPatternUI();
+  case APP_NAME.STRUCTURE:
+    return new OligoStructureUI();
+  default:
+    throw new Error(`Unknown app name: ${appName}`);
   }
 }

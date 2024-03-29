@@ -4,7 +4,7 @@ import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
 import {FormatDetector} from './apps/common/model/parsing-validation/format-detector';
 import {SequenceValidator} from './apps/common/model/parsing-validation/sequence-validator';
 import {APP_NAME} from './apps/common/view/const';
-import {AppUIFactory} from './apps/common/view/ui';
+import {getSpecifiedAppUI} from './apps/common/view/utils';
 import {CombinedAppUI} from './apps/common/view/combined-app-ui';
 import {linkStrandsV3000} from './apps/structure/model/mol-transformations';
 import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-molfile';
@@ -126,6 +126,6 @@ export async function translateOligonucleotideSequence(
 
 async function buildLayout(appName: string): Promise<void> {
   await initSequenceTranslatorLibData();
-  const appUI = AppUIFactory.createSpecificAppUI(appName);
+  const appUI = getSpecifiedAppUI(appName);
   await appUI.initializeAppLayout();
 }

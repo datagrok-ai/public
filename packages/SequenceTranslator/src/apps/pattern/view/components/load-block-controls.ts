@@ -117,7 +117,7 @@ export class PatternLoadControlsManager {
     const patternList = this.isCurrentUserSelected() ?
       [' '].concat(this.dataManager.getCurrentUserPatternNames()) :
       this.dataManager.getOtherUsersPatternNames();
-    this.selectedPattern = patternList[0] || '<default>';
+    this.selectedPattern = patternList[0];
     this.eventBus.requestPatternLoad(this.selectedPattern);
 
     const choiceInput = ui.choiceInput('Pattern', this.selectedPattern, patternList);

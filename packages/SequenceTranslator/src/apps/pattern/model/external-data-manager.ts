@@ -1,7 +1,5 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
 import {
   STORAGE_NAME, GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, OTHER_USERS
@@ -51,6 +49,10 @@ export class PatternAppDataManager {
 
   getPatternConfig(patternName: string, isCurrentUserPattern: boolean): Promise<PatternConfiguration> {
     return this.patternConfigManager.getPatternConfig(patternName, isCurrentUserPattern);
+  }
+
+  async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
+    return await this.patternConfigManager.getPatternConfigByHash(hash);
   }
 }
 
@@ -176,10 +178,12 @@ class PatternConfigManager {
     if (patternHash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
 
+    console.log(`loaded pattern with hash:`, patternHash);
+
     return await this.getPatternConfigByHash(patternHash);
   }
 
-  private async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
+  async getPatternConfigByHash(hash: string): Promise<PatternConfiguration> {
     const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
     const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
     return config;

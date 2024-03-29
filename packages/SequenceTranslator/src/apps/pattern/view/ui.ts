@@ -2,17 +2,19 @@ import * as ui from 'datagrok-api/ui';
 
 import {APP_NAME} from '../../common/view/const';
 import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
+import {Router} from '../model/router';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 import {PatternAppLeftSection} from './components/left-section';
 import {PatternAppRightSection} from './components/right-section';
-
 class PatternApp {
   static async getContent(): Promise<HTMLDivElement> {
     const defaultsProvider = new PatternDefaultsProvider();
     const eventBus = new EventBus(defaultsProvider);
     const dataManager = await PatternAppDataManager.getInstance(eventBus);
+
+    await new Router(eventBus, dataManager).navigate();
 
     const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();
     const rightSection = new PatternAppRightSection(eventBus, dataManager).getLayout();
