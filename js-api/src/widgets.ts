@@ -1050,6 +1050,7 @@ export class InputBase<T = any> {
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
+  set property(p: Property) { api.grok_InputBase_Set_Property(this.dart, toDart(p)); }
 
   /** Value format. */
   get format(): string { return api.grok_InputBase_Get_Format(this.dart); }

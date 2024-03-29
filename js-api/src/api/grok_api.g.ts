@@ -1018,6 +1018,7 @@ export interface IDartApi {
   grok_TagElement_Get_Tag(te: any): any;
   grok_TagElement_Set_Tag(te: any, tag: any): any;
   grok_InputBase_Get_Property(input: any): any;
+  grok_InputBase_Set_Property(input: any, p: any): any;
   grok_InputBase_Get_Root(input: any): any;
   grok_InputBase_Get_Caption(input: any): any;
   grok_InputBase_Set_Caption(input: any, s: String): any;
@@ -1074,6 +1075,14 @@ export interface IDartApi {
   grok_DateInput_Set_Value(input: any, x: any): any;
   grok_ChoiceInput_Get_Items(input: any): any;
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
+  grok_RadioInput_Set_Items(input: any, x: any): any;
+  grok_MultiChoiceInput_Set_Items(input: any, x: any): any;
+  grok_StringInput_AddClearIcon(input: any, x: any): any;
+  grok_StringInput_AddEscClears(input: any, x: any): any;
+  grok_StringInput_AddIcon(input: any, x: any): any;
+  grok_TextInput_SetSize(input: any, width: any, height: any): any;
+  grok_ColumnInput_ChangeTable(input: any, table: any, predicate: any): any;
+  grok_ColumnsInput_ChangeAvailableAndCheckedColumns(input: any, availableColumns: any, checkedColumns: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
   grok_TreeViewNode_Tree(): any;
