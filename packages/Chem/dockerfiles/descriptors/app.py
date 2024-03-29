@@ -3,6 +3,7 @@ from chem import *
 import logging
 import sys
 import json
+import gzip
 
 from utils import parallelize
 
@@ -23,7 +24,10 @@ cpu_count = 4
 
 @bp.route('/chem/descriptors/tree', methods=['GET'])
 def chem_descriptors_tree():
-    return _make_response(json.dumps(get_descriptors_tree()), headers=headers_app_json)
+    content = json.dumps(get_descriptors_tree())
+    headers = dict(headers_app_json)
+    headers['Cache-Control'] = 'max-age=31536000'
+    return _make_response(content, headers=headers)
 
 
 @bp.route('/chem/descriptors', methods=['POST'])
@@ -40,35 +44,35 @@ def chem_descriptors():
 @bp.route('/chem/molecules_to_canonical', methods=['POST'])
 def chem_molecules_to_canonical():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_canonical, [molecules], [molecules], available_cores)
+    result = parallelize(molecules_to_canonical, [molecules], [molecules], cpu_count)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/molecules_to_inchi', methods=['POST'])
 def chem_molecules_to_inchi():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_inchi, [molecules], [molecules], available_cores)
+    result = parallelize(molecules_to_inchi, [molecules], [molecules], cpu_count)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/molecules_to_inchi_key', methods=['POST'])
 def chem_molecules_to_inchi_key():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_inchi_key, [molecules], [molecules], available_cores)
+    result = parallelize(molecules_to_inchi_key, [molecules], [molecules], cpu_count)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/inchi_to_inchi_key', methods=['POST'])
 def chem_inchi_to_inchi_key():
     inchi = json.loads(request.data)
-    result = parallelize(inchi_to_inchi_key, [inchi], [inchi], available_cores)
+    result = parallelize(inchi_to_inchi_key, [inchi], [inchi], cpu_count)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/inchi_to_smiles', methods=['POST'])
 def chem_inchi_to_smiles():
     inchi = json.loads(request.data)
-    result = parallelize(inchi_to_smiles, [inchi], [inchi], available_cores)
+    result = parallelize(inchi_to_smiles, [inchi], [inchi], cpu_count)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
@@ -84,7 +88,24 @@ def _make_response(data, headers=None):
     return response
 
 
+def make_compressed_response(response):
+    accept_encoding = request.headers.get('Accept-Encoding', '').lower()
+    if (response.status_code < 200 or response.status_code >= 300 or response.direct_passthrough or
+            'gzip' not in accept_encoding or 'Content-Encoding' in response.headers):
+        return response
+    data = response.get_data()
+    length = len(data)
+    compress_level = 6 if 1_000_000 < length < 10_000_000 else 1 if length < 1000000 else 9
+    content = gzip.compress(data, compresslevel=compress_level)
+    response.set_data(content)
+    response.headers['Content-Length'] = len(content)
+    response.headers['Content-Encoding'] = 'gzip'
+    return response
+
+
 app.register_blueprint(bp)
+app.after_request(make_compressed_response)
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, threaded=True)
