@@ -3,8 +3,8 @@ let v = grok.shell.newView('demo: inputs-events');
 const msg = (v) => grok.shell.info(v);
 
 let name = ui.stringInput('Name', 'Arthur Dent', v => msg(v));
-let age = ui.intInput('Age', 30, v => msg(v));
-let sex = ui.choiceInput('Sex', 'Male', ['Male', 'Female'], v => msg(v));
+let age = ui.input.int('Age', {value: 30, onValueChanged: v => msg(v)});
+let sex = ui.input.choice('Sex', {items: ['Male', 'Female'], value: 'Male', onValueChanged: v => msg(v)});
 let date = ui.dateInput('Birthday', dayjs('1970-5-10'), v => msg(v));
 let alien = ui.boolInput('Alien', false, v => msg(v));
 let friends = ui.multiChoiceInput('Friends',
