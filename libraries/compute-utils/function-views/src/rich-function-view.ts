@@ -165,13 +165,6 @@ export class RichFunctionView extends FunctionView {
     ).subscribe(() => this.doRun());
     this.subs.push(runSub);
 
-    // always run validations on start
-    const controller = new AbortController();
-    const results = await this.runValidation({isRevalidation: false}, controller.signal);
-    this.setValidationResults(results);
-    this.runRevalidations({isRevalidation: false}, results);
-    this.validationUpdates.next(null);
-
     const lastInputs = (!this.options.isTabbed) ? (await this.loadLastInputs()): null;
 
     if (lastInputs) {
@@ -179,15 +172,28 @@ export class RichFunctionView extends FunctionView {
         ui.divText('Do you want to load last inputs?'),
         ui.divH([
           ui.bigButton('Load', () => {
-            for (const [key, value] of Object.entries(lastInputs))
-              this.funcCall.inputs[key] = value;
+            for (const [key, value] of Object.entries(lastInputs)) {
+              const input = this.getInput(key);
+              input.notify = false;
+              input.value = value;
+              input.notify = true;
+            }
+
+            grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
           }),
         ]),
       ]));
-    }
+    } else {
+      // always run validations on start
+      const controller = new AbortController();
+      const results = await this.runValidation({isRevalidation: false}, controller.signal);
+      this.setValidationResults(results);
+      this.runRevalidations({isRevalidation: false}, results);
+      this.validationUpdates.next(null);
 
-    if (!lastInputs && this.runningOnStart && this.isRunnable())
-      await this.doRun();
+      if (this.runningOnStart && this.isRunnable())
+        await this.doRun();
+    }
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
