@@ -395,9 +395,9 @@ export async function textToSmiles(molfile: string): Promise<string | null> {
   if (isInchiKey(molfile))
     return mapIdentifier(INCHI_KEY);
 
-  for (let source of Object.keys(UniChemSource.idNames)) {
-    if (molfile.startsWith(UniChemSource.idNames[source]))
-      return await mapIdentifier(source);
+  for (const [_, value] of Object.entries(UniChemSource.idNames)) {
+    if (molfile.startsWith(value))
+      return await mapIdentifier(value);
   }
   try {
     return await grok.functions.eval(`chembl:nameToSmiles("${molfile}")`);

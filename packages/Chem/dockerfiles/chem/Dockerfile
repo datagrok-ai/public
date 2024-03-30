@@ -23,6 +23,3 @@ ENV PATH ${VIRTUAL_ENV}/bin:$PATH
 COPY . .
 EXPOSE 5000
 CMD ["python", "app.py"]
-
-
-# make changes dasf

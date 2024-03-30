@@ -95,15 +95,31 @@ def make_compressed_response(response):
         return response
     data = response.get_data()
     length = len(data)
-    compress_level = 6 if 1_000_000 < length < 10_000_000 else 1 if length < 1000000 else 9
+    compress_level = 6 if 100_000 < length < 10_000_000 else 1 if length <= 100_000 else 9
+    app.logger.debug(f"Compression of response with compress level of {compress_level}...")
     content = gzip.compress(data, compresslevel=compress_level)
+    app.logger.debug(f"Compression finished. Length before - {length}, after - {len(content)}")
     response.set_data(content)
     response.headers['Content-Length'] = len(content)
     response.headers['Content-Encoding'] = 'gzip'
     return response
 
 
+def decompress_request():
+    if 'gzip' in request.headers.get('Content-Encoding', ''):
+        data = request.get_data()
+        expected_length = int(request.headers.get('Content-Length', '-1'))
+        if expected_length != len(data):
+            return Response(f'Content length differs. Expected length {expected_length}, received {len(data)}',
+                            status=400)
+        app.logger.debug("Decompression of request body...")
+        data = gzip.decompress(data)
+        app.logger.debug("Decompressed request body")
+        request.data = data
+
+
 app.register_blueprint(bp)
+app.before_request(decompress_request)
 app.after_request(make_compressed_response)
 
 
