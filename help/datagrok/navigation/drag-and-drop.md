@@ -21,6 +21,6 @@ controls can be used as a source of drag-and-drop:
 , [Table Manager](../../explore/table-manager.md). 
 Most of the viewers, and a lot of dialogs accept columns that are being dragged.
 
-![](../../visualize/viewers/filters-drag-column.gif)
+![](../../visualize/viewers/img/filters-drag-column.gif)
 
-![](../../visualize/filters-drag-and-drop.gif)
+![](../../visualize/viewers/img/filters-drag-and-drop.gif)

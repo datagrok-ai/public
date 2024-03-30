@@ -14,6 +14,10 @@ import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types'
 
 const g: string = GAP_SYMBOL;
 
+import {GAP_SYMBOL} from '../const';
+
+const g: string = GAP_SYMBOL;
+
 category('WebLogo-positions', () => {
   const csvDf1 = `seq
 ATC-G-TTGC--

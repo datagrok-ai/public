@@ -1,15 +1,15 @@
 // Bioreactor simulation wireframe
 
-let view = grok.shell.newView("Flowrate");
+let view = grok.shell.newView('Flowrate');
 let progressDiv = ui.divText('Ready');
 view.setRibbonPanels([[progressDiv]]);
 
 let data = grok.data.demo.randomWalk();
 
-let reactorInput = ui.choiceInput('Reactor', 'Biotek 15kL SS', ['Biotek 15kL SS']);
-let productInput = ui.choiceInput('Product', 'BAR FOO56545', ['BAR FOO56545']);
-let controlRunInput = ui.choiceInput('Control Run', '15FDX006', ['15FDX006']);
-let daysInput = ui.intInput('Process days', 12);
+let reactorInput = ui.input.choice('Reactor', {items: ['Biotek 15kL SS'], value: 'Biotek 15kL SS'});
+let productInput = ui.input.choice('Product', {items: ['BAR FOO56545'], value: 'BAR FOO56545'});
+let controlRunInput = ui.input.choice('Control Run', {items: ['15FDX006'], value: '15FDX006'});
+let daysInput = ui.input.int('Process days', {value: 12});
 
 let topGrid = ui.divV([
   ui.divH([

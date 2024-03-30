@@ -14,7 +14,7 @@ the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), suc
 
 ![Google Map](../../uploads/viewers/google-map.png "Google Map")
 
-![Map big data](google-map-city-perf.gif "Map big data")
+![Map big data](img/google-map-city-perf.gif "Map big data")
 
 ## Videos
 

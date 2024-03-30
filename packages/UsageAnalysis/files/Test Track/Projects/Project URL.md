@@ -8,7 +8,7 @@
 1. Open a new tab in browser and insert the URL
 
 Expected: the correcponding project should be opened
-
+---
 {
   "order": 6
 }

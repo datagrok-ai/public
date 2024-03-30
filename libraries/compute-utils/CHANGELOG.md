@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.29.0 (2024-03-29)
+
+### Features
+
+- RFV: Disabled re-run on inputs load
+- ModelCatalog: Full support of single-file models
+- HistoryPanel: Redesigned to use Grid
+
 ## 1.28.0 (2024-03-13)
 
 ### Features

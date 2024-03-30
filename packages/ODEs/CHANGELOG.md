@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.7 (2024-03-28)
+
+Added siderbar feature to the generated JS-scripts
+
 ## 1.0.6 (2024-03-08)
 
 * E-notation use

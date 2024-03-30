@@ -458,6 +458,11 @@ export class TimelinesViewer extends EChartViewer {
   updateLegend(column: DG.Column): void {
     $(this.legendDiv).empty();
     const legend = DG.Legend.create(column);
+    legend.onViewerLegendChanged = () => {
+      const filteredIdxs = legend.filterBy;
+      const legendLabels = this.legendDiv.innerText.split('\n');
+      this.updateOnLegendChange(filteredIdxs, legendLabels);
+    }
     this.legendDiv.appendChild(legend.root);
     $(legend.root).addClass('charts-legend');
   }
@@ -649,6 +654,16 @@ export class TimelinesViewer extends EChartViewer {
       return;
     }
     this.option.series[0].data = this.getSeriesData();
+    this.updateZoom();
+    this.chart.setOption(this.option);
+  }
+
+  updateOnLegendChange(filteredIdxs: number[], legendLabels: string[]): void {
+    const filteredNames = filteredIdxs.map(idx => legendLabels[idx]);
+    const data = this.getSeriesData();
+    this.option.series[0].data = data.filter((item: any) => {
+      return filteredNames.includes(item[3][0]);
+    });
     this.updateZoom();
     this.chart.setOption(this.option);
   }

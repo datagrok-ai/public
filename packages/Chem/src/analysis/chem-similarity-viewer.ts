@@ -88,7 +88,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       try {
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
-          this.fingerprint as Fingerprint);
+          this.fingerprint as Fingerprint, this.recalculateOnFilter);
         if (!df) {
           this.error = 'Malformed';
           this.closeWithError(progressBar);
@@ -198,6 +198,7 @@ export async function chemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,
+  filterSync: boolean = false,
 ) : Promise<DG.DataFrame | null> {
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => {return null;});
   if (!targetFingerprint)
@@ -227,7 +228,7 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse)
+    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse && !(!table.filter.get(idx) && filterSync))
     .sort(compare);
   const molsList = [];
   const scoresList = [];

@@ -7,7 +7,7 @@ Biostructure Viewer is used for visualizing and analyzing macromolecules.
 It allows you to view 3D structures, explore docking results, and offers multiple rendering modes for different visual
 representations. The viewer is based on [RCSB Molstar viewer](https://github.com/molstar/rcsb-molstar).
 
-![Biostructure Viewer](biostructure-viewer.png)
+![Biostructure Viewer](img/biostructure-viewer.png)
 
 ## Creating an Biostructure viewer
 

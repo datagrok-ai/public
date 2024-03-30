@@ -37,7 +37,11 @@ export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'class
 export type CodeConfig = {
   script?: string;
   mode?: string;
-  placeholder?: string
+  placeholder?: string;
+};
+export type TagsInputConfig = {
+  tags?: string[];
+  showButton?: boolean;
 };
 
 export class ObjectPropertyBag {
@@ -1050,6 +1054,7 @@ export class InputBase<T = any> {
 
   /** Property if associated with */
   get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
+  set property(p: Property) { api.grok_InputBase_Set_Property(this.dart, toDart(p)); }
 
   /** Value format. */
   get format(): string { return api.grok_InputBase_Get_Format(this.dart); }
@@ -1902,6 +1907,12 @@ export class Legend extends DartWidget {
   /** Position (left / right / top / bottom) */
   get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
   set position(pos: LegendPosition) { api.grok_Legend_Set_Position(this.dart, pos); }
+
+  set onViewerLegendChanged(handler: Function) {
+    api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
+  }
+
+  get filterBy() { return api.grok_Legend_Get_FilterBy(this.dart); }
 }
 
 
@@ -2064,15 +2075,15 @@ export class TagsInput extends InputBase {
   private _onTagRemoved: Subject<string> = new Subject<string>();
 
 
-  constructor(name: string, tags: string[], showBtn: boolean) {
+  constructor(name: string, config?: TagsInputConfig) {
     super(ui.stringInput(name, '').dart);
 
-    this._addTagIcon = showBtn ?
+    this._addTagIcon = (config?.showButton ?? true) ?
       ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
       ui.iconFA('');
 
-    this._tags = tags;
-    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+    this._tags = config?.tags ?? [];
+    this._tagsDiv = ui.div(this._tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
 
     this._createRoot();
     this._initEventListeners();

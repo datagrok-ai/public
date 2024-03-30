@@ -64,19 +64,18 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-      parentCall?: DG.FuncCall
     } = {historyEnabled: true, isTabbed: false},
   ) {
     super();
     this.box = true;
-    this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
-    const parentView = this.parentCall?.parentCall?.aux?.['view'];
-    if (parentView && !this.options.isTabbed) {
-      this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
-      this.parentView = parentView;
-      if (this.parentCall?.func)
-        this.basePath = `/${this.parentCall.func.name}`;
-    }
+    this.parentCall = grok.functions.getCurrentCall();
+
+    if (initValue instanceof DG.FuncCall)
+      this.parentCall = initValue;
+
+    this.parentView = this.parentCall?.parentCall?.aux?.['view'];
+    this.basePath = `/${this.parentCall.func.name}`;
+
     this.init();
   }
 
@@ -99,7 +98,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const runId = this.getStartId();
     if (runId && !this.options.isTabbed) {
       ui.setUpdateIndicator(this.root, true);
-      this.loadRun(this.funcCall.id);
+      this.loadRun(runId);
       ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }

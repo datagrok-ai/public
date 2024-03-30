@@ -26,14 +26,14 @@ for categorical values.
 You can categorize DateTime columns using special functions, such as 'Year', 'Month', 'Quarter', '
 Year - Month' and 'Year - Quarter':
 
-![Dates in a bar chart](bar-chart-dates.gif "Dates in a bar chart")
+![Dates in a bar chart](img/bar-chart-dates.gif "Dates in a bar chart")
 
 ### Relative values support
 
 Use the 'Relative Values' property in combination with the 'Stack' property to analyze the distribution of the stacked
 values:
 
-![Relative values in a bar chart](bar-chart-relative-values.gif "Relative values in a bar chart")
+![Relative values in a bar chart](img/bar-chart-relative-values.gif "Relative values in a bar chart")
 
 ## Videos
 
