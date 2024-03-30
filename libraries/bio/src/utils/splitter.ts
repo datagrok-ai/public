@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {UnitsHandler} from './units-handler';
+import {SeqHandler} from './seq-handler';
 
 
 export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.DataFrame {
@@ -19,9 +19,9 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
   const rowCount = sequenceColumn.length;
   const resultDf = DG.DataFrame.create(rowCount);
 
-  const uh = UnitsHandler.getOrCreate(sequenceColumn);
+  const uh = SeqHandler.forColumn(sequenceColumn);
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    const currentMonomerList = uh.splitted[rowIdx];
+    const currentMonomerList = uh.getSplitted(rowIdx);
     for (let posIdx: number = 0; posIdx < currentMonomerList.length; ++posIdx) {
       const om: string = currentMonomerList.getOriginal(posIdx);
       const col = getCol(posIdx) || createCol(posIdx);

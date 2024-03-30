@@ -10,7 +10,7 @@ import {
   SplitterFunc
 } from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION} from './consts';
-import {GapOriginals, UnitsHandler} from '../units-handler';
+import {GapOriginals, SeqHandler} from '../seq-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
@@ -70,8 +70,7 @@ export class FastaSimpleSeqSplitted implements ISeqSplitted {
  * @param {SplitterFunc} splitter
  * @return { SeqColStats }, sameLength: boolean } stats of column sequences
  */
-export function getStatsForCol(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
-  const uh = UnitsHandler.getOrCreate(seqCol);
+export function getStatsForCol(seqCol: DG.Column<string>, minLength: number, splitter: SplitterFunc): SeqColStats {
   const cats = seqCol.categories;
   const splitted: Iterable<ISeqSplitted> = wu.enumerate(seqCol.getRawData())
     .map(([catI, rowIdx]) => splitter(cats[catI]));
@@ -266,8 +265,8 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
 export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const uh: UnitsHandler = UnitsHandler.getOrCreate(seqCol);
-    alphabet = uh.alphabet;
+    const sh: SeqHandler = SeqHandler.forColumn(seqCol);
+    alphabet = sh.alphabet;
   } else {
     const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);
     alphabet = detectAlphabet(stats.freq, candidateAlphabets);

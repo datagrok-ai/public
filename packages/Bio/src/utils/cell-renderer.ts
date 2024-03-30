@@ -16,7 +16,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {GapOriginals, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -164,10 +164,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (!seqColTemp) {
       seqColTemp = new MonomerPlacer(grid, tableCol,
         () => {
-          const uh = UnitsHandler.getOrCreate(tableCol);
+          const sh = SeqHandler.forColumn(tableCol);
           return {
-            unitsHandler: uh,
-            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? gapLength : msaGapLength,
+            seqHandler: sh,
+            monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction, monomerLengthLimit: maxLengthOfMonomer,
             monomerLib: getBioLib()
           };
@@ -212,22 +212,22 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
       const splitLimit = w / 5;
-      const uh = UnitsHandler.getOrCreate(tableCol);
+      const sh = SeqHandler.forColumn(tableCol);
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
       if (tempCurrentWord && tableCol?.dataFrame?.currentRowIdx === -1)
         tableColTemp[tempTAGS.currentWord] = null;
 
-      const referenceSequence: ISeqSplitted = (() => {
+      const referenceSequence: string[] = (() => {
         // @ts-ignore
-        const splitterFunc: SplitterFunc = uh.getSplitter(splitLimit);
-        return splitterFunc(
+        const splitterFunc: SplitterFunc = sh.getSplitter(splitLimit);
+        return wu(splitterFunc(
           ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
-            tempReferenceSequence : tempCurrentWord ?? '');
+            tempReferenceSequence : tempCurrentWord ?? '').originals).toArray();
       })();
 
-      const subParts: ISeqSplitted = uh.splitted[rowIdx];
+      const subParts: ISeqSplitted = sh.getSplitted(rowIdx);
       /* let x1 = x; */
       let color = undefinedColor;
       let drawStyle = DrawStyle.classic;
@@ -236,7 +236,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         drawStyle = DrawStyle.MSA;
 
       for (let posIdx: number = 0; posIdx < subParts.length; ++posIdx) {
-        const amino: string = subParts.getCanonical(posIdx);
+        const amino: string = subParts.getOriginal(posIdx);
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         const last = posIdx === subParts.length - 1;

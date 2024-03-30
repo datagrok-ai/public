@@ -3,9 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
 import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
-import {getSplitter} from './utils';
-import {TAGS as bioTAGS} from '../../utils/macromolecule';
-import {UnitsHandler} from '../units-handler';
+import {SeqHandler} from '../seq-handler';
 
 export enum SCORE {
   IDENTITY = 'identity',
@@ -22,10 +20,10 @@ export async function calculateScores(
   table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE
 ): Promise<DG.Column<number>> {
   const splitSeqDf = splitAlignedSequences(col);
-  const srcUh = UnitsHandler.getOrCreate(col);
-  const refCol = srcUh.getNewColumnFromList('ref', [ref]);
-  const refUh = UnitsHandler.getOrCreate(refCol);
-  const refSplitted = refUh.splitted[0]; // ref is at 0
+  const srcSh = SeqHandler.forColumn(col);
+  const refCol = srcSh.getNewColumnFromList('ref', [ref]);
+  const refUh = SeqHandler.forColumn(refCol);
+  const refSplitted = refUh.getSplitted(0); // ref is at 0
 
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
     scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf) : null;

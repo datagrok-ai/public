@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
   monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
@@ -299,7 +299,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private viewed: boolean = false;
 
-  private unitsHandler: UnitsHandler | null;
+  private seqHandler: SeqHandler | null;
   private initialized: boolean = false;
 
   // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
@@ -369,7 +369,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   public get positionMarginValue(): number {
-    if (this.positionMarginState === PositionMarginStates.AUTO && this.unitsHandler!.getAlphabetIsMultichar() === true)
+    if (this.positionMarginState === PositionMarginStates.AUTO && this.seqHandler!.getAlphabetIsMultichar() === true)
       return this.positionMargin;
     else if (this.positionMarginState === PositionMarginStates.ON)
       return this.positionMargin;
@@ -381,7 +381,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     super();
 
     this.textBaseline = 'top';
-    this.unitsHandler = null;
+    this.seqHandler = null;
 
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
@@ -585,7 +585,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
       if (this.seqCol) {
         try {
-          this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
+          this.seqHandler = SeqHandler.forColumn(this.seqCol);
 
           this.palette = pickUpPalette(this.seqCol);
           this.render(WlRenderLevel.Freqs, 'updateSeqCol()');
@@ -596,7 +596,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           throw err;
         }
         if (!this.seqCol) {
-          this.unitsHandler = null;
+          this.seqHandler = null;
           this.positionNames = [];
           this.positionLabels = [];
           this.startPosition = -1;
@@ -953,9 +953,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // region updatePositions
 
       const dfFilter = this.getFilter();
-      const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
-        wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
-          return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+      const maxLength: number = dfFilter.trueCount === 0 ? this.seqHandler!.maxLength :
+        wu.count(0).take(this.seqHandler!.length).map((rowIdx) => {
+          const mList = this.seqHandler!.getSplitted(rowIdx);
+          return dfFilter.get(rowIdx) && !!mList ? mList.length : 0;
         }).reduce((max, l) => Math.max(max, l), 0);
 
       /** positionNames and positionLabel can be set up through the column's tags only */
@@ -976,7 +977,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // endregion updatePositions
 
       const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
-      this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
+      this.seqHandler = SeqHandler.forColumn(this.seqCol);
       const posCount: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.positions = new Array(posCount);
       for (let jPos = 0; jPos < length; jPos++) {
@@ -988,7 +989,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
       const dfRowCount = this.dataFrame.rowCount;
-      const splitted = this.unitsHandler.splitted;
 
       for (let jPos = 0; jPos < length; ++jPos) {
         const pi = this.positions[jPos];
@@ -996,7 +996,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) {
             ++pi.sumRowCount;
-            const seqMList: ISeqSplitted = splitted[rowI];
+            const seqMList: ISeqSplitted = this.seqHandler.getSplitted(rowI);
             const cm: string = seqMList.getCanonical(this.startPosition + jPos);
             const pmi = pi.getFreq(cm);
             pmi.value = ++pmi.rowCount;
@@ -1015,7 +1015,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) { // respect the filter
-            const seqMList: ISeqSplitted = splitted[rowI];
+            const seqMList: ISeqSplitted = this.seqHandler.getSplitted(rowI);
             const cm: string = seqMList.getCanonical(this.startPosition + jPos);
             const value: number | null = valueCol.get(rowI);
             this.positions[jPos].getFreq(cm).push(value);
@@ -1138,7 +1138,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private _lastHeight: number;
 
   public getAlphabetSize(): number {
-    return this.unitsHandler?.getAlphabetSize() ?? 0;
+    return this.seqHandler?.getAlphabetSize() ?? 0;
   }
 
   // -- Handle events --
@@ -1204,10 +1204,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           tooltipRows.push(pi.buildCompositionTable(this.palette!));
         const tooltipEl = ui.divV(tooltipRows);
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
-      } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.unitsHandler) {
+      } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.seqHandler) {
         // Monomer at position tooltip
         // const monomerAtPosSeqCount = countForMonomerAtPosition(
-        //   this.dataFrame, this.unitsHandler!, this.getFilter(), monomer, atPI);
+        //   this.dataFrame, this.seqHandler!, this.getFilter(), monomer, atPI);
         const pmi = pi.getFreq(monomer);
 
         const tooltipRows = [
@@ -1235,10 +1235,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const [pi, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
 
       // prevents deselect all rows if we miss monomer bounds
-      if (pi !== null && monomer !== null && this.dataFrame && this.seqCol && this.unitsHandler) {
+      if (pi !== null && monomer !== null && this.dataFrame && this.seqCol && this.seqHandler) {
         // Calculate a new BitSet object for selection to prevent interfering with existing
         const selBS: DG.BitSet = DG.BitSet.create(this.dataFrame.selection.length, (rowI: number) => {
-          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.getFilter(), rowI, monomer, pi);
+          return checkSeqForMonomerAtPos(this.dataFrame, this.seqHandler!, this.getFilter(), rowI, monomer, pi);
         });
         this.dataFrame.selection.init((i) => selBS.get(i));
       }
@@ -1325,20 +1325,20 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
 }
 
 export function checkSeqForMonomerAtPos(
-  df: DG.DataFrame, uh: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
+  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
-  const seqMList: ISeqSplitted = uh.splitted[rowI];
+  const seqMList: ISeqSplitted = sh.getSplitted(rowI);
   const seqCM: string | null = at.pos < seqMList.length ? seqMList.getCanonical(at.pos) : null;
   return seqCM !== null && seqCM === monomer;
 }
 
 export function countForMonomerAtPosition(
-  df: DG.DataFrame, uh: UnitsHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
+  df: DG.DataFrame, sh: SeqHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
 ): number {
   let count = 0;
   let rowI = -1;
   while ((rowI = filter.findNext(rowI, true)) != -1) {
-    const seqMList: ISeqSplitted = uh.splitted[rowI];
+    const seqMList: ISeqSplitted = sh.getSplitted(rowI);
     const seqMPos: number = at.pos;
     const seqCM: string | null = seqMPos < seqMList.length ? seqMList.getCanonical(seqMPos) : null;
     if (seqCM !== null && seqCM === monomer) count++;

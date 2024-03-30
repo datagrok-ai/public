@@ -9,7 +9,7 @@ import {
   PositionMonomerInfo as PMI,
   WebLogoViewer,
 } from '../viewers/web-logo-viewer';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const g: string = GAP_SYMBOL;
@@ -181,8 +181,8 @@ ATC-G-TTGC--
     }
 
     const atPI1: PI = resPosList[1];
-    const uh = UnitsHandler.getOrCreate(seqCol);
-    const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
+    const sh = SeqHandler.forColumn(seqCol);
+    const countAt1 = countForMonomerAtPosition(df, sh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
     await wlViewer.awaitRendered();
   });

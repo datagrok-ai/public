@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {GapOriginals, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 enum Tests {
@@ -15,7 +15,7 @@ enum Tests {
   helm = 'helm',
 }
 
-category('UnitsHandler', () => {
+category('SeqHandler', () => {
   const fG = GapOriginals[NOTATION.FASTA];
   const hG = GapOriginals[NOTATION.HELM];
   const sG = GapOriginals[NOTATION.SEPARATOR];
@@ -130,12 +130,12 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
       if (semType) col.semType = semType;
       expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
 
-      const uh = UnitsHandler.getOrCreate(col);
-      expect(uh.notation, testData.tgt.notation);
-      expect(uh.separator === testData.tgt.separator, true);
+      const sh = SeqHandler.forColumn(col);
+      expect(sh.notation, testData.tgt.notation);
+      expect(sh.separator === testData.tgt.separator, true);
 
-      const resSplitted = uh.splitted
-        .map((ss) => wu(ss.originals).toArray());
+      const resSplitted: string[][] = wu.count(0).take(sh.length)
+        .map((rowIdx) => wu(sh.getSplitted(rowIdx).originals).toArray()).toArray();
       expectArray(resSplitted, testData.tgt.splitted);
     });
   }

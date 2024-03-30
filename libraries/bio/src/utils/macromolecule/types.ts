@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ALPHABET, NOTATION} from './consts';
-import {UnitsHandler} from '../units-handler';
+import {SeqHandler} from '../seq-handler';
 
 /** Canonical gap symbol */
 export const GAP_SYMBOL: string = '';

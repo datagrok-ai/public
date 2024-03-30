@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const FASTA_LINE_WIDTH = 60;
@@ -28,8 +28,8 @@ export function saveAsFastaUI() {
     .filter((gc: DG.GridColumn) => {
       const col: DG.Column | null = gc.column;
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = UnitsHandler.getOrCreate(col);
-        return uh.isFasta();
+        const sh = SeqHandler.forColumn(col);
+        return sh.isFasta();
       }
       return false;
     }).toArray();
@@ -77,7 +77,7 @@ export function saveAsFastaUI() {
 export function saveAsFastaDo(
   idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
 ): string {
-  const uh = UnitsHandler.getOrCreate(seqCol);
+  const sh = SeqHandler.forColumn(seqCol);
   const fastaLines: string[] = [];
 
   for (let rowIdx: number = 0; rowIdx < seqCol.length; rowIdx++) {
@@ -85,7 +85,7 @@ export function saveAsFastaDo(
     // https://en.wikipedia.org/wiki/FASTA_format
 
     const seqId: string = idColList.map((col) => col.get(rowIdx).toString()).join('|');
-    const srcSS = uh.splitted[rowIdx];
+    const srcSS = sh.getSplitted(rowIdx);
     const seqLineList: string[] = wrapSequence(srcSS, lineWidth);
 
     fastaLines.push(`>${seqId}${lineSeparator}`);

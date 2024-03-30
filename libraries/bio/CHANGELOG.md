@@ -6,6 +6,15 @@
 
 * #2707: Add original and canonical to ISeqSplitted
 
+### Bug fixes
+
+* Bio: Fix SeqHandler.splitted cache for changing data
+* Bio: Fix SeqHandler.forColumn temp cache for changing column
+
+### Breaking changes
+
+* Rename UnitsHandler to SeqHandler, .getOrCreate() to forColumn()
+
 ## 5.39.29 (2024-03-07)
 
 ### Features

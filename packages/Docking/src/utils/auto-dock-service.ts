@@ -184,8 +184,8 @@ export class AutoDockService implements IAutoDockService {
     // // posesCol.setTag(DG.TAGS.UNITS, 'pdbqt');
     // const posesDf = DG.DataFrame.fromColumns([posesCol]);
 
-    const posesDf: DG.DataFrame = poses 
-      ? this.ph.parsePdbqt(adRes.poses, poseColName) 
+    const posesDf: DG.DataFrame = poses
+      ? this.ph.parsePdbqt(adRes.poses, poseColName)
       : DG.DataFrame.fromJson(JSON.stringify(result));
     return posesDf;
   }
@@ -199,8 +199,8 @@ export class AutoDockService implements IAutoDockService {
     let ligandPdbCol: DG.Column<string>;
     switch (ligandCol.semType) {
       case DG.SEMTYPE.MOLECULE: {
-        const uh = MoleculeUnitsHandler.getOrCreate(ligandCol);
-        ligandPdbCol = await uh.getAsPdb(this.ph);
+        const sh = MoleculeUnitsHandler.getOrCreate(ligandCol);
+        ligandPdbCol = await sh.getAsPdb(this.ph);
         break;
       }
       case DG.SEMTYPE.MOLECULE3D: {

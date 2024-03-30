@@ -10,14 +10,14 @@ import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
 import $ from 'cash-dom';
-import {fromEvent, Observable, Subject, Subscription, Unsubscribable} from 'rxjs';
+import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor, IWebEditorApp} from '@datagrok-libraries/bio/src/helm/types';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
@@ -120,7 +120,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     this.filterSyncer.sync(logPrefix, async () => {
       superAttach(dataFrame);
       this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-      const uh = UnitsHandler.getOrCreate(this.column!);
+      const sh = SeqHandler.forColumn(this.column!);
       this.columnName ??= this.column?.name;
       this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
 

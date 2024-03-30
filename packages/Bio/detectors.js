@@ -31,7 +31,7 @@ const ALIGNMENT = {
 };
 
 /** Class for handling notation units in Macromolecule columns */
-const UnitsHandler = {
+const SeqHandler = {
   TAGS: {
     aligned: 'aligned',
     alphabet: 'alphabet',
@@ -163,8 +163,8 @@ class BioPackageDetectors extends DG.Package {
         // alphabetSize calculated on (sub)sample of data is incorrect
         // const alphabetSize = Object.keys(statsAsHelm.freq).length;
         const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
-        // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
-        col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+        // col.setTag(SeqHandler.TAGS.alphabetSize, alphabetSize.toString());
+        col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -236,12 +236,12 @@ class BioPackageDetectors extends DG.Package {
         }
 
         col.setTag(DG.TAGS.UNITS, units);
-        if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
-        col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+        if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
+        col.setTag(SeqHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+        col.setTag(SeqHandler.TAGS.alphabet, alphabet);
         if (alphabet === ALPHABET.UN) {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-          col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+          col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
@@ -283,13 +283,13 @@ class BioPackageDetectors extends DG.Package {
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.setTag(DG.TAGS.UNITS, units);
-        if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
-        col.setTag(UnitsHandler.TAGS.aligned, aligned);
-        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+        if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
+        col.setTag(SeqHandler.TAGS.aligned, aligned);
+        col.setTag(SeqHandler.TAGS.alphabet, alphabet);
         if (alphabet === ALPHABET.UN) {
           // alphabetSize calculated on (sub)sample of data is incorrect
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-          col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+          col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
         return DG.SEMTYPE.MACROMOLECULE;
       }

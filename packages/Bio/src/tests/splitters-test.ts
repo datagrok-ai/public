@@ -5,10 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {
-  after, before, category, test, expect, expectArray, delay, awaitCheck
+  after, before, category, test, expect, expectArray
 } from '@datagrok-libraries/utils/src/test';
-import {TAGS as bioTAGS, NOTATION, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';
 import {awaitGrid} from './utils';
@@ -134,7 +133,7 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
   });
 
   // test('helmAsFasta', async () => {
-  //   // The columns can't be empty for UnitsHandler
+  //   // The columns can't be empty for SeqHandler
   //   /* eslint-disable max-len */
   //   const srcSeq = '[meI][Pip][dK][Thr_PO3H2][L-hArg(Et,Et)][D-Tyr_Et][Tyr_ab-dehydroMe][dV]EN[D-Orn][D-aThr][Phe_4Me]';
   //   const tgtSeqA = ['meI', 'Pip', 'dK', 'Thr_PO3H2', 'L-hArg(Et,Et)', 'D-Tyr_Et', 'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn', 'D-aThr', 'Phe_4Me'];

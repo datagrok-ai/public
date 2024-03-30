@@ -173,8 +173,8 @@ async function _testPdbqtImportModels(): Promise<void> {
     const df: DG.DataFrame = (await importPdbqtUI(cnt, true))[0];
 
     const molCol = df.getCol(IMPORT.pdb.molColName);
-    const uh = IMPORT.pdb.unitsHandlerClass.getOrCreate(molCol);
-    expect(uh.units, IMPORT.pdb.units);
+    const sh = IMPORT.pdb.unitsHandlerClass.getOrCreate(molCol);
+    expect(sh.units, IMPORT.pdb.units);
   } catch (err) {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);

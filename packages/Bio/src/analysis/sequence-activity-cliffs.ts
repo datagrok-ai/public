@@ -10,7 +10,7 @@ import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@da
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
@@ -105,10 +105,10 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const uh = UnitsHandler.getOrCreate(params.seqCol);
-  const subParts1 = uh.splitted[params.points[0]]; // splitter(sequencesArray[0], {uh, rowIdx: -1});
-  const subParts2 = uh.splitted[params.points[1]]; // splitter(sequencesArray[1], {uh, rowIdx: -1});
-  const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
+  const sh = SeqHandler.forColumn(params.seqCol);
+  const subParts1 = sh.getSplitted(params.points[0]); // splitter(sequencesArray[0], {uh, rowIdx: -1});
+  const subParts2 = sh.getSplitted(params.points[1]); // splitter(sequencesArray[1], {uh, rowIdx: -1});
+  const canvas = createDifferenceCanvas(subParts1, subParts2, sh.units, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 
   propPanel.append(createDifferencesWithPositions(molDifferences));

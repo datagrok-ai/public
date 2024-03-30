@@ -9,7 +9,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {IMonomerLib, Monomer} from '../types';
-import {UnitsHandler} from '../utils/units-handler';
+import {SeqHandler} from '../utils/seq-handler';
 import {
   getFormattedMonomerLib,
   keepPrecision
@@ -43,7 +43,7 @@ export async function _toAtomicLevel(
   }
 
   let srcCol: DG.Column<string> = seqCol;
-  const seqUh = UnitsHandler.getOrCreate(seqCol);
+  const seqUh = SeqHandler.forColumn(seqCol);
 
   // convert 'helm' to 'separator' units
   if (seqUh.isHelm()) {
@@ -51,8 +51,8 @@ export async function _toAtomicLevel(
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
-  const srcUh = UnitsHandler.getOrCreate(srcCol);
-  const alphabet = srcUh.alphabet;
+  const srcSh = SeqHandler.forColumn(srcCol);
+  const alphabet = srcSh.alphabet;
 
   // determine the polymer type according to HELM specifications
   let polymerType: HELM_POLYMER_TYPE;
@@ -93,15 +93,15 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
   const result: string[][] = new Array(rowCount);
 
   // split the string into monomers
-  const uh = UnitsHandler.getOrCreate(macroMolCol);
+  const sh = SeqHandler.forColumn(macroMolCol);
 
   let containsEmptyValues = false;
 
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    const seqSS = uh.splitted[rowIdx];
+    const seqSS = sh.getSplitted(rowIdx);
     containsEmptyValues ||= seqSS.length === 0;
     result[rowIdx] = wu(seqSS.canonicals)
-      .filter((cm) => !uh.isGap(cm)).map((cm) => cm).toArray();
+      .filter((cm) => !sh.isGap(cm)).map((cm) => cm).toArray();
   }
 
   if (containsEmptyValues)

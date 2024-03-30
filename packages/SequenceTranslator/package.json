@@ -45,7 +45,7 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/tutorials",
     "debug-sequencetranslator": "grok publish",
     "release-sequencetranslator": "grok publish localhost --release",
     "build-sequencetranslator": "webpack",
@@ -58,7 +58,8 @@
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "grok test",
     "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "test-local": "grok test --host localhost",
+    "build-all": "npm --prefix ./../../libraries/chem-meta run build && npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
   },
   "canEdit": [
     "Developers"

@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GapOriginals, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
@@ -187,11 +187,11 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
   const col = df.columns.bySemType('Macromolecule')!;
-  const colUh = UnitsHandler.getOrCreate(col);
+  const colSh = SeqHandler.forColumn(col);
   const colUnits = col.getTag(DG.TAGS.UNITS);
   if (colUnits === NOTATION.HELM)
     checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
-  const convert = colUh.getConverter(NOTATION.HELM);
+  const convert = colSh.getConverter(NOTATION.HELM);
   const helmMol = convert(mol);
   checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.getTag(DG.TAGS.UNITS));
 }
@@ -209,7 +209,7 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!;
   const col = cell.column;
-  const uh = UnitsHandler.getOrCreate(col);
+  const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
   // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
@@ -252,7 +252,7 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
         if (units === undefined)
           cell.value = helmValue;
         else {
-          const convertedRes = uh.convertHelmToFastaSeparator(helmValue, units!, uh.separator);
+          const convertedRes = sh.convertHelmToFastaSeparator(helmValue, units!, sh.separator);
           cell.value = convertedRes;
         }
       }

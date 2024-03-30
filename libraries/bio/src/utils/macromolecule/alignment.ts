@@ -1,5 +1,5 @@
 import {ISeqSplitted} from './types';
-import {GapOriginals} from '../units-handler';
+import {GapOriginals} from '../seq-handler';
 import {NOTATION} from './consts';
 import {StringListSeqSplitted} from './utils';
 

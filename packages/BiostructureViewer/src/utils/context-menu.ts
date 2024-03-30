@@ -68,21 +68,21 @@ export function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boo
 
   function downloadRawValue(): void {
     const tableCol = gridCell.tableColumn!;
-    const uh = Molecule3DUnitsHandler.getOrCreate(tableCol);
+    const sh = Molecule3DUnitsHandler.getOrCreate(tableCol);
 
-    const fileName: string = uh.getFileName(gridCell.cell);
+    const fileName: string = sh.getFileName(gridCell.cell);
     const tgtValue: string = gridCell.cell.value;
     DG.Utils.download(fileName, tgtValue);
   }
 
   async function showNglViewer(): Promise<void> {
     const tableCol = gridCell.tableColumn!;
-    const uh = Molecule3DUnitsHandler.getOrCreate(tableCol);
+    const sh = Molecule3DUnitsHandler.getOrCreate(tableCol);
 
     const valueData: BiostructureData = {
       binary: false,
       data: gridCell.cell.value,
-      ext: uh.fileExt(),
+      ext: sh.fileExt(),
     };
     if (gridCell.grid.view instanceof DG.TableView) {
       const view = gridCell.grid.view as DG.TableView;

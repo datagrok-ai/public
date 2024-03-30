@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {getMonomerSubstitutionMatrix} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -18,7 +18,7 @@ export async function getEncodedSeqSpaceCol(
 ): Promise<{ seqList: string[], options: { [_: string]: any } }> {
 // encodes sequences using utf characters to also support multichar and non fasta sequences
   const rowCount = seqCol.length;
-  const seqUh = UnitsHandler.getOrCreate(seqCol);
+  const sh = SeqHandler.forColumn(seqCol);
   const encList = Array<string>(rowCount);
   let charCodeCounter = 36;
   const charCodeMap = new Map<string, string>();
@@ -33,7 +33,7 @@ export async function getEncodedSeqSpaceCol(
       continue;
     }
     encList[rowIdx] = '';
-    const splittedSeq = seqUh.splitted[rowIdx];
+    const splittedSeq = sh.getSplitted(rowIdx);
     for (let j = 0; j < splittedSeq.length; j++) {
       const char = splittedSeq.getCanonical(j);
       if (!charCodeMap.has(char)) {

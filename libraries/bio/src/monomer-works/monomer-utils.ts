@@ -8,7 +8,7 @@ import {
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
 import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
-import {UnitsHandler} from '../utils/units-handler';
+import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -16,12 +16,12 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
-  const uh = UnitsHandler.getOrCreate(col);
+  const sh = SeqHandler.forColumn(col);
   const encodedStringArray = [];
   const rowCount = col.length;
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
     let encodedMonomerStr = '';
-    const monomers = uh.splitted[rowIdx];
+    const monomers = sh.getSplitted(rowIdx);
     for (const cm of monomers.canonicals) {
       if (!monomerSymbolDict[cm]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
@@ -39,12 +39,12 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
 }
 
 export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
-  const uh = UnitsHandler.getOrCreate(col);
+  const sh = SeqHandler.forColumn(col);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   const rowCount = col.length;
   for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    const monomers = uh.splitted[rowIdx];
+    const monomers = sh.getSplitted(rowIdx);
     const molFilesForSeq = [];
     for (let j = 0; j < monomers.length; ++j) {
       const cm = monomers.getCanonical(j);
@@ -63,10 +63,10 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
 }
 
 export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
-  const uh = UnitsHandler.getOrCreate(cell.column);
+  const sh = SeqHandler.forColumn(cell.column);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
-  const monomers = uh.splitted[cell.rowIndex];
+  const monomers = sh.getSplitted(cell.rowIndex);
   const molFilesForSeq = [];
   for (let j = 0; j < monomers.length; ++j) {
     const cm = monomers.getCanonical(j);
