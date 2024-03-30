@@ -26,7 +26,7 @@ export class MonomerLibFileEventManager {
   // WARNING: a temporary solution
   async getValidLibraryPathsAsynchronously(): Promise<string[]> {
     return new Promise((resolve) => {
-      this._libraryFilesUpdateSubject$.pipe(
+      this._libraryFilesUpdateSubject$.pipe<string[]>(
         skip(1)
       ).subscribe((fileNames) => {
         resolve(fileNames);

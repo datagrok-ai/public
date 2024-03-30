@@ -12,7 +12,7 @@ import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-me
 import {
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -165,11 +165,11 @@ export function getBioLib(): IMonomerLib {
   return MonomerLibManager.instance.getBioLib();
 }
 
-//name: getUnitsHandler
+//name: getSeqHandler
 //input: column sequence { semType: Macromolecule }
 //output: object result
-export function getUnitsHandler(sequence: DG.Column<string>): UnitsHandler {
-  return UnitsHandler.getOrCreate(sequence);
+export function getSeqHandler(sequence: DG.Column<string>): SeqHandler {
+  return SeqHandler.forColumn(sequence);
 }
 
 // -- Panels --
@@ -611,7 +611,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const _colUH = UnitsHandler.getOrCreate(col);
+    const _colSh = SeqHandler.forColumn(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -630,7 +630,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return UnitsHandler.getOrCreate(c).isMsa(); });
+    const selectedCol = colList.find((c) => { return SeqHandler.forColumn(c).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -773,8 +773,8 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
 //name: Bio: getHelmMonomers
 //input: column sequence {semType: Macromolecule}
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const uh = UnitsHandler.getOrCreate(sequence);
-  const stats = uh.stats;
+  const sh = SeqHandler.forColumn(sequence);
+  const stats = sh.stats;
   return Object.keys(stats.freq);
 }
 

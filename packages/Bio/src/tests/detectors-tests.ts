@@ -6,7 +6,7 @@ import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -433,12 +433,12 @@ export async function _testPosList(list: string[], units: NOTATION,
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = UnitsHandler.getOrCreate(col);
-  expect(uh.getAlphabetSize(), alphabetSize);
-  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
-  if (!uh.isHelm()) {
-    expect(uh.aligned, aligned);
-    expect(uh.alphabet, alphabet);
+  const sh = SeqHandler.forColumn(col);
+  expect(sh.getAlphabetSize(), alphabetSize);
+  expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!sh.isHelm()) {
+    expect(sh.aligned, aligned);
+    expect(sh.alphabet, alphabet);
   }
 }
 
@@ -461,12 +461,12 @@ export async function _testPos(
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = UnitsHandler.getOrCreate(col);
-  expect(uh.getAlphabetSize(), alphabetSize);
-  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
-  if (!uh.isHelm()) {
-    expect(uh.aligned, aligned);
-    expect(uh.alphabet, alphabet);
+  const sh = SeqHandler.forColumn(col);
+  expect(sh.getAlphabetSize(), alphabetSize);
+  expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!sh.isHelm()) {
+    expect(sh.aligned, aligned);
+    expect(sh.alphabet, alphabet);
   }
 }
 
