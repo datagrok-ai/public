@@ -1017,6 +1017,8 @@ export interface IDartApi {
   grok_TagEditor_OnChanged(te: any, handler: any): any;
   grok_TagElement_Get_Tag(te: any): any;
   grok_TagElement_Set_Tag(te: any, tag: any): any;
+  grok_InputBase_Get_InputType(input: any): any;
+  grok_InputBase_Get_DataType(input: any): any;
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Set_Property(input: any, p: any): any;
   grok_InputBase_Get_Root(input: any): any;

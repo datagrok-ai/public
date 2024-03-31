@@ -1044,6 +1044,14 @@ export class InputBase<T = any> {
     return toJs(api.grok_InputBase_ForColumn(column.dart));
   }
 
+  /** Input type identifier (such as "Slider" for the slider input). See {@link InputType}. */
+  get inputType(): string {
+    return api.grok_InputBase_Get_InputType(this.dart);
+  };
+
+  /** Data type this input can edit. See {@link Type}. */
+  get dataType(): string { return api.grok_InputBase_Get_DataType(this.dart); };
+
   /** Visual root (typically a div element that contains {@link caption} and {@link input}) */
   get root(): HTMLElement { return api.grok_InputBase_Get_Root(this.dart); };
 
@@ -1203,6 +1211,9 @@ export class InputForm extends DartWrapper {
 /** Base class for JS value editors */
 export abstract class JsInputBase<T = any> extends InputBase<T> {
   //onInput: rxjs.Subject<any> = new rxjs.Subject<any>();
+
+  abstract get inputType(): string;
+  abstract get dataType(): string;
 
   abstract getInput(): HTMLElement;
 
