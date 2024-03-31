@@ -1233,7 +1233,7 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 
   constructor() {
     super(null, null);
-    //this.dart = api.grok_InputBase_FromJS(this);
+    this.dart = api.grok_InputBase_FromJS(this);
   }
 }
 
