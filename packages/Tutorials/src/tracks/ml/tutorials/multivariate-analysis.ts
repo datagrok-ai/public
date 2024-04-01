@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
@@ -11,7 +11,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     return `Multivariate analysis reveals complex interactions and patterns within a dataset. It uses 
     statistical techniques to explore the relationships among multiple variables.`;
   }
-  get steps() { return 6; }
+  get steps() { return 7; }
     
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
@@ -19,6 +19,9 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
   protected async _run() {
     this.header.textContent = this.name;
+
+    grok.shell.windows.context.visible = false;
+    grok.shell.windows.help.visible = false;
 
     this.describe(`Partial Least Squares Regression (PLS) models the relationship 
     between independent variables (predictors) and dependent variables (responses). Use it 
@@ -59,7 +62,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
       setTimeout(() => {
         viewers = [...(grok.shell.v as DG.TableView).viewers];
-        console.log(viewers);
+        //console.log(viewers);
       }, 2000);
     }, undefined, 'Perform multivariate analysis');
   
@@ -78,38 +81,73 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'Select column with data samples names.');
 
-    await this.action('Click "RUN" and wait for the analysis to complete.', dlg.onClose);
+    await this.action('Press "RUN" and wait for the analysis', dlg.onClose);
 
-    setTimeout(() => {
-      const wizard = ui.hints.addTextHint({title: 'Explore', pages: [
-        {
-          caption: ui.h2('Observed vs. Predicted'),
-          text: 'Closer to the line means better price prediction.',
-          showNextTo: viewers[1].root,
-        },
-        {
-          caption: ui.h2('Scores'),
-          text: 'Similarities & dissimilarities: alfaromeo and mercedes are different.',
-          showNextTo: viewers[4].root,
-        },
-        {
-          caption: ui.h2('Loadings'),
-          text: 'The impact of each feature on the latent factors: higher loading means stronger influence.',
-          showNextTo: viewers[3].root,
-        },
-        {
-          caption: ui.h2('Regression Coefficients'),
-          text: 'Parameters of the obtained linear model: the "diesel" feature affects the price the most.',
-          showNextTo: viewers[2].root,
-        },
-        {
-          caption: ui.h2('Explained Variance'),
-          text: 'How well the latent components fit source data: closer to one means better fit.',
-          showNextTo: viewers[5].root,
-        },
-      ]});
+    let viewerRoots: HTMLElement[];
+      
+    const viewerMd = [
+      '# Observed vs. Predicted\n\nCloser to the line means better price prediction.',
+      '# Scores\n\n' +      
+      'Similarities & dissimilarities among samples:\n\n' +       
+      "* volvo's are close to each other\n" + 
+      '* porsche & mercedes are different',
+      '# Loadings\n\n' +       
+      'The impact of each feature on the latent factors: higher loading means stronger influence.',
+      '# Regression Coefficients\n\n' +      
+      'Parameters of the obtained linear model:\n\n' +       
+      '* features make different contribution to the prediction\n' +
+      '* "diesel" effects the most',
+      '# Explained Variance\n\n' +       
+      'How well the latent factors fit source data:\n\n' + 
+      '* closer to one means better fit\n' +
+      '* 3 latent components explain 92% of the price variation',
+    ];
+    
+    let idx = 0;
+    let hint: HTMLElement;
+    let msg: HTMLDivElement;
+    let popup: HTMLDivElement;
+    const nextBtn = ui.button('next', () => hint.click(), 'Go to the next viewer');
+    const prevBtn = ui.button('prev', () => {
+      idx -= 2;
+      hint.click();
+    }, 'Go to the previous viewer');
+    const doneBtn = ui.button('done', () => hint.click(), 'Complete this tutorial');
+    const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
+    btnsDiv.style.marginLeft = 'auto';
+    btnsDiv.style.marginRight = '0';
 
-      wizard.helpUrl = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
+    const step = () => {
+      if (idx < viewerRoots.length) {
+        msg = ui.divV([ui.markdown(viewerMd[idx]), btnsDiv]);
+        popup = ui.hints.addHint(viewerRoots[idx], msg, 'left');
+        doneBtn.hidden = (idx < viewerRoots.length - 1);
+        nextBtn.hidden = (idx === viewerRoots.length - 1);
+        prevBtn.hidden = (idx < 1);
+        hint = ui.hints.addHintIndicator(popup, undefined, 3000);
+        hint.onclick = () => {
+          popup.remove();
+          ++idx;
+          step();
+        };
+      }
+    };
+
+    setTimeout(async () => {
+      viewerRoots = [
+        viewers[1].root, // Observed vs. Predicted scatterplot
+        viewers[4].root, // Scores scatterplot
+        viewers[3].root, // Loadings scatterplot
+        viewers[2].root, // Regression coeffs bar chart
+        viewers[5].root, // Explained variances bar chart
+      ];
+
+      step();
     }, 2100);
+    
+    await this.action('Explore each viewer', new Observable((subscriber: any) => {
+      //@ts-ignore
+      $(doneBtn).one('click', () => subscriber.next(true));
+    }), undefined, 'Press "Next" to switch to the next viewer');    
   }
 }
