@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.0 (WIP)
+
+### Features
+
+* #2707: Add original and canonical to monomer
+
 ## 2.11.42 (2024-03-27)
 
 ### Bug fixes

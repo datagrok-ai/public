@@ -16,6 +16,7 @@ import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
 import {calculateColumns} from './utils/calculate-single-cell';
+
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
@@ -35,6 +36,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   public campaignProps: {[key: string]: any} = {};
   private currentPickViewId?: string;
   private _pickViewPromise?: Promise<void> | null = null;
+
   constructor(c: DG.FuncCall) {
     super(c);
     this._infoView = new InfoView(this);
@@ -44,7 +46,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    grok.shell.addView(this.multiView);
+    //grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {

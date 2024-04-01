@@ -7,7 +7,7 @@ import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {alignSequencePair} from '@datagrok-libraries/bio/src/utils/macromolecule/alignment';
 import {KnnResult, SparseMatrixService} from '@datagrok-libraries/ml/src/distance-matrix/sparse-matrix-service';
 import {getEncodedSeqSpaceCol} from './sequence-space';
@@ -50,9 +50,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const uh = UnitsHandler.getOrCreate(this.moleculeColumn!);
+        const sh = SeqHandler.forColumn(this.moleculeColumn!);
 
-        await (!uh.isHelm() ? this.computeByMM() : this.computeByChem());
+        await (!sh.isHelm() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.moleculeColumnName})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -121,13 +121,13 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
-    const col = resDf.col(molColName)!;
-    const uh = UnitsHandler.getOrCreate(col);
-    const splitter = uh.getSplitter();
-    const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
-    const subParts2 = splitter(resDf.get(molColName, resDf.currentRowIdx));
-    const alignment = alignSequencePair(Array.from(subParts1), Array.from(subParts2));
-    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, uh.units, molDifferences);
+    const resCol: DG.Column<string> = resDf.col(molColName)!;
+    const molColSh = SeqHandler.forColumn(this.moleculeColumn!);
+    const resSh = SeqHandler.forColumn(resCol);
+    const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
+    const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
+    const alignment = alignSequencePair(subParts1, subParts2);
+    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.units, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

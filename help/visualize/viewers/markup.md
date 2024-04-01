@@ -19,7 +19,7 @@ Context menu:
 |-----------------------|-----------------|
 | Edit content...       | Opens a dialog for editing viewer's content.   |
 
-![Markup Viewer](markup-viewer.png "Markup Viewer")
+![Markup Viewer](img/markup-viewer.png "Markup Viewer")
 
 Here is how to embed iframes:
 

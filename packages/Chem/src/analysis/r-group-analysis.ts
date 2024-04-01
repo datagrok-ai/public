@@ -4,13 +4,44 @@ import * as DG from 'datagrok-api/dg';
 import {findRGroups, findRGroupsWithCore} from '../scripts-api';
 import {convertMolNotation, getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
+import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
+import {getRdKitService} from '../utils/chem-common-rdkit';
+import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 import { SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import { getUncommonAtomsAndBonds } from '../utils/chem-common-rdkit';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import { hexToPercentRgb } from '../utils/chem-common';
+import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 
+const enum RGroupMatchingStrategy {
+  Greedy = 'Greedy',
+  GreedyChunks = 'GreedyChunks',
+  Exhaustive = 'Exhaustive',
+  NoSymmetrization = 'NoSymmetrization',
+  GA = 'GA'
+};
+
+const enum RGroupAlignment {
+  None = 'None',
+  NoAlignment = 'NoAlignment',
+  MCS = 'MCS'
+};
+
+type RGroupsRes = {
+  rGroups: DG.Column<string>[];
+  highlightCol?: DG.Column<object>;
+}
+
+const matchingStrategies: RGroupMatchingStrategy[] = [
+  RGroupMatchingStrategy.Greedy,
+  RGroupMatchingStrategy.GreedyChunks,
+  RGroupMatchingStrategy.Exhaustive,
+  RGroupMatchingStrategy.GA,
+  RGroupMatchingStrategy.NoSymmetrization,
+];
+
+const alignments: RGroupAlignment[] = [RGroupAlignment.MCS, RGroupAlignment.NoAlignment, RGroupAlignment.None];
 
 let latestAnalysisCols: {[key: string]: string []} = {};
 let latestTrellisPlot: {[key: string]: DG.Viewer | null} = {};
@@ -31,25 +62,25 @@ export function convertToRDKit(smiles: string): string {
  */
 export function rGroupAnalysis(col: DG.Column): void {
   const sketcher = new DG.chem.Sketcher();
+
+  //General fields 
+  const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
+  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
-  const exactAtomsCheck = ui.boolInput('MCS exact atoms', true);
-  const exactBondsCheck = ui.boolInput('MCS exact bonds', true);
   const replaceLatest = ui.boolInput('Replace latest', true);
   const undoLatestAnalysis = ui.icons.undo(() => {
     removeLatestAnalysis(col);
   }, 'Undo latest analysis');
   undoLatestAnalysis.classList.add('chem-rgroup-undo-icon');
 
-  const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
-  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
-
+  //MCS fields
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
       const molCol = col.dataFrame.columns.byName(columnInput.value!);
       //TODO: implements mcs using web worker
-      const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      const mcsSmarts = await getMCS(molCol, mcsExactAtomsCheck.value!, mcsExactBondsCheck.value!);
       if (mcsSmarts !== null) {
         ui.setUpdateIndicator(sketcher.root, false);
         sketcher.setSmarts(mcsSmarts);
@@ -60,24 +91,46 @@ export function rGroupAnalysis(col: DG.Column): void {
     }
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
-  const mcsButtonHost = ui.div([mcsButton], 'chem-mcs-button-host');
   mcsButton.classList.add('chem-mcs-button');
+  const mcsExactAtomsCheck = ui.boolInput('Exact atoms', true);
+  const mcsExactBondsCheck = ui.boolInput('Exact bonds', true);
+
+  //R groups fields
+  const rGroupMatchingStrategy = ui.choiceInput('Matching strategy', matchingStrategies[0], matchingStrategies);
+  const rGroupAlignment = ui.choiceInput('Alignment', alignments[0], alignments);
+  const rGroupChunkSize = ui.intInput('Chunk size', 5);
+
+  //settings button to adjust mcs and r-groups settings
+  const mcsAndrGroupsSettingsIcon = ui.icons.settings(() => {
+    rGroupSettinsOpened = !rGroupSettinsOpened;
+    if (!rGroupSettinsOpened)
+      ui.empty(mcsAndRGroupSettingsDiv);
+    else {
+      mcsAndRGroupSettingsDiv.append(ui.divText('MCS settings', 'chem-rgroup-settings-header'));
+      mcsAndRGroupSettingsDiv.append(mcsExactAtomsCheck.root);
+      mcsAndRGroupSettingsDiv.append(mcsExactBondsCheck.root);
+      mcsAndRGroupSettingsDiv.append(ui.divText('R group analysis settings', 'chem-rgroup-settings-header'));
+      mcsAndRGroupSettingsDiv.append(rGroupMatchingStrategy.root);
+      mcsAndRGroupSettingsDiv.append(rGroupAlignment.root);
+      mcsAndRGroupSettingsDiv.append(rGroupChunkSize.root);
+    }
+  }, 'MCS and R group analysis settins');
+  mcsAndrGroupsSettingsIcon.classList.add('chem-rgroup-settings-icon');
+  const mcsAndRGroupSettingsDiv = ui.divV([], {style: {paddingTop: '15px'}});
+  let rGroupSettinsOpened = false;
+
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
     helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
-    .add(ui.div([
+    .add(ui.divV([
       sketcher,
-      ui.divH([
-        ui.divV([
-          exactAtomsCheck.root, exactBondsCheck.root,
-        ]),
-        mcsButtonHost,
-      ]),
+      mcsButton,
       columnInput,
       columnPrefixInput,
-      ui.divH([visualAnalysisCheck.root, replaceLatest.root, undoLatestAnalysis])
+      ui.divH([visualAnalysisCheck.root, replaceLatest.root, undoLatestAnalysis, mcsAndrGroupsSettingsIcon]),
+      mcsAndRGroupSettingsDiv
     ]))
     .onOK(async () => {
       if (replaceLatest.value) {
@@ -117,19 +170,31 @@ export function rGroupAnalysis(col: DG.Column): void {
       }
       let progressBar;
       try {
+        //using onlyMatchAtRGroups param in case user has manually defined enumerated R groups
         const onlyMatchAtRGroups =
           !!MolfileHandler.getInstance(core).atomTypes.filter((it) => it.startsWith('R')).length &&
-          core.includes('M  RGP');
-        if (!onlyMatchAtRGroups)
+          core.includes('M  RGP'); 
+        const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
+        if (coreIsQMol)
           core = convertMolNotation(core, grok.chem.Notation.MolBlock, grok.chem.Notation.Smarts);
         progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
-        const res = await findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups);
+        //const res = await rGroupsPython(col, core, columnPrefixInput.value, true, onlyMatchAtRGroups);
+
+        const rGroupOptions = {
+          chunkSize: rGroupChunkSize.value!.toString(),
+          matchingStrategy: rGroupMatchingStrategy.value!,
+          alignment: rGroupAlignment.value!,
+          includeTargetMolInResults: true,
+          onlyMatchAtRGroups: onlyMatchAtRGroups
+        };
+        const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+
         const module = getRdKitModule();
-        if (res.rowCount) {
+        if (rGroups.length) {
           //unmatched are those items for which all R group cols are empty
-          const unmatchedItems = new Uint8Array(res.rowCount).fill(0);
+          const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
           latestAnalysisCols[col.dataFrame.name] = [];
-          for (const resCol of res.columns) {
+          for (const resCol of rGroups) {
             const molsArray = new Array<string>(resCol.length);
             for (let i = 0; i < resCol.length; i++) {
               const molStr = resCol.get(i);
@@ -138,7 +203,7 @@ export function rGroupAnalysis(col: DG.Column): void {
               } else {
                 let mol: RDMol | null = null;
                 try {
-                  mol = module.get_mol(molStr);
+                  mol = resCol.name === 'Core' && coreIsQMol ? module.get_qmol(molStr!) : module.get_mol(molStr!);
                   if (mol)
                     molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
                 } catch (e) {
@@ -162,44 +227,31 @@ export function rGroupAnalysis(col: DG.Column): void {
             col.dataFrame.columns.add(rCol);
             latestAnalysisCols[col.dataFrame.name].push(rColName);
           }
-          //create column for highlight of uncommon structure
-          const highlightColName = `r-groups-highlight_${rGroupPrefixIdx}`;
-          let coreMol: RDMol | null = null;
-          let coreMolWithoutRGroups: RDMol | null = null;
-          try {
-            //const coreWithoutRGroups = core.replaceAll('R#', '*');
-            coreMol = module.get_mol(core);
-            const smiles = coreMol.get_smiles();
-            //remove r groups from smiles string to make highlight more precise
-            const newSmiles = smiles.replaceAll(/(\[\d+\*\])/g, '').replaceAll('()', '');
-            coreMolWithoutRGroups = module.get_mol(newSmiles);
-            const substructCol = DG.Column.fromType('object', highlightColName, col.dataFrame.rowCount)
-              .init((i) => getUncommonAtomsAndBonds(col.get(i), coreMolWithoutRGroups, module, '#bc131f', true));
-            col.dataFrame.columns.add(substructCol);
-            latestAnalysisCols[col.dataFrame.name].push(highlightColName);
-            col.temp[SUBSTRUCT_COL] = highlightColName;
-          } finally {
-            coreMol?.delete();
-            coreMolWithoutRGroups?.delete();
+          //create column for r groups highlight
+          if (highlightCol) {
+            col.dataFrame.columns.add(highlightCol);
+            latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
+            col.temp[SUBSTRUCT_COL] = highlightCol.name;
           }
           //create boolean column for match/non match
-          const isHitCol = DG.Column.bool(`${rGroupPrefixIdx ? `isHit_${rGroupPrefixIdx}` : `isHit`}`, res.rowCount)
-            .init((i) => unmatchedItems[i] !== res.columns.length - 1);
+          const isHitCol = DG.Column.bool(`${rGroupPrefixIdx ? `isHit_${rGroupPrefixIdx}` : `isHit`}`, rGroups[0].length)
+            .init((i) => unmatchedItems[i] !== rGroups.length - 1);
           col.dataFrame.columns.add(isHitCol);
           latestAnalysisCols[col.dataFrame.name].push(isHitCol.name);
           //filter out unmatched values
-          const filterUnmatched = DG.BitSet.create(res.rowCount).init((i) => isHitCol.get(i));
+          const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => isHitCol.get(i));
           col.dataFrame.filter.copyFrom(filterUnmatched);
           const view = grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
-          view.grid.col(highlightColName)!.visible = false;
+          if(highlightCol)
+            view.grid.col(highlightCol.name)!.visible = false;
           if (visualAnalysisCheck.value && view) {
-            if (res.columns.length < 3)
+            if (rGroups.length < 3)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
-                xColumnNames: [res.columns.byIndex(1).name], // column 0 is Core column
-                yColumnNames: [res.columns.byIndex(2).name],
+                xColumnNames: [rGroups[1].name], // column 0 is Core column
+                yColumnNames: [rGroups[2].name],
               });
           }
         } else
@@ -215,6 +267,76 @@ export function rGroupAnalysis(col: DG.Column): void {
   dlg.initDefaultHistory();
 }
 
+export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
+  coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
+    { [key: string]: string | boolean }): Promise<RGroupsRes> {
+  const res: IRGroupAnalysisResult =
+    await (await getRdKitService())
+      .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');
+  const resCols: DG.Column<string>[] = [];
+  for (let i = 0; i < res.colNames.length; i++) {
+    const col = DG.Column.string(res.colNames[i], molecules.length).init((j) => res.smiles[i][j]);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    resCols.push(col);
+  }
+  //creating highlight column
+  const highlightColName = `r-groups-highlight_${rGroupPrefixIdx}`;
+  const rGroupsNum = res.atomsToHighLight.length;
+  const colors = Array<Array<number>>(rGroupsNum);
+  for (let r = 0; r < rGroupsNum; r++)
+    colors[r] = hexToPercentRgb(DG.Color.toHtml(DG.Color.getCategoricalColor(r)))!;
+
+  const substructCol = DG.Column.fromType('object', highlightColName, molecules.dataFrame.rowCount)
+    .init((i) => {
+      const substr: ISubstruct = {
+        atoms: [],
+        bonds: [],
+        highlightAtomColors: {},
+        highlightBondColors: {},
+      };
+      for (let j = 0; j < rGroupsNum; j++) {
+        if(res.atomsToHighLight[j][i]) {
+          res.atomsToHighLight[j][i].forEach((atom) => substr.highlightAtomColors![atom] = colors[j]);
+          substr.atoms = substr.atoms!.concat(Array.from(res.atomsToHighLight[j][i]));
+        }
+        if(res.bondsToHighLight[j][i]) {
+          res.bondsToHighLight[j][i].forEach((bond) => substr.highlightBondColors![bond] = colors[j]);
+          substr.bonds = substr.bonds!.concat(Array.from(res.bondsToHighLight[j][i]));
+        }
+      }
+      return substr;
+    });
+  return { rGroups: resCols, highlightCol: substructCol };
+}
+
+export async function rGroupsPython(col: DG.Column<string>, core: string, prefix: string, withCore: boolean,
+  onlyMatchAtRGroups: boolean):
+  Promise<RGroupsRes> {
+  const resCols = [];
+  const res = withCore ? await findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups):
+    await findRGroups(col.name, col.dataFrame, core, prefix);
+  const module = getRdKitModule();
+  if (res.rowCount) {
+    for (const resCol of res.columns) {
+      const molsArray = new Array<string>(resCol.length);
+      for (let i = 0; i < resCol.length; i++) {
+        const molStr = resCol.get(i);
+        try {
+          const mol = module.get_mol(molStr);
+          molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+          mol.delete();
+        } catch (e) {
+          console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+        }
+      }
+      const rCol = DG.Column.fromStrings(resCol.name, molsArray);
+      rCol.semType = DG.SEMTYPE.MOLECULE;
+      rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+      resCols.push(rCol);
+    }
+  }
+  return { rGroups: resCols };
+}
 function removeLatestAnalysis(col: DG.Column) {
   if(latestTrellisPlot[col.dataFrame.name] && latestTrellisPlot[col.dataFrame.name]!.dataFrame) 
     latestTrellisPlot[col.dataFrame.name]!.close();

@@ -113,6 +113,7 @@ export enum TYPE {
   NUMERICAL = 'numerical',
   GRID_CELL_RENDER_ARGS = 'GridCellRenderArgs',
 
+  ELEMENT = 'element',
   VIEW = 'view',
   TABLE_VIEW = 'TableView',
   USER = 'User',

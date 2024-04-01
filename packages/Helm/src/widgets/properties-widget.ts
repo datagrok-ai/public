@@ -4,13 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {removeGapsFromHelm} from '../utils';
 
-export function getPropertiesDict(seq: string, uh: UnitsHandler): {} {
-  const helmString = uh.isHelm() ? seq : uh.getConverter(NOTATION.HELM)(seq);
+export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
+  const helmString = sh.isHelm() ? seq : sh.getConverter(NOTATION.HELM)(seq);
   // Remove gap symbols for compatibility with WebEditor
   const helmString2 = removeGapsFromHelm(helmString);
 
@@ -36,8 +36,8 @@ export function getPropertiesDict(seq: string, uh: UnitsHandler): {} {
 
 
 export function getPropertiesWidget(value: DG.SemanticValue): DG.Widget {
-  const uh = UnitsHandler.getOrCreate(value.cell.column);
-  const propDict = getPropertiesDict(value.value, uh);
+  const sh = SeqHandler.forColumn(value.cell.column);
+  const propDict = getPropertiesDict(value.value, sh);
   return new DG.Widget(
     ui.tableFromMap(propDict)
   );
