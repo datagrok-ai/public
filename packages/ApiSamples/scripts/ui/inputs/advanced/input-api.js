@@ -10,7 +10,7 @@ const inputs = [
   ui.input.bool('bool', {value: false, tooltipText: 'Bool input tooltip'}),
   ui.input.toggle('toggle', {value: true, tooltipText: 'Toggle input tooltip'}),
   ui.input.textArea('textArea', {value: 'Text area', size: {width: 150, height: 35}}),
-  ui.input.string('string', {value: 'Text', placeholder: 'Text', clearIcon: true, escClears: true,icon: ui.iconFA('square')}),
+  ui.input.string('string', {value: 'Text', placeholder: 'Text', clearIcon: true, escClears: true, icon: ui.iconFA('square')}),
   ui.input.search('search', {value: 'Search'}),
   ui.input.date('date', {value: dayjs('1970-5-10')}),
   // ui.input.map('map'), // doesn't work yet
