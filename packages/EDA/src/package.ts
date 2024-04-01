@@ -231,7 +231,7 @@ export async function MVA(): Promise<void> {
 }
 
 //name: MVA demo
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate analysis
 export async function demoMultivariateAnalysis(): Promise<any> {
   runDemoMVA();

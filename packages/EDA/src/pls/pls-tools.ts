@@ -241,7 +241,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.DEMO) {
     const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((viewer, idx) => {
       return {
-        caption: ui.h2(DEMO_RESULTS[idx].caption),
         text: DEMO_RESULTS[idx].text,
         showNextTo: viewer.root,
       }

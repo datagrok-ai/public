@@ -115,9 +115,9 @@ The method finds the latent factors that
 /** Description of demo results: wizard components */
 export const DEMO_RESULTS = [
   {caption: TITLE.MODEL, text: 'Closer to the line means better price prediction.'},
-  {caption: TITLE.SCORES, text: 'Similarities & dissimilarities: alfaromeo and mercedes are different.'},
+  {caption: TITLE.SCORES, text: 'The latent factor values for each data sample reflect the similarities and dissimilarities among observations.'},
   {caption: TITLE.LOADINGS, text: 'The impact of each feature on the latent factors: higher loading means stronger influence.'},
-  {caption: TITLE.REGR_COEFS, text: 'Parameters of the obtained linear model: the "diesel" feature affects the price the most.'},
+  {caption: TITLE.REGR_COEFS, text: 'Parameters of the obtained linear model: features make different contribution to the prediction.'},
   {caption: TITLE.EXPL_VAR, text: 'How well the latent components fit source data: closer to one means better fit.'},
 ];
 
