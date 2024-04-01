@@ -50,10 +50,17 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     dlg.add(ui.columnInput('Names', this.t!, null, () => {}, {
       filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)
     }));
+
+    let viewers = [] as DG.Viewer[];
   
     dlg.addButton('RUN', () => {
       dlg.close();
       plsDlg.getButton('RUN').click();
+
+      setTimeout(() => {
+        viewers = [...(grok.shell.v as DG.TableView).viewers];
+        console.log(viewers);
+      }, 2000);
     }, undefined, 'Perform multivariate analysis');
   
     dlg.show();
@@ -71,17 +78,38 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'Select column with data samples names.');
 
-    const outcomeDescription = `Once you run the analysis, the following visualizations will appear:
-    <ul style="list-style-type:disc">
-      <li><code>Observed vs. Predicted</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
-      <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>      
-      <li><code>Loadings</code> is a scatter plot that presents the impact of each feature on the latent factors</li>
-      <li><code>Regression Coefficients</code> is a bar chart with regression coefficients</li>
-      <li><code>Explained Variance</code> is a bar chart indicating how well the latent factors fit source data</li>
-    </ul><br>Look into these findings to figure out which variables correlate with each other ` +
-    'and which of them have a greater impact on the outcome.<br>See the context help on the right '+
-    'to learn more about multivariate analysis, or navigate to a documentation page by clicking the "Open in new tab" button.';
+    await this.action('Click "RUN" and wait for the analysis to complete.', dlg.onClose);
 
-    await this.action('Click "RUN" and wait for the analysis to complete.', dlg.onClose, null, outcomeDescription);
+    setTimeout(() => {
+      const wizard = ui.hints.addTextHint({title: 'Explore', pages: [
+        {
+          caption: ui.h2('Observed vs. Predicted'),
+          text: 'Closer to the line means better price prediction.',
+          showNextTo: viewers[1].root,
+        },
+        {
+          caption: ui.h2('Scores'),
+          text: 'Similarities & dissimilarities: alfaromeo and mercedes are different.',
+          showNextTo: viewers[4].root,
+        },
+        {
+          caption: ui.h2('Loadings'),
+          text: 'The impact of each feature on the latent factors: higher loading means stronger influence.',
+          showNextTo: viewers[3].root,
+        },
+        {
+          caption: ui.h2('Regression Coefficients'),
+          text: 'Parameters of the obtained linear model: the "diesel" feature affects the price the most.',
+          showNextTo: viewers[2].root,
+        },
+        {
+          caption: ui.h2('Explained Variance'),
+          text: 'How well the latent components fit source data: closer to one means better fit.',
+          showNextTo: viewers[5].root,
+        },
+      ]});
+
+      wizard.helpUrl = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
+    }, 2100);
   }
 }
