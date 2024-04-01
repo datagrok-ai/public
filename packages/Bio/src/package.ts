@@ -59,7 +59,7 @@ import {BioPackage, BioPackageProperties} from './package-types';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {PolyTool} from './utils/poly-tool/ui';
+import {getPolyToolDialog} from './utils/poly-tool/ui';
 import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
@@ -471,9 +471,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
         })
         .onCancel(() => { resolve(undefined); })
         .show();
-    } else {
+    } else
       runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-    }
   }).catch((err: any) => {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
@@ -647,9 +646,8 @@ export async function compositionAnalysis(): Promise<void> {
           await handler(col);
       })
       .show();
-  } else {
+  } else
     col = colList[0];
-  }
 
   if (!col)
     return;
@@ -690,10 +688,9 @@ export function convertDialog() {
 //name: polyTool
 //description: Perform cyclization of polymers
 export async function polyTool(): Promise<void> {
-  const polytool = new PolyTool();
   let dialog: DG.Dialog;
   try {
-    dialog = await polytool.getPolyToolDialog();
+    dialog = await getPolyToolDialog();
     dialog.show();
   } catch (err: any) {
     grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
