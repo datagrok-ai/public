@@ -1,5 +1,5 @@
 1. Open smiles.csv (For example from Files -> Demo Files/chem)
-2.Go to  **Chem > Search**:
+2. Go to  **Chem > Search**:
    * **Diversity Search**
    * **Similarity Search**
 3. Click the structures inside the opened **Diversity(Similarity) Search** viewer.

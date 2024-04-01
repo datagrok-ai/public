@@ -33,6 +33,7 @@
     2. Check the **Misc** > **Mouse Drag** (Pan or Select) setting
     3. Go to the scatter **plot > Property Pane > Misc**. Check the **Lasso Tool** checkbox. Use it on the scatter plot. Check the selection in the grid.
     4. Save to Layout. Check
+    5. Select some points. Use Ctrl+Shift+Drag for deselection.
 10. Tooltip:
     1. Right-click the scatter plot and check all options on the **Tooltip** tab.
     2. Save to Layout. Check
@@ -53,7 +54,10 @@
     4. Change arbitrary settings on the **Filter Panel** and check the scatter plot interaction.
     5. Save to Layout. Check
 
-<https://github.com/datagrok-ai/public/issues/1744>
+6. Use datasets: SPGI_v2, BrokenScatterPlots, OOMscatter.plot.small, scatter.plot.broken2, ForDG.csv:
+   * log scale + Layout
+   * invert axes + slider + Layout
+   * log scale + invert axes + slider + Layout
 ---
 {
   "order": 2
