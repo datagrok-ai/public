@@ -24,7 +24,7 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
    * the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot comparing the responce to its prediction
    * the [Regression Coefficients](https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients) bar chart presenting parameters of the obtained linear model
    * the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot indicating the impact of each feature on the latent factors
-   * the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot showing data samples similarities/dissimilarities
+   * the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot reflecting data samples similarities and dissimilarities
    * the [Explained Variance](https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance) bar chart measuring how well the latent factors fit source data
 
 ![add-to-workspace](pls.gif)
@@ -40,7 +40,7 @@ Compute the predictors representation by the latent factors:
    * the columns with the predictors (in the `Using` field)
    * the number of `Components`, i.e. latent factors
 
-PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)):
+PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)). The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates this:
 
 ![add-to-workspace](pls_vs_pca.png)
 
