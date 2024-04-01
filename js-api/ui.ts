@@ -957,68 +957,84 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.int} instead */
 export function intInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.slider} instead */
 export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null, options: {step: number | null} | null = null): InputBase<number | null> {
   return new InputBase(api.grok_SliderInput(name, value, min, max, options?.step), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.choice} instead */
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
   return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.multiChoice} instead */
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.string} instead */
 export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeholder?: String } | null = null): InputBase<string> {
   return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.search} instead */
 export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.float} instead */
 export function floatInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.date} instead */
 export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
   return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.bool} instead */
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
   return new InputBase(api.grok_BoolInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.toggle} instead */
 export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean> {
   return new InputBase(api.grok_SwitchInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.molecule} instead */
 export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.column} instead */
 export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
   const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
   return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.columns} instead */
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
                              options?: {available?: string[], checked?: string[]}): InputBase<Column[]> {
   return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.table} instead */
 export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
   return new InputBase(api.grok_TableInput(name, table?.dart, tables.map(toDart)), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.textArea} instead */
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.color} instead */
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
@@ -1027,6 +1043,7 @@ export function colorPicker(color: number, onChanged: (color: number) => void, c
   return api.grok_ColorPicker(color, onChanged, colorDiv);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.radio} instead */
 export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
   return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
