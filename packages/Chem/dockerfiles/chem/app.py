@@ -4,8 +4,10 @@ import logging
 import sys
 import json
 import gzip
+import os
 
 from utils import parallelize
+from settings import Settings
 
 app = Flask('descriptors')
 handler = logging.StreamHandler(sys.stderr)
@@ -19,7 +21,7 @@ bp = Blueprint('descriptors', __name__)
 headers_text = {'Content-Type': 'text/plain'}
 headers_app_json = {'Content-Type': 'application/json'}
 headers_app_octet_stream = {'Content-Type': 'application/octet-stream'}
-cpu_count = 4
+Settings.init()
 
 
 @bp.route('/chem/descriptors/tree', methods=['GET'])
@@ -36,7 +38,7 @@ def chem_descriptors():
     data = json.loads(request.data)
     molecules = data[request.args.get('molKey', 'molecules')]
     result = parallelize(get_descriptors, [molecules, data[request.args.get('desc', 'descriptors')]], [molecules],
-                         cpu_count)
+                         Settings.num_cores)
     app.logger.debug("Finished descriptors calculation")
     return _make_response(json.dumps(result), headers=headers_app_json)
 
@@ -44,35 +46,35 @@ def chem_descriptors():
 @bp.route('/chem/molecules_to_canonical', methods=['POST'])
 def chem_molecules_to_canonical():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_canonical, [molecules], [molecules], cpu_count)
+    result = parallelize(molecules_to_canonical, [molecules], [molecules], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/molecules_to_inchi', methods=['POST'])
 def chem_molecules_to_inchi():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_inchi, [molecules], [molecules], cpu_count)
+    result = parallelize(molecules_to_inchi, [molecules], [molecules], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/molecules_to_inchi_key', methods=['POST'])
 def chem_molecules_to_inchi_key():
     molecules = json.loads(request.data)
-    result = parallelize(molecules_to_inchi_key, [molecules], [molecules], cpu_count)
+    result = parallelize(molecules_to_inchi_key, [molecules], [molecules], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/inchi_to_inchi_key', methods=['POST'])
 def chem_inchi_to_inchi_key():
     inchi = json.loads(request.data)
-    result = parallelize(inchi_to_inchi_key, [inchi], [inchi], cpu_count)
+    result = parallelize(inchi_to_inchi_key, [inchi], [inchi], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
 @bp.route('/chem/inchi_to_smiles', methods=['POST'])
 def chem_inchi_to_smiles():
     inchi = json.loads(request.data)
-    result = parallelize(inchi_to_smiles, [inchi], [inchi], cpu_count)
+    result = parallelize(inchi_to_smiles, [inchi], [inchi], Settings.num_cores)
     return _make_response(json.dumps(result), headers=headers_app_json)
 
 
@@ -124,4 +126,4 @@ app.after_request(make_compressed_response)
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    app.run(host=Settings.host, port=Settings.port, threaded=True)
