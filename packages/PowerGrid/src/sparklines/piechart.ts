@@ -22,16 +22,24 @@ interface Subsector {
   radius: number;
   lowThreshold: number;
   highThreshold: number;
+  weight: number;
+  //probabilities: number[];
+  //boundary: number;
 }
 
 interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle;
   sectors: {
-    sectorColor: string;
-    subsectors: Subsector[];
-  }[];
+    lowerBound: number;
+    upperBound: number;
+    sectors: {
+      sectorColor: string;
+      subsectors: Subsector[];
+    }[];
+  };
 }
+
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   const sectors = gc.settings.sectors;
@@ -69,14 +77,14 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
     r = Math.max(r, minRadius);
   } else if (settings.sectors) {
-    const sectors = settings.sectors;
+    const sectors = settings.sectors.sectors;
     const totalSectors = sectors.length;
     const sectorAngle = (2 * Math.PI) / totalSectors;
     const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
     for (let i = 0; i < totalSectors; ++i) {
       const sector = sectors[i];
-      const sectorStartAngle = i * sectorAngle;
-      const sectorEndAngle = (i + 1) * sectorAngle;
+      const sectorStartAngle = settings.sectors.lowerBound + i * sectorAngle;
+      const sectorEndAngle = settings.sectors.lowerBound + (i + 1) * sectorAngle;
       if (normalizedAngle >= sectorStartAngle && normalizedAngle < sectorEndAngle) {
         const subsectors = sector.subsectors;
         const totalSubsectors = subsectors.length;
@@ -173,42 +181,94 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
       }
-    } else if (settings.sectors) {
+    } if (settings.sectors) {
+      const { lowerBound, upperBound, sectors } = settings.sectors;
+      sectors.sort((a, b) => b.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0) - a.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0));
+    
       let currentAngle = 0;
-      const sectors = settings.sectors;
-      for (let i = 0; i < sectors.length; ++i) {
-        const sector = sectors[i];
-        const sectorAngle = (2 * Math.PI) / sectors.length;
+      const totalSectorWeight = sectors.reduce((acc, sector) => acc + sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0), 0);
+    
+      for (const sector of sectors) {
+        const sectorWeight = sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
+        const normalizedSectorWeight = sectorWeight / totalSectorWeight;
+        const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
+    
+        // Render sector
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, Math.min(box.width, box.height) / 2, currentAngle, currentAngle + sectorAngle);
         g.closePath();
         g.fillStyle = this.hexToRgbA(sector.sectorColor, 0.4);
         g.fill();
-        
-        const totalSubsectors = sector.subsectors.length;
+    
+        // Render subsectors
         let subsectorCurrentAngle = currentAngle;
-        sector.subsectors.forEach(subsector => {
-          const subsectorAngle = sectorAngle / totalSubsectors;
+        sector.subsectors.forEach((subsector) => {
+          const normalizedSubsectorWeight = subsector.weight / sectorWeight;
+          const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
           const gap = 0.05;
           let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
           const subsectorName = subsector.name;
           const subsectorCol = cols.find(col => col.name === subsectorName);
+          let value;
           if (subsectorCol) {
-            r = this.normalizeValue(df.cell(row, subsectorCol.name).value, subsector) * (Math.min(box.width, box.height) / 2);
+            value = df.cell(row, subsector.name).value;
+            const normalizedValue = value && subsectorCol.name !== 'PPBR' ? this.normalizeValue(value, subsector) : 1;
+            r = normalizedValue * (Math.min(box.width, box.height) / 2);
             r = Math.max(r, minRadius);
           }
-          g.beginPath();
-          g.moveTo(box.midX, box.midY);
-          g.arc(box.midX, box.midY, r, subsectorCurrentAngle + gap, subsectorCurrentAngle + subsectorAngle - gap);
-          g.closePath();
-          g.fillStyle = this.hexToRgbA(sector.sectorColor, 0.8);
-          g.fill();
+          if (subsectorCol?.name === 'PPBR') {
+            const patternSize = r;
+            const patternCanvas = ui.canvas();
+            patternCanvas.width = patternSize;
+            patternCanvas.height = patternSize;
+            const patternCtx = patternCanvas.getContext('2d');
+            patternCtx!.strokeStyle = '#535659';
+            patternCtx!.lineWidth = 0.5;
+            const numLines = 15;
+            const spacing = patternSize / (numLines + 1);
+            for (let i = 1; i <= numLines; i++) {
+              const y = i * spacing;
+              patternCtx!.beginPath();
+              patternCtx!.moveTo(0, y);
+              patternCtx!.lineTo(patternSize, y);
+              patternCtx!.stroke();
+            }
+            const pattern = g.createPattern(patternCanvas, 'repeat');
+            g.beginPath();
+            g.moveTo(box.midX, box.midY);
+            g.arc(box.midX, box.midY, r, subsectorCurrentAngle + gap, subsectorCurrentAngle + subsectorAngle - gap);
+            g.closePath();
+            g.save();
+            g.translate(box.midX, box.midY);
+            g.rotate(Math.PI/6);
+            g.translate(-box.midX, -box.midY);
+            g.fillStyle = pattern!;
+            g.fill();
+            g.restore();
+          } else {
+            g.beginPath();
+            g.moveTo(box.midX, box.midY);
+            g.arc(box.midX, box.midY, r, subsectorCurrentAngle + gap, subsectorCurrentAngle + subsectorAngle - gap);
+            g.closePath();
+            g.fillStyle = value ? this.hexToRgbA(sector.sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
+            g.fill();
+          }
           subsectorCurrentAngle += subsectorAngle;
         });
+    
+        // Render inner circle representing the range
+        g.beginPath();
+        g.arc(box.midX, box.midY, lowerBound * (Math.min(box.width, box.height) / 2), currentAngle, currentAngle + sectorAngle);
+        g.arc(box.midX, box.midY, upperBound * (Math.min(box.width, box.height) / 2), currentAngle + sectorAngle, currentAngle, true);
+        g.closePath();
+        g.fillStyle = this.hexToRgbA(sector.sectorColor, 0.4);
+        g.fill();
+    
         currentAngle += sectorAngle;
       }
-    } else {
+    }    
+     else {
       const sum = getColumnsSum(cols, row);
       let currentAngle = 0;
       for (let i = 0; i < cols.length; i++) {
