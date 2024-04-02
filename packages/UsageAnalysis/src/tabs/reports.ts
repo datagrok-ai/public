@@ -3,6 +3,7 @@ import {UaToolbox} from '../ua-toolbox';
 import * as grok from 'datagrok-api/grok';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
+import {DetailedLog} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 const filtersStyle = {
@@ -12,7 +13,8 @@ const filtersStyle = {
 export class ReportsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
-    this.name = 'User reports';
+    this.name = 'Reports';
+    this.rout = 'Reports';
   }
 
   async initViewers(): Promise<void> {
@@ -91,6 +93,16 @@ export class ReportsView extends UaView {
 
         return viewer;
       },
+      processDataFrame: (t: DG.DataFrame) => {
+        t.onSelectionChanged.subscribe(async () => {
+          await this.showReportContextPanel(t);
+        });
+        t.onCurrentRowChanged.subscribe(async () => {
+          t.selection.setAll(false);
+          t.selection.set(t.currentRowIdx, true);
+        });
+        return t;
+      },
     });
 
     reportsViewer.root.classList.add('ui-panel');
@@ -99,5 +111,13 @@ export class ReportsView extends UaView {
       filters,
       reportsViewer.root,
     ]));
+  }
+
+  async showReportContextPanel(table: DG.DataFrame): Promise<void> {
+    if (!table.selection.anyTrue) return;
+    let df = table.clone(table.selection);
+    const reportId = df.getCol('report_id').get(0);
+    if (!reportId) return
+    grok.shell.o = ui.div([await DetailedLog.getAccordion(reportId)]);
   }
 }
