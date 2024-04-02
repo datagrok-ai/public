@@ -72,6 +72,10 @@ title: "Grid"
 
 ![Date and number formatting](img/grid-formatting.gif "Date and number formatting")
 
+### Custom formatting
+
+![Custom number formatting](img/grid-custom-format.gif "Custom number formatting")
+
 See also:
 
 * [Formatting notation](../../govern/catalog/tags.md#format) for dates and numbers
