@@ -44,7 +44,7 @@
     "@datagrok-libraries/utils": "^4.1.44",
     "@types/pako": "^2.0.3",
     "cash-dom": "latest",
-    "datagrok-api": "^1.18.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "latest",
     "file-loader": "latest",
     "jstat": "^1.9.5",
