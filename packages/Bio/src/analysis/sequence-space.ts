@@ -20,7 +20,7 @@ export async function getEncodedSeqSpaceCol(
   const rowCount = seqCol.length;
   const sh = SeqHandler.forColumn(seqCol);
   const encList = Array<string>(rowCount);
-  let charCodeCounter = 36;
+  let charCodeCounter = 1; // start at 1, 0 is reserved for null.
   const charCodeMap = new Map<string, string>();
   const seqColCats = seqCol.categories;
   const seqColRawData = seqCol.getRawData();
@@ -28,7 +28,7 @@ export async function getEncodedSeqSpaceCol(
     const catI = seqColRawData[rowIdx];
     const seq = seqColCats[catI];
     if (seq === null || seqCol.isNone(rowIdx)) {
-      // @ts-ignore
+      //@ts-ignore
       encList[rowIdx] = null;
       continue;
     }
@@ -44,30 +44,13 @@ export async function getEncodedSeqSpaceCol(
     }
   }
   let options = {} as mmDistanceFunctionArgs;
-  if (similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE) {
+  if (
+    similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE ||
+    similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH
+  ) {
     const monomers = Array.from(charCodeMap.keys());
     const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
-    // the susbstitution matrix contains similarity, but we need distances
-    monomerRes.scoringMatrix.forEach((row, i) => {
-      row.forEach((val, j) => {
-        monomerRes.scoringMatrix[i][j] = 1 - val;
-      });
-    });
-    const monomerHashToMatrixMap: { [_: string]: number } = {};
-    Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
-      monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
-    });
-    // sets distance function args in place.
-    options = {scoringMatrix: monomerRes.scoringMatrix, alphabetIndexes: monomerHashToMatrixMap};
-  } else if (similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH) {
-    const monomers = Array.from(charCodeMap.keys());
-    const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
-    // the susbstitution matrix contains similarity, but we need distances
-    // monomerRes.scoringMatrix.forEach((row, i) => {
-    //   row.forEach((val, j) => {
-    //     monomerRes.scoringMatrix[i][j] = 1 - val;
-    //   });
-    // });
+
     const monomerHashToMatrixMap: { [_: string]: number } = {};
     Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
       monomerHashToMatrixMap[charCodeMap.get(key)!] = value;

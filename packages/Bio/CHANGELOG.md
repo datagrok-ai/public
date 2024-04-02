@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.12.2 (2024-04-03)
+
+Harmonized MM distance function with monomer similarity matrices.
+
 ## 2.12.1 (2024-04-02)
 
 ### Bug fixes
