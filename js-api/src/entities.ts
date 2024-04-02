@@ -1226,6 +1226,10 @@ export class Property {
   get description(): string { return api.grok_Property_Get_Description(this.dart); }
   set description(s: string) { api.grok_Property_Set_Description(this.dart, s); }
 
+  /** Nullable */
+  get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
+  set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
+
   /** Default value */
   get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.dart); }
   set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, s); }

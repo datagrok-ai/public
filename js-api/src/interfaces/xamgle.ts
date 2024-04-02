@@ -8,8 +8,6 @@ export interface IDetailedLogSettings {
 
   errors: string;
 
-  stackTrace: string;
-
   clientLog: string;
 
   serverLog: string;

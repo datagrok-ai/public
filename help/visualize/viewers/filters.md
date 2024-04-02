@@ -68,7 +68,7 @@ Free-text filter also understands (very basic) logical conditions. Here are some
 Unfortunately, at the moment free-text filter does not work with columns that have space in the name. 
 We are working on developing another filter that would let you specify column/operation/value in a more structured form.
 
-![](features/filters-free-text.gif)
+![](img/filters-free-text.gif)
 
 ## Column tags
 
@@ -111,7 +111,7 @@ column.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = 'Categorical';
 
 Drag-and-drop columns right from the grid to add the corresponding filters:
 
-![filters-drag-column](filters-drag-column.gif)
+![filters-drag-column](img/filters-drag-column.gif)
 
 See also:
 

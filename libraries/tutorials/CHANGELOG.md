@@ -1,5 +1,11 @@
 # tutorials changelog
 
+## 1.3.12 (2024-03-29)
+
+### Features
+
+* Additional parameter to get item from top menu
+
 ## 1.3.10 (2023-10-27)
 
 ### Bug Fixes

@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
-import {DEFAULT_FORMATS} from '../const';
-
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {HELM_REQUIRED_FIELD as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
-import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
-import {META_FIELDS as MET} from './const';
 import {codesToSymbolsDictionary} from '../../model/data-loading-utils/json-loader';
+import {DEFAULT_FORMATS} from '../const';
+import {META_FIELDS as MET} from './const';
+
+import {_package} from '../../package';
 
 export class MonomerLibWrapper {
   private constructor() {

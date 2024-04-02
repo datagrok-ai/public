@@ -21,4 +21,4 @@ The viewer also works together with the grid:
 
 The viewer is a part of the [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid) package.
 
-![Forms viewer](forms.gif)
+![Forms viewer](img/forms.gif)

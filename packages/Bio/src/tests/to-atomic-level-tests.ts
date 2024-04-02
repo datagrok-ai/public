@@ -14,7 +14,7 @@ import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {toAtomicLevel} from '../package';
 import {_package} from '../package-test';
@@ -198,7 +198,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
-    const uh = UnitsHandler.getOrCreate(seqCol);
+    const sh = SeqHandler.forColumn(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });

@@ -378,14 +378,9 @@
   border-bottom: 2px solid var(--blue-2)!important
 }
 
-.chem-mcs-button-host {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .chem-mcs-button {
   font-size: 12px!important;
+  margin-left: 0px!important;
 }
 
 .chem-viewer-grid {
@@ -544,8 +539,20 @@
 }
 
 .chem-rgroup-undo-icon {
-  padding-left: 80px;
+  padding-left: 70px;
   padding-top: 6px
+}
+
+.chem-rgroup-settings-icon {
+  padding-left: 10px;
+  padding-top: 2px;
+  font-size: 20px;
+}
+
+.chem-rgroup-settings-header {
+  color: var(--grey-4);
+  font-weight: bold;
+  align-self: center;
 }
 
 .grok-chem-filter-options {
@@ -562,4 +569,16 @@
   width: auto;
   min-width: auto;
   margin-left: 6px;
+}
+
+.d4-filter-disabled > .chem-filter-sketcher-div{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-empty-filter{
+  pointer-events: none;
+}
+
+.d4-filter-disabled > .chem-filter-search-options{
+  pointer-events: none;
 }

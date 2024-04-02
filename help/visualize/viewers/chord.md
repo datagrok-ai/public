@@ -10,7 +10,7 @@ between the data points as arcs connecting the data.
 The chord width represents the strength of the flow
 between the entities.
 
-![Chord viewer](chord-viewer.png)
+![Chord viewer](img/chord-viewer.png)
 
 ## Creating a Chord viewer
 

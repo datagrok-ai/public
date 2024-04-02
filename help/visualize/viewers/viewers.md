@@ -36,7 +36,7 @@ Viewers are docked within a view. To rearrange it, start dragging viewer's heade
 move the mouse cursor to one of them and release the mouse button to dock the viewer at that spot. To resize the viewer,
 drag the viewer's border.
 
-![viewers-interaction-main](../viewers-interaction-main.gif)
+![viewers-interaction-main](img/viewers-interaction-main.gif)
 
 ## Docking
 
@@ -77,7 +77,7 @@ To save a layout and then apply it to a different dataset:
 4. Open another dataset with similar columns
 5. Click View | Layout | Open Gallery and select a layout saved in step 3. Or, in case you saved it locally at step 3, drag-and-drop the layout file to the view.
 
-![layout-suggestions](../layout-suggestions.gif)
+![layout-suggestions](img/layout-suggestions.gif)
 
 ## Selection
 
@@ -108,7 +108,7 @@ To select rows in the [grid](grid.md):
 | (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
 | (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
 
-![viewers-selection](../viewers-selection.gif)
+![viewers-selection](img/viewers-selection.gif)
 
 ## Current rows
 
@@ -124,17 +124,17 @@ you move from one row to another you immediately see where the row values belong
 the most similar structure to the reference. This also works the other way around: by first clicking on a visual
 element, you will see the row it represents in the grid.
 
-![current-rows](../current-rows-2.gif "Current rows")
+![current-rows](img/current-rows-2.gif "Current rows")
 
 ## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
 
-![filters](filters.gif)
+![filters](img/filters.gif)
 
 Alternatively, click on the column's "hamburger icon" to filter by the individual column:
 
-![grid-column-filter](grid-column-filter.png)
+![grid-column-filter](img/grid-column-filter.png)
 
 ### Viewers as filters
 
@@ -153,7 +153,7 @@ this sets two different [properties](#properties) of a viewer:
 By setting these properties manually, it is possible to achieve different combination of interactivity (for instance, a
 viewer that shows only selected rows)
 
-![viewers-as-filters](../viewers-as-filters.gif)
+![viewers-as-filters](img/viewers-as-filters.gif)
 
 ## Common actions
 
@@ -229,7 +229,7 @@ select `Viewer | Properties`.
 
 [![Properties](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
 
-![viewer-property-panel](viewer-property-panel.gif)
+![viewer-property-panel](img/viewer-property-panel.gif)
 
 ## Tooltips
 
@@ -305,7 +305,7 @@ There are two ways to add a trellis plot:
 
 See [Trellis Plot](trellis-plot.md) for more details.
 
-![viewers-as-trellis](../viewers-as-trellis.gif)
+![viewers-as-trellis](img/viewers-as-trellis.gif)
 
 ### Google map
 
@@ -324,7 +324,7 @@ See [Trellis Plot](trellis-plot.md) for more details.
 
 |                                               |                                                                                                                                                                                                                                                       |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Markup](markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
+| ![Markup](img/markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
 
 ### Statistics
 

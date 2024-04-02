@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALPHABET, NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-category('UnitsHandler: getRegion', () => {
+category('SeqHandler: getRegion', () => {
   const data: {
     [testName: string]: {
       srcCsv: string,
@@ -76,8 +76,8 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
       const semType: string | null = await grok.functions.call('Bio:detectMacromolecule', {col: srcSeqCol});
       if (semType) srcSeqCol.semType = semType;
 
-      const srcUh = UnitsHandler.getOrCreate(srcSeqCol);
-      const resSeqCol = srcUh.getRegion(testData.startIdx, testData.endIdx, 'regSeq');
+      const srcSh = SeqHandler.forColumn(srcSeqCol);
+      const resSeqCol = srcSh.getRegion(testData.startIdx, testData.endIdx, 'regSeq');
 
       const tgtDf = DG.DataFrame.fromCsv(testData.tgtCsv);
       const tgtSeqCol = tgtDf.getCol('seq');

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import * as rxjs from 'rxjs';
@@ -26,11 +26,13 @@ import {DEFAULT_FORMATS} from '../../model/const';
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
 }
-const REQUIRED_COLUMN_LABELS = [ REQUIRED_COLUMN_LABEL.SEQUENCE ];
+
+const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 
 export class TranslatorLayoutHandler {
   private eventBus: EventBus;
   private inputFormats = Object.keys(codesToHelmDictionary).concat(DEFAULT_FORMATS.HELM);
+
   constructor() {
     this.moleculeImgDiv = ui.div([]);
     this.moleculeImgDiv.className = 'mol-host';
@@ -100,7 +102,7 @@ export class TranslatorLayoutHandler {
       ...tableControls,
       inputFormats,
       outputFormats,
-      convertBulkButton 
+      convertBulkButton,
     ], 'ui-form');
 
     const bulkTranslationControls = ui.block25([
@@ -151,9 +153,9 @@ export class TranslatorLayoutHandler {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.setTag(DG.TAGS.UNITS, units);
-      const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? UnitsHandler.setUnitsToFastaColumn : UnitsHandler.setUnitsToHelmColumn;
-      setUnits(unitsHandler);
+      const seqHandler = SeqHandler.forColumn(translatedColumn);
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn : SeqHandler.setUnitsToHelmColumn;
+      setUnits(seqHandler);
     }
 
     // add newColumn to the table
@@ -180,7 +182,7 @@ export class TranslatorLayoutHandler {
     const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
     const clearButton = ui.button(
-      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = '' }),
+      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = ''; }),
       () => {}
     );
     ui.tooltip.bind(clearButton, 'Clear input');
@@ -205,7 +207,7 @@ export class TranslatorLayoutHandler {
       ui.h1('Single sequence'),
       singleSequenceInputControls,
       singleSequenceOutputTable,
-    ])
+    ]);
 
     return singleSequenceControls;
   }
@@ -325,7 +327,7 @@ class TableInputManager {
   }
 
   private getTableFromEventData(eventData: any): DG.DataFrame {
-    if (! eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
+    if (!eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
       throw new Error(`EventData does not contain a dataframe`, eventData);
 
     return eventData.args.dataFrame as DG.DataFrame;
@@ -495,7 +497,7 @@ export class EventBus {
   getSelectedColumn(columnLabel: REQUIRED_COLUMN_LABEL): DG.Column<string> | null {
     return this._columnSelection[columnLabel].getValue();
   }
-  
+
   getSelectedInputFormat(): string {
     return this._inputFormatSelection$.getValue();
   }

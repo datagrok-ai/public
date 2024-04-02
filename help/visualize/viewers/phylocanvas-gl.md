@@ -19,4 +19,4 @@ _Phylocanvas.gl_ supports a variety of tree types:
 
 * [Viewers](../viewers/viewers.md)
 * [Network diagram](network-diagram.md) viewer
-* [Dendrogram](./dendrogram) viewer
+* [Dendrogram](dendrogram.md) viewer

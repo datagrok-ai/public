@@ -13,7 +13,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -1293,13 +1293,13 @@ export class PeptidesModel {
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
     this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
-    const uh = UnitsHandler.getOrCreate(seqCol);
-    const isHelm = uh.isHelm();
+    const sh = SeqHandler.forColumn(seqCol);
+    const isHelm = sh.isHelm();
     if (isHelm) {
       try {
         grok.shell.warning('Column is in HELM notation. Sequences space will linearize sequences from position 0 ' +
           'prior to analysis');
-        const linearCol = uh.convert(NOTATION.SEPARATOR, '/');
+        const linearCol = sh.convert(NOTATION.SEPARATOR, '/');
         const newName = this.df.columns.getUnusedName(`Separator(${seqCol.name})`);
         linearCol.name = newName;
         this.df.columns.add(linearCol, true);
