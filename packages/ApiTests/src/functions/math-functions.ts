@@ -211,22 +211,22 @@ category('Functions: Math', () => {
     'Round(-3.4)': -3,
   }));
 
-  test('Round10', () => check({
-    'Round10(12345.12345, 6)': 12345.12345,
-    'Round10(12345.12345, 4)': 12345.1235,
-    'Round10(12345.12345, 0)': 12345,
-    'Round10(PI, 2)': 3.14,
-    'Round10(0.5, 0)': 1,
-    'Round10(0.3, 0)': 0,
-    'Round10(-0.5, 0)': -1,
-    'Round10(175, -1)': 180,
-    'Round10(170, -1)': 170,
-    'Round10(175, -2)': 200,
-    'Round10(125, -2)': 100,
-    'Round10(12340.12345, -3.8)': 12000,
-    'Round10(12340.12345, -4.2)': 10000,
-    'Round10(12340.12345, -5)': 0,
-    'Round10(null, 2)': undefined,
+  test('RoundFloat', () => check({
+    'RoundFloat(12345.12345, 6)': 12345.12345,
+    'RoundFloat(12345.12345, 4)': 12345.1235,
+    'RoundFloat(12345.12345, 0)': 12345,
+    'RoundFloat(PI, 2)': 3.14,
+    'RoundFloat(0.5, 0)': 1,
+    'RoundFloat(0.3, 0)': 0,
+    'RoundFloat(-0.5, 0)': -1,
+    'RoundFloat(175, -1)': 180,
+    'RoundFloat(170, -1)': 170,
+    'RoundFloat(175, -2)': 200,
+    'RoundFloat(125, -2)': 100,
+    'RoundFloat(12340.12345, -3.8)': 12000,
+    'RoundFloat(12340.12345, -4.2)': 10000,
+    'RoundFloat(12340.12345, -5)': 0,
+    'RoundFloat(null, 2)': undefined,
   }));
 
   test('Sin', () => check({

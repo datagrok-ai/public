@@ -51,7 +51,7 @@ to use parameters: `true`
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
-- [Round10](#round10)
+- [RoundFloat](#roundFloat)
 - [Sin](#sin)
 - [Smaller](#smaller)
 - [Sqrt](#sqrt)
@@ -379,15 +379,15 @@ Round(3.5)     // 4
 Round(-3.5)    // -4
 ```
 
-## <a name="round10"></a>Round10(`x`, `decimalPlaces`)
+## <a name="roundFloat"></a>RoundFloat(`x`, `decimalPlaces`)
 
 Returns the number rounded up `x` to the number of decimal places specified by `decimalPlaces`.
 
 `decimalPlaces` can be negative to round to even 10s, 100s, etc.
 
 ```javascript
-Round10(PI, 2)      // 3.14
-Round10(25, -1)     // 30
+RoundFloat(PI, 2)      // 3.14
+RoundFloat(25, -1)     // 30
 ```
 
 ## <a name="sin"></a>Sin(`x`)
