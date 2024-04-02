@@ -194,8 +194,9 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10) {
-  return await markovCluster(df, cols, metrics, weights,
-    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations);
+  const res = (await markovCluster(df, cols, metrics, weights,
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations));
+  return res?.sc;
 }
 
 //top-menu: ML | Analyze | Multivariate Analysis...
