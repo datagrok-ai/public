@@ -2261,6 +2261,11 @@ export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.tags} instead */
+export function tagsInput(name: string, tags: string[], showButton: boolean) {
+  return new TagsInput(name, {tags: tags, showButton: showButton});
+}
+
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
