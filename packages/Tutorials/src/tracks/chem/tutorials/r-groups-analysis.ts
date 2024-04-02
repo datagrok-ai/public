@@ -73,18 +73,10 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.describe(`Once the analysis is complete, the R-group columns are added to the table,
     along with a trellis plot for visual exploration.<br>Let’s set up the visualization.`);
 
-    const getTrellisPlotSettingsIcon = () => {
-      for (const v of tv.viewers) {
-        if (v.type === DG.VIEWER.TRELLIS_PLOT)
-          return v.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement;
-      }
-      return null;
-    }
-
     await this.action('In the trellis plot, click the gear icon for the embedded viewer',
       new Observable((subscriber: any) => {
         $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
-      }), getTrellisPlotSettingsIcon(),
+      }), v!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement,
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`);
    
     grok.shell.windows.showContextPanel = true;
@@ -177,12 +169,15 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.describe(`Finally, let’s change the R-groups used on the plot.`);
 
     await this.action('Set the value for the X axis to R4', new Observable((subscriber: any) => {
-      const s = v.root.querySelectorAll('.d4-columns-host')[0].children[1] as HTMLSelectElement;
-      s.addEventListener('change', (e) => {
-        //@ts-ignore
-        if (e.target.value === 'R4')
-          subscriber.next(true);
+      const observer = new MutationObserver((mutationsList, observer) => {
+        mutationsList.forEach((m) => {
+          if (m.target.textContent === 'R4') {
+            subscriber.next(true);
+            observer.disconnect();
+          }
+        });
       });
+      observer.observe(v.root.querySelectorAll('.d4-columns-host')[0].children[0].children[1], {childList: true, subtree: true});
     }));
   }
 }

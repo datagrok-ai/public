@@ -43,13 +43,11 @@ export class ActivityCliffsTutorial extends Tutorial {
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
     <li><b>Chem</b> menu (it contains all chemical tools)</li>
-    <li>Context menu (right-click for access)</li>
-    <li><b>Context Panel</b> on the right.</li>
     </ul><br>
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', this.getMenuItem('Chem'));
+    'Activity Cliffs', this.getMenuItem('Chem', true));
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>
