@@ -1,6 +1,14 @@
 # Bio changelog
 
-## 2.12.0 (WIP)
+## 2.12.1 (2024-04-02)
+
+### Bug fixes
+
+* Fix bioSubstructureFilter with two columns
+* Fix bioSubstructureFilter error on filters reopen
+* GROK-15292: Fix bioSubstructureFilter for reset
+
+## 2.12.0 (2024-03-30)
 
 ### Features
 
