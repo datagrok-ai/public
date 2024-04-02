@@ -17,6 +17,7 @@ import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInput
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {OptimizationView as Optimization} from './optimization-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
 import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
@@ -678,6 +679,8 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
+    const optimization = ui.iconFA('mountains', async () => await this.onOptimizationLaunch(), 'Run optimization');
+
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
@@ -694,6 +697,7 @@ export class RichFunctionView extends FunctionView {
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.isOptimizationEnabled ? [optimization]: [],
       ...this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
@@ -1111,6 +1115,10 @@ export class RichFunctionView extends FunctionView {
 
   private async onSALaunch(): Promise<void> {
     await SensitivityAnalysis.fromEmpty(this.func);
+  }
+
+  private async onOptimizationLaunch(): Promise<void> {
+    await Optimization.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {
