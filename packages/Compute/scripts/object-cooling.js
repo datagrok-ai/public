@@ -21,6 +21,7 @@
 //meta.compareCustomizer: Compute:CustomCustomizer
 //meta.uploadFunc: Compute:CustomUploader
 //meta.help: Compute/readme.md
+//meta.mainInputs: ["ambTemp", "initTemp", "desiredTemp"]
 
 timeToCool = undefined;
 
