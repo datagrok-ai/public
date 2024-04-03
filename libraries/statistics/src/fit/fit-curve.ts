@@ -221,7 +221,9 @@ export const fitChartDataProperties: DG.Property[] = [
   DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
   DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
   DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
-    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
+    //@ts-ignore
+    friendlyName: 'Statistics'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
