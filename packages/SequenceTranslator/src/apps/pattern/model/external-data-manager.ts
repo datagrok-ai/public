@@ -8,8 +8,7 @@ import {PatternConfiguration, PatternExistsError, PatternNameExistsError} from '
 import {EventBus} from './event-bus';
 
 import objectHash from 'object-hash';
-
-type RawPatternRecords = {[patternName: string]: string};
+import {DataInitializer} from './data-initializer';
 
 export class PatternAppDataManager {
   // WARNING: not a singleton, encapsulated async init logic in a static method
@@ -18,8 +17,11 @@ export class PatternAppDataManager {
     private patternConfigManager: PatternConfigManager
   ) { }
 
-  static async getInstance(eventBus: EventBus): Promise<PatternAppDataManager> {
-    const patternConfigManager = await PatternConfigManager.getInstance(eventBus);
+  static async getInstance(
+    eventBus: EventBus,
+    dataInitializer: DataInitializer
+  ): Promise<PatternAppDataManager> {
+    const patternConfigManager = new PatternConfigManager(eventBus, dataInitializer);
     return new PatternAppDataManager(eventBus, patternConfigManager);
   }
 
@@ -61,72 +63,21 @@ export class PatternAppDataManager {
 }
 
 class PatternConfigManager {
-  // todo: remove
   private currentUserName: string;
-  private currentUserId: string;
-
   private otherUsersPatternNameToHash = new Map<string, string>();
   private currentUserPatternNameToHash = new Map<string, string>();
 
-  private constructor(private eventBus: EventBus) { }
-
-  private async init(): Promise<void> {
-    try {
-      this.currentUserName = await this.fetchCurrentUserName();
-      this.currentUserId = await this.fetchCurrentUserId();
-      const patternRecords = await PatternConfigLoader.fetchPatterns();
-      await this.initializePatterns(patternRecords);
-
-      this.eventBus.updatePatternList();
-    } catch (e) {
-      console.error('Error while initializing pattern list manager', e);
-    }
-  }
-
-  static async getInstance(eventBus: EventBus): Promise<PatternConfigManager> {
-    const instance = new PatternConfigManager(eventBus);
-    await instance.init();
-
-    eventBus.patternDeletionRequested$.subscribe(async (patternName: string) => {
-      await instance.deletePattern(patternName);
-    });
-
-    return instance;
-  }
-
-  private async initializePatterns(patternRecords: RawPatternRecords) {
-    if (!this.currentUserId)
-      throw new Error('Current user ID is not set');
-
-    const userIdsToUserNames = new Map<string, string>();
-
-    for (const [patternHash, stringifiedRecord] of Object.entries(patternRecords))
-      await this.extractDataFromRecordToMaps(patternHash, stringifiedRecord, userIdsToUserNames);
-  }
-
-  private async extractDataFromRecordToMaps(
-    patternHash: string,
-    stringifiedRecord: string,
-    userIdsToUserNames: Map<string, string>
+  constructor(
+    private eventBus: EventBus,
+    private dataInitializer: DataInitializer
   ) {
-    const record = JSON.parse(stringifiedRecord);
-    const patternConfig = record[R.PATTERN_CONFIG] as PatternConfiguration;
-    const patternName = patternConfig.patternName;
-    const authorID = record[R.AUTHOR_ID];
-    if (authorID === this.currentUserId) {
-      this.currentUserPatternNameToHash.set(patternName, patternHash);
-    } else {
-      if (!userIdsToUserNames.has(authorID)) {
-        const userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
-        userIdsToUserNames.set(authorID, userFriendlyName);
-      }
-      const fullPatternName = patternName + ` (created by ${userIdsToUserNames.get(authorID)})`;
-      this.otherUsersPatternNameToHash.set(fullPatternName, patternHash);
-    }
-  }
+    this.currentUserName = this.dataInitializer.getCurrentUserName();
+    this.currentUserPatternNameToHash = this.dataInitializer.getCurrentUserPatternNameToHash();
+    this.otherUsersPatternNameToHash = this.dataInitializer.getOtherUsersPatternNameToHash();
 
-  private async fetchCurrentUserId(): Promise<string> {
-    return (await grok.dapi.users.current()).id;
+    this.eventBus.patternDeletionRequested$.subscribe(async (patternName: string) => {
+      await this.deletePattern(patternName);
+    });
   }
 
   getCurrentUserPatternNames(): string[] {
@@ -139,23 +90,18 @@ class PatternConfigManager {
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
   }
 
-  private async fetchCurrentUserName(): Promise<string> {
-    const friendlyName = (await grok.dapi.users.current()).friendlyName;
-    return friendlyName;
-  }
-
   getCurrentUserName(): string {
     return this.currentUserName;
   }
 
   async savePatternToUserStorage(patternConfig: PatternConfiguration): Promise<void> {
-    const hash = PatternConfigLoader.getHash(patternConfig);
+    const hash = this.getHash(patternConfig);
     this.validatePatternUniqueness(hash);
 
     const patternName = patternConfig[L.PATTERN_NAME];
     this.validatePatternNameUniqueness(patternName);
 
-    const record = await PatternConfigLoader.getRecordFromPattern(patternConfig);
+    const record = await this.getRecordFromPattern(patternConfig);
     await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
     this.currentUserPatternNameToHash.set(patternName, hash);
     this.eventBus.updatePatternList();
@@ -239,15 +185,8 @@ class PatternConfigManager {
 
     // todo: load default pattern in case there are no patterns left
   }
-}
 
-namespace PatternConfigLoader {
-  export async function fetchPatterns() {
-    const patternsRecord = await grok.dapi.userDataStorage.get(STORAGE_NAME, false) as RawPatternRecords;
-    return patternsRecord;
-  }
-
-  export async function getRecordFromPattern(patternConfig: PatternConfiguration): Promise<string> {
+  private async getRecordFromPattern(patternConfig: PatternConfiguration): Promise<string> {
     const record = {
       [R.PATTERN_CONFIG]: patternConfig,
       [R.AUTHOR_ID]: await grok.dapi.users.current().then((u) => u.id),
@@ -256,7 +195,7 @@ namespace PatternConfigLoader {
     return stringifiedRecord;
   }
 
-  export function getHash(patternConfig: PatternConfiguration): string {
+  private getHash(patternConfig: PatternConfiguration): string {
     // WARNING: hash is computed over the graph settings only, as defining the
     // pattern's identity
     const graphSettings = GKL.reduce((acc, key) => {

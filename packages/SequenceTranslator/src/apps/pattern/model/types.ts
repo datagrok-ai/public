@@ -61,3 +61,5 @@ export class PatternExistsError extends Error {
     this.name = 'PatternExistsError';
   }
 }
+
+export type RawPatternRecords = {[patternName: string]: string};

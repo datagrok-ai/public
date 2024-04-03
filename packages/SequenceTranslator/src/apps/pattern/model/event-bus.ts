@@ -26,7 +26,7 @@ export class EventBus {
   private _modificationsWithNumericLabels$: rxjs.BehaviorSubject<string[]>;
   private _sequenceBase$: rxjs.BehaviorSubject<string>;
 
-  private _patternListUpdated$ = new rxjs.Subject<string>();
+  private _patternListUpdated$ = new rxjs.Subject<void>();
 
   private _patternLoadRequested$ = new rxjs.Subject<string>();
   private _patternLoaded$ = new rxjs.Subject<string>();
@@ -197,7 +197,7 @@ export class EventBus {
     this._patternLoadRequested$.next(patternHash);
   }
 
-  get patternListUpdated$(): rxjs.Observable<string> {
+  get patternListUpdated$(): rxjs.Observable<void> {
     return this._patternListUpdated$.asObservable();
   }
 

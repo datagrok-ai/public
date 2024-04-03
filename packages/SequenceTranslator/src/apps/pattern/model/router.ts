@@ -1,7 +1,7 @@
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
 
-export class Router {
+export class URLRouter {
   private searchParams: URLSearchParams;
 
   constructor(private eventBus: EventBus, private patternAppDataManager: PatternAppDataManager) {
