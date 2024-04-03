@@ -14,7 +14,6 @@ export class ReportsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Reports';
-    this.rout = 'Reports';
   }
 
   async initViewers(): Promise<void> {
@@ -52,6 +51,7 @@ export class ReportsView extends UaView {
           viewer.col('reporter')!.width = 30;
           viewer.col('report_id')!.cellType = 'html';
           viewer.col('report_id')!.width = 20;
+          viewer.col('report_number')!.visible = false;
         });
 
         viewer.onCellPrepare(async function(gc) {
