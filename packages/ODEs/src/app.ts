@@ -291,7 +291,6 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
-  private fitPane: DG.TabPane;
   private editorView: EditorView | undefined;
   private openMenu: DG.Menu;
   private openIcon: HTMLElement;
@@ -317,14 +316,10 @@ export class DiffStudio {
       return this.modelDiv;
     });
     this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
-    this.fitPane = this.tabControl.addPane(TITLE.FIT, () => this.inputsPanel);
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
       if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)
         await this.runSolving(true);
-      if ((this.tabControl.currentPane === this.fitPane)) {
-        await this.runFitting(true);
-      }
     });
 
     const dockTabCtrl = () => {
@@ -628,92 +623,6 @@ export class DiffStudio {
     }
   }; // solve
 
-  /** Fit IVP */
-  private async fit(ivp: IVP, inputsPath: string): Promise<void> {
-    try {
-      if (this.toChangePath)
-        this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
-
-      const start = ivp.arg.initial.value;
-      const finish = ivp.arg.final.value;
-      const step = ivp.arg.step.value;
-
-      if (start >= finish)
-        return;
-
-      if ((step <= 0) || (step > finish - start))
-        return;
-
-      const scriptText = getScriptLines(ivp).join('\n');
-      const script = DG.Script.create(scriptText);
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-
-      await call.call();
-
-      if (this.solutionViewer)
-        this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
-
-      this.solutionTable = call.outputs[DF_NAME];
-      this.solverView.dataFrame = call.outputs[DF_NAME];
-      this.solverView.name = this.solutionTable.name;
-
-      // if (ivp.updates) {
-      //   this.solverView.grid.columns.setVisible([this.solutionTable.columns.names()[0]]);
-      //   this.solverView.grid.columns.setVisible(this.solutionTable.columns.names()
-      //     .filter((name) => name !== STAGE_COL_NAME));
-      // }
-
-      if (true) {
-        // this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
-        //   getLineChartOptions(this.solutionTable.columns.names()));
-        const csv: string = await grok.dapi.files.readAsText('System:AppData/DiffStudio/sample.csv');
-        const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-
-        const opts = getLineChartOptions(df.columns.names());
-        opts['multiAxis'] = true;
-        //multiAxis: true
-        const aaa = DG.Viewer.lineChart(df, opts);
-        //getLineChartOptions(df.columns.names()));
-        // {... multiAxis: true...}
-        const fitGrid = DG.Viewer.grid(df);
-        this.viewerDockNode = grok.shell.dockManager.dock(
-          this.solutionViewer,
-          DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.
-            findNode(this.solverView.grid.root),
-        );
-
-        grok.shell.dockManager.dock(
-          aaa,
-          DG.DOCK_TYPE.DOWN,
-          this.solverView.dockManager.
-            findNode(this.solverView.grid.root),
-        );
-        grok.shell.dockManager.dock(
-          fitGrid,
-          DG.DOCK_TYPE.DOWN,
-          this.solverView.dockManager.
-            findNode(this.solverView.grid.root),
-        );
-      } else {
-        this.solutionViewer.dataFrame = this.solutionTable;
-
-        if (this.toChangeSolutionViewerProps) {
-          this.solutionViewer.setOptions(getLineChartOptions(this.solutionTable.columns.names()));
-          this.toChangeSolutionViewerProps = false;
-        }
-      }
-
-      this.isSolvingSuccess = true;
-      this.runPane.header.hidden = false;
-    } catch (error) {
-      this.clearSolution();
-      this.isSolvingSuccess = false;
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
-    }
-  }; // fit
-
   /** Run solving the current IVP */
   private async runSolving(toShowInputsForm: boolean): Promise<void> {
     try {
@@ -761,82 +670,6 @@ export class DiffStudio {
       grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
     }
   }; // runSolving
-
-  /** Run solving the current IVP */
-  private async runFitting(toShowInputsForm: boolean): Promise<void> {
-    try {
-      const ivp = getIVP(this.editorView!.state.doc.toString());
-
-      this.setCallWidgetsVisibility(this.isSolvingSuccess);
-      const csv: string = await grok.dapi.files.readAsText('System:AppData/DiffStudio/sample.csv');
-      const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-
-
-      //FIT - new param values
-      // const scriptText = getScriptLines(ivp).join('\n');
-      // const script = DG.Script.create(scriptText);
-      // const params = getScriptParams(ivp);
-      // const call = script.prepare(params);
-
-      // await call.call();
-
-      // if (this.solutionViewer)
-      //   this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
-
-      // this.solutionTable = call.outputs[DF_NAME];
-
-
-      const newParams = new Map();
-      newParams.set('KA', 0.998);
-      newParams.set('CL', 6.033);
-      newParams.set('V2', 1.012);
-      newParams.forEach((value, key) => {ivp.params.get(key).value = value;});
-
-
-      await this.getInputsForm2(ivp);
-
-      if (this.isSolvingSuccess) {
-        this.toChangeInputs = false;
-        this.tabControl.currentPane = this.fitPane;
-
-        if (this.prevInputsNode !== null)
-          this.inputsPanel.removeChild(this.prevInputsNode);
-
-        const form = ui.form([]);
-        this.fit(ivp, '');
-
-        if (this.inputsByCategories.size === 1)
-          this.inputsByCategories.get(TITLE.MISC)!.forEach((input) => form.append(input.root));
-        else {
-          this.inputsByCategories.forEach((inputs, category) => {
-            if (category !== TITLE.MISC) {
-              form.append(ui.h2(category));
-              inputs.forEach((inp) => {
-                form.append(inp.root);
-              });
-            }
-          });
-
-          if (this.inputsByCategories.get(TITLE.MISC)!.length > 0) {
-            form.append(ui.h2(TITLE.MISC));
-              this.inputsByCategories.get(TITLE.MISC)!.forEach((inp) => {
-                form.append(inp.root);
-              });
-          }
-        }
-
-        this.prevInputsNode = this.inputsPanel.appendChild(form);
-
-        if (!toShowInputsForm)
-          setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
-      } else
-        this.tabControl.currentPane = this.modelPane;
-    } catch (error) {
-      this.clearSolution();
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
-    }
-  }; // runFitting
-
 
   /** Show/hide model call widgets */
   private setCallWidgetsVisibility(toShow: boolean): void {
