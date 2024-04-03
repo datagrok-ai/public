@@ -19,17 +19,17 @@ export class StickyMeta {
     return toJs(api.grok_Sticky_GetAllValues(toDart(schema), toDart(keys)));
   }
 
-  createSchema(name: string, types: Map<String, String>[], properties: Map<String, String>[]): Promise<Schema> {
+  createSchema(name: string, types: {name: string, matchBy: string}[], properties: {name: string, type: string}[]): Promise<Schema> {
     var schema = Schema.create(name);
     let entityTypes: Array<EntityType> = [];
     for (var typeIdx in types) {
       var typeDesc = types[typeIdx];
-      entityTypes.push(EntityType.create(typeDesc['name'], typeDesc['matchBy']));
+      entityTypes.push(EntityType.create(typeDesc.name, typeDesc.matchBy));
     }
     let entityProperties: Array<EntityProperty> = [];
     for (var propIdx in properties) {
       var propDesc = properties[propIdx];
-      entityProperties.push(EntityProperty.create(propDesc['name'], propDesc['type']));
+      entityProperties.push(EntityProperty.create(propDesc.name, propDesc.type));
     }
     schema.entityTypes = entityTypes;
     schema.properties = entityProperties;
