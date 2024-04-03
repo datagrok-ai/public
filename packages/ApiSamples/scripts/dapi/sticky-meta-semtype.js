@@ -1,48 +1,35 @@
 //name: sticky-meta-semtype
 //tags: demo
 //language: javascript
-let t1 = grok.data.testData('molecules', 1000);
-let type = DG.EntityType.create('apisamples-molecule', 'semtype=molecule');
-let property = DG.EntityProperty.create('date', 'datetime');
-let schema = DG.Schema.create('Date');
-let schemas = await grok.dapi.stickyMeta.getSchemas();
-for (var index in schemas) {
-  var refSchema = schemas[index];
 
-  if (schema.name === refSchema.name) {
-    schema = refSchema;
-  }
-}
-var hasProperty = false;
-var hasType = false;
-for (var index in schema.properties) {
-  var refProperty =  schema.properties[index];
-  if (refProperty.name === property.name) {
-    hasProperty = true;
-  }
-}
-for (var index in schema.entityTypes) {
-  var refType =  schema.entityTypes[index];
-  if (refType.name === type.name) {
-    hasType = true;
-  }
-}
-if (!hasProperty) {
-	schema.properties = schema.properties.concat(property);
-}
-if (!hasType) {
- 	schema.entityTypes = schema.entityTypes.concat(type);
-}
+// uniqueName ensures that sample creates new configuration
+var uniqueName = (prefix) => 'apisamles-' + prefix + '-' + (Math.random() + 1).toString(36).substring(7);
 
+// create sample dataset on molecules
+var df = grok.data.testData('molecules', 15);
 
-await grok.dapi.stickyMeta.saveSchema(schema);
-var startView = grok.shell.addTableView(t1);
+// Create a schema named Date, connected with molecules, and having 1 parameter "date"
+var schema = await grok.dapi.stickyMeta.createSchema(
+  uniqueName('Date'),
+  [{name: uniqueName('Molecule'), matchBy: 'semtype=molecule'}],
+  [{name: 'date', type: 'datetime'}]
+);
 
-// for fetching Chem's detectors and functions
+// Open dataframe in a view.
+var startView = grok.shell.addTableView(df);
+
+// This timeout is needed for Chem package to apply its semtype detector on opened view
 setTimeout(async () => {
-  var valuesColumn = DG.Column.dateTime('date', 1000);
+
+  // Create sample date time values column with one value
+  var valuesColumn = DG.Column.dateTime('date', 15);
   valuesColumn.set(0, '03/20/2024');
   
-  await grok.dapi.stickyMeta.setAllValues(schema, t1.columns.byName('smiles'), DG.DataFrame.fromColumns([valuesColumn]));
+  // Save date as sticky meta. 
+  await grok.dapi.stickyMeta.setAllValues(schema, df.columns.byName('smiles'), DG.DataFrame.fromColumns([valuesColumn]));
+  
+  // Trigger cell redraw to fetch latest changes
+  // This line can be removed and replaced by manual scroll of grid or column resize
+  startView.grid.invalidate();
 }, 1000);
 
