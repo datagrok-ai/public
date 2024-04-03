@@ -182,6 +182,7 @@ export interface IFitSeriesOptions {
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
   outlierColor?: string;                // overrides the standardized series outlier color
+  connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
@@ -235,6 +236,7 @@ export const fitSeriesProperties: DG.Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
+  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
   DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
     'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
   DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),

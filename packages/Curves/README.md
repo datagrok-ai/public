@@ -38,6 +38,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "markerType": "circle",
       "lineStyle": "dashed",
       "errorModel": "proportional",
+      "connectDots": false,
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
@@ -85,6 +86,7 @@ Each series has its own parameters, such as:
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `errorModel` - defines the series error model, which could be either `constant` or `proportional`
+- `connectDots` - defines whether to connect the points with lines or not
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
