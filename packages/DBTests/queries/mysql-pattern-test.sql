@@ -14,56 +14,56 @@ SELECT * FROM mock_data WHERE id = @id;
 -- name: MySqlStringTypeIntPatternOpMore
 -- connection: MySqlDBTests
 -- input: string id = ">28" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMore(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMore('>28'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpMoreEq
 -- connection: MySqlDBTests
 -- input: string id = ">=29" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMoreEq('>=29'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpLessEq
 -- connection: MySqlDBTests
 -- input: string id = "<=1" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpLessEq(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpLessEq('<=1'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpLess
 -- connection: MySqlDBTests
 -- input: string id = "<2" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpLess(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpLess('<2'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpIn
 -- connection: MySqlDBTests
 -- input: string id = "in(29, 30)" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpIn(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpIn(id='in(29, 30)'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpNotIn
 -- connection: MySqlDBTests
 -- input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpNotIn(), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpNotIn(id='not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)'), OpenFile('System:AppData/Dbtests/common/data1-20.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpMinMax
 -- connection: MySqlDBTests
 -- input: string id = "min-max 29-30" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMinMax(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpMinMax(id='min-max 29-30'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
 -- name: MySqlStringTypeIntPatternOpNotEq
 -- connection: MySqlDBTests
 -- input: string id = "!=1" {pattern: int}
--- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpNotEq(), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypeIntPatternOpNotEq('!=1'), OpenFile('System:AppData/Dbtests/common/data2-30.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @id(id)
 -- end
 
@@ -77,28 +77,28 @@ SELECT * FROM mock_data WHERE some_number = @some_number;
 -- name: MySqlStringTypePatternDoubleOpMore
 -- connection: MySqlDBTests
 -- input: string some_number = ">975" {pattern: double}
--- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpMore(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: MySqlStringTypePatternDoubleOpMoreEq
 -- connection: MySqlDBTests
 -- input: string some_number = ">=975" {pattern: double}
--- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: MySqlStringTypePatternDoubleOpLess
 -- connection: MySqlDBTests
 -- input: string some_number = "<20" {pattern: double}
--- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpLess(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpLess('<20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
 -- name: MySqlStringTypePatternDoubleOpLessEq
 -- connection: MySqlDBTests
 -- input: string some_number = "<=20" {pattern: double}
--- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypePatternDoubleOpLessEq('<=20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @some_number(some_number);
 -- end
 
@@ -126,7 +126,7 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 -- name: MySqlStringTypePatternStringOpIn
 -- connection: MySqlDBTests
 -- input: string country = "in (Poland, Brazil)" {pattern: string}
--- test: Dbtests:expectTable(MySqlStringTypePatternStringOpIn(), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: MySql
+-- test: Dbtests:expectTable(MySqlStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: MySql
 SELECT * FROM mock_data WHERE @country(country);
 -- end
 

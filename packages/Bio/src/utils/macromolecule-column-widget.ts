@@ -3,10 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAGS as wlTAGS} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
 import {WebLogoViewer} from '../viewers/web-logo-viewer';
 
 import {_package} from '../package';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 /** Used in Macromolecule column tooltip */
 export class MacromoleculeColumnWidget extends DG.Widget {
@@ -14,7 +15,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
 
   private readonly seqCol: DG.Column<string>;
 
-  private wlViewer: WebLogoViewer;
+  private wlViewer: WebLogoViewer | null = null;
 
   constructor(seqCol: DG.Column<string>) {
     super(ui.divV([]));
@@ -23,7 +24,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
   }
 
   async init(): Promise<void> {
-    const uh = UnitsHandler.getOrCreate(this.seqCol);
+    const sh = SeqHandler.forColumn(this.seqCol);
     const pkgTooltipWebLogo = _package.properties.TooltipWebLogo;
     const colTooltipWebLogo = this.seqCol.getTag(wlTAGS.tooltipWebLogo);
 
@@ -32,7 +33,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
         sequenceColumnName: this.seqCol.name,
         backgroundColor: 0x00000000,
         positionHeight: 'Entropy',
-        positionWidth: (uh.getAlphabetIsMultichar() ? 24 : 16),
+        positionWidth: (sh.getAlphabetIsMultichar() ? 24 : 16),
         fixWidth: true,
         fitArea: false,
         // maxHeight: 100,
@@ -46,7 +47,10 @@ export class MacromoleculeColumnWidget extends DG.Widget {
   }
 
   override detach() {
-    this.wlViewer.detach();
+    if (this.wlViewer) {
+      this.wlViewer.detach();
+      this.wlViewer = null;
+    }
     super.detach();
   }
 }

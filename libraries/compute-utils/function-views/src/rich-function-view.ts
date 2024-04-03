@@ -112,7 +112,6 @@ export class RichFunctionView extends FunctionView {
     await this.loadInputsOverrides();
     await this.loadInputsValidators();
     await super.onFuncCallReady();
-    this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
     const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
     this.subs.push(fcReplacedSub);
@@ -166,13 +165,6 @@ export class RichFunctionView extends FunctionView {
     ).subscribe(() => this.doRun());
     this.subs.push(runSub);
 
-    // always run validations on start
-    const controller = new AbortController();
-    const results = await this.runValidation({isRevalidation: false}, controller.signal);
-    this.setValidationResults(results);
-    this.runRevalidations({isRevalidation: false}, results);
-    this.validationUpdates.next(null);
-
     const lastInputs = (!this.options.isTabbed) ? (await this.loadLastInputs()): null;
 
     if (lastInputs) {
@@ -180,15 +172,28 @@ export class RichFunctionView extends FunctionView {
         ui.divText('Do you want to load last inputs?'),
         ui.divH([
           ui.bigButton('Load', () => {
-            for (const [key, value] of Object.entries(lastInputs))
-              this.funcCall.inputs[key] = value;
+            for (const [key, value] of Object.entries(lastInputs)) {
+              const input = this.getInput(key);
+              input.notify = false;
+              input.value = value;
+              input.notify = true;
+            }
+
+            grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
           }),
         ]),
       ]));
-    }
+    } else {
+      // always run validations on start
+      const controller = new AbortController();
+      const results = await this.runValidation({isRevalidation: false}, controller.signal);
+      this.setValidationResults(results);
+      this.runRevalidations({isRevalidation: false}, results);
+      this.validationUpdates.next(null);
 
-    if (!lastInputs && this.runningOnStart && this.isRunnable())
-      await this.doRun();
+      if (this.runningOnStart && this.isRunnable())
+        await this.doRun();
+    }
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
@@ -440,38 +445,36 @@ export class RichFunctionView extends FunctionView {
     const getCompareDialog = () => {
       const compareDialog = DG.Dialog.create({'title': 'Select to compare'});
 
-      const historyRuns = new HistoricalRunsList(simulatedFunccalls.length > 0 ? simulatedFunccalls: this.historyBlock!.history, {
+      const historyRuns = new HistoricalRunsList(simulatedFunccalls.length > 0 ?
+        simulatedFunccalls:
+        [...this.historyBlock!.history.values()],
+      [],
+      {
         fallbackText: 'No historical runs found',
-        showDelete: false,
-        showEdit: false,
-        showFavorite: false,
-        showAuthorIcon: false,
-        showCompare: false,
+        showActions: !(simulatedFunccalls.length > 0),
+        showBatchActions: !(simulatedFunccalls.length > 0),
       });
-      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
-        fallbackText: 'No runs uploaded',
-        showDelete: false,
-        showEdit: false,
-        showFavorite: false,
-        showAuthorIcon: false,
-        showCompare: false,
-      });
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls,
+        [], {
+          fallbackText: 'No runs uploaded',
+          showActions: false,
+          showBatchActions: false,
+        });
 
-      compareDialog.add(ui.divH([
+      compareDialog.add(ui.divV([
         ui.divV([
-          ui.label('Uploaded runs', {style: {'padding': '0px 10px 0px 9px'}}),
+          ui.label('Uploaded runs'),
           ui.element('div', 'splitbar-horizontal'),
-          uploadedRuns,
-        ], {style: {width: '185px'}}),
+          uploadedRuns.root,
+        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
         ui.divV([
           ui.label(simulatedFunccalls.length > 0 ? 'Simulated': 'History', {style: {'padding': '0px 10px 0px 9px'}}),
           ui.element('div', 'splitbar-horizontal'),
-          historyRuns,
-        ], {style: {width: '185px'}}),
-      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll'}}));
+          historyRuns.root,
+        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
+      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll', 'height': '100%'}}));
 
-      $(compareDialog.root.parentElement).removeClass('ui-form');
-      $(compareDialog.root.parentElement).css('overflow-y', 'hidden');
+      $(compareDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
 
       const compareSelected = 'Compare selected' as const;
 
@@ -523,9 +526,9 @@ export class RichFunctionView extends FunctionView {
     let simulatedFunccalls = [] as DG.FuncCall[];
 
     const uploadDialog = DG.Dialog.create({'title': 'Upload'});
-    $(uploadDialog.root.parentElement).removeClass('ui-form');
+    $(uploadDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
     const reviewDialog = DG.Dialog.create({'title': 'Review uploaded runs'});
-    $(reviewDialog.root.parentElement).removeClass('ui-form');
+    $(reviewDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
 
     const saveToHistory = 'Save to history' as const;
     const simulateInputs = 'Simulate w/ same inputs' as const;
@@ -536,6 +539,14 @@ export class RichFunctionView extends FunctionView {
 
     uploadDialog.addButton(saveToHistory, async () => {
       properUpdateIndicator(uploadDialog.root, true);
+
+      uploadedFunccalls.forEach((call) => {
+        if (call.options['immutable_tags'])
+          call.options['immutable_tags'].push(EXPERIMENTAL_TAG);
+        else
+          call.options['immutable_tags'] = [EXPERIMENTAL_TAG];
+      });
+
       return Promise.all(uploadedFunccalls.map(async (call) => {
         const valid = await this.getValidExpRun(call);
 
@@ -554,39 +565,36 @@ export class RichFunctionView extends FunctionView {
 
         uploadDialog.close();
 
-        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, [], {
           fallbackText: 'No runs uploaded',
-          showDelete: false,
-          showEdit: false,
-          showFavorite: false,
-          showAuthorIcon: false,
-          showCompare: false,
+          showActions: true,
+          showBatchActions: true,
         });
 
         reviewDialog.add(uploadedRuns);
 
-        reviewDialog.show({modal: true, center: true});
+        reviewDialog.show({modal: true, fullScreen: true});
       });
     });
     uploadDialog.addButton('Next', () => {
       uploadDialog.close();
 
-      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
-        fallbackText: 'No runs uploaded',
-        showDelete: false,
-        showEdit: false,
-        showFavorite: false,
-        showAuthorIcon: false,
-        showCompare: false,
+      uploadedFunccalls.forEach((call) => {
+        if (call.options['immutable_tags'])
+          call.options['immutable_tags'].push(EXPERIMENTAL_TAG);
+        else
+          call.options['immutable_tags'] = [EXPERIMENTAL_TAG];
       });
 
-      reviewDialog.add(ui.divV([
-        ui.label('Uploaded runs', {style: {'padding': '0px 10px 0px 9px'}}),
-        ui.element('div', 'splitbar-horizontal'),
-        uploadedRuns,
-      ]));
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, [], {
+        fallbackText: 'No runs uploaded',
+        showActions: true,
+        showBatchActions: true,
+      });
 
-      reviewDialog.show({modal: true, center: true});
+      reviewDialog.add(uploadedRuns.root);
+
+      reviewDialog.show({modal: true, fullScreen: true});
     });
     $(uploadDialog.getButton('CANCEL')).hide();
     uploadDialog.getButton(saveToHistory).disabled = true;
@@ -603,7 +611,7 @@ export class RichFunctionView extends FunctionView {
 
         reviewDialog.close();
 
-        getCompareDialog().show({modal: true, center: true});
+        getCompareDialog().show({modal: true, fullScreen: true});
       }).catch((e) => {
         grok.shell.error(e);
       }).finally(() => {
@@ -614,7 +622,7 @@ export class RichFunctionView extends FunctionView {
     reviewDialog.addButton(compareWithHistory, () => {
       reviewDialog.close();
 
-      getCompareDialog().show({modal: true, center: true});
+      getCompareDialog().show({modal: true, fullScreen: true});
     });
 
     const uploadSub = grok.functions.onAfterRunAction.pipe(

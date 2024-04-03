@@ -5,7 +5,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 
 import {ConverterFunc} from './types';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';
@@ -133,8 +133,8 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
       throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
-      const converterUH = UnitsHandler.getOrCreate(srcCol);
-      const resCol = converterUH.convert(tgtNotation, tgtSeparator);
+      const converterSh = SeqHandler.forColumn(srcCol);
+      const resCol = converterSh.convert(tgtNotation, tgtSeparator);
       expect(resCol.getTag(DG.TAGS.UNITS), tgtNotation);
       return resCol;
     };
@@ -152,7 +152,7 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const _uh: UnitsHandler = UnitsHandler.getOrCreate(resCol);
+    const _sh: SeqHandler = SeqHandler.forColumn(resCol);
   }
 
   // FASTA tests

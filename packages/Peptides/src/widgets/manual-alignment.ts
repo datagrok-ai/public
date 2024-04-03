@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 /**
  * Allows to edit sequence and apply changes to the table and analysis.
@@ -18,14 +18,13 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
   $(sequenceInput.root).addClass('pep-textinput');
 
   const applyChangesBtn = ui.button('Apply', async () => {
-    const uh = UnitsHandler.getOrCreate(alignedSequenceCol);
+    const sh = SeqHandler.forColumn(alignedSequenceCol);
     const newSequence = sequenceInput.value;
-    const splitter = uh.getSplitter();
-    const splitSequence = splitter(newSequence);
+    const splitSequence = sh.split(newSequence);
     const affectedRowIndex = currentDf.currentRowIdx;
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (let i = 0; i < splitSequence.length; i++) {
-      const part = splitSequence[i];
+      const part = splitSequence.getCanonical(i);
       if (currentDf.col(i.toString()) !== null)
         currentDf.set(i.toString(), affectedRowIndex, part);
     }

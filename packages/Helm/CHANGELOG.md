@@ -1,5 +1,12 @@
 # Helm changelog
 
+## 2.1.31 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to monomer
+* Bump dependencies versions
+
 ## 2.1.30 (2024-03-13)
 
 ### Features

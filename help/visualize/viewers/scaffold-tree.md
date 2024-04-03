@@ -7,3 +7,5 @@ molecules into a unique tree hierarchy based on their scaffolds, with scaffolds
 forming leaf nodes of such tree. The hierarchy is created by iterative removal
 of rings from more complex scaffolds using chemically meaningful set of rules,
 until a single, root ring is obtained.
+
+To learn more, see [Scaffold tree analysis](../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis).

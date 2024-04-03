@@ -11,7 +11,9 @@ export function createMCLWorker(data: any[][], threshold: number,
   worker.postMessage({data, threshold, weights, aggregationMethod, distanceFns, distanceFnArgs, maxIterations});
   let resolveF: Function;
   const promise = new Promise<{
-    clusters: number[], embedX: Float32Array, embedY: Float32Array, is: number[], js: number[]}>((resolve, reject) => {
+    clusters: number[], embedX: Float32Array, embedY: Float32Array,
+     is: Uint32Array, js: Uint32Array
+    }>((resolve, reject) => {
       resolveF = resolve;
       worker.onmessage = (event) => {
         setTimeout(() => worker.terminate(), 100);

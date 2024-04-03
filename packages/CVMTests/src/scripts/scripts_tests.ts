@@ -52,12 +52,15 @@ for (const lang of langs) {
     });
 
     test('Dataframe input/output', async () => {
-      const df = DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
+      function getSample() {
+        return DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
+      }
       const result = await grok.functions.call(`CVMTests:${lang}Dataframe`,
-        {'df': df, 'dfNumerical': df, 'dfCategorical': df});
-      expectTable(result['resultDf'], df);
-      expectTable(result['resultNumerical'], df);
-      expectTable(result['resultCategorical'], df);
+        {'df': getSample(), 'dfNumerical': getSample(), 'dfCategorical': getSample()});
+      const sample = getSample();
+      expectTable(result['resultDf'], sample);
+      expectTable(result['resultNumerical'], sample);
+      expectTable(result['resultCategorical'], sample);
     });
 
     test('Map type input/output', async () => {

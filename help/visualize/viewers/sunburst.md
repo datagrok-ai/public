@@ -4,7 +4,7 @@ title: "Sunburst"
 
 A sunburst viewer shows hierarchical data. Use a sunburst to understand data composition and explore patterns in multi-level categories.
 
-![Sunburst interactive data exploration](sunburst-interactive.gif)
+![Sunburst interactive data exploration](img/sunburst-interactive.gif)
 
 The center represents the top hierarchy, with each outer ring representing subsequent levels. The segment size within a ring shows its relative proportion compared to other categories at that level. Hover over any segment to see details or click it to drill down. To go back to the previous view, click the area in the center. To reset the viewer, press Ctrl+Shift+A.
 
@@ -28,7 +28,7 @@ To configure a sunburst, hover over the viewer's top and click the **Gear** icon
 * To select which columns to show, use the **Data** > **Hierarchy** control.
 * To set the hierarchy for a column, adjust the order by dragging it within the **Select columns...** window. The first row represents the highest hierarchy level; the second row sets the subsequent hierarchy level, and so forth.
 
-![Sunburst configuration](sunburst-config.gif)<!--replace gif with nicer colors later-->
+![Sunburst configuration](img/sunburst-config.gif)<!--replace gif with nicer colors later-->
 
 By default, each hierarchy branch has its own distinct color. However, if a grid column is color-coded, those colors transfer to the corresponding segments in the ring for that column.
 
@@ -36,7 +36,7 @@ By default, each hierarchy branch has its own distinct color. However, if a grid
 
 A sunburst responds to data filters and works in sync with other viewers. To select a segment within sunburst, Ctrl+Click it. This action automatically updates other viewers to mirror your selection.
 
-![Sunburst categories selection](sunburst-categories-selection.gif)<!--replace gif so that it also shows filters-->
+![Sunburst categories selection](img/sunburst-categories-selection.gif)<!--replace gif so that it also shows filters-->
 
 :::note 
 

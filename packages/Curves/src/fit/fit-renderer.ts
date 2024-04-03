@@ -158,13 +158,13 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number, outlierColor: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
-    const color = p.outlier ? (p.outlierColor ? DG.Color.fromHtml(p.outlierColor) ?
+    const color = !series.connectDots ? p.outlier ? (p.outlierColor ? DG.Color.fromHtml(p.outlierColor) ?
       DG.Color.fromHtml(p.outlierColor) : outlierColor : outlierColor) : p.color ? DG.Color.fromHtml(p.color) ?
-      DG.Color.fromHtml(p.color) : pointColor : pointColor;
+      DG.Color.fromHtml(p.color) : pointColor : pointColor : pointColor;
     const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
-    const size = p.outlier ? OUTLIER_PX_SIZE * ratio : p.size ? p.size : POINT_PX_SIZE * ratio;
+    const size = !series.connectDots ? p.outlier ? OUTLIER_PX_SIZE * ratio : p.size ? p.size : POINT_PX_SIZE * ratio : POINT_PX_SIZE * ratio;
     DG.Paint.marker(g,
-      p.outlier ? DG.MARKER_TYPE.OUTLIER : marker,
+      !series.connectDots ? p.outlier ? DG.MARKER_TYPE.OUTLIER : marker : marker,
       transform.xToScreen(p.x), transform.yToScreen(p.y), color, size);
     if (p.stdev && !p.outlier) {
       g.strokeStyle = DG.Color.toHtml(color);
@@ -332,8 +332,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points' || screenBounds.width < MIN_AXES_CELL_PX_WIDTH ||
-        screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
+      if (data.series![i].connectDots || !data.series![i].clickToToggle || data.series![i].showPoints !== 'points' ||
+        screenBounds.width < MIN_AXES_CELL_PX_WIDTH || screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
@@ -436,30 +436,53 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           data.chartOptions.showStatistics = [];
       }
       series.points.sort((a, b) => a.x - b.x);
+
+      if (series.connectDots ?? false) {
+        g.strokeStyle = series.pointColor ? DG.Color.fromHtml(series.pointColor) ?
+          series.pointColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        g.lineWidth = 2 * ratio;
+        g.beginPath();
+        for (let j = 0; j < series.points.length; j++) {
+          const x = series.points[j].x;
+          const y = series.points[j].y;
+          const screenX = viewport.xToScreen(x);
+          const screenY = viewport.yToScreen(y);
+          if (j === 0)
+            g.moveTo(screenX, screenY);
+          else
+            g.lineTo(screenX, screenY);
+        }
+        g.stroke();
+      }
+
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
-      let curve: (x: number) => number;
-      if (series.parameters) {
-        if (data.chartOptions?.logX) {
-          if (series.parameters[2] > 0)
-            series.parameters[2] = Math.log10(series.parameters[2]);
+      let curve: ((x: number) => number) | null = null;
+      if (!(series.connectDots && !series.showFitLine)) {
+        if (series.parameters) {
+          if (data.chartOptions?.logX) {
+            if (series.parameters[2] > 0)
+              series.parameters[2] = Math.log10(series.parameters[2]);
+          }
+          curve = getCurve(series, fitFunc);
         }
-        curve = getCurve(series, fitFunc);
+        else {
+          const fitResult = fitSeries(series, fitFunc, chartLogOptions);
+          curve = fitResult.fittedCurve;
+          series.parameters = fitResult.parameters;
+          userParamsFlag = false;
+        }
       }
-      else {
-        const fitResult = fitSeries(series, fitFunc, chartLogOptions);
-        curve = fitResult.fittedCurve;
-        series.parameters = fitResult.parameters;
-        userParamsFlag = false;
-      }
-  
+
       if (series.showPoints ?? 'points') {
         const pointColor = series.pointColor ? DG.Color.fromHtml(series.pointColor) ?
           series.pointColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
         const outlierColor = series.outlierColor ? DG.Color.fromHtml(series.outlierColor) ?
           DG.Color.fromHtml(series.outlierColor) : DG.Color.red : DG.Color.red;
         g.strokeStyle = pointColor;
-        if (series.showPoints === 'points')
+        if (series.connectDots && series.showPoints != '')
+          drawPoints(g, series, viewport, ratio, chartLogOptions, DG.Color.fromHtml(pointColor), outlierColor);
+        else if (series.showPoints === 'points')
           drawPoints(g, series, viewport, ratio, chartLogOptions, DG.Color.fromHtml(pointColor), outlierColor);
         else if (['candlesticks', 'both'].includes(series.showPoints!))
           drawCandles(g, series, viewport, ratio, DG.Color.fromHtml(pointColor));
@@ -480,7 +503,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let j = axesLeftPxMargin; j <= screenBounds.width - axesRightPxMargin; j++) {
           const x = screenBounds.x + j;
           const xForY = data.chartOptions?.logX ? Math.log10(viewport.xToWorld(x)) : viewport.xToWorld(x);
-          const y = data.chartOptions?.logY ? viewport.yToScreen(Math.pow(10, curve(xForY))) : viewport.yToScreen(curve(xForY));
+          const y = data.chartOptions?.logY ? viewport.yToScreen(Math.pow(10, curve!(xForY))) : viewport.yToScreen(curve!(xForY));
           if (j === axesLeftPxMargin)
             g.moveTo(x, y);
           else
@@ -502,7 +525,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, showAxesLabels, chartLogOptions);
       }
   
-      if (series.droplines && showDroplines) {
+      if ((series.showFitLine ?? true) && series.droplines && showDroplines) {
         g.save();
         g.strokeStyle = 'blue';
         g.lineWidth = ratio;
@@ -511,13 +534,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let j = 0; j < series.droplines.length; j++) {
           const droplineName = series.droplines[j];
           if (droplineName === 'IC50')
-            drawDropline(g, viewport, series.parameters[2], dataBounds, curve, chartLogOptions);
+            drawDropline(g, viewport, series.parameters![2], dataBounds, curve!, chartLogOptions);
         }
         g.stroke();
         g.restore();
       }
 
-      if (data.chartOptions?.showStatistics) {
+      if ((series.showFitLine ?? true) && data.chartOptions?.showStatistics) {
         const statistics = getSeriesStatistics(series, fitFunc, chartLogOptions);
         for (let j = 0; j < data.chartOptions.showStatistics.length; j++) {
           const statName = data.chartOptions.showStatistics[j];
@@ -571,6 +594,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (data.series?.some((series) => series.points.length === 0))
       return;
 
+    if (data.series?.some((series) => series.points.every((point) => point.x === 0)))
+      return;
+
+    if (data.series?.some((series) => series.points.every((point) => point.y === 0)))
+      return;
+
     this.renderCurves(g, x, y, w, h, data);
   }
 
@@ -591,27 +620,32 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       : getChartData(gridCell);
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
-    const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
-    const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
-    const dataBox = layoutChart(screenBounds, showAxesLabels, showTitle)[0];
-    const dataBounds = getChartBounds(data);
-    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+    if (screenBounds.width >= MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH && screenBounds.height >= MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
+      const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
+      const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
+      const dataBox = layoutChart(screenBounds, showAxesLabels, showTitle)[0];
+      const dataBounds = getChartBounds(data);
+      const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
-    for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points' || screenBounds.width < MIN_AXES_CELL_PX_WIDTH ||
-        screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
-        continue;
-      for (let j = 0; j < data.series![i].points.length!; j++) {
-        const p = data.series![i].points[j];
-        const screenX = viewport.xToScreen(p.x);
-        const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
-        if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
-          e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
-          document.body.style.cursor = 'pointer';
-          return;
+      for (let i = 0; i < data.series?.length!; i++) {
+        if (data.series![i].showPoints !== 'points')
+          continue;
+        for (let j = 0; j < data.series![i].points.length!; j++) {
+          const p = data.series![i].points[j];
+          const screenX = viewport.xToScreen(p.x);
+          const screenY = viewport.yToScreen(p.y);
+          const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
+          if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
+              e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
+            ui.tooltip.show(ui.divV([ui.divText(`x: ${p.x}`), ui.divText(`y: ${p.y}`)]), e.x + 16, e.y + 16);
+            if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= MIN_AXES_CELL_PX_WIDTH &&
+              screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT)
+              document.body.style.cursor = 'pointer';
+            return;
+          }
         }
       }
+      ui.tooltip.hide();
     }
     document.body.style.cursor = 'default';
   }

@@ -139,7 +139,7 @@ export class MCLSparseReducer {
         clusters[i] = clusterNum;
       }
     }
-    return {clusters, is, js};
+    return {clusters, is: new Uint32Array(is), js: new Uint32Array(js)};
   }
 
   public toObjectForm(sparseMatrix: SparseMatrixResult): SparseMatrixObject {

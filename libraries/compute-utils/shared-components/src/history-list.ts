@@ -2,581 +2,599 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {Subject, BehaviorSubject, merge, fromEvent} from 'rxjs';
+import $ from 'cash-dom';
+import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
-import {properUpdateIndicator} from '../../function-views/src/shared/utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
 import {EXPERIMENTAL_TAG, storageName} from '../../shared-utils/consts';
-import {FilterOptions} from './history-panel';
+import {ID_COLUMN_NAME} from './history-input';
 
-class HistoricalRunCard extends DG.Widget {
-  private _onFuncCallChanged = new BehaviorSubject<DG.FuncCall>(this.initialFunccall);
-  private _onFavoriteChanged = new BehaviorSubject<boolean>(this.initialIsFavorite);
-  private favStorageName = `${storageName}_${this.funcCall.func.name}_Fav`;
+const EXP_COLUMN_NAME = 'Source';
+const FAVORITE_COLUMN_NAME = 'Is favorite';
+const ACTIONS_COLUMN_NAME = 'Delete';
 
-  private _onClicked = new Subject<DG.FuncCall>();
-  private _onSelect = new Subject<DG.FuncCall>();
-  private _onUnselect = new Subject<DG.FuncCall>();
-  private _onMetadataEdit = new Subject<DG.FuncCall>();
-  private _onDelete = new Subject<DG.FuncCall>();
+const AUTHOR_COLUMN_NAME = 'Author';
+const STARTED_COLUMN_NAME = 'Started';
+const TITLE_COLUMN_NAME = 'Title';
+const DESC_COLUMN_NAME = 'Desc.';
+const TAGS_COLUMN_NAME = 'Tags';
 
-  private addToSelected = ui.iconFA('square', (ev) => {
-    ev.stopPropagation();
-    this.redrawIsSelected(true);
-    this._onSelect.next(this.funcCall);
-  }, 'Select this run');
+const getColumnName = (key: string) => {
+  return `${key[0].toUpperCase()}${key.substring(1)}`;
+};
 
-  private removeFromSelected = ui.iconFA('check-square', (ev) => {
-    ev.stopPropagation();
-    this.redrawIsSelected(false);
-    this._onUnselect.next(this.funcCall);
-  }, 'Unselect this run');
-
-  private addToFavorites = ui.iconFA('star', async (ev) => {
-    ev.stopPropagation();
-    this.saveIsFavorite(true);
-  }, 'Add to favorites');
-
-  private unfavoriteIcon = ui.iconFA('star', async (ev) => {
-    ev.stopPropagation();
-    this.saveIsFavorite(false);
-  }, 'Unfavorite the run');
-
-  public onClicked = this._onClicked.asObservable();
-  public onSelect = this._onSelect.asObservable();
-  public onUnselect = this._onUnselect.asObservable();
-  public onFavoriteChanged = this._onFavoriteChanged.asObservable();
-  public onMetadataEdit = this._onMetadataEdit.asObservable();
-  public onDelete = this._onDelete.asObservable();
-
-  public get funcCall() {
-    return this._onFuncCallChanged.value;
-  }
-
-  public get onFuncCallChanged() {
-    return this._onFuncCallChanged.asObservable();
-  }
-
-  public get isFavorite() {
-    return this._onFavoriteChanged.value;
-  }
-
-  constructor(
-    private readonly initialFunccall: DG.FuncCall,
-    private readonly initialIsFavorite: boolean,
-    private readonly options?: {
-      showEdit?: boolean,
-      showDelete?: boolean,
-      showFavorite?: boolean,
-      showAuthorIcon?: boolean,
-    },
-  ) {
-    super(ui.div(ui.divText('No run is loaded', 'hp-no-elements-label')));
-
-    const onChangedSub = merge(this._onFuncCallChanged, this.onMetadataEdit)
-      .subscribe((funccall) => this.redraw(funccall, this.isFavorite));
-
-    const clickSub = fromEvent(this.root, 'click').subscribe(() => this._onClicked.next(this.funcCall));
-    this.subs.push(clickSub, onChangedSub);
-  }
-
-  private async saveIsFavorite(isFavorite: boolean) {
-    properUpdateIndicator(this.root, true);
-    if (isFavorite) {
-      return grok.dapi.userDataStorage.postValue(this.favStorageName, this.funcCall.id, '')
-        .then(() => {
-          this.redrawIsFavorite(true);
-          this._onFavoriteChanged.next(true);
-        })
-        .finally(() => properUpdateIndicator(this.root, false));
-    } else {
-      return grok.dapi.userDataStorage.remove(this.favStorageName, this.funcCall.id)
-        .then(() => {
-          this.redrawIsFavorite(false);
-          this._onFavoriteChanged.next(false);
-        })
-        .finally(() => properUpdateIndicator(this.root, false));
-    }
-  }
-
-  redrawIsFavorite(isFavorite: boolean) {
-    if (isFavorite) {
-      ui.setDisplay(this.addToFavorites, false);
-      ui.setDisplay(this.unfavoriteIcon, true);
-    } else {
-      ui.setDisplay(this.unfavoriteIcon, false);
-      ui.setDisplay(this.addToFavorites, true);
-    }
-  }
-
-  redrawIsSelected(isSelected: boolean) {
-    if (isSelected) {
-      ui.setDisplay(this.addToSelected, false);
-      ui.setDisplay(this.removeFromSelected, true);
-    } else {
-      ui.setDisplay(this.removeFromSelected, false);
-      ui.setDisplay(this.addToSelected, true);
-    }
-  }
-
-  redrawRun(updatedRun: DG.FuncCall) {
-    this._onFuncCallChanged.next(updatedRun);
-    this._onMetadataEdit.next(updatedRun);
-  }
-
-  async showDeleteDialog() {
-    const deleteDialog = new HistoricalRunsDelete(new Set([this.funcCall]));
-
-    const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(() => {
-      this._onDelete.next(this.funcCall);
-      onDeleteSub.unsubscribe();
-    });
-    deleteDialog.show({center: true, width: 500});
-  }
-
-  async showEditDialog() {
-    const editDialog = new HistoricalRunEdit(this.funcCall, this.isFavorite);
-
-    const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
-      properUpdateIndicator(this.root, true);
-
-      return ((editOptions.favorite !== 'same') ?
-        this.saveIsFavorite((editOptions.favorite === 'favorited')) :
-        Promise.resolve())
-        .then(() => historyUtils.loadRun(this.funcCall.id, false))
-        .then((fullCall) => {
-          if (editOptions.title) fullCall.options['title'] = editOptions.title;
-          if (editOptions.description) fullCall.options['description'] = editOptions.description;
-          if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-
-          return Promise.all([historyUtils.saveRun(fullCall), fullCall]);
-        })
-        .then(([, fullCall]) => {
-          this._onMetadataEdit.next(fullCall);
-          this._onFuncCallChanged.next(fullCall);
-
-          onEditSub.unsubscribe();
-        })
-        .catch((err) => {
-          grok.shell.error(err);
-        }).finally(() => {
-          properUpdateIndicator(this.root, false);
-        });
-    });
-    editDialog.show({center: true, width: 500});
-  }
-
-  private redraw(run: DG.FuncCall, isFavorite: boolean) {
-    const options = this.options;
-
-    let authorIcon = null;
-    if (this.options?.showAuthorIcon) {
-      authorIcon = run.author.picture as HTMLElement;
-      authorIcon.style.width = '25px';
-      authorIcon.style.height = '25px';
-      authorIcon.style.fontSize = '20px';
-
-      ui.bind(run.author, authorIcon);
-    }
-
-    const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
-    experimentalTag.classList.add('fad', 'fa-sm');
-    experimentalTag.classList.remove('fal');
-    experimentalTag.style.marginLeft = '3px';
-    const immutableTags = run.options['immutable_tags'] as string[] | undefined;
-    const cardLabel = ui.span([
-      ui.label(
-        run.options['title'] ??
-        run.author?.friendlyName ??
-        grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
-      ),
-      ...(immutableTags && immutableTags.includes(EXPERIMENTAL_TAG)) ?
-        [experimentalTag]:[],
-    ]);
-
-    const editIcon = ui.iconFA('edit', (ev) => {
-      ev.stopPropagation();
-      this.showEditDialog();
-    }, 'Edit run metadata');
-    editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-    const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
-      ev.stopPropagation();
-      this.showDeleteDialog();
-    }, 'Delete run');
-    deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-
-    this.addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-    this.unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
-
-    if (isFavorite) {
-      ui.setDisplay(this.addToFavorites, false);
-      ui.setDisplay(this.unfavoriteIcon, true);
-    } else {
-      ui.setDisplay(this.unfavoriteIcon, false);
-      ui.setDisplay(this.addToFavorites, true);
-    }
-
-    this.addToSelected.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
-    this.removeFromSelected.classList.add('hp-funccall-card-icon');
-    ui.setDisplay(this.removeFromSelected, false);
-
-    const dateStarted = new Date(run.started.toString())
-      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
-
-    const card = ui.divH([
-      ui.divH([
-        ...(options?.showAuthorIcon) ? [authorIcon!]: [],
-        ui.divV([
-          cardLabel,
-          ui.span([dateStarted]),
-          ...(run.options['description']) ? [ui.divText(run.options['description'], 'description')]: [],
-          ...(run.options['tags'] && run.options['tags'].length > 0) ?
-            [ui.div(run.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
-        ], 'hp-card-content'),
-      ]),
-      ui.divH([
-        ...(options?.showFavorite) ? [this.unfavoriteIcon, this.addToFavorites]: [],
-        ...(options?.showEdit) ? [editIcon]: [],
-        ...(options?.showDelete) ? [deleteIcon]: [],
-        this.addToSelected, this.removeFromSelected,
-      ]),
-    ], 'hp-funccall-card');
-
-    ui.tooltip.bind(card, () => ui.tableFromMap({
-      Author: grok.shell.user.toMarkup(),
-      Date: dateStarted,
-      ...(run.options['title']) ? {'Title': run.options['title']}:{},
-      ...(run.options['description']) ? {'Description': run.options['description']}:{},
-      ...(run.options['tags'] && run.options['tags'].length > 0) ?
-        {'Tags': ui.div(run.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
-      ...(run.options['immutable_tags'] && run.options['immutable_tags'].length > 0) ?
-        {'Extra': ui.div(run.options['immutable_tags']
-          .map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor',
-        )}:{},
-    }));
-
-    ui.empty(this.root);
-    this.root.appendChild(card);
-  }
-}
+const runCache = new DG.LruCache<string, DG.FuncCall>();
 
 export class HistoricalRunsList extends DG.Widget {
-  private storageName(runs: DG.FuncCall[]) {
-    return `${storageName}_${runs[0].func.name}_Fav`;
+  private storageName(runs: Map<string, DG.FuncCall>) {
+    return `${storageName}_${[...runs.values()][0].func.name}_Fav`;
   }
+
+  private onRunsChanged = new BehaviorSubject<Map<string, DG.FuncCall>>(this.initialRuns.reduce((acc, run) => {
+    acc.set(run.id, run);
+    return acc;
+  }, new Map<string, DG.FuncCall>));
+  private onRunsDfChanged = new BehaviorSubject<DG.DataFrame>(DG.DataFrame.fromColumns([
+    DG.Column.bool(EXP_COLUMN_NAME, 0),
+    ...this.options.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
+    ...this.options.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+    DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
+    DG.Column.string(AUTHOR_COLUMN_NAME, 0),
+    DG.Column.string(TAGS_COLUMN_NAME, 0),
+    DG.Column.string(TITLE_COLUMN_NAME, 0),
+    DG.Column.string(DESC_COLUMN_NAME, 0),
+    ...this.visibleProps
+      .map((column) => DG.Column.fromStrings(getColumnName(column), [])),
+    DG.Column.fromStrings(ID_COLUMN_NAME, []),
+  ]));
+
+  private _historyFilters = DG.Viewer.filters(this.onRunsDfChanged.value, {title: 'Filters'});
+  private _historyGrid = DG.Viewer.grid(
+    this.onRunsDfChanged.value,
+    {showRowHeader: false, showColumnGridlines: false, allowEdit: false},
+  );
 
   public onComparisonCalled = new Subject<string[]>();
   public onMetadataEdit = new Subject<DG.FuncCall>();
-  public onDelete = new Subject<DG.FuncCall>();
   public onClicked = new Subject<DG.FuncCall>();
+  public onDelete = new Subject<DG.FuncCall>();
 
   private _onSelectedChanged = new BehaviorSubject<Set<DG.FuncCall>>(new Set([]));
-  private onFilteringChanged = new BehaviorSubject<FilterOptions>({isOnlyFavorites: false, text: ''});
-  private onRunsChanged = new BehaviorSubject<DG.FuncCall[]>(this.initialRuns);
-  private onFilteredRunsChanged = new BehaviorSubject<DG.FuncCall[]>(this.onRunsChanged.value);
-
-  private cards: HistoricalRunCard[] = [];
-  private total = ui.span([`Selected: ${this._onSelectedChanged.value.size}`], {style: {'align-self': 'center'}});
-
-  public get runs() {
-    return this.onRunsChanged.value;
-  }
-
-  private isOKforFilter(card: HistoricalRunCard) {
-    const filteringOptions = this.onFilteringChanged.value;
-    const run = card.funcCall;
-
-    const isFavorite = filteringOptions.isOnlyFavorites ? card.isFavorite : true;
-    const startedAfter = (filteringOptions.startedAfter ? run.started > filteringOptions.startedAfter : true);
-    const titleContainsText = (!filteringOptions.text.length) ? true :
-      (!!run.options['title']) ? run.options['title'].includes(filteringOptions.text): false;
-    const descContainsText = (!filteringOptions.text.length) ? true :
-      (!!run.options['description']) ? run.options['description'].includes(filteringOptions.text): false;
-
-    const hasTags = (!filteringOptions.tags || filteringOptions.tags.length === 0) ? true :
-      (!!run.options['tags']) ?
-        filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
-
-    return isFavorite && (titleContainsText || descContainsText) && startedAfter && hasTags;
-  }
-
-  public filter() {
-    this.cards.forEach((card) => ui.setDisplay(card.root, this.onFilteredRunsChanged.value.includes(card.funcCall)));
-  }
 
   public get selected() {
     return this._onSelectedChanged.value;
+  }
+
+  public get runs() {
+    return this.onRunsChanged.value;
   }
 
   public get onSelectedChanged() {
     return this._onSelectedChanged.asObservable();
   }
 
-  constructor(
-    private readonly initialRuns: DG.FuncCall[],
-    private readonly options: {
-      fallbackText?: string,
-      showEdit?: boolean,
-      showDelete?: boolean,
-      showFavorite?: boolean,
-      showAuthorIcon?: boolean,
-      showCompare?: boolean,
-    } = {
-      showEdit: true,
-      showDelete: true,
-      showFavorite: true,
-      showAuthorIcon: true,
-      showCompare: true,
-    }) {
-    super(ui.div([
-      ui.divV([
-        ui.element('div', 'splitbar-horizontal'),
-        ui.divText('No historical runs were loaded', 'hp-no-elements-label'),
-      ]),
-    ], {style: {'height': '100%', 'overflow-y': 'hidden'}}));
+  private async saveIsFavorite(funcCall: DG.FuncCall, isFavorite: boolean) {
+    const favStorageName = `${storageName}_${funcCall.func.name}_Fav`;
 
-    const selectionChangedSub = this._onSelectedChanged.subscribe((selectedRuns) => {
-      this.cards.forEach((card) => {
-        card.redrawIsSelected(selectedRuns.has(card.funcCall));
-      });
-      this.redrawSelectionState();
-    });
-    const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
-      if (runs.length === 0)
-        this.redraw(runs, []);
+    if (isFavorite)
+      return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
+    else
+      return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
+  }
+
+  private showEditDialog(funcCall: DG.FuncCall, isFavorite: boolean) {
+    const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
+
+    const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
+      if (!this.options.isHistory)
+        this.updateRun(funcCall);
       else {
-        grok.dapi.userDataStorage
-          .get(this.storageName(runs))
-          .then((data: Record<string, string>) => {
-            this.redraw(runs, Object.keys(data));
+        return ((editOptions.favorite !== 'same') ?
+          this.saveIsFavorite(funcCall, (editOptions.favorite === 'favorited')) :
+          Promise.resolve())
+          .then(() => historyUtils.loadRun(funcCall.id, false))
+          .then((fullCall) => {
+            if (editOptions.title) fullCall.options['title'] = editOptions.title;
+            if (editOptions.description) fullCall.options['description'] = editOptions.description;
+            if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+
+            return [historyUtils.saveRun(fullCall), fullCall] as const;
           })
-          .catch(() => {
-            grok.shell.error(`Favorites storage is not available. Try again later.`);
-            this.redraw(runs, []);
+          .then(([, fullCall]) => {
+            this.updateRun(fullCall);
+
+            this.onMetadataEdit.next(fullCall);
+
+            onEditSub.unsubscribe();
           })
-          .finally(() => {
-            this._onSelectedChanged.next(new Set([]));
+          .catch((err) => {
+            grok.shell.error(err);
           });
       }
     });
+    editDialog.show({center: true, width: 500});
+  }
 
-    const filteringChangedSub = this.onFilteringChanged.subscribe(() => {
-      this.onFilteredRunsChanged.next(
-        this.cards.filter((card) => this.isOKforFilter(card)).map((card) => card.funcCall),
-      );
-      this._onSelectedChanged.next(new Set([]));
-      this.filter();
+  constructor(
+    private readonly initialRuns: DG.FuncCall[],
+    private visibleProps: string[] = [],
+    private readonly options: {
+      fallbackText?: string,
+      showActions?: boolean,
+      showBatchActions?: boolean,
+      // Used in the only place to avoid bug
+      isHistory?: boolean
+    } = {
+      showActions: true,
+      showBatchActions: true,
+      isHistory: false,
+    }) {
+    super(ui.div([], {style: {height: '100%', width: '100%'}}));
+
+    this.root.appendChild(this.defaultText);
+    $(this.showFiltersIcon.firstChild).addClass('fad');
+
+    const batchActions = ui.divH([
+      ui.divH([
+        this.showFiltersIcon, this.showMetadataIcon.root, this.showInputsIcon.root,
+      ], {style: {'gap': '5px', 'padding': '0px 5px'}}),
+      ui.divH([
+        this.trashIcon, this.compareIcon,
+      ], {style: {'gap': '5px', 'padding': '0px 5px'}}),
+    ], {style: {'justify-content': 'space-between'}});
+    batchActions.style.setProperty('overflow-y', 'hidden', 'important');
+
+    const gridWithControls = ui.divV([
+      ...this.options.showBatchActions ? [batchActions]:[],
+      this._historyGrid.root,
+    ], 'ui-box');
+    $(gridWithControls).removeClass('ui-div');
+    const splitH = ui.splitH([
+      gridWithControls,
+      this._historyFilters.root,
+    ], {style: {'height': '100%'}}, true);
+    this.root.appendChild(splitH);
+    ui.tools.waitForElementInDom(splitH).then((x) => {
+      $(x).css('width', '100%');
+      $(this._historyFilters.root).css('width', '300px');
     });
 
-    this.subs.push(listChangedSub, selectionChangedSub, filteringChangedSub);
+    ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
+      this.showMetadataIcon.root, this.showInputsIcon.root, this.trashIcon,
+      this.compareIcon, this.showFiltersIcon], false);
+
+    const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
+      const newRuns = [...runs.values()];
+
+      const extractStringValue = (run: DG.FuncCall, key: string) => {
+        if (key === AUTHOR_COLUMN_NAME) return run.author?.friendlyName ?? grok.shell.user.friendlyName;
+
+        const val =
+        (run as any)[key] ??
+        run.inputs[key] ??
+        run.outputs[key] ??
+        run.options[key] ??
+        null;
+
+        return val?.toString() ?? '';
+      };
+
+      const getColumnByProp = (prop: DG.Property) => {
+        if (prop.propertyType === DG.TYPE.DATE_TIME) {
+          return DG.Column.dateTime(prop.caption ?? getColumnName(prop.name), newRuns.length)
+            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].inputs[prop.name]));
+        }
+
+        return DG.Column.fromType(
+          prop.propertyType as any,
+          prop.caption ?? getColumnName(prop.name),
+          newRuns.length,
+        ).init((idx) => extractStringValue(newRuns[idx], prop.name));
+      };
+
+      const getColumnByName = (key: string) => {
+        if (key === STARTED_COLUMN_NAME) {
+          return DG.Column.dateTime(getColumnName(key), newRuns.length)
+            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
+        }
+
+        return DG.Column.fromStrings(getColumnName(key), newRuns.map((run) => extractStringValue(run, key)));
+      };
+
+      if (runs.size > 0) {
+        const favoritesRecord: Record<string, string> =
+          await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};
+        const favorites = Object.keys(favoritesRecord);
+
+        const func = [...this.runs.values()][0].func;
+
+        const columnTypes = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
+        if (this.visibleProps.length === 0) {
+          this.visibleProps = func.inputs
+            .filter((input) => columnTypes.includes(input.propertyType as any))
+            .map((prop) => prop.name);
+        }
+
+        const newRunsGridDf = DG.DataFrame.fromColumns([
+          DG.Column.string(EXP_COLUMN_NAME, newRuns.length).init((idx) => {
+            const immutableTags = newRuns[idx].options['immutable_tags'] as string[];
+            return immutableTags && immutableTags.includes(EXPERIMENTAL_TAG) ? 'Experimental': 'Simulated';
+          }),
+          ...this.options.isHistory ?
+            [
+              DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
+                .init((idx) => favorites.includes(newRuns[idx].id)),
+            ]: [],
+          ...this.options.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
+          getColumnByName(STARTED_COLUMN_NAME),
+          getColumnByName(AUTHOR_COLUMN_NAME),
+          DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
+            newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
+          ),
+          DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
+          DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
+          ...this.visibleProps.map((key) => getColumnByProp(func.inputs.find((prop) => prop.name === key)!)),
+          DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)),
+        ]);
+
+        $(this.defaultText).hide();
+        ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
+          this.showInputsIcon.root, this.showMetadataIcon.root, this.trashIcon,
+          this.compareIcon, this.showFiltersIcon], true);
+
+        this.onRunsDfChanged.next(newRunsGridDf);
+      } else {
+        $(this.defaultText).show();
+        ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
+          this.showInputsIcon.root, this.showMetadataIcon.root, this.trashIcon,
+          this.compareIcon, this.showFiltersIcon], false);
+      }
+    });
+
+    this.onRunsDfChanged.subscribe((newRunsGridDf) => {
+      this._historyFilters.dataFrame = newRunsGridDf;
+      this._historyGrid.dataFrame = newRunsGridDf;
+
+      this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+
+      this.styleHistoryGrid();
+      this.styleHistoryFilters();
+
+      newRunsGridDf.onCurrentRowChanged.subscribe(() => {
+        this._historyGrid.dataFrame.rows.select(() => false);
+        // Filtering out header clicks
+        if (this._historyGrid.dataFrame.currentRowIdx >= 0)
+          this.onClicked.next(this.runs.get(this._historyGrid.dataFrame.currentRow.get(ID_COLUMN_NAME)));
+      });
+
+      newRunsGridDf.onSelectionChanged.subscribe(() => {
+        if (this._historyGrid.dataFrame.selection.trueCount > 0)
+          this._historyGrid.setOptions({'showCurrentRowIndicator': false});
+        else
+          this._historyGrid.setOptions({'showCurrentRowIndicator': true});
+
+        const selectedCalls: DG.FuncCall[] = [...newRunsGridDf.selection
+          .getSelectedIndexes()]
+          .map((idx) => {
+            const call = this.runs.get(newRunsGridDf.rows.get(idx).get(ID_COLUMN_NAME))!;
+            return call;
+          });
+        this._onSelectedChanged.next(new Set(selectedCalls));
+
+        this.redrawSelectionState();
+      });
+    });
+
+    this.subs.push(listChangedSub);
   }
 
   async deleteRun(id: string) {
-    const corrCards = this.cards.splice(this.cards.findIndex((card) => card.funcCall.id === id), 1);
-    const deletedCard = corrCards[0];
-    properUpdateIndicator(deletedCard.root, true);
-    return historyUtils.deleteRun(deletedCard.funcCall).then(() => {
-      ui.empty(deletedCard.root);
-      const idx = this.runs.findIndex((run) => run.id === id);
-      if (idx >= 0)
-        this.runs.splice(idx, 1);
-    }).catch((e) => {
-      grok.shell.error(e);
-    }).finally(() => {
-      properUpdateIndicator(deletedCard.root, false);
-    });
+    return historyUtils.loadRun(id, true)
+      .then((loadedRun) => {
+        return [
+          (this.options.isHistory) ? historyUtils.deleteRun(loadedRun): Promise.resolve(),
+          loadedRun,
+        ] as const;
+      })
+      .then(([, loadedRun]) => {
+        this.onRunsChanged.value.delete(id);
+        this.onRunsChanged.next(this.onRunsChanged.value);
+        if (this.options.isHistory) this.onDelete.next(loadedRun);
+      })
+      .catch((e) => {
+        grok.shell.error(e);
+      });
   }
 
   editRun(editedCall: DG.FuncCall) {
-    const corrCard = this.cards.find((card) => card.funcCall.id === editedCall.id);
-    corrCard?.showEditDialog();
+    this.showEditDialog(editedCall, false);
   }
 
   updateRun(updatedRun: DG.FuncCall) {
-    const corrCard = this.cards.find((card) => card.funcCall.id === updatedRun.id);
-    corrCard?.redrawRun(updatedRun);
+    this.onRunsChanged.value.set(updatedRun.id, updatedRun);
+    this.onRunsChanged.next(this.onRunsChanged.value);
   }
 
   addRun(newRun: DG.FuncCall) {
-    this.onRunsChanged.next([newRun, ...this.onRunsChanged.value]);
+    this.onRunsChanged.value.set(newRun.id, newRun);
+    this.onRunsChanged.next(this.onRunsChanged.value);
   }
 
   updateRuns(newRuns: DG.FuncCall[]) {
-    this.onRunsChanged.next(newRuns);
+    this.onRunsChanged.next(newRuns.reduce((acc, run) => {
+      acc.set(run.id, run);
+      return acc;
+    }, new Map<string, DG.FuncCall>));
   }
 
-  setFiltering(filteringOptions: FilterOptions) {
-    this.onFilteringChanged.next(filteringOptions);
-  }
-
-  resetFiltering() {
-    this.onFilteringChanged.next({isOnlyFavorites: false, text: ''});
-  }
-
-  private getTrashIcon() {
-    const t = ui.iconFA('trash-alt', () => {
-      const deleteDialog = new HistoricalRunsDelete(this._onSelectedChanged.value);
-
-      const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async (setToDelete) => {
-        await Promise.all(
-          wu(setToDelete.values()).map(async (funcCall) => {
-            await this.deleteRun(funcCall.id);
-
-            this._onSelectedChanged.value.delete(funcCall);
-            this._onSelectedChanged.next(this._onSelectedChanged.value);
-
-            return Promise.resolve();
-          }));
-
-        onDeleteSub.unsubscribe();
-      });
-
-      deleteDialog.show({center: true, width: 500});
-    }, 'Delete selected runs');
-
-    t.style.margin = '5px';
-    if (this._onSelectedChanged.value.size === 0)
-      t.classList.add('hp-disabled');
-    return t;
-  }
-  private trashIcon = this.getTrashIcon();
-
-  private getSelectAllIcon() {
-    const t = ui.iconFA('square',
-      () => this._onSelectedChanged.next(new Set(this.onFilteredRunsChanged.value)),
-      'Select all',
-    );
-    t.style.margin = '5px';
-    return t;
-  }
-  private selectAllIcon = this.getSelectAllIcon();
-
-  private getUnselectOnPartialIcon() {
-    const t = ui.iconFA('minus-square', () => this._onSelectedChanged.next(new Set()), 'Unselect all');
-    t.style.margin = '5px';
-    return t;
-  }
-  private unselectOnPartialIcon = this.getUnselectOnPartialIcon();
-
-  private getUnselectAllIcon() {
-    const t = ui.iconFA('check-square', () => this._onSelectedChanged.next(new Set()), 'Unselect all');
-    t.style.margin = '5px';
-    return t;
-  }
-  private unselectAllIcon = this.getUnselectAllIcon();
-
-  private getCompareIcon() {
-    const t = ui.iconFA('exchange', async () => {
-      this.onComparisonCalled.next([...wu(this._onSelectedChanged.value.keys()).map((selected) => selected.id)]);
-    }, 'Compare selected runs');
-    t.style.margin = '5px';
-    return t;
-  }
-  private compareIcon = this.getCompareIcon();
-
-  private redraw(newFuncCalls: DG.FuncCall[], favorites: string[]) {
-    ui.empty(this.root);
-    this.cards = newFuncCalls.map((funcCall) => new HistoricalRunCard(
-      funcCall,
-      favorites.includes(funcCall.id),
-      this.options),
-    );
-
-    if (newFuncCalls.length > 0) {
-      this.root.appendChild(ui.divV([
-        ui.divH([
-          this.total,
-          ui.divH([
-            ...this.options.showCompare ? [this.compareIcon]: [],
-            this.trashIcon,
-            this.selectAllIcon, this.unselectOnPartialIcon, this.unselectAllIcon,
-          ]),
-        ], {style: {
-          'justify-content': 'space-between',
-          'padding': '0px 10px 0px 9px',
-        }}),
-        ui.element('div', 'splitbar-horizontal'),
-        ui.divV(this.cards.map((card) => card.root), {style: {'overflow-y': 'scroll'}}),
-      ], {style: {'overflow-y': 'hidden', 'height': '100%'}}));
-    } else {
-      this.root.appendChild(ui.divV([
-        ui.element('div', 'splitbar-horizontal'),
-        ui.divText(this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label'),
-      ]));
+  private trashIcon = ui.div(ui.iconFA('trash-alt', () => {
+    const selection = this._historyGrid.dataFrame.selection;
+    const setToDelete = new Set<DG.FuncCall>();
+    for (let i = 0; i < selection.length; i++) {
+      const bit = this._historyGrid.dataFrame.selection.get(i);
+      if (bit)
+        setToDelete.add(this.runs.get(this._historyGrid.dataFrame.getCol(ID_COLUMN_NAME).get(i))!);
     }
 
-    const anyClickSub = merge(...this.cards.map((card) => card.onClicked))
-      .subscribe((clickedCall) => this.onClicked.next(clickedCall));
+    const deleteDialog = new HistoricalRunsDelete(setToDelete);
 
-    const anySelectSub = merge(...this.cards.map((card) => card.onSelect))
-      .subscribe((selectedCall) => this._onSelectedChanged.next(new Set([
-        selectedCall, ...this._onSelectedChanged.value,
-      ])));
+    const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async (setToDelete) => {
+      await Promise.all(
+        wu(setToDelete.values()).map(async (funcCall) => {
+          await this.deleteRun(funcCall.id);
 
-    const anyUnselectSub = merge(...this.cards.map((card) => card.onUnselect))
-      .subscribe((selectedCall) => {
-        this._onSelectedChanged.value.delete(selectedCall);
-        this._onSelectedChanged.next(this._onSelectedChanged.value);
-      });
+          return Promise.resolve();
+        }));
 
-    const anyDeleteSub = merge(...this.cards.map((card) => card.onDelete))
-      .subscribe((callToDelete) => {
-        this.deleteRun(callToDelete.id).then(() => {
-          this._onSelectedChanged.value.delete(callToDelete);
-          this._onSelectedChanged.next(this._onSelectedChanged.value);
+      onDeleteSub.unsubscribe();
+    });
 
-          const runIdx = this.onRunsChanged.value.findIndex((call) => call.id === callToDelete.id);
-          if (runIdx >= 0) {
-            this.onRunsChanged.value.splice(runIdx, 1);
-            this.onRunsChanged.next(this.onRunsChanged.value);
+    deleteDialog.show({center: true, width: 500, modal: true});
+  }, 'Delete selected runs'), {style: {'padding-top': '5px'}});
+
+  private compareIcon = ui.div(ui.iconFA('exchange', async () => {
+    const selection = this._historyGrid.dataFrame.selection;
+    const setToCompare = [];
+    for (let i = 0; i < selection.length; i++) {
+      const bit = this._historyGrid.dataFrame.selection.get(i);
+      if (bit)
+        setToCompare.push(this._historyGrid.dataFrame.getCol(ID_COLUMN_NAME).get(i));
+    }
+
+    this.onComparisonCalled.next(setToCompare);
+  }, 'Compare selected runs'), {style: {'padding-top': '5px'}});
+
+
+  private isFilterHidden = false;
+  private showFiltersIcon = ui.div(ui.iconFA('filter', () => {
+    if (this.isFilterHidden) {
+      $(this.showFiltersIcon.firstChild).addClass('fad');
+      $(this.showFiltersIcon.firstChild).removeClass('fal');
+      $(this._historyFilters.root.parentElement).css('width', '100%');
+      $(this._historyFilters.root).css('width', '300px');
+      ui.setDisplay(this._historyFilters.root, true);
+      this.isFilterHidden = false;
+    } else {
+      $(this.showFiltersIcon.firstChild).addClass('fal');
+      $(this.showFiltersIcon.firstChild).removeClass('fad');
+      ui.setDisplay(this._historyFilters.root, false);
+      this.isFilterHidden = true;
+    }
+  }, 'Toggle filters'), {style: {'padding-top': '4px'}});
+
+  private showMetadataIcon = ui.switchInput('Metadata', true, (newValue: boolean) => {
+    this.styleHistoryGrid();
+    this.styleHistoryFilters();
+  });
+
+  private showInputsIcon = ui.switchInput('Inputs', false, async (newValue: boolean) => {
+    if (this.runs.size === 0) return;
+
+    if (newValue && this.options.isHistory) {
+      const fullCalls = await Promise.all(
+        [...this.runs.values()].map(async (run) => {
+          if (runCache.has(run.id))
+            return runCache.get(run.id)!;
+          else {
+            const loadedRun = await historyUtils.loadRun(run.id, true);
+            runCache.set(loadedRun.id, loadedRun);
+
+            return loadedRun;
           }
-          this.onDelete.next(callToDelete);
-        });
+        }));
+      fullCalls.forEach((fullCall) => {
+        this.runs.set(fullCall.id, fullCall);
+      });
+      this.onRunsChanged.next(this.runs);
+    } else {
+      this.styleHistoryGrid();
+      this.styleHistoryFilters();
+    }
+  });
+
+  private defaultText = ui.divV([
+    ui.element('div', 'splitbar-horizontal'),
+    ui.divText(this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label'),
+  ]);
+
+  private styleHistoryGrid() {
+    if (this.runs.size > 0) {
+      const func = [...this.runs.values()][0].func;
+
+      const actionsCol = this._historyGrid.columns.byName(ACTIONS_COLUMN_NAME);
+      if (actionsCol) {
+        actionsCol.cellType = 'html';
+        actionsCol.width = 35;
+      }
+
+      const favCol = this._historyGrid.columns.byName(FAVORITE_COLUMN_NAME);
+      if (favCol) {
+        favCol.cellType = 'html';
+        favCol.width = 20;
+      }
+      this._historyGrid.columns.byName(EXP_COLUMN_NAME)!.cellType = 'html';
+      this._historyGrid.columns.byName(EXP_COLUMN_NAME)!.width = 20;
+      this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!.cellType = 'html';
+      this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!.width = 90;
+      this._historyGrid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
+      this._historyGrid.setOptions({
+        'showCurrentCellOutline': false,
+        'allowEdit': false,
+        'allowBlockSelection': false,
+      });
+      for (let i = 0; i < this._historyGrid.columns.length; i++) {
+        const col = this._historyGrid.columns.byIndex(i)?.column;
+        if (col && col.type === DG.TYPE.DATE_TIME)
+          this._historyGrid.columns.byIndex(i)!.format = 'MMM d HH:mm';
+      }
+
+      this._historyGrid.onCellPrepare((cell) => {
+        if (cell.tableColumn?.name === ACTIONS_COLUMN_NAME) {
+          if (cell.isColHeader) {
+            cell.customText = '';
+            return;
+          }
+
+          const run = this.runs.get(cell.tableRow?.get(ID_COLUMN_NAME))!;
+
+          cell.element = ui.divH([
+            ui.iconFA('trash', () => {
+              const setToDelete= new Set([this.runs.get(cell.tableRow!.get(ID_COLUMN_NAME))!]);
+              const deleteDialog = new HistoricalRunsDelete(setToDelete);
+
+              const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
+                await Promise.all(
+                  wu(setToDelete.values()).map(async (funcCall) => {
+                    await this.deleteRun(funcCall.id);
+
+                    return Promise.resolve();
+                  }));
+                onDeleteSub.unsubscribe();
+              });
+              deleteDialog.show({center: true, width: 500});
+            }, 'Remove run from history'),
+            ui.iconFA(
+              'edit',
+              () => this.showEditDialog(
+                run,
+                cell.tableRow!.get(FAVORITE_COLUMN_NAME)!,
+              ),
+              'Edit run metadata',
+            ),
+          ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
+        }
+
+        if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
+          if (cell.isColHeader) {
+            cell.customText = '';
+            return;
+          }
+
+          const run = this.runs.get(cell.tableRow?.get(ID_COLUMN_NAME))!;
+
+          const unfavoriteIcon =
+            ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
+          unfavoriteIcon.classList.add('fas');
+
+          cell.element = ui.div(
+            cell.cell.value ?
+              unfavoriteIcon:
+              ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
+            {style: {'padding': '5px 0px'}});
+        }
+
+        if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
+          if (cell.isColHeader)
+            cell.customText = '';
+
+          const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+          experimentalTag.classList.add('fad', 'fa-sm');
+          experimentalTag.classList.remove('fal');
+
+          cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
+            ui.div(experimentalTag, {style: {'padding': '5px'}}): ui.div();
+        }
+
+        if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
+          if (cell.isColHeader)
+            return;
+
+          const tags = cell.cell.value.length > 0 ? ui.div((cell.cell.value as string | null)?.split(',').map(
+            (tag: string) => ui.span([tag], 'd4-tag')),
+          'd4-tag-editor'): ui.div();
+          $(tags).css({'padding': '3px', 'background-color': 'transparent'});
+          cell.element = tags;
+        }
       });
 
-    const anyMetadataEditSub = merge(...this.cards.map((card) => card.onMetadataEdit))
-      .subscribe((editedCall) => {
-        this.onMetadataEdit.next(editedCall);
-      });
+      const tagCol = this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
+      this._historyGrid.columns.setVisible([
+        ...this.showMetadataIcon.value ? [EXP_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [FAVORITE_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [ACTIONS_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [STARTED_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [AUTHOR_COLUMN_NAME]: [],
+        ...tagCol.stats.missingValueCount < tagCol.length && this.showMetadataIcon.value ? [TAGS_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [TITLE_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [DESC_COLUMN_NAME]: [],
+        ...this.showInputsIcon.value ? this.visibleProps
+          .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
+          .filter((prop) => {
+            return !this.options.isHistory ||
+              this._historyGrid.dataFrame.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
+          })
+          .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
+      ]);
 
-    const favoritesChanged = merge(...this.cards.map((card) => card.onFavoriteChanged))
-      .subscribe(() => this.onFilteringChanged.next(this.onFilteringChanged.value));
+      this._historyGrid.root.style.height = '100%';
+    }
+  }
 
-    this.subs.push(anyClickSub, anySelectSub, anyUnselectSub, anyDeleteSub, anyMetadataEditSub, favoritesChanged);
+  private styleHistoryFilters() {
+    if (this.runs.size > 0) {
+      const func = [...this.runs.values()][0].func;
+
+      const tagCol = this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
+      this._historyFilters.setOptions({columnNames: [
+        ...this.showMetadataIcon.value &&
+        this._historyGrid.dataFrame.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value &&
+        (this._historyGrid.dataFrame.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
+          [FAVORITE_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value ? [STARTED_COLUMN_NAME]:[],
+        ...this.showMetadataIcon.value &&
+        this._historyGrid.dataFrame.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value &&
+        tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value &&
+        this._historyGrid.dataFrame.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
+        ...this.showMetadataIcon.value &&
+        this._historyGrid.dataFrame.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
+        ...this.showInputsIcon.value ? this.visibleProps
+          .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
+          .filter((prop) => {
+            return !this.options.isHistory ||
+            this._historyGrid.dataFrame.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
+          })
+          .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
+      ]});
+      $(this._historyFilters.root).find('.d4-filter-group-header').hide();
+
+      this._historyFilters.root.style.height = '100%';
+    }
   }
 
   private redrawSelectionState() {
-    const currentSelectedSet = this._onSelectedChanged.value;
+    const currentSelectedCount = this._historyGrid.dataFrame.selection.trueCount;
 
-    const newTotal = ui.span([`Selected: ${currentSelectedSet.size}`], {style: {'align-self': 'center'}});
-    this.total.replaceWith(newTotal);
-    this.total = newTotal;
-
-    if (currentSelectedSet.size < 2)
-      this.compareIcon.classList.add('hp-disabled');
+    if (currentSelectedCount < 2)
+      (this.compareIcon.firstChild as HTMLElement).classList.add('hp-disabled');
     else
-      this.compareIcon.classList.remove('hp-disabled');
+      (this.compareIcon.firstChild as HTMLElement).classList.remove('hp-disabled');
 
-    if (currentSelectedSet.size === 0)
-      this.trashIcon.classList.add('hp-disabled');
+    if (currentSelectedCount === 0)
+      (this.trashIcon.firstChild as HTMLElement).classList.add('hp-disabled');
     else
-      this.trashIcon.classList.remove('hp-disabled');
-
-    if (currentSelectedSet.size === 0) {
-      ui.setDisplay(this.selectAllIcon, true);
-      ui.setDisplay(this.unselectOnPartialIcon, false);
-      ui.setDisplay(this.unselectAllIcon, false);
-    } else {
-      if (currentSelectedSet.size === this.onFilteredRunsChanged.value.length) {
-        ui.setDisplay(this.selectAllIcon, false);
-        ui.setDisplay(this.unselectOnPartialIcon, false);
-        ui.setDisplay(this.unselectAllIcon, true);
-      } else {
-        ui.setDisplay(this.selectAllIcon, false);
-        ui.setDisplay(this.unselectOnPartialIcon, true);
-        ui.setDisplay(this.unselectAllIcon, false);
-      }
-    }
+      (this.trashIcon.firstChild as HTMLElement).classList.remove('hp-disabled');
   }
 }

@@ -2,14 +2,14 @@
 
 // Method #1. Using grok's wrapper classes only
 let v = grok.shell.newView('Demo');
-let choices = ui.choiceInput('Value', 'A', ['A', 'B', 'C']);
+let choices = ui.input.choice('Value', {items: ['A', 'B', 'C'], value: 'A'});
 let container = ui.div();
 v.append(container);
 let inputs = ui.inputs([choices]);
 container.appendChild(inputs);
-let choices_new = ui.choiceInput('Value', 'B', ['B', 'C', 'D']);
-inputs.replaceChild(choices_new.root, choices.root);
-choices = choices_new;
+let choicesNew = ui.input.choice('Value', {items: ['B', 'C', 'D'], value: 'B'});
+inputs.replaceChild(choicesNew.root, choices.root);
+choices = choicesNew;
 choices.onChanged((v) => {
   grok.shell.info('The selected value is changed');
 });

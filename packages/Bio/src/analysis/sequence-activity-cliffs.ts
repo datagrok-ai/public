@@ -2,13 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
@@ -97,19 +99,16 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
   propPanel.append(ui.divText(params.seqCol.name, {style: {fontWeight: 'bold'}}));
 
-  const sequencesArray = new Array<string>(2);
   const activitiesArray = new Array<number>(2);
   params.points.forEach((molIdx, idx) => {
-    sequencesArray[idx] = params.seqCol.get(molIdx);
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const uh = UnitsHandler.getOrCreate(params.seqCol);
-  const splitter = uh.getSplitter();
-  const subParts1 = splitter(sequencesArray[0]);
-  const subParts2 = splitter(sequencesArray[1]);
-  const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
+  const sh = SeqHandler.forColumn(params.seqCol);
+  const subParts1 = sh.getSplitted(params.points[0]); // splitter(sequencesArray[0], {uh, rowIdx: -1});
+  const subParts2 = sh.getSplitted(params.points[1]); // splitter(sequencesArray[1], {uh, rowIdx: -1});
+  const canvas = createDifferenceCanvas(subParts1, subParts2, sh.units, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 
   propPanel.append(createDifferencesWithPositions(molDifferences));
@@ -135,7 +134,8 @@ export function createDifferenceCanvas(
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, subParts1, subParts2, units, true, molDifferences);
+  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30,
+    wu(subParts1.canonicals).toArray(), wu(subParts2.canonicals).toArray(), units, true, molDifferences);
   return canvas;
 }
 

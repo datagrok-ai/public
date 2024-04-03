@@ -16,7 +16,9 @@ Use the "Rows" combo box to choose the subset of rows to edit:
 * Current Row
 * Mouse Over Row
 
-Depending on the "Rows" value, this control can also be used not only for editing, but for viewing the values of the
-mouse-over row, or editing the values of the current row. \
+Depending on the "Rows" value, this control can also be used for editing, viewing the values of the
+mouse-over row, or editing the values of the current row.
 
-![Batch edit](../uploads/gifs/batch-edit.gif "Batch edit")
+To open the batch editor, in the Top Menu, select **Data** > **Batch Edit...**
+
+![Batch edit](../uploads/gifs/batch-edit.gif "Batch edit") <!--need to update gif due to changes in UI (Top Menu)>

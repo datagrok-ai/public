@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { AVAILABLE_FPS } from '../constants';
 import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
@@ -33,6 +33,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeProperties: string[];
   renderCompleted = new Subject<void>();
   isComputing = false;
+  recalculateOnFilter = false;
+  filterSub: Subscription | null = null;
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -40,6 +42,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
+    this.recalculateOnFilter = this.bool('recalculateOnFilter', this.recalculateOnFilter);
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
@@ -58,6 +61,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
+    this.filterSub?.unsubscribe();
   }
 
   async onTableAttached(): Promise<void> {
@@ -100,6 +104,14 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (property.name === 'moleculeProperties') {
       this.render(false);
       return;
+    }
+    if (property.name === 'recalculateOnFilter') {
+      const recalcOnFilter = property.get(this);
+      if (!recalcOnFilter) {
+        this.filterSub?.unsubscribe();
+        this.filterSub = null;
+      } else
+        this.filterSub = DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe(async (_: any) => await this.render());
     }
     this.render();
   }

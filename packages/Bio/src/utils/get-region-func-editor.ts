@@ -3,6 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {_package} from '../package';
 
 export interface GetRegionParams {
   table: DG.DataFrame,
@@ -11,9 +14,6 @@ export interface GetRegionParams {
   end: string | null,
   /** Name for the column with sequence of the region  */ name: string | null,
 }
-
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {_package} from '../package';
 
 export interface SeqRegion {
   name: string,
@@ -70,7 +70,7 @@ export class GetRegionFuncEditor {
 
   private sequenceInputChanged(): void {
     const seqCol = this.inputs.sequence.value;
-    const uh = seqCol ? UnitsHandler.getOrCreate(seqCol) : null;
+    const sh = seqCol ? SeqHandler.forColumn(seqCol) : null;
     this.updateRegionItems();
     this.updateStartEndInputItems();
     this.updateRegion(true);
@@ -89,9 +89,9 @@ export class GetRegionFuncEditor {
         this.inputs.start.value = reg?.start;
         this.inputs.end.value = reg?.end;
       } else {
-        const uh = UnitsHandler.getOrCreate(this.inputs.sequence.value!);
-        this.inputs.start.value = uh.posList[0];
-        this.inputs.end.value = uh.posList[uh.posList.length - 1];
+        const sh = SeqHandler.forColumn(this.inputs.sequence.value!);
+        this.inputs.start.value = sh.posList[0];
+        this.inputs.end.value = sh.posList[sh.posList.length - 1];
       }
     } finally {
       this.fixRegion = false;
@@ -122,13 +122,13 @@ export class GetRegionFuncEditor {
 
   private updateStartEndInputItems(): void {
     const seqCol = this.inputs.sequence.value;
-    const uh = seqCol ? UnitsHandler.getOrCreate(seqCol) : null;
+    const sh = seqCol ? SeqHandler.forColumn(seqCol) : null;
 
     const startSE = (this.inputs.start.input as HTMLSelectElement);
     const endSE = (this.inputs.end.input as HTMLSelectElement);
     for (let i = startSE.options.length - 1; i >= 0; --i) startSE.options.remove(i);
     for (let i = endSE.options.length - 1; i >= 0; --i) endSE.options.remove(i);
-    for (const pos of uh?.posList ?? []) {
+    for (const pos of sh?.posList ?? []) {
       const startPosOE = document.createElement('option');
       const endPosOE = document.createElement('option');
       startPosOE.text = endPosOE.text = pos;
@@ -136,8 +136,8 @@ export class GetRegionFuncEditor {
       startSE.options.add(startPosOE);
       endSE.options.add(endPosOE);
     }
-    startSE.value = uh?.posList[0] ?? '';
-    endSE.value = uh?.posList[uh?.posList.length - 1] ?? '';
+    startSE.value = sh?.posList[0] ?? '';
+    endSE.value = sh?.posList[sh?.posList.length - 1] ?? '';
   }
 
   private updateRegionItems(): void {

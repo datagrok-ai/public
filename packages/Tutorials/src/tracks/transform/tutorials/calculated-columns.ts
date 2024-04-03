@@ -116,7 +116,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
         return call.func.name === 'AddNewColumn' && column.name === columnName &&
           Math.abs(column.min - 1.279) < tolerance && Math.abs(column.max - 2.029) < tolerance;
       })), null, 'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
-      '"Round10" function with two arguments (the previous expression column and the number of decimal places). Pay attention to ' +
+      '"RoundFloat" function with two arguments (the previous expression column and the number of decimal places). Pay attention to ' +
       `the "${columnNameBMI}" column. When we change the formula of the underlying column (that is, its metadata), ` +
       're-calculation is triggered automatically.');
     

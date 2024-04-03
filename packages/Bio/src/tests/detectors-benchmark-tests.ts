@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, getAlphabet, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 category('detectorsBenchmark', () => {
   let detectFunc: DG.Func;
@@ -124,11 +124,11 @@ category('detectorsBenchmark', () => {
   }
 
   function checkDetectorRes(col: DG.Column, tgt: TgtType): void {
-    const uh = UnitsHandler.getOrCreate(col);
+    const sh = SeqHandler.forColumn(col);
     expect(col.semType === tgt.semType, true);
-    expect(uh.notation === tgt.notation, true);
-    expect(uh.alphabet === tgt.alphabet, true);
-    expect(uh.separator === tgt.separator, true);
+    expect(sh.notation === tgt.notation, true);
+    expect(sh.alphabet === tgt.alphabet, true);
+    expect(sh.separator === tgt.separator, true);
   }
 });
 

@@ -1,8 +1,14 @@
 # BiostructureViewer changelog
 
-## 1.0.25 (2024-01-29)
+## 1.0.26 (2024-03-30)
 
 ### Features
+
+* #2707: Add original and canonical to monomer
+
+## 1.0.25 (2024-01-29)
+
+## Features
 
 * MolstarViewer optimize buildView postponed, destroyView detach only
 
