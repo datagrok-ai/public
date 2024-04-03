@@ -637,7 +637,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
           if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
               e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
-            ui.tooltip.show(ui.divV([ui.divText(`x: ${p.x}`), ui.divText(`y: ${p.y}`)]), e.x + 16, e.y + 16);
+            ui.tooltip.show(ui.divV([ui.divText(`x: ${DG.format(p.x, '#0.000')}`),
+              ui.divText(`y: ${DG.format(p.y, '#0.000')}`)]), e.x + 16, e.y + 16);
             if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= MIN_AXES_CELL_PX_WIDTH &&
               screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT)
               document.body.style.cursor = 'pointer';
