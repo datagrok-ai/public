@@ -151,6 +151,7 @@ export interface IFitChartOptions {
   logY?: boolean;            // defines whether the y data should be logarithmic or not
 
   allowXZeroes?: boolean;    // defines whether x zeroes allowed for logarithmic data or not
+  mergeSeries?: boolean;     // defines whether to merge series or not
 
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
@@ -220,6 +221,7 @@ export const fitChartDataProperties: DG.Property[] = [
   DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
   DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
   DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
+  DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Whether to merge series or not', defaultValue: false}),
   DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
     choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
     //@ts-ignore

@@ -86,6 +86,33 @@ export function mergeProperties(properties: DG.Property[], source: any, target: 
   }
 }
 
+export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
+  if (series.length === 0)
+    return null;
+  const mergedSeries: IFitSeries = {
+    points: [],
+    name: series[0].name,
+    fitFunction: series[0].fitFunction,
+    markerType: series[0].markerType,
+    lineStyle: series[0].lineStyle,
+    pointColor: series[0].pointColor,
+    fitLineColor: series[0].fitLineColor,
+    confidenceIntervalColor: series[0].confidenceIntervalColor,
+    outlierColor: series[0].outlierColor,
+    connectDots: series[0].connectDots,
+    showFitLine: series[0].showFitLine,
+    showPoints: series[0].showPoints,
+    showCurveConfidenceInterval: series[0].showCurveConfidenceInterval,
+    errorModel: series[0].errorModel,
+    clickToToggle: series[0].clickToToggle,
+    labels: series[0].labels,
+    droplines: series[0].droplines,
+  };
+  for (const s of series)
+    mergedSeries.points = [...mergedSeries.points, ...s.points];
+  return mergedSeries;
+}
+
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
 export function getChartData(gridCell: DG.GridCell): IFitChartData {
@@ -426,8 +453,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
     g.restore();
 
-    for (let i = 0; i < data.series?.length!; i++) {
-      const series = data.series![i];
+    const mergedSeries = data.chartOptions?.mergeSeries ? mergeSeries(data.series!) : null;
+    if (data.chartOptions?.mergeSeries && mergedSeries === null)
+      return;
+    for (let i = 0; i < (data.chartOptions?.mergeSeries ? 1 : data.series?.length!); i++) {
+      const series = mergedSeries ?? data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
