@@ -1359,7 +1359,7 @@ export class EntityType {
   };
 
   static create(name: string, matching: string): EntityType {
-    return toJs(api.grok_EntityType_Create(toJs(name), toJs(matching)));
+    return toJs(api.grok_EntityType_Create(toDart(name), toDart(matching)));
   }
 
   get name(): string { return toJs(api.grok_EntityType_Get_Name(this.dart)); }
