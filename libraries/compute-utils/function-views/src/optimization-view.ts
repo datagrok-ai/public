@@ -13,7 +13,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
+import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './optimization/constants';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -81,12 +81,12 @@ export class OptimizationView {
             analysisInputs.analysisType.value.next(v);
             this.updateRunWidgetsState();
             this.setAnalysisInputTooltip();
-            this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
+            this.store.analysisInputs.samplesCount.input.setTooltip('Number of the function evaluations');
           }),
         value: new BehaviorSubject(OPTIMIZATION_TYPE.MAX),
       },
       samplesCount: {
-        input: ui.intInput('Samples', 10, (v: number) => {
+        input: ui.intInput('Evaluations', 10, (v: number) => {
           analysisInputs.samplesCount.value = v;
           this.updateRunWidgetsState();
         }),
@@ -109,11 +109,12 @@ export class OptimizationView {
       ui.tooltip.bind(input.root, () => {
         if (isInput) {
           return (input.value) ?
-            'Switch to mark input as immutable': 'Switch to mark input as mutable';
+            `Switch to mark as immutable` :
+            `Switch to mark as mutable`;
         } else {
           return !input.value ?
-            'Switch to mark output as requiring analysis' :
-            'Switch to mark output as not requiring analysis';
+            `Switch to mark as a target` :
+            `Switch to mark as not a target`;
         }
       });
 
@@ -151,7 +152,7 @@ export class OptimizationView {
           min: {
             input:
               (() => {
-                const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} min`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
+                const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (min)`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
                 return inp;
@@ -160,7 +161,7 @@ export class OptimizationView {
           },
           max: {
             input: (() => {
-              const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} max`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
+              const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (max)`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
@@ -283,14 +284,18 @@ export class OptimizationView {
           (() => {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
-            input.setTooltip('Scalar');
+            input.setTooltip('Output scalar');
+            input.value = 0;
 
             input.addCaption(caption);
 
             const isInterestInput = supportedOutputTypes.includes(outputProp.propertyType) ?
               getSwitchElement(
-                true,
+                this.toSetSwitched,
                 (v: boolean) => {
+                  this.targetCount += v ? 1 : -1;
+                  console.log('============================================');
+                  this.store.analysisInputs.analysisType.input.root.hidden = (this.targetCount !== 1);
                   temp.isInterest.next(v);
                   temp.analysisInputs.forEach((inp) => {
                     inp.root.hidden = (temp.value.returning !== DF_OPTIONS.BY_COL_VAL);
@@ -300,6 +305,7 @@ export class OptimizationView {
                 false,
               ).root: getSwitchMock();
             input.root.insertBefore(isInterestInput, input.captionLabel);
+            this.toSetSwitched = false;
 
             return input;
           })(),
@@ -327,7 +333,7 @@ export class OptimizationView {
             colName: DF_OPTIONS.ALL_COLUMNS as string,
             colValue: 0,
           },
-          isInterest: new BehaviorSubject<boolean>(true),
+          isInterest: new BehaviorSubject<boolean>(this.targetCount === 1),
         };
         $(temp.input.input).css('visibility', 'hidden');
 
@@ -350,15 +356,19 @@ export class OptimizationView {
   };
 
   private openedViewers = [] as DG.Viewer[];
-  private runButton: HTMLButtonElement;
-  private runIcon: HTMLElement;
-  private helpIcon: HTMLElement;
+  private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run optimization');
+  private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run optimization');
+  private helpIcon = ui.iconFA('question', () => {
+    window.open('https://datagrok.ai/help/compute.md#optimization', '_blank');
+  }, 'Open help in a new tab');
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
   private gridSubscription: any = null;
+  private targetCount = 1;
+  private toSetSwitched = true;
 
   store = this.generateInputFields(this.func);
-  comparisonView: DG.TableView;
+  comparisonView!: DG.TableView;
 
   static async fromEmpty(
     func: DG.Func,
@@ -399,14 +409,18 @@ export class OptimizationView {
       configFunc: undefined,
     },
   ) {
-    this.runButton = ui.bigButton('Run', async () => await this.runAnalysis());
+    if (!this.isOptimizationApplicable(func)) {
+      grok.shell.warning('Optimization is not applicable: the function has no scalar outputs.');
+      baseView.close();
+      return;
+    }
 
-    this.runIcon = ui.iconFA('play', async () => await this.runAnalysis());
+    this.runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run optimization');
     this.runIcon.style.color = 'var(--green-2)';
     this.runIcon.classList.add('fas');
 
     this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute.md#sensitivity-analysis', '_blank');
+      window.open('https://datagrok.ai/help/compute.md#optimization', '_blank');
     }, 'Open help in a new tab');
 
     const form = this.buildFormWithBtn();
@@ -415,7 +429,7 @@ export class OptimizationView {
     this.addTooltips();
     this.comparisonView = baseView;
 
-    const saDock = this.comparisonView.dockManager.dock(
+    const opt = this.comparisonView.dockManager.dock(
       form,
       DG.DOCK_TYPE.LEFT,
       null,
@@ -431,7 +445,8 @@ export class OptimizationView {
     rbnPanels.push([this.helpIcon, this.runIcon]);
     this.comparisonView.setRibbonPanels(rbnPanels);
 
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#sensitivity-analysis';
+    this.comparisonView.name = this.comparisonView.name.replace('comparison', 'optimization');
+    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#optimization';
     this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
@@ -457,57 +472,16 @@ export class OptimizationView {
     }
   }
 
-  private getFuncCallCount(analysisInputs: AnalysisProps, inputs: Record<string, SensitivityStore>): number {
-    let variedInputsCount = 0;
-
-    switch (analysisInputs.analysisType.value.value) {
-    case OPTIMIZATION_TYPE.MIN:
-      let product = 1;
-
-      const hasLvlInput = (input: SensitivityStore): input is SensitivityNumericStore => {
-        return input.type === DG.TYPE.INT || input.type === DG.TYPE.BIG_INT || input.type === DG.TYPE.FLOAT;
-      };
-
-      for (const input of Object.values(inputs)) {
-        if (input.isChanging.value) {
-          product *= hasLvlInput(input) ? input.lvl.value : input.lvl;
-          ++variedInputsCount;
-        }
-      }
-
-      if (variedInputsCount === 0)
-        return 0;
-
-      return product;
-
-    case OPTIMIZATION_TYPE.MAX:
-      return analysisInputs.samplesCount.value;
-
-    default:
-      return 0;
+  private isOptimizationApplicable(func: DG.Func): boolean {
+    for (const output of func.outputs) {
+      if (isNumericProp(output))
+        return true;
     }
-  }
 
-  private getFuncCallCountAsString(): string {
-    if (!this.canEvaluationBeRun())
-      return '0';
-
-    const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);
-
-    if (funcCallCount < 1000)
-      return String(funcCallCount);
-
-    if (funcCallCount < 1000000)
-      return String(Math.ceil(funcCallCount / 10) / 100) + 'k';
-
-    if (funcCallCount < 1000000000)
-      return String(Math.ceil(funcCallCount / 10000) / 100) + 'm';
-
-    return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
+    return false;
   }
 
   private updateRunWidgetsState(): void {
-    this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
     this.runButton.disabled = !this.canEvaluationBeRun();
     this.runIcon.hidden = this.runButton.disabled;
   }
@@ -524,7 +498,7 @@ export class OptimizationView {
       .reduce((container, outputConfig) => {
         const prop = outputConfig.prop;
         if (prop.category !== prevCategory) {
-          container.append(ui.h2(prop.category));
+          container.append(ui.p(prop.category));
           prevCategory = prop.category;
         }
 
@@ -548,7 +522,7 @@ export class OptimizationView {
       .reduce((container, inputConfig) => {
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
-          container.append(ui.h2(prop.category));
+          container.append(ui.p(prop.category));
           prevCategory = prop.category;
         }
 
@@ -599,10 +573,10 @@ export class OptimizationView {
 
     switch (this.store.analysisInputs.analysisType.value.value) {
     case OPTIMIZATION_TYPE.MIN:
-      msg = 'Grid analysis: the function is evaluated with respect to the selected inputs varying within the specified ranges';
+      msg = 'Minimize target';
       break;
     case OPTIMIZATION_TYPE.MAX:
-      msg = 'Monte Carlo simulation: the function is evaluated with respect to random variation of the selected inputs within the specified ranges';
+      msg = 'Maximize target';
       break;
     default:
       msg = 'Unknown method!';
@@ -612,36 +586,17 @@ export class OptimizationView {
     this.store.analysisInputs.analysisType.input.setTooltip(msg);
   }
 
-  private samplesCountTooltip(): string {
-    switch (this.store.analysisInputs.analysisType.value.value) {
-    case OPTIMIZATION_TYPE.MAX:
-      return 'Input sets count';
-    default:
-      return 'Unknown method!';
-    }
-  }
-
   private addTooltips(): void {
     // type of analysis
     this.setAnalysisInputTooltip();
 
-    // run button
-    ui.tooltip.bind(this.runButton, () =>
-      `Run sensitivity analysis: the function is evaluated ${this.getFuncCallCount(this.store.analysisInputs, this.store.inputs)} times`,
-    );
-
-    // run icon
-    ui.tooltip.bind(this.runIcon, () =>
-      `Run sensitivity analysis: the function is evaluated ${this.getFuncCallCount(this.store.analysisInputs, this.store.inputs)} times`,
-    );
-
     // samples count
-    this.store.analysisInputs.samplesCount.input.setTooltip(this.samplesCountTooltip());
+    this.store.analysisInputs.samplesCount.input.setTooltip('Number of the function evaluations');
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
-      const inpType = this.store.inputs[propName].prop.propertyType;
-      if (inpType === DG.TYPE.BOOL || inpType === DG.TYPE.STRING)
+      const prop = this.store.inputs[propName].prop;
+      if (!isNumericProp(prop))
         continue;
 
       const propConfig = this.store.inputs[propName];
@@ -673,24 +628,21 @@ export class OptimizationView {
     return this.isAnyInputSelected() && this.isAnyOutputSelected();
   }
 
-  private async runAnalysis(): Promise<void> {
+  private async runOptimization(): Promise<void> {
     if (!this.canEvaluationBeRun())
       return;
 
-    switch (this.store.analysisInputs.analysisType.value.value) {
-    case OPTIMIZATION_TYPE.MIN:
-      await this.runGridAnalysis();
-      break;
-    case OPTIMIZATION_TYPE.MAX:
-      await this.runRandomAnalysis();
-      break;
-    default:
-      break;
-    }
+    if (this.targetCount > 1)
+      await this.runMonteCarloOptimization();
+    else
+      await this.runMonteCarloOptimization(); // TODO: to replace it by Leonid's optimizer
   }
 
   private getFixedInputColumns(rowCount: number): DG.Column[] {
     return Object.values(this.store.inputs).filter((input) => {
+      if (input.type === DG.TYPE.DATA_FRAME)
+        return false;
+
       if (!supportedInputTypes.includes(input.type))
         return true;
       return !input.isChanging.value;
@@ -721,7 +673,7 @@ export class OptimizationView {
     });
   }
 
-  private async runRandomAnalysis() {
+  private async runMonteCarloOptimization() {
     const options = {
       func: this.func,
       fixedInputs: this.getFixedInputs().map((propName) => ({
@@ -762,14 +714,9 @@ export class OptimizationView {
     this.comparisonView.grid.columns.setVisible(colNamesToShow);
     this.comparisonView.grid.props.rowHeight = ROW_HEIGHT;
 
-    // add correlation plot
-    const corPlot = DG.Viewer.correlationPlot(funcEvalResults, {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow});
-    const corPlotDockNode = this.comparisonView.dockManager.dock(corPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.COR_PLOT);
-    this.openedViewers.push(corPlot);
-
     // add PC plot
     const pcPlot = DG.Viewer.pcPlot(funcEvalResults, {columnNames: colNamesToShow});
-    this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.DOWN, corPlotDockNode, '', DOCK_RATIO.PC_PLOT);
+    this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
     this.openedViewers.push(pcPlot);
 
     const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, options.variedInputs.length);
@@ -839,211 +786,6 @@ export class OptimizationView {
 
       grok.shell.o = overviewPanel.root;
     });
-  }
-
-  private async runGridAnalysis() {
-    const paramValues = Object.keys(this.store.inputs).reduce((acc, propName) => {
-      switch (this.store.inputs[propName].type) {
-      case DG.TYPE.INT:
-      case DG.TYPE.BIG_INT:
-        const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-        const intStep = (numPropConfig.max.value - numPropConfig.min.value) / (numPropConfig.lvl.value - 1);
-        acc[propName] = numPropConfig.isChanging.value ?
-          Array.from({length: numPropConfig.lvl.value}, (_, i) => Math.round(numPropConfig.min.value + i*intStep)) :
-          [numPropConfig.const.value];
-        break;
-      case DG.TYPE.FLOAT:
-        const floatPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
-        const floatStep = (floatPropConfig.max.value - floatPropConfig.min.value) / (floatPropConfig.lvl.value - 1);
-        acc[propName] = floatPropConfig.isChanging.value ?
-          Array.from({length: floatPropConfig.lvl.value}, (_, i) => floatPropConfig.min.value + i*floatStep) :
-          [floatPropConfig.const.value];
-        break;
-      case DG.TYPE.BOOL:
-        const boolPropConfig = this.store.inputs[propName] as SensitivityBoolStore;
-        acc[propName] = boolPropConfig.isChanging.value ?
-          [boolPropConfig.const.value, !boolPropConfig.const.value]:
-          [boolPropConfig.const.value];
-        break;
-      default:
-        const constPropConfig = this.store.inputs[propName] as SensitivityConstStore;
-        acc[propName] = [constPropConfig.const.value];
-      }
-
-      return acc;
-    }, {} as Record<string, any[]>);
-
-    let runParams = Object.values(paramValues)[0].map((item) => [item]) as any[][];
-    for (let i = 1; i < Object.values(paramValues).length; i++) {
-      const values = Object.values(paramValues)[i];
-
-      const newRunParams = [] as any[][];
-      for (const accVal of runParams) {
-        for (const val of values)
-          newRunParams.push([...accVal, val]);
-      }
-
-      runParams = newRunParams;
-    }
-
-    const funccalls = runParams.map((runParams) => this.func.prepare(
-      this.func.inputs
-        .map((input, idx) => ({name: input.name, idx}))
-        .reduce((acc, {name, idx}) => {
-          acc[name] = runParams[idx];
-          return acc;
-        }, {} as Record<string, any>),
-    ));
-
-    const calledFuncCalls = await getCalledFuncCalls(funccalls);
-
-    this.closeOpenedViewers();
-
-    const variedInputsColumns = [] as DG.Column[];
-    const rowCount = calledFuncCalls.length;
-    const fixedInputsColumns = this.getFixedInputColumns(rowCount);
-
-    for (const inputName of Object.keys(this.store.inputs)) {
-      const input = this.store.inputs[inputName];
-      const prop = input.prop;
-
-      if (input.isChanging.value) {
-        variedInputsColumns.push(DG.Column.fromType(
-          prop.propertyType as unknown as DG.COLUMN_TYPE,
-          prop.caption ?? prop.name,
-          rowCount,
-        ));
-      }
-    }
-
-    const inputsOfInterestColumns = [...variedInputsColumns];
-
-    const len = inputsOfInterestColumns.length;
-    const funcEvalResults = DG.DataFrame.fromColumns([inputsOfInterestColumns[0]]);
-
-    for (let i = 1; i < len; ++i) {
-      inputsOfInterestColumns[i].name = funcEvalResults.columns.getUnusedName(inputsOfInterestColumns[i].name);
-      funcEvalResults.columns.add(inputsOfInterestColumns[i]);
-    }
-
-    for (let row = 0; row < rowCount; ++row) {
-      for (const inputName of Object.keys(this.store.inputs)) {
-        const input = this.store.inputs[inputName];
-        const prop = input.prop;
-
-        if (input.isChanging.value)
-          funcEvalResults.set(prop.caption ?? prop.name, row, calledFuncCalls[row].inputs[inputName]);
-      }
-    }
-
-    const outputsOfInterest = this.getOutputsOfInterest();
-    const outputsOfInterestColumns = getOutput(calledFuncCalls, outputsOfInterest).columns;
-
-    for (const outCol of outputsOfInterestColumns) {
-      inputsOfInterestColumns.forEach((inCol) => {
-        if (inCol.name === outCol.name) {
-          inCol.name = `${inCol.name} (input)`;
-          outCol.name = `${outCol.name} (output)`;
-        }
-      });
-
-      outCol.name = funcEvalResults.columns.getUnusedName(outCol.name);
-
-      funcEvalResults.columns.add(outCol);
-    }
-
-    const colNamesToShow = funcEvalResults.columns.names();
-
-    for (const col of fixedInputsColumns) {
-      col.name = funcEvalResults.columns.getUnusedName(`${col.name} (fixed)`);
-      funcEvalResults.columns.add(col);
-    }
-
-    this.comparisonView.dataFrame = funcEvalResults;
-
-    this.gridSubscription = this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
-      const selectedRun = calledFuncCalls[cell.tableRowIndex ?? 0];
-
-      const scalarParams = ([...selectedRun.outputParams.values()])
-        .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
-      const scalarTable = DG.HtmlTable.create(
-        scalarParams,
-        (scalarVal: DG.FuncCallParam) =>
-          [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
-      ).root;
-
-      const dfParams = ([...selectedRun.outputParams.values()])
-        .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
-      const dfPanes = dfParams.reduce((acc, param) => {
-        const configs = getPropViewers(param.property).config;
-
-        const dfValue = selectedRun.outputs[param.name];
-        const paneName = param.property.caption ?? param.property.name;
-        configs.map((config) => {
-          const viewerType = config['type'] as string;
-          const viewer = DG.Viewer.fromType(viewerType, dfValue);
-          viewer.setOptions(config);
-          $(viewer.root).css({'width': '100%'});
-          if (acc[paneName])
-            acc[paneName].push(viewer.root);
-          else acc[paneName] = [viewer.root];
-        });
-
-        return acc;
-      }, {} as {[name: string]: HTMLElement[]});
-
-      let overviewPanelConfig: Object;
-      let paneToExpandIdx: number;
-
-      if (scalarParams.length > 0) {
-        paneToExpandIdx = 1;
-        overviewPanelConfig = {
-          'Output scalars': [scalarTable],
-          ...dfPanes,
-        };
-      } else {
-        paneToExpandIdx = 0;
-        overviewPanelConfig = {
-          ...dfPanes,
-        };
-      }
-
-      const overviewPanel = ui.accordion();
-      $(overviewPanel.root).css({'width': '100%'});
-      Object.entries(overviewPanelConfig).map((e) => {
-        overviewPanel.addPane(e[0], () => ui.divV(e[1]));
-      });
-
-      overviewPanel.panes[paneToExpandIdx].expanded = true;
-
-      grok.shell.o = overviewPanel.root;
-    });
-
-    // hide columns with fixed inputs
-    this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
-    this.comparisonView.grid.columns.setVisible(colNamesToShow);
-
-    this.comparisonView.grid.props.rowHeight = ROW_HEIGHT;
-
-    // add correlation plot
-    const corPlot = DG.Viewer.correlationPlot(funcEvalResults, {xColumnNames: colNamesToShow, yColumnNames: colNamesToShow});
-    const corPlotDockNode = this.comparisonView.dockManager.dock(corPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.COR_PLOT);
-    this.openedViewers.push(corPlot);
-
-    // add PC plot
-    const pcPlot = DG.Viewer.pcPlot(funcEvalResults, {columnNames: colNamesToShow});
-    this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.DOWN, corPlotDockNode, '', DOCK_RATIO.PC_PLOT);
-    this.openedViewers.push(pcPlot);
-
-    const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsColumns.length);
-
-    // other vizualizations depending on the varied inputs dimension
-    const graphViewer = (variedInputsColumns.length === 1) ?
-      DG.Viewer.lineChart(funcEvalResults, this.getLineChartOpt(colNamesToShow)) :
-      DG.Viewer.scatterPlot(funcEvalResults, this.getScatterOpt(colNamesToShow, nameOfNonFixedOutput));
-
-    this.openedViewers.push(graphViewer);
-    this.comparisonView.dockManager.dock(graphViewer, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.GRAPH);
   }
 
   private getOutputNameForScatterPlot(names: string[], table: DG.DataFrame, start: number): string {
