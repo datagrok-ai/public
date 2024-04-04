@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
 import {FitChartCellRenderer} from './fit-renderer';
-import {getChartData, mergeProperties} from '../fit/fit-renderer';
+import {getChartData, mergeProperties} from './fit-renderer';
 import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
@@ -11,7 +11,7 @@ import {interval, merge} from 'rxjs';
 
 
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
-  curvesColumnName?: string;
+  curvesColumnNames?: string[] = [];
   showSelectedRowsCurves: boolean = false;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
@@ -21,7 +21,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   constructor() {
     super(new FitChartCellRenderer());
 
-    this.curvesColumnName = this.column('curves');
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST);
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
@@ -43,7 +43,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   }
 
   createChartData(): void {
-    if (!this.curvesColumnName)
+    if (this.curvesColumnNames?.length === 0)
       return;
     this.rows.length = 0;
     if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
@@ -56,12 +56,13 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
     this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
-    for (let i of this.rows) {
-      const gridCell = grid.cell(this.curvesColumnName!, grid.tableRowToGrid(i));
-      const cellCurves = getChartData(gridCell);
-      cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
-      this.data.series?.push(...cellCurves.series!);
-    }
+    for (const colName of this.curvesColumnNames!)
+      for (let i of this.rows) {
+        const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
+        const cellCurves = getChartData(gridCell);
+        cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+        this.data.series?.push(...cellCurves.series!);
+      }
   }
 
   onPropertyChanged(property: DG.Property | null): void {
@@ -72,7 +73,9 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
   onTableAttached(): void {
     const grid = this.tableView?.grid!;
-    this.curvesColumnName ??= this.dataFrame.columns.bySemType(FIT_SEM_TYPE)?.name;
+    const fitCol = this.dataFrame.columns.bySemType(FIT_SEM_TYPE);
+    if (fitCol !== null)
+      this.curvesColumnNames = [fitCol.name];
 
     merge(this.dataFrame.onCurrentCellChanged, grid.onCellMouseEnter, this.dataFrame.onSelectionChanged)
       .pipe(debounce(_ => interval(50)))
@@ -87,7 +90,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   }
 
   render(): void {
-    if (!this.curvesColumnName) {
+    if (this.curvesColumnNames?.length === 0) {
       this._showErrorMessage('The MultiCurveViewer viewer requires a minimum of 1 curves column.');
       return;
     }
