@@ -225,8 +225,8 @@ Examples of built-in renderers include molecules, URL based images, fit lines, c
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
-data from multiple columns, use [smart forms](#smart-forms). To visualize
-numerical data, use [sparklines](#sparklines).
+data from multiple columns, use _smart forms_. To visualize
+numerical data, use _sparklines_.
 
 To add a summary column, right-click any cell, then choose **Add** > **Summary
 Columns**, and select your preferred option from the menu.
