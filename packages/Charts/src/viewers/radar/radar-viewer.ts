@@ -52,7 +52,8 @@ export class RadarViewer extends DG.JsViewer {
     this.showValues = this.bool('showValues', true);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL});
-
+    this.addRowSourceAndFormula();
+    
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
