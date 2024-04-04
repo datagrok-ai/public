@@ -32,7 +32,7 @@ export const GapOriginals: {
 };
 
 export type ConvertFunc = (src: string) => string;
-export type JoinerFunc = (src: ISeqSplitted) => string;
+export type JoinerFunc = (src: ArrayLike<string>) => string;
 
 /** Class for handling notation units in Macromolecule columns and
  * conversion of notation systems in Macromolecule columns
@@ -635,7 +635,7 @@ export class SeqHandler {
     // assign the values to the newly created empty column
     newColumn.init((rowIdx: number) => {
       const srcSS = this.getSplitted(rowIdx);
-      return joiner(srcSS);
+      return joiner(srcSS.originals);
     });
     return newColumn;
   }
@@ -652,7 +652,7 @@ export class SeqHandler {
     const startIdxVal: number = startIdx ?? 0;
     const endIdxVal: number = endIdx ?? this.maxLength - 1;
 
-    const join = this.getJoiner();
+    const joiner = this.getJoiner();
 
     const regLength = endIdxVal - startIdxVal + 1;
     regCol.init((rowI): string => {
@@ -664,7 +664,7 @@ export class SeqHandler {
         const seqOM = seqS.getOriginal(seqJPos);
         regOMList[regJPos] = seqJPos < seqS.length ? seqOM : GapOriginals[this.notation];
       }
-      return join(new StringListSeqSplitted(regOMList, GapOriginals[this.notation]));
+      return joiner(regOMList);
     });
 
     const getRegionOfPositionNames = (str: string): string => {
@@ -703,18 +703,20 @@ export class SeqHandler {
     const srcSh = this;
     switch (notation) {
     case NOTATION.FASTA: {
-      res = function(srcSS: ISeqSplitted): string { return srcSh.joinToFasta(srcSS, srcSh.isHelm()); };
+      res = function(srcOList: ArrayLike<string>): string { return joinToFasta(srcOList, srcSh.isHelm()); };
       break;
     }
     case NOTATION.SEPARATOR: {
       if (!separator) throw new Error(`Separator is mandatory for notation '${notation}'.`);
-      res = function(srcSS: ISeqSplitted): string { return joinToSeparator(srcSS, separator, srcSh.isHelm()); };
+      res = function(srcOList: ArrayLike<string>): string {
+        return joinToSeparator(srcOList, separator, srcSh.isHelm());
+      };
       break;
     }
     case NOTATION.HELM: {
       const isDnaOrRna = srcSh.alphabet === ALPHABET.DNA || srcSh.alphabet === ALPHABET.RNA;
       const wrappers = srcSh.getHelmWrappers();
-      res = function(srcSS: ISeqSplitted): string { return joinToHelm(srcSS, wrappers, isDnaOrRna); };
+      res = function(srcOList: ArrayLike<string>): string { return joinToHelm(srcOList, wrappers, isDnaOrRna); };
       break;
     }
     default:
@@ -750,35 +752,15 @@ export class SeqHandler {
 
   // -- joiners & converters --
 
-  private joinToFasta(seqS: ISeqSplitted, isHelm: boolean): string {
-    const resMList: string[] = new Array<string>(seqS.length);
-    for (let posIdx: number = 0; posIdx < seqS.length; ++posIdx) {
-      const cm: string = seqS.getOriginal(posIdx);
-      let om: string = seqS.getOriginal(posIdx);
-      if (isHelm)
-        om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
-
-      if (cm === GAP_SYMBOL)
-        om = GapOriginals[NOTATION.FASTA];
-      else if (cm === PHOSPHATE_SYMBOL)
-        om = '';
-      else if (om.length > 1)
-        om = '[' + om + ']';
-
-      resMList[posIdx] = om;
-    }
-    return resMList.join('');
-  }
-
   private convertToFasta(src: string): string {
     const srcUhSplitter: SplitterFunc = this.splitter;
     const srcSS: ISeqSplitted = this.isHelm() ? this.splitterAsHelmNucl(src) : srcUhSplitter(src);
-    return this.joinToFasta(srcSS, this.isHelm());
+    return joinToFasta(srcSS.originals, this.isHelm());
   }
 
   private convertToSeparator(src: string, tgtSeparator: string): string {
     const srcSS: ISeqSplitted = this.isHelm() ? this.splitterAsHelmNucl(src) : this.splitter(src);
-    return joinToSeparator(srcSS, tgtSeparator, this.isHelm());
+    return joinToSeparator(srcSS.originals, tgtSeparator, this.isHelm());
   }
 
   private convertToHelm(src: string): string {
@@ -786,7 +768,7 @@ export class SeqHandler {
 
     const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');
     const srcSS = this.splitter(src);
-    return joinToHelm(srcSS, wrappers, isDnaOrRna);
+    return joinToHelm(srcSS.originals, wrappers, isDnaOrRna);
   }
 
   /** Splits Helm sequence adjusting nucleotides to single char symbols. (!) Removes lone phosphorus. */
@@ -809,11 +791,31 @@ export class SeqHandler {
 
 // -- joiners --
 
-function joinToSeparator(seqS: ISeqSplitted, tgtSeparator: string, isHelm: boolean): string {
-  const resMList: string[] = new Array<string>(seqS.length);
-  for (let posIdx: number = 0; posIdx < seqS.length; ++posIdx) {
-    const cm = seqS.getCanonical(posIdx);
-    let om = seqS.getOriginal(posIdx);
+function joinToFasta(srcOList: ArrayLike<string>, isHelm: boolean): string {
+  const resMList: string[] = new Array<string>(srcOList.length);
+  for (let posIdx: number = 0; posIdx < srcOList.length; ++posIdx) {
+    const cm: string = srcOList[posIdx];
+    let om: string = srcOList[posIdx];
+    if (isHelm)
+      om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
+
+    if (cm === GAP_SYMBOL)
+      om = GapOriginals[NOTATION.FASTA];
+    else if (cm === PHOSPHATE_SYMBOL)
+      om = '';
+    else if (om.length > 1)
+      om = '[' + om + ']';
+
+    resMList[posIdx] = om;
+  }
+  return resMList.join('');
+}
+
+function joinToSeparator(srcOList: ArrayLike<string>, tgtSeparator: string, isHelm: boolean): string {
+  const resMList: string[] = new Array<string>(srcOList.length);
+  for (let posIdx: number = 0; posIdx < srcOList.length; ++posIdx) {
+    const cm = srcOList[posIdx];
+    let om = srcOList[posIdx];
     if (isHelm)
       om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
 
@@ -826,12 +828,12 @@ function joinToSeparator(seqS: ISeqSplitted, tgtSeparator: string, isHelm: boole
   return resMList.join(tgtSeparator);
 }
 
-function joinToHelm(srcSS: ISeqSplitted, wrappers: string[], isDnaOrRna: boolean): string {
+function joinToHelm(srcOList: ArrayLike<string>, wrappers: string[], isDnaOrRna: boolean): string {
   const [prefix, leftWrapper, rightWrapper, postfix] = wrappers;
-  const resOMList: string[] = new Array<string>(srcSS.length);
-  for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
-    const cm = srcSS.getCanonical(posIdx);
-    let om: string = srcSS.getOriginal(posIdx);
+  const resOMList: string[] = new Array<string>(srcOList.length);
+  for (let posIdx: number = 0; posIdx < srcOList.length; ++posIdx) {
+    const cm = srcOList[posIdx];
+    let om: string = srcOList[posIdx];
     if (cm === GAP_SYMBOL)
       om = GapOriginals[NOTATION.HELM];
     else {

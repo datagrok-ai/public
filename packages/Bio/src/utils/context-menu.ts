@@ -20,7 +20,7 @@ export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu): void {
       const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.DefaultSeparator : undefined;
       const joiner = srcSh.getJoiner({notation: tgtNotation as NOTATION, separator});
       const srcSS = srcSh.getSplitted(srcRowIdx);
-      const tgtSeq = joiner(srcSS);
+      const tgtSeq = joiner(srcSS.originals);
 
       if (!navigator.clipboard) {
         grok.shell.warning('The clipboard functionality requires a secure origin — either HTTPS or localhost');

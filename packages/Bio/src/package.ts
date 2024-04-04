@@ -22,6 +22,7 @@ import {
   createJsonMonomerLibFromSdf, IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {INotationProvider} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {
@@ -77,6 +78,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {PolyToolNotationProvider} from './utils/poly-tool/notation-provider';
 
 export const _package = new BioPackage();
 
@@ -1045,4 +1047,13 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+// -- Custom notations --
+
+//name: getNotationProviderForPolyTool
+//meta.notationProvider: { "semType": "Macromolecule", "notation": "PolyTool" }
+//output: object result
+export async function getNotationProviderForPolyTool(): Promise<INotationProvider> {
+  return new PolyToolNotationProvider();
 }

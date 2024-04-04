@@ -69,6 +69,9 @@ class BioPackageDetectors extends DG.Package {
     super();
     // replace super._logger
     this._logger = new LoggerWrapper(this, this.logger, 'detectors');
+
+    const logPrefix = `BioPackageDetectors.ctor()`;
+    this.logger.debug(`${logPrefix}, `);
   }
 
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
@@ -115,6 +118,18 @@ class BioPackageDetectors extends DG.Package {
   }
 
   /** Returns last object (stores it if enabled earlier). */
+
+  // name: initBioDetectors
+  // tags: init
+  initBioDetectors() {
+    const logPrefix = `BioPackageDetectors.initBioDetectors()`;
+    this.logger.warning(`${logPrefix}, start`);
+
+    // DG.Func.find([].join('optio && ')).;
+
+    this.logger.warning(`${logPrefix}, end`);
+  }
+
   detectMacromoleculeStoreLast() {
     const last = {};
     if (window.$detectMacromoleculeStore) window.$detectMacromoleculeStore.last = last;
@@ -122,6 +137,8 @@ class BioPackageDetectors extends DG.Package {
   }
 
   //tags: semTypeDetector
+  //meta.semType: Macromolecule
+  //meta.notation: PolyTool
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
@@ -459,18 +476,21 @@ class BioPackageDetectors extends DG.Package {
 
   vectorLength(v) {
     let sqrSum = 0;
-    for (let i = 0; i < v.length; i++)
+    for (let i = 0; i < v.length; i++) {
       sqrSum += v[i] * v[i];
+    }
     return Math.sqrt(sqrSum);
   }
 
   vectorDotProduct(v1, v2) {
-    if (v1.length !== v2.length)
+    if (v1.length !== v2.length) {
       throw Error('The dimensionality of the vectors must match');
+    }
 
     let prod = 0;
-    for (let i = 0; i < v1.length; i++)
+    for (let i = 0; i < v1.length; i++) {
       prod += v1[i] * v2[i];
+    }
 
     return prod;
   }
@@ -499,10 +519,11 @@ class BioPackageDetectors extends DG.Package {
         .map((ma) => {
           let mRes;
           const m = ma[0];
-          if (m.length > 1)
+          if (m.length > 1) {
             mRes = ma[1];
-          else
+          } else {
             mRes = m;
+          }
 
           return mRes;
         }).toArray();
@@ -530,10 +551,11 @@ class BioPackageDetectors extends DG.Package {
       const mmPostProcess = (mm) => {
         this.helmPp1Re.lastIndex = 0;
         const pp1M = this.helmPp1Re.exec(mm);
-        if (pp1M && pp1M.length >= 2)
+        if (pp1M && pp1M.length >= 2) {
           return pp1M[1];
-        else
+        } else {
           return mm;
+        }
       };
 
       const mmList = inSeq ? inSeq.split('.') : [];
@@ -543,8 +565,9 @@ class BioPackageDetectors extends DG.Package {
   }
 
   sample(col, n) {
-    if (col.length < n)
+    if (col.length < n) {
       throw new Error('Sample source is less than n requested.');
+    }
 
     const idxSet = new Set();
     while (idxSet.size < n) {

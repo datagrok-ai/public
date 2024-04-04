@@ -14,7 +14,10 @@
     "indent": ["error", 2, {"SwitchCase": 1}],
     "max-len": ["error", 120],
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "varsIgnorePattern": "^(_|ui$|grok$|DG$|$PackageDetectors)",
+      "argsIgnorePattern": "^_"
+    }],
     "require-jsdoc": "off",
     "valid-jsdoc": "warn",
     "spaced-comment": "off",

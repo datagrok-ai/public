@@ -9,8 +9,8 @@ import {SeqHandler} from '../seq-handler';
 export const GAP_SYMBOL: string = '';
 
 export interface ISeqSplitted {
-  get canonicals(): Iterable<string>;
-  get originals(): Iterable<string>;
+  get canonicals(): ArrayLike<string> & Iterable<string>;
+  get originals(): ArrayLike<string> & Iterable<string>;
 
   isGap(posIdx: number): boolean;
 
@@ -21,6 +21,10 @@ export interface ISeqSplitted {
   getOriginal(posIdx: number): string;
 
   length: number;
+}
+
+export interface INotationProvider {
+
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }

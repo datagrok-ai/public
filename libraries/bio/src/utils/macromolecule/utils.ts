@@ -21,9 +21,9 @@ import {UnknownSeqPalettes} from '../../unknown';
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
 
-  get canonicals(): Iterable<string> { return this.mList; }
+  get canonicals(): ArrayLike<string> & Iterable<string> { return this.mList; }
 
-  get originals(): Iterable<string> { return this.mList; }
+  get originals(): ArrayLike<string> & Iterable<string> { return this.mList; }
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
@@ -42,9 +42,9 @@ export class StringListSeqSplitted implements ISeqSplitted {
 export class FastaSimpleSeqSplitted implements ISeqSplitted {
   get length(): number { return this.seqS.length; }
 
-  get canonicals(): Iterable<string> { return this.seqS; }
+  get canonicals(): ArrayLike<string> & Iterable<string> { return this.seqS; }
 
-  get originals(): Iterable<string> { return this.seqS; }
+  get originals(): ArrayLike<string> & Iterable<string> { return this.seqS; }
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === GapOriginals[NOTATION.FASTA];
