@@ -31,11 +31,6 @@ enum DF_OPTIONS {
   BY_COL_VAL = 'By value in column',
 }
 
-type AnalysisProps = {
-  analysisType: InputWithValue<BehaviorSubject<OPTIMIZATION_TYPE>>,
-  samplesCount: InputWithValue,
-}
-
 type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
 type InputValues = {
@@ -50,19 +45,16 @@ type SensitivityNumericStore = {
   type: DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
   min: InputWithValue,
   max: InputWithValue,
-  lvl: InputWithValue,
 } & InputValues;
 
 type SensitivityBoolStore = {
   prop: DG.Property,
   type: DG.TYPE.BOOL,
-  lvl: number,
 } & InputValues;
 
 type SensitivityConstStore = {
   prop: DG.Property,
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
-  lvl: 1,
 } & InputValues;
 
 type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
@@ -73,30 +65,6 @@ const isNumericProp = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT
 
 export class OptimizationView {
   generateInputFields = (func: DG.Func) => {
-    const analysisInputs = {
-      analysisType: {
-        input: ui.choiceInput(
-          'Goal', OPTIMIZATION_TYPE.MAX, [OPTIMIZATION_TYPE.MAX, OPTIMIZATION_TYPE.MIN],
-          (v: OPTIMIZATION_TYPE) => {
-            analysisInputs.analysisType.value.next(v);
-            this.updateRunWidgetsState();
-            this.setAnalysisInputTooltip();
-            this.store.analysisInputs.samplesCount.input.setTooltip('Number of the function evaluations');
-          }),
-        value: new BehaviorSubject(OPTIMIZATION_TYPE.MAX),
-      },
-      samplesCount: {
-        input: ui.intInput('Evaluations', 10, (v: number) => {
-          analysisInputs.samplesCount.value = v;
-          this.updateRunWidgetsState();
-        }),
-        value: 10,
-      },
-    } as AnalysisProps;
-
-    analysisInputs.analysisType.input.root.insertBefore(getSwitchMock(), analysisInputs.analysisType.input.captionLabel);
-    analysisInputs.samplesCount.input.root.insertBefore(getSwitchMock(), analysisInputs.samplesCount.input.captionLabel);
-
     const getInputValue = (input: DG.Property, key: string) => (
       input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
     );
@@ -167,29 +135,20 @@ export class OptimizationView {
             })(),
             value: getInputValue(inputProp, 'max'),
           },
-          lvl: {
-            input: ui.intInput('Samples', 3, (v: number) => {
-              (ref as SensitivityNumericStore).lvl.value = v;
-              this.updateRunWidgetsState();
-            }),
-            value: 3,
-          },
           isChanging: new BehaviorSubject<boolean>(false),
         };
 
-        [temp.max.input, temp.lvl.input].forEach((input) => {
+        [temp.max.input].forEach((input) => {
           input.root.insertBefore(getSwitchMock(), input.captionLabel);
           $(input.root).removeProp('display');
         });
 
-        const simpleSa = [temp.lvl.input];
         acc[inputProp.name] = {
           ...temp,
           constForm: [temp.const.input],
           saForm: [
             temp.min.input,
             temp.max.input,
-            ...simpleSa,
           ],
         } as SensitivityNumericStore;
 
@@ -204,12 +163,11 @@ export class OptimizationView {
           isChangingInputConst.notify = true;
         });
         combineLatest([
-          temp.isChanging, analysisInputs.analysisType.value,
-        ]).subscribe(([isChanging, analysisType]) => {
+          temp.isChanging,
+        ]).subscribe(([isChanging]) => {
           if (isChanging) {
             ref.constForm.forEach((input) => $(input.root).hide());
             ref.saForm.forEach((input) => $(input.root).css('display', 'flex'));
-            simpleSa.forEach((input) => analysisType === OPTIMIZATION_TYPE.MIN ? $(input.root).css('display', 'flex'): $(input.root).hide());
           } else {
             ref.constForm.forEach((input) => $(input.root).css('display', 'flex'));
             ref.saForm.forEach((input) => $(input.root).hide());
@@ -236,7 +194,6 @@ export class OptimizationView {
             value: false,
           } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
-          lvl: 1,
         };
 
         acc[inputProp.name] = {
@@ -245,9 +202,6 @@ export class OptimizationView {
           saForm: [],
         } as SensitivityBoolStore;
         const boolRef = acc[inputProp.name] as SensitivityBoolStore;
-        boolRef.isChanging.subscribe((v) => {
-          boolRef.lvl = v ? 2: 1;
-        });
         break;
       default:
         const switchMock = getSwitchMock();
@@ -294,8 +248,9 @@ export class OptimizationView {
                 this.toSetSwitched,
                 (v: boolean) => {
                   this.targetCount += v ? 1 : -1;
-                  console.log('============================================');
-                  this.store.analysisInputs.analysisType.input.root.hidden = (this.targetCount !== 1);
+                  this.optTypeInput.root.hidden = (this.targetCount !== 1);
+                  this.optSettingsIcon.hidden = (this.targetCount < 1);
+                  this.showHideSettings();
                   temp.isInterest.next(v);
                   temp.analysisInputs.forEach((inp) => {
                     inp.root.hidden = (temp.value.returning !== DF_OPTIONS.BY_COL_VAL);
@@ -352,7 +307,7 @@ export class OptimizationView {
       isInterest: BehaviorSubject<boolean>
     }>);
 
-    return {analysisInputs, inputs, outputs};
+    return {inputs, outputs};
   };
 
   private openedViewers = [] as DG.Viewer[];
@@ -369,6 +324,37 @@ export class OptimizationView {
 
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
+
+  // Optimization settings: TO ADD METHOD's SETTINGS HERE
+  private samplesCount = 10;
+  private samplesCountInput = ui.input.int('Samples', {
+    min: 1,
+    step: 10,
+    value: this.samplesCount,
+    tooltipText: 'Number of the function evaluations',
+    showPlusMinus: true,
+  });
+
+  private optType = OPTIMIZATION_TYPE.MAX;
+  private optTypeInput = ui.input.radio('Goal', {
+    value: this.optType,
+    items: [OPTIMIZATION_TYPE.MAX as string, OPTIMIZATION_TYPE.MIN as string],
+    tooltipText: 'Type of optimization',
+  });
+
+  private methodSettingsDiv = ui.divV([ui.label('TO BE ADDED')]); // HERE, TO ADD UI for modifying optimizer settings
+
+  private optSettingsIcon = ui.iconFA('cog', () => {
+    const prevState = this.optSettingsDiv.hidden;
+    this.showHideSettings();
+    this.optSettingsDiv.hidden = !prevState;
+  }, 'Modify optimization settings');
+
+  private optSettingsDiv = ui.divV([
+    ui.h2('Settings'),
+    this.samplesCountInput.root,
+    this.methodSettingsDiv,
+  ]);
 
   static async fromEmpty(
     func: DG.Func,
@@ -422,6 +408,13 @@ export class OptimizationView {
     this.helpIcon = ui.iconFA('question', () => {
       window.open('https://datagrok.ai/help/compute.md#optimization', '_blank');
     }, 'Open help in a new tab');
+
+    this.samplesCountInput.onChanged(() => this.samplesCount = this.samplesCountInput.value);
+    this.optTypeInput.onChanged(() => this.optType = (this.optTypeInput.value as OPTIMIZATION_TYPE));
+    this.samplesCountInput.root.insertBefore(getSwitchMock(), this.samplesCountInput.captionLabel);
+    this.optTypeInput.root.insertBefore(getSwitchMock(), this.optTypeInput.captionLabel);
+
+    this.optSettingsDiv.hidden = true;
 
     const form = this.buildFormWithBtn();
     this.runButton.disabled = !this.canEvaluationBeRun();
@@ -489,11 +482,6 @@ export class OptimizationView {
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
 
-    const optSettingsDiv = ui.div([this.store.analysisInputs.samplesCount.input.root]);
-    optSettingsDiv.hidden = true;
-
-    const optSettingsIcon = ui.iconFA('cog', () => optSettingsDiv.hidden = !optSettingsDiv.hidden, 'Modify optimization settings');
-
     const form = Object.values(this.store.outputs)
       .reduce((container, outputConfig) => {
         const prop = outputConfig.prop;
@@ -510,11 +498,11 @@ export class OptimizationView {
         return container;
       }, ui.div([
         ui.h2('Optimize'),
-        ui.div([optSettingsIcon], {style: {'margin-top': '-22px', 'text-align': 'right'}}),
+        ui.div([this.optSettingsIcon], {style: {'margin-top': '-22px', 'text-align': 'right'}}),
       ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
 
-    form.appendChild(this.store.analysisInputs.analysisType.input.root);
-    form.appendChild(optSettingsDiv);
+    form.appendChild(this.optTypeInput.root);
+    form.appendChild(this.optSettingsDiv);
     form.appendChild(ui.h2('with respect to'));
     prevCategory = 'Misc';
 
@@ -568,30 +556,9 @@ export class OptimizationView {
     return form;
   }
 
-  private setAnalysisInputTooltip(): void {
-    let msg: string;
-
-    switch (this.store.analysisInputs.analysisType.value.value) {
-    case OPTIMIZATION_TYPE.MIN:
-      msg = 'Minimize target';
-      break;
-    case OPTIMIZATION_TYPE.MAX:
-      msg = 'Maximize target';
-      break;
-    default:
-      msg = 'Unknown method!';
-      break;
-    }
-
-    this.store.analysisInputs.analysisType.input.setTooltip(msg);
-  }
-
   private addTooltips(): void {
-    // type of analysis
-    this.setAnalysisInputTooltip();
-
     // samples count
-    this.store.analysisInputs.samplesCount.input.setTooltip('Number of the function evaluations');
+    this.samplesCountInput.setTooltip('Number of the function evaluations');
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
@@ -604,8 +571,15 @@ export class OptimizationView {
       propConfig.const.input.setTooltip(`'${name}' value`);
       (propConfig as SensitivityNumericStore).min.input.setTooltip(`Min value of '${name}'`);
       (propConfig as SensitivityNumericStore).max.input.setTooltip(`Max value of '${name}'`);
-      (propConfig as SensitivityNumericStore).lvl.input.setTooltip(`Number of samples along the axis '${name}'`);
     }
+  }
+
+  private showHideSettings(): void {
+    this.samplesCountInput.root.hidden = (this.targetCount < 2);
+    this.methodSettingsDiv.hidden = (this.targetCount > 1);
+
+    if (this.targetCount < 1)
+      this.optSettingsDiv.hidden = true;
   }
 
   private isAnyInputSelected(): boolean {
@@ -617,11 +591,7 @@ export class OptimizationView {
   }
 
   private isAnyOutputSelected(): boolean {
-    for (const propName of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[propName].isInterest.value === true)
-        return true;
-    }
-    return false;
+    return this.targetCount > 0;
   }
 
   private canEvaluationBeRun(): boolean {
@@ -689,7 +659,7 @@ export class OptimizationView {
           max: propConfig.max.value,
         };
       }),
-      samplesCount: this.store.analysisInputs.samplesCount.value || 1,
+      samplesCount: this.samplesCount,
     };
 
     const outputsOfInterest = this.getOutputsOfInterest();
