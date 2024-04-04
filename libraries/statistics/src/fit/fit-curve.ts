@@ -153,6 +153,7 @@ export interface IFitChartOptions {
   allowXZeroes?: boolean;    // defines whether x zeroes allowed for logarithmic data or not
   mergeSeries?: boolean;     // defines whether to merge series or not
 
+  showColumnLabel?: boolean; // defines whether to show the column label in the legend or not
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
 }
@@ -191,6 +192,7 @@ export interface IFitSeriesOptions {
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
+  columnName?: string;                  // defines the column name where the series is stored
 }
 // TODO: show labels in property panel if present, color by default from series
 
@@ -222,6 +224,7 @@ export const fitChartDataProperties: DG.Property[] = [
   DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
   DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
   DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Whether to merge series or not', defaultValue: false}),
+  DG.Property.js('showColumnLabel', DG.TYPE.BOOL, {description: 'Whether to show the column label in the legend or not', defaultValue: false}),
   DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
     choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
     //@ts-ignore
@@ -258,6 +261,7 @@ export const fitSeriesProperties: DG.Property[] = [
     choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
   DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
     choices: DROPLINES, inputType: 'MultiChoice'}),
+  DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';

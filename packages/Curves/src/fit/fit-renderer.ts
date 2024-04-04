@@ -52,6 +52,8 @@ const MIN_TITLE_PX_WIDTH = 275;
 const MIN_TITLE_PX_HEIGHT = 225;
 const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 180;
 const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
+const MIN_LEGEND_PX_WIDTH = 325;
+const MIN_LEGEND_PX_HEIGHT = 275;
 const MIN_DROPLINES_VISIBILITY_PX_WIDTH = 120;
 const MIN_DROPLINES_VISIBILITY_PX_HEIGHT = 110;
 const AXES_LEFT_PX_MARGIN = 38;
@@ -107,6 +109,7 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
     clickToToggle: series[0].clickToToggle,
     labels: series[0].labels,
     droplines: series[0].droplines,
+    columnName: series[0].columnName,
   };
   for (const s of series)
     mergedSeries.points = [...mergedSeries.points, ...s.points];
@@ -435,6 +438,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
+    const showLegend = w >= MIN_LEGEND_PX_WIDTH && h >= MIN_LEGEND_PX_HEIGHT;
     const showDroplines =  w >= MIN_DROPLINES_VISIBILITY_PX_WIDTH && h >= MIN_DROPLINES_VISIBILITY_PX_HEIGHT;
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxesLabels, showTitle);
 
@@ -606,6 +610,30 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       g.restore();
     }
 
+    if (showLegend) {
+      g.font = '11px Roboto, "Roboto Local"';
+      for (let i = 0; i < data.series?.length!; i++) {
+        g.beginPath();
+        const series = data.series![i];
+        const lineColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
+          series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        const markerColor = series.pointColor ? DG.Color.fromHtml(series.pointColor) ?
+          DG.Color.fromHtml(series.pointColor) : DG.Color.getCategoricalColor(i) : DG.Color.getCategoricalColor(i);
+        g.strokeStyle = lineColor;
+        g.lineWidth = 2 * ratio;
+        const text = `${data.chartOptions?.showColumnLabel ? series.columnName ?? '' : ''} ${series.name ?? ''}`;
+        const textWidth = g.measureText(text).width;
+        g.moveTo(dataBox.maxX - textWidth - 25, dataBox.y + 20 - 4 + 20 * i);
+        g.lineTo(dataBox.maxX - textWidth - 5, dataBox.y + 20 - 4 + 20 * i);
+        const marker = series.markerType ? series.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
+        DG.Paint.marker(g, marker, dataBox.maxX - textWidth - 25 + (20 / 2), dataBox.y + 20 - 4 + 20 * i, markerColor, POINT_PX_SIZE * ratio);
+        g.fillStyle = 'black';
+        g.fillText(text, dataBox.maxX - textWidth, dataBox.y + 20 + 20 * i);
+        g.stroke();
+      }
+      g.restore();
+    }
+
     g.restore();
   }
 
@@ -629,6 +657,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (data.series?.some((series) => series.points.every((point) => point.y === 0)))
       return;
+
+    data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
 
     this.renderCurves(g, x, y, w, h, data);
   }

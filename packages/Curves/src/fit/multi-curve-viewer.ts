@@ -55,14 +55,18 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
+    this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
     for (let i of this.rows) {
-      const cellCurves = getChartData(grid.cell(this.curvesColumnName!, grid.tableRowToGrid(i)));
+      const gridCell = grid.cell(this.curvesColumnName!, grid.tableRowToGrid(i));
+      const cellCurves = getChartData(gridCell);
+      cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
       this.data.series?.push(...cellCurves.series!);
     }
   }
 
   onPropertyChanged(property: DG.Property | null): void {
     this.applyViewerProperties();
+    this.createChartData();
     this.render();
   }
 
