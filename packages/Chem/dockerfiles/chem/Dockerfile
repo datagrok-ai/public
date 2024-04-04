@@ -28,7 +28,7 @@ COPY . .
 ARG CHEM_USER=chem
 RUN adduser --system --group $CHEM_USER
 USER $CHEM_USER
-EXPOSE $CHEM_PORT
+EXPOSE 5000
 SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT gunicorn app:app \
