@@ -24,7 +24,6 @@ reuse them (or share with teammates) later on.
 * [Properties](#properties)
 * [Common actions](#common-actions)
 * [Group tooltips](#group-tooltips)
-* [Trellis](#trellis)
 * [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
