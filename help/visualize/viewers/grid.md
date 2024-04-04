@@ -13,7 +13,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Grid is a [viewer](viewers.md) for tabular data. It's like Excel on steroids.
+Grid is a [viewer](viewers.md) for tabular data. Think Excel on steroids.
 
 :::note
 
@@ -46,7 +46,6 @@ Certain features and functionalities described in this article are part of the [
 |(De)Select rows with the current value | (Ctrl+) Shift + ENTER           |
 |Select rows above current              | Ctrl + Shift + Home             |
 |Select rows below current              | Ctrl + Shift + End              |
-| Toggle row selection                  | <kbd>Spacebar</kbd>             |
 |<h4>**Navigate**</h4>        ||
 |Up, Down, Left, Right                   | Navigate                        |
 |Page Up, Page Down                      | Navigate                        |
