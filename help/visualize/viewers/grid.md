@@ -33,7 +33,7 @@ Certain features and functionalities described in this article are part of the [
 
 |                                       |                                 |
 |---------------------------------------|---------------------------------|
-|<h4>**Select**</h4>        |
+|<h4>**Select**</h4>        ||
 |Select rows                            | Shift+Mouse Drag                |
 |Deselect rows                          | Ctrl+Shift+Mouse Drag           |
 |Select columns                         | Mouse Drag rows                 |
@@ -47,7 +47,7 @@ Certain features and functionalities described in this article are part of the [
 |Select rows above current              | Ctrl + Shift + Home             |
 |Select rows below current              | Ctrl + Shift + End              |
 | Toggle row selection                  | <kbd>Spacebar</kbd>             |
-|<h4>**Navigate**</h4>        |
+|<h4>**Navigate**</h4>        ||
 |Up, Down, Left, Right                   | Navigate                        |
 |Page Up, Page Down                      | Navigate                        |
 |Ctrl+Home                               | Jump to first row               |
@@ -56,10 +56,10 @@ Certain features and functionalities described in this article are part of the [
 |End                                     | Jump to last column             |
 |Ctrl+UP / DOWN                          | Prev / next selected row        |
 |Alt+F                                   | Show in full screen             |
-|<h4>**Sort**</h4>|
+|<h4>**Sort**</h4>||
 | Sort a column                          | Double-click column header      |
 | Sort current column                    | Ctrl+Shift+UP                   |
-|<h4>**Edit**</h4>|
+|<h4>**Edit**</h4>||
 | Edit cell                              | Double-click                    |
 | Copy cell value                        | Ctrl+C                          |
 | Paste into cell                        | Ctrl+V                          |
@@ -68,11 +68,11 @@ Certain features and functionalities described in this article are part of the [
 | Undo                                   | Ctrl+Z                          |
 | Redo                                   | Ctrl+Shift+Z                    |
 | Delete selected rows and/or columns    | Shift+Del                       |
-|<h4>**Resize and reorder**</h4>|
+|<h4>**Resize and reorder**</h4>||
 | Reorder columns   | Drag the column header.<br/>Selected columns are repositioned simultaneously next to each other   |
 | Resize columns                 | Drag the right border of the column header.<br/>Selected columns are resized simultaneously      |
 | Resize row height              | Drag the border of the row header     |
-|<h4>**Column properties**</h4>|
+|<h4>**Column properties**</h4>||
 | Open                           | <kbd>F2</kbd>                   |
 
 ## Rows and columns
