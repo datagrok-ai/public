@@ -23,8 +23,7 @@ interface Subsector {
   lowThreshold: number;
   highThreshold: number;
   weight: number;
-  //probabilities: number[];
-  //boundary: number;
+  //erroneous: boolean;
 }
 
 interface PieChartSettings extends SummarySettingsBase {
@@ -60,6 +59,100 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   return sum;
 }
 
+function normalizeValue(value: number, subsector: Subsector): number {
+  const { lowThreshold, highThreshold } = subsector;
+  const isMax = highThreshold > lowThreshold;
+  if (isMax ? value < lowThreshold : value > lowThreshold)
+    return 0;
+  else if (isMax ? value > highThreshold : value < highThreshold)
+    return 1;
+  else
+    return isMax 
+      ? (value - lowThreshold) / (highThreshold - lowThreshold)
+      : (value - highThreshold) / (lowThreshold - highThreshold);
+}
+
+function renderDiagonalStripes(
+  g: CanvasRenderingContext2D, box: DG.Rect, r: number, 
+  currentAngle: number, subsectorAngle: number
+) {
+  const patternSize = r;
+  const patternCanvas = ui.canvas();
+  patternCanvas.width = patternSize;
+  patternCanvas.height = patternSize;
+  const patternCtx = patternCanvas.getContext('2d')!;
+  patternCtx.strokeStyle = '#535659';
+  patternCtx.lineWidth = 0.5;
+  const numLines = 15;
+  const spacing = patternSize / (numLines + 1);
+  for (let i = 1; i <= numLines; i++) {
+    const y = i * spacing;
+    patternCtx.beginPath();
+    patternCtx.moveTo(0, y);
+    patternCtx.lineTo(patternSize, y);
+    patternCtx.stroke();
+  }
+  const pattern = g.createPattern(patternCanvas, 'repeat')!;
+  g.beginPath();
+  g.moveTo(box.midX, box.midY);
+  g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
+  g.closePath();
+  g.save();
+  g.translate(box.midX, box.midY);
+  g.rotate(Math.PI / 6);
+  g.translate(-box.midX, -box.midY);
+  g.fillStyle = pattern;
+  g.fill();
+  g.restore();
+}
+
+function renderSubsector(
+  g: CanvasRenderingContext2D, box: DG.Rect, sectorColor: string,
+  sectorAngle: number, currentAngle: number, subsector: Subsector,
+  minRadius: number,cols: DG.Column[], df: DG.DataFrame, row: number,
+  sectorWeight: number
+): number {
+  const normalizedSubsectorWeight = subsector.weight / sectorWeight;
+  const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
+  let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
+  const subsectorName = subsector.name;
+  const subsectorCol = cols.find((col) => col.name === subsectorName);
+  let value;
+  if (subsectorCol) {
+    value = df.cell(row, subsector.name).value;
+    const normalizedValue = value && subsectorCol.name !== 'PPBR' ? normalizeValue(value, subsector) : 1;
+    r = normalizedValue * (Math.min(box.width, box.height) / 2);
+    r = Math.max(r, minRadius);
+  }
+  if (subsectorCol?.name === 'PPBR') {
+    renderDiagonalStripes(g, box, r, currentAngle, subsectorAngle);
+  } else {
+    g.beginPath();
+    g.moveTo(box.midX, box.midY);
+    g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
+    g.closePath();
+    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+    g.lineWidth = 0.6;
+    g.stroke();
+    g.fillStyle = value ? hexToRgbA(sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
+    g.fill();
+  }
+  return currentAngle + subsectorAngle;
+}
+
+function hexToRgbA(hex: string, opacity: number): string {
+  const bigint = parseInt(hex.substring(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r},${g},${b},${opacity})`;
+}
+
+function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsector[]; }): number {
+  return sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
+}
+
+
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
@@ -77,30 +170,34 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
     r = Math.max(r, minRadius);
   } else if (settings.sectors) {
-    const sectors = settings.sectors.sectors;
-    const totalSectors = sectors.length;
-    const sectorAngle = (2 * Math.PI) / totalSectors;
-    const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
-    for (let i = 0; i < totalSectors; ++i) {
-      const sector = sectors[i];
-      const sectorStartAngle = settings.sectors.lowerBound + i * sectorAngle;
-      const sectorEndAngle = settings.sectors.lowerBound + (i + 1) * sectorAngle;
-      if (normalizedAngle >= sectorStartAngle && normalizedAngle < sectorEndAngle) {
+    const { sectors } = settings.sectors;
+    let currentAngle = 0;
+    const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
+    for (const sector of sectors) {
+      const sectorWeight = calculateSectorWeight(sector);
+      const normalizedSectorWeight = sectorWeight / totalSectorWeight;
+      const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
+      const sectorStartAngle = currentAngle;
+      const sectorEndAngle = currentAngle + sectorAngle;
+
+      if (angle >= sectorStartAngle && angle < sectorEndAngle) {
         const subsectors = sector.subsectors;
-        const totalSubsectors = subsectors.length;
-        const subsectorAngle = sectorAngle / totalSubsectors;
+        const totalSubsectorWeight = subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
         let subsectorStartAngle = sectorStartAngle;
-        for (let j = 0; j < totalSubsectors; ++j) {
-          const subsector = subsectors[j];
+        for (const subsector of subsectors) {
+          const subsectorWeight = subsector.weight;
+          const normalizedSubsectorWeight = subsectorWeight / totalSubsectorWeight;
+          const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
           const subsectorEndAngle = subsectorStartAngle + subsectorAngle;
-          if (normalizedAngle >= subsectorStartAngle && normalizedAngle < subsectorEndAngle) {
-            activeColumn = cols.findIndex((col) => col && subsector && col.name === subsector.name);
+          if (angle >= subsectorStartAngle && angle < subsectorEndAngle) {
+            activeColumn = cols.findIndex((col) => col && col.name === subsector.name);
             break;
           }
           subsectorStartAngle = subsectorEndAngle;
         }
         break;
       }
+      currentAngle += sectorAngle;
     }
   } else {
     const sum = getColumnsSum(cols, row);
@@ -181,94 +278,42 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
       }
-    } if (settings.sectors) {
+    } else if (settings.sectors) {
       const { lowerBound, upperBound, sectors } = settings.sectors;
-      sectors.sort((a, b) => b.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0) - a.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0));
-    
+      sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
+
       let currentAngle = 0;
-      const totalSectorWeight = sectors.reduce((acc, sector) => acc + sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0), 0);
-    
+      const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
+
       for (const sector of sectors) {
-        const sectorWeight = sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
+        const sectorWeight = calculateSectorWeight(sector);
         const normalizedSectorWeight = sectorWeight / totalSectorWeight;
         const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
-    
+
         // Render sector
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, Math.min(box.width, box.height) / 2, currentAngle, currentAngle + sectorAngle);
         g.closePath();
-        g.fillStyle = this.hexToRgbA(sector.sectorColor, 0.4);
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
         g.fill();
-    
+
         // Render subsectors
         let subsectorCurrentAngle = currentAngle;
-        sector.subsectors.forEach((subsector) => {
-          const normalizedSubsectorWeight = subsector.weight / sectorWeight;
-          const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
-          const gap = 0.05;
-          let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
-          const subsectorName = subsector.name;
-          const subsectorCol = cols.find(col => col.name === subsectorName);
-          let value;
-          if (subsectorCol) {
-            value = df.cell(row, subsector.name).value;
-            const normalizedValue = value && subsectorCol.name !== 'PPBR' ? this.normalizeValue(value, subsector) : 1;
-            r = normalizedValue * (Math.min(box.width, box.height) / 2);
-            r = Math.max(r, minRadius);
-          }
-          if (subsectorCol?.name === 'PPBR') {
-            const patternSize = r;
-            const patternCanvas = ui.canvas();
-            patternCanvas.width = patternSize;
-            patternCanvas.height = patternSize;
-            const patternCtx = patternCanvas.getContext('2d');
-            patternCtx!.strokeStyle = '#535659';
-            patternCtx!.lineWidth = 0.5;
-            const numLines = 15;
-            const spacing = patternSize / (numLines + 1);
-            for (let i = 1; i <= numLines; i++) {
-              const y = i * spacing;
-              patternCtx!.beginPath();
-              patternCtx!.moveTo(0, y);
-              patternCtx!.lineTo(patternSize, y);
-              patternCtx!.stroke();
-            }
-            const pattern = g.createPattern(patternCanvas, 'repeat');
-            g.beginPath();
-            g.moveTo(box.midX, box.midY);
-            g.arc(box.midX, box.midY, r, subsectorCurrentAngle + gap, subsectorCurrentAngle + subsectorAngle - gap);
-            g.closePath();
-            g.save();
-            g.translate(box.midX, box.midY);
-            g.rotate(Math.PI/6);
-            g.translate(-box.midX, -box.midY);
-            g.fillStyle = pattern!;
-            g.fill();
-            g.restore();
-          } else {
-            g.beginPath();
-            g.moveTo(box.midX, box.midY);
-            g.arc(box.midX, box.midY, r, subsectorCurrentAngle + gap, subsectorCurrentAngle + subsectorAngle - gap);
-            g.closePath();
-            g.fillStyle = value ? this.hexToRgbA(sector.sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
-            g.fill();
-          }
-          subsectorCurrentAngle += subsectorAngle;
-        });
-    
+        for (const subsector of sector.subsectors)
+          subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, df, row, sectorWeight);
+
         // Render inner circle representing the range
         g.beginPath();
         g.arc(box.midX, box.midY, lowerBound * (Math.min(box.width, box.height) / 2), currentAngle, currentAngle + sectorAngle);
         g.arc(box.midX, box.midY, upperBound * (Math.min(box.width, box.height) / 2), currentAngle + sectorAngle, currentAngle, true);
         g.closePath();
-        g.fillStyle = this.hexToRgbA(sector.sectorColor, 0.4);
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
         g.fill();
-    
+        
         currentAngle += sectorAngle;
       }
-    }    
-     else {
+    } else {
       const sum = getColumnsSum(cols, row);
       let currentAngle = 0;
       for (let i = 0; i < cols.length; i++) {
@@ -291,14 +336,6 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  hexToRgbA(hex: string, opacity: number): string {
-    const bigint = parseInt(hex.substring(1), 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r},${g},${b},${opacity})`;
-  }
-  
   renderSettings(gc: DG.GridColumn): Element {
     const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
@@ -317,18 +354,5 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           gc.grid.invalidate();
         }),
     ]);
-  }
-
-  normalizeValue(value: number, subsector: Subsector) {
-    const { lowThreshold, highThreshold } = subsector;
-    const isMax = highThreshold > lowThreshold;
-    if (isMax ? value < lowThreshold : value > lowThreshold)
-      return 0;
-    else if (isMax ? value > highThreshold : value < highThreshold)
-      return 1;
-    else
-      return isMax 
-        ? (value - lowThreshold) / (highThreshold - lowThreshold)
-        : (value - highThreshold) / (lowThreshold - highThreshold);
   }
 }
