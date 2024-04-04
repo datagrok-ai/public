@@ -1,11 +1,8 @@
-import {STRANDS, TERMINI} from './const';
-import {TerminalType, NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications} from './types';
-import {DEFAULT_PATTERN_CONFIG as DEFAULT} from './const';
 import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
+import {DEFAULT_PATTERN_CONFIG as DEFAULT, STRANDS, TERMINI} from './const';
+import {NucleotideSequences, PhosphorothioateLinkageFlags, StrandTerminusModifications, TerminalType} from './types';
 
 export class PatternDefaultsProvider {
-  constructor() { }
-
   getPatternName(): string { return DEFAULT.PATTERN_NAME; }
 
   getAntiSenseStrandVisibilityFlag(): boolean { return DEFAULT.IS_ANTISENSE_STRAND_VISIBLE; }
@@ -55,6 +52,4 @@ export class PatternDefaultsProvider {
   getModificationsWithNumericLabels(): string[] {
     return [this.fetchDefaultNucleobase()];
   }
-
-  getMaxSequenceLength(): number { return DEFAULT.SEQUENCE_LENGTH; }
 }

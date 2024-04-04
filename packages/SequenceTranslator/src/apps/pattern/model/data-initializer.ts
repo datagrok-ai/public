@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {PATTERN_RECORD_KEYS as R, STORAGE_NAME} from './const';
 import {PatternConfiguration, RawPatternRecords} from './types';
+import {PatternDefaultsProvider} from './defaults-provider';
 
 export class DataInitializer {
   private currentUserName: string;
@@ -10,9 +11,13 @@ export class DataInitializer {
   private otherUsersPatternNameToHash = new Map<string, string>();
   private currentUserPatternNameToHash = new Map<string, string>();
 
+  // WARNING: not a singleton, encapsulates async init logic in getInstance
+  // method
   private constructor() { }
 
-  static async getInstance(): Promise<DataInitializer> {
+  static async getInstance(
+    defaultsProvider: PatternDefaultsProvider
+  ): Promise<DataInitializer> {
     const instance = new DataInitializer();
 
     instance.currentUserName = await instance.fetchCurrentUserName();

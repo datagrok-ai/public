@@ -34,7 +34,7 @@ export class PatternLoadControlsManager {
     const patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
     this.eventBus.setPatternConfig(patternConfiguration);
 
-    const patternName = this.dataManager.getPatternNameByHash(patternHash);
+    const patternName = patternConfiguration.patternName;
     this.selectedPattern = patternName;
 
     this.eventBus.updateControlsUponPatternLoaded(patternHash);

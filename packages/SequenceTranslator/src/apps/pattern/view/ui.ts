@@ -2,20 +2,25 @@ import * as ui from 'datagrok-api/ui';
 
 import {APP_NAME} from '../../common/view/const';
 import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
-import {URLRouter} from '../model/router';
+import {PatternConfigManager} from '../model/config-manager';
+import {DataInitializer} from '../model/data-initializer';
 import {PatternDefaultsProvider} from '../model/defaults-provider';
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
+import {URLRouter} from '../model/router';
 import {PatternAppLeftSection} from './components/left-section';
 import {PatternAppRightSection} from './components/right-section';
-import {DataInitializer} from '../model/data-initializer';
 
 class PatternApp {
   static async getContent(): Promise<HTMLDivElement> {
     const defaultsProvider = new PatternDefaultsProvider();
-    const dataInitializer = await DataInitializer.getInstance();
+    const dataInitializer = await DataInitializer.getInstance(defaultsProvider);
+    const patternConfigManager = new PatternConfigManager(dataInitializer);
+
+    const searchParams = new URLSearchParams(window.location.search);
+
     const eventBus = new EventBus(defaultsProvider);
-    const dataManager = await PatternAppDataManager.getInstance(eventBus, dataInitializer);
+    const dataManager = new PatternAppDataManager(eventBus, patternConfigManager);
 
     const urlRouter = new URLRouter(eventBus, dataManager);
     await urlRouter.navigate();

@@ -1,5 +1,29 @@
 import {EventBus} from '../model/event-bus';
 import {PatternAppDataManager} from '../model/external-data-manager';
+import {DataInitializer} from './data-initializer';
+
+// export namespace URLRouter {
+//   export function navigate(
+//     searchParams: URLSearchParams,
+//     dataInitializer: DataInitializer
+//   ): void {
+//     if (!searchParams.has('pattern'))
+//       return;
+
+//     const patternHash = searchParams.get('pattern');
+//     if (!patternHash)
+//       return;
+
+//     try {
+//       const patternConfig = await patternAppDataManager.getPatternConfig(patternHash);
+//       eventBus.setPatternConfig(patternConfig);
+//     } catch (e) {
+//       searchParams.delete('pattern');
+//       window.history.pushState({}, '', window.location.pathname);
+//       console.warn('Error while getting pattern config by hash', e);
+//     }
+//   }
+// }
 
 export class URLRouter {
   private searchParams: URLSearchParams;
