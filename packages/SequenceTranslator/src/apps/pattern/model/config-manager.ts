@@ -1,7 +1,9 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 
-import {GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME} from './const';
+import {
+  GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME
+} from './const';
 import {PatternConfiguration, PatternExistsError, PatternNameExistsError} from './types';
 
 import objectHash from 'object-hash';

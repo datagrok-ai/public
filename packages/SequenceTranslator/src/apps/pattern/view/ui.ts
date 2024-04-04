@@ -17,13 +17,13 @@ class PatternApp {
     const dataInitializer = await DataInitializer.getInstance(defaultsProvider);
     const patternConfigManager = new PatternConfigManager(dataInitializer);
 
-    const searchParams = new URLSearchParams(window.location.search);
+    const urlRouter = new URLRouter();
 
-    const eventBus = new EventBus(defaultsProvider);
+    const initialPatternConfig = await urlRouter.getPatternConfigFromURL(patternConfigManager);
+    const eventBus = new EventBus(initialPatternConfig);
+    eventBus.patternLoaded$.subscribe((hash) => urlRouter.setPatternURL(hash));
+
     const dataManager = new PatternAppDataManager(eventBus, patternConfigManager);
-
-    const urlRouter = new URLRouter(eventBus, dataManager);
-    await urlRouter.navigate();
 
     const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();
     const rightSection = new PatternAppRightSection(eventBus, dataManager).getLayout();

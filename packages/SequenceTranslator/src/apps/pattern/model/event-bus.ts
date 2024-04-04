@@ -4,7 +4,7 @@ import * as rxjs from 'rxjs';
 import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, STRAND, STRANDS} from './const';
-import {PatternDefaultsProvider} from './defaults-provider';
+// import {PatternDefaultsProvider} from './defaults-provider';
 import {
   NucleotideSequences, PatternConfiguration, PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
 } from './types';
@@ -38,8 +38,10 @@ export class EventBus {
 
   private _svgSaveRequested$ = new rxjs.Subject<void>();
 
-  constructor(defaults: PatternDefaultsProvider) {
-    this.initializeDefaultState(defaults);
+  constructor(
+    initialPatternConfiguration: PatternConfiguration
+  ) {
+    this.initializeDefaultState(initialPatternConfiguration);
 
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotides();
@@ -63,15 +65,31 @@ export class EventBus {
     return this._nucleotideSequences$.asObservable();
   }
 
-  private initializeDefaultState(defaults: PatternDefaultsProvider) {
-    this._patternName$ = new rxjs.BehaviorSubject(defaults.getPatternName());
-    this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(defaults.getAntiSenseStrandVisibilityFlag());
-    this._nucleotideSequences$ = new rxjs.BehaviorSubject(defaults.getNucleotideSequences());
-    this._phosphorothioateLinkageFlags = new rxjs.BehaviorSubject(defaults.getPhosphorothioateLinkageFlags());
-    this._terminalModifications = new rxjs.BehaviorSubject(defaults.getTerminusModifications());
-    this._comment$ = new rxjs.BehaviorSubject(defaults.getComment());
-    this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(defaults.getModificationsWithNumericLabels());
-    this._sequenceBase$ = new rxjs.BehaviorSubject(defaults.fetchDefaultNucleobase());
+  private initializeDefaultState(
+    initialPatternConfiguration: PatternConfiguration
+  ) {
+    this._patternName$ = new rxjs.BehaviorSubject(initialPatternConfiguration[L.PATTERN_NAME]);
+    this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]
+    );
+    this._nucleotideSequences$ = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[G.NUCLEOTIDE_SEQUENCES]
+    );
+    this._phosphorothioateLinkageFlags = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]
+    );
+    this._terminalModifications = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]
+    );
+    this._comment$ = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[L.PATTERN_COMMENT]
+    );
+    this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(
+      initialPatternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]
+    );
+    this._sequenceBase$ = new rxjs.BehaviorSubject(
+      getMostFrequentNucleotide(initialPatternConfiguration[G.NUCLEOTIDE_SEQUENCES])
+    );
   }
 
   getPatternName(): string {
