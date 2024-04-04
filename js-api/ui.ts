@@ -1048,6 +1048,10 @@ export function radioInput(name: string, value: string, items: string[], onValue
   return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
+export function conditionalColorSection(colors: { [key: string]: string }, column: Column | null): HTMLElement {
+  return api.grok_UI_RenderConditionalColorSection(column, colors);
+}
+
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element

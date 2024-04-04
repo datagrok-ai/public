@@ -1275,6 +1275,7 @@ export interface IDartApi {
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;
   grok_UI_Star(id: String): any;
+  grok_UI_RenderConditionalColorSection(column: any, colors: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;
