@@ -15,7 +15,10 @@ export const _package = new DG.Package();
 //name: Usage Analysis
 //tags: app
 export function usageAnalysisApp(): void {
-  if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
+  if (grok.shell.sidebar.panes.every((p) => p.name !== ViewHandler.UAname))
+    ViewHandler.getInstance().init();
+  else
+    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
 }
 
 //name: Test Track
