@@ -1048,8 +1048,12 @@ export function radioInput(name: string, value: string, items: string[], onValue
   return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
-export function conditionalColorSection(colors: { [key: string]: string }, column: Column | null): HTMLElement {
-  return api.grok_UI_RenderConditionalColorSection(column, colors);
+export function patternsInput(colors: { [key: string]: string }): HTMLElement {
+  return api.grok_UI_PatternsInput(colors);
+}
+
+export function schemeInput(gradient: number[]): HTMLElement {
+  return api.grok_UI_SchemeInput(gradient);
 }
 
 /**
