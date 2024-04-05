@@ -24,7 +24,6 @@ reuse them (or share with teammates) later on.
 * [Properties](#properties)
 * [Common actions](#common-actions)
 * [Group tooltips](#group-tooltips)
-* [Trellis](#trellis)
 * [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
@@ -37,6 +36,16 @@ move the mouse cursor to one of them and release the mouse button to dock the vi
 drag the viewer's border.
 
 ![viewers-interaction-main](img/viewers-interaction-main.gif)
+
+<br/>
+
+:::tip
+
+For quick profiling, use the **Plots** [info pane](link). Datagrok automatically generates visualizations when you select one or more columns.
+
+![](../../deploy/releases/platform/img/plots-info-pane.gif)
+
+:::
 
 ## Docking
 
@@ -287,52 +296,6 @@ context menu, then go to the **Viewer** submenu and select **Embed**:
 
 Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this feature
 works only for data uploaded as a project to the server.
-
-## Viewers
-
-### Trellis
-
-Trellis plots are useful for finding the structure and patterns in complex data. A Trellis plot is a layout of smaller
-charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
-grid layout looks similar to a garden trellis, hence the name Trellis Chart.
-
-There are two ways to add a trellis plot:
-
-* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
-  the left
-* create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
-  on `Viewer | Use in Trellis`
-
-See [Trellis Plot](trellis-plot.md) for more details.
-
-![viewers-as-trellis](img/viewers-as-trellis.gif)
-
-### Google map
-
-|                                                                  |                                                                                                                                                   |
-|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Google Map](../../uploads/viewers/google-map.png "Google Map") | Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.<br />[Google Map](google-map.md)        |
-
-### Shape map
-
-|                                                                                                                                                      |                                                                                                                                                                                                                                                                                                |
-|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Shape Map](../../uploads/viewers/shape-map-pa-counties.png "Shape Map") <br /> ![Shape Map](../../uploads/viewers/shape-map-plate.png "Shape Map") | Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but also it can show an arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).<br />[Shape Map](shape-map.md)        |
-
-
-### Markup viewer
-
-|                                               |                                                                                                                                                                                                                                                       |
-|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Markup](img/markup-viewer.png "Markup")         | Use [Markup Viewer](markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
-
-### Statistics
-
-Provides specified descriptive [Statistics](statistics.md) for the chosen columns.
-
-### Globe
-
-Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](globe.md)
 
 ## Resources
 

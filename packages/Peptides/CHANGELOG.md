@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.17.13 (2024-04-02)
+
+### Features
+
+* Add max activity vs cluster size viewer.
+
 ## 1.17.12 (2024-03-30)
 
 ### Features

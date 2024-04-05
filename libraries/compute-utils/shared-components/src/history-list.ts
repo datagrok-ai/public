@@ -19,6 +19,8 @@ const TITLE_COLUMN_NAME = 'Title';
 const DESC_COLUMN_NAME = 'Desc.';
 const TAGS_COLUMN_NAME = 'Tags';
 
+const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
+
 const getColumnName = (key: string) => {
   return `${key[0].toUpperCase()}${key.substring(1)}`;
 };
@@ -48,7 +50,8 @@ export class HistoricalRunsList extends DG.Widget {
     DG.Column.fromStrings(ID_COLUMN_NAME, []),
   ]));
 
-  private _historyFilters = DG.Viewer.filters(this.onRunsDfChanged.value, {title: 'Filters'});
+  private _historyFilters = DG.Viewer.filters(this.onRunsDfChanged.value,
+    {title: 'Filters', columnNames: [] as string[]});
   private _historyGrid = DG.Viewer.grid(
     this.onRunsDfChanged.value,
     {showRowHeader: false, showColumnGridlines: false, allowEdit: false},
@@ -80,6 +83,10 @@ export class HistoricalRunsList extends DG.Widget {
       return grok.dapi.userDataStorage.postValue(favStorageName, funcCall.id, '');
     else
       return grok.dapi.userDataStorage.remove(favStorageName, funcCall.id);
+  }
+
+  private getRunByIdx(idx: number) {
+    return this.runs.get(this.currentDf.get(ID_COLUMN_NAME, idx));
   }
 
   private showEditDialog(funcCall: DG.FuncCall, isFavorite: boolean) {
@@ -115,6 +122,20 @@ export class HistoricalRunsList extends DG.Widget {
     editDialog.show({center: true, width: 500});
   }
 
+  private layout = ui.splitH([], null, true);
+
+  private defaultGridText = ui.divV([
+    ui.element('div', 'splitbar-horizontal'),
+    ui.divText(this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label'),
+  ]);
+
+  private defaultFiltersText = ui.divText('No filters to show', 'hp-no-elements-label');
+
+  private filterWithText = ui.divH([
+    this.defaultFiltersText,
+    this._historyFilters.root,
+  ], 'ui-box');
+
   constructor(
     private readonly initialRuns: DG.FuncCall[],
     private visibleProps: string[] = [],
@@ -131,17 +152,17 @@ export class HistoricalRunsList extends DG.Widget {
     }) {
     super(ui.div([], {style: {height: '100%', width: '100%'}}));
 
-    this.root.appendChild(this.defaultText);
-    $(this.showFiltersIcon.firstChild).addClass('fad');
+    this.root.appendChild(this.defaultGridText);
 
     const batchActions = ui.divH([
       ui.divH([
+        ...options.isHistory ? [this.toggleCompactMode]: [],
         this.showFiltersIcon, this.showMetadataIcon.root, this.showInputsIcon.root,
-      ], {style: {'gap': '5px', 'padding': '0px 5px'}}),
+      ], {style: {'gap': '5px', 'padding': '5px'}}),
       ui.divH([
         this.trashIcon, this.compareIcon,
-      ], {style: {'gap': '5px', 'padding': '0px 5px'}}),
-    ], {style: {'justify-content': 'space-between'}});
+      ], {style: {'gap': '5px', 'padding': '5px'}}),
+    ], {style: {'justify-content': 'space-between', 'padding': '0px 5px'}});
     batchActions.style.setProperty('overflow-y', 'hidden', 'important');
 
     const gridWithControls = ui.divV([
@@ -149,19 +170,15 @@ export class HistoricalRunsList extends DG.Widget {
       this._historyGrid.root,
     ], 'ui-box');
     $(gridWithControls).removeClass('ui-div');
-    const splitH = ui.splitH([
-      gridWithControls,
-      this._historyFilters.root,
-    ], {style: {'height': '100%'}}, true);
-    this.root.appendChild(splitH);
-    ui.tools.waitForElementInDom(splitH).then((x) => {
-      $(x).css('width', '100%');
-      $(this._historyFilters.root).css('width', '300px');
-    });
+    $(gridWithControls).css('width', '100%');
+
+    this.root.appendChild(this.layout);
 
     ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
-      this.showMetadataIcon.root, this.showInputsIcon.root, this.trashIcon,
+      this.toggleCompactMode, this.trashIcon,
       this.compareIcon, this.showFiltersIcon], false);
+
+    this.setGridCellRendering();
 
     const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
       const newRuns = [...runs.values()];
@@ -182,6 +199,7 @@ export class HistoricalRunsList extends DG.Widget {
       const getColumnByProp = (prop: DG.Property) => {
         if (prop.propertyType === DG.TYPE.DATE_TIME) {
           return DG.Column.dateTime(prop.caption ?? getColumnName(prop.name), newRuns.length)
+            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].inputs[prop.name]));
         }
 
@@ -195,6 +213,7 @@ export class HistoricalRunsList extends DG.Widget {
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
+            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
         }
 
@@ -208,10 +227,13 @@ export class HistoricalRunsList extends DG.Widget {
 
         const func = [...this.runs.values()][0].func;
 
-        const columnTypes = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
+        const getMainInputs = (): string[] | null => {
+          return func.options['mainInputs'] ? JSON.parse(func.options['mainInputs']): null;
+        };
+
         if (this.visibleProps.length === 0) {
-          this.visibleProps = func.inputs
-            .filter((input) => columnTypes.includes(input.propertyType as any))
+          this.visibleProps = (this.options.isHistory ? getMainInputs(): null) ?? func.inputs
+            .filter((input) => SUPPORTED_COL_TYPES.includes(input.propertyType as any))
             .map((prop) => prop.name);
         }
 
@@ -221,10 +243,8 @@ export class HistoricalRunsList extends DG.Widget {
             return immutableTags && immutableTags.includes(EXPERIMENTAL_TAG) ? 'Experimental': 'Simulated';
           }),
           ...this.options.isHistory ?
-            [
-              DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
-                .init((idx) => favorites.includes(newRuns[idx].id)),
-            ]: [],
+            [DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
+              .init((idx) => favorites.includes(newRuns[idx].id))]: [],
           ...this.options.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
           getColumnByName(STARTED_COLUMN_NAME),
           getColumnByName(AUTHOR_COLUMN_NAME),
@@ -237,55 +257,324 @@ export class HistoricalRunsList extends DG.Widget {
           DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)),
         ]);
 
-        $(this.defaultText).hide();
-        ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
-          this.showInputsIcon.root, this.showMetadataIcon.root, this.trashIcon,
-          this.compareIcon, this.showFiltersIcon], true);
+        ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], false);
+        ui.setDisplayAll([
+          this._historyGrid.root,
+          this._historyFilters.root,
+          this.toggleCompactMode,
+          this.showMetadataIcon.root,
+          ...this.visibleProps.length > 0 ? [this.showInputsIcon.root]: [],
+          this.trashIcon,
+          this.compareIcon,
+          this.showFiltersIcon,
+        ], true);
 
         this.onRunsDfChanged.next(newRunsGridDf);
       } else {
-        $(this.defaultText).show();
-        ui.setDisplayAll([this._historyGrid.root, this._historyFilters.root,
-          this.showInputsIcon.root, this.showMetadataIcon.root, this.trashIcon,
-          this.compareIcon, this.showFiltersIcon], false);
+        ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], true);
+        ui.setDisplayAll([
+          this._historyGrid.root,
+          this._historyFilters.root,
+          this.showMetadataIcon.root,
+          this.showInputsIcon.root,
+          this.toggleCompactMode,
+          this.trashIcon,
+          this.compareIcon,
+          this.showFiltersIcon,
+        ], false);
       }
     });
 
-    this.onRunsDfChanged.subscribe((newRunsGridDf) => {
+    const runDfChangedSub = this.onRunsDfChanged.subscribe((newRunsGridDf) => {
       this._historyFilters.dataFrame = newRunsGridDf;
       this._historyGrid.dataFrame = newRunsGridDf;
 
-      this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+      this.currentDf.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
 
       this.styleHistoryGrid();
       this.styleHistoryFilters();
 
-      newRunsGridDf.onCurrentRowChanged.subscribe(() => {
-        this._historyGrid.dataFrame.rows.select(() => false);
+      const currentDfSub = newRunsGridDf.onCurrentRowChanged.subscribe(() => {
+        this.currentDf.rows.select(() => false);
         // Filtering out header clicks
-        if (this._historyGrid.dataFrame.currentRowIdx >= 0)
-          this.onClicked.next(this.runs.get(this._historyGrid.dataFrame.currentRow.get(ID_COLUMN_NAME)));
+        const currentRowIdx = this.currentDf.currentRowIdx;
+        if (currentRowIdx >= 0)
+          this.onClicked.next(this.getRunByIdx(currentRowIdx));
       });
 
-      newRunsGridDf.onSelectionChanged.subscribe(() => {
-        if (this._historyGrid.dataFrame.selection.trueCount > 0)
-          this._historyGrid.setOptions({'showCurrentRowIndicator': false});
-        else
-          this._historyGrid.setOptions({'showCurrentRowIndicator': true});
+      const selectionSub = newRunsGridDf.onSelectionChanged.subscribe(() => {
+        this._historyGrid.props.showCurrentRowIndicator = (this.currentDf.selection.trueCount < 0);
 
         const selectedCalls: DG.FuncCall[] = [...newRunsGridDf.selection
           .getSelectedIndexes()]
-          .map((idx) => {
-            const call = this.runs.get(newRunsGridDf.rows.get(idx).get(ID_COLUMN_NAME))!;
-            return call;
-          });
+          .map((idx) => this.getRunByIdx(idx)!);
         this._onSelectedChanged.next(new Set(selectedCalls));
 
         this.redrawSelectionState();
       });
+
+      this.subs.push(currentDfSub, selectionSub);
     });
 
-    this.subs.push(listChangedSub);
+    const filterSub = this._isFilterHidden.subscribe((isHidden) => {
+      if (!isHidden) {
+        $(this.showFiltersIcon.firstChild).addClass('fad');
+        $(this.showFiltersIcon.firstChild).removeClass('fal');
+        $(this.filterWithText).css(this.compactMode ? 'height': 'width', '320px');
+        $(this.filterWithText).css(this.compactMode ? 'width': 'height', '100%');
+        ui.setDisplay(this.filterWithText, true);
+      } else {
+        $(this.showFiltersIcon.firstChild).addClass('fal');
+        $(this.showFiltersIcon.firstChild).removeClass('fad');
+        ui.setDisplay(this.filterWithText, false);
+      }
+    });
+
+    const compactModeSub = this._compactMode.subscribe((newValue) => {
+      const content = [
+        gridWithControls,
+        this.filterWithText,
+      ];
+      $(this.filterWithText).css({paddingTop: '10px'});
+      $(this.filterWithText).removeClass('ui-div');
+      const styles = {style: {'width': '100%', 'height': '100%'}};
+
+      $(this.toggleCompactMode.firstChild).addClass(newValue ? 'fa-expand-alt': 'fa-compress-alt');
+      $(this.toggleCompactMode.firstChild).removeClass(newValue ? 'fa-compress-alt': 'fa-expand-alt');
+
+      const newLayout = newValue ?
+        ui.splitV(content, styles, true) :
+        ui.splitH(content, styles, true);
+      this.layout.replaceWith(newLayout);
+      this.layout = newLayout;
+
+      ui.tools.waitForElementInDom(this.layout).then((x) => {
+        $(x).css(this.compactMode ? 'height': 'width', '100%');
+
+        $(this._historyFilters.root).css({
+          ...this.compactMode ? {'width': '100%'} : {'height': '100%'},
+        });
+        $(this.filterWithText).css({
+          ...this.compactMode ? {'height': '310px', 'width': '100%'} : {'width': '310px', 'height': '100%'},
+        });
+        $(gridWithControls).css({
+          ...this.compactMode ? {'width': '100%'} : {'height': '100%'},
+        });
+      });
+
+      this.styleHistoryGrid();
+      this.styleHistoryFilters();
+    });
+
+    this.subs.push(listChangedSub, compactModeSub, runDfChangedSub, filterSub);
+  }
+
+  private setGridColumnsRendering() {
+    const actionsCol = this._historyGrid.columns.byName(ACTIONS_COLUMN_NAME);
+    if (actionsCol) {
+      actionsCol.cellType = 'html';
+      actionsCol.width = 35;
+    }
+
+    const favCol = this._historyGrid.columns.byName(FAVORITE_COLUMN_NAME);
+    if (favCol) {
+      favCol.cellType = 'html';
+      favCol.width = 20;
+    }
+    const expCol = this._historyGrid.columns.byName(EXP_COLUMN_NAME)!;
+    expCol.cellType = 'html';
+    expCol.width = 20;
+
+    const tagsColumn = this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!;
+    tagsColumn.cellType = 'html';
+    tagsColumn.width = 90;
+
+    this._historyGrid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
+    this._historyGrid.columns.byName(ID_COLUMN_NAME)!.cellType = 'html';
+  }
+
+  private isFavoriteByIndex(idx: number) {
+    return this.currentDf.get(FAVORITE_COLUMN_NAME, idx);
+  }
+
+  private setGridCellRendering() {
+    this._historyGrid.onCellPrepare((cell) => {
+      if (cell.isColHeader && cell.tableColumn?.name &&
+          [ACTIONS_COLUMN_NAME, EXP_COLUMN_NAME, FAVORITE_COLUMN_NAME].includes(cell.tableColumn.name))
+        cell.customText = '';
+
+      if (cell.isColHeader)
+        return;
+
+      if (cell.tableColumn?.name === ACTIONS_COLUMN_NAME) {
+        cell.customText = '';
+        const run = this.getRunByIdx(cell.tableRowIndex!)!;
+
+        cell.element = ui.divH([
+          ui.iconFA('trash', () => {
+            const setToDelete = new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
+            const deleteDialog = new HistoricalRunsDelete(setToDelete);
+
+            const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
+              await Promise.all(
+                wu(setToDelete.values()).map(async (funcCall) => {
+                  await this.deleteRun(funcCall.id);
+
+                  return Promise.resolve();
+                }));
+              onDeleteSub.unsubscribe();
+            });
+            deleteDialog.show({center: true, width: 500});
+          }, 'Remove run from history'),
+          ui.iconFA(
+            'edit',
+            () => this.showEditDialog(
+              run,
+              this.isFavoriteByIndex(cell.tableRowIndex!),
+            ),
+            'Edit run metadata',
+          ),
+        ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
+      }
+
+      if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
+        cell.customText = '';
+        const run = this.getRunByIdx(cell.tableRowIndex!)!;
+
+        const unfavoriteIcon =
+          ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
+        $(unfavoriteIcon).addClass('fas');
+
+        cell.element = ui.div(
+          cell.cell.value ?
+            unfavoriteIcon :
+            ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
+          {style: {'padding': '5px 0px'}});
+      }
+
+      if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
+        cell.customText = '';
+        const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+        $(experimentalTag).addClass('fad fa-sm');
+        $(experimentalTag).removeClass('fal');
+
+        cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
+          ui.div(experimentalTag, {style: {'padding': '5px'}}) : ui.div();
+      }
+
+      if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
+        cell.customText = '';
+        const tags = cell.cell.value.length > 0 ? ui.div((cell.cell.value as string | null)?.split(',').map(
+          (tag: string) => ui.span([tag], 'd4-tag')),
+        'd4-tag-editor') : ui.div();
+        $(tags).css({'padding': '3px', 'background-color': 'transparent'});
+        cell.element = tags;
+      }
+
+      if (cell.tableColumn?.name === ID_COLUMN_NAME) {
+        cell.customText = '';
+        const run = this.getRunByIdx(cell.tableRowIndex!);
+
+        if (!run) return;
+
+        const authorIcon = run.author.picture as HTMLElement;
+        $(authorIcon).css({'width': '25px', 'height': '25px', 'fontSize': '20px'});
+
+        ui.bind(run.author, authorIcon);
+
+        const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
+        experimentalTag.classList.add('fad', 'fa-sm');
+        experimentalTag.classList.remove('fal');
+        experimentalTag.style.marginLeft = '3px';
+        const immutableTags = run.options['immutable_tags'] as string[] | undefined;
+        const cardLabel = ui.span([
+          ui.label(
+            run.options['title'] ??
+            run.author?.friendlyName ??
+            grok.shell.user.friendlyName, {style: {'color': 'var(--blue-1)'}},
+          ),
+          ...(immutableTags && immutableTags.includes(EXPERIMENTAL_TAG)) ?
+            [experimentalTag]:[],
+        ]);
+
+        const editIcon = ui.iconFA('edit', (ev) => {
+          ev.stopPropagation();
+          this.showEditDialog(run, this.isFavoriteByIndex(cell.tableRowIndex!));
+        }, 'Edit run metadata');
+        editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+        const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
+          ev.stopPropagation();
+          const setToDelete= new Set([this.getRunByIdx(cell.tableRowIndex!)!]);
+          const deleteDialog = new HistoricalRunsDelete(setToDelete);
+          const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
+            await Promise.all(
+              wu(setToDelete.values()).map(async (funcCall) => {
+                await this.deleteRun(funcCall.id);
+
+                return Promise.resolve();
+              }));
+            onDeleteSub.unsubscribe();
+          });
+          deleteDialog.show({center: true, width: 500});
+        }, 'Delete run');
+        deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+
+        const unfavoriteIcon =
+        ui.iconFA('star', (ev) => {
+          ev.stopPropagation();
+          this.saveIsFavorite(run, false).then(() => this.updateRun(run));
+        }, 'Unfavorite');
+        unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+        const addToFavorites = ui.iconFA('star',
+          (ev) => {
+            ev.stopPropagation();
+            this.saveIsFavorite(run, true).then(() => this.updateRun(run));
+          }, 'Favorite');
+        addToFavorites.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+        if (this.isFavoriteByIndex(cell.tableRowIndex!)) {
+          ui.setDisplay(addToFavorites, false);
+          ui.setDisplay(unfavoriteIcon, true);
+        } else {
+          ui.setDisplay(unfavoriteIcon, false);
+          ui.setDisplay(addToFavorites, true);
+        }
+
+        const dateStarted = new Date(run.started.toString())
+          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+
+        const card = ui.divH([
+          ui.divH([
+            authorIcon,
+            ui.divV([
+              cardLabel,
+              ui.span([dateStarted]),
+              ...(run.options['tags'] && run.options['tags'].length > 0) ?
+                [ui.div(run.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
+            ], 'hp-card-content'),
+          ]),
+          ui.divH([
+            ...(this.options.showActions) ? [unfavoriteIcon, addToFavorites, editIcon, deleteIcon]: [],
+          ]),
+        ], 'hp-funccall-card');
+
+        card.addEventListener('mouseover', () => {
+          cell.grid.dataFrame.mouseOverRowIdx = cell.gridRow;
+        });
+        card.addEventListener('click', (e) => {
+          if (e.shiftKey)
+            cell.grid.dataFrame.selection.set(cell.gridRow, true);
+          else if (e.ctrlKey)
+            cell.grid.dataFrame.selection.set(cell.gridRow, false);
+          else
+            cell.grid.dataFrame.currentRowIdx = cell.gridRow;
+        });
+        cell.element = card;
+      }
+    });
   }
 
   async deleteRun(id: string) {
@@ -297,8 +586,8 @@ export class HistoricalRunsList extends DG.Widget {
         ] as const;
       })
       .then(([, loadedRun]) => {
-        this.onRunsChanged.value.delete(id);
-        this.onRunsChanged.next(this.onRunsChanged.value);
+        this.runs.delete(id);
+        this.onRunsChanged.next(this.runs);
         if (this.options.isHistory) this.onDelete.next(loadedRun);
       })
       .catch((e) => {
@@ -311,12 +600,12 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   updateRun(updatedRun: DG.FuncCall) {
-    this.onRunsChanged.value.set(updatedRun.id, updatedRun);
+    this.runs.set(updatedRun.id, updatedRun);
     this.onRunsChanged.next(this.onRunsChanged.value);
   }
 
   addRun(newRun: DG.FuncCall) {
-    this.onRunsChanged.value.set(newRun.id, newRun);
+    this.runs.set(newRun.id, newRun);
     this.onRunsChanged.next(this.onRunsChanged.value);
   }
 
@@ -328,13 +617,9 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   private trashIcon = ui.div(ui.iconFA('trash-alt', () => {
-    const selection = this._historyGrid.dataFrame.selection;
+    const selection = this.currentDf.selection.getSelectedIndexes();
     const setToDelete = new Set<DG.FuncCall>();
-    for (let i = 0; i < selection.length; i++) {
-      const bit = this._historyGrid.dataFrame.selection.get(i);
-      if (bit)
-        setToDelete.add(this.runs.get(this._historyGrid.dataFrame.getCol(ID_COLUMN_NAME).get(i))!);
-    }
+    selection.forEach((idx) => setToDelete.add(this.getRunByIdx(idx)!));
 
     const deleteDialog = new HistoricalRunsDelete(setToDelete);
 
@@ -353,36 +638,46 @@ export class HistoricalRunsList extends DG.Widget {
   }, 'Delete selected runs'), {style: {'padding-top': '5px'}});
 
   private compareIcon = ui.div(ui.iconFA('exchange', async () => {
-    const selection = this._historyGrid.dataFrame.selection;
-    const setToCompare = [];
-    for (let i = 0; i < selection.length; i++) {
-      const bit = this._historyGrid.dataFrame.selection.get(i);
-      if (bit)
-        setToCompare.push(this._historyGrid.dataFrame.getCol(ID_COLUMN_NAME).get(i));
-    }
+    const selection = this.currentDf.selection.getSelectedIndexes();
+    const setToCompare = [] as string[];
+    selection.forEach((idx) => {
+      setToCompare.push(this.currentDf.getCol(ID_COLUMN_NAME).get(idx));
+    });
 
     this.onComparisonCalled.next(setToCompare);
   }, 'Compare selected runs'), {style: {'padding-top': '5px'}});
 
 
-  private isFilterHidden = false;
+  private _isFilterHidden = new BehaviorSubject(false);
+  public get isFilterHidden() {
+    return this._isFilterHidden.value;
+  }
+
+  public set isFilterHidden(value: boolean) {
+    this._isFilterHidden.next(value);
+  }
   private showFiltersIcon = ui.div(ui.iconFA('filter', () => {
-    if (this.isFilterHidden) {
-      $(this.showFiltersIcon.firstChild).addClass('fad');
-      $(this.showFiltersIcon.firstChild).removeClass('fal');
-      $(this._historyFilters.root.parentElement).css('width', '100%');
-      $(this._historyFilters.root).css('width', '300px');
-      ui.setDisplay(this._historyFilters.root, true);
-      this.isFilterHidden = false;
-    } else {
-      $(this.showFiltersIcon.firstChild).addClass('fal');
-      $(this.showFiltersIcon.firstChild).removeClass('fad');
-      ui.setDisplay(this._historyFilters.root, false);
-      this.isFilterHidden = true;
-    }
+    this._isFilterHidden.next(!this._isFilterHidden.value);
   }, 'Toggle filters'), {style: {'padding-top': '4px'}});
 
-  private showMetadataIcon = ui.switchInput('Metadata', true, (newValue: boolean) => {
+  private _compactMode = new BehaviorSubject(this.options.isHistory ?? false);
+  public get compactMode() {
+    return this._compactMode.value;
+  }
+
+  public set compactMode(value: boolean) {
+    this._compactMode.next(value);
+  }
+
+  public get onCompactModeChanged() {
+    return this._compactMode.asObservable();
+  }
+
+  private toggleCompactMode = ui.div(ui.iconFA('expand-alt', () => {
+    this.compactMode = !this.compactMode;
+  }, 'Toggle compact mode'), {style: {'padding-top': '4px'}});
+
+  private showMetadataIcon = ui.switchInput('Metadata', true, () => {
     this.styleHistoryGrid();
     this.styleHistoryFilters();
   });
@@ -412,180 +707,103 @@ export class HistoricalRunsList extends DG.Widget {
     }
   });
 
-  private defaultText = ui.divV([
-    ui.element('div', 'splitbar-horizontal'),
-    ui.divText(this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label'),
-  ]);
-
   private styleHistoryGrid() {
-    if (this.runs.size > 0) {
+    this._historyGrid.setOptions({
+      'showCurrentCellOutline': false,
+      'allowEdit': false,
+      'allowBlockSelection': false,
+      'showRowHeader': false,
+      'showColumnLabels': !this.compactMode,
+      'extendLastColumn': this.compactMode,
+    });
+
+    for (let i = 0; i < this._historyGrid.columns.length; i++) {
+      const col = this._historyGrid.columns.byIndex(i);
+      if (col && col.column?.type === DG.TYPE.DATE_TIME)
+        col.format = 'MMM d HH:mm';
+    }
+
+    this.setGridColumnsRendering();
+
+    if (this.compactMode) {
+      this._historyGrid.columns.setVisible([ID_COLUMN_NAME]);
+
+      this._historyGrid.props.rowHeight = 70;
+      this._historyGrid.invalidate();
+    } else {
+      this._historyGrid.props.rowHeight = 28;
       const func = [...this.runs.values()][0].func;
 
-      const actionsCol = this._historyGrid.columns.byName(ACTIONS_COLUMN_NAME);
-      if (actionsCol) {
-        actionsCol.cellType = 'html';
-        actionsCol.width = 35;
-      }
+      const showMetadata = this.showMetadataIcon.value;
 
-      const favCol = this._historyGrid.columns.byName(FAVORITE_COLUMN_NAME);
-      if (favCol) {
-        favCol.cellType = 'html';
-        favCol.width = 20;
-      }
-      this._historyGrid.columns.byName(EXP_COLUMN_NAME)!.cellType = 'html';
-      this._historyGrid.columns.byName(EXP_COLUMN_NAME)!.width = 20;
-      this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!.cellType = 'html';
-      this._historyGrid.columns.byName(TAGS_COLUMN_NAME)!.width = 90;
-      this._historyGrid.columns.byName(STARTED_COLUMN_NAME)!.width = 110;
-      this._historyGrid.setOptions({
-        'showCurrentCellOutline': false,
-        'allowEdit': false,
-        'allowBlockSelection': false,
-      });
-      for (let i = 0; i < this._historyGrid.columns.length; i++) {
-        const col = this._historyGrid.columns.byIndex(i)?.column;
-        if (col && col.type === DG.TYPE.DATE_TIME)
-          this._historyGrid.columns.byIndex(i)!.format = 'MMM d HH:mm';
-      }
-
-      this._historyGrid.onCellPrepare((cell) => {
-        if (cell.tableColumn?.name === ACTIONS_COLUMN_NAME) {
-          if (cell.isColHeader) {
-            cell.customText = '';
-            return;
-          }
-
-          const run = this.runs.get(cell.tableRow?.get(ID_COLUMN_NAME))!;
-
-          cell.element = ui.divH([
-            ui.iconFA('trash', () => {
-              const setToDelete= new Set([this.runs.get(cell.tableRow!.get(ID_COLUMN_NAME))!]);
-              const deleteDialog = new HistoricalRunsDelete(setToDelete);
-
-              const onDeleteSub = deleteDialog.onFuncCallDelete.subscribe(async () => {
-                await Promise.all(
-                  wu(setToDelete.values()).map(async (funcCall) => {
-                    await this.deleteRun(funcCall.id);
-
-                    return Promise.resolve();
-                  }));
-                onDeleteSub.unsubscribe();
-              });
-              deleteDialog.show({center: true, width: 500});
-            }, 'Remove run from history'),
-            ui.iconFA(
-              'edit',
-              () => this.showEditDialog(
-                run,
-                cell.tableRow!.get(FAVORITE_COLUMN_NAME)!,
-              ),
-              'Edit run metadata',
-            ),
-          ], {style: {'padding': '6px 0px', 'gap': '6px', 'justify-content': 'space-between'}});
-        }
-
-        if (cell.tableColumn?.name === FAVORITE_COLUMN_NAME) {
-          if (cell.isColHeader) {
-            cell.customText = '';
-            return;
-          }
-
-          const run = this.runs.get(cell.tableRow?.get(ID_COLUMN_NAME))!;
-
-          const unfavoriteIcon =
-            ui.iconFA('star', () => this.saveIsFavorite(run, false).then(() => this.updateRun(run)), 'Unfavorite');
-          unfavoriteIcon.classList.add('fas');
-
-          cell.element = ui.div(
-            cell.cell.value ?
-              unfavoriteIcon:
-              ui.iconFA('star', () => this.saveIsFavorite(run, true).then(() => this.updateRun(run)), 'Favorite'),
-            {style: {'padding': '5px 0px'}});
-        }
-
-        if (cell.tableColumn?.name === EXP_COLUMN_NAME) {
-          if (cell.isColHeader)
-            cell.customText = '';
-
-          const experimentalTag = ui.iconFA('flask', null, 'Experimental run');
-          experimentalTag.classList.add('fad', 'fa-sm');
-          experimentalTag.classList.remove('fal');
-
-          cell.element = cell.cell.value && cell.cell.value === 'Experimental' ?
-            ui.div(experimentalTag, {style: {'padding': '5px'}}): ui.div();
-        }
-
-        if (cell.tableColumn?.name === TAGS_COLUMN_NAME) {
-          if (cell.isColHeader)
-            return;
-
-          const tags = cell.cell.value.length > 0 ? ui.div((cell.cell.value as string | null)?.split(',').map(
-            (tag: string) => ui.span([tag], 'd4-tag')),
-          'd4-tag-editor'): ui.div();
-          $(tags).css({'padding': '3px', 'background-color': 'transparent'});
-          cell.element = tags;
-        }
-      });
-
-      const tagCol = this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
+      const tagCol = this.currentDf.getCol(TAGS_COLUMN_NAME);
       this._historyGrid.columns.setVisible([
-        ...this.showMetadataIcon.value ? [EXP_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [FAVORITE_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [ACTIONS_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [STARTED_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [AUTHOR_COLUMN_NAME]: [],
-        ...tagCol.stats.missingValueCount < tagCol.length && this.showMetadataIcon.value ? [TAGS_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [TITLE_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [DESC_COLUMN_NAME]: [],
+        EXP_COLUMN_NAME,
+        FAVORITE_COLUMN_NAME,
+        ACTIONS_COLUMN_NAME,
+        ...showMetadata ? [STARTED_COLUMN_NAME]: [],
+        ...showMetadata ? [AUTHOR_COLUMN_NAME]: [],
+        ...showMetadata && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
+        ...showMetadata ? [TITLE_COLUMN_NAME]: [],
+        ...showMetadata ? [DESC_COLUMN_NAME]: [],
         ...this.showInputsIcon.value ? this.visibleProps
           .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
-          .filter((prop) => {
-            return !this.options.isHistory ||
-              this._historyGrid.dataFrame.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
-          })
+          // .filter((prop) => {
+          //   return !this.options.isHistory ||
+          //     this.currentDf.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
+          // })
           .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
       ]);
-
-      this._historyGrid.root.style.height = '100%';
     }
+  }
+
+  private get currentDf() {
+    return this.onRunsDfChanged.value;
   }
 
   private styleHistoryFilters() {
     if (this.runs.size > 0) {
       const func = [...this.runs.values()][0].func;
 
-      const tagCol = this._historyGrid.dataFrame.getCol(TAGS_COLUMN_NAME);
-      this._historyFilters.setOptions({columnNames: [
-        ...this.showMetadataIcon.value &&
-        this._historyGrid.dataFrame.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value &&
-        (this._historyGrid.dataFrame.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
+      const tagCol = this.currentDf.getCol(TAGS_COLUMN_NAME);
+      const showMetadata = this.showMetadataIcon.value;
+
+      const columnNames = [
+        ...showMetadata &&
+        this.currentDf.getCol(EXP_COLUMN_NAME).categories.length > 1 ? [EXP_COLUMN_NAME]: [],
+        ...showMetadata &&
+        (this.currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value ? [STARTED_COLUMN_NAME]:[],
-        ...this.showMetadataIcon.value &&
-        this._historyGrid.dataFrame.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value &&
+        ...showMetadata ? [STARTED_COLUMN_NAME]:[],
+        ...showMetadata &&
+        this.currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
+        ...showMetadata &&
         tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value &&
-        this._historyGrid.dataFrame.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
-        ...this.showMetadataIcon.value &&
-        this._historyGrid.dataFrame.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
+        ...showMetadata &&
+        this.currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
+        ...showMetadata &&
+        this.currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
         ...this.showInputsIcon.value ? this.visibleProps
           .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
           .filter((prop) => {
             return !this.options.isHistory ||
-            this._historyGrid.dataFrame.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
+            this.currentDf.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
           })
           .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
-      ]});
-      $(this._historyFilters.root).find('.d4-filter-group-header').hide();
-
-      this._historyFilters.root.style.height = '100%';
+      ];
+      if (columnNames.length > 0) {
+        ui.setDisplay(this.defaultFiltersText, false);
+        ui.setDisplay(this._historyFilters.root, true);
+        this._historyFilters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
+      } else {
+        ui.setDisplay(this.defaultFiltersText, true);
+        ui.setDisplay(this._historyFilters.root, false);
+      }
     }
   }
 
   private redrawSelectionState() {
-    const currentSelectedCount = this._historyGrid.dataFrame.selection.trueCount;
+    const currentSelectedCount = this.currentDf.selection.trueCount;
 
     if (currentSelectedCount < 2)
       (this.compareIcon.firstChild as HTMLElement).classList.add('hp-disabled');

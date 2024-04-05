@@ -802,6 +802,8 @@ export interface IDartApi {
   grok_Property_Set_SemType(p: any, x: String): any;
   grok_Property_Get_Description(p: any): any;
   grok_Property_Set_Description(p: any, x: String): any;
+  grok_Property_Get_Nullable(p: any): any;
+  grok_Property_Set_Nullable(p: any, x: Bool): any;
   grok_Property_Get_DefaultValue(p: any): any;
   grok_Property_Set_DefaultValue(p: any, x: any): any;
   grok_Property_Get_Choices(p: any): any;
@@ -1084,7 +1086,9 @@ export interface IDartApi {
   grok_StringInput_AddIcon(input: any, x: any): any;
   grok_TextInput_SetSize(input: any, width: any, height: any): any;
   grok_ColumnInput_ChangeTable(input: any, table: any, predicate: any): any;
-  grok_ColumnsInput_ChangeAvailableAndCheckedColumns(input: any, availableColumns: any, checkedColumns: any): any;
+  grok_ColumnsInput_ChangeTable(input: any, table: any, predicate: any): any;
+  grok_ColumnsInput_ChangeAvailableColumns(input: any, availableColumns: any): any;
+  grok_ColumnsInput_ChangeCheckedColumns(input: any, checkedColumns: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
   grok_TreeViewNode_Tree(): any;
@@ -1271,6 +1275,8 @@ export interface IDartApi {
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;
   grok_UI_Star(id: String): any;
+  grok_UI_PatternsInput(colors: any): any;
+  grok_UI_SchemeInput(gradient: any): any;
   grok_UI_MakeDraggable(e: any, allowCopy: any, check: any, getDragObject: any, getDragCaption: any, dragObjectType: String, getDragHint: any, getDragContext: any, onDragStart: any, onDragEnd: any): any;
   grok_UI_MakeDroppable(e: any, acceptDrop: any, doDrop: any): any;
   grok_UI_InitFormulaAccelerators(textInput: any, table: any): any;
@@ -1412,6 +1418,7 @@ export interface IDartApi {
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
+  grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

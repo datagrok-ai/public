@@ -161,12 +161,12 @@ export class ErrorsView extends UaView {
 
     accordion.addPane('Statistics', () => ui.wait(async () => {
       const detailsButton = ui.button('Details', async () => {
-        const ev = ViewHandler.getView('User reports');
+        const ev = ViewHandler.getView('Reports');
         const viewer = ev.viewers[0];
         viewer.reloadViewer({'event_id': eventId});
         if (!viewer.activated)
           viewer.activated = true;
-        ViewHandler.changeTab('User reports');
+        ViewHandler.changeTab('Reports');
         this.uaToolbox.drilldown = ViewHandler.getCurrentView();
       });
       detailsButton.classList.add('ua-details-button');

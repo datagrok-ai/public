@@ -113,6 +113,9 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
   const dendrogram = ui.boolInput(VIEWER_TYPE.DENDROGRAM, isDendrogramEnabled ?? false,
     () => result.showDendrogram = dendrogram.value) as DG.InputBase<boolean>;
+  const clusterMaxActivity = ui.boolInput(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, !!settings?.showClusterMaxActivity, () => {
+    result.showClusterMaxActivity = clusterMaxActivity.value ?? undefined;
+  });
   const showSeqSpace = ui.boolInput('Sequence space', !!settings?.showSequenceSpace, () => {
     result.showSequenceSpace = showSeqSpace.value ?? undefined;
     if (showSeqSpace.value) {
@@ -126,11 +129,12 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     if (result.showSequenceSpace === settings?.showSequenceSpace)
       delete result.showSequenceSpace;
   });
+  clusterMaxActivity.setTooltip('Show cluster max activity viewer');
   dendrogram.setTooltip('Show dendrogram viewer');
   dendrogram.enabled = getTreeHelperInstance() !== null;
 
-  accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram, showSeqSpace]), true);
-  inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
+  accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram, showSeqSpace, clusterMaxActivity]), true);
+  inputs[SETTINGS_PANES.VIEWERS] = [dendrogram, showSeqSpace, clusterMaxActivity];
 
   // Columns to include pane options
   const inputsRows: HTMLElement[] = [];

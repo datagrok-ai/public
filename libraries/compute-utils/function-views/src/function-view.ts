@@ -386,6 +386,17 @@ export abstract class FunctionView extends DG.ViewBase {
     let isHistoryBlockOpened = false;
 
     this.subs.push(
+      newHistoryBlock.onCompactModeChanged.subscribe((newValue) => {
+        const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+        if (historyPanel) {
+          grok.shell.dockManager.close(historyPanel);
+
+          if (newValue)
+            grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+          else
+            grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+        }
+      }),
       newHistoryBlock.onRunChosen.subscribe(async (id) => {
         ui.setUpdateIndicator(this.root, true);
         await this.loadRun(id);
@@ -409,8 +420,12 @@ export abstract class FunctionView extends DG.ViewBase {
       }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened)
-            grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+          if (isHistoryBlockOpened) {
+            if (this.historyBlock?.compactMode)
+              grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+            else
+              grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+          }
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
@@ -437,7 +452,11 @@ export abstract class FunctionView extends DG.ViewBase {
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
       if (!grok.shell.dockManager.findNode(this.historyRoot)) {
-        grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+        if (this.historyBlock?.compactMode)
+          grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+        else
+          grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+
         this.historyRoot.parentElement!.classList.add('ui-box');
         this.historyRoot.classList.add('ui-box');
       }
@@ -452,7 +471,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const editBtn = ui.iconFA('edit', () => {
       if (!this.historyBlock || !this.lastCall) return;
 
-      this.historyBlock.showEditDialog(this.lastCall);
+      this.historyBlock.showEditDialog(this.historyBlock.history.get(this.funcCall.id)!);
     }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
@@ -809,6 +828,10 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
+  }
+
+  protected get mainInputs(): string[] | null {
+    return this.func.options['mainInputs'] ? JSON.parse(this.func.options['mainInputs']): null;
   }
 
   protected get mandatoryConsistent() {

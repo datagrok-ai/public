@@ -40,8 +40,6 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
     <li><b>Chem</b> menu (it contains all chemical tools)</li>
-    <li>Context menu (right-click for access)</li>
-    <li><b>Context Panel</b> on the right.</li>
     </ul><br>
     Let’s search for similar and diverse structures.`);
 
@@ -52,7 +50,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       if (data.args.viewer.type === 'Chem Similarity Search')
         sim = data.args.viewer;
       return !!sim;
-    })), this.getMenuItem('Chem'));
+    })), this.getMenuItem('Chem', true));
 
     await this.action('Next, click Chem > Search > Diversity Search...',
     grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {

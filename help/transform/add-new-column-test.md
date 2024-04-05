@@ -60,7 +60,7 @@ expression (mathematical function, constants, platform objects properties and fu
 1. Re-open [*"Add new column"*](add-new-column.md) dialog
 
 1. Add "Height" column to *"Formula"* field. Enter ```$``` to call drop-down list of columns or drag column from
-   anywhere in platform ([Column Manager](../explore/column-manager.md)
+   anywhere in platform ([Column Manager](../datagrok/navigation/column-manager.md)
    , [Table](../datagrok/table.md),
    [Context panel](../datagrok/navigation.md#context-panel))
 

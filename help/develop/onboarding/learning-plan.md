@@ -80,7 +80,7 @@ The goal for today is to gain experience with the platform by learning about its
       1. Cylinder Volume Calculator takes parameters `radius` and `height` and returns `volume` rounded to 2 decimal
          places.
       1. Follow the [instructions](../how-to/add-package-tests.md#testing-functions) to add tests to the script (use
-         function `Round10` and constant `PI` in your tests)
+         function `RoundFloat` and constant `PI` in your tests)
 
 ## Day 3
 
