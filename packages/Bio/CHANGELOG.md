@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.5 (2024-04-05)
+
+### Features
+
+* Add KNN computation on webGPU for UMAP (sequence space).
+
 ## 2.12.4 (2024-04-05)
 
 ### Features
