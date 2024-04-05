@@ -10,11 +10,20 @@ import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-re
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 
 
+export type MCLClusterViewerResult = {
+  sc: DG.ScatterPlotViewer;
+  embedXCol: DG.Column;
+  embedYCol: DG.Column;
+  clusterCol: DG.Column;
+  clusterCounterCol: DG.Column;
+  connectivityCol: DG.Column;
+}
+
 export async function markovCluster(
   df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10
-): Promise<void | DG.ScatterPlotViewer> {
+): Promise<undefined | MCLClusterViewerResult> {
   const scatterPlotProps = {
     showXAxis: false,
     showYAxis: false,
@@ -59,18 +68,36 @@ export async function markovCluster(
   if (!res)
     return;
   const clusterColName = df.columns.getUnusedName('Cluster (MCL)');
-  const emberdXColName = df.columns.getUnusedName('EmbedX');
-  const emberdYColName = df.columns.getUnusedName('EmbedY');
+  const emberdXColName = df.columns.getUnusedName('EmbedX (MCL)');
+  const emberdYColName = df.columns.getUnusedName('EmbedY (MCL)');
   const clustersCounter: {[_: number]: number} = {};
   res.clusters.forEach((c) => {
     if (!clustersCounter[c]) clustersCounter[c] = 0;
     clustersCounter[c]++;
   });
+  const connectivity = new Uint32Array(res.embedX.length);
+  for (let i = 0; i < res.is.length; i++) {
+    connectivity[res.is[i]]++;
+    connectivity[res.js[i]]++;
+  }
   const clusterCounterColName = df.columns.getUnusedName('Cluster size (MCL)');
-  df.columns.addNewFloat(emberdXColName).init((i) => res.embedX[i]);
-  df.columns.addNewFloat(emberdYColName).init((i) => res.embedY[i]);
-  df.columns.addNewInt(clusterCounterColName).init((i) => clustersCounter[res.clusters[i]]);
-  df.columns.addNewString(clusterColName).init((i) => res.clusters[i].toString());
+  const connectivityColName = df.columns.getUnusedName('Connectivity (MCL)');
+
+  const embedXCol = df.columns.addNewFloat(emberdXColName);
+  embedXCol.init((i) => res.embedX[i]);
+  const embedYCol = df.columns.addNewFloat(emberdYColName);
+  embedYCol.init((i) => res.embedY[i]);
+  const clusterCol = df.columns.addNewString(clusterColName);
+  clusterCol.init((i) => res.clusters[i].toString());
+  const clusterCounterCol = df.columns.addNewInt(clusterCounterColName);
+  clusterCounterCol.init((i) => clustersCounter[res.clusters[i]]);
+  const connectivityCol = df.columns.addNewInt(connectivityColName);
+  connectivityCol.init((i) => connectivity[i]);
+
+  // df.columns.addNewFloat(emberdXColName).init((i) => res.embedX[i]);
+  // df.columns.addNewFloat(emberdYColName).init((i) => res.embedY[i]);
+  // df.columns.addNewInt(clusterCounterColName).init((i) => clustersCounter[res.clusters[i]]);
+  // df.columns.addNewString(clusterColName).init((i) => res.clusters[i].toString());
   sc.props.xColumnName = emberdXColName;
   sc.props.yColumnName = emberdYColName;
   sc.props.colorColumnName = clusterColName;
@@ -86,6 +113,6 @@ export async function markovCluster(
   // sc.close();
   // const scLinesViewer = new ScatterPlotWithLines(sc, res.is, res.js, emberdXColName, emberdYColName);
   // tv.addViewer(scLinesViewer);
-  return sc;
+  return {sc, embedXCol, embedYCol, clusterCol, clusterCounterCol, connectivityCol};
 }
 

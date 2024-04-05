@@ -10,6 +10,7 @@ import org.slf4j.Marker;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,14 +24,18 @@ public class QueryStreamAppender extends AppenderBase<ILoggingEvent> {
     private static final String ORDER = "ORDER";
     private static final Gson GSON = new Gson();
     private final Session session;
+    private final List<String> allowedLevels;
     private int currentOrder = 1;
 
-    public QueryStreamAppender(Session session) {
+    public QueryStreamAppender(Session session, List<String> allowedLevels) {
         this.session = session;
+        this.allowedLevels = allowedLevels;
     }
 
     @Override
     protected void append(ILoggingEvent iLoggingEvent) {
+        if (allowedLevels.size() != 0 && !allowedLevels.contains(iLoggingEvent.getLevel().levelStr.toLowerCase()))
+            return;
         Marker marker = iLoggingEvent.getMarker() == null ? EventType.MISC.getMarker()
                 : iLoggingEvent.getMarker();
         String[] split = marker.getName().split("\\|");

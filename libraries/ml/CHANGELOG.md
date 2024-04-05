@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.4.13 (2024-03-07)
+
+Add Connectivity to MCL, Harmonized macromolecule distance functions.
+
 ## 6.4.12 (2024-03-06)
 
 ### Bug fixes

@@ -151,6 +151,7 @@ export interface IFitChartOptions {
   logY?: boolean;            // defines whether the y data should be logarithmic or not
 
   allowXZeroes?: boolean;    // defines whether x zeroes allowed for logarithmic data or not
+  mergeSeries?: boolean;     // defines whether to merge series or not
 
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
@@ -182,6 +183,7 @@ export interface IFitSeriesOptions {
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
   outlierColor?: string;                // overrides the standardized series outlier color
+  connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
@@ -219,8 +221,11 @@ export const fitChartDataProperties: DG.Property[] = [
   DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
   DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
   DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
+  DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Whether to merge series or not', defaultValue: false}),
   DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
-    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
+    //@ts-ignore
+    friendlyName: 'Statistics'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
@@ -235,6 +240,7 @@ export const fitSeriesProperties: DG.Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
+  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
   DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
     'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
   DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),

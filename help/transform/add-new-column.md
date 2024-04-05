@@ -24,7 +24,7 @@ For formulas where row index is required, `row` variable is available.
 Example:
 
 ```javascript
-1.57 * Round10(${Weight}, 2) / Avg($[Weight]) - log(${IC50} * PI)
+1.57 * RoundFloat(${Weight}, 2) / Avg($[Weight]) - log(${IC50} * PI)
 ```
 
 To treat data as strings use quotes, for example:

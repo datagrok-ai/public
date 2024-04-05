@@ -51,10 +51,18 @@ export class HistoryPanel extends DG.Widget {
     return this.historyList.runs;
   }
 
+  public get onCompactModeChanged() {
+    return this.historyList.onCompactModeChanged;
+  }
+
+  public get compactMode() {
+    return this.historyList.compactMode;
+  }
+
   constructor(
     private func: DG.Func,
   ) {
-    super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label')));
+    super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label'), {style: {'width': '100%', 'height': '100%'}}));
 
     const clickedSub = this.historyList.onClicked.subscribe((clickedCall) => this.onRunChosen.next(clickedCall.id));
 

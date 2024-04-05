@@ -30,5 +30,5 @@ Contains gallery of saved [layouts](../../visualize/view-layout.md).
 See also:
 
 * [Table](../concepts/table.md)
-* [Table Manager](../../explore/table-manager.md)
-* [Column Manager](../../explore/column-manager.md)
+* [Table Manager](table-manager.md)
+* [Column Manager](column-manager.md)

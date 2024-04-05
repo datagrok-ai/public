@@ -1,5 +1,12 @@
 # Compute changelog
 
+## 1.29.1 (2024-04-03)
+
+### Features
+
+- HistoryPanel: Added compact mode
+- HistoryPanel: Fixed bug with supported column types
+
 ## 1.29.0 (2024-03-29)
 
 ### Features

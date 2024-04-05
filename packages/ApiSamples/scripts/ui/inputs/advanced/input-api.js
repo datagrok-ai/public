@@ -33,4 +33,7 @@ const inputs = [
   await ui.input.markdown('markdown'),
 ];
 
-grok.shell.newView('Inputs', [ui.form(inputs)]);
+const form = DG.InputForm.forInputs(inputs);
+form.onInputChanged.subscribe((ed) => grok.shell.info(`Input - ${ed.args.input.caption}, new value - ${ed.args.input.value}`));
+
+grok.shell.newView('Inputs', [form.root]);

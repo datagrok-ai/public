@@ -6,49 +6,23 @@ import {Observable, Subject, Unsubscribable} from 'rxjs';
 import {_package} from '../package';
 
 export interface IFilterProps {
-  get onChanged(): Observable<void>;
-
-  save(): object;
-  apply(propsObj: object): void;
 }
 
 /** Fasta and Helm */
 export class BioFilterProps implements IFilterProps {
-  private _onChanged: Subject<void> = new Subject<void>();
-
-  get onChanged(): Observable<void> { return this._onChanged; }
-
   constructor(
-    public substructure: string
+    public readonly substructure: string,
+    /** Pass false from an inheritors constructor, at the end set true. */ protected readOnly: boolean = true,
   ) {
     return new Proxy(this, {
       set: (target: any, key: string | symbol, value: any) => {
         _package.logger.debug(`BioFilterProps.set ${key.toString()}( '${value}' )`);
+        if (this.readOnly)
+          throw new Error('Properties are immutable.');
         target[key] = value;
-        this._onChanged.next();
         return true;
       }
     });
-  }
-
-  save(): object {
-    const propsObj = {};
-    for (const [key, value] of Object.entries(this)) {
-      if (key !== '_onChanged') {
-        // @ts-ignore
-        propsObj[key] = this[key];
-      }
-    }
-    return propsObj;
-  }
-
-  apply(propsObj: object) {
-    for (const [key, value] of Object.entries(this)) {
-      if (key !== '_onChanged') {
-        // @ts-ignore
-        this[key] = propsObj[key];
-      }
-    }
   }
 }
 
@@ -57,6 +31,9 @@ export interface IBioFilter {
 
   get props(): IFilterProps;
   set props(value: IFilterProps);
+
+  applyProps(props: IFilterProps): void;
+  saveProps(): IFilterProps;
 
   get onChanged(): Observable<void>;
   get filterPanel(): HTMLElement;
@@ -79,7 +56,6 @@ export abstract class BioFilterBase<TProps extends BioFilterProps> implements IB
 
   private _props: TProps;
   protected _propsChanging: boolean = false;
-  private _propsOnChangedSub: Unsubscribable | null = null;
 
   abstract get type(): string;
 
@@ -91,32 +67,30 @@ export abstract class BioFilterBase<TProps extends BioFilterProps> implements IB
   set props(value: TProps) {
     this._propsChanging = true;
     try {
-      if (this._propsOnChangedSub) {
-        this._propsOnChangedSub.unsubscribe();
-        this._propsOnChangedSub = null;
-      }
       this._props = value;
       this.applyProps();
       this.onChanged.next();
-      this._propsOnChangedSub = this._props.onChanged
-        .subscribe(() => {
-          this.onChanged.next();
-        });
     } finally {
       this._propsChanging = false;
     }
   };
 
-  abstract attach(): Promise<void>;
-
-  async detach(): Promise<void> {
-    if (this._propsOnChangedSub) {
-      this._propsOnChangedSub.unsubscribe();
-      this._propsOnChangedSub = null;
+  saveProps(): IFilterProps {
+    const propsObj = {};
+    for (const [key, value] of Object.entries(this.props)) {
+      if (key !== '_onChanged') {
+        // @ts-ignore
+        propsObj[key] = this.props[key];
+      }
     }
+    return propsObj;
   }
 
   abstract applyProps(): void;
+
+  abstract attach(): Promise<void>;
+
+  async detach(): Promise<void> { }
 
   get filterSummary(): string { return this.props.substructure; };
 

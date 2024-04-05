@@ -4,15 +4,18 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class QueryLoggerImpl implements QueryLogger {
     private final QueryStreamAppender appender;
     private final Logger logger;
 
-    public QueryLoggerImpl(Session session) {
+    public QueryLoggerImpl(Session session, List<String> allowedLevels) {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        appender = new QueryStreamAppender(session);
+        appender = new QueryStreamAppender(session, allowedLevels);
         String name = UUID.randomUUID().toString();
         appender.setName(name);
         appender.setContext(context);

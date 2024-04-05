@@ -1,6 +1,22 @@
 # Bio changelog
 
-## 2.12.0 (WIP)
+## 2.12.3 (2024-04-03)
+
+Updated version of openchemlib in dependencies
+
+## 2.12.2 (2024-04-03)
+
+Harmonized MM distance function with monomer similarity matrices.
+
+## 2.12.1 (2024-04-02)
+
+### Bug fixes
+
+* Fix bioSubstructureFilter with two columns
+* Fix bioSubstructureFilter error on filters reopen
+* GROK-15292: Fix bioSubstructureFilter for reset
+
+## 2.12.0 (2024-03-30)
 
 ### Features
 

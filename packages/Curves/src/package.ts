@@ -29,6 +29,7 @@ export function fitCellRenderer(): FitChartCellRenderer {
 //name: MultiCurveViewer
 //description: A viewer that superimposes multiple in-cell curves on one chart
 //tags: viewer
+//meta.icon: icons/multi-curve-viewer.png
 //output: viewer result
 export function _FitViewer(): MultiCurveViewer {
   return new MultiCurveViewer();
