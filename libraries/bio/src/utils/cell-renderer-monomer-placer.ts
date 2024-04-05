@@ -8,6 +8,7 @@ import {SeqHandler} from './seq-handler';
 import {MonomerToShortFunc, ALPHABET} from './macromolecule';
 import {IMonomerLib, Monomer} from '../types';
 import {HELM_POLYMER_TYPE} from './const';
+import {SeqSplittedBase} from './macromolecule/types';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
@@ -91,7 +92,7 @@ export class MonomerPlacer {
 
     let res: number[] = this._monomerLengthList[rowIdx];
     if (res === null) {
-      const seqMonList: string[] = this.getSeqMonList(rowIdx);
+      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.col).getSplitted(rowIdx).originals;
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
 
       for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
@@ -131,7 +132,7 @@ export class MonomerPlacer {
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._rowsProcessed.get(seqIdx))
         continue;
-      const seqMonList: string[] = this.getSeqMonList(seqIdx);
+      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.col).getSplitted(seqIdx).originals;
       if (seqMonList.length > res.length)
         res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
 
@@ -149,8 +150,7 @@ export class MonomerPlacer {
   public getPosition(rowIdx: number, x: number): number | null {
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
     const sh = SeqHandler.forColumn(this.col);
-    const seq: string = this.col.get(rowIdx)!;
-    const seqMonList: string[] = wu(sh.getSplitted(rowIdx).canonicals).map((cm) => cm).toArray();
+    const seqMonList: string[] = wu(sh.getSplitted(rowIdx).originals).toArray();
     if (seqMonList.length === 0) return null;
 
     let iterationCount: number = 100;
@@ -179,11 +179,6 @@ export class MonomerPlacer {
       }
     }
     return left;
-  }
-
-  getSeqMonList(rowIdx: number): string[] {
-    const sh = SeqHandler.forColumn(this.col);
-    return wu(sh.getSplitted(rowIdx).canonicals).map((cm) => cm).toArray();
   }
 
   public getMonomer(symbol: string): Monomer | null {

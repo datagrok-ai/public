@@ -1,5 +1,16 @@
 # bio changelog
 
+## 5.40.1 (2024-04-05)
+
+### Features
+
+* Add support for custom notations, splitters
+
+### Bug fixes
+
+bio: Fix monomer placer to render original monomers
+bio: Fix SeqHandler.getRegion for out of seq length
+
 ## 5.40.0 (2024-03-30)
 
 ### Features
