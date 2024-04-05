@@ -1453,6 +1453,14 @@ export class Color {
     return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
   }
 
+  static highlight(color: number): number {
+    return api.grok_Color_Highlight(color);
+  }
+
+  static darken(color: number, diff: number): number {
+    return api.grok_Color_Darken(color, diff);
+  }
+
   static scale(x: number, min: number, max: number): number {
     return min === max ? min : (x - min) / (max - min);
   }
