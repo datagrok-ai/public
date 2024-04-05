@@ -124,7 +124,7 @@ class BioPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  detectMacromolecule(col) {
+  async detectMacromolecule(col) {
     const tableName = col.dataFrame ? col.dataFrame.name : null;
     this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
@@ -291,6 +291,9 @@ class BioPackageDetectors extends DG.Package {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+
+        await refineSeqSplitter(col, stats, separator);
+
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
@@ -309,7 +312,8 @@ class BioPackageDetectors extends DG.Package {
   /** Detects the most frequent char with a rate of at least 0.15 of others in sum.
    * Does not use any splitting strategies, estimates just by single characters.
    * @param freq Dictionary of characters freqs
-   * @param sample A string array of seqs sample
+   * @param categoriesSample A string array of seqs sample
+   * @param seqMinLength A threshold on min seq length for contributing to stats
    */
   detectSeparator(freq, categoriesSample, seqMinLength) {
     // To detect a separator we analyze col's sequences character frequencies.
@@ -583,5 +587,14 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
     });
+  }
+}
+
+async function refineSeqSplitter(col, stats, separator) {
+  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
+  if (isCyclized) {
+    await grok.functions.call('Bio:applyNotationProviderForCyclized',
+      {col: col, separator: separator});
+    return;
   }
 }

@@ -17,7 +17,7 @@ import {
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ISeqSplitted, SeqSplittedBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
@@ -27,7 +27,7 @@ import {
 } from '../utils/cell-renderer-consts';
 import * as C from './constants';
 
-import {_package, getBioLib} from '../package';
+import {_package, getBioLib, getSeqHandler} from '../package';
 
 type TempType = { [tagName: string]: any };
 
@@ -93,9 +93,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
     const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX);
 
-    const seqMonList: string[] = seqColTemp.getSeqMonList(gridCell.tableRowIndex!);
-    if (left !== null && left < seqMonList.length) {
-      const monomerSymbol: string = seqMonList[left];
+    const seqCList: SeqSplittedBase = SeqHandler.forColumn(seqColTemp.col)
+      .getSplitted(gridCell.tableRowIndex!).canonicals;
+    if (left !== null && left < seqCList.length) {
+      const monomerSymbol: string = seqCList[left];
       const tooltipElements: HTMLElement[] = [ui.div(monomerSymbol)];
       if (seqColTemp._monomerStructureMap[monomerSymbol]) {
         //

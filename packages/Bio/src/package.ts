@@ -12,7 +12,7 @@ import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-me
 import {
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -77,6 +77,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
 
 export const _package = new BioPackage();
 
@@ -1045,4 +1046,13 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+// -- Custom notation providers --
+
+//name: applyNotationProviderForCyclized
+//input: column col
+//input: string separator
+export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
 }

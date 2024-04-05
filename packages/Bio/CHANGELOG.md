@@ -1,5 +1,17 @@
 # Bio changelog
 
+## 2.12.4 (2024-04-05)
+
+### Features
+
+* Add support for custom notations, splitters
+* Add notation provider, splitter for cyclized macromolecules
+
+### Bug fixes
+
+* Fix cell renderer for original and tooltip with canonical
+* Fix WebLogo for positions out of seq length
+
 ## 2.12.3 (2024-04-03)
 
 Updated version of openchemlib in dependencies
