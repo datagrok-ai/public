@@ -21,14 +21,6 @@ Certain features and functionalities described in this article are part of the [
 
 :::
 
-:::note developers
-
-<!--To edit column permissions, use:
-`table.col('myColumn').tags['editableBy'] = "username"`. <br/>-->
-[Learn how to customize the grid programmatically](../../develop/how-to/customize-grid.md)
-
-:::
-
 ## Controls
 
 |                                       |                                 |
@@ -36,10 +28,11 @@ Certain features and functionalities described in this article are part of the [
 |<h4>**Select**</h4>        ||
 |Select rows                            | Shift+Mouse Drag                |
 |Deselect rows                          | Ctrl+Shift+Mouse Drag           |
-|Select columns                         | Mouse Drag rows                 |
+|Select columns and rows                | Mouse Drag rows                 |
 |Select columns                         | Shift+drag column headers       |
 |Select columns                         | Ctrl+click column headers       |
 |Deselect columns                       | Ctrl+Shift+click column headers |
+| Invert column selection               | Ctrl+click                      |
 |(De)select rows                        | (Ctrl+) Shift + ↑↓              |
 |(De)select columns                     | (Ctrl+) Shift + ←→              |
 |(De)select rows                        | (Ctrl+) Shift + mouse-drag      |
@@ -47,14 +40,14 @@ Certain features and functionalities described in this article are part of the [
 |Select rows above current              | Ctrl + Shift + Home             |
 |Select rows below current              | Ctrl + Shift + End              |
 |<h4>**Navigate**</h4>        ||
-|Up, Down, Left, Right                   | Navigate                        |
-|Page Up, Page Down                      | Navigate                        |
-|Ctrl+Home                               | Jump to first row               |
-|Ctrl+End                                | Jump to last row                |
-|Home                                    | Jump to first column            |
-|End                                     | Jump to last column             |
-|Ctrl+UP / DOWN                          | Prev / next selected row        |
-|Alt+F                                   | Show in full screen             |
+| Navigate                              | Up, Down, Left, Right           |
+| Navigate                              | Page Up, Page Down              |
+| Jump to first row                     | Ctrl+Home                       |
+| Jump to last row                      | Ctrl+End                        |
+| Jump to first column                  | Home                            |
+| Jump to last column                   | End                             |
+| Prev / next selected row              | Ctrl+UP / DOWN                  |
+| Show in full screen                   | Alt+F                           |
 |<h4>**Sort**</h4>||
 | Sort a column                          | Double-click column header      |
 | Sort current column                    | Ctrl+Shift+UP                   |
@@ -62,7 +55,6 @@ Certain features and functionalities described in this article are part of the [
 | Edit cell                              | Double-click                    |
 | Copy cell value                        | Ctrl+C                          |
 | Paste into cell                        | Ctrl+V                          |
-| Invert column selection                | Ctrl+click                      |
 | Add a row (requires `Allow Edit` set to `true`) | Enter or click the **plus** **(+)** icon in the bottom row |
 | Undo                                   | Ctrl+Z                          |
 | Redo                                   | Ctrl+Shift+Z                    |
@@ -186,14 +178,7 @@ their content is automatically visualized in the **Context Panel**.
 
 ## Cells
 
-In addition to displaying a single data point based on its type, a grid cell
-may contain the following:
-
-* [Cell renderers](#cell-renderers)
-* [Summary columns](#summary-columns)
-* [Forms](#forms)
-* [Data from linked tables](#data-from-linked-tables)
-* [Images](#images)
+You can customize the display of cell data using [cell renderers](#cell-renderers). Grid cells can also contain values from [multiple columns](#summary-columns) or [linked tables](#data-from-linked-tables), and display embedded [images](#images).
 
 ![](img/cell-renderers-examples.gif)
 
@@ -201,8 +186,9 @@ may contain the following:
 
 Cell renderers customize how cell data is shown. For instance, molecules in
 SMILES notation may be rendered in 2D. For specific semantic types,
-such as molecules or URL images, cell renderers are applied automatically. To
-apply a cell renderer manually:
+such as molecules or URL images, cell renderers are applied automatically. 
+
+To apply a cell renderer manually:
 
 1. Right click the column header and select **Column properties...**. A dialog
    opens.
@@ -212,6 +198,8 @@ apply a cell renderer manually:
   >additional parameters. 
 1. Click **OK**.
 
+![](../../deploy/releases/platform/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
+
 Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers](../supported-cell-renderers.md).  //TODO: New doc: supported-cell-renderers.md-->
 
 :::note developers
@@ -220,20 +208,26 @@ Examples of built-in renderers include molecules, URL based images, fit lines, c
 
 :::
 
-
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
 data from multiple columns, use _smart forms_. To visualize
-numerical data, use _sparklines_.
-
-To add a summary column, right-click any cell, then choose **Add** > **Summary
-Columns**, and select your preferred option from the menu.
-
-To change selected columns for the summary column, click its header and choose
-the columns you want in the **Context Panel** under **Renderer**.
+numerical data, use _sparklines_. To design a custom form, use _forms_.
 
 <Tabs>
+<TabItem value="smart-forms" label="Smart forms" default>
+
+Smart forms show values from multiple columns within a single cell. They inherit
+color-coding and [cell renderers](#cell-renderers) from the source columns, and their content
+dynamically adjusts to fit the cell size.
+
+To add a smart form, right-click a cell and select **Add** > **Summary Columns** > **Smart Form**. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
+
+<br/>
+
+![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+
+</TabItem>
 <TabItem value="sparklines" label="Sparklines">
 
 Sparklines use charts to visualize numerical values within a row,
@@ -243,35 +237,32 @@ Supported summary column types:
 * Sparklines
 * Bar Chart
 * Radar
-* Pie Bar Chart
+* Pie Barchart
 <!--* Markup-->
+
+To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
+
+<br/>
 
 ![Summary columns](../../uploads/viewers/grid-summary-columns.png "Summary columns")
 
 </TabItem>
+<TabItem value="forms" label="Forms">
 
-<TabItem value="smart-forms" label="Smart forms">
+To show data from multiple columns, you can design a form:
 
-Smart forms show values from multiple columns within a single cell. They inherit
-color-coding and [cell renderers](#cell-renderers) from the source columns, and their content
-dynamically adjusts to fit the cell size.
+1. Right-click a cell, select **Add** > **Forms** > **Design a Form...**. This
+   opens a [form viewer](forms.md).  
+1. In the form viwer, column names and values are shown as individual components
+   that you can edit. Design your form with clicks and drags.
+1. Once done, click the **CLOSE AND APPLY** button to add the form as a column to your dataset.
 
-![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+<br/>
+
+![Forms](img/grid-forms.gif "Forms")
 
 </TabItem>
 </Tabs>
-
-### Forms
-
-You can design a custom form to show information from multiple columns within a cell.
-
-To add a form:
-
-1. Right-click a cell, select **Add** > **Forms** > **Design a Form...**. This open a [form viewer](forms.md),  where each column name and value is presented as a separate component. 
-1. Design your form with clicks and drags.
-1. Once done, click the **CLOSE AND APPLY** button to add the form as a column to your dataset.
-
-![Forms](img/grid-forms.gif "Forms")
 
 ### Data from linked tables
 
@@ -347,9 +338,15 @@ To toggle filters, in the **Top Menu**, click the filter icon.
 
 The **Filters Panel** is a [viewer](viewers.md). [Learn more about filters](filters.md).
 
-
-
 ## How To
+
+:::note developers
+
+<!--To edit column permissions, use:
+`table.col('myColumn').tags['editableBy'] = "username"`. <br/>-->
+[Customize the grid programmatically](../../develop/how-to/customize-grid.md)
+
+:::
 
 ### Format cells
 
@@ -374,15 +371,20 @@ See:
 
 :::
 
-<!--
+### Add rows or columns
 
-### Add new rows or columns
+To add a new row, either click the **plus (+)** icon after the bottom row in your dataset. Alternatively, go to the **Top Menu** and select **Edit** > **Add rows..**. This opens a dialog where you can specify the number of rows to add, as well as their position relative to your current row.
 
-To add a new row, either click the **plus (+)** icon after the bottom row in your dataset, or go to the **Top Menu** and select **Edit** > **Add rows..**. This opens a dialog where you can specify the number of rows to add, as well as their position relative to your current row.
+To add a new column:
 
-To add a new column, in the **Top Menu**, select **Edit** > **Add New Column...**. This opens a dialog where 
+1. In the **Top Menu**, click the **Add New Column...** icon. This opens a dialog.
+1. In the dialog, specify the column's name and data type and click **OK**. 
+1. An empty column is added to the dataset.
+1. Optional. To specify a column's [semantic type](../../govern/catalog/semantic-types.md), [tags](../../govern/catalog/tags.md), or [cell renderer](#cell-renderers), use the [column's properties](#columns).
 
-//TODO: WIP TBD-->
+![](img/grid-add-new-rows-columns.gif)
+
+[Learn how to add calculated columns](../../transform/add-new-column.md).
 
 ### Pin rows and columns
 
@@ -404,9 +406,9 @@ To unpin rows, select the **Unpin** option from the **Pin** context menu.
 
 You can color code columns with these schemes: 
    
-* "Categorical" for categorical columns (`string` and `bool` data types)
-* "Conditional" or "linear" for numeric columns
-* "Linear" for datetime columns.
+* For categorical columns (`string` and `bool` data types), "categorical"
+* For numeric columns, "conditional" or "linear"
+* For `datetime` columns, "linear"
 
 To color-code a column, right click its header and select the desired scheme
 from the **Color Coding** submenu. This applies color to the
