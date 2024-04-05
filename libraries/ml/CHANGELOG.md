@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.5.1 (2024-04-05)
+
+Fix function editor for seq/chem space
+
 ## 6.5.0 (2024-04-05)
 
 Add webGPU KNN calculation option to UMAP.
