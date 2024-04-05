@@ -77,12 +77,16 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
         this.data.series?.push(...series);
     }
     this.data.series?.forEach((series, i) => {
-      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(i));
-      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+      if (this.data.series?.length! > 20)
+        series.showPoints = '';
+      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
     });
   }
 
   onPropertyChanged(property: DG.Property | null): void {
+    if (property?.name === 'curvesColumnNames')
+      this.props.set('showColumnLabel', this.curvesColumnNames?.length! > 1 as unknown as object);
     this.applyViewerProperties();
     this.createChartData();
     this.render();
