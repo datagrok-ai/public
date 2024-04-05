@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-04-05 1.18.4
+
+### Addressed Issues
+
+* (Bug) GROK-15334: Large file open fails (WIP)
+
+
 ## 2024-03-28 1.18.3
 
 ### Addressed Issues
