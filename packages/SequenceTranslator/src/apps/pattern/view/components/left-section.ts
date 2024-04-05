@@ -1,19 +1,17 @@
 import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
-import {PatternDefaultsProvider} from '../../model/defaults-provider';
-import {EventBus} from '../../model/event-bus';
-import {PatternAppDataManager} from '../../model/external-data-manager';
 
+import {DataManager} from '../../model/data-manager';
+import {EventBus} from '../../model/event-bus';
+import {TableControlsManager} from './bulk-convert/table-controls';
 import {PatternEditControlsManager} from './edit-block-controls';
 import {PatternLoadControlsManager} from './load-block-controls';
-import {TableControlsManager} from './bulk-convert/table-controls';
 
 export class PatternAppLeftSection {
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager,
-    private defaults: PatternDefaultsProvider
+    private dataManager: DataManager
   ) { };
 
   getLayout(): HTMLDivElement {
@@ -24,7 +22,7 @@ export class PatternAppLeftSection {
 
     const editControlsManager = new PatternEditControlsManager(
       this.eventBus,
-      this.defaults
+      this.dataManager
     );
     const tableControlsManager = new TableControlsManager(this.eventBus);
 

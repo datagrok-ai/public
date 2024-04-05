@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
 import {NucleotideSequences} from './types';
+import {EventBus} from './event-bus';
 
 
 export function isOverhangNucleotide(nucleotide: string): boolean {
@@ -36,7 +37,6 @@ export function getMostFrequentNucleotide(sequences: NucleotideSequences): strin
 
   return mostFrequentNucleotide;
 }
-
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
   const AXOLABS_MAP = AXOLABS_STYLE_MAP;

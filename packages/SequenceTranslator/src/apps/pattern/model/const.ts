@@ -54,14 +54,14 @@ export const EXAMPLE_MIN_WIDTH: string = '400px';
 
 export const OTHER_USERS = 'Other users';
 
-export namespace DEFAULT_PATTERN_CONFIG {
-  export const SEQUENCE_LENGTH = 23;
-  export const PHOSPHOROTHIOATE = true;
-  export const TERMINUS_MODIFICATION = '';
-  export const COMMENT = '';
-  export const IS_ANTISENSE_STRAND_VISIBLE = true;
-  export const PATTERN_NAME = 'Pattern';
-}
+// export namespace DEFAULT_PATTERN_CONFIG {
+//   export const SEQUENCE_LENGTH = 23;
+//   export const PHOSPHOROTHIOATE = true;
+//   export const TERMINUS_MODIFICATION = '';
+//   export const COMMENT = '';
+//   export const IS_ANTISENSE_STRAND_VISIBLE = true;
+//   export const PATTERN_NAME = 'Pattern';
+// }
 
 export namespace GRAPH_SETTINGS_KEYS {
   export const IS_ANTISENSE_STRAND_INCLUDED = 'isAntisenseStrandIncluded';
@@ -98,3 +98,46 @@ export const PATTERN_RECORD_KEY_LIST = [
   PATTERN_RECORD_KEYS.PATTERN_CONFIG,
   PATTERN_RECORD_KEYS.AUTHOR_ID
 ];
+
+export const EXAMPLE_PATTERN_CONFIG =
+{
+  'patternConfig': {
+    'patternName': '<default example>',
+    'isAntisenseStrandIncluded': true,
+    'nucleotideSequences': {
+      'SS': [
+        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
+        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA'
+      ],
+      'AS': [
+        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
+        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA'
+      ]
+    },
+    'phosphorothioateLinkageFlags': {
+      'SS': [
+        true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+        true, true, true, true, true, true, true, true
+      ],
+      'AS': [
+        true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+        true, true, true, true, true, true, true, true
+      ]
+    },
+    'strandTerminusModifications': {
+      'SS': {
+        '3\'': '',
+        '5\'': ''
+      },
+      'AS': {
+        '3\'': '',
+        '5\'': ''
+      }
+    },
+    'patternComment': '',
+    'nucleotidesWithNumericLabels': [
+      'RNA'
+    ]
+  },
+  'authorID': 'example'
+};

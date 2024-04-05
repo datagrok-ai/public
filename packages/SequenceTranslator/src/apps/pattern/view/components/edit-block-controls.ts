@@ -7,16 +7,16 @@ import $ from 'cash-dom';
 import '../style.css';
 
 import {MAX_SEQUENCE_LENGTH, STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
-import {PatternDefaultsProvider} from '../../model/defaults-provider';
 import {EventBus} from '../../model/event-bus';
 import {StrandType} from '../../model/types';
 import {NumberInput, StringInput} from '../types';
 import {isDialogOpen, StrandEditorDialog} from './strand-editor/dialog';
+import {DataManager} from '../../model/data-manager';
 
 export class PatternEditControlsManager {
   constructor(
     private eventBus: EventBus,
-    private defaultState: PatternDefaultsProvider
+    private dataManager: DataManager
   ) { }
 
   createControls(): HTMLElement[] {
@@ -125,9 +125,9 @@ export class PatternEditControlsManager {
   }
 
   private createSequenceBaseInput(): StringInput {
-    const availableNucleoBases = this.defaultState.fetchAvailableNucleotideBases()
+    const availableNucleoBases = this.dataManager.fetchAvailableNucleotideBases()
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    const defaultNucleotideBase = this.defaultState.fetchDefaultNucleobase();
+    const defaultNucleotideBase = this.dataManager.fetchDefaultNucleobase();
 
     const sequenceBaseInput = ui.choiceInput('Sequence basis', defaultNucleotideBase, availableNucleoBases);
 

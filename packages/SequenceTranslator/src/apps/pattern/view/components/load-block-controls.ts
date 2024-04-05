@@ -9,7 +9,7 @@ import {StringInput} from '../types';
 
 import $ from 'cash-dom';
 import {EventBus} from '../../model/event-bus';
-import {PatternAppDataManager} from '../../model/external-data-manager';
+import {DataManager} from '../../model/data-manager';
 
 export class PatternLoadControlsManager {
   private subscriptions = new SubscriptionManager();
@@ -17,7 +17,7 @@ export class PatternLoadControlsManager {
 
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager
+    private dataManager: DataManager
   ) {
     this.eventBus.patternLoadRequested$.subscribe((patternHash: string) => this.handlePatternChoice(patternHash));
 
@@ -26,6 +26,10 @@ export class PatternLoadControlsManager {
 
     const defaultPattern = this.dataManager.getCurrentUserPatternNames()[0];
     this.selectedPattern = defaultPattern;
+
+    this.eventBus.patternDeletionRequested$.subscribe(async (patternName: string) => {
+      await this.dataManager.deletePattern(patternName, this.eventBus);
+    });
   }
 
   private selectedPattern: string;

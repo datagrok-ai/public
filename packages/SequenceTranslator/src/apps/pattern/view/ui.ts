@@ -2,30 +2,24 @@ import * as ui from 'datagrok-api/ui';
 
 import {APP_NAME} from '../../common/view/const';
 import {IsolatedAppUIBase} from '../../common/view/isolated-app-ui';
-import {PatternConfigManager} from '../model/config-manager';
-import {DataInitializer} from '../model/data-initializer';
-import {PatternDefaultsProvider} from '../model/defaults-provider';
+import {DataManager} from '../model/data-manager';
 import {EventBus} from '../model/event-bus';
-import {PatternAppDataManager} from '../model/external-data-manager';
 import {URLRouter} from '../model/router';
 import {PatternAppLeftSection} from './components/left-section';
 import {PatternAppRightSection} from './components/right-section';
 
 class PatternApp {
   static async getContent(): Promise<HTMLDivElement> {
-    const defaultsProvider = new PatternDefaultsProvider();
-    const dataInitializer = await DataInitializer.getInstance(defaultsProvider);
-    const patternConfigManager = new PatternConfigManager(dataInitializer);
+    const dataManager = await DataManager.getInstance();
 
     const urlRouter = new URLRouter();
 
-    const initialPatternConfig = await urlRouter.getPatternConfigFromURL(patternConfigManager);
+    const initialPatternConfig = await dataManager.getPatternConfig(urlRouter.getPatternHash());
     const eventBus = new EventBus(initialPatternConfig);
-    eventBus.patternLoaded$.subscribe((hash) => urlRouter.setPatternURL(hash));
 
-    const dataManager = new PatternAppDataManager(eventBus, patternConfigManager);
+    urlRouter.updateURLOnPatternLoaded(eventBus);
 
-    const leftSection = new PatternAppLeftSection(eventBus, dataManager, defaultsProvider).getLayout();
+    const leftSection = new PatternAppLeftSection(eventBus, dataManager).getLayout();
     const rightSection = new PatternAppRightSection(eventBus, dataManager).getLayout();
 
     const isResizeable = true;

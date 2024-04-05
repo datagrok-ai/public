@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {EventBus} from '../../model/event-bus';
-import {PatternAppDataManager} from '../../model/external-data-manager';
+import {DataManager} from '../../model/data-manager';
 import {PatternExistsError, PatternNameExistsError} from '../../model/types';
 import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
 import {NumericLabelVisibilityControls} from './numeric-label-visibility-controls';
@@ -12,7 +12,7 @@ export class PatternAppRightSection {
 
   constructor(
     private eventBus: EventBus,
-    private dataManager: PatternAppDataManager
+    private dataManager: DataManager
   ) {
     this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
   };
@@ -64,7 +64,7 @@ export class PatternAppRightSection {
       grok.shell.warning(`Insert pattern name`);
       return;
     }
-    this.dataManager.savePatternToUserStorage()
+    this.dataManager.savePatternToUserStorage(this.eventBus)
       .then(() => {
         grok.shell.info(`Pattern ${patternName} saved`);
       })
