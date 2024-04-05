@@ -457,11 +457,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
     g.restore();
 
-    const mergedSeries = data.chartOptions?.mergeSeries ? mergeSeries(data.series!) : null;
-    if (data.chartOptions?.mergeSeries && mergedSeries === null)
-      return;
-    for (let i = 0; i < (data.chartOptions?.mergeSeries ? 1 : data.series?.length!); i++) {
-      const series = mergedSeries ?? data.series![i];
+    for (let i = 0; i < data.series?.length!; i++) {
+      const series = data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined))
         continue;
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
@@ -649,6 +646,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
 
+    if (data.series?.length === 0)
+      return;
+
     if (data.series?.some((series) => series.points.length === 0))
       return;
 
@@ -659,6 +659,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+    if (data.chartOptions?.mergeSeries)
+      data.series = [mergeSeries(data.series!)!];
 
     this.renderCurves(g, x, y, w, h, data);
   }

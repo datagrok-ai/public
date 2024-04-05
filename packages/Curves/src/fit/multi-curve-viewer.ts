@@ -30,7 +30,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
 
     for (const p of fitChartDataProperties)
-      this.addProperty(p.name, p.propertyType, p.defaultValue, p.options);
+      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, p.options);
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
@@ -58,12 +58,15 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
     this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
+    const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
     for (const colName of this.curvesColumnNames!) {
       const series = [];
-      for (const i of this.rows) {
+      for (const i of new Set(this.rows)) {
         const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
         const cellCurves = getChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+        if (mergeCellSeries)
+          cellCurves.series = [mergeSeries(cellCurves.series!)!];
         series.push(...cellCurves.series!);
       }
       if (this.mergeColumnSeries)
