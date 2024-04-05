@@ -7,8 +7,6 @@ import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
 import {getPropViewers} from './shared/utils';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
-import {getOutput} from './variance-based-analysis/sa-outputs-routine';
-import {getCalledFuncCalls} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
@@ -35,7 +33,7 @@ type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
 type InputValues = {
   isChanging: BehaviorSubject<boolean>,
-  const: InputWithValue<boolean | number | string>,
+  const: InputWithValue<boolean | number | string | DG.DataFrame>,
   constForm: DG.InputBase[],
   saForm: DG.InputBase[],
 }
@@ -288,7 +286,7 @@ export class OptimizationView {
             colName: DF_OPTIONS.ALL_COLUMNS as string,
             colValue: 0,
           },
-          isInterest: new BehaviorSubject<boolean>(this.targetCount === 1),
+          isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
         };
         $(temp.input.input).css('visibility', 'hidden');
 
@@ -331,7 +329,6 @@ export class OptimizationView {
     min: 1,
     step: 10,
     value: this.samplesCount,
-    tooltipText: 'Number of the function evaluations',
     showPlusMinus: true,
   });
 
@@ -339,7 +336,6 @@ export class OptimizationView {
   private optTypeInput = ui.input.radio('Goal', {
     value: this.optType,
     items: [OPTIMIZATION_TYPE.MAX as string, OPTIMIZATION_TYPE.MIN as string],
-    tooltipText: 'Type of optimization',
   });
 
   private methodSettingsDiv = ui.divV([ui.label('TO BE ADDED')]); // HERE, TO ADD UI for modifying optimizer settings
@@ -557,8 +553,8 @@ export class OptimizationView {
   }
 
   private addTooltips(): void {
-    // samples count
     this.samplesCountInput.setTooltip('Number of the function evaluations');
+    this.optTypeInput.setTooltip('Type of optimization');
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
@@ -603,9 +599,9 @@ export class OptimizationView {
       return;
 
     if (this.targetCount > 1)
-      await this.runMonteCarloOptimization();
+      await this.runMonteCarloMethod();
     else
-      await this.runMonteCarloOptimization(); // TODO: to replace it by Leonid's optimizer
+      await this.runNelderMeadMethod();
   }
 
   private getFixedInputColumns(rowCount: number): DG.Column[] {
@@ -643,7 +639,8 @@ export class OptimizationView {
     });
   }
 
-  private async runMonteCarloOptimization() {
+  /** Perform Monte Carlo analysis */
+  private async runMonteCarloMethod() {
     const options = {
       func: this.func,
       fixedInputs: this.getFixedInputs().map((propName) => ({
@@ -756,7 +753,70 @@ export class OptimizationView {
 
       grok.shell.o = overviewPanel.root;
     });
-  }
+  } // runMonteCarloMethod
+
+  /** Perform Nelder-Mead method */
+  private async runNelderMeadMethod() {
+    // inputs of the source function
+    const inputs: any = {};
+
+    // add fixed inputs
+    this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+    console.log('inputs');
+    console.log(inputs);
+
+    // get varied inputs, optimization is performed with respect to them
+    const variedInputs = this.getVariedInputs();
+    const dim = variedInputs.length;
+
+    // varied inputs specification
+    const variedInputNames = [] as string[];
+    const minVals = new Float64Array(dim);
+    const maxVals = new Float64Array(dim);
+
+    // set varied inputs specification
+    variedInputs.forEach((name, idx) => {
+      const propConfig = this.store.inputs[name] as SensitivityNumericStore;
+      minVals[idx] = propConfig.min.value;
+      maxVals[idx] = propConfig.max.value;
+      variedInputNames.push(name);
+    });
+
+    console.log('variedInputNames');
+    console.log(variedInputNames);
+
+    console.log('minVals');
+    console.log(minVals);
+
+    console.log('maxVals');
+    console.log(maxVals);
+
+    // get selected output
+    const outputsOfInterest = this.getOutputsOfInterest();
+    console.log(`outputsOfInterest:`);
+    console.log(outputsOfInterest);
+    if (outputsOfInterest.length !== 1) {
+      grok.shell.error('No output is selected for optimization.');
+      return;
+    }
+    const outputName = outputsOfInterest[0].prop.name;
+    console.log(`outputName: ${outputName}`);
+
+    // for maximization
+    const multiplier = (this.optType === OPTIMIZATION_TYPE.MIN) ? 1 : -1;
+    console.log(`multiplier: ${multiplier}`);
+
+    /** Cost function to be optimized */
+    const costFunc = async (x: Float64Array): Promise<number> => {
+      x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+      const funcCall = this.func.prepare(inputs);
+      const calledFuncCall = await funcCall.call();
+
+      return multiplier * calledFuncCall.getParamValue(outputName);
+    };
+
+    console.log('=================================================================================');
+  } // runNelderMeadMethod
 
   private getOutputNameForScatterPlot(names: string[], table: DG.DataFrame, start: number): string {
     for (let i = start; i < names.length; ++i) {
