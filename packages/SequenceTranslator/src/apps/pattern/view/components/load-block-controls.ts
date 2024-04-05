@@ -1,6 +1,9 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {OTHER_USERS} from '../../model/const';
+import {
+  EXAMPLE_PATTERN_CONFIG, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R
+} from '../../model/const';
 import {SubscriptionManager} from '../../model/subscription-manager';
 
 import '../style.css';
@@ -8,8 +11,8 @@ import '../style.css';
 import {StringInput} from '../types';
 
 import $ from 'cash-dom';
-import {EventBus} from '../../model/event-bus';
 import {DataManager} from '../../model/data-manager';
+import {EventBus} from '../../model/event-bus';
 
 export class PatternLoadControlsManager {
   private subscriptions = new SubscriptionManager();
@@ -95,7 +98,9 @@ export class PatternLoadControlsManager {
 
   private createUserChoiceInput(): StringInput {
     const currentUser = this.dataManager.getCurrentUserName();
-    const possibleValues = [currentUser + ' (me)', OTHER_USERS];
+    const possibleValues = [currentUser + ' (me)'];
+    if (this.dataManager.getOtherUsersPatternNames().length > 0)
+      possibleValues.push(OTHER_USERS);
 
     const userChoiceInput = ui.choiceInput(
       'Author',
@@ -158,7 +163,13 @@ export class PatternLoadControlsManager {
   private createDeletePatternButton(): HTMLButtonElement {
     const button = ui.button(
       ui.iconFA('trash-alt'),
-      () => this.showDeletePatternDialog()
+      () => {
+        if (this.selectedPattern === EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG][L.PATTERN_NAME]) {
+          grok.shell.warning('Cannot delete example pattern');
+          return;
+        }
+        this.showDeletePatternDialog();
+      }
     );
 
     ui.tooltip.bind(button, 'Delete pattern from user storage');

@@ -65,18 +65,15 @@ export class DataManager {
       this.currentUserPatternNameToHash.get(patternName) :
       this.otherUsersPatternNameToHash.get(patternName);
 
-    // console.warn('pattern data', patternName, isCurrentUserPattern, patternHash);
-
-    if (patternHash === undefined) {
-      // console.warn('pattern data', patternName, isCurrentUserPattern, patternHash);
+    if (patternHash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
-    }
+
 
     return patternHash;
   }
 
   async getPatternConfig(hash: string | null): Promise<PatternConfiguration> {
-    if (hash === null)
+    if (hash === null || hash === '')
       return this.getDefaultPattern();
 
     const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
@@ -136,8 +133,7 @@ export class DataManager {
   }
 
   private getHash(patternConfig: PatternConfiguration): string {
-    // WARNING: hash is computed over the graph settings only, as defining the
-    // pattern's identity
+    // WARNING: hash is computed over the graph settings only, as the ones defining the pattern's identity
     const graphSettings = GKL.reduce((acc, key) => {
       acc[key] = patternConfig[key as keyof PatternConfiguration];
       return acc;
@@ -174,6 +170,8 @@ export class DataManager {
     eventBus: EventBus
   ): Promise<void> {
     const hash = this.currentUserPatternNameToHash.get(patternName);
+    if (hash === '')
+      throw new Error(`Cannot delete default pattern`);
     if (hash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
     await grok.dapi.userDataStorage.remove(STORAGE_NAME, hash, false);
@@ -216,6 +214,13 @@ export class DataManager {
 
     for (const [patternHash, stringifiedRecord] of Object.entries(patternRecords))
       await this.extractDataFromRecordToMaps(patternHash, stringifiedRecord, userIdsToUserNames);
+
+    this.setDefaultPattern();
+  }
+
+  private setDefaultPattern(): void {
+    const defaultPatternConfig = EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG] as PatternConfiguration;
+    this.currentUserPatternNameToHash.set(defaultPatternConfig[L.PATTERN_NAME], '');
   }
 
   private async extractDataFromRecordToMaps(
