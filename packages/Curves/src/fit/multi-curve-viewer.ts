@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
-import {FitChartCellRenderer} from './fit-renderer';
+import {FitChartCellRenderer, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
 import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
@@ -15,6 +15,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   showSelectedRowsCurves: boolean = false;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
+  mergeColumnSeries: boolean = false;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
 
@@ -26,6 +27,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
+    this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
 
     for (const p of fitChartDataProperties)
       this.addProperty(p.name, p.propertyType, p.defaultValue, p.options);
@@ -56,13 +58,19 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
     this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
-    for (const colName of this.curvesColumnNames!)
-      for (let i of this.rows) {
+    for (const colName of this.curvesColumnNames!) {
+      const series = [];
+      for (const i of this.rows) {
         const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
         const cellCurves = getChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
-        this.data.series?.push(...cellCurves.series!);
+        series.push(...cellCurves.series!);
       }
+      if (this.mergeColumnSeries)
+        this.data.series?.push(mergeSeries(series)!);
+      else
+        this.data.series?.push(...series);
+    }
   }
 
   onPropertyChanged(property: DG.Property | null): void {
