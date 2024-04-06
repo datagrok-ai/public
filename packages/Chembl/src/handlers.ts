@@ -10,16 +10,20 @@ export class ChemblIdHandler extends DG.ObjectHandler {
     return x instanceof DG.SemanticValue && x.semType == 'CHEMBL_ID';
   }
 
-  renderCard(x: any) {
+  renderInnerCard(x: any) {
     const id = (x as SemanticValue).value;
     return ui.divV([
-      id,
+      ui.h3(id),
       ui.wait(async () => ui.bind(x, grok.chem.drawMolecule(await grok.functions.call('Chembl:chemblIdToSmiles', {id: id}))))
-    ]);
+    ], { style: { width: '220px', height: '150px' }});
+  }
+
+  renderCard(x: any) {
+    return ui.card(this.renderInnerCard(x));
   }
 
   renderTooltip(x: any, context?: any): HTMLElement {
-    return this.renderCard(x);
+    return this.renderInnerCard(x);
   }
 
   renderProperties(x: any, context?: any): HTMLElement {

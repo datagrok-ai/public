@@ -60,11 +60,26 @@ function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
 
 
 function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
-  var ids = s.split(/,\s*/);
-  var semValues = ids.map(id => DG.SemanticValue.parse(id));
+  const ids = s.split(/,\s*/);
+  const semValues = ids.map(id => DG.SemanticValue.parse(id));
+  if (semValues.length < 1 || semValues[0]?.semType == null)
+    return;
+
   if (semValues.every(sv => sv?.semType && sv.semType == semValues[0].semType) && DG.ObjectHandler.forEntity(semValues[0])) {
+    const itemsPanel = ui.div([], {style: {'display': 'flex', 'flex-wrap': 'wrap'}});
+    const panel = ui.divV([
+      ui.span([
+        `${semValues.length} ${semValues[0].semType} ${semValues.length == 1 ? 'object. ' : 'objects. '}`,
+        ui.link('Open table', () => {
+          const df = DG.DataFrame.create(semValues.length);
+          df.columns.addNewString(semValues[0].semType).init(i => semValues[i].value);
+          grok.shell.addTable(df);
+        })], {style: {'margin-bottom': '10px'}}),
+      itemsPanel
+    ]);
     for (let sv of semValues)
-      host.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
+      itemsPanel.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
+    host.append(panel);
   }
 }
 
