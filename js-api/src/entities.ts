@@ -271,6 +271,12 @@ export class Func extends Entity {
     return (await (this.prepare(parameters)).call()).getOutputParamValue();
   }
 
+  /** Executes the function synchronously, and returns the result.
+   *  If the function is asynchronous, throws an exception. */
+  applySync(parameters: {[name: string]: any} = {}): any {
+    return this.prepare(parameters).callSync().getOutputParamValue();
+  }
+
   /** Returns functions with the specified attributes. */
   static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Func[] {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);

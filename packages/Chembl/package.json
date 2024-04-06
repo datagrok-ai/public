@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.16.0",
+    "datagrok-api": "^1.18.0",
     "file-loader": "^6.2.0",
     "ts-loader": "latest",
     "typescript": "latest"
@@ -32,6 +32,7 @@
     "@datagrok/chem": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "build": "webpack",
@@ -45,5 +46,16 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "meta": {
+    "semanticTypes": [
+      {
+        "semType": "CHEMBL_ID",
+        "description": "Compound id in the CHEMBL database",
+        "parsers": [{
+          "regexp": "CHEMBL\\d+"
+        }]
+      }
+    ]
+  }
 }

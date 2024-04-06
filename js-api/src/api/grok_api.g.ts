@@ -846,6 +846,7 @@ export interface IDartApi {
   grok_SemanticValue_Set_Meta(v: any, name: String, value: any): any;
   grok_SemanticValue_FromTableCell(cell: any): any;
   grok_SemanticValue_FromGridCell(cell: any): any;
+  grok_SemanticValue_Parse(s: String): any;
   grok_EntityType_Create(name: String, matching: String): any;
   grok_EntityType_Get_Name(et: any): any;
   grok_EntityType_Set_Name(et: any, s: String): any;
@@ -1178,6 +1179,7 @@ export interface IDartApi {
   grok_Meta_ForEntity(entity: any): any;
   grok_Meta_ForSemType(semType: String, resolve: any, reject: any): any;
   grok_Meta_Get_Type(meta: any): any;
+  grok_Meta_IsApplicable(meta: any, x: any): any;
   grok_Meta_Get_Name(meta: any, x: any): any;
   grok_Meta_RenderIcon(meta: any, x: any): any;
   grok_Meta_RenderMarkup(meta: any, x: any): any;
@@ -1421,6 +1423,7 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
+  grok_InfoPanels_GetAccordion(x: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

@@ -27,6 +27,7 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
+  regexEntitiesSearch(s, host);
   projectsSearch(s, host);
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
@@ -56,6 +57,17 @@ function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
   s = s.toLowerCase();
   host.appendChild(ui.list(queries.filter((q) => q.name.toLowerCase().includes(s))));
 }
+
+
+function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
+  var ids = s.split(/,\s*/);
+  var semValues = ids.map(id => DG.SemanticValue.parse(id));
+  if (semValues.every(sv => sv?.semType && sv.semType == semValues[0].semType) && DG.ObjectHandler.forEntity(semValues[0])) {
+    for (let sv of semValues)
+      host.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
+  }
+}
+
 
 function projectsSearch(s: string, host: HTMLDivElement): void {
   if (s.length < 3)

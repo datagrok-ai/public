@@ -41,7 +41,7 @@
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "link-all": "npm link datagrok-api  @datagrok-libraries/utils",
-    "link-api": "npm link datagrok-api ",
+    "link-api": "npm link datagrok-api",
     "link-tools": "npm link datagrok-tools",
     "link-utils": "npm link @datagrok-libraries/utils",
     "debug-powerpack": "webpack && grok publish localhost --release",
