@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.6 (2024-04-07)
+
+### Bug fixes
+
+* Fix detectMacromolecule to invalidate on custom notation
+
 ## 2.12.5 (2024-04-05)
 
 ### Features

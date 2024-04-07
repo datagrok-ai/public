@@ -30,6 +30,12 @@ const ALIGNMENT = {
   SEQ: 'SEQ',
 };
 
+const SeqTemps = {
+  seqHandler: `seq-handler`,
+  notationProvider: `seq-handler.notation-provider`,
+};
+
+
 /** Class for handling notation units in Macromolecule columns */
 const SeqHandler = {
   TAGS: {
@@ -121,10 +127,13 @@ class BioPackageDetectors extends DG.Package {
     return last;
   }
 
+  /** Detector MUST NOT be async, causes error:
+   *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
+   */
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  async detectMacromolecule(col) {
+  detectMacromolecule(col) {
     const tableName = col.dataFrame ? col.dataFrame.name : null;
     this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
@@ -292,7 +301,7 @@ class BioPackageDetectors extends DG.Package {
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
 
-        await refineSeqSplitter(col, stats, separator);
+        refineSeqSplitter(col, stats, separator).then(() => { });
 
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -304,8 +313,9 @@ class BioPackageDetectors extends DG.Package {
       this.logger.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}` +
         `${errStack ? '\n' + errStack : ''}` + `\n${colTops}`);
     } finally {
-      const t2 = Date.now();
-      this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
+      // Prevent too much log spam
+      // const t2 = Date.now();
+      // this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
     }
   }
 
@@ -407,12 +417,10 @@ class BioPackageDetectors extends DG.Package {
     for (const seq of values) {
       const mSeq = !!seq ? splitter(seq) : [];
 
-      if (firstLength === null) {
-        //
+      if (firstLength === null)
         firstLength = mSeq.length;
-      } else if (mSeq.length !== firstLength) {
+      else if (mSeq.length !== firstLength)
         sameLength = false;
-      }
 
       if (mSeq.length >= minLength) {
         for (const m of mSeq) {
@@ -440,9 +448,8 @@ class BioPackageDetectors extends DG.Package {
     if (maxSim > 0) {
       const sim = candidatesSims.find((cs) => cs[4] === maxSim);
       alphabetName = sim[0];
-    } else {
+    } else
       alphabetName = ALPHABET.UN;
-    }
     return alphabetName;
   }
 
@@ -591,10 +598,22 @@ class BioPackageDetectors extends DG.Package {
 }
 
 async function refineSeqSplitter(col, stats, separator) {
+  let invalidateRequired = false;
   const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
   if (isCyclized) {
-    await grok.functions.call('Bio:applyNotationProviderForCyclized',
-      {col: col, separator: separator});
-    return;
+    await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
+    // SeqHandler will be recreated and replaced with the next call .forColumn()
+    // because of changing tags of the column
+    invalidateRequired = true;
+  }
+
+  if (invalidateRequired) {
+    // Applying custom notation provider MUST invalidate SeqHandler
+    delete col.temp[SeqTemps.seqHandler];
+
+    for (const view of grok.shell.tableViews) {
+      if (view.dataFrame === col.dataFrame)
+        view.grid.invalidate();
+    }
   }
 }
