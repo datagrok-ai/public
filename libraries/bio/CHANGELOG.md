@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.40.2 (2024-04-07)
+
+### Bug fixes
+
+Bio: Fix SeqHandler for column version
+
 ## 5.40.1 (2024-04-05)
 
 ### Features
