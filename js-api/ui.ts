@@ -1105,6 +1105,10 @@ export class tools {
     element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
   }[] = [];
 
+  /** Finds entities (such as "CHEMBL25") in the specified html element, and converts
+   * them to hyperlinks */
+  //static void annotateEntities(element: HTMLElement) { }
+
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
     let height = element.clientHeight;

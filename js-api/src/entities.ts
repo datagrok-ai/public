@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -210,6 +210,7 @@ export class UserSession extends Entity {
   /** User */
   get user(): User { return toJs(api.grok_UserSession_Get_User(this.dart)); }
 }
+
 
 /** Represents a function
  * @extends Entity
