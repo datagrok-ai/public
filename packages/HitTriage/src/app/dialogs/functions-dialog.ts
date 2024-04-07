@@ -19,7 +19,6 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
-  //const scripts = (await DG.Script.findAll({tags: [HitTriageComputeFunctionTag]})).filter((s) => s.type === 'script')
   const scripts: HitTriageTemplateScript[] = computeFunctions.scripts
     .filter(({inputs: i}) => i.length >= 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((s) => ({name: s.name, id: s.id, args: template?.compute?.scripts?.find((ts) => ts.id === s.id)?.args ?? {}}));

@@ -282,7 +282,9 @@ export class Func extends Entity {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);
   }
 
-  /** Returns functions (including queries and scripts) with the specified attributes. */
+  /**
+   * @deprecated Use find, it's the same now but does not make a server query and synchronous.
+   */
   static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
     let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
