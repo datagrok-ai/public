@@ -8,6 +8,7 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
+import {ReportsView} from "./tabs/reports";
 
 export const _package = new DG.Package();
 
@@ -19,6 +20,21 @@ export function usageAnalysisApp(): void {
     ViewHandler.getInstance().init();
   else
     grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
+}
+
+//name: initWithReportId
+//input: string reportNumber
+export function initWithReportId(reportNumber: string): void {
+  function setReports(): void {
+    ViewHandler.getInstance().setUrlParam('report-number', reportNumber, true);
+    ViewHandler.changeTab('Reports');
+  }
+  if (grok.shell.sidebar.panes.every((p) => p.name !== ViewHandler.UAname))
+    ViewHandler.getInstance().init().then(() => setReports());
+  else {
+    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
+    setReports();
+  }
 }
 
 //name: Test Track

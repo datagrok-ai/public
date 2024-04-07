@@ -47,7 +47,6 @@ export class ViewHandler {
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('groups');
     const paramsHavePackages = params.has('packages');
-    const paramsHaveReport = params.has('report');
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
