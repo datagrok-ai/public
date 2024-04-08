@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.7 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+
 ## 2.12.6 (2024-04-07)
 
 ### Bug fixes
