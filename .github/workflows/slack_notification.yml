@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps: slack_notification
       - name: Prepare Slack Message
-        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
         id: slack-prepare
         shell: bash
         env:
