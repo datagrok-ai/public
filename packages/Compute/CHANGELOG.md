@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.30.1 (2024-04-08)
+
+### Bug fixes
+
+- RFV: Default export properly works with nulls
+
 ## 1.30.0 (2024-04-08)
 
 ### Features
