@@ -29,10 +29,11 @@ export function solve(problem: ODEs): DG.DataFrame {
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
 //tags: app
-export async function runDiffStudio(): Promise<void> {
+//output: view v
+export async function runDiffStudio(): Promise<DG.ViewBase> {
   //await runSolverApp();
-  const solver = new DiffStudio();
-  await solver.runSolverApp();
+  const solver = new DiffStudio(false);
+  return await solver.runSolverApp();
 }
 
 //name: Diff Studio Demo
