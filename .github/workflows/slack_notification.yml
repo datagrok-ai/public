@@ -5,16 +5,21 @@ on:
       slack_header:  # id of input
         required: false
         default: ''
+        type: string
       slack_context:
         required: false
         default: ''
+        type: string
       slack_message_body:
         default: ''
         required: false
+        type: string
       slack_id:
         required: true
+        type: string
       slack_token:
         required: true
+        type: string
 
 jobs:
   slack_notification:
