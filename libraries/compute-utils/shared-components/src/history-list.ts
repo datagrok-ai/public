@@ -6,23 +6,17 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
-import {EXPERIMENTAL_TAG, storageName} from '../../shared-utils/consts';
+import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
+  DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
+  FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
+  , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-
-const EXP_COLUMN_NAME = 'Source';
-const FAVORITE_COLUMN_NAME = 'Is favorite';
-const ACTIONS_COLUMN_NAME = 'Delete';
-
-const AUTHOR_COLUMN_NAME = 'Author';
-const STARTED_COLUMN_NAME = 'Started';
-const TITLE_COLUMN_NAME = 'Title';
-const DESC_COLUMN_NAME = 'Desc.';
-const TAGS_COLUMN_NAME = 'Tags';
+import {camel2title, extractStringValue, getMainParams} from '../../shared-utils/utils';
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
 const getColumnName = (key: string) => {
-  return `${key[0].toUpperCase()}${key.substring(1)}`;
+  return camel2title(key);
 };
 
 const runCache = new DG.LruCache<string, DG.FuncCall>();
@@ -36,30 +30,59 @@ export class HistoricalRunsList extends DG.Widget {
     acc.set(run.id, run);
     return acc;
   }, new Map<string, DG.FuncCall>));
-  private onRunsDfChanged = new BehaviorSubject<DG.DataFrame>(DG.DataFrame.fromColumns([
-    DG.Column.bool(EXP_COLUMN_NAME, 0),
-    ...this.options.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
-    ...this.options.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
-    DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
-    DG.Column.string(AUTHOR_COLUMN_NAME, 0),
-    DG.Column.string(TAGS_COLUMN_NAME, 0),
-    DG.Column.string(TITLE_COLUMN_NAME, 0),
-    DG.Column.string(DESC_COLUMN_NAME, 0),
-    ...this.visibleProps
-      .map((column) => DG.Column.fromStrings(getColumnName(column), [])),
-    DG.Column.fromStrings(ID_COLUMN_NAME, []),
-  ]));
+  private _onRunsDfChanged = new BehaviorSubject<DG.DataFrame>(
+    DG.DataFrame.fromColumns([
+      DG.Column.bool(EXP_COLUMN_NAME, 0),
+      ...this.options?.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
+      ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+      DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
+      DG.Column.string(AUTHOR_COLUMN_NAME, 0),
+      DG.Column.string(TAGS_COLUMN_NAME, 0),
+      DG.Column.string(TITLE_COLUMN_NAME, 0),
+      DG.Column.string(DESC_COLUMN_NAME, 0),
+      DG.Column.fromStrings(ID_COLUMN_NAME, []),
+    ]));
 
-  private _historyFilters = DG.Viewer.filters(this.onRunsDfChanged.value,
+  public get onRunsDfChanged() {
+    return this._onRunsDfChanged.asObservable();
+  }
+
+  private _historyFilters = DG.Viewer.filters(this._onRunsDfChanged.value,
     {title: 'Filters', columnNames: [] as string[]});
   private _historyGrid = DG.Viewer.grid(
-    this.onRunsDfChanged.value,
+    this._onRunsDfChanged.value,
     {showRowHeader: false, showColumnGridlines: false, allowEdit: false},
   );
 
   public onComparisonCalled = new Subject<string[]>();
   public onMetadataEdit = new Subject<DG.FuncCall>();
-  public onClicked = new Subject<DG.FuncCall>();
+  private _onChosen = new BehaviorSubject<DG.FuncCall | null>(null);
+  public get onChosen() {
+    return this._onChosen.asObservable();
+  }
+
+  public get chosen() {
+    return this._onChosen.value;
+  }
+
+  public set chosen(val: DG.FuncCall | null) {
+    this.chosenById = val?.id ?? null;
+  }
+
+  public set chosenById(id: string | null) {
+    if (!id) {
+      this.currentDf.currentRowIdx = -1;
+      return;
+    }
+
+    for (let i = 0; i < this.currentDf.rowCount; i++) {
+      if (this.currentDf.getCol(ID_COLUMN_NAME).get(i) === id) {
+        this.currentDf.currentRowIdx = i;
+        break;
+      }
+    }
+  }
+
   public onDelete = new Subject<DG.FuncCall>();
 
   private _onSelectedChanged = new BehaviorSubject<Set<DG.FuncCall>>(new Set([]));
@@ -93,7 +116,7 @@ export class HistoricalRunsList extends DG.Widget {
     const editDialog = new HistoricalRunEdit(funcCall, isFavorite);
 
     const onEditSub = editDialog.onMetadataEdit.subscribe(async (editOptions) => {
-      if (!this.options.isHistory)
+      if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
         return ((editOptions.favorite !== 'same') ?
@@ -124,10 +147,9 @@ export class HistoricalRunsList extends DG.Widget {
 
   private layout = ui.splitH([], null, true);
 
-  private defaultGridText = ui.divV([
-    ui.element('div', 'splitbar-horizontal'),
-    ui.divText(this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label'),
-  ]);
+  private defaultGridText = ui.divText(
+    this.options?.fallbackText ?? 'No historical runs found', 'hp-no-elements-label',
+  );
 
   private defaultFiltersText = ui.divText('No filters to show', 'hp-no-elements-label');
 
@@ -136,37 +158,45 @@ export class HistoricalRunsList extends DG.Widget {
     this._historyFilters.root,
   ], 'ui-box');
 
+  private visibleProps(func: DG.Func) {
+    return this.options?.visibleProps ?? getMainParams(func) ?? func.inputs
+      .filter((input) => SUPPORTED_COL_TYPES.includes(input.propertyType as any))
+      .map((prop) => prop.name);
+  };
+
   constructor(
     private readonly initialRuns: DG.FuncCall[],
-    private visibleProps: string[] = [],
-    private readonly options: {
+    private options?: {
+      // FuncCall props (inputs, outputs, options) to be visible. By default, all input params will be visible.
+      // You may add outputs and/or options.
+      visibleProps?: string[],
+      // Text to show if no runs has been found
       fallbackText?: string,
+      // Flag to show per-element edit and delete actions. Default is false
       showActions?: boolean,
+      // Flag to show delete and compare actions. Default is false
       showBatchActions?: boolean,
-      // Used in the only place to avoid bug
-      isHistory?: boolean
-    } = {
-      showActions: true,
-      showBatchActions: true,
-      isHistory: false,
+      // Flag used in HistoryPanel. Default is false
+      isHistory?: boolean,
+      // Custom mapping between prop name and it's extraction logic. Default is empty
+      propFuncs?: Record<string, (currentRun: DG.FuncCall) => string>
     }) {
     super(ui.div([], {style: {height: '100%', width: '100%'}}));
 
-    this.root.appendChild(this.defaultGridText);
-
     const batchActions = ui.divH([
       ui.divH([
-        ...options.isHistory ? [this.toggleCompactMode]: [],
+        ...options?.isHistory ? [this.toggleCompactMode]: [],
         this.showFiltersIcon, this.showMetadataIcon.root, this.showInputsIcon.root,
       ], {style: {'gap': '5px', 'padding': '5px'}}),
-      ui.divH([
-        this.trashIcon, this.compareIcon,
-      ], {style: {'gap': '5px', 'padding': '5px'}}),
+      ui.divH(
+        this.options?.showBatchActions ? [this.trashIcon, this.compareIcon]: [],
+        {style: {'gap': '5px', 'padding': '5px'}}),
     ], {style: {'justify-content': 'space-between', 'padding': '0px 5px'}});
     batchActions.style.setProperty('overflow-y', 'hidden', 'important');
 
     const gridWithControls = ui.divV([
-      ...this.options.showBatchActions ? [batchActions]:[],
+      this.defaultGridText,
+      batchActions,
       this._historyGrid.root,
     ], 'ui-box');
     $(gridWithControls).removeClass('ui-div');
@@ -183,19 +213,6 @@ export class HistoricalRunsList extends DG.Widget {
     const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
       const newRuns = [...runs.values()];
 
-      const extractStringValue = (run: DG.FuncCall, key: string) => {
-        if (key === AUTHOR_COLUMN_NAME) return run.author?.friendlyName ?? grok.shell.user.friendlyName;
-
-        const val =
-        (run as any)[key] ??
-        run.inputs[key] ??
-        run.outputs[key] ??
-        run.options[key] ??
-        null;
-
-        return val?.toString() ?? '';
-      };
-
       const getColumnByProp = (prop: DG.Property) => {
         if (prop.propertyType === DG.TYPE.DATE_TIME) {
           return DG.Column.dateTime(prop.caption ?? getColumnName(prop.name), newRuns.length)
@@ -207,7 +224,10 @@ export class HistoricalRunsList extends DG.Widget {
           prop.propertyType as any,
           prop.caption ?? getColumnName(prop.name),
           newRuns.length,
-        ).init((idx) => extractStringValue(newRuns[idx], prop.name));
+        ).init((idx) =>
+          (this.options?.propFuncs?.[prop.name])?.(newRuns[idx]) ??
+          extractStringValue(newRuns[idx], prop.name),
+        );
       };
 
       const getColumnByName = (key: string) => {
@@ -217,7 +237,10 @@ export class HistoricalRunsList extends DG.Widget {
             .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
         }
 
-        return DG.Column.fromStrings(getColumnName(key), newRuns.map((run) => extractStringValue(run, key)));
+        return DG.Column.fromStrings(
+          getColumnName(key),
+          newRuns.map((run) => (this.options?.propFuncs?.[key])?.(run) ?? extractStringValue(run, key)),
+        );
       };
 
       if (runs.size > 0) {
@@ -227,25 +250,25 @@ export class HistoricalRunsList extends DG.Widget {
 
         const func = [...this.runs.values()][0].func;
 
-        const getMainInputs = (): string[] | null => {
-          return func.options['mainInputs'] ? JSON.parse(func.options['mainInputs']): null;
+        const getColumn = (key: string) => {
+          const prop =
+          func.inputs.find((prop) => prop.name === key) ??
+          func.outputs.find((prop) => prop.name === key);
+          if (prop)
+            return getColumnByProp(prop);
+          else
+            return getColumnByName(key);
         };
-
-        if (this.visibleProps.length === 0) {
-          this.visibleProps = (this.options.isHistory ? getMainInputs(): null) ?? func.inputs
-            .filter((input) => SUPPORTED_COL_TYPES.includes(input.propertyType as any))
-            .map((prop) => prop.name);
-        }
 
         const newRunsGridDf = DG.DataFrame.fromColumns([
           DG.Column.string(EXP_COLUMN_NAME, newRuns.length).init((idx) => {
             const immutableTags = newRuns[idx].options['immutable_tags'] as string[];
             return immutableTags && immutableTags.includes(EXPERIMENTAL_TAG) ? 'Experimental': 'Simulated';
           }),
-          ...this.options.isHistory ?
+          ...this.options?.isHistory ?
             [DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
               .init((idx) => favorites.includes(newRuns[idx].id))]: [],
-          ...this.options.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
+          ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
           getColumnByName(STARTED_COLUMN_NAME),
           getColumnByName(AUTHOR_COLUMN_NAME),
           DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
@@ -253,7 +276,7 @@ export class HistoricalRunsList extends DG.Widget {
           ),
           DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
           DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
-          ...this.visibleProps.map((key) => getColumnByProp(func.inputs.find((prop) => prop.name === key)!)),
+          ...this.visibleProps(func).map((key) => getColumn(key)),
           DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)),
         ]);
 
@@ -269,7 +292,7 @@ export class HistoricalRunsList extends DG.Widget {
           this.showFiltersIcon,
         ], true);
 
-        this.onRunsDfChanged.next(newRunsGridDf);
+        this._onRunsDfChanged.next(newRunsGridDf);
       } else {
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], true);
         ui.setDisplayAll([
@@ -285,7 +308,7 @@ export class HistoricalRunsList extends DG.Widget {
       }
     });
 
-    const runDfChangedSub = this.onRunsDfChanged.subscribe((newRunsGridDf) => {
+    const runDfChangedSub = this._onRunsDfChanged.subscribe((newRunsGridDf) => {
       this._historyFilters.dataFrame = newRunsGridDf;
       this._historyGrid.dataFrame = newRunsGridDf;
 
@@ -296,15 +319,10 @@ export class HistoricalRunsList extends DG.Widget {
 
       const currentDfSub = newRunsGridDf.onCurrentRowChanged.subscribe(() => {
         this.currentDf.rows.select(() => false);
-        // Filtering out header clicks
-        const currentRowIdx = this.currentDf.currentRowIdx;
-        if (currentRowIdx >= 0)
-          this.onClicked.next(this.getRunByIdx(currentRowIdx));
+        this._onChosen.next(this.getRunByIdx(this.currentDf.currentRowIdx) ?? null);
       });
 
       const selectionSub = newRunsGridDf.onSelectionChanged.subscribe(() => {
-        this._historyGrid.props.showCurrentRowIndicator = (this.currentDf.selection.trueCount < 0);
-
         const selectedCalls: DG.FuncCall[] = [...newRunsGridDf.selection
           .getSelectedIndexes()]
           .map((idx) => this.getRunByIdx(idx)!);
@@ -335,7 +353,6 @@ export class HistoricalRunsList extends DG.Widget {
         gridWithControls,
         this.filterWithText,
       ];
-      $(this.filterWithText).css({paddingTop: '10px'});
       $(this.filterWithText).removeClass('ui-div');
       const styles = {style: {'width': '100%', 'height': '100%'}};
 
@@ -526,7 +543,7 @@ export class HistoricalRunsList extends DG.Widget {
           ev.stopPropagation();
           this.saveIsFavorite(run, false).then(() => this.updateRun(run));
         }, 'Unfavorite');
-        unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+        unfavoriteIcon.classList.add('fas', 'hp-funccall-card-icon');
 
         const addToFavorites = ui.iconFA('star',
           (ev) => {
@@ -557,7 +574,7 @@ export class HistoricalRunsList extends DG.Widget {
             ], 'hp-card-content'),
           ]),
           ui.divH([
-            ...(this.options.showActions) ? [unfavoriteIcon, addToFavorites, editIcon, deleteIcon]: [],
+            ...(this.options?.showActions) ? [unfavoriteIcon, addToFavorites, editIcon, deleteIcon]: [],
           ]),
         ], 'hp-funccall-card');
 
@@ -581,14 +598,19 @@ export class HistoricalRunsList extends DG.Widget {
     return historyUtils.loadRun(id, true)
       .then((loadedRun) => {
         return [
-          (this.options.isHistory) ? historyUtils.deleteRun(loadedRun): Promise.resolve(),
+          (this.options?.isHistory) ? historyUtils.deleteRun(loadedRun): Promise.resolve(),
           loadedRun,
         ] as const;
       })
       .then(([, loadedRun]) => {
         this.runs.delete(id);
         this.onRunsChanged.next(this.runs);
-        if (this.options.isHistory) this.onDelete.next(loadedRun);
+        if (this.options?.isHistory) this.onDelete.next(loadedRun);
+
+        return loadedRun;
+      })
+      .then((loadedRun) => {
+        this.saveIsFavorite(loadedRun, false);
       })
       .catch((e) => {
         grok.shell.error(e);
@@ -660,7 +682,7 @@ export class HistoricalRunsList extends DG.Widget {
     this._isFilterHidden.next(!this._isFilterHidden.value);
   }, 'Toggle filters'), {style: {'padding-top': '4px'}});
 
-  private _compactMode = new BehaviorSubject(this.options.isHistory ?? false);
+  private _compactMode = new BehaviorSubject(this.options?.isHistory ?? false);
   public get compactMode() {
     return this._compactMode.value;
   }
@@ -682,10 +704,10 @@ export class HistoricalRunsList extends DG.Widget {
     this.styleHistoryFilters();
   });
 
-  private showInputsIcon = ui.switchInput('Inputs', false, async (newValue: boolean) => {
+  private showInputsIcon = ui.switchInput('Params', false, async (newValue: boolean) => {
     if (this.runs.size === 0) return;
 
-    if (newValue && this.options.isHistory) {
+    if (newValue && this.options?.isHistory) {
       const fullCalls = await Promise.all(
         [...this.runs.values()].map(async (run) => {
           if (runCache.has(run.id))
@@ -709,6 +731,7 @@ export class HistoricalRunsList extends DG.Widget {
 
   private styleHistoryGrid() {
     this._historyGrid.setOptions({
+      'showCurrentRowIndicator': true,
       'showCurrentCellOutline': false,
       'allowEdit': false,
       'allowBlockSelection': false,
@@ -724,6 +747,8 @@ export class HistoricalRunsList extends DG.Widget {
     }
 
     this.setGridColumnsRendering();
+
+    if (this.runs.size === 0) return;
 
     if (this.compactMode) {
       this._historyGrid.columns.setVisible([ID_COLUMN_NAME]);
@@ -746,19 +771,22 @@ export class HistoricalRunsList extends DG.Widget {
         ...showMetadata && tagCol.stats.missingValueCount < tagCol.length ? [TAGS_COLUMN_NAME]: [],
         ...showMetadata ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata ? [DESC_COLUMN_NAME]: [],
-        ...this.showInputsIcon.value ? this.visibleProps
-          .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
-          // .filter((prop) => {
-          //   return !this.options.isHistory ||
-          //     this.currentDf.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
-          // })
-          .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
+        ...this.showInputsIcon.value ? this.visibleProps(func)
+          .map((key) => {
+            const param = func.inputs.find((prop) => prop.name === key) ??
+            func.outputs.find((prop) => prop.name === key);
+
+            if (param)
+              return param.caption ?? getColumnName(param.name);
+            else
+              return getColumnName(key);
+          }): [],
       ]);
     }
   }
 
   private get currentDf() {
-    return this.onRunsDfChanged.value;
+    return this._onRunsDfChanged.value;
   }
 
   private styleHistoryFilters() {
@@ -783,15 +811,24 @@ export class HistoricalRunsList extends DG.Widget {
         this.currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata &&
         this.currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
-        ...this.showInputsIcon.value ? this.visibleProps
-          .map((visibleCol) => func.inputs.find((input) => input.name === visibleCol)!)
-          .filter((prop) => {
-            return !this.options.isHistory ||
-            this.currentDf.getCol(prop.caption ?? getColumnName(prop.name)).categories.length > 1;
+        ...this.showInputsIcon.value ? this.visibleProps(func)
+          .map((key) => {
+            const param = func.inputs.find((prop) => prop.name === key) ??
+          func.outputs.find((prop) => prop.name === key);
+
+            if (param)
+              return param.caption ?? getColumnName(param.name);
+            else
+              return getColumnName(key);
           })
-          .map((prop) => prop.caption ?? getColumnName(prop.name)): [],
+          .filter((columnName) => {
+            return !this.options?.isHistory ||
+            this.currentDf.getCol(columnName).categories.length > 1;
+          })
+          .map((columnName) => columnName): [],
       ];
       if (columnNames.length > 0) {
+        $(this.filterWithText).css({paddingTop: '10px'});
         ui.setDisplay(this.defaultFiltersText, false);
         ui.setDisplay(this._historyFilters.root, true);
         this._historyFilters.setOptions({columnNames, 'showHeader': false, 'showBoolCombinedFitler': false});
