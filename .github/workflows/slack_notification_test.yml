@@ -5,7 +5,7 @@ on:
 
 
 jobs:
-  Slack_notification_test:
+  slack_notification_test:
     runs-on: ubuntu-latest
     name: slack_notification
     steps:
