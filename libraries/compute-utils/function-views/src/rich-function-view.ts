@@ -1670,9 +1670,9 @@ export class RichFunctionView extends FunctionView {
         if (scalarInputs.length) {
           const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
           scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-            caption: scalarInput.options['caption'] || scalarInput.name,
-            value: lastCall.inputs[scalarInput.name],
-            units: scalarInput.options['units'] || '',
+            caption: scalarInput.options['caption'] ?? scalarInput.name,
+            value: lastCall.inputs[scalarInput.name] ?? '',
+            units: scalarInput.options['units'] ?? '',
           })));
         }
 
@@ -1690,9 +1690,9 @@ export class RichFunctionView extends FunctionView {
         if (scalarOutputs.length) {
           const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
           scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-            caption: scalarOutput.options['caption'] || scalarOutput.name,
-            value: lastCall.outputs[scalarOutput.name],
-            units: scalarOutput.options['units'] || '',
+            caption: scalarOutput.options['caption'] ?? scalarOutput.name,
+            value: lastCall.outputs[scalarOutput.name] ?? '',
+            units: scalarOutput.options['units'] ?? '',
           })));
         }
 
