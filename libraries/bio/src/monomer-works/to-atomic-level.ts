@@ -204,14 +204,17 @@ function getMolGraph(
     const libObject = formattedMonomerLib.get(monomerSymbol);
     const capGroups = parseCapGroups(libObject[HELM_FIELDS.RGROUPS]);
     const capGroupIdxMap = parseCapGroupIdxMap(libObject[HELM_FIELDS.MOLFILE]);
-    const molfileV3K = convertMolfileToV3K(removeRGroupLines(libObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
+    //in case molfile is molV2000 need to convert it to molV3000
+    const molfileV3K = libObject[HELM_FIELDS.MOLFILE].includes('V3000') ? libObject[HELM_FIELDS.MOLFILE] :
+      convertMolfileToV3K(removeRGroupLines(libObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
 
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
     const bonds = parseBondBlock(molfileV3K, counts.bondCount);
     const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+    const steabs = getAbsStereocenters(molfileV3K);
 
-    const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
+    const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta, stereoAtoms: steabs};
 
     if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
@@ -230,6 +233,22 @@ function getMolGraph(
 
     return monomerGraph;
   }
+}
+
+function getAbsStereocenters(molfileV3K: string): number[] {
+  let collection: number[] = [];
+  let indexCollection = molfileV3K.indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
+
+  while (indexCollection !== -1) {
+    indexCollection += 28;
+    const collectionEnd = molfileV3K.indexOf(')', indexCollection);
+    //using slice(1) because first digit in brackets is a number of stereo atoms
+    collection = collection.concat(molfileV3K.substring(indexCollection, collectionEnd).split(' ')
+      .slice(1).map((it) => parseInt(it)));
+    indexCollection = collectionEnd;
+    indexCollection = molfileV3K.indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
+  }
+  return collection;
 }
 
 function setShiftsAndTerminalNodes(
@@ -476,9 +495,14 @@ export function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
 /** Constructs mapping of r-group nodes to default capGroups, all numeration starting from 1.
  * According to https://pubs.acs.org/doi/10.1021/ci3001925, R1 and R2 are the chain extending attachment points,
  * while R3 is the branching attachment point.
- * @param {string} molfileV2K - V2000 molfile
+ * @param {string} molfile - V2000 or V3000 molfile
  * @return {Map<number, number>} - Map of r-group nodes to default capGroups*/
-export function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
+export function parseCapGroupIdxMap(molfile: string): Map<number, number> {
+  const isMolV3K = molfile.includes('V3000');
+  return isMolV3K ? parseCapGroupIdxMapV3K(molfile) : parseCapGroupIdxMapV2K(molfile);
+}
+
+export function parseCapGroupIdxMapV2K(molfileV2K: string): Map<number, number> {
   const capGroupIdxMap = new Map<number, number>();
 
   // parse A-lines (RNA)
@@ -518,6 +542,22 @@ export function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
     }
     begin = molfileV2K.indexOf(C.V2K_RGP_LINE, end);
   }
+  return capGroupIdxMap;
+}
+
+export function parseCapGroupIdxMapV3K(molfileV3K: string): Map<number, number> {
+  const capGroupIdxMap = new Map<number, number>();
+  const regex = /M  V30 (\d+) R#.+RGROUPS=\((\d+) (\d+)\).*/gm;
+  let res;
+  while ((res = regex.exec(molfileV3K)) !== null) {
+      // This is necessary to avoid infinite loops with zero-width matches
+      if (res.index === regex.lastIndex) {
+          regex.lastIndex++;
+      }     
+      // index 1 matches array is the atom number, index 3 is R group number
+      capGroupIdxMap.set(parseInt(res[1]), parseInt(res[3]));
+  }
+  
   return capGroupIdxMap;
 }
 
@@ -1079,7 +1119,8 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
     const capGroups = parseCapGroups(monomerLibObject[HELM_FIELDS.RGROUPS]);
     const capGroupIdxMap = parseCapGroupIdxMap(monomerLibObject[HELM_FIELDS.MOLFILE]);
 
-    const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomerLibObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
+    const molfileV3K = monomerLibObject[HELM_FIELDS.MOLFILE].includes('V3000') ? monomerLibObject[HELM_FIELDS.MOLFILE] :
+      convertMolfileToV3K(removeRGroupLines(monomerLibObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
 
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
@@ -1105,7 +1146,8 @@ export function capPeptideMonomer(monomer: Monomer): string {
 
   const capGroups = parseCapGroups(monomer[HELM_FIELDS.RGROUPS]);
   const capGroupIdxMap = parseCapGroupIdxMap(monomer[HELM_FIELDS.MOLFILE]);
-  const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
+  const molfileV3K = monomer[HELM_FIELDS.MOLFILE].includes('V3000') ? monomer[HELM_FIELDS.MOLFILE] :
+    convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
   const counts = parseAtomAndBondCounts(molfileV3K);
 
   const atoms = parseAtomBlock(molfileV3K, counts.atomCount);

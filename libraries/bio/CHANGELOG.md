@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.40.3 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+* Adding STEABS block when linking monomers
+
 ## 5.40.2 (2024-04-07)
 
 ### Bug fixes

@@ -93,9 +93,15 @@ export function monomerSeqToMolfile(
     bondCount: bondCount,
   };
 
+  const steabsCollection: number [] = [];
+  let nAtoms = 0;
+
   for (v.i = 0; v.i < LC.seqLength; ++v.i) {
     const monomer = monomersDict.get(monomerSeq[v.i])!;
     addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, LC);
+    //adding stereo atoms to array for further STEABS block generation
+    monomer.stereoAtoms?.forEach((i) => steabsCollection.push(i + nAtoms));
+    nAtoms += monomer.atoms.x.length;
   }
 
   capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
@@ -117,11 +123,33 @@ export function monomerSeqToMolfile(
   result += C.V3K_BEGIN_BOND_BLOCK;
   result += molfileBondBlock.join('');
   result += C.V3K_END_BOND_BLOCK;
+  if (steabsCollection.length > 0) 
+    result += getCollectionBlock(steabsCollection);
   result += C.V3K_END_CTAB_BLOCK;
   result += C.V3K_END;
 
   // return molfileParts.join('');
   return result;
+}
+
+
+function getCollectionBlock(collection: number[]): string {
+  let collectionBlock = 'M  V30 BEGIN COLLECTION\n';
+  const entries = 4;
+  const collNumber = Math.ceil(collection.length / entries);
+
+  collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
+  for (let i = 0; i < collNumber; i++) {
+    collectionBlock += 'M  V30 ';
+    const entriesCurrent = i + 1 === collNumber ? collection.length - (collNumber - 1) * entries : entries;
+    for (let j = 0; j < entriesCurrent; j++) {
+      collectionBlock += (j + 1 === entriesCurrent) ?
+        (i === collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
+        collection[entries * i + j] + ' ';
+    }
+  }
+  collectionBlock += 'M  V30 END COLLECTION\n';
+  return collectionBlock;
 }
 
 /** Cap the resulting (after sewing up all the monomers) molfile with 'O'
