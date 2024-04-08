@@ -14,7 +14,6 @@ jobs:
       - name: Slack
         id: notif
         uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
-        # secrets: inherit
         with:
           slack_token: ${{ secrets.SLACKBOT_TOKEN }}
           slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
