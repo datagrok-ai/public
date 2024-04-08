@@ -512,7 +512,7 @@ The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
 identify structural transformation rules that can be used to improve potency and
 ADMET properties during lead optimization. This tool automatically detects
 matched molecule pairs in your dataset and calculates the difference in property
-or activity values between them. The mean change in property or activity values
+or activity values between them coupled with fragmets variation. The mean change in property or activity values
 across your dataset represents the expected size of the change when the
 transformation is applied to a molecule.
 
@@ -520,7 +520,7 @@ The results of the MMP analysis are presented in a series of tables and
 visualizations, allowing you to:
 
 * View fragments and substitutions in your dataset 
-* Analyze the effect of specific fragments on the chosen activity or property of
+* Analyze the mean effect of specific fragments on the chosen activity or property of
   a lead compound
 * Generate new molecules based on the transformations present in your dataset
   and view their predicted properties and activities.
@@ -545,8 +545,8 @@ The **Transformations** tab has two tables:
 * **The upper table** shows all fragment substitutions found in the dataset for
   the current molecule. It includes the frequency of each substitution and the
   corresponding change in the analyzed activity or property.
-* **The lower table** shows all pairs of molecules associated with the
-  substitution from the upper table.  It provides details about the analyzed
+* **The lower table** shows all pairs of molecules associated with the selected
+  substitution from the upper table. It provides details about the analyzed
   activity or property for each pair of molecules.
 
 </TabItem>
@@ -555,7 +555,7 @@ The **Transformations** tab has two tables:
 In the **Fragments** tab, a 
 [trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
 fragments on the x and y axes. Each intersection in the plot displays the change
-in the analyzed activity or property resulting from a fragment substitution.
+in the analyzed activities or properties resulting from a fragment substitution.
 
 </TabItem>
 <TabItem value="cliffs" label="Cliffs"> 
