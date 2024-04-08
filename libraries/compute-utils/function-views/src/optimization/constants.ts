@@ -4,7 +4,7 @@
 export enum DOCK_RATIO {
     PC_PLOT = 0.5,
     GRAPH = 0.6,
-  }
+}
 
 /** Size constants */
 export const ROW_HEIGHT = 25;

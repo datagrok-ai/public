@@ -12,6 +12,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './optimization/constants';
+import {getMinimum} from './optimization/monte-carlo-optimizer';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -329,7 +330,6 @@ export class OptimizationView {
     min: 1,
     step: 10,
     value: this.samplesCount,
-    showPlusMinus: true,
   });
 
   private optType = OPTIMIZATION_TYPE.MAX;
@@ -762,8 +762,6 @@ export class OptimizationView {
 
     // add fixed inputs
     this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
-    console.log('inputs');
-    console.log(inputs);
 
     // get varied inputs, optimization is performed with respect to them
     const variedInputs = this.getVariedInputs();
@@ -771,8 +769,8 @@ export class OptimizationView {
 
     // varied inputs specification
     const variedInputNames = [] as string[];
-    const minVals = new Float64Array(dim);
-    const maxVals = new Float64Array(dim);
+    const minVals = new Float32Array(dim);
+    const maxVals = new Float32Array(dim);
 
     // set varied inputs specification
     variedInputs.forEach((name, idx) => {
@@ -782,32 +780,19 @@ export class OptimizationView {
       variedInputNames.push(name);
     });
 
-    console.log('variedInputNames');
-    console.log(variedInputNames);
-
-    console.log('minVals');
-    console.log(minVals);
-
-    console.log('maxVals');
-    console.log(maxVals);
-
     // get selected output
     const outputsOfInterest = this.getOutputsOfInterest();
-    console.log(`outputsOfInterest:`);
-    console.log(outputsOfInterest);
     if (outputsOfInterest.length !== 1) {
       grok.shell.error('No output is selected for optimization.');
       return;
     }
     const outputName = outputsOfInterest[0].prop.name;
-    console.log(`outputName: ${outputName}`);
 
     // for maximization
     const multiplier = (this.optType === OPTIMIZATION_TYPE.MIN) ? 1 : -1;
-    console.log(`multiplier: ${multiplier}`);
 
     /** Cost function to be optimized */
-    const costFunc = async (x: Float64Array): Promise<number> => {
+    const costFunc = async (x: Float32Array): Promise<number> => {
       x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
@@ -815,7 +800,14 @@ export class OptimizationView {
       return multiplier * calledFuncCall.getParamValue(outputName);
     };
 
-    console.log('=================================================================================');
+    const extr = await getMinimum({
+      costFunc: costFunc,
+      minVals: minVals,
+      maxVals: maxVals,
+      samplesCount: this.samplesCount,
+    });
+
+    console.log(extr);
   } // runNelderMeadMethod
 
   private getOutputNameForScatterPlot(names: string[], table: DG.DataFrame, start: number): string {
