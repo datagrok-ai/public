@@ -6,16 +6,10 @@ on:
 
 jobs:
   slack_notification_test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Slack
-        id: notif
-        uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
-        # with:
-        #   slack_token: ${{ secrets.SLACKBOT_TOKEN }}
-        #   slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
-        #   slack_context: "*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
-        #   slack_message_body: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
-        #   slack_id: ${{ secrets.SLACK_ID }}
+    uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
+    with:
+      slack_token: ${{ secrets.SLACKBOT_TOKEN }}
+      slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+      slack_context: "*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
+      slack_message_body: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
+      slack_id: ${{ secrets.SLACK_ID }}
