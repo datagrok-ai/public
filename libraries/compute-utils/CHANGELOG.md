@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.30.0 (2024-04-08)
+
+### Features
+
+- HistoryInput refactored: now uses same component as HistoryPanel
+- `mainInputs` tag renamed to `mainParams`
+- Both HistoryInput and HistoryPanel now use `mainParams` to determine visible columns
+
 ## 1.29.1 (2024-04-03)
 
 ### Features
