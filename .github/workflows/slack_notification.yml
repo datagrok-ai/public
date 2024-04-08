@@ -40,9 +40,9 @@ jobs:
           if [[ "${{ inputs.slack_message_body }}" != "" ]];then
             payload=$(echo "$payload" | jq '.blocks += [{"type": "section","text": {"type": "mrkdwn", "text": "${{ inputs.slack_message_body }}"}}]')
           fi
-          if [[ "${{ inputs.slack_context }}" != "" ]];then
-            payload=$(echo "$payload" | jq '.blocks += [{"type": "context","elements":[{"type": "mrkdwn", "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"}]}]')
-          fi
+          # if [[ ${{ inputs.slack_context }} ]];then
+          #   payload=$(echo "$payload" | jq '.blocks += [{"type": "context","elements":[{"type": "mrkdwn", "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"}]}]')
+          # fi
           echo $payload
           echo SLACK_PAYLOAD=$payload >> $GITHUB_ENV
           
