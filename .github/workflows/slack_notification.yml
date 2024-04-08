@@ -43,8 +43,8 @@ jobs:
           # if [[ ${{ inputs.slack_context }} ]];then
           #   payload=$(echo "$payload" | jq '.blocks += [{"type": "context","elements":[{"type": "mrkdwn", "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"}]}]')
           # fi
-          echo $payload
-          echo SLACK_PAYLOAD=$payload >> $GITHUB_ENV
+          echo $payload > payload.json
+          # echo SLACK_PAYLOAD=$payload >> $GITHUB_ENV
           
 
 
@@ -55,6 +55,6 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
-          payload: ${{ env.SLACK_PAYLOAD }}
+          payload-file-path: ./payload.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
