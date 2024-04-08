@@ -5,13 +5,16 @@ on:
 
 
 jobs:
-  Slack_notification:
+  Slack_notification_test:
     runs-on: ubuntu-latest
     name: slack_notification
     steps:
       - uses: actions/checkout@v4
-      - id: notif
-        uses: datagrok-ai/public@vhlushchenko/GROK-15351-github-notification
+      
+      - name: Slack
+        id: notif
+        uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
+        # secrets: inherit
         with:
           slack_token: ${{ secrets.SLACKBOT_TOKEN }}
           slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"

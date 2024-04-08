@@ -1,23 +1,25 @@
 name: 'Slack Notification'
-inputs:
-  slack_header:  # id of input
-    required: false
-    default: ''
-  slack_context:
-    required: false
-    default: ''
-  slack_message_body:
-    default: ''
-    required: false
-  slack_id:
-    required: true
-  slack_token:
-    required: true
+on:  
+  workflow_call:
+    inputs:
+      slack_header:  # id of input
+        required: false
+        default: ''
+      slack_context:
+        required: false
+        default: ''
+      slack_message_body:
+        default: ''
+        required: false
+      slack_id:
+        required: true
+      slack_token:
+        required: true
 
-runs:
-  using: "composite"
-  steps:
-    
+jobs:
+  Slack_notification:
+    runs-on: ubuntu-latest
+    steps: slack_notification
     - name: Prepare Slack Message
       if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
       id: slack-prepare
@@ -54,6 +56,6 @@ runs:
       uses: slackapi/slack-github-action@v1.24.0
       with:
         channel-id: ${{ env.SLACK_CHANNEL }}
-        payload: ${{ env. SLACK_PAYLOAD }}
+        payload: ${{ env.SLACK_PAYLOAD }}
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
