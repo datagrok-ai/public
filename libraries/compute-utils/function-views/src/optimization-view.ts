@@ -12,7 +12,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './optimization/constants';
-import {getMinimum} from './optimization/monte-carlo-optimizer';
+import {optimizeNM} from './optimization/monte-carlo-optimizer';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -601,7 +601,7 @@ export class OptimizationView {
     if (this.targetCount > 1)
       await this.runMonteCarloMethod();
     else
-      await this.runNelderMeadMethod();
+      await this.runLocalMinimumOptimization();
   }
 
   private getFixedInputColumns(rowCount: number): DG.Column[] {
@@ -756,7 +756,7 @@ export class OptimizationView {
   } // runMonteCarloMethod
 
   /** Perform Nelder-Mead method */
-  private async runNelderMeadMethod() {
+  private async runLocalMinimumOptimization() {
     // inputs of the source function
     const inputs: any = {};
 
@@ -800,7 +800,7 @@ export class OptimizationView {
       return multiplier * calledFuncCall.getParamValue(outputName);
     };
 
-    const extr = await getMinimum({
+    const extr = await optimizeNM({
       costFunc: costFunc,
       minVals: minVals,
       maxVals: maxVals,
