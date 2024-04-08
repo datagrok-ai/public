@@ -19,7 +19,7 @@ on:
 jobs:
   slack_notification:
     runs-on: ubuntu-latest
-    steps: slack_notification
+    steps:
       - name: Prepare Slack Message
         id: slack-prepare
         shell: bash
