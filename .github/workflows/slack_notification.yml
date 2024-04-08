@@ -55,6 +55,27 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
-          payload-file-path: ./payload.json
+          payload: |
+            {
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                      }
+                  },
+                  {
+                      "type": "context",
+                      "elements": [
+                          {
+                              "type": "mrkdwn",
+                              "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                          }
+                      ]
+                  }
+              ]
+            }
+          # payload-file-path: ./payload.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
