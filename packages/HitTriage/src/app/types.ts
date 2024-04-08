@@ -107,6 +107,7 @@ export type HitTriageCampaign = {
     rowCount?: number,
     filteredRowCount?: number,
     layout?: string,
+    columnTypes?: {[key: string]: string},
 };
 
 export type IChemFunctionsDialogResult = {

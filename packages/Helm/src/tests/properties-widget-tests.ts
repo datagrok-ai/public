@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {getPropertiesDict} from '../widgets/properties-widget';
 
@@ -75,7 +75,7 @@ function testPropertiesDict(
   col.setTag(DG.TAGS.UNITS, units);
   if (separator) col.setTag(bioTAGS.separator, separator);
   if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
-  const uh = UnitsHandler.getOrCreate(col);
+  const uh = SeqHandler.forColumn(col);
   const actPropDict = getPropertiesDict(seq, uh);
   expectObject(actPropDict, expPropDict);
 }

@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.16 (2024-04-05)
+
+Add webGPU KNN calculation option to UMAP.
+
 ## 1.1.15 (2024-02-27)
 
 Add support for post processing functions in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.

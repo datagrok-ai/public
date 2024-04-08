@@ -149,6 +149,7 @@ enum ANNOT {
   INT_INPUT = '//input: int',
   OUTPUT = `//output: dataframe ${DF_NAME}`,
   EDITOR = '//editor: Compute:RichFunctionViewEditor',
+  SIDEBAR = '//sidebar: @compute',
   CAPTION = 'caption:',
   ARG_INIT = '{caption: Initial; category: Argument}',
   ARG_FIN = '{caption: Final; category: Argument}',
@@ -640,8 +641,10 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] 
     res.push(`${ANNOT.OUTPUT} {${ANNOT.CAPTION} ${ivp.name}`);
 
   // the 'editor' line
-  if (toAddEditor)
+  if (toAddEditor) {
     res.push(ANNOT.EDITOR);
+    res.push(ANNOT.SIDEBAR);
+  }
 
   if (ivp.metas.length >0)
     ivp.metas.forEach((line) => res.push(`//${line}`));

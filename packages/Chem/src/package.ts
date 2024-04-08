@@ -498,7 +498,7 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //input: column col {semType: Molecule}
 //input: string _metric {optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
@@ -1280,8 +1280,8 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
-//top-menu: Chem | Analyze | Molecular Matched Pairs...
-//name:  Molecular Matched Pairs
+//top-menu: Chem | Analyze | Matched Molecular Pairs...
+//name:  Matched Molecular Pairs
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type:numerical}

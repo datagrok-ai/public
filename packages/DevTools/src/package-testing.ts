@@ -652,8 +652,8 @@ export class TestManager extends DG.ViewBase {
       }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
         return {info, testInfo};
-      const cat = testInfo.get('category', 0);
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
+        const cat = testInfo.get('category', 0);
         if (isAggrTest) {
           const grid = DG.DataFrame.fromCsv(testInfo.get('result', 0)).plot.grid().root;
           grid.style.width = 'inherit';

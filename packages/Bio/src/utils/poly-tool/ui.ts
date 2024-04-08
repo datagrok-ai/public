@@ -3,17 +3,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
-import {ALL_MONOMERS, CYCLIZATION_TYPE, TRANSFORMATION_TYPE} from './const';
 import {addTransformedColumn} from './transformation';
-import * as rxjs from 'rxjs';
-//import {MetaData} from './types';
+import {RULES_PATH, RULES_STORAGE_NAME} from './transformation';
+import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-base';
 
-const RULE_PATH = 'System:AppData/Bio/polytool-rules/';
+class RuleInputs extends ActiveFiles {
+  constructor(path: string, userStorageName: string, ext: string ) {
+    super(path, userStorageName, ext);
+  }
+}
 
-export function getPolyToolDialog(): DG.Dialog {
-  //const monomerLib = MonomerLibManager.instance.getBioLib();
+export async function getPolyToolDialog(): Promise<DG.Dialog> {
   const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   if (!targetColumns)
     throw new Error('No dataframe with macromolecule columns open');
@@ -26,24 +26,16 @@ export function getPolyToolDialog(): DG.Dialog {
   const generateHelmChoiceInput = ui.boolInput('Get HELM', true);
   ui.tooltip.bind(generateHelmChoiceInput.root, 'Add HELM column');
 
-  // let rulesTable: DG.DataFrame = DG.DataFrame.create();
-
-  const ruleFileInput = ui.button('ADD RULES', () => {
-    DG.Utils.openFile({
-      accept: '.csv',
-      open: async (selectedFile) => {
-        const content = await selectedFile.text();
-        // rulesTable = DG.DataFrame.fromCsv(content);
-        await grok.dapi.files.writeAsText(RULE_PATH + `${selectedFile.name}`, content);
-        //console.log(df.toCsv());
-      },
-    });
-  });
+  const chiralityEngineInput = ui.boolInput('Chirality engine', false);
+  const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.csv');
+  const rulesForm = await ruleInputs.getForm();
 
   const div = ui.div([
     targetColumnInput,
     generateHelmChoiceInput,
-    ruleFileInput
+    chiralityEngineInput,
+    'Rules used',
+    rulesForm
   ]);
 
   const dialog = ui.dialog('Poly Tool')
@@ -54,9 +46,14 @@ export function getPolyToolDialog(): DG.Dialog {
         grok.shell.warning('No marcomolecule column chosen!');
         return;
       }
-      addTransformedColumn(molCol!, generateHelmChoiceInput.value!);
-    }
-    );
+
+      const files = await ruleInputs.getActive();
+
+      addTransformedColumn(molCol!,
+        generateHelmChoiceInput.value!,
+        files,
+        chiralityEngineInput.value!);
+    });
 
   return dialog;
 }

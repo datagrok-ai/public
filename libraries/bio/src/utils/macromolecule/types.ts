@@ -2,12 +2,31 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ALPHABET} from './consts';
-import {UnitsHandler} from '../units-handler';
+import {ALPHABET, NOTATION} from './consts';
+import {SeqHandler} from '../seq-handler';
 
-export interface ISeqSplitted extends Iterable<string> {
-  [jPos: number]: string;
+/** Canonical gap symbol */
+export const GAP_SYMBOL: string = '';
+
+export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
+
+export interface ISeqSplitted {
+  get canonicals(): SeqSplittedBase;
+  get originals(): SeqSplittedBase;
+
+  isGap(posIdx: number): boolean;
+
+  /** */
+  getCanonical(posIdx: number): string;
+
+  /** For fasta and Helm must not be enclosed to square brackets [meA].*/
+  getOriginal(posIdx: number): string;
+
   length: number;
+}
+
+export interface INotationProvider {
+  get splitter(): SplitterFunc;
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }

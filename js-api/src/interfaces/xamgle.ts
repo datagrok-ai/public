@@ -2,13 +2,13 @@
 
 
 export interface IDetailedLogSettings {
+  type: string;
+
   description: string;
 
   details: string;
 
   errors: string;
-
-  stackTrace: string;
 
   clientLog: string;
 

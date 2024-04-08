@@ -1,9 +1,10 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
-import { SubstructureSearchType } from '../constants';
+import {SubstructureSearchType} from '../constants';
+import {stringArrayToMolList} from '../utils/chem-common';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -11,6 +12,13 @@ export enum MolNotation {
   MolBlock = 'molblock', // molblock V2000
   V3KMolBlock = 'v3Kmolblock', // molblock V3000
   Unknown = 'unknown',
+}
+
+export interface IRGroupAnalysisResult {
+  colNames: string[];
+  smiles: Array<string>[];
+  atomsToHighLight: Array<Array<Uint32Array>>;
+  bondsToHighLight: Array<Array<Uint32Array>>;
 }
 
 const MALFORMED_MOL_V2000 = `
@@ -264,6 +272,87 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._rdKitMols = null;
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
+  }
+
+  rGroupAnalysis(molecules: string[], coreMolecule: string, coreIsQMol?: boolean, options?: string): IRGroupAnalysisResult {
+    let mols: MolList | null = null;
+    let res: RGroupDecomp | null = null;
+    let core: RDMol | null = null;
+    let cols: {[colName: string] : MolList | null} = {};
+    let totalColsNum = 0;
+    let colNames: string [] = [];
+    const rgroupTargetAtomsPropName = '_rgroupTargetAtoms';
+    const rgroupTargetBondsPropName = '_rgroupTargetBonds';
+    const numOfNonRGroupCols = 1; //Core column
+    const coreColName = 'Core';
+    const molColName = 'Mol';
+    const resCols = [];
+    try {
+      mols = stringArrayToMolList(molecules, this._rdKitModule);
+      try {
+        core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
+          this._rdKitModule.get_mol(coreMolecule, JSON.stringify({
+            makeDummiesQueries: true,
+            mappedDummiesAreRGroups: true,
+          }));
+        if (!core)
+          throw new Error(`Core is possibly malformed`);
+      } catch (e) {
+        throw new Error(`Core is possibly malformed`);
+      }
+
+      //res = this._rdKitModule.rgroups(core!, mols!, options ? options : '');
+      res = this._rdKitModule.get_rgd(core!, options ? options : '');
+      const unmatches: number[] = [];
+      for (let i = 0; i < molecules.length; i ++) {
+        const match = res!.add(mols!.at(i));
+        if (match == -1)
+          unmatches.push(i);
+      }
+
+      res!.process();
+
+      cols = res!.get_rgroups_as_columns();
+      colNames = Object.keys(cols).filter((it) => it !== molColName); //exclude Mol column from result since we do not need it
+
+      totalColsNum = colNames.length;
+
+      let counter = 0;
+      if (totalColsNum > 0) {
+        const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
+        const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols).fill([]).map((u) => [] as Uint32Array[]);
+        for (let i = 0; i < totalColsNum; i++) {
+          const isRGroupCol = colNames[i] !== coreColName;
+          const col = Array<string>(molecules.length);
+          for (let j = 0; j < molecules.length; j++) {
+            if (unmatches[counter] !== j) {
+              const rgroup = cols[colNames[i]]!.at(j - counter);
+              if (isRGroupCol) {
+                if(rgroup.has_prop(rgroupTargetAtomsPropName))
+                  atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName)));
+                if(rgroup.has_prop(rgroupTargetBondsPropName))
+                  bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
+              }
+              col[j] = rgroup.get_smiles();
+            }
+            else {
+              counter++;
+              col[j] = '';
+            }
+          }
+          resCols.push(col);
+          counter = 0;
+        }
+        return {colNames: colNames, smiles: resCols, atomsToHighLight: atomsToHighlight, bondsToHighLight: bondsToHighlight};
+      }
+      return {colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []};
+    } finally {
+      core?.delete();
+      mols?.delete();
+      res?.delete();
+      for (let i = 0; i < totalColsNum; i ++)
+        cols[colNames[i]]?.delete();
+    }
   }
 
   invalidateCache() {

@@ -3,16 +3,21 @@ import {UaToolbox} from '../ua-toolbox';
 import * as grok from 'datagrok-api/grok';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
+import {DetailedLog} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time'],
+  columnNames: ['error', 'reporter', 'report_time', 'report_number'],
 };
 
 export class ReportsView extends UaView {
+  currentFilterGroup: DG.FilterGroup | null;
+
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
-    this.name = 'User reports';
+    this.name = 'Reports';
+    this.currentFilterGroup = null;
   }
 
   async initViewers(): Promise<void> {
@@ -43,13 +48,22 @@ export class ReportsView extends UaView {
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace',
         });
-        filters.append(DG.Viewer.filters(t, filtersStyle).root);
+
+        const filters_ = DG.Viewer.filters(t, filtersStyle);
+        this.currentFilterGroup = new DG.FilterGroup(filters_.dart);
+        if (ViewHandler.getCurrentView().name === 'Reports' && ViewHandler.getInstance().getSearchParameters().has('report-number')) {
+          let reportNumber = ViewHandler.getInstance().getSearchParameters().get('report-number');
+          if (reportNumber)
+            this.updateFilter(reportNumber);
+        }
+        filters.append(filters_.root);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
+          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error', 'error_stack_trace']);
           viewer.col('reporter')!.cellType = 'html';
           viewer.col('reporter')!.width = 30;
           viewer.col('report_id')!.cellType = 'html';
           viewer.col('report_id')!.width = 20;
+          viewer.col('report_number')!.visible = false;
         });
 
         viewer.onCellPrepare(async function(gc) {
@@ -91,6 +105,16 @@ export class ReportsView extends UaView {
 
         return viewer;
       },
+      processDataFrame: (t: DG.DataFrame) => {
+        t.onSelectionChanged.subscribe(async () => {
+          await this.showReportContextPanel(t);
+        });
+        t.onCurrentRowChanged.subscribe(async () => {
+          t.selection.setAll(false);
+          t.selection.set(t.currentRowIdx, true);
+        });
+        return t;
+      },
     });
 
     reportsViewer.root.classList.add('ui-panel');
@@ -99,5 +123,23 @@ export class ReportsView extends UaView {
       filters,
       reportsViewer.root,
     ]));
+  }
+
+  updateFilter(reportNumber: string): void {
+    this.currentFilterGroup?.updateOrAdd({
+      type: DG.FILTER_TYPE.MULTI_VALUE,
+      column: 'report_number',
+      selected: [reportNumber]}
+    );
+  }
+
+  async showReportContextPanel(table: DG.DataFrame): Promise<void> {
+    if (!table.selection.anyTrue) return;
+    let df = table.clone(table.selection);
+    const reportId = df.getCol('report_id').get(0);
+    if (!reportId) return;
+    grok.shell.o = ui.wait(async () => {
+      return ui.div([await DetailedLog.getAccordion(reportId)]);
+    });
   }
 }

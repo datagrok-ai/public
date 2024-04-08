@@ -98,6 +98,8 @@ export class ModelCatalogView extends DG.CustomCardView {
       const bindSub = grok.functions.onBeforeRunAction.subscribe((fc) => {
         if (fc.func.hasTag('model'))
           this.bindModel(fc);
+        else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model'))
+          this.bindModel(fc.inputs['call']);
       });
 
       const helpOpenSub = grok.events.onCurrentViewChanged.subscribe(async () => {

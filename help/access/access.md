@@ -3,7 +3,7 @@ title: "Access"
 sidebar_position: 0
 ---
 
-Datagrok provides a single, unified access point for data accross an organization, simplifying the process of centralizing data collected from multiple sources. You can easily visualize, explore, and learn from your data, and use the insights gained to take action. Additionally, the platform provides access controls, security features, caching, and automatic monitoring of connection health.
+Datagrok provides a single, unified access point for data across an organization, simplifying the process of centralizing data collected from multiple sources. You can easily visualize, explore, and learn from your data, and use the insights gained to take action. Additionally, the platform provides access controls, security features, caching, and automatic monitoring of connection health.
 
 ## Data sources
 

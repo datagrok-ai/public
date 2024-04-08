@@ -44,6 +44,8 @@ category('Radar', () => {
       showMax: true,
       showValues: true,
       valuesColumnNames: ['AGE', 'COUNTRYID'],
+      rowSource: 'Filtered',
+      filter: '',
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });

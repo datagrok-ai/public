@@ -256,7 +256,7 @@ WHERE s.molregno = CAST(@molregno as INTEGER)
 --name: ChemblInfo
 --connection: Chembl
 --tags: panel, widget
---input: string chemblId {semType: chembl}
+--input: string chemblId {semType: CHEMBL_ID}
 SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
 FROM molecule_dictionary md
 LEFT JOIN compound_structures s

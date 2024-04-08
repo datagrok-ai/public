@@ -4,9 +4,9 @@ import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
-import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {expect} from '@datagrok-libraries/utils/src/test';
+
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -21,8 +21,8 @@ export function convert(col?: DG.Column): void {
   let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!tgtCol)
     throw new Error('No column with Macromolecule semantic type found');
-  let converterUH = UnitsHandler.getOrCreate(tgtCol);
-  let currentNotation: NOTATION = converterUH.notation;
+  let converterSh = SeqHandler.forColumn(tgtCol);
+  let currentNotation: NOTATION = converterSh.notation;
   const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
     {
@@ -46,8 +46,8 @@ export function convert(col?: DG.Column): void {
     }
 
     tgtCol = newCol;
-    converterUH = UnitsHandler.getOrCreate(tgtCol);
-    currentNotation = converterUH.notation;
+    converterSh = SeqHandler.forColumn(tgtCol);
+    currentNotation = converterSh.notation;
     if (currentNotation === NOTATION.HELM)
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
@@ -116,8 +116,8 @@ export function convert(col?: DG.Column): void {
  * @param {string | null} separator Separator for SEPARATOR notation
  */
 export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
-  const converterUH = UnitsHandler.getOrCreate(srcCol);
-  const newColumn = converterUH.convert(targetNotation, separator);
+  const converterSh = SeqHandler.forColumn(srcCol);
+  const newColumn = converterSh.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);
 
   // Call detector directly to escape some error on detectSemanticTypes

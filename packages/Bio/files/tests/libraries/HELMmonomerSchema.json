@@ -21,7 +21,7 @@
     },
     "id": {
       "description": "Unique ID for the monomer. There is no meaning associated with this ID value.",
-	  "type": "integer"
+	  "type": ["string", "integer"]
     },
     "rgroups": {
       "description": "An array of the monomer R groups and required information.",

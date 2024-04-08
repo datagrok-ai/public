@@ -1,5 +1,11 @@
 # DevTools changelog
 
+## 1.3.43 (2024-04-02)
+
+### Bug fixes
+
+* TM: Fix error on selection non-executed test, Invalid argument (index): null
+
 ## 1.3.42 (2024-01-24)
 
 *Dependency: datagarok-api >= 1.17.3*

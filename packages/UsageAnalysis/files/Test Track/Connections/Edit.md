@@ -1,4 +1,4 @@
-1. Right-click the connection from the previous step (2.1).
+1. Right-click the connection from the previous step (Adding).
 2. Select **Edit** from context menu.
 3. Change name to `new_test_postgres` and click OK.
 4. Change login/password parameters of the `new_test_postgres` connection with arbitrary data and save the changes.
