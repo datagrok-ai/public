@@ -57,7 +57,7 @@ export async function optimizeNM (
 
   const params = new Float32Array(paramsBottom.length);
   for (let i = 0; i < paramsBottom.length; i++)
-    params[i] =  (paramsBottom[i] + paramsTop[i])/2
+    params[i] =  (paramsBottom[i] + paramsTop[i])/2;
 
 
   const dim = params.length + 1;

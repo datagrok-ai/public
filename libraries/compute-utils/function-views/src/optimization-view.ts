@@ -800,12 +800,11 @@ export class OptimizationView {
       return multiplier * calledFuncCall.getParamValue(outputName);
     };
 
-    const extr = await optimizeNM({
-      costFunc: costFunc,
-      minVals: minVals,
-      maxVals: maxVals,
-      samplesCount: this.samplesCount,
-    });
+    const extr = await optimizeNM(costFunc,
+      minVals,
+      maxVals,
+      this.samplesCount,
+    );
 
     console.log(extr);
   } // runNelderMeadMethod
