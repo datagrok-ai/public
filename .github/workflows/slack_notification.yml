@@ -14,12 +14,7 @@ on:
         default: ''
         required: false
         type: string
-      slack_id:
-        required: true
-        type: string
-      slack_token:
-        required: true
-        type: string
+
 
 jobs:
   slack_notification:
