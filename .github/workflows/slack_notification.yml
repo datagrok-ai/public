@@ -24,7 +24,7 @@ jobs:
         id: slack-prepare
         shell: bash
         env:
-          SLACK_ID: ${{ secrets.SLACKBOT_TOKEN }}
+          SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
