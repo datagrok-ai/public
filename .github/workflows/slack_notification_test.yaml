@@ -5,20 +5,14 @@ on:
 
 
 jobs:
-  slack_notification_test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-      - name: Prepare message
-        run: |
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-      - name: Slack Notif
-        uses: ./.github/workflows/slack_notification.yml
-        with: 
-          slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
-          slack_context: ${{ env.SLACK_MESSAGE_CONTEXT }}
-          slack_message_body: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
-          slack_token: ${{ secrets.SLACKBOT_TOKEN }}
-          slack_id: ${{ secrets.SLACK_ID }}
+  test-job:
+    uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
+    secrets: inherit
+    with: 
+      slack_header: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+      slack_context: true
+      slack_message_body: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
+
+
+    
+      

@@ -8,8 +8,8 @@ on:
         type: string
       slack_context:
         required: false
-        default: ''
-        type: string
+        default: true
+        type: boolean
       slack_message_body:
         default: ''
         required: false
@@ -25,15 +25,18 @@ jobs:
   slack_notification:
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare Slack Message
+      - name: Prepare Slack Payload
         id: slack-prepare
         shell: bash
         env:
-          SLACK_ID: ${{ inputs.slack_id }}
+          SLACK_ID: ${{ secrets.SLACKBOT_TOKEN }}
         run: |
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
           
           payload='{"blocks":[]}'
           if [[ ${{ inputs.slack_header }} != '']];then
@@ -43,15 +46,10 @@ jobs:
             payload=$(echo "$payload" | jq '.blocks += [{"type": "section","text": {"type": "mrkdwn","text": "${{ inputs.slack_message_body }}"}}]')
           fi
           if [[ ${{ inputs.slack_context }} != '']];then
-            payload=$(echo "$payload" | jq '.blocks += [{"type": "context","elements":[{"type": "mrkdwn", "text": "${{ inputs.slack_message_body }}"}]}]')
+            payload=$(echo "$payload" | jq '.blocks += [{"type": "context","elements":[{"type": "mrkdwn", "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"}]}]')
           fi
           echo SLACK_PAYLOAD=$payload >> $GITHUB_ENV
 
-          header="Package *${{ matrix.package }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.package }}/package.json")/v/${{ matrix.version }}|NPM>"
-          echo SLACK_MESSAGE_HEADER=${{ inputs.slack_header }} >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=${{ inputs.slack_context }} >> $GITHUB_ENV
 
       
       - name: Send to Slack
@@ -62,4 +60,4 @@ jobs:
           channel-id: ${{ env.SLACK_CHANNEL }}
           payload: ${{ env.SLACK_PAYLOAD }}
         env:
-          SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
