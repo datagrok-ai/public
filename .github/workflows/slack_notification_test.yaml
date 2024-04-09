@@ -5,7 +5,14 @@ on:
 
 
 jobs:
+
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Failed Build Notification
+        run: echo 123
   test-job:
+    needs: job1
     runs-on: ubuntu-latest
     steps:
       - name: Slack Failed Build Notification
