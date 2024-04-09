@@ -31,6 +31,7 @@ jobs:
         id: test
         run: eho $GITHUB_ACTION
       - name: Slack Failed Build Notification
+        if: always()
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
