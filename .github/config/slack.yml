@@ -16,7 +16,7 @@ text: |
   {{/if}}
 
 fallback: |-
-  [GitHub] {{workflow}} #{{runNumber}} {{jobName}} is {{jobStatus}}
+  [GitHub] {{workflow}} #{{runNumber}} {{jobName}} is 123 {{jobStatus}}
 
 fields:
   - title: Job Steps
