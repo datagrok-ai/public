@@ -8,6 +8,7 @@
 //input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
 //input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validatorFunc: Compute:HeatCapValidator; }
 //input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
+//input: string previousRun {caption: Previous run; category: Simulation; input: Compute:ObjectCoolingSelector; funccallMapping: {"simTime": "timeToCool"}; nullable: true}
 //input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validatorFunc: Compute:SimTimeValidator; validatorFuncOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
 //output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
 //output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
@@ -21,6 +22,7 @@
 //meta.compareCustomizer: Compute:CustomCustomizer
 //meta.uploadFunc: Compute:CustomUploader
 //meta.help: Compute/readme.md
+//meta.mainParams: ["ambTemp", "initTemp", "desiredTemp"]
 
 timeToCool = undefined;
 

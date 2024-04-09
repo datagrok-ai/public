@@ -1,11 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as OCL from 'openchemlib/full';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
@@ -51,10 +51,10 @@ export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Pr
 
 /** Translate HELM column into molfile column and append to the dataframe */
 export async function getMolColumnFromHelm(
-  df: DG.DataFrame, helmCol: DG.Column<string>
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
 ): Promise<DG.Column<string>> {
   const converter = new HelmToMolfileConverter(helmCol, df);
-  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn();
+  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn(chiralityEngine);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
 }
@@ -89,7 +89,28 @@ export class HelmToMolfileConverter {
     return smiles;
   }
 
-  async convertToRdKitBeautifiedMolfileColumn(): Promise<DG.Column<string>> {
+  async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
+    const beautifiedMolV2000 =  beautifiedMols.map((mol) => {
+      if (mol === null)
+        return '';
+      const molBlock = mol.get_molblock();
+      mol!.delete();
+      return molBlock;
+    });
+    const molv3000Arr = new Array<string>(beautifiedMolV2000.length);
+    const chiralityPb = DG.TaskBarProgressIndicator.create(`Handling chirality...`);
+    for (let i = 0; i < beautifiedMolV2000.length; i++) {
+      const oclMolecule = OCL.Molecule.fromMolfile(beautifiedMolV2000[i]);
+      const molV3000 = oclMolecule.toMolfileV3();
+      molv3000Arr[i] = molV3000.replace('STERAC1', 'STEABS');
+      const progress = i/beautifiedMolV2000.length*100;
+      chiralityPb.update(progress, `${progress?.toFixed(2)}% of molecules completed`);
+    }
+    chiralityPb.close();
+    return DG.Column.fromStrings(columnName, molv3000Arr); 
+  }
+
+  async convertToRdKitBeautifiedMolfileColumn(chiralityEngine?: boolean): Promise<DG.Column<string>> {
     const smiles = await this.getSmilesList();
     const rdKitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
     const beautifiedMols = smiles.map((item) =>{
@@ -103,13 +124,16 @@ export class HelmToMolfileConverter {
       return mol;
     });
     const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+
+    if (chiralityEngine)
+      return await this.getMolV3000ViaOCL(beautifiedMols, columnName);
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
       const molBlock = mol.get_v3Kmolblock();
       mol!.delete();
       return molBlock;
-    }));
+    })); 
   }
 
   async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {

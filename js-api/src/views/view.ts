@@ -4,7 +4,7 @@ import * as ui from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {Menu, ToolboxPage, Widget} from '../widgets';
+import {Menu, ToolboxPage, TreeViewGroup, TreeViewNode, Widget} from '../widgets';
 import {ColumnInfo, Entity, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable, MapProxy} from '../utils';
@@ -694,9 +694,11 @@ export class TableView extends View {
   }
 }
 
+
 export interface IViewStateApplicationOptions {
   pickupColumnTags?: boolean;
 }
+
 
 /** Script view */
 export class ScriptView extends View {
@@ -709,6 +711,7 @@ export class ScriptView extends View {
     return new ScriptView(api.grok_ScriptView(script.dart));
   }
 }
+
 
 export class DockView extends View {
   constructor(dart: any) {
@@ -723,6 +726,20 @@ export class DockView extends View {
     return api.grok_DockView_HandleResize(this.dart);
   }
 }
+
+
+export class BrowseView extends View {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
+  get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
+
+  get preview(): View | null { return api.grok_BrowseView_Get_Preview(this.dart); }
+  set preview(preview: View | null) { api.grok_BrowseView_Set_Preview(this.dart, preview?.dart); }
+}
+
 
 export class ViewLayout extends Entity {
 

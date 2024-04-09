@@ -5,7 +5,7 @@ const STORAGE_NAME = 'layouts-demo';
 let view = grok.shell.addTableView(grok.data.testData('demog', 1000));
 view.name = 'layouts demo';
 
-let nameInput = ui.stringInput('', 'Default');
+let nameInput = ui.input.string('', {value: 'Default'});
 nameInput.captionLabel.style.width = '0';
 
 let save = ui.button('Save', () => {

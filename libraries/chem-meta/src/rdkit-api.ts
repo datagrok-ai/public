@@ -13,8 +13,23 @@ export interface RDModule {
   get_mcs_as_smarts(mols: MolList, details?: string): string;
   set_log_tee(logName: string): RDLog;
   set_log_capture(logName: string): RDLog;
+  get_rgd(core: RDMol, options: string): RGroupDecomp;
   MolList: MolListConstructor;
+  RGroupDecomp: RGroupDecompConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
+}
+
+export interface RGroupDecomp {
+  add(mol: RDMol): number;
+  process(): boolean;
+  get_rgroups_as_columns(): {[colName: string]: MolList};
+  get_rgroups_as_rows(): {[rowNum: string]: MolList};
+  delete(): void;
+}
+
+interface RGroupDecompConstructor {
+  new(core: RDMol, details: string): RGroupDecomp;
+  new(cores: MolList, details: string, manyCores: boolean): RGroupDecomp;
 }
 
 export interface RDMol {

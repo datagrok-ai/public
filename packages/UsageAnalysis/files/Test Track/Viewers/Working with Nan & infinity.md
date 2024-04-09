@@ -1,7 +1,7 @@
 1. SPGI_v2_infinity.csv - add viewers+layouts
 2. Run the script and add viewers+layouts
 
-// [https://datagrok.ai/help/visualize/viewers/scatter-plot ](https://datagrok.ai/help/visualize/viewers/scatter-plot)
+
 ```js
 let t = grok.data.demo.demog();
 let view = grok.shell.addTableView(t);
@@ -17,5 +17,5 @@ showRegressionLine: true, markerType: 'square'
 ```
 ---
 {
-  "order": 12
+  "order": 18
 }

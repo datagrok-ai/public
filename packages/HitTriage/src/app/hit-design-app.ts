@@ -38,6 +38,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
   public mainView: DG.ViewBase;
+
   constructor(c: DG.FuncCall) {
     super(c);
     this._infoView = new HitDesignInfoView(this);
@@ -47,8 +48,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    //this.mainView = this.multiView;
-    this.mainView = grok.shell.addView(this.multiView);
+
+    this.mainView = this.multiView;
+    //this.mainView = grok.shell.addView(this.multiView);
+
     grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
         if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
@@ -91,6 +94,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           const col = this.dataFrame!.columns.byName(colName);
           if (col && semtype)
             col.semType = semtype;
+        });
+      }
+      if (this._campaign?.columnTypes) {
+        Object.entries(this._campaign.columnTypes).forEach(([colName, type]) => {
+          const col = this.dataFrame!.columns.byName(colName);
+          if (col && col.type !== type)
+            try {this.dataFrame!.changeColumnType(colName, type as DG.COLUMN_TYPE);} catch (e) {console.error(e);}
         });
       }
       //await this.dataFrame.meta.detectSemanticTypes();
@@ -549,6 +559,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const campaignName = campaignId;
     const columnSemTypes: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+    const colTypeMap: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
@@ -559,6 +571,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       rowCount: enrichedDf.col(ViDColName)?.toList().filter((s) => s !== EmptyStageCellValue).length ?? 0,
       filteredRowCount: enrichedDf.filter.trueCount,
       savePath: this._filePath,
+      columnTypes: colTypeMap,
     };
     console.log(this._filePath);
     const csvDf = DG.DataFrame.fromColumns(

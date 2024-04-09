@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput,
+  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -33,15 +33,16 @@ import {__obs, StreamSubscription} from './src/events';
 import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import {Entity, Property, User} from './src/entities';
+import {Entity, FileInfo, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
 import * as d4 from './src/api/d4.api.g';
+import {IDartApi} from "./src/api/grok_api.g";
 
 
-let api = <any>window;
+let api: IDartApi = <any>window;
 declare let grok: any;
 
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -701,42 +702,102 @@ export function tree(): TreeViewGroup {
 
 // TODO: create a new file - inputs.ts for these inputs
 export namespace input {
-  // TODO: add label here
+  interface IIndexable {
+    [key: string]: any;
+  }
+
+  interface Size {
+    height: number;
+    width: number;
+  }
+
+  const optionsMap: {[key: string]: (input: InputBase, inputType: d4.InputType, option: any) => void} = {
+    value: (input, inputType, x) => input.value = inputType === d4.InputType.File ? toDart(x) : x,
+    nullable: (input, inputType, x) => input.nullable = x, // finish it?
+    property: (input, inputType, x) => input.property = x,
+    tooltipText: (input, inputType, x) => input.setTooltip(x),
+    onCreated: (input, inputType, x) => x(input),
+    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input.value)),
+    clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
+    escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
+    size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
+    placeholder: (input, inputType, x) => (input.input as HTMLInputElement).placeholder = x,
+    items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
+      inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+    icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
+    available: (input, inputType, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
+    checked: (input, inputType, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+  };
+
+  function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
+    if (options === null || options === undefined)
+      return;
+    const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
+    if (!options.property)
+      options.property = Property.fromOptions({name: input.caption, inputType: inputType as string});
+    for (let key of Object.keys(specificOptions)) {
+      if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key))
+        (options.property as IIndexable)[key] = (specificOptions as IIndexable)[key];
+      if (key === 'table' && (specificOptions as IIndexable)[key] !== undefined) {
+        const filter = typeof (specificOptions as IIndexable)['filter'] === 'function' ?
+          (x: any) => (specificOptions as IIndexable)['filter']!(toJs(x)) : null;
+        inputType === d4.InputType.Column ? api.grok_ColumnInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter) :
+          api.grok_ColumnsInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter);
+      }
+      if (optionsMap[key] !== undefined)
+        optionsMap[key](input, inputType, (specificOptions as IIndexable)[key]);
+    }
+    const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
+    for (let key of Object.keys(baseOptions)) {
+      if (key === 'value' && baseOptions[key] !== undefined)
+        options.property.defaultValue = toDart(baseOptions[key]);
+      if (key === 'nullable' && baseOptions[key] !== undefined)
+        options.property.nullable = baseOptions[key]!;
+      if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
+        optionsMap[key](input, inputType, (baseOptions as IIndexable)[key]);
+    }
+  }
+
   interface IInputInitOptions<T = any> {
     value?: T;
     property?: Property;
+    nullable?: boolean;
     elementOptions?: ElementOptions;
+    tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (input: InputBase<T>) => void;
   }
 
-  interface ITextBoxInputInitOptions<T> extends IInputInitOptions<T> {
-    clearIcon?: boolean;
-    escClears?: boolean;
-    placeholder?: string;
-  }
-
-  interface INumberInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+  interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
     min?: number;
     max?: number;
     step?: number;
+    showSlider?: boolean;
+    showPlusMinus?: boolean;
   }
 
-  interface IChoiceInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+  interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
-    nullable?: boolean;
   }
 
   interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
   }
 
-  interface IStringInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+  interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
+    clearIcon?: boolean;
+    escClears?: boolean;
     icon?: string | HTMLElement;
+    placeholder?: string;
     // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
   }
 
-  interface IColumnInputInitOptions<T> extends ITextBoxInputInitOptions<T> {
+  interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
+    size: Size;
+  }
+
+  interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
     filter?: Function;
   }
@@ -769,16 +830,10 @@ export namespace input {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
-  export function userGroups(name: string, value?: User[], onValueChanged: Function | null = null): InputBase<User[]> {
-    const i = forInputType(d4.InputType.UserGroups);
-    if (value)
-      i.value = value;
-    return i;
-  }
-
   function _create(type: d4.InputType, name: string, options?: IInputInitOptions): InputBase {
     const input = forInputType(type);
     input.caption = name;
+    setInputOptions(input, type, options);
     // go through properties and set them
     _options(input.root, options?.elementOptions);
     return input;
@@ -786,6 +841,14 @@ export namespace input {
 
   export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
     return _create(d4.InputType.Int, name, options);
+  }
+
+  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt> {
+    return _create(d4.InputType.BigInt, name, options);
+  }
+
+  export function qNum(name: string, options?: IInputInitOptions): InputBase<number> {
+    return _create(d4.InputType.QNum, name, options);
   }
 
   export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
@@ -804,7 +867,7 @@ export namespace input {
     return _create(d4.InputType.Text, name, options);
   }
 
-  export function search(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function search(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Search, name, options);
   }
 
@@ -812,27 +875,37 @@ export namespace input {
     return _create(d4.InputType.Float, name, options);
   }
 
-  export function date(name: string, options?: ITextBoxInputInitOptions<dayjs.Dayjs>): DateInput {
+  export function date(name: string, options?: IInputInitOptions<dayjs.Dayjs>): DateInput {
     return _create(d4.InputType.Date, name, options);
+  }
+
+  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string>> {
+    return _create(d4.InputType.Map, name, options);
   }
 
   export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Bool, name, options);
   }
 
-  // do we need this?
   export function toggle(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Switch, name, options);
+  }
+
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo> {
+    return _create(d4.InputType.File, name, options);
+  }
+
+  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any>> {
+    return _create(d4.InputType.List, name, options);
   }
 
   export function molecule(name: string, options?: IInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Molecule, name, options);
   }
 
-  // export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
-    // const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
-    // return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
-  // }
+  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+    return _create(d4.InputType.Column, name, options);
+  }
 
   export function columns(name: string, options?: IColumnsInputInitOptions<Column[]>): InputBase<Column[]> {
     return _create(d4.InputType.Columns, name, options);
@@ -842,16 +915,28 @@ export namespace input {
     return _create(d4.InputType.Table, name, options);
   }
 
-  export function textArea(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+  export function textArea(name: string, options?: ITextAreaInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.TextArea, name, options);
   }
 
-  export function color(name: string, options?: ITextBoxInputInitOptions<string>): InputBase<string> {
+  export function color(name: string, options?: IInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Color, name, options);
   }
 
   export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
     return _create(d4.InputType.Radio, name, options);
+  }
+
+  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+    return _create(d4.InputType.User, name, options);
+  }
+
+  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+    return _create(d4.InputType.UserGroups, name, options);
+  }
+
+  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+    return _create(d4.InputType.Image, name, options);
   }
 
   export async function markdown(name: string): Promise<MarkdownInput> {
@@ -861,6 +946,10 @@ export namespace input {
   export function code(name: string, options?: CodeConfig): CodeInput {
     return new CodeInput(name, options);
   }
+
+  export function tags(name: string, config?: TagsInputConfig) {
+    return new TagsInput(name, config);
+  }
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -869,68 +958,84 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.int} instead */
 export function intInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.slider} instead */
 export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null, options: {step: number | null} | null = null): InputBase<number | null> {
   return new InputBase(api.grok_SliderInput(name, value, min, max, options?.step), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.choice} instead */
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null, options: { nullable?: boolean } | null = null): ChoiceInput<T | null> {
   return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items, options), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.multiChoice} instead */
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.string} instead */
 export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeholder?: String } | null = null): InputBase<string> {
   return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.search} instead */
 export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.float} instead */
 export function floatInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.date} instead */
 export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
   return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.bool} instead */
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
   return new InputBase(api.grok_BoolInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.toggle} instead */
 export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean> {
   return new InputBase(api.grok_SwitchInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.molecule} instead */
 export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.column} instead */
 export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
   const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
   return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.columns} instead */
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
                              options?: {available?: string[], checked?: string[]}): InputBase<Column[]> {
   return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.table} instead */
 export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
   return new InputBase(api.grok_TableInput(name, table?.dart, tables.map(toDart)), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.textArea} instead */
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.color} instead */
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
@@ -939,8 +1044,17 @@ export function colorPicker(color: number, onChanged: (color: number) => void, c
   return api.grok_ColorPicker(color, onChanged, colorDiv);
 }
 
+/** @deprecated The method will be removed soon. Use {@link input.radio} instead */
 export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
   return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
+}
+
+export function patternsInput(colors: { [key: string]: string }): HTMLElement {
+  return api.grok_UI_PatternsInput(colors);
+}
+
+export function schemeInput(gradient: number[]): HTMLElement {
+  return api.grok_UI_SchemeInput(gradient);
 }
 
 /**
@@ -990,6 +1104,10 @@ export class tools {
   private static mutationObserverElements: {
     element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
   }[] = [];
+
+  /** Finds entities (such as "CHEMBL25") in the specified html element, and converts
+   * them to hyperlinks */
+  //static void annotateEntities(element: HTMLElement) { }
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
@@ -1216,7 +1334,7 @@ export class tools {
       
       if (label == null) return;
 
-      label.style.minWidth = String(Math.min(...labels))+'px';;
+      label.style.minWidth = String(Math.min(...labels))+'px';
       label.style.maxWidth = String(Math.max(...labels))+'px';
       label.style.width = '100%';
 
@@ -1526,7 +1644,7 @@ export class Tooltip {
     return api.grok_Tooltip_Get_Root();
   }
 
-  get isVisible(): boolean { return api.grok_Tooltip_Is_Visible(); }
+  get isVisible(): boolean { return api.grok_Tooltip_Get_IsVisible(); }
 
   get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
   get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
@@ -1659,7 +1777,7 @@ export class ObjectHandler {
     return _objectHandlerSubject.subscribe(observer);
   }
 
-  static forEntity(object: object, context: object | null = null): ObjectHandler | null {
+  static forEntity(object: any, context: any | null = null): ObjectHandler | null {
     let semValue = object instanceof SemanticValue ? object : SemanticValue.fromValueType(object, null);
 
     let args = new ObjectHandlerResolutionArgs(semValue, context);
@@ -1702,12 +1820,12 @@ export class EntityMetaDartProxy extends ObjectHandler {
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
 
-  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
-  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, x); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, x); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
 }
 
 /**
@@ -1785,7 +1903,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
       const rootHeight = b.getBoundingClientRect().height;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider') != true){
           let height = (h-rootHeight)/b.children.length+$(b.childNodes[i]).height();
           $(b.childNodes[i]).css('height', String(height)+'px');
           //$(b.childNodes[i]).attr('style', `height:${(h-rootHeight)/b.children.length+$(b.childNodes[i]).height()}px;`);
@@ -1852,7 +1970,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       const rootWidth = b.getBoundingClientRect().width;
 
       for (let i = 0; i < b.children.length; i++){
-        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider') != true){
           let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
@@ -2027,6 +2145,12 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
+
+export namespace panels {
+  export function infoPanel(x: any): Accordion { return api.grok_InfoPanels_GetAccordion(toDart(x)); }
+}
+
+
 export namespace forms {
 
   export function normal(children: InputBase[], options: {} | null = null){
@@ -2156,8 +2280,9 @@ export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
 }
 
-export function tagsInput(name: string, tags: string[], showBtn: boolean) {
-  return new TagsInput(name, tags, showBtn);
+/** @deprecated The method will be removed soon. Use {@link input.tags} instead */
+export function tagsInput(name: string, tags: string[], showButton: boolean) {
+  return new TagsInput(name, {tags: tags, showButton: showButton});
 }
 
 export let icons = {
@@ -2227,11 +2352,11 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
     }
   }, 100);
 
-  overlay.addEventListener('mousemove', (e:MouseEvent)=> {
+  overlay.addEventListener('mousemove', (e: MouseEvent)=> {
     api.grok_Tooltip_Show(tooltip, e.clientX+10, e.clientY+10);
   });
 
-  overlay.addEventListener('mouseleave', (e:MouseEvent) => {
+  overlay.addEventListener('mouseleave', (e: MouseEvent) => {
     setTimeout(() => {
       api.grok_Tooltip_Hide();
     }, 200)

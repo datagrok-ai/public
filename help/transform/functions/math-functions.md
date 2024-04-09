@@ -28,7 +28,9 @@ to use parameters: `true`
 - [Div](#div)
 - [Eq](#eq)
 - [Exp](#exp)
+- [Fixed](#fixed)
 - [Floor](#floor)
+- [FormatFloat](#formatFloat)
 - [Greater](#greater)
 - [If](#if)
 - [Ln](#ln)
@@ -51,7 +53,7 @@ to use parameters: `true`
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
-- [Round10](#round10)
+- [RoundFloat](#roundFloat)
 - [Sin](#sin)
 - [Smaller](#smaller)
 - [Sqrt](#sqrt)
@@ -175,6 +177,15 @@ Returns the natural exponent (E) to the power `x`.
 Exp(2)    // 7.389056205749512
 ```
 
+## <a name="fixed"></a>Fixed(`x`, `decimalPlaces`)
+
+Returns the rounded number `x` to the specified number of `decimalPlaces`.
+
+```javascript
+Fixed(3.5, 2)   // 3.50
+Fixed(-3.5, 0)  // -4
+```
+
 ## <a name="floor"></a>Floor(`x`)
 
 Returns the greatest integer no greater than `x`.
@@ -182,6 +193,15 @@ Returns the greatest integer no greater than `x`.
 ```javascript
 Floor(3.5)     // 3
 Floor(-3.5)    // -4
+```
+
+## <a name="formatFloat"></a>FormatFloat(`x`, `format`)
+
+Returns the number `x` formatted according to the specified format.
+
+```javascript
+FormatFloat(12345.12345, 'scientific')    // 1.23E4
+FormatFloat(12345.12345, '#0.00')         // 12345.12
 ```
 
 ## <a name="greater"></a>Greater(`x`, `y`)
@@ -379,15 +399,15 @@ Round(3.5)     // 4
 Round(-3.5)    // -4
 ```
 
-## <a name="round10"></a>Round10(`x`, `decimalPlaces`)
+## <a name="roundFloat"></a>RoundFloat(`x`, `decimalPlaces`)
 
 Returns the number rounded up `x` to the number of decimal places specified by `decimalPlaces`.
 
 `decimalPlaces` can be negative to round to even 10s, 100s, etc.
 
 ```javascript
-Round10(PI, 2)      // 3.14
-Round10(25, -1)     // 30
+RoundFloat(PI, 2)      // 3.14
+RoundFloat(25, -1)     // 30
 ```
 
 ## <a name="sin"></a>Sin(`x`)

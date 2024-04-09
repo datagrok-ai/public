@@ -6,7 +6,7 @@
       "name": "Representations",
       "widget": "webWidget",
       "templates": [{
-        "template": "(CHEMBL[0-9]+)",
+        "template": "(XXXCHEMBL[0-9]+)",
         "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/representations"
       }]
     },
@@ -15,7 +15,7 @@
       "name": "Alternative forms",
       "widget": "webWidget",
       "templates": [{
-        "template": "(CHEMBL[0-9]+)",
+        "template": "(XXXCHEMBL[0-9]+)",
         "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/alternate_forms"
       }]
     },
@@ -24,7 +24,7 @@
       "name": "Calculated properties",
       "widget": "webWidget",
       "templates": [{
-        "template": "(CHEMBL[0-9]+)",
+        "template": "(XXXCHEMBL[0-9]+)",
         "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/calculated_properties"
       }]
     },
@@ -33,7 +33,7 @@
       "name": "Cross references",
       "widget": "webWidget",
       "templates": [{
-        "template": "(CHEMBL[0-9]+)",
+        "template": "(XXXCHEMBL[0-9]+)",
         "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/cross_refs"
       }]
     }

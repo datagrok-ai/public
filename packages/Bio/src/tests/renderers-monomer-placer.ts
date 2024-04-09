@@ -6,7 +6,7 @@ import wu from 'wu';
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {_package} from '../package-test';
 
@@ -93,9 +93,9 @@ id3,QHIRE--LT
       const charWidth: number = 7;
       const sepWidth: number = 12;
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, () => {
-        const uh = UnitsHandler.getOrCreate(seqCol);
+        const sh = SeqHandler.forColumn(seqCol);
         return {
-          unitsHandler: uh,
+          seqHandler: sh,
           monomerCharWidth: charWidth,
           separatorWidth: sepWidth,
           monomerToShort: monomerToShort,

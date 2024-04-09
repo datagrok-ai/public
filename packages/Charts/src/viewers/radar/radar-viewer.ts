@@ -42,7 +42,7 @@ export class RadarViewer extends DG.JsViewer {
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
-    this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', false, {description: 'Hides max and min values'});
+    this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', true, {description: 'Hides max and min values'});
     this.showAllRows = this.bool('showAllRows', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);
@@ -52,7 +52,8 @@ export class RadarViewer extends DG.JsViewer {
     this.showValues = this.bool('showValues', true);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL});
-
+    this.addRowSourceAndFormula();
+    
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
@@ -103,7 +104,6 @@ export class RadarViewer extends DG.JsViewer {
   initChartEventListeners() {
     this.dataFrame.onRowsFiltered.subscribe((_) => {
       if (this.dataFrame) {
-        this.checkConditions();
         this.render();
       }
     });
@@ -139,130 +139,51 @@ export class RadarViewer extends DG.JsViewer {
     this.render();
   }
 
-  public override onPropertyChanged(property: DG.Property): void {
-    super.onPropertyChanged(property);
-    switch (property.name) {
-    case 'min':
-      if (this.showMin === true)
-        this.updateMin();
-      break;
-    case 'max':
-      if (this.showMax === true)
-        this.updateMax();
-
-      break;
-    case 'showMin':
-      if (this.showMin != true)
-        this.clearData([0]);
-      else
-        this.updateMin();
-
-      break;
-    case 'showMax':
-      if (this.showMax != true)
-        this.clearData([1]);
-      else
-        this.updateMax();
-
-      break;
-    case 'showOnlyCurrentRow':
-      if (this.showOnlyCurrentRow === true)
-        this.clearData([0, 1]);
-      else {
-        this.clearData([2]);
-        this.checkConditions();
-      }
-      break;
-    case 'showAllRows':
-      if (this.showAllRows === true) {
-        option.legend.show = false;
-        this.clearData([0, 1, 2]);
-        const data = option.series[2].data;
-        for (let i = 0; i < this.dataFrame.rowCount; i++) {
-          data.push({
-            name: `row ${i}`,
-            value: this.columns.map((c) => Number(c.get(i))),
-            label: {
-              show: this.showValues,
-              formatter: function(params: any) {
-                return StringUtils.formatNumber(params.value) as string;
-              },
-            },
-          });
-        }
-      } else {
-        option.legend.show = true;
-        this.clearData([2]);
-        this.checkConditions();
-      }
-      break;
-    case 'showTooltip':
-      if (this.showTooltip === false)
-        option['silent'] = true;
-      else
-        option['silent'] = false;
-
-      break;
-    case 'backgroundMinColor':
-      if (this.showMin === true)
-        this.updateMin();
-
-      break;
-    case 'backgroundMaxColor':
-      if (this.showMax === true)
-        this.updateMax();
-
-      break;
-    case 'showValues':
-      if (this.showValues === false)
-        this.updateShowValues();
-      else
-        this.checkConditions();
-
-      break;
-    case 'valuesColumnNames':
-      this.init();
-      if (this.showValues === false)
-        this.updateShowValues();
-      break;
-    }
+  public override onPropertyChanged(property: DG.Property) {
     this.render();
   }
 
+  getSeriesData(): void {
+    option.radar.indicator = [];
+    this.clearData([0, 1, 2]);
+    this.columns = this.getColumns();
+    for (const c of this.columns) {
+      const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
+      if (c.type === 'datetime')
+        option.radar.indicator.push({ name: c.name, max: this.getYearFromDate(c.max), min: this.getYearFromDate(c.min) });
+      else
+        option.radar.indicator.push({ name: c.name, max: c.max, min: minimalVal });
+    }
+  
+    if (this.showMin)
+      this.updateMin();
+  
+    if (this.showMax)
+      this.updateMax();
+  
+    if (this.showOnlyCurrentRow)
+      this.updateRow();
+  
+    if (this.showAllRows) {
+      option.series[2].data = [];
+      for (let i = 0; i < this.dataFrame.rowCount; i++) {
+        option.series[2].data.push({
+          value: this.columns.map((c) => {
+            const value = Number(c.get(i));
+            return value !== -2147483648 ? value : 0;
+          }),
+          name: `row ${i + 1}`,
+          label: { show: this.showValues, formatter: (params: any) => StringUtils.formatNumber(params.value) as string },
+        });
+      }
+    }
+    
+    option.legend.show = !this.showAllRows;
+    option.silent = !this.showTooltip;
+  }  
+
   getYearFromDate(value: number) {
     return new Date(Math.floor(value) / 1000).getFullYear()
-  }
-
-  checkConditions() {
-    if (this.showMin === true)
-      this.updateMin();
-    if (this.showMax === true)
-      this.updateMax();
-    this.updateRow();
-  }
-
-  updateShowValues() {
-    option.series[2].data = [];
-    const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
-    option.series[2].data.push({
-      value: this.columns.map((c) => {
-        const value = Number(c.get(currentRow));
-        return value != -2147483648 ? value : 0;
-      }),
-      name: `row ${currentRow + 1}`,
-      lineStyle: {
-        width: 2,
-        type: 'dashed',
-        color: 'rgba(66, 135, 204, 0.8)',
-      },
-      label: {
-        show: false,
-      },
-      symbolSize: 6,
-      itemStyle: {
-        color: 'rgba(66, 135, 204, 0.8)',
-      },
-    });
   }
 
   updateMin() {
@@ -359,6 +280,7 @@ export class RadarViewer extends DG.JsViewer {
       return;
     }
     this._removeErrorMessage();
+    this.getSeriesData();
     this.chart.setOption(option);
   }
 

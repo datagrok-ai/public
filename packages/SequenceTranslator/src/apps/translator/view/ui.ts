@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import * as rxjs from 'rxjs';
 
@@ -165,10 +165,10 @@ class TranslatorAppLayout {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.setTag(DG.TAGS.UNITS, units);
-      const unitsHandler = UnitsHandler.getOrCreate(translatedColumn);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? UnitsHandler.setUnitsToFastaColumn :
-        UnitsHandler.setUnitsToHelmColumn;
-      setUnits(unitsHandler);
+      const seqHandler = SeqHandler.forColumn(translatedColumn);
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
+        SeqHandler.setUnitsToHelmColumn;
+      setUnits(seqHandler);
     }
 
     // add newColumn to the table
@@ -341,7 +341,7 @@ class TableInputManager {
   }
 
   private getTableFromEventData(eventData: any): DG.DataFrame {
-    if (! eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
+    if (!eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
       throw new Error(`EventData does not contain a dataframe`, eventData);
 
     return eventData.args.dataFrame as DG.DataFrame;

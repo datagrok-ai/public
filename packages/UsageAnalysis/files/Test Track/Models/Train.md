@@ -1,4 +1,4 @@
-1. Open "demog" table in Datagrok
+1. Open demog.csv
 2. Delete missing values (using **Select** | **Missing values…** on the menu ribbon)
 3. On Toolbox, expand **Models** tab and click the **Train** button
 4. Select **H2O** for **Model Engine** field

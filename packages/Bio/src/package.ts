@@ -12,7 +12,7 @@ import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-me
 import {
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -59,7 +59,7 @@ import {BioPackage, BioPackageProperties} from './package-types';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {PolyTool} from './utils/poly-tool/ui';
+import {getPolyToolDialog} from './utils/poly-tool/ui';
 import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
@@ -77,6 +77,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
 
 export const _package = new BioPackage();
 
@@ -165,11 +166,11 @@ export function getBioLib(): IMonomerLib {
   return MonomerLibManager.instance.getBioLib();
 }
 
-//name: getUnitsHandler
+//name: getSeqHandler
 //input: column sequence { semType: Macromolecule }
 //output: object result
-export function getUnitsHandler(sequence: DG.Column<string>): UnitsHandler {
-  return UnitsHandler.getOrCreate(sequence);
+export function getSeqHandler(sequence: DG.Column<string>): SeqHandler {
+  return SeqHandler.forColumn(sequence);
 }
 
 // -- Panels --
@@ -471,9 +472,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
         })
         .onCancel(() => { resolve(undefined); })
         .show();
-    } else {
+    } else
       runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-    }
   }).catch((err: any) => {
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
@@ -492,7 +492,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
 //input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; default: Morgan; optional: true}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
@@ -611,7 +611,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const _colUH = UnitsHandler.getOrCreate(col);
+    const _colSh = SeqHandler.forColumn(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -630,7 +630,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return UnitsHandler.getOrCreate(c).isMsa(); });
+    const selectedCol = colList.find((c) => { return SeqHandler.forColumn(c).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -647,9 +647,8 @@ export async function compositionAnalysis(): Promise<void> {
           await handler(col);
       })
       .show();
-  } else {
+  } else
     col = colList[0];
-  }
 
   if (!col)
     return;
@@ -690,10 +689,9 @@ export function convertDialog() {
 //name: polyTool
 //description: Perform cyclization of polymers
 export async function polyTool(): Promise<void> {
-  const polytool = new PolyTool();
   let dialog: DG.Dialog;
   try {
-    dialog = await polytool.getPolyToolDialog();
+    dialog = await getPolyToolDialog();
     dialog.show();
   } catch (err: any) {
     grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
@@ -773,8 +771,8 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
 //name: Bio: getHelmMonomers
 //input: column sequence {semType: Macromolecule}
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const uh = UnitsHandler.getOrCreate(sequence);
-  const stats = uh.stats;
+  const sh = SeqHandler.forColumn(sequence);
+  const stats = sh.stats;
   return Object.keys(stats.freq);
 }
 
@@ -1048,4 +1046,13 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+// -- Custom notation providers --
+
+//name: applyNotationProviderForCyclized
+//input: column col
+//input: string separator
+export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
 }

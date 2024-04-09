@@ -2,6 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+import wu from 'wu';
+
+
 import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
@@ -19,7 +23,7 @@ import {HelmBioFilter} from '../widgets/bio-substructure-filter-helm';
 import {_package} from '../package-test';
 
 
-category('substructureFilters', async () => {
+category('bio-substructure-filters', async () => {
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
@@ -303,6 +307,144 @@ category('substructureFilters', async () => {
       dlg.close();
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
+    await awaitGrid(view.grid);
+  });
+
+  // two seq columns
+
+  const twoColumnsCsv: string = `id,seq1,seq2,trueSeq1,trueSeq2
+0,CGGCTACGGC,ATTGCATTCG,0,1,
+1,CGGCTGCCGC,ATAGCATTCG,1,1,
+2,CGGCTGCGCC,AATGCATACG,1,0,
+3,CGGCTGCATT,TTTGCATTCG,1,1,
+4,CGGCTGCATT,AAAGCATACG,1,0,
+`;
+
+  test('two-columns-fasta', async () => {
+    const df = DG.DataFrame.fromCsv(twoColumnsCsv);
+    await grok.data.detectSemanticTypes(df);
+    const view = grok.shell.addTableView(df);
+
+    const fSeq1ColName: string = 'seq1';
+    const fSeq1SubStr: string = 'CGGCTG';
+    const fSeq1Trues: number[] = df.getCol('trueSeq1').toList();
+
+    const fSeq2ColName: string = 'seq2';
+    const fSeq2SubStr: string = 'GCATT';
+    const fSeq2Trues: number[] = df.getCol('trueSeq2').toList();
+
+    //const seq2Filter = new BioSubstructureFilter();
+    const filterList: any[] = [
+      {type: 'Bio:bioSubstructureFilter', columnName: fSeq1ColName},
+      {type: 'Bio:bioSubstructureFilter', columnName: fSeq2ColName},
+    ];
+    const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
+      {filters: filterList})) as DG.FilterGroup;
+    view.dockManager.dock(fg, DG.DOCK_TYPE.LEFT);
+    await delay(100);
+    await awaitGrid(view.grid);
+
+    const seq1Filter = fg.filters[0] as BioSubstructureFilter;
+    const seq2Filter = fg.filters[1] as BioSubstructureFilter;
+    expect(seq1Filter.column!.name, fSeq1ColName);
+    expect(seq2Filter.column!.name, fSeq2ColName);
+
+    const seq1Bf = seq1Filter.bioFilter as FastaBioFilter;
+    const seq2Bf = seq2Filter.bioFilter as FastaBioFilter;
+
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq1Bf.props = new BioFilterProps(fSeq1SubStr);
+    }, 1000);
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq2Bf.props = new BioFilterProps('');
+    }, 1000, 'testEvent onRowsFiltered on seq1');
+    expect(df.filter.trueCount, fSeq1Trues.filter((v) => v === 1).length);
+    expect(df.filter.toBinaryString(), fSeq1Trues.map((v) => v.toString()).join(''));
+
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq1Bf.props = new BioFilterProps('');
+    }, 1000);
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq2Bf.props = new BioFilterProps(fSeq2SubStr);
+    }, 1000, 'testEvent onRowsFiltered on seq2');
+    expect(df.filter.trueCount, fSeq2Trues.filter((v) => v === 1).length);
+    expect(df.filter.toBinaryString(), fSeq2Trues.map((v) => v.toString()).join(''));
+
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq1Bf.props = new BioFilterProps('');
+    }, 1000);
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq2Bf.props = new BioFilterProps('');
+    }, 1000, 'testEvent onRowsFiltered on neither');
+    expect(df.filter.trueCount, df.rowCount);
+
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq1Bf.props = new BioFilterProps(fSeq1SubStr);
+    }, 5000);
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seq2Bf.props = new BioFilterProps(fSeq2SubStr);
+    }, 5000, 'testEvent onRowsFiltered on both');
+    const bothTrues: number[] = wu.count(0).take(df.rowCount)
+      .map((rowI) => fSeq1Trues[rowI] * fSeq2Trues[rowI]).toArray();
+    expect(df.filter.trueCount, bothTrues.filter((v) => v === 1).length);
+    expect(df.filter.toBinaryString(), bothTrues.map((v) => v.toString()).join(''));
+
+    await Promise.all([seq1Filter.awaitRendered(), seq2Filter.awaitRendered(), awaitGrid(view.grid)]);
+  });
+
+  // -- reset --
+
+  test('reset-fasta', async () => {
+    const df = await readDataframe('tests/filter_FASTA.csv');
+    await grok.data.detectSemanticTypes(df);
+    const view = grok.shell.addTableView(df);
+
+    const fSeqColName: string = 'fasta';
+    const fSubStr: string = 'MD';
+    const fTrueCount: number = 3;
+
+    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: fSeqColName}];
+    const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
+      {filters: filterList})) as DG.FilterGroup;
+    view.dockManager.dock(fg, DG.DOCK_TYPE.LEFT);
+    await delay(100);
+    await awaitGrid(view.grid);
+
+    const seqFilter = fg.filters[0] as BioSubstructureFilter;
+    const seqBf = seqFilter.bioFilter as FastaBioFilter;
+    await testEvent(df.onRowsFiltered, () => {}, () => {
+      seqBf.props = new BioFilterProps(fSubStr);
+    }, 1000, 'testEvent onRowsFiltered');
+    expect(df.filter.trueCount, fTrueCount);
+    expect(seqBf.props.substructure, fSubStr);
+    expect(seqBf.substructureInput.value, fSubStr);
+
+    const fgResetIconEl: HTMLElement = $(fg.root).find('i[name="icon-arrow-rotate-left"]')[0] as HTMLElement;
+    fgResetIconEl.click();
+    await delay(100);
+    await awaitGrid(view.grid);
+    expect(seqBf.props.substructure, '');
+    expect(seqBf.substructureInput.value, '');
+  });
+
+  test('reopen', async () => {
+    const df = await _package.files.readCsv('tests/filter_FASTA.csv');
+    const view = grok.shell.addTableView(df);
+
+    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: 'fasta'}];
+
+    const fg1 = (await df.plot.fromType(DG.VIEWER.FILTERS,
+      {filters: filterList})) as DG.FilterGroup;
+    const fg1Dn = view.dockManager.dock(fg1, DG.DOCK_TYPE.LEFT);
+    await delay(100);
+    await awaitGrid(view.grid);
+    fg1.close();
+    await awaitGrid(view.grid);
+
+    const fg2 = (await df.plot.fromType(DG.VIEWER.FILTERS,
+      {filters: filterList})) as DG.FilterGroup;
+    const fg2Dn = view.dockManager.dock(fg2, DG.DOCK_TYPE.LEFT);
+    await delay(100);
     await awaitGrid(view.grid);
   });
 });

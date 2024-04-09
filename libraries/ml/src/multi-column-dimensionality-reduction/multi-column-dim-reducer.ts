@@ -5,12 +5,13 @@ import {DistanceMatrixService} from '../distance-matrix';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {UMAP} from '../umap';
 import {assert, transposeMatrix} from '@datagrok-libraries/utils/src/vector-operations';
-import {SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
+import {KnnResult, SparseMatrixService} from '../distance-matrix/sparse-matrix-service';
 import {DimReductionMethods} from './types';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import seedRandom from 'seedrandom';
 //import {TSNE} from '@keckelt/tsne';
 import {TSNE} from '../t-sne/t-sne';
+import {multiColWebGPUKNN} from '@datagrok-libraries/math';
 
 export interface IUMAPOptions {
     learningRate?: number;
@@ -21,6 +22,7 @@ export interface IUMAPOptions {
     minDist?: number;
     progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
     randomSeed?: string;
+    useWEBGPU?: boolean;
 }
 
 export interface ITSNEOptions {
@@ -29,11 +31,11 @@ export interface ITSNEOptions {
     dim?: number;
 }
 
-export interface IDimReductionParam<T extends number | string = number> {
+export interface IDimReductionParam<T extends number | string | boolean = number> {
     uiName: string;
-    value: (T extends number ? number : string) | null;
+    value: (T extends number ? number : T extends string ? string : boolean) | null;
     tooltip: string;
-    type?: T extends number ? 'number' : 'string';
+    type?: T extends number ? 'number' : T extends string ? 'string' : 'boolean';
     placeholder?: string;
     min?: number;
     max?: number;
@@ -125,6 +127,7 @@ class UMAPReducer extends MultiColumnReducer {
     protected vectors: number[];
     protected progressFunc?: (epoc: number, epochsLength: number, embedding: number[][]) => void;
     protected distanceFnArgs: {[_: string]: any}[];
+    protected useWEBGPU: boolean = false;
     /**
      * Creates an instance of UMAPReducer.
      * @param {Options} options Options to pass to the constructor.
@@ -139,7 +142,7 @@ class UMAPReducer extends MultiColumnReducer {
       this.distanceFnArgs = options.distanceFnArgs;
       this.distanceFns = options.distanceFns!;
       this.progressFunc = options.progressFunc;
-
+      this.useWEBGPU = options.useWEBGPU ?? false;
       this.distanceFnames = options.distanceFnames!;
       //Umap uses vector indexing, so we need to create an array of vectors as indeces.
       this.vectors = new Array(this.data[0].length).fill(0).map((_, i) => i);
@@ -158,11 +161,25 @@ class UMAPReducer extends MultiColumnReducer {
      */
     public async transform(_parallelDistanceWorkers?: boolean): Promise<Matrix> {
       console.time('knn graph');
-      const knnRes = await new SparseMatrixService()
-        .multiColumnKNN(this.data, this.distanceFnames, this.reducer.neighbors,
-          this.distanceFnArgs, this.weights, this.aggregationMethod);
+      let knnGraph: KnnResult | undefined = undefined;
+      if (this.useWEBGPU) {
+        try {
+          knnGraph = await multiColWebGPUKNN(
+            this.data, this.reducer.neighbors, this.distanceFnames as any, this.aggregationMethod as any,
+            this.weights, this.distanceFnArgs
+          ) as unknown as KnnResult;
+        } catch (e) {
+          console.error('WEBGPU KNN failed, falling back to multithreaded CPU implementation');
+          console.error(e);
+        }
+      }
+      if (!knnGraph) {
+        knnGraph = await new SparseMatrixService()
+          .multiColumnKNN(this.data, this.distanceFnames, this.reducer.neighbors,
+            this.distanceFnArgs, this.weights, this.aggregationMethod);
+      }
       console.timeEnd('knn graph');
-      this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
+      this.reducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
 
       // needed so that garbage collector can free memory from distance matrix
       await new Promise<void>((resolve) => {

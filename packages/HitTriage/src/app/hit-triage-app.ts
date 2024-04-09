@@ -16,6 +16,7 @@ import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
 import {calculateColumns} from './utils/calculate-single-cell';
+
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
@@ -35,6 +36,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   public campaignProps: {[key: string]: any} = {};
   private currentPickViewId?: string;
   private _pickViewPromise?: Promise<void> | null = null;
+
   constructor(c: DG.FuncCall) {
     super(c);
     this._infoView = new InfoView(this);
@@ -44,7 +46,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    grok.shell.addView(this.multiView);
+    //grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {
@@ -80,8 +82,15 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     if (this._campaign?.columnSemTypes) {
       Object.entries(this._campaign.columnSemTypes).forEach(([colName, semtype]) => {
         const col = this.dataFrame!.columns.byName(colName);
-        if (col)
+        if (col && col.semType !== semtype)
           col.semType = semtype;
+      });
+    };
+    if (this._campaign?.columnTypes) {
+      Object.entries(this._campaign.columnTypes).forEach(([colName, type]) => {
+        const col = this.dataFrame!.columns.byName(colName);
+        if (col && col.type !== type)
+          try {col.convertTo(type);} catch (e) {console.error(e);}
       });
     }
     await this.dataFrame.meta.detectSemanticTypes();
@@ -321,6 +330,10 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
     const columnSemTypes: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+
+    const colTypeMap: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
+
     const campaign: HitTriageCampaign = {
       name: campaignName,
       templateName,
@@ -337,6 +350,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       rowCount: enrichedDf.rowCount,
       filteredRowCount: enrichedDf.filter.trueCount,
       template: this.template as HitDesignTemplate | undefined,
+      columnTypes: colTypeMap,
     };
     this.campaign = campaign;
 

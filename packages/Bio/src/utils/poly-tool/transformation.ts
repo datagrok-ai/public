@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {HELM_WRAPPER} from './const';
@@ -221,11 +221,11 @@ function getHelmCycle(helm: string, source: ConnectionData): string {
 }
 
 export async function addTransformedColumn(
-  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[]
+  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[], chiralityEngine?: boolean
 ): Promise<void> {
   const df = molColumn.dataFrame;
-  const uh = UnitsHandler.getOrCreate(molColumn);
-  const sourceHelmCol = uh.convert(NOTATION.HELM);
+  const sh = SeqHandler.forColumn(molColumn);
+  const sourceHelmCol = sh.convert(NOTATION.HELM);
   const pt = PolymerTransformation.getInstance(sourceHelmCol);
   const fileSource = new DG.FileSource(RULES_PATH);
 
@@ -243,7 +243,7 @@ export async function addTransformedColumn(
   addCommonTags(targetHelmCol);
   targetHelmCol.setTag('units', NOTATION.HELM);
 
-  const molCol = await getMolColumnFromHelm(df, targetHelmCol);
+  const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
 
   if (addHelm) {

@@ -1,6 +1,6 @@
-- check different viewers docking capabilities
-- save the layout
+* check different viewers docking capabilities
+* save the layout
 ---
 {
-  "order": 16
+  "order": 17
 }

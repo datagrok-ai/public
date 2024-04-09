@@ -17,7 +17,6 @@ import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-seriali
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
 import {properUpdateIndicator} from './shared/utils';
-import {HistoricalRunEdit} from '../../shared-components/src/history-dialogs';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -65,19 +64,18 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-      parentCall?: DG.FuncCall
     } = {historyEnabled: true, isTabbed: false},
   ) {
     super();
     this.box = true;
-    this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
-    const parentView = this.parentCall?.parentCall?.aux?.['view'];
-    if (parentView && !this.options.isTabbed) {
-      this.parentCall = options.parentCall ?? grok.functions.getCurrentCall();
-      this.parentView = parentView;
-      if (this.parentCall?.func)
-        this.basePath = `/${this.parentCall.func.name}`;
-    }
+    this.parentCall = grok.functions.getCurrentCall();
+
+    if (initValue instanceof DG.FuncCall)
+      this.parentCall = initValue;
+
+    this.parentView = this.parentCall?.parentCall?.aux?.['view'];
+    this.basePath = `/${this.parentCall.func.name}`;
+
     this.init();
   }
 
@@ -100,7 +98,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const runId = this.getStartId();
     if (runId && !this.options.isTabbed) {
       ui.setUpdateIndicator(this.root, true);
-      this.loadRun(this.funcCall.id);
+      this.loadRun(runId);
       ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
@@ -386,6 +384,17 @@ export abstract class FunctionView extends DG.ViewBase {
     let isHistoryBlockOpened = false;
 
     this.subs.push(
+      newHistoryBlock.onCompactModeChanged.subscribe((newValue) => {
+        const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+        if (historyPanel) {
+          grok.shell.dockManager.close(historyPanel);
+
+          if (newValue)
+            grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+          else
+            grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+        }
+      }),
       newHistoryBlock.onRunChosen.subscribe(async (id) => {
         ui.setUpdateIndicator(this.root, true);
         await this.loadRun(id);
@@ -410,8 +419,10 @@ export abstract class FunctionView extends DG.ViewBase {
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
           if (isHistoryBlockOpened) {
-            grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
-            grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+            if (this.historyBlock?.compactMode)
+              grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+            else
+              grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
           }
         } else {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
@@ -426,7 +437,6 @@ export abstract class FunctionView extends DG.ViewBase {
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
-    this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
     this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
@@ -440,8 +450,13 @@ export abstract class FunctionView extends DG.ViewBase {
   buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => {
       if (!grok.shell.dockManager.findNode(this.historyRoot)) {
-        grok.shell.dockElement(this.historyRoot, 'History', 'right', 0.2);
-        grok.shell.dockManager.findNode(this.historyRoot)!.container.containerElement.style.height = '100%';
+        if (this.historyBlock?.compactMode)
+          grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
+        else
+          grok.shell.dockManager.dock(this.historyRoot, 'down', null, 'History', 0.3);
+
+        this.historyRoot.parentElement!.classList.add('ui-box');
+        this.historyRoot.classList.add('ui-box');
       }
     });
 
@@ -454,7 +469,7 @@ export abstract class FunctionView extends DG.ViewBase {
     const editBtn = ui.iconFA('edit', () => {
       if (!this.historyBlock || !this.lastCall) return;
 
-      this.historyBlock.showEditDialog(this.lastCall);
+      this.historyBlock.showEditDialog(this.historyBlock.history.get(this.funcCall.id)!);
     }, 'Edit this run metadata');
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
@@ -768,7 +783,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public isHistorical = new BehaviorSubject<boolean>(false);
 
-  protected historyRoot: HTMLDivElement = ui.box(null, {style: {height: '100%'}});
+  protected historyRoot: HTMLDivElement = ui.div();
 
   public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 
@@ -811,6 +826,10 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
+  }
+
+  protected get mainParams(): string[] | null {
+    return this.func.options['mainParams'] ? JSON.parse(this.func.options['mainParams']): null;
   }
 
   protected get mandatoryConsistent() {

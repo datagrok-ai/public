@@ -1,5 +1,35 @@
 # Compute changelog
 
+## 1.30.1 (2024-04-08)
+
+### Bug fixes
+
+- RFV: Default export properly works with nulls
+
+## 1.30.0 (2024-04-08)
+
+### Features
+
+- HistoryInput refactored: now uses same component as HistoryPanel
+- `mainInputs` tag renamed to `mainParams`
+- Both HistoryInput and HistoryPanel now use `mainParams` to determine visible columns
+
+## 1.29.1 (2024-04-03)
+
+### Features
+
+- HistoryPanel: Added compact mode
+- HistoryPanel: Fixed bug with supported column types
+
+## 1.29.0 (2024-03-29)
+
+### Features
+
+- RFV: Disabled re-run on inputs load
+- ModelCatalog: Full support of single-file models
+- HistoryPanel: Redesigned to use Grid
+
+
 ## 1.28.0 (2024-03-13)
 
 ### Features

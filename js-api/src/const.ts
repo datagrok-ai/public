@@ -113,6 +113,7 @@ export enum TYPE {
   NUMERICAL = 'numerical',
   GRID_CELL_RENDER_ARGS = 'GridCellRenderArgs',
 
+  ELEMENT = 'element',
   VIEW = 'view',
   TABLE_VIEW = 'TableView',
   USER = 'User',
@@ -291,6 +292,7 @@ export const TAGS = {
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
 
+
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.
     * Signature: app() */
@@ -349,6 +351,96 @@ export const FUNC_TYPES = {
   /** Converts values. Has one input and one output */
   CONVERTER: 'converter'
 }
+
+
+export interface FuncRoleDescription {
+  role: string;
+  description: string;
+  header: string;
+  signature?: string;
+}
+
+
+export const functionRoles: FuncRoleDescription[] = [
+  {
+    role: FUNC_TYPES.APP,
+    description: 'An application that gets shown in the app store.',
+    header: 'tags',
+    signature: 'app()'
+  },
+  {
+    role: FUNC_TYPES.PANEL,
+    description: 'Context-specific widget that appears on the context panel.',
+    header: 'tags',
+    signature: 'panel(x: any): Widget'
+  },
+  {
+    role: FUNC_TYPES.INIT,
+    description: 'Gets invoked when the containing package is initialized.',
+    header: 'tags',
+    signature: 'init()'
+  },
+  {
+    role: FUNC_TYPES.AUTOSTART,
+    description: 'Gets invoked at platform startup. Use it wisely as the whole package will get initialized.',
+    header: 'tags',
+    signature: 'autostart()'
+  },
+  {
+    role: FUNC_TYPES.SEM_TYPE_DETECTOR,
+    description: 'Semantic type detector for a column. Gets invoked when a new dataframe is imported into the platform.\n   *  Implementation should either set column.semType directly, or return the semantic type that will get assigned.',
+    header: 'tags',
+    signature: 'semTypeDetector(Column): string'
+  },
+  {
+    role: FUNC_TYPES.FILE_VIEWER,
+    header: 'tags',
+    description: 'Creates a viewer (or editor) for a file with the specified extension.\n   *  The extension is derived from the `fileViewer-[extension]` tag.\n   *  Used in the file system browser.',
+    signature: 'fileViewer(FileInfo): View'
+  },
+  {
+    role: FUNC_TYPES.FILE_EXPORTER,
+    header: 'tags',
+    description: 'Exports a file. Gets added to the "export" menu at startup.',
+    signature: 'fileExporter()'
+  },
+  {
+    role: FUNC_TYPES.FILE_IMPORTER,
+    header: 'tags',
+    description: 'andles custom file formats.\n   * The `meta.ext` parameter should contain a comma-separated list of extensions',
+    signature: 'fileImporter(x: string | TypedArray): DataFrame[]'
+  },
+  {
+    role: FUNC_TYPES.CELL_RENDERER,
+    header: 'tags',
+    description: 'Creates a cell renderer that is used for rendering cells for specific semantic types.\n   *  Semantic type is derived from the `cellRenderer-[semType]` tag.',
+    signature: 'cellRenderer(): GridCellRenderer'
+  },
+  {
+    role: FUNC_TYPES.PACKAGE_SETTINGS_EDITOR,
+    header: 'tags',
+    description: 'Edits package settings.',
+    signature: 'packageSettingsEditor(): Widget'
+  },
+  {
+    role: FUNC_TYPES.DASHBOARD,
+    description: 'Makes a widget appear on the welcome screen.',
+    header: 'tags',
+    signature: 'dashboard(): DG.Widget'
+  },
+  {
+    role: FUNC_TYPES.FUNCTION_ANALYSIS,
+    description: 'Function analysis that gets added to the function view. Examples: sensitivity analysis, parameter editor',
+    header: 'tags',
+    signature: 'functionAnalysis(x:func):View'
+  },
+  {
+    role: FUNC_TYPES.CONVERTER,
+    description: 'Converts values. Has one input and one output',
+    header: 'role',
+    signature: 'converter(x: any): any'
+  },
+]
 
 export enum LOG_LEVEL {
   DEBUG = 'debug',

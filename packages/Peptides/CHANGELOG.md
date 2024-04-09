@@ -1,5 +1,17 @@
 # Peptides changelog
 
+## 1.17.13 (2024-04-02)
+
+### Features
+
+* Add max activity vs cluster size viewer.
+
+## 1.17.12 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to ISeqSplitted
+
 ## 1.17.11 (2024-03-12)
 
 * Fix context panel issues with mutation cliff pairs.
@@ -132,7 +144,8 @@ Added MCL clustering to peptide analysis.
 
 ### Features
 
-* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff
+  pairs panel.
 * Added icon to expand grids in property panel to fullscreen.
 
 ### Bug Fixes
@@ -168,7 +181,8 @@ Added MCL clustering to peptide analysis.
 * Monomer-Position and Most Potent Residues: Circle size is now based on the absolute value of mean difference.
 * Scaling default colors (blue for low values and red for high) in Monomer-Position viewer.
 * Highlight rows on mouse over Monomer-Position, Most Potent Residues, Logo Summary Table and WebLogo in the header.
-* Changed viewer interactivity to match the platform defaults. Learn more about viewer hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
+* Changed viewer interactivity to match the platform defaults. Learn more about viewer
+  hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
 * Accordion with actions, mutation cliffs pairs, distribution and selection panels now shows on any selection.
 * Removed steps from tutorial.
 * Ignore rows with missing values when starting the analysis.
@@ -246,8 +260,10 @@ This release focuses on improving analysis stability and usability.
 
 * Improved activity distribution plots to show selected vs. all.
 * Added position number in main table view column headers.
-* The Monomer-Position viewer in the Mutation Cliffs mode now shows the number of unique sequences that have monomer mutation at the selected position.
-* The Monomer-Position viewer in the Mutation Cliffs mode now selects unique sequences that have monomer mutation at the selected position.
+* The Monomer-Position viewer in the Mutation Cliffs mode now shows the number of unique sequences that have monomer
+  mutation at the selected position.
+* The Monomer-Position viewer in the Mutation Cliffs mode now selects unique sequences that have monomer mutation at the
+  selected position.
 * The Mutation Cliffs panel now shows unique sequences and corresponding values from columns visible in the table view.
 
 ### Bug Fixes

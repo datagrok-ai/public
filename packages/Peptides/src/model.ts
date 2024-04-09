@@ -13,7 +13,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as _treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
@@ -53,12 +53,14 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {getDbscanWorker} from '@datagrok-libraries/math';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {ClusterMaxActivityViewer, IClusterMaxActivity} from './viewers/cluster-max-activity-viewer';
 
 export enum VIEWER_TYPE {
   MONOMER_POSITION = 'Monomer-Position',
   MOST_POTENT_RESIDUES = 'Most Potent Residues',
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
+  CLUSTER_MAX_ACTIVITY = 'Cluster Max Activity',
 }
 
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
@@ -190,6 +192,9 @@ export class PeptidesModel {
       case 'showDendrogram':
         updateVars.add('dendrogram');
         break;
+      case 'showClusterMaxActivity':
+        updateVars.add('clusterMaxActivity');
+        break;
       case 'showSequenceSpace':
         updateVars.add('showSequenceSpace');
         break;
@@ -249,6 +254,10 @@ export class PeptidesModel {
         break;
       case 'dendrogram':
         this.settings!.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
+        break;
+      case 'clusterMaxActivity':
+        this.settings!.showClusterMaxActivity ? this.addClusterMaxActivityViewer() :
+          this.closeViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY);
         break;
       case 'logoSummaryTable':
         this.settings!.showLogoSummaryTable ? this.addLogoSummaryTable() :
@@ -1115,6 +1124,22 @@ export class PeptidesModel {
     logoSummaryTable.viewerGrid.invalidate();
   }
 
+  async addClusterMaxActivityViewer(viewerProperties?: IClusterMaxActivity): Promise<void> {
+    const potentialClusterCol = this._mclCols?.find((colName) => colName.toLowerCase().startsWith('cluster (mcl)')) ??
+      (this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null)?.clustersColumnName ??
+      this._sequenceSpaceCols?.find((colName) => colName.toLowerCase().startsWith('cluster'));
+    viewerProperties ??= {
+      activityColumnName: this.settings!.activityColumnName,
+      clusterColumnName: potentialClusterCol ?? wu(this.df.columns.categorical).next().value?.name,
+      activityTarget: C.ACTIVITY_TARGET.HIGH,
+    };
+    const _clusterMaxActivity = await this.df.plot
+      .fromType(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, viewerProperties) as ClusterMaxActivityViewer;
+    const lstNode = this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ?? null;
+    this.analysisView.dockManager.dock(_clusterMaxActivity, lstNode ? DG.DOCK_TYPE.DOWN: DG.DOCK_TYPE.RIGHT,
+      lstNode, VIEWER_TYPE.CLUSTER_MAX_ACTIVITY);
+  }
+
   /**
    * Adds Monomer-Position viewer to the analysis view
    * @param {ISARViewer} [viewerProperties] - Viewer properties
@@ -1231,13 +1256,13 @@ export class PeptidesModel {
     const seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     this.settings!.mclSettings ??= new type.MCLSettings();
     const mclParams = this.settings?.mclSettings;
-
     let counter = 0;
-    const addedColCount = 4;
+    const addedColCount = 5; // embedx, embedy, cluster, cluster size and connectivity count
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
       for (const col of colArgs.columns) {
-        if (col.name.toLowerCase().startsWith('embed') ||
-        col.name.toLowerCase().startsWith('cluster')) {
+        if ((col.name.toLowerCase().startsWith('embed') ||
+        col.name.toLowerCase().startsWith('cluster') ||
+        col.name.toLowerCase().startsWith('connectivity')) && col.name.toLowerCase().includes('mcl')) {
           const gridCol = this.analysisView.grid.col(col.name);
           if (gridCol == null || this._mclCols.includes(col.name))
             continue;
@@ -1276,7 +1301,7 @@ export class PeptidesModel {
       }], mclParams!.threshold, mclParams!.maxIterations,
     );
     mclAdditionSub.unsubscribe();
-    this._mclViewer = mclViewer ?? null;
+    this._mclViewer = mclViewer?.sc ?? null;
   }
 
   /**
@@ -1293,13 +1318,13 @@ export class PeptidesModel {
       this._sequenceSpaceCols.forEach((col) => this.df.columns.remove(col));
     this._sequenceSpaceCols = [];
     let seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
-    const uh = UnitsHandler.getOrCreate(seqCol);
-    const isHelm = uh.isHelm();
+    const sh = SeqHandler.forColumn(seqCol);
+    const isHelm = sh.isHelm();
     if (isHelm) {
       try {
         grok.shell.warning('Column is in HELM notation. Sequences space will linearize sequences from position 0 ' +
           'prior to analysis');
-        const linearCol = uh.convert(NOTATION.SEPARATOR, '/');
+        const linearCol = sh.convert(NOTATION.SEPARATOR, '/');
         const newName = this.df.columns.getUnusedName(`Separator(${seqCol.name})`);
         linearCol.name = newName;
         this.df.columns.add(linearCol, true);

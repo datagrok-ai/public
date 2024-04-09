@@ -23,7 +23,7 @@ What's more, Datagrok understands the nature of your
   data, offering actionable insights. It can
   [suggest suitable visualizations](../../../../visualize/view-layout.md#layout-suggestions) for your datasets, automatically render  chemical structures, calculate descriptors, or predict properties. It gives you every tool you need to explore data and uncover its meaning.
 
-![img](../../../../visualize/viewers-interaction-main.gif)
+![img](../../../../visualize/viewers/img/viewers-interaction-main.gif)
 
 * [Bring data from anywhere](../../../../access/access.md#data-sources). Your data is automatically parsed and rendered in a spreadsheet. The spreadsheet works with _millions of columns_ and _billions of rows_ and has powerful features:
   * Built-in statistics and dataset overview

@@ -218,8 +218,8 @@ export function getTileCategoryEditor(preset?: string[]) {
       items.push(addingItem.Name);
     return items;
   }
-  itemsGrid.onItemAdded.subscribe((item) => {
-    addingItem = item ?? {};
+  itemsGrid.onItemAdded.subscribe((_) => {
+    addingItem = {};
   });
   itemsGrid.onAddingItemChanged.subscribe((item) => {
     if (item)
