@@ -18,7 +18,7 @@ jobs:
           SLACK_FOOTER: "Slack message footer."
           SLACK_CUSTOM_PAYLOAD: '{"type": "context","elements":[{"type": "mrkdwn", "text": "Hello world"}'
           SLACK_MESSAGE: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
-          SLACK_TITLE: GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+          SLACK_TITLE: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
     # uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
     # secrets: inherit
