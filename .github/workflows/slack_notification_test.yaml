@@ -23,7 +23,7 @@ jobs:
       - name: Slack Failed Build Notification
         uses: act10ns/slack@v2.1.0
         with:
-          status: ${{ job.status }}
+          status: "failure"
           steps: ${{ toJson(steps) }}
           config: ".github/config/slack.yml"
                   
