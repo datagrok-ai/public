@@ -48,7 +48,7 @@ footer: >-
 colors:
   success: '#4CE809'
   failure: '#E80914'
-  cancelled: '#A569BD'
+  cancelled: '#EDDE05'
   default: '#7D3C98'
 
 icons:
@@ -57,4 +57,3 @@ icons:
   cancelled: ':grimacing:'
   skipped: ':heavy_minus_sign:'
   default: ':interrobang:'
-  
