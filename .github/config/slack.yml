@@ -20,7 +20,7 @@ fallback: |-
 
 fields:
   - title: Job Steps
-    value: "123"
+    value: "{{#each jobSteps}}{{icon this.outcome}} {{@key}}\n{{/each}}"
     short: true
   - title: Job Matrix
     value: "{{#each jobMatrix}}{{@key}}: {{this}}\n{{/each}}"
@@ -46,7 +46,7 @@ fields:
     short: true
 
 footer: >-
-  <{{repositoryUrl}}|{{repositoryName}}> {{workflow}} #{{runNumber}}
+  <{{repositoryUrl}}|{{repositoryName}}> asdsadsad{{workflow}} #{{runNumber}}
 
 colors:
   success: '#5DADE2'
