@@ -22,9 +22,6 @@ fields:
   - title: Job Steps
     value: "{{#each jobSteps}}{{icon this.outcome}} {{@key}}\n{{/each}}"
     short: false
-  - title: Job Matrix
-    value: "{{#each jobMatrix}}{{@key}}: {{this}}\n{{/each}}"
-    short: false
   - title: Workflow
     value: "<{{workflowUrl}}|{{workflow}}>"
     short: true
@@ -56,7 +53,7 @@ colors:
 
 icons:
   success: ':white_check_mark:'
-  failure: ':grimacing:'
-  cancelled: ':x:'
+  failure: ':x:'
+  cancelled: ':grimacing:'
   skipped: ':heavy_minus_sign:'
   default: ':interrobang:'
