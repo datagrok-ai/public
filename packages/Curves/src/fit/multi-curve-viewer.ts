@@ -81,6 +81,8 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
         series.showPoints = '';
       series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
       series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.showCurveConfidenceInterval = false;
+      series.droplines = [];
     });
   }
 
