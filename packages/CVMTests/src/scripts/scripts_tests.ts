@@ -45,7 +45,7 @@ for (const lang of langs) {
       const currentTime = dayjs();
       const result = await grok.functions.call(`CVMTests:${lang}Date`,
         {'input_datetime': currentTime});
-      if (lang == 'Octave')
+      if (lang === 'Octave' || lang === 'R')
         expect(currentTime.add(1, 'day').format('YYYY-MM-DDTHH:mm:ss'), result.format('YYYY-MM-DDTHH:mm:ss'));
       else
         expect(result.valueOf(), currentTime.add(1, 'day').valueOf());
@@ -55,12 +55,14 @@ for (const lang of langs) {
       function getSample() {
         return DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
       }
+      const sample1 = getSample();
+      const sample2 = getSample();
+      const sample3 = getSample();
       const result = await grok.functions.call(`CVMTests:${lang}Dataframe`,
-        {'df': getSample(), 'dfNumerical': getSample(), 'dfCategorical': getSample()});
-      const sample = getSample();
-      expectTable(result['resultDf'], sample);
-      expectTable(result['resultNumerical'], sample);
-      expectTable(result['resultCategorical'], sample);
+        {'df': sample1, 'dfNumerical': sample2, 'dfCategorical': sample3});
+      expectTable(result['resultDf'], sample1);
+      expectTable(result['resultNumerical'], sample2);
+      expectTable(result['resultCategorical'], sample3);
     });
 
     test('Map type input/output', async () => {
@@ -75,6 +77,19 @@ for (const lang of langs) {
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
         expect(!result || result.length === 0, false);
       });
+
+      test('DataFrame int column correctness', async () => {
+        const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
+        if (lang !== 'R') {
+          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.INT, true);
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.BIG_INT, true);
+        }
+        else {
+          // R returns float columns. They can be easily converted to int
+          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.FLOAT, true);
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.FLOAT, true);
+        }
+      });
     }
 
     if (!['JavaScript', 'Grok'].includes(lang)) {
@@ -83,8 +98,8 @@ for (const lang of langs) {
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
             {'fileInput': FileInfo.fromString(fileStringData), 'blobInput': FileInfo.fromBytes(fileBinaryData)});
-        expect((result['fileOutput'] as FileInfo).data, fileBinaryData);
-        expect((result['blobOutput'] as FileInfo).data, fileBinaryData);
+        expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as FileInfo).data), true);
+        expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as FileInfo).data), true);
       });
     }
 
@@ -246,4 +261,15 @@ function randomString(length: number, chars: string) {
   let result = '';
   for (let i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
   return result;
+}
+
+function isEqualBytes(bytes1: Uint8Array, bytes2: Uint8Array): boolean {
+  if (bytes1.length !== bytes2.length)
+    return false;
+
+  for (let i = 0; i < bytes1.length; i++)
+    if (bytes1[i] !== bytes2[i])
+      return false;
+
+  return true;
 }
