@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.8 (2024-04-09)
+
+### Features
+
+* To atomic level: STEABS block contains less than 80 symbols per row
+
 ## 2.12.7 (2024-04-08)
 
 ### Features
