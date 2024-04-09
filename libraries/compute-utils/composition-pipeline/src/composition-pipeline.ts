@@ -336,7 +336,7 @@ export class LinkState {
 
   public getValuesChanges() {
     return this.valueChanges.pipe(
-      withLatestFrom(this.enabled, this.pipelineState.initialLoading, this.pipelineState.runChanging),
+      withLatestFrom(this.enabled, this.pipelineState.globalLoading, this.pipelineState.runChanging),
       filter(([, enabled, initialLoading, runChanging]) => {
         if (!enabled)
           return false;
@@ -353,7 +353,7 @@ export class LinkState {
 }
 
 export class PipelineState {
-  initialLoading = new BehaviorSubject<boolean>(true);
+  globalLoading = new BehaviorSubject<boolean>(true);
   runChanging = new BehaviorSubject<boolean>(false);
   closed = new Subject<true>();
 }
@@ -817,8 +817,8 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     super.build();
     this.rt!.wireViews();
     this.rt!.wireLinks();
-    this.rt!.pipelineState.initialLoading.next(false);
-    this.execHooks('onViewReady');
+    this.rt!.pipelineState.globalLoading.next(false);
+    this.execHooks('onViewReady', {view: this});
   }
 
   override close() {
@@ -853,13 +853,13 @@ export class RFVPopup extends RichFunctionView {
 }
 
 export class CompositionPipeline {
-  private id: ItemName;
-  private nqName: NqName;
+  private id?: ItemName;
+  private nqName?: NqName;
   private exportConfig?: ExportConfig;
 
   private pipelineState = new PipelineState();
 
-  private config: CompositionGraphConfig;
+  private config?: CompositionGraphConfig;
   private ioInfo = new Map<NqName, StateItemConfiguration[]>();
   private nodes = new Map<PathKey, NodeState>();
   private links = new Map<PathKey, LinkState>();
@@ -884,18 +884,30 @@ export class CompositionPipeline {
     return {...compositionConfig, nestedPipelines};
   }
 
-  constructor(conf: PipelineConfigVariants) {
+  constructor(conf?: PipelineConfigVariants) {
+    if (conf) {
+      this.setConfig(conf);
+    }
+  }
+
+  public setConfig(conf: PipelineConfigVariants) {
+    if (this.config)
+      throw new Error('Pipeline already has config');
     this.config = cloneConfig(conf);
     this.id = this.config.id;
     this.nqName = this.config.nqName;
     this.exportConfig = this.config.exportConfig;
+
   }
 
-  public makePipelineView() {
+  public makePipelineView(nqName = this.nqName) {
     if (this.viewInst)
-      throw new Error(`View has been already created for pipeline ${this.nqName} ${this.id}`);
+      throw new Error(`View has been already created for pipeline ${nqName}`);
 
-    this.viewInst = new CompositionPipelineView(this.nqName);
+    if (!nqName)
+      throw new Error('No nqName for pipeline');
+
+    this.viewInst = new CompositionPipelineView(nqName);
     return this.viewInst;
   }
 
@@ -988,6 +1000,9 @@ export class CompositionPipeline {
   }
 
   private processConfig() {
+    if (!this.config)
+      throw new Error('No pipeline config');
+
     // process merge config
     const {toRemove, toAdd} = traverseConfigPipelines(
       this.config,
@@ -1216,6 +1231,9 @@ export class CompositionPipeline {
   // funcall states
 
   private addScriptStatesToConfig() {
+    if (!this.config)
+      throw new Error('No pipeline config');
+
     traverseConfigPipelines(
       this.config,
       (acc, node) => {
@@ -1254,6 +1272,9 @@ export class CompositionPipeline {
   }
 
   private async gatherIONqNames() {
+    if (!this.config)
+      throw new Error('No pipeline config');
+
     const names = new Set<string>();
     traverseConfigPipelines(
       this.config,
