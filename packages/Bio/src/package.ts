@@ -78,6 +78,7 @@ import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
+import {DimerizedNotationProvider} from './utils/poly-tool/dimerized';
 
 export const _package = new BioPackage();
 
@@ -1055,4 +1056,11 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
 //input: string separator
 export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
   col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
+}
+
+//name: applyNotationProviderForDimerized
+//input: column col
+//input: string separator
+export function applyNotationProviderForDimerized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new DimerizedNotationProvider(separator);
 }

@@ -598,14 +598,23 @@ class BioPackageDetectors extends DG.Package {
 }
 
 async function refineSeqSplitter(col, stats, separator) {
-  let invalidateRequired = false;
-  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
-  if (isCyclized) {
-    await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
-    // SeqHandler will be recreated and replaced with the next call .forColumn()
-    // because of changing tags of the column
-    invalidateRequired = true;
-  }
+  const invalidateRequired = await (async () => {
+    const isDimerized = Object.keys(stats.freq).some((om) => {
+      if (om.match(/^\([#$]\d+\)/)) return true;
+    });
+    if (isDimerized) {
+      await grok.functions.call('Bio:applyNotationProviderForDimerized', {col: col, separator: separator});
+      return true;
+    }
+
+    const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
+    if (isCyclized) {
+      await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
+      // SeqHandler will be recreated and replaced with the next call .forColumn()
+      // because of changing tags of the column
+      return true;
+    }
+  })();
 
   if (invalidateRequired) {
     // Applying custom notation provider MUST invalidate SeqHandler

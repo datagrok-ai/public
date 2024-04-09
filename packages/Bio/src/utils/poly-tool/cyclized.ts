@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {GAP_SYMBOL, INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {
+  GAP_SYMBOL, INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc
+} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitterWithSeparator, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';

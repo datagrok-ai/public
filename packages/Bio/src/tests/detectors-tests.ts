@@ -152,6 +152,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     testSpgi = 'testSpgi',
     testSpgi100 = 'testSpgi100',
     testUrl = 'testUrl',
+    testPolyTool1 = 'testPolyTool1',
   }
 
   const samples: { [key: string]: string } = {
@@ -176,6 +177,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
     [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
     [Samples.testUrl]: 'System:AppData/Bio/tests/testUrl.csv',
+    [Samples.testPolyTool1]: 'System:AppData/Bio/tests/testPolytool1.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -287,12 +289,12 @@ MWRSWY-CKHPMWRSWY-CKHP`;
 
   test('SepMsaUnWEmpty', async () => {
     await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
-      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true, '-');
   });
 
   test('SepComplex', async () => {
     await _testPos(readCsv(csvTests.sepComplex), 'seq',
-      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true, '-');
   });
 
   test('samplesFastaCsv', async () => {
@@ -392,6 +394,12 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   test('samplesTestUrl', async () => {
     await _testDf(readSamples(Samples.testUrl), {} /* no positive */);
   });
+
+  test('samplesTestPolytool', async () => {
+    await _testDf(readSamples(Samples.testPolyTool1), {
+      'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true, '-'),
+    });
+  });
 });
 
 export async function _testNegList(list: string[]): Promise<void> {
@@ -460,6 +468,10 @@ export async function _testPos(
   expect(col.getTag(bioTAGS.alphabet), alphabet);
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
+  else {
+    expect(bioTAGS.separator in col.tags, false,
+      `Unexpected column's tag '${bioTAGS.separator}' of value '${col.getTag(bioTAGS.separator)}'.`);
+  }
 
   const sh = SeqHandler.forColumn(col);
   expect(sh.getAlphabetSize(), alphabetSize);
