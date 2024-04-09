@@ -9,9 +9,6 @@ jobs:
   job1:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        id: checkout
-        uses: actions/checkout@v3
       - name: Slack Failed Build Notification
         id: fall
         run: eco 123 asd asd sad 
@@ -33,7 +30,7 @@ jobs:
       - name: Slack Failed Build Notification
         uses: act10ns/slack@v2.1.0
         with:
-          status: ${{ env.WORKFLOW_CONCLUSION }}
+          status: ${{ github.event.workflow_run.conclusion }}
           config: ".github/config/slack.yml"
                   
           webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
