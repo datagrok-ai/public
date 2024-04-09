@@ -1,5 +1,5 @@
 username: GitHub-CI
-icon_url: https://octodex.github.com/images/mona-the-rivetertocat.png
+icon_url: https://static-00.iconduck.com/assets.00/github-icon-2018x2048-8uyrp3nr.png
 
 pretext: Triggered via {{eventName}} by {{actor}} {{or action "action"}} {{ref}} `{{diffRef}}`
 title: GitHub Actions
