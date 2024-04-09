@@ -9,17 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Slack Failed Build Notification
-        uses: rtCamp/action-slack-notify@v2.2.0
-        env:
-          SLACK_ICON_EMOJI: ':ship:'
-          SLACK_USERNAME: BOT
-          # SLACK_CHANNEL: githubactions
-          SLACK_COLOR: 'danger'
-          SLACK_FOOTER: "Slack message footer."
-          SLACK_CUSTOM_PAYLOAD: '{"type": "context","elements":[{"type": "mrkdwn", "text": "Hello world"}'
-          SLACK_MESSAGE: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
-          SLACK_TITLE: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
+        uses: act10ns/slack@v2
+        with:
+          status: ${{ job.status }}
+          config: .github/config/slack.yml
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        # uses: rtCamp/action-slack-notify@v2.2.0
+        # env:
+        #   SLACK_ICON_EMOJI: ':ship:'
+        #   SLACK_USERNAME: BOT
+        #   # SLACK_CHANNEL: githubactions
+        #   SLACK_COLOR: 'danger'
+        #   SLACK_FOOTER: "Slack message footer."
+        #   SLACK_CUSTOM_PAYLOAD: '{"type": "context","elements":[{"type": "mrkdwn", "text": "Hello world"}'
+        #   SLACK_MESSAGE: "Test results are empty. Probably it was caused by timeout. Check the job output for more information"
+        #   SLACK_TITLE: "GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+        #   SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
     # uses: datagrok-ai/public/.github/workflows/slack_notification.yml@vhlushchenko/GROK-15351-github-notification
     # secrets: inherit
     # with: 
