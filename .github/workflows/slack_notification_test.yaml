@@ -18,7 +18,7 @@ jobs:
       - name: test
         run: echo 123
       - name: Slack Failed Build Notification
-        uses: act10ns/slack@v2
+        uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
           steps: true
