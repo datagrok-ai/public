@@ -39,7 +39,7 @@ fields:
     value: "{{runNumber}}"
     short: true
   - title: Actor
-    value: "{{actor}}"
+    value: "123"
     short: true
   - title: Job Status
     value: "{{jobStatus}}"

@@ -20,7 +20,7 @@ jobs:
       - name: Slack Failed Build Notification
         uses: act10ns/slack@v2
         with:
-          # status: ${{ job.status }}
+          status: ${{ job.status }}
           steps: true
           config: .github/config/slack.yml
           webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
