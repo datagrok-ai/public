@@ -15,7 +15,8 @@ import {carsDataframe, testDataForBinaryClassification} from './data-generators'
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
-import {oneWayAnova} from './stat-tools';
+import {oneWayAnova} from './anova/anova-tools';
+import {runOneWayAnova} from './anova/anova-ui';
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
 import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
@@ -417,17 +418,24 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
   return await getPrediction(df, model);
 }
 
-//top-menu: ML | Analyze | ANOVA...
-//name: ANOVA
+//top-menu: ML | Analyze | ANOVA old...
+//name: ANOVAold
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table
 //input: column factor {type: categorical}
 //input: column feature {type: numerical}
 //input: double significance = 0.05 [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
 //input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
+export function anovaOld(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
   addOneWayAnovaVizualization(table, factor, feature, res);
+}
+
+//top-menu: ML | Analyze | ANOVA...
+//name: ANOVAold
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
+export function anova(): void {
+  runOneWayAnova();
 }
 
 //top-menu: ML | Missing Values Imputation ...

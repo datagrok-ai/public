@@ -1,4 +1,4 @@
-// Statistic tools
+// Analysis of Variances (ANOVA): computations
 
 /* REFERENCES
 
