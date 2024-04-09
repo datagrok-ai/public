@@ -29,7 +29,7 @@ jobs:
       - uses: technote-space/workflow-conclusion-action@v3
       - name: test
         id: test
-        run: echo $GITHUB_ACTION
+        run: eho $GITHUB_ACTION
       - name: Slack Failed Build Notification
         uses: act10ns/slack@v2.1.0
         with:

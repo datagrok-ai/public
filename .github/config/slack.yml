@@ -50,7 +50,7 @@ footer: >-
 
 colors:
   success: '#4CE809'
-  failure: '#884EA0'
+  failure: '#E80914'
   cancelled: '#A569BD'
   default: '#7D3C98'
 
