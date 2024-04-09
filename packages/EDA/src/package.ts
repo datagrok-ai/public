@@ -10,7 +10,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart,
-  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
+  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
@@ -428,7 +428,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
 export function anovaOld(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {
   const res = oneWayAnova(factor, feature, significance, validate);
-  addOneWayAnovaVizualization(table, factor, feature, res);
+  //addOneWayAnovaVizualization(table, factor, feature, res);
 }
 
 //top-menu: ML | Analyze | ANOVA...

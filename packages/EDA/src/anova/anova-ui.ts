@@ -4,8 +4,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {oneWayAnova} from './anova-tools';
+
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
+
+
+/** Add one-way ANOVA results */
+function addOneWayAnovaVizualization(
+  table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: DG.DataFrame,
+): void {
+  const view = grok.shell.getTableView(table.name);
+  view.addViewer(DG.Viewer.boxPlot(DG.DataFrame.fromColumns([factors, values])));
+  view.addViewer(DG.Viewer.grid(anova));
+}
 
 /** Run one-way analysis of variances */
 export function runOneWayAnova(): void {
@@ -74,11 +86,13 @@ export function runOneWayAnova(): void {
   validateInput.onChanged(() => validate = validateInput.value);
   validateInput.setTooltip('Indicates whether to check the normality of distribution and an eqaulity of varainces.');
 
-  const dlg = ui.dialog({title: 'ANOVA', helpUrl: 'https://datagrok.ai/help/explore/anova'});
+  const dlg = ui.dialog({title: 'ANOVA', helpUrl: '/help/explore/anova'});
   const view = grok.shell.getTableView(df.name);
   view.root.appendChild(dlg.root);
   dlg.addButton('Run', () => {
     dlg.close();
+    const res = oneWayAnova(factor!, feature!, significance, validate);
+    addOneWayAnovaVizualization(df, factor!, feature!, res);
   }, undefined, 'Perform analysis of variances');
 
   const runBtn = dlg.getButton('Run');
@@ -88,4 +102,4 @@ export function runOneWayAnova(): void {
     .add(signInput)
     .add(validateInput)
     .show();
-}
+} // runOneWayAnova
