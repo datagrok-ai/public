@@ -1,7 +1,7 @@
 username: GitHub-CI
 icon_url: https://octodex.github.com/images/mona-the-rivetertocat.png
 
-pretext: Triggered via {{eventName}} by {{actor}} {{or action "action"}} {{ref}} `{{diffRef}}`
+pretext: Triggered via {{eventName}} by123 {{actor}} {{or action "action"}} {{ref}} `{{diffRef}}`
 title: GitHub Actions
 title_link: https://support.github.com
 
@@ -21,10 +21,10 @@ fallback: |-
 fields:
   - title: Job Steps
     value: "{{#each jobSteps}}{{icon this.outcome}} {{@key}}\n{{/each}}"
-    short: true
+    short: false
   - title: Job Matrix
     value: "{{#each jobMatrix}}{{@key}}: {{this}}\n{{/each}}"
-    short: true
+    short: false
   - title: Workflow
     value: "<{{workflowUrl}}|{{workflow}}>"
     short: true
@@ -39,7 +39,7 @@ fields:
     value: "{{runNumber}}"
     short: true
   - title: Actor
-    value: "123"
+    value: "{{actor}}"
     short: true
   - title: Job Status
     value: "{{jobStatus}}"
