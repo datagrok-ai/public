@@ -46,7 +46,7 @@ fields:
     short: true
 
 footer: >-
-  <{{repositoryUrl}}|{{repositoryName}}> asdsadsad{{workflow}} #{{runNumber}}
+  <{{repositoryUrl}}|{{repositoryName}}> {{workflow}} #{{runNumber}}
 
 colors:
   success: '#5DADE2'
