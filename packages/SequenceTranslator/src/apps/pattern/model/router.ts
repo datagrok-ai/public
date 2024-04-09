@@ -18,8 +18,7 @@ export class URLRouter {
 
   setPatternURL(patternHash: string): void {
     if (patternHash === null || patternHash === '') {
-      this.urlSearchParams.delete(PATTERN_KEY);
-      window.history.pushState({}, '', `${window.location.pathname}`);
+      this.clearPatternURL();
       return;
     }
 
@@ -28,6 +27,7 @@ export class URLRouter {
   }
 
   clearPatternURL(): void {
-    this.setPatternURL('');
+    this.urlSearchParams.delete(PATTERN_KEY);
+    window.history.pushState({}, '', `${window.location.pathname}`);
   }
 }

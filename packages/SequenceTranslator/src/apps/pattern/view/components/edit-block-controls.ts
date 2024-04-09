@@ -63,7 +63,7 @@ export class PatternEditControlsManager {
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(
       `${STRAND_LABEL[STRAND.ANTISENSE]} strand`,
-      true
+      this.eventBus.isAntisenseStrandActive()
     );
 
     toggleAntisenseStrand.onInput(

@@ -139,5 +139,5 @@ export const EXAMPLE_PATTERN_CONFIG =
       'RNA'
     ]
   },
-  'authorID': 'example'
+  'authorID': ''
 };

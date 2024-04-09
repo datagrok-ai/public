@@ -3,18 +3,22 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
-import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, STRAND, STRANDS} from './const';
+import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS} from './const';
 // import {PatternDefaultsProvider} from './defaults-provider';
 import {
-  NucleotideSequences, PatternConfiguration, PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
+  NucleotideSequences, PatternConfigRecord, PatternConfiguration,
+  PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
 } from './types';
 import {
   getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels, StrandEditingUtils
 } from './utils';
+import {DataManager} from './data-manager';
 
 /** Manager of all events in the application, *the* central state manager.
  * Use for communication between app's components to avoid tight coupling. */
 export class EventBus {
+  private _patternAuthorSelection$: rxjs.BehaviorSubject<string>;
+
   private _patternName$: rxjs.BehaviorSubject<string>;
 
   private _isAntisenseStrandActive$: rxjs.BehaviorSubject<boolean>;
@@ -33,15 +37,16 @@ export class EventBus {
   private _uniqueNucleotides$ = new rxjs.BehaviorSubject<string[]>([]);
 
   private _patternDeletionRequested$ = new rxjs.Subject<string>();
-  private _userSelection$ = new rxjs.BehaviorSubject<string>('');
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
 
   private _svgSaveRequested$ = new rxjs.Subject<void>();
 
   constructor(
-    initialPatternConfiguration: PatternConfiguration
+    private dataManager: DataManager,
+    initialPaternConfigRecord: PatternConfigRecord
   ) {
-    this.initializeDefaultState(initialPatternConfiguration);
+    this.initializeAuthorSelection(initialPaternConfigRecord);
+    this.initializePatternState(initialPaternConfigRecord);
 
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotides();
@@ -65,30 +70,41 @@ export class EventBus {
     return this._nucleotideSequences$.asObservable();
   }
 
-  private initializeDefaultState(
-    initialPatternConfiguration: PatternConfiguration
+  private initializeAuthorSelection(
+    initialConfigRecord: PatternConfigRecord
   ) {
-    this._patternName$ = new rxjs.BehaviorSubject(initialPatternConfiguration[L.PATTERN_NAME]);
+    const patternAuthorId = initialConfigRecord[R.AUTHOR_ID];
+    if (this.dataManager.isCurrentUserId(patternAuthorId))
+      this._patternAuthorSelection$ = new rxjs.BehaviorSubject(this.dataManager.getCurrentUserAuthorshipCategory());
+    else
+      this._patternAuthorSelection$ = new rxjs.BehaviorSubject(this.dataManager.getOtherUsersAuthorshipCategory());
+  }
+
+  private initializePatternState(
+    initialConfigRecord: PatternConfigRecord
+  ) {
+    const initialPattern = initialConfigRecord[R.PATTERN_CONFIG];
+    this._patternName$ = new rxjs.BehaviorSubject(initialPattern[L.PATTERN_NAME]);
     this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]
+      initialPattern[G.IS_ANTISENSE_STRAND_INCLUDED]
     );
     this._nucleotideSequences$ = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[G.NUCLEOTIDE_SEQUENCES]
+      initialPattern[G.NUCLEOTIDE_SEQUENCES]
     );
     this._phosphorothioateLinkageFlags = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]
+      initialPattern[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]
     );
     this._terminalModifications = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]
+      initialPattern[G.STRAND_TERMINUS_MODIFICATIONS]
     );
     this._comment$ = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[L.PATTERN_COMMENT]
+      initialPattern[L.PATTERN_COMMENT]
     );
     this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(
-      initialPatternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]
+      initialPattern[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]
     );
     this._sequenceBase$ = new rxjs.BehaviorSubject(
-      getMostFrequentNucleotide(initialPatternConfiguration[G.NUCLEOTIDE_SEQUENCES])
+      getMostFrequentNucleotide(initialPattern[G.NUCLEOTIDE_SEQUENCES])
     );
   }
 
@@ -356,15 +372,15 @@ export class EventBus {
   }
 
   get userSelection$(): rxjs.Observable<string> {
-    return this._userSelection$.asObservable().pipe(skip(1));
+    return this._patternAuthorSelection$.asObservable().pipe(skip(1));
   }
 
   selectUser(username: string) {
-    this._userSelection$.next(username);
+    this._patternAuthorSelection$.next(username);
   }
 
   getSelectedUser(): string {
-    return this._userSelection$.getValue();
+    return this._patternAuthorSelection$.getValue();
   }
 }
 

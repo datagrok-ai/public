@@ -7,7 +7,7 @@ import {EventBus} from '../model/event-bus';
 import {URLRouter} from '../model/router';
 import {PatternAppLeftSection} from './components/left-section';
 import {PatternAppRightSection} from './components/right-section';
-import {PatternConfiguration} from '../model/types';
+import {PatternConfigRecord} from '../model/types';
 
 
 export class OligoPatternUI extends IsolatedAppUIBase {
@@ -25,8 +25,8 @@ async function getContent(): Promise<HTMLDivElement> {
   const dataManager = await DataManager.getInstance();
   const urlRouter = new URLRouter();
 
-  const initialPatternConfig = await getInitialPatternConfig(dataManager, urlRouter);
-  const eventBus = new EventBus(initialPatternConfig);
+  const initialPatternRecord = await getInitialPatternRecord(dataManager, urlRouter);
+  const eventBus = new EventBus(dataManager, initialPatternRecord);
   urlRouter.updateURLOnPatternLoaded(eventBus);
 
   const leftSection = new PatternAppLeftSection(eventBus, dataManager).getLayout();
@@ -42,15 +42,20 @@ async function getContent(): Promise<HTMLDivElement> {
   return layout;
 }
 
-async function getInitialPatternConfig(
+async function getInitialPatternRecord(
   dataManager: DataManager,
   urlRouter: URLRouter
-): Promise<PatternConfiguration> {
+): Promise<PatternConfigRecord> {
   const patternHash = urlRouter.getPatternHash();
-  let initialPatternConfig = await dataManager.getPatternConfig(patternHash);
-  if (!initialPatternConfig) {
+  if (!patternHash) {
     urlRouter.clearPatternURL();
-    initialPatternConfig = dataManager.getDefaultPattern();
+    return dataManager.getDefaultPatternRecord();
   }
-  return initialPatternConfig;
+
+  let initialPatternRecord = await dataManager.getPatternRecord(patternHash);
+  if (!initialPatternRecord) {
+    urlRouter.clearPatternURL();
+    initialPatternRecord = dataManager.getDefaultPatternRecord();
+  }
+  return initialPatternRecord;
 }

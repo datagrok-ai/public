@@ -5,7 +5,9 @@ import {
   EXAMPLE_PATTERN_CONFIG,
   GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME
 } from './const';
-import {PatternConfiguration, PatternExistsError, PatternNameExistsError, RawPatternRecords} from './types';
+import {
+  PatternConfigRecord, PatternConfiguration, PatternExistsError, PatternNameExistsError, RawPatternRecords
+} from './types';
 
 import objectHash from 'object-hash';
 import {EventBus} from './event-bus';
@@ -72,27 +74,41 @@ export class DataManager {
     return patternHash;
   }
 
-  async getPatternConfig(hash: string | null): Promise<PatternConfiguration | null> {
+  async getPatternRecord(hash: string): Promise<PatternConfigRecord | null> {
     if (hash === null || hash === '')
       return null;
     try {
       const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
-      const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
+      const config = JSON.parse(patternConfig) as PatternConfigRecord;
       return config;
     } catch {
       return null;
     }
   }
 
-  getDefaultPattern(): PatternConfiguration {
+  async getPatternConfig(hash: string | null): Promise<PatternConfiguration | null> {
+    if (hash === '' || hash === null)
+      return null;
+    const record = await this.getPatternRecord(hash);
+    const config = record === null ? null : record[R.PATTERN_CONFIG] as PatternConfiguration;
+    return config;
+  }
+
+  getDefaultPatternRecord(): PatternConfigRecord {
+    const record = EXAMPLE_PATTERN_CONFIG as PatternConfigRecord;
+    record[R.AUTHOR_ID] = this.currentUserId;
+    return record;
+  }
+
+  getDefaultPatternConfig(): PatternConfiguration {
     return EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG] as PatternConfiguration;
   }
 
   private getAuthorCategoryByHash(hash: string): string {
     if (this.isCurrentUserPattern(hash))
-      return this.currentUserName;
+      return this.getCurrentUserAuthorshipCategory();
     else if (this.isOtherUserPattern(hash))
-      return OTHER_USERS;
+      return this.getOtherUsersAuthorshipCategory();
     else
       throw new Error(`Pattern with hash ${hash} not found`);
   }
@@ -121,7 +137,7 @@ export class DataManager {
     if (!nameOfPatternToBeLoaded)
       throw new Error('Cannot load pattern after deletion, as there are no patterns left');
     const hash = this.currentUserPatternNameToHash.get(nameOfPatternToBeLoaded);
-    if (!hash)
+    if (hash === undefined)
       throw new Error(`Pattern with name ${nameOfPatternToBeLoaded} not found`);
     return hash;
   }
@@ -173,8 +189,10 @@ export class DataManager {
     eventBus: EventBus
   ): Promise<void> {
     const hash = this.currentUserPatternNameToHash.get(patternName);
-    if (hash === '')
-      throw new Error(`Cannot delete default pattern`);
+    if (patternName === this.getDefaultPatternName()) {
+      grok.shell.warning(`Cannot delete default pattern`);
+      return;
+    }
     if (hash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
     await grok.dapi.userDataStorage.remove(STORAGE_NAME, hash, false);
@@ -235,7 +253,7 @@ export class DataManager {
     const patternConfig = record[R.PATTERN_CONFIG] as PatternConfiguration;
     const patternName = patternConfig.patternName;
     const authorID = record[R.AUTHOR_ID];
-    if (authorID === this.currentUserId) {
+    if (this.isCurrentUserId(authorID)) {
       this.currentUserPatternNameToHash.set(patternName, patternHash);
     } else {
       if (!userIdsToUserNames.has(authorID)) {
@@ -245,5 +263,21 @@ export class DataManager {
       const fullPatternName = patternName + ` (created by ${userIdsToUserNames.get(authorID)})`;
       this.otherUsersPatternNameToHash.set(fullPatternName, patternHash);
     }
+  }
+
+  getDefaultPatternName(): string {
+    return EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG][L.PATTERN_NAME];
+  }
+
+  getCurrentUserAuthorshipCategory(): string {
+    return this.currentUserName + ' (me)';
+  }
+
+  getOtherUsersAuthorshipCategory(): string {
+    return OTHER_USERS;
+  }
+
+  isCurrentUserId(userId: string): boolean {
+    return userId === this.currentUserId;
   }
 }

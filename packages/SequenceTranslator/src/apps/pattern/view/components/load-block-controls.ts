@@ -1,9 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {
-  EXAMPLE_PATTERN_CONFIG, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R
-} from '../../model/const';
 import {SubscriptionManager} from '../../model/subscription-manager';
 
 import '../style.css';
@@ -24,12 +21,6 @@ export class PatternLoadControlsManager {
   ) {
     this.eventBus.patternLoadRequested$.subscribe((patternHash: string) => this.handlePatternChoice(patternHash));
 
-    const defaultUser = this.dataManager.getCurrentUserName();
-    this.eventBus.selectUser(defaultUser);
-
-    const defaultPattern = this.dataManager.getCurrentUserPatternNames()[0];
-    this.selectedPattern = defaultPattern;
-
     this.eventBus.patternDeletionRequested$.subscribe(async (patternName: string) => {
       await this.dataManager.deletePattern(patternName, this.eventBus);
     });
@@ -38,9 +29,9 @@ export class PatternLoadControlsManager {
   private selectedPattern: string;
 
   private async handlePatternChoice(patternHash: string): Promise<void> {
-    const patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
-    if (!patternConfiguration)
-      throw new Error(`Pattern with hash ${patternHash} not found`);
+    let patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
+    if (patternConfiguration === null)
+      patternConfiguration = this.dataManager.getDefaultPatternConfig();
 
     this.eventBus.setPatternConfig(patternConfiguration);
 
@@ -51,7 +42,7 @@ export class PatternLoadControlsManager {
   }
 
   private isCurrentUserSelected(): boolean {
-    return this.eventBus.getSelectedUser() !== OTHER_USERS;
+    return this.eventBus.getSelectedUser() !== this.dataManager.getOtherUsersAuthorshipCategory();
   }
 
   createControls(): HTMLElement[] {
@@ -67,6 +58,9 @@ export class PatternLoadControlsManager {
 
     this.eventBus.patternListUpdated$.subscribe(() => {
       this.subscriptions.unsubscribeAll();
+
+      // todo: change values of selectedPattern and selectedUser here
+
       $(inputsContainer).empty();
       $(inputsContainer).append(this.createPatternInputs());
     });
@@ -100,10 +94,9 @@ export class PatternLoadControlsManager {
   }
 
   private createUserChoiceInput(): StringInput {
-    const currentUser = this.dataManager.getCurrentUserName();
-    const possibleValues = [currentUser + ' (me)'];
+    const possibleValues = [this.dataManager.getCurrentUserAuthorshipCategory()];
     if (this.dataManager.getOtherUsersPatternNames().length > 0)
-      possibleValues.push(OTHER_USERS);
+      possibleValues.push(this.dataManager.getOtherUsersAuthorshipCategory());
 
     const userChoiceInput = ui.choiceInput(
       'Author',
@@ -167,7 +160,7 @@ export class PatternLoadControlsManager {
     const button = ui.button(
       ui.iconFA('trash-alt'),
       () => {
-        if (this.selectedPattern === EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG][L.PATTERN_NAME]) {
+        if (this.selectedPattern === this.dataManager.getDefaultPatternName()) {
           grok.shell.warning('Cannot delete example pattern');
           return;
         }
