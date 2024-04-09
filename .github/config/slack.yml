@@ -20,7 +20,7 @@ fallback: |-
 
 fields:
   - title: Job Steps
-    value: "{{#each jobSteps}}{{icon this.outcome}} {{@key}}\n{{/each}}"
+    value: "123"
     short: true
   - title: Job Matrix
     value: "{{#each jobMatrix}}{{@key}}: {{this}}\n{{/each}}"
