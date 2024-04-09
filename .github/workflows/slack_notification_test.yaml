@@ -6,9 +6,9 @@ on:
 
 jobs:
 
-  job1:
-    runs-on: ubuntu-latest
-    steps:
+  # job1:
+  #   runs-on: ubuntu-latest
+  #   steps:
       # - name: Slack Failed Build Notification
       #   id: fall
       #   run: eco 123 asd asd sad 
@@ -20,7 +20,7 @@ jobs:
       #     config: ".github/config/slack.yml"
   test-job:
     if: always()
-    needs: job1
+    # needs: job1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
