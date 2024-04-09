@@ -20,9 +20,14 @@ export class URLRouter {
     if (patternHash === null || patternHash === '') {
       this.urlSearchParams.delete(PATTERN_KEY);
       window.history.pushState({}, '', `${window.location.pathname}`);
+      return;
     }
 
     this.urlSearchParams.set(PATTERN_KEY, patternHash);
     window.history.pushState({}, '', `${window.location.pathname}?${this.urlSearchParams}`);
+  }
+
+  clearPatternURL(): void {
+    this.setPatternURL('');
   }
 }

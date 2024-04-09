@@ -72,19 +72,19 @@ export class DataManager {
     return patternHash;
   }
 
-  async getPatternConfig(hash: string | null): Promise<PatternConfiguration> {
+  async getPatternConfig(hash: string | null): Promise<PatternConfiguration | null> {
     if (hash === null || hash === '')
-      return this.getDefaultPattern();
+      return null;
     try {
       const patternConfig = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, hash, false);
       const config = JSON.parse(patternConfig)[R.PATTERN_CONFIG] as PatternConfiguration;
       return config;
     } catch {
-      return this.getDefaultPattern();
+      return null;
     }
   }
 
-  private getDefaultPattern(): PatternConfiguration {
+  getDefaultPattern(): PatternConfiguration {
     return EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG] as PatternConfiguration;
   }
 

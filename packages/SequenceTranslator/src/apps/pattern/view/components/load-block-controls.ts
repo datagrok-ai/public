@@ -39,6 +39,9 @@ export class PatternLoadControlsManager {
 
   private async handlePatternChoice(patternHash: string): Promise<void> {
     const patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
+    if (!patternConfiguration)
+      throw new Error(`Pattern with hash ${patternHash} not found`);
+
     this.eventBus.setPatternConfig(patternConfiguration);
 
     const patternName = patternConfiguration.patternName;

@@ -6,6 +6,10 @@ import {DataManager} from '../../model/data-manager';
 import {PatternExistsError, PatternNameExistsError} from '../../model/types';
 import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
 import {NumericLabelVisibilityControls} from './numeric-label-visibility-controls';
+import {
+  EXAMPLE_PATTERN_CONFIG,
+  GRAPH_SETTINGS_KEY_LIST as GKL, LEGEND_SETTINGS_KEYS as L, OTHER_USERS, PATTERN_RECORD_KEYS as R, STORAGE_NAME
+} from '../../model/const';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -60,6 +64,10 @@ export class PatternAppRightSection {
 
   private processSaveButtonClick(): void {
     const patternName = this.eventBus.getPatternName();
+    if (patternName === EXAMPLE_PATTERN_CONFIG[R.PATTERN_CONFIG][L.PATTERN_NAME]) {
+      grok.shell.warning(`Cannot save pattern with name ${patternName}`);
+      return;
+    }
     if (patternName === '') {
       grok.shell.warning(`Insert pattern name`);
       return;
