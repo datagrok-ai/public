@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts';
 import {option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
+import { EChartViewer } from '../echart/echart-viewer';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
@@ -16,7 +17,7 @@ const ERROR_CLASS = 'd4-viewer-error';
   description: 'Creates a radar viewer',
   icon: 'icons/radar-viewer.svg',
 })
-export class RadarViewer extends DG.JsViewer {
+export class RadarViewer extends EChartViewer {
   get type(): string {return 'RadarViewer';}
 
   chart: echarts.ECharts;
@@ -52,7 +53,6 @@ export class RadarViewer extends DG.JsViewer {
     this.showValues = this.bool('showValues', true);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL});
-    this.addRowSourceAndFormula();
     
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
@@ -128,10 +128,7 @@ export class RadarViewer extends DG.JsViewer {
       .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {
-      this.updateRow();
-      this.chart.setOption(option);
-    }));
+    this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((_) => {
       this.init();
       this.chart.setOption(option);
@@ -160,13 +157,15 @@ export class RadarViewer extends DG.JsViewer {
   
     if (this.showMax)
       this.updateMax();
-  
+
     if (this.showOnlyCurrentRow)
       this.updateRow();
   
     if (this.showAllRows) {
       option.series[2].data = [];
-      for (let i = 0; i < this.dataFrame.rowCount; i++) {
+      for (let i = 0; i < this.filter.length; i++) {
+        if (!this.filter.get(i))
+          continue;
         option.series[2].data.push({
           value: this.columns.map((c) => {
             const value = Number(c.get(i));
