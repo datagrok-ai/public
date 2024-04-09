@@ -13,7 +13,7 @@ jobs:
         with:
           status: ${{ job.status }}
           config: .github/config/slack.yml
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
         # uses: rtCamp/action-slack-notify@v2.2.0
         # env:
         #   SLACK_ICON_EMOJI: ':ship:'
