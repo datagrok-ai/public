@@ -15,8 +15,8 @@ jobs:
     needs: job1
     runs-on: ubuntu-latest
     steps:
-      - name: test
-        run: echo 123
+      - name: Checkout Repository
+        uses: actions/checkout@v3
       - name: Slack Failed Build Notification
         uses: act10ns/slack@v2.1.0
         with:
