@@ -12,7 +12,6 @@ import {HitAppBase} from '../hit-app-base';
 
 export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   preset?: HitDesignTemplate): Promise<INewTemplateResult<HitDesignTemplate>> {
-  const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
   const availableTemplates = (await _package.files.list('Hit Design/templates'));
   let hasNameError = false;
   let hasKeyError = false;
@@ -86,12 +85,6 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   templateKeyInput.root.style.borderBottom = 'none';
   errorDiv.style.opacity = '0%';
   keyErrorDiv.style.opacity = '0%';
-
-  const functionsMap: {[key: string]: string} = {};
-  functionsMap['Descriptors'] = 'Descriptors';
-  functions.forEach((func) => {
-    functionsMap[func.friendlyName ?? func.name] = `${func.package.name}:${func.name}`;
-  });
 
   let funcDialogRes: IComputeDialogResult | null = null;
   // used just for functions editor
