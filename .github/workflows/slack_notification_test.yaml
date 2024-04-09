@@ -10,8 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Slack Failed Build Notification
-        run: echo 123
+        run: echo 123 asd asd sad 
   test-job:
+    if: always()
     needs: job1
     runs-on: ubuntu-latest
     steps:
@@ -21,8 +22,8 @@ jobs:
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
           config: ".github/config/slack.yml"
+                  
           webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
         # uses: rtCamp/action-slack-notify@v2.2.0
         # env:
