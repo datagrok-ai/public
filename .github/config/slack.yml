@@ -1,7 +1,7 @@
 username: GitHub-CI
 icon_url: https://octodex.github.com/images/mona-the-rivetertocat.png
 
-pretext: Triggered via {{eventName}} by123 {{actor}} {{or action "action"}} {{ref}} `{{diffRef}}`
+pretext: Triggered via {{eventName}} by {{actor}} {{or action "action"}} {{ref}} `{{diffRef}}`
 title: GitHub Actions
 title_link: https://support.github.com
 
@@ -49,10 +49,10 @@ footer: >-
   <{{repositoryUrl}}|{{repositoryName}}> {{workflow}} #{{runNumber}}
 
 colors:
-  success: '#5DADE2'
-  failure: '#884EA0'
-  cancelled: '#A569BD'
-  default: '#7D3C98'
+  success: '#71E25D'
+  failure: '#E80918'
+  cancelled: '#D2E809'
+  default: '#09E8D9'
 
 icons:
   success: ':white_check_mark:'
