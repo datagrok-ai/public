@@ -22,12 +22,13 @@ export class TableInputManager {
   }
 
   private subscribeToTableEvents(): void {
-    grok.events.onTableAdded.subscribe((table: DG.DataFrame) => this.handleTableAdded(table));
-    grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => this.handleTableRemoved(table));
+    grok.events.onTableAdded.subscribe((eventData) => this.handleTableAdded(eventData));
+    grok.events.onTableRemoved.subscribe((eventData) => this.handleTableRemoved(eventData));
     this.eventBus.tableSelectionChanged$.subscribe(() => this.handleTableChoice());
   }
 
-  private handleTableAdded(table: DG.DataFrame): void {
+  private handleTableAdded(eventData: DG.EventData<DG.DataFrameArgs>): void {
+    const table = eventData.args.dataFrame;
     if (this.availableTables.some((availableTable: DG.DataFrame) => availableTable.name === table.name))
       return;
 
@@ -37,7 +38,8 @@ export class TableInputManager {
     this.refreshTableInput();
   }
 
-  private handleTableRemoved(removedTable: DG.DataFrame): void {
+  private handleTableRemoved(eventData: DG.EventData<DG.DataFrameArgs>): void {
+    const removedTable = eventData.args.dataFrame;
     this.availableTables = this.availableTables.filter((table: DG.DataFrame) => table.name !== removedTable.name);
 
     this.refreshTableInput();

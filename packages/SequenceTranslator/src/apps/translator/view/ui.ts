@@ -340,14 +340,11 @@ class TableInputManager {
     this.eventBus.tableSelected$.subscribe(() => this.handleTableChoice());
   }
 
-  private getTableFromEventData(eventData: any): DG.DataFrame {
-    if (!eventData && eventData.args && eventData.args.dataFrame instanceof DG.DataFrame)
-      throw new Error(`EventData does not contain a dataframe`, eventData);
-
-    return eventData.args.dataFrame as DG.DataFrame;
+  private getTableFromEventData(eventData: DG.EventData<DG.DataFrameArgs>): DG.DataFrame {
+    return eventData.args.dataFrame;
   }
 
-  private handleTableAdded(eventData: any): void {
+  private handleTableAdded(eventData: DG.EventData<DG.DataFrameArgs>): void {
     const table = this.getTableFromEventData(eventData);
 
     if (this.availableTables.some((t: DG.DataFrame) => t.name === table.name))

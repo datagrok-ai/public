@@ -4,7 +4,7 @@ import {_package} from '../../../../package';
 import {DEFAULT_FORMATS} from '../const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELD as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
 import {META_FIELDS as MET} from './const';
 import {CODES_TO_SYMBOLS_DICT} from '../data-loader/json-loader';
