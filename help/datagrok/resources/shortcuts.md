@@ -36,8 +36,8 @@ different actions. For details, see the documentation for such tool or viewer.
 -->
 <br/>
 
-* <kbd>L</kbd>: <b>Viewers | Scatterplot</b> | Toggle regression line
-* <kbd>R</kbd>: <b>Viewers | Scatterplot</b> | Toggle rectangle/lasso selection mode
+* <kbd>L</kbd>: <b>Viewers | Scatterplot</b> | Toggle rectangle/lasso selection mode
+* <kbd>R</kbd>: <b>Viewers | Scatterplot</b> | Toggle regression line
 
 <br/>
 
