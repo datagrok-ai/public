@@ -227,7 +227,7 @@ jobs:
       - name: npm version
         run: npm version
       - name: sleep
-        run: sleep 300
+        run: slep 300
       - name: unpublished dependencies in package-lock.json
         id: package-lock
         if: ${{ matrix.unpublished_deps == '' }}
