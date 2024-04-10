@@ -226,9 +226,11 @@ jobs:
         run: npm install -g npm@x
       - name: npm version
         run: npm version
+      - name: sleep
+        run: sleep 300
       - name: unpublished dependencies in package-lock.json
         id: package-lock
-        if: failure() #${{ matrix.unpublished_deps == '' }}
+        if: ${{ matrix.unpublished_deps == '' }}
         run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
         working-directory: packages/${{ matrix.package }}
       # - name: npm install
