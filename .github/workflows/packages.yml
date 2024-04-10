@@ -228,7 +228,7 @@ jobs:
         run: npm version
       - name: unpublished dependencies in package-lock.json
         id: package-lock
-        if: ${{ matrix.unpublished_deps == '' }}
+        if: failure() #${{ matrix.unpublished_deps == '' }}
         run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
         working-directory: packages/${{ matrix.package }}
       # - name: npm install
