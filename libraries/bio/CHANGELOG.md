@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.40.4 (2024-04-10)
+
+### Bug fixes
+
+Bio: Fix SDF to JSON for Biovia lib
+
 ## 5.40.3 (2024-04-08)
 
 ### Features
