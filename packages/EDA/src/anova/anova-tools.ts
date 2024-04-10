@@ -228,16 +228,43 @@ export class FactorizedData {
       const sumsOfSquares = new Float64Array(catCount).fill(0);
       const subSampleSizes = new Int32Array(catCount).fill(0);
 
-      for (let i = 0; i < size; ++i) {
-        const c = cats[i];
-        sums[c] += vals[i];
-        sumsOfSquares[c] += vals[i] ** 2;
-        ++subSampleSizes[c];
+      let cat: number;
+
+      if (categories.type == DG.COLUMN_TYPE.BOOL) {
+        let catIdx = 0;
+        let shift = 0;
+        let packed = cats[0];
+        const MAX_SHIFT = 8 * cats.BYTES_PER_ELEMENT - 1;
+
+        for (let i = 0; i < size; ++i) {
+          cat = 1 & (packed >> shift);
+          sums[cat] += vals[i];
+          sumsOfSquares[cat] += vals[i] ** 2;
+          ++subSampleSizes[cat];
+          ++shift;
+
+          if (shift > MAX_SHIFT) {
+            shift = 0;
+            ++catIdx;
+            packed = cats[catIdx];
+          }
+        }
+      } else {
+        for (let i = 0; i < size; ++i) {
+          cat = cats[i];
+          sums[cat] += vals[i];
+          sumsOfSquares[cat] += vals[i] ** 2;
+          ++subSampleSizes[cat];
+        }
       }
 
       this.sums = sums;
       this.sumsOfSquares = sumsOfSquares;
       this.subSampleSizes = subSampleSizes;
+
+      console.log(sums);
+      console.log(sumsOfSquares);
+      console.log(subSampleSizes);
 
       break;
 
