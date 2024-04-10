@@ -206,13 +206,17 @@ jobs:
         run: npm install
         working-directory: ./packages/ApiTests
       - name: Build ApiTests
+        id: build-ApiTests
+        continue-on-error: true
         run: npm run build
         working-directory: ./packages/ApiTests
       - name: Publish ApiTests
+        if: steps.build-ApiTests.outcome == 'success'
         run: grok publish ${HOST}
         working-directory: ./packages/ApiTests
 
       - name: Wait for published docker to become available
+        if: steps.build-ApiTests.outcome == 'success'
         timeout-minutes: 5
         run: |
           until .github/scripts/check-output.sh "docker ps" 'ApiTests'
@@ -231,6 +235,7 @@ jobs:
 
       - name: Run ApiTests
         continue-on-error: true
+        if: steps.build-ApiTests.outcome == 'success'
         timeout-minutes: 15
         id: test-ApiTests
         run: |
@@ -318,20 +323,6 @@ jobs:
             {
                 "blocks": [
                     {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
-                        }
-                    },
-                    {
                         "type": "context",
                         "elements": [
                             {
@@ -346,6 +337,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 
       - name: npm publish
+        id: publish
         run: |
           tag=""
           if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
@@ -384,6 +376,21 @@ jobs:
               fi
             done
           fi
+      - name: Slack Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: Slack Failed-Cancelled Notification
+        if: failure() || cancelled()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   libraries:
     name: Check libraries
@@ -463,7 +470,14 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-
+      - name: Slack Failed Notification
+        if: failure()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
     runs-on: ubuntu-22.04
@@ -542,3 +556,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
+      - name: Slack Failed Notification
+        if: failure()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
