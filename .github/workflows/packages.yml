@@ -555,11 +555,11 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
-      - name: Cleanup datagrok-tools
-        if: steps.datagrok-tools.outcome == 'success'
-        timeout-minutes: 15
-        run: |
-          npm uninstall -g datagrok-tools@latest
+      # - name: Cleanup datagrok-tools
+      #   if: steps.datagrok-tools.outcome == 'success'
+      #   timeout-minutes: 15
+      #   run: |
+      #     npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
