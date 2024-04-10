@@ -555,11 +555,11 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
-#      - name: Cleanup datagrok-tools
-#        if: steps.datagrok-tools.outcome == 'success'
-#        timeout-minutes: 15
-#        run: |
-#          npm uninstall -g datagrok-tools@latest
+      # - name: Cleanup datagrok-tools
+      #   if: steps.datagrok-tools.outcome == 'success'
+      #   timeout-minutes: 15
+      #   run: |
+      #     npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
@@ -699,7 +699,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       
       - name: Slack Notification
-        if: always()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          matrix: ${{ toJson(matrix) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: Slack Failed-Cancelled Notification
+        if: failure() || cancelled()
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
