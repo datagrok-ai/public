@@ -703,7 +703,7 @@ jobs:
       - name: Slack Notification
         uses: act10ns/slack@v2.1.0
         with:
-          status: ${{ toJson(steps.package-lock.outcome) }}
+          status: ${{ steps.package-lock.outcome }}
           steps: ${{ toJson(steps) }}
           matrix: ${{ toJson(matrix) }}
           config: ".github/config/slack.yml"        
