@@ -33,7 +33,7 @@ export function runOneWayAnova(): void {
   const featureColNames = [] as string[];
 
   for (const col of df.columns) {
-    if (col.stats.missingValueCount < 1) {
+    if ((col.stats.missingValueCount < 1) && (col.stats.uniqueCount > 1)) {
       if (FEATURE_TYPES.includes(col.type))
         featureColNames.push(col.name);
       else if (FACTOR_TYPES.includes(col.type))
@@ -42,12 +42,21 @@ export function runOneWayAnova(): void {
   }
 
   if (factorColNames.length < 1) {
-    grok.shell.warning(`No acceptable factor columns (no missing values, type: ${FACTOR_TYPES.join(', ')})`);
+    grok.shell.warning(ui.markdown(`No acceptable factor columns:
+
+    - no missing values
+    - type: ${FACTOR_TYPES.join(', ')} 
+    - at least two categories`,
+    ));
     return;
   }
 
   if (featureColNames.length < 1) {
-    grok.shell.warning(`No acceptable feature columns (no missing values, type: ${FEATURE_TYPES.join(', ')})`);
+    grok.shell.warning(ui.markdown(`No acceptable feature columns:
+    
+    - no missing values
+    - type: ${FEATURE_TYPES.join(', ')}`,
+    ));
     return;
   }
 
@@ -91,8 +100,13 @@ export function runOneWayAnova(): void {
   view.root.appendChild(dlg.root);
   dlg.addButton('Run', () => {
     dlg.close();
-    const res = oneWayAnova(factor!, feature!, significance, validate);
-    addOneWayAnovaVizualization(df, factor!, feature!, res);
+
+    try {
+      const res = oneWayAnova(factor!, feature!, significance, validate);
+      addOneWayAnovaVizualization(df, factor!, feature!, res);
+    } catch (error) {
+      grok.shell.error(error instanceof Error ? error.message : 'Analysis of variances failes: the platform issue');
+    }
   }, undefined, 'Perform analysis of variances');
 
   const runBtn = dlg.getButton('Run');

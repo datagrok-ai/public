@@ -61,7 +61,7 @@ type OneWayAnova = {
 };
 
 /** Categorical column */
-type CatCol = DG.Column<DG.COLUMN_TYPE.STRING>;
+type CatCol = DG.Column<DG.COLUMN_TYPE.STRING | DG.COLUMN_TYPE.BOOL>;
 
 /** Numerical column */
 type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
@@ -132,9 +132,6 @@ export class FactorizedData {
   private catCount!: number;
 
   constructor(categories: CatCol, values: NumCol, checkNormality: boolean = false, alpha: number = 0.05) {
-    if (categories.type !== DG.COLUMN_TYPE.STRING)
-      throw new Error();
-
     if (categories.length !== values.length)
       throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);
 
