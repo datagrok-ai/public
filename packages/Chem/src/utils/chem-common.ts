@@ -81,13 +81,14 @@ export function stringArrayToMolList(molecules: string[], rdkit: RDModule): MolL
 }
 
 export function appendMolList(molString: string | null, mols: MolList, rdkit: RDModule) {
-  if (!molString)
-    return;
   let molSafe;
   try {
-    molSafe = getMolSafe(molString!, {}, rdkit);
-    if (molSafe.mol !== null && !molSafe.isQMol)
-      mols.append(molSafe.mol);
+    molSafe = getMolSafe(molString ?? '', {}, rdkit);
+    if (molSafe.mol === null || molSafe.isQMol || !molSafe.kekulize) {
+      molSafe.mol?.delete();
+      molSafe = getMolSafe('', {}, rdkit);
+    }
+    mols.append(molSafe.mol!);
   } finally {
     molSafe?.mol?.delete();
   }

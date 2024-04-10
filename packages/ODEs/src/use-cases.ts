@@ -100,7 +100,7 @@ ${CONTROL_EXPR.EXPR}:
   C2 = centr / V2
 
 ${CONTROL_EXPR.LOOP}:
-  count = 1 {category: Dosing; min: 1; max: 1} [Number of doses]
+  count = 1 {category: Dosing; min: 1; max: 10} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t

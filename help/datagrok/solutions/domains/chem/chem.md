@@ -249,7 +249,7 @@ The following code snippet defines a converter function that retrieves the SMILE
 --friendlyName: Converters | ChEMBL to SMILES
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
---connection: ChemblSql
+--connection: Chembl
 --input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
 --tags: unit-test

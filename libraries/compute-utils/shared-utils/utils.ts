@@ -5,10 +5,32 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
-import {VIEWER_PATH, viewerTypesMapping} from './consts';
+import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
+
+export const extractStringValue = (run: DG.FuncCall, key: string) => {
+  if (key === AUTHOR_COLUMN_NAME) return run.author?.friendlyName ?? grok.shell.user.friendlyName;
+
+  const val =
+  (run as any)[key] ??
+  run.inputs[key] ??
+  run.outputs[key] ??
+  run.options[key] ??
+  null;
+
+  return val?.toString() ?? '';
+};
+
+export const getMainParams = (func: DG.Func): string[] | null => {
+  return func.options['mainParams'] ? JSON.parse(func.options['mainParams']): null;
+};
+
+export const camel2title = (camelCase: string) => camelCase
+  .replace(/([A-Z])/g, (match) => ` ${match.toLowerCase()}`)
+  .trim()
+  .replace(/^./, (match) => match.toUpperCase());
 
 export function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;

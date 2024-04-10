@@ -72,6 +72,40 @@ category('SeqHandler', () => {
     expect(sh.alphabet, ALPHABET.UN);
   });
 
+  test('column-version', async () => {
+    const df = DG.DataFrame.fromCsv(seqDna);
+    await grok.data.detectSemanticTypes(df);
+    const seqCol = df.getCol('seq');
+
+    // col.version will change because of changing .tags
+    const sh1 = SeqHandler.forColumn(seqCol);
+
+    const v1 = seqCol.version;
+    // col.version MUST NOT change and the same object returned
+    const sh2 = SeqHandler.forColumn(seqCol);
+    const v2 = seqCol.version;
+    expect(v1, v2, 'Unexpected column version changed');
+    expect(sh1, sh2, 'Unexpected SeqHandler object changed');
+
+    df.rows.addNew(['TACCCCTTCAAC']);
+    const sh3 = SeqHandler.forColumn(seqCol);
+    const v3 = seqCol.version;
+    expect(v2 < v3, true, 'Stalled column version on add row');
+    expect(sh2 !== sh3, true, 'Stalled SeqHandler object on add row');
+
+    seqCol.set(1, 'CAGTGTCCCCGT');
+    const sh4 = SeqHandler.forColumn(seqCol);
+    const v4 = seqCol.version;
+    expect(v3 < v4, true, 'Stalled column version on change data');
+    expect(sh3 !== sh4, true, 'Stalled SeqHandler object on change data');
+
+    seqCol.setTag('testTag', 'testValue');
+    const sh5 = SeqHandler.forColumn(seqCol);
+    const v5 = seqCol.version;
+    expect(v4 < v5, true, 'Stalled column version on set tag');
+    expect(sh4 !== sh5, true, 'Stalled SeqHandler object on set tag');
+  });
+
   async function loadCsvWithDetection(csv: string): Promise<[df: DG.DataFrame, sh: SeqHandler]> {
     const df = DG.DataFrame.fromCsv(csv);
     await grok.data.detectSemanticTypes(df);

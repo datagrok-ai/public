@@ -1,5 +1,13 @@
 # ml changelog
 
+## 6.5.1 (2024-04-05)
+
+Fix function editor for seq/chem space
+
+## 6.5.0 (2024-04-05)
+
+Add webGPU KNN calculation option to UMAP.
+
 ## 6.4.13 (2024-03-07)
 
 Add Connectivity to MCL, Harmonized macromolecule distance functions.

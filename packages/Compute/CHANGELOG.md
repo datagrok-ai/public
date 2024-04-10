@@ -1,5 +1,25 @@
 # Compute changelog
 
+## 1.31.0 (2024-04-10)
+
+### Features
+
+- ModelCatalog: Adaptation for BrowseView
+
+## 1.30.1 (2024-04-08)
+
+### Bug fixes
+
+- RFV: Default export properly works with nulls
+
+## 1.30.0 (2024-04-08)
+
+### Features
+
+- HistoryInput refactored: now uses same component as HistoryPanel
+- `mainInputs` tag renamed to `mainParams`
+- Both HistoryInput and HistoryPanel now use `mainParams` to determine visible columns
+
 ## 1.29.1 (2024-04-03)
 
 ### Features
