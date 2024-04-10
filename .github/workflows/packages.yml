@@ -7,8 +7,8 @@ on:
         required: true
         type: string
   push:
-    paths:
-      - 'packages/**'
+    # paths:
+    #   - 'packages/**'
   pull_request:
     paths:
       - 'packages/**'
