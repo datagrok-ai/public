@@ -317,21 +317,21 @@ jobs:
           payload: |
             {
                 "blocks": [
-                  {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                    }
-                },
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": "${{ env.SLACK_MESSAGE_BODY }}"
-                    }
-                },
-                {
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+                        }
+                    },
+                    {
                         "type": "context",
                         "elements": [
                             {
@@ -575,4 +575,3 @@ jobs:
           steps: ${{ toJson(steps) }}
           config: ".github/config/slack.yml"        
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-          
