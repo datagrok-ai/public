@@ -8,8 +8,21 @@ export class URLRouter {
     this.urlSearchParams = new URLSearchParams(window.location.search);
   }
 
-  updateURLOnPatternLoaded(eventBus: EventBus): void {
-    eventBus.patternLoaded$.subscribe((hash) => this.setPatternURL(hash));
+  subscribeToObservables(eventBus: EventBus): void {
+    eventBus.urlStateUpdated$.subscribe((hash) => this.setPatternURL(hash));
+    eventBus.loadPatternInNewTabRequested$.subscribe((hash) => {
+      const url = `${window.location.origin}${window.location.pathname}?${PATTERN_KEY}=${hash}`;
+      window.open(url, '_blank');
+    });
+
+    window.addEventListener('popstate', () => {
+      this.urlSearchParams = new URLSearchParams(window.location.search);
+      const patternHash = this.getPatternHash();
+      if (patternHash === null)
+        return;
+
+      eventBus.requestPatternLoad(patternHash);
+    });
   }
 
   getPatternHash(): string | null {

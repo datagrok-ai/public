@@ -40,6 +40,8 @@ export class EventBus {
   private _tableSelection$ = new rxjs.BehaviorSubject<DG.DataFrame | null>(null);
 
   private _svgSaveRequested$ = new rxjs.Subject<void>();
+  private _loadPatternInNewTabRequested$ = new rxjs.Subject<string>();
+  private _urlStateUpdated$ = new rxjs.Subject<string>();
 
   constructor(
     private dataManager: DataManager,
@@ -381,6 +383,22 @@ export class EventBus {
 
   getSelectedUser(): string {
     return this._patternAuthorSelection$.getValue();
+  }
+
+  get loadPatternInNewTabRequested$(): rxjs.Observable<string> {
+    return this._loadPatternInNewTabRequested$.asObservable();
+  }
+
+  requestLoadPatternInNewTab(patternHash: string) {
+    this._loadPatternInNewTabRequested$.next(patternHash);
+  }
+
+  updateUrlState(patternHash: string) {
+    this._urlStateUpdated$.next(patternHash);
+  }
+
+  get urlStateUpdated$(): rxjs.Observable<string> {
+    return this._urlStateUpdated$.asObservable();
   }
 }
 

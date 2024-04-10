@@ -61,7 +61,7 @@ export class PatternAppRightSection {
   private processSaveButtonClick(): void {
     const patternName = this.eventBus.getPatternName();
     if (patternName === this.dataManager.getDefaultPatternName()) {
-      grok.shell.warning(`Cannot save pattern with name ${patternName}`);
+      grok.shell.warning(`Cannot save default pattern`);
       return;
     }
     if (patternName === '') {
@@ -78,7 +78,10 @@ export class PatternAppRightSection {
         } else if (e instanceof PatternExistsError) {
           grok.shell.warning(ui.div([
             ui.divText(`Pattern already exists`),
-            ui.button('Load', () => {}),
+            ui.button('Load', () => {
+              const hash = e.message;
+              this.eventBus.requestLoadPatternInNewTab(hash);
+            }),
           ]));
         } else {
           console.error('Error while saving pattern', e);

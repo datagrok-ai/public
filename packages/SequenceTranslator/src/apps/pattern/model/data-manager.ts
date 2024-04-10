@@ -59,7 +59,7 @@ export class DataManager {
       .concat(Array.from(this.otherUsersPatternNameToHash.values()));
 
     if (existingHashes.includes(hash))
-      throw new PatternExistsError(`Pattern with hash ${hash} already exists`);
+      throw new PatternExistsError(hash);
   }
 
   getPatternHash(patternName: string, isCurrentUserPattern: boolean): string {
@@ -174,6 +174,8 @@ export class DataManager {
       const record = await this.getRecordFromPattern(patternConfig);
       await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
       this.currentUserPatternNameToHash.set(patternName, hash);
+
+      eventBus.selectUser(this.getCurrentUserAuthorshipCategory());
 
       eventBus.updatePatternList();
     } catch (e) {

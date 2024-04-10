@@ -27,7 +27,7 @@ async function getContent(): Promise<HTMLDivElement> {
 
   const initialPatternRecord = await getInitialPatternRecord(dataManager, urlRouter);
   const eventBus = new EventBus(dataManager, initialPatternRecord);
-  urlRouter.updateURLOnPatternLoaded(eventBus);
+  urlRouter.subscribeToObservables(eventBus);
 
   const leftSection = new PatternAppLeftSection(eventBus, dataManager).getLayout();
   const rightSection = new PatternAppRightSection(eventBus, dataManager).getLayout();

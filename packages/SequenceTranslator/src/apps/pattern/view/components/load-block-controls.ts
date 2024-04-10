@@ -26,7 +26,7 @@ export class PatternLoadControlsManager {
     });
   }
 
-  private selectedPattern: string;
+  // private selectedPattern: string;
 
   private async handlePatternChoice(patternHash: string): Promise<void> {
     let patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
@@ -35,8 +35,8 @@ export class PatternLoadControlsManager {
 
     this.eventBus.setPatternConfig(patternConfiguration);
 
-    const patternName = patternConfiguration.patternName;
-    this.selectedPattern = patternName;
+    // const patternName = patternConfiguration.patternName;
+    // this.selectedPattern = patternName;
 
     this.eventBus.updateControlsUponPatternLoaded(patternHash);
   }
@@ -126,18 +126,18 @@ export class PatternLoadControlsManager {
 
   private createPatternChoiceInput(): StringInput {
     const patternList = this.isCurrentUserSelected() ?
-      // [' '].concat(this.dataManager.getCurrentUserPatternNames()) :
       this.dataManager.getCurrentUserPatternNames() :
       this.dataManager.getOtherUsersPatternNames();
-    this.selectedPattern = patternList[0];
 
     if (this.authorSelectedByUser) {
-      const patternHash = this.dataManager.getPatternHash(this.selectedPattern, this.isCurrentUserSelected());
+      const patternHash = this.dataManager.getPatternHash(patternList[0], this.isCurrentUserSelected());
       this.eventBus.requestPatternLoad(patternHash);
+      this.eventBus.updateUrlState(patternHash);
       this.authorSelectedByUser = false;
     }
 
-    const choiceInput = ui.choiceInput('Pattern', this.selectedPattern, patternList);
+    const defaultValue = this.getPatternName(patternList);
+    const choiceInput = ui.choiceInput('Pattern', defaultValue, patternList);
     choiceInput.setTooltip('Select pattern to load');
 
     $(choiceInput.input).css({
@@ -145,22 +145,36 @@ export class PatternLoadControlsManager {
       'min-width': '100px',
     });
 
-    const subscription = choiceInput.onInput(
-      () => {
-        const patternHash = this.dataManager.getPatternHash(choiceInput.value!, this.isCurrentUserSelected());
-        this.eventBus.requestPatternLoad(patternHash);
-      }
+    this.subscriptions.add(
+      choiceInput.onInput(
+        () => {
+          const patternHash = this.dataManager.getPatternHash(choiceInput.value!, this.isCurrentUserSelected());
+          this.eventBus.requestPatternLoad(patternHash);
+          this.eventBus.updateUrlState(patternHash);
+        }
+      )
     );
-    this.subscriptions.add(subscription);
+
+    this.subscriptions.add(
+      this.eventBus.patternLoaded$.subscribe(() => {
+        const patternName = this.eventBus.getPatternName();
+        if (!choiceInput.value?.includes(patternName))
+          choiceInput.value = this.getPatternName(patternList);
+      })
+    );
 
     return choiceInput;
+  }
+
+  private getPatternName(patternList: string[]): string {
+    return patternList.find((patternName) => patternName.includes(this.eventBus.getPatternName())) ?? patternList[0];
   }
 
   private createDeletePatternButton(): HTMLButtonElement {
     const button = ui.button(
       ui.iconFA('trash-alt'),
       () => {
-        if (this.selectedPattern === this.dataManager.getDefaultPatternName()) {
+        if (this.eventBus.getPatternName() === this.dataManager.getDefaultPatternName()) {
           grok.shell.warning('Cannot delete example pattern');
           return;
         }
@@ -180,8 +194,9 @@ export class PatternLoadControlsManager {
 
   private showDeletePatternDialog(): void {
     const dialog = ui.dialog('Delete pattern');
-    dialog.add(ui.divText(`Are you sure you want to delete pattern ${this.selectedPattern}?`));
-    dialog.onOK(() => this.eventBus.requestPatternDeletion(this.selectedPattern));
+    const patternName = this.eventBus.getPatternName();
+    dialog.add(ui.divText(`Are you sure you want to delete pattern ${patternName}?`));
+    dialog.onOK(() => this.eventBus.requestPatternDeletion(patternName));
     dialog.show();
   }
 }
