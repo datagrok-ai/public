@@ -698,10 +698,12 @@ jobs:
 #         env:
 #           GH_TOKEN: ${{ github.token }}
       
+      - name: Check status
+        run: echo ${{ steps.package-lock.outputs.status }}
       - name: Slack Notification
         uses: act10ns/slack@v2.1.0
         with:
-          status: ${{ steps.package-lock.outputs.status }}
+          status: ${{ toJson(steps.package-lock.outputs.status) }}
           steps: ${{ toJson(steps) }}
           matrix: ${{ toJson(matrix) }}
           config: ".github/config/slack.yml"        
