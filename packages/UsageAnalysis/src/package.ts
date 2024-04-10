@@ -8,6 +8,7 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
+import {ReportsView} from "./tabs/reports";
 
 export const _package = new DG.Package();
 
@@ -23,20 +24,20 @@ export async function usageAnalysisApp(): Promise<DG.ViewBase> {
 //name: initWithReportId
 //input: string reportNumber
 export async function initWithReportId(reportNumber: string): Promise<any> {
-  function setReports(): void {
+  async function setReports(): Promise<void> {
     ViewHandler.getInstance().setUrlParam('report-number', reportNumber, true);
-    const ev = ViewHandler.getView('Reports');
-    ev.viewers[0].reloadViewer();
     ViewHandler.changeTab('Reports');
+    const view = ViewHandler.getCurrentView() as ReportsView;
+    await view.reloadViewers();
   }
   if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
     grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
-    setReports();
+    await setReports();
   }
   else {
     await ViewHandler.getInstance().init();
     grok.shell.addView(ViewHandler.UA);
-    setReports();
+    await setReports();
   }
 }
 
