@@ -357,6 +357,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
+      - name: Slack Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}  
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
@@ -385,6 +392,7 @@ jobs:
               fi
             done
           fi
+
       - name: Slack Notification
         uses: act10ns/slack@v2.1.0
         with:
@@ -392,6 +400,7 @@ jobs:
           steps: ${{ toJson(steps) }}
           config: ".github/config/slack.yml"        
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
       - name: Slack Failed-Cancelled Notification
         if: failure() || cancelled()
         uses: act10ns/slack@v2.1.0
