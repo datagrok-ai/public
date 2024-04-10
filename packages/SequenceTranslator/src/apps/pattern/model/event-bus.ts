@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
+import {debounceTime, map, skip, throttle, switchMap} from 'rxjs/operators';
 
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS} from './const';
 // import {PatternDefaultsProvider} from './defaults-provider';
@@ -362,6 +362,8 @@ export class EventBus {
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
       this._nucleotideSequences$.asObservable().pipe(map(() => {})),
       this._patternLoaded$.asObservable().pipe(map(() => {}))
+    ).pipe(
+      debounceTime(50)
     ) as rxjs.Observable<void>;
   }
 
@@ -377,11 +379,11 @@ export class EventBus {
     return this._patternAuthorSelection$.asObservable().pipe(skip(1));
   }
 
-  selectUser(username: string) {
+  selectAuthor(username: string) {
     this._patternAuthorSelection$.next(username);
   }
 
-  getSelectedUser(): string {
+  getSelectedAuthor(): string {
     return this._patternAuthorSelection$.getValue();
   }
 

@@ -42,7 +42,7 @@ export class PatternLoadControlsManager {
   }
 
   private isCurrentUserSelected(): boolean {
-    return this.eventBus.getSelectedUser() !== this.dataManager.getOtherUsersAuthorshipCategory();
+    return this.eventBus.getSelectedAuthor() !== this.dataManager.getOtherUsersAuthorshipCategory();
   }
 
   createControls(): HTMLElement[] {
@@ -69,12 +69,12 @@ export class PatternLoadControlsManager {
   }
 
   private createPatternInputs(): HTMLElement[] {
-    const userChoiceInput = this.createUserChoiceInput();
+    const authorChoiceInput = this.createAuthorChoiceInput();
     const patternChoiceInputContainer = this.createPatternChoiceInputContainer();
     const deletePatternButton = this.createDeletePatternButton();
 
     return [
-      userChoiceInput.root,
+      authorChoiceInput.root,
       patternChoiceInputContainer,
       deletePatternButton
     ];
@@ -93,27 +93,27 @@ export class PatternLoadControlsManager {
     return patternChoiceInputContainer;
   }
 
-  private createUserChoiceInput(): StringInput {
+  private createAuthorChoiceInput(): StringInput {
     const possibleValues = [this.dataManager.getCurrentUserAuthorshipCategory()];
     if (this.dataManager.getOtherUsersPatternNames().length > 0)
       possibleValues.push(this.dataManager.getOtherUsersAuthorshipCategory());
 
-    const userChoiceInput = ui.choiceInput(
+    const authorChoiceInput = ui.choiceInput(
       'Author',
-      this.eventBus.getSelectedUser(),
+      this.eventBus.getSelectedAuthor(),
       possibleValues,
       (userName: string) => {
         this.authorSelectedByUser = true;
-        this.eventBus.selectUser(userName);
+        this.eventBus.selectAuthor(userName);
       }
     );
-    this.setUserChoiceInputStyle(userChoiceInput);
-    userChoiceInput.setTooltip('Select pattern author');
+    this.setAuthorChoiceInputStyle(authorChoiceInput);
+    authorChoiceInput.setTooltip('Select pattern author');
 
-    return userChoiceInput;
+    return authorChoiceInput;
   }
 
-  private setUserChoiceInputStyle(userChoiceInput: StringInput): void {
+  private setAuthorChoiceInputStyle(userChoiceInput: StringInput): void {
     $(userChoiceInput.input).css({
       'max-width': '100px',
       'min-width': '100px',

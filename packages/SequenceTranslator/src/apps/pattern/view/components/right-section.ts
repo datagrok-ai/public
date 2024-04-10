@@ -74,7 +74,7 @@ export class PatternAppRightSection {
       })
       .catch((e) => {
         if (e instanceof PatternNameExistsError) {
-          new OverwritePatternDialog(this.eventBus).show();
+          new OverwritePatternDialog(this.eventBus, this.dataManager).show();
         } else if (e instanceof PatternExistsError) {
           grok.shell.warning(ui.div([
             ui.divText(`Pattern already exists`),
@@ -92,7 +92,8 @@ export class PatternAppRightSection {
 
 class OverwritePatternDialog {
   constructor(
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private dataManager: DataManager
   ) { }
 
   show(): void {
@@ -108,14 +109,14 @@ class OverwritePatternDialog {
 
   private processOverwriteNamesakePattern(): void {
     const patternName = this.eventBus.getPatternName();
-    grok.shell.info(`Pattern ${patternName} overwritten`);
-    // this.dataManager.overwritePatternInUserStorage()
-    //   .then(() => {
-    //     grok.shell.info(`Pattern ${patternName} overwritten`);
-    //   })
-    //   .catch((e) => {
-    //     console.error('Error while overwriting pattern', e);
-    //   });
+    this.dataManager.overwritePatternInUserStorage(this.eventBus)
+      .then(() => {
+        grok.shell.info(`Pattern ${patternName} overwritten`);
+      })
+      .catch((e) => {
+        console.error('Error while overwriting pattern in user storage', e);
+        grok.shell.error('Error while overwriting pattern');
+      });
   }
 }
 

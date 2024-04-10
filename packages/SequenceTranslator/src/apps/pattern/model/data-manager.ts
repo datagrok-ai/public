@@ -175,7 +175,7 @@ export class DataManager {
       await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
       this.currentUserPatternNameToHash.set(patternName, hash);
 
-      eventBus.selectUser(this.getCurrentUserAuthorshipCategory());
+      eventBus.selectAuthor(this.getCurrentUserAuthorshipCategory());
 
       eventBus.updatePatternList();
     } catch (e) {
@@ -184,6 +184,19 @@ export class DataManager {
       else
         console.error('Error while saving pattern to user storage', e);
     }
+  }
+
+  async overwritePatternInUserStorage(
+    eventBus: EventBus
+  ): Promise<void> {
+    const patternConfig = eventBus.getPatternConfig();
+    const hash = this.getHash(patternConfig);
+    const patternName = patternConfig[L.PATTERN_NAME];
+    const record = await this.getRecordFromPattern(patternConfig);
+    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
+    this.currentUserPatternNameToHash.set(patternName, hash);
+    // eventBus.selectUser(this.getCurrentUserAuthorshipCategory());
+    eventBus.updatePatternList();
   }
 
   async deletePattern(

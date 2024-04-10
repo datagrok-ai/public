@@ -29,7 +29,7 @@ export class URLRouter {
     return this.urlSearchParams.get(PATTERN_KEY);
   }
 
-  setPatternURL(patternHash: string): void {
+  private setPatternURL(patternHash: string): void {
     if (patternHash === null || patternHash === '') {
       this.clearPatternURL();
       return;
