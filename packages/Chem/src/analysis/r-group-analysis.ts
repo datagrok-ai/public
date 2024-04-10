@@ -14,6 +14,22 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 import { hexToPercentRgb } from '../utils/chem-common';
 import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 
+export type RGroupParams = {
+  molColName: string,
+  core: string,
+  rGroupName: string,
+  rGroupChunkSize: string,
+  rGroupMatchingStrategy: string,
+  rGroupAlignment: string,
+  visualAnalysis: boolean,
+}
+
+export type RGroupDecompRes = {
+  xAxisColName: string,
+  yAxisColName: string,
+  highlightColName?: string,
+}
+
 const enum RGroupMatchingStrategy {
   Greedy = 'Greedy',
   GreedyChunks = 'GreedyChunks',
@@ -129,138 +145,159 @@ export function rGroupAnalysis(col: DG.Column): void {
       mcsAndRGroupSettingsDiv
     ]))
     .onOK(async () => {
-      if (replaceLatest.value) {
-        removeLatestAnalysis(col);
-        await delay(50);
-      }
-      const getPrefixIdx = (colPrefix: string) => {
-        let prefixIdx = 0;
-        col = col.dataFrame.columns.byName(columnInput.value!);
-        const re = new RegExp(`^${colPrefix}$`, 'i');
-        if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
-          prefixIdx++;
-          const maxPrefixIdx = 100;
-          for (let i = 0; i < maxPrefixIdx; i++) {
-            const reIdx = new RegExp(`^${colPrefix}_${prefixIdx}$`, 'i');
-            if (!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
-              break;
-            prefixIdx++;
-          }
-          if (prefixIdx - 1 === maxPrefixIdx) {
-            grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
-            return null;
-          }
-        }
-        return prefixIdx;
-      }
-      const rGroupPrefixRe = `${columnPrefixInput.value}\\d+`;
-      const corePrefixRe = `Core`;
-      const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
-      const corePrefixIdx = getPrefixIdx(corePrefixRe);
-      if (rGroupPrefixIdx === null || corePrefixIdx === null)
-        return;
-      let core = sketcher.getMolFile();
-      if (!core) {
-        grok.shell.error('No core was provided');
-        return;
-      }
-      let progressBar;
       try {
-        //using onlyMatchAtRGroups param in case user has manually defined enumerated R groups
-        const onlyMatchAtRGroups =
-          !!MolfileHandler.getInstance(core).atomTypes.filter((it) => it.startsWith('R')).length &&
-          core.includes('M  RGP'); 
-        const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
-        if (coreIsQMol)
-          core = convertMolNotation(core, grok.chem.Notation.MolBlock, grok.chem.Notation.Smarts);
-        progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
-        //const res = await rGroupsPython(col, core, columnPrefixInput.value, true, onlyMatchAtRGroups);
-
-        const rGroupOptions = {
-          chunkSize: rGroupChunkSize.value!.toString(),
-          matchingStrategy: rGroupMatchingStrategy.value!,
-          alignment: rGroupAlignment.value!,
-          includeTargetMolInResults: true,
-          onlyMatchAtRGroups: onlyMatchAtRGroups
-        };
-        const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
-
-        const module = getRdKitModule();
-        if (rGroups.length) {
-          //unmatched are those items for which all R group cols are empty
-          const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
-          latestAnalysisCols[col.dataFrame.name] = [];
-          for (const resCol of rGroups) {
-            const molsArray = new Array<string>(resCol.length);
-            for (let i = 0; i < resCol.length; i++) {
-              const molStr = resCol.get(i);
-              if (resCol.name !== 'Core' && !molStr) {
-                unmatchedItems[i] += 1;
-              } else {
-                let mol: RDMol | null = null;
-                try {
-                  mol = resCol.name === 'Core' && coreIsQMol ? module.get_qmol(molStr!) : module.get_mol(molStr!);
-                  if (mol)
-                    molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-                } catch (e) {
-                  //do nothing here, molsArray[i] is empty for invalid molecules
-                } finally {
-                  mol?.delete();
-                }
-              }
-            }
-            let rColName = '';
-            if (resCol.name === 'Core') {
-              rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
-              col.temp[SCAFFOLD_COL] = rColName;
-            }
-            else
-              rColName = rGroupPrefixIdx ? `${resCol.name}_${rGroupPrefixIdx}` : resCol.name;
-            resCol.name = rColName;
-            const rCol = DG.Column.fromStrings(rColName, molsArray);
-            rCol.semType = DG.SEMTYPE.MOLECULE;
-            rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
-            col.dataFrame.columns.add(rCol);
-            latestAnalysisCols[col.dataFrame.name].push(rColName);
-          }
-          //create column for r groups highlight
-          if (highlightCol) {
-            col.dataFrame.columns.add(highlightCol);
-            latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
-            col.temp[SUBSTRUCT_COL] = highlightCol.name;
-          }
-          //create boolean column for match/non match
-          const isHitCol = DG.Column.bool(`${rGroupPrefixIdx ? `isHit_${rGroupPrefixIdx}` : `isHit`}`, rGroups[0].length)
-            .init((i) => unmatchedItems[i] !== rGroups.length - 1);
-          col.dataFrame.columns.add(isHitCol);
-          latestAnalysisCols[col.dataFrame.name].push(isHitCol.name);
-          //filter out unmatched values
-          const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => isHitCol.get(i));
-          col.dataFrame.filter.copyFrom(filterUnmatched);
+        if (replaceLatest.value) {
+          removeLatestAnalysis(col);
+          await delay(50);
+        }
+        const smarts = await sketcher.getSmarts();
+        const funcCall = await DG.Func.find({ name: 'rGroupDecomposition' })[0].prepare({
+          df: col.dataFrame,
+          molColName: columnInput.value!,
+          core: smarts,
+          rGroupName: columnPrefixInput.value,
+          rGroupChunkSize: rGroupChunkSize.value!.toString(),
+          rGroupMatchingStrategy: rGroupMatchingStrategy.value!,
+          rGroupAlignment: rGroupAlignment.value!,
+          visualAnalysis: visualAnalysisCheck.value!,
+        }).call(undefined, undefined, { processed: false });
+        const res: RGroupDecompRes = funcCall.getOutputParamValue();
+        if (res) {
           const view = grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
-          if(highlightCol)
-            view.grid.col(highlightCol.name)!.visible = false;
-          if (visualAnalysisCheck.value && view) {
-            if (rGroups.length < 3)
+          if (res.highlightColName)
+            view.grid.col(res.highlightColName)!.visible = false;
+          if (visualAnalysisCheck.value! && view) {
+            if (!res.yAxisColName || !res.xAxisColName)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
-                xColumnNames: [rGroups[1].name], // column 0 is Core column
-                yColumnNames: [rGroups[2].name],
+                xColumnNames: [res.xAxisColName],
+                yColumnNames: [res.yAxisColName],
               });
           }
-        } else
-          grok.shell.error('None R-Groups were found');
-        progressBar.close();
+        }
       } catch (e: any) {
-        grok.shell.error(e);
-        dlg.close();
-        progressBar?.close();
+        grok.shell.error(e.message);
       }
     });
   dlg.show();
   dlg.initDefaultHistory();
+}
+
+export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promise<RGroupDecompRes | undefined> {
+  const getPrefixIdx = (colPrefix: string) => {
+    let prefixIdx = 0;
+    col = col.dataFrame.columns.byName(params.molColName);
+    const re = new RegExp(`^${colPrefix}$`, 'i');
+    if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+      prefixIdx++;
+      const maxPrefixIdx = 2;
+      for (let i = 0; i < maxPrefixIdx; i++) {
+        const reIdx = new RegExp(`^${colPrefix}_${prefixIdx}$`, 'i');
+        if (!col.dataFrame.columns.names().filter(((it) => it.match(reIdx))).length)
+          break;
+        prefixIdx++;
+      }
+      if (prefixIdx - 1 === maxPrefixIdx) {
+        throw new Error('Table contains columns named \'R[number]\', please change column prefix');
+      }
+    }
+    return prefixIdx;
+  }
+  const rGroupPrefixRe = `${params.rGroupName}\\d+`;
+  const corePrefixRe = `Core`;
+  const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
+  const corePrefixIdx = getPrefixIdx(corePrefixRe);
+  let core = params.core;
+  if (!core) {
+    throw new Error('No core was provided');
+  }
+  let progressBar;
+  try {
+    //using onlyMatchAtRGroups param in case user has manually defined enumerated R groups
+    core = convertMolNotation(core, grok.chem.Notation.Smarts, grok.chem.Notation.MolBlock);
+    const onlyMatchAtRGroups =
+      !!MolfileHandler.getInstance(core).atomTypes.filter((it) => it.startsWith('R')).length &&
+      core.includes('M  RGP');
+    const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
+    if (coreIsQMol)
+      core = convertMolNotation(core, grok.chem.Notation.MolBlock, grok.chem.Notation.Smarts);
+    progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
+    //const res = await rGroupsPython(col, core, columnPrefixInput.value, true, onlyMatchAtRGroups);
+
+    const rGroupOptions = {
+      chunkSize: params.rGroupChunkSize,
+      matchingStrategy: params.rGroupMatchingStrategy,
+      alignment: params.rGroupAlignment,
+      includeTargetMolInResults: true,
+      onlyMatchAtRGroups: onlyMatchAtRGroups
+    };
+    const { rGroups, highlightCol } = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+    const module = getRdKitModule();
+    if (rGroups.length) {
+      //unmatched are those items for which all R group cols are empty
+      const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
+      latestAnalysisCols[col.dataFrame.name] = [];
+      for (const resCol of rGroups) {
+        const molsArray = new Array<string>(resCol.length);
+        for (let i = 0; i < resCol.length; i++) {
+          const molStr = resCol.get(i);
+          if (resCol.name !== 'Core' && !molStr) {
+            unmatchedItems[i] += 1;
+          } else {
+            let mol: RDMol | null = null;
+            try {
+              mol = resCol.name === 'Core' && coreIsQMol ? module.get_qmol(molStr!) : module.get_mol(molStr!);
+              if (mol)
+                molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+            } catch (e) {
+              //do nothing here, molsArray[i] is empty for invalid molecules
+            } finally {
+              mol?.delete();
+            }
+          }
+        }
+        let rColName = '';
+        if (resCol.name === 'Core') {
+          rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
+          col.temp[SCAFFOLD_COL] = rColName;
+        }
+        else
+          rColName = rGroupPrefixIdx ? `${resCol.name}_${rGroupPrefixIdx}` : resCol.name;
+        resCol.name = rColName;
+        const rCol = DG.Column.fromStrings(rColName, molsArray);
+        rCol.semType = DG.SEMTYPE.MOLECULE;
+        rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+        col.dataFrame.columns.add(rCol);
+        latestAnalysisCols[col.dataFrame.name].push(rColName);
+      }
+      //create column for r groups highlight
+      if (highlightCol) {
+        col.dataFrame.columns.add(highlightCol);
+        latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
+        col.temp[SUBSTRUCT_COL] = highlightCol.name;
+      }
+      //create boolean column for match/non match
+      const isHitCol = DG.Column.bool(`${rGroupPrefixIdx ? `isHit_${rGroupPrefixIdx}` : `isHit`}`, rGroups[0].length)
+        .init((i) => unmatchedItems[i] !== rGroups.length - 1);
+      col.dataFrame.columns.add(isHitCol);
+      latestAnalysisCols[col.dataFrame.name].push(isHitCol.name);
+      //filter out unmatched values
+      const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => isHitCol.get(i));
+      col.dataFrame.filter.copyFrom(filterUnmatched);
+    } else
+      grok.shell.warning('None R-Groups were found');
+    progressBar.close();
+    return {
+      xAxisColName: rGroups.length > 1 ? rGroups[1].name : '',  //rGroups[0] column is Core column
+      yAxisColName: rGroups.length > 2 ? rGroups[2].name : '',
+      highlightColName: highlightCol?.name
+    };
+  } catch (e: any) {
+    grok.shell.error(e);
+    progressBar?.close();
+  }
 }
 
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,

@@ -45,7 +45,7 @@ import {createPropPanelElement, createTooltipElement} from './analysis/activity-
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
@@ -645,6 +645,37 @@ export function rGroupsAnalysisMenu(): void {
   }
   rGroupAnalysis(col);
 }
+
+
+//name: rGroupDecomposition
+//tags: Transform
+//input: dataframe df
+//input: string molColName
+//input: string core
+//input: string rGroupName
+//input: string rGroupChunkSize
+//input: string rGroupMatchingStrategy
+//input: string rGroupAlignment
+//input: bool visualAnalysis
+//output: object res
+export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string,
+  rGroupName: string, rGroupChunkSize: string, rGroupMatchingStrategy: string,
+  rGroupAlignment: string, visualAnalysis: boolean): Promise<RGroupDecompRes | undefined> {
+  const params: RGroupParams = {
+    molColName: molColName,
+    core: core,
+    rGroupName: rGroupName,
+    rGroupChunkSize: rGroupChunkSize,
+    rGroupMatchingStrategy: rGroupMatchingStrategy,
+    rGroupAlignment: rGroupAlignment,
+    visualAnalysis: visualAnalysis,
+  };
+  const col = df.col(molColName);
+  if (col === null)
+    throw new Error(`Current table does not contain ${params.molColName} column`); //exception
+  return await rGroupDecomp(col, params);
+}
+
 
 //name: ActivityCliffsEditor
 //tags: editor
