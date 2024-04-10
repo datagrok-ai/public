@@ -2,63 +2,23 @@
 
 import {Extremum, OptimizationTask} from './definitions';
 
-// export async function getMinimum(task: OptimizationTask): Promise<Extremum> {
-//   // 1. Check dimensions
-//   if (task.minVals.length !== task.maxVals.length)
-//     throw new Error('Non-equal size of arrays with min & max values');
+const TOLERANCE = 1e-4;
+const MAX_ITER = 50;
+const NON_ZERO_PARAM = 0.0001;
+const INITIAL_SCALE = 0.02;
 
-//   if (task.minVals.length === 0)
-//     throw new Error('Empty arrays with min & max values');
+const SCALE_REFLECTION = 1;
+const SCALE_EXPANSION = 2;
+const SCALE_CONTRACTION = -0.5;
 
-//   // 2. Init optimization
-//   const dim = task.minVals.length;
-//   const argMin = new Float32Array(dim);
-//   const arg = new Float32Array(dim);
-//   const step = new Float32Array(dim);
-
-//   task.minVals.forEach((val, idx) => {
-//     argMin[idx] = val;
-//     step[idx] = task.maxVals[idx] - val;
-//   });
-
-//   let minCost = await task.costFunc(argMin);
-//   let cost: number;
-
-//   // 3. Search for min
-//   for (let i = 0; i < task.samplesCount; ++i) {
-//     for (let j = 0; j < dim; ++j)
-//       arg[j] = task.minVals[j] + step[j] * Math.random();
-
-//     cost = await task.costFunc(arg);
-
-//     if (cost < minCost) {
-//       minCost = cost;
-//       arg.forEach((val, idx) => argMin[idx] = val);
-//     }
-//   }
-
-//   return {
-//     arg: argMin,
-//     cost: minCost,
-//   };
-// }
-
-// costFunc: costFunc,
-// minVals: minVals,
-// maxVals: maxVals,
-// samplesCount: this.samplesCount,
-
-
-export async function optimizeNM (
+export async function optimizeNM(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   paramsBottom: Float32Array,
   paramsTop: Float32Array,
   samplesCount: number): Promise<Extremum> {
-
   const params = new Float32Array(paramsBottom.length);
   for (let i = 0; i < paramsBottom.length; i++)
-    params[i] =  (paramsBottom[i] + paramsTop[i])/2;
-
+    params[i] = (paramsBottom[i] + paramsTop[i])/2;
 
   const dim = params.length + 1;
   const dimParams = params.length;
@@ -70,11 +30,11 @@ export async function optimizeNM (
     optParams[i] = new Float32Array(dimParams);
     for (let j = 0; j < dimParams; j++) {
       optParams[i][j] = params[j];
-      if (i != 0) {
-        if (params[i - 1] == 0)
-          optParams[i][j] = 0.0001;
+      if (i != 0 && i - 1 === j) {
+        if (params[j] == 0)
+          optParams[i][j] = NON_ZERO_PARAM;
         else
-          optParams[i][j] += 0.02 * params[i - 1];
+          optParams[i][j] += INITIAL_SCALE * params[i - 1];
       }
     }
 
@@ -88,17 +48,9 @@ export async function optimizeNM (
   const lastIndex = indexes.length - 1;
 
   let iteration = 0;
-  const maxIter = 30;
-  const infinitesemal = 5e-6;
-  const tolerance = 1e-4;
-
   let best = 0;
   let previousBest = 0;
   let noImprovment = 0;
-
-  const scaleReflection = 1;
-  const scaleExpansion = 2;
-  const scaleContraction = -0.5;
 
   const centroid = new Float32Array(dimParams);
   const reflectionPoint = new Float32Array(dimParams);
@@ -111,7 +63,7 @@ export async function optimizeNM (
       indexes.sort((a:number, b:number) => {
         return pointObjectives[a] - pointObjectives[b];
       });
-      if (iteration >= maxIter)
+      if (iteration >= MAX_ITER)
         break;
 
       if (iteration == 0) {
@@ -122,7 +74,7 @@ export async function optimizeNM (
       iteration++;
 
       best = pointObjectives[indexes[0]];
-      if ((best + infinitesemal)/(previousBest + infinitesemal) - 1 > tolerance)
+      if (previousBest - best > TOLERANCE)
         noImprovment = 0;
       else {
         ++noImprovment;
@@ -132,6 +84,9 @@ export async function optimizeNM (
 
       previousBest = best;
 
+      console.log(iteration);
+      for (let i = 0; i < dimParams; i++)
+        console.log(optParams[indexes[0]][i]);
       //centroid
       for (let i = 0; i < dimParams; i++)
         centroid[i] = params[i];
@@ -149,7 +104,7 @@ export async function optimizeNM (
       for (let i = 0; i < dimParams; i++)
         reflectionPoint[i] = centroid[i];
       for (let i = 0; i < dimParams; i++)
-        reflectionPoint[i] += scaleReflection * (centroid[i] - optParams[indexes[lastIndex]][i]);
+        reflectionPoint[i] += SCALE_REFLECTION * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
       const reflectionScore = await objectiveFunc(reflectionPoint);
 
@@ -158,7 +113,7 @@ export async function optimizeNM (
         for (let i = 0; i < dimParams; i++)
           expansionPoint[i] = centroid[i];
         for (let i = 0; i < dimParams; i++)
-          expansionPoint[i] += scaleExpansion * (centroid[i] - optParams[indexes[lastIndex]][i]);
+          expansionPoint[i] += SCALE_EXPANSION * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
         const expansionScore = await objectiveFunc(expansionPoint);
 
@@ -184,7 +139,7 @@ export async function optimizeNM (
       for (let i = 0; i < dimParams; i++)
         contractionPoint[i] = centroid[i];
       for (let i = 0; i < dimParams; i++)
-        contractionPoint[i] += scaleContraction * (centroid[i] - optParams[indexes[lastIndex]][i]);
+        contractionPoint[i] += SCALE_CONTRACTION * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
       const contractionScore = await objectiveFunc(contractionPoint);
 
@@ -204,5 +159,5 @@ export async function optimizeNM (
   for (let i = 0; i < dimParams; i++)
     params[i] = optParams[indexes[0]][i];
 
-  return {arg: params, cost: pointObjectives[0]};
+  return {arg: params, cost: pointObjectives[indexes[0]]};
 }
