@@ -50,7 +50,7 @@ export async function initTemplates(): Promise<void> {
     });
 
   await loadTemplates();
-  console.log(templates);
+  //console.log(templates);
 }
 
 /// Community-curated template collection

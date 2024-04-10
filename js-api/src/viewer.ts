@@ -4,7 +4,7 @@ import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
-import {toJs} from "./wrappers";
+import {toJs, toDart} from "./wrappers";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
@@ -487,8 +487,12 @@ export class FilterGroup extends Viewer {
     return toJs(api.grok_FilterGroup_Get_Filters(this.dart));
   }
 
-  setEnabled(filter: Filter | Widget, active: boolean) {
+  setEnabled(filter: Filter | Widget | FilterState, active: boolean) {
     api.grok_FilterGroup_SetEnabled(this.dart, filter, active);
+  }
+
+  setExpanded(filter: Filter | Widget, active: boolean) {
+    api.grok_FilterGroup_SetExpanded(this.dart, filter, active);
   }
 
   remove(filter: Filter | Widget) {

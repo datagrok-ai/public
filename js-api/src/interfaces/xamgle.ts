@@ -2,6 +2,8 @@
 
 
 export interface IDetailedLogSettings {
+  type: string;
+
   description: string;
 
   details: string;

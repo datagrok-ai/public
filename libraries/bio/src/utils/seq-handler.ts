@@ -40,7 +40,6 @@ export type JoinerFunc = (src: ISeqSplitted) => string;
  */
 export class SeqHandler {
   protected readonly _column: DG.Column; // the column to be converted
-  protected readonly _columnVersion: number;
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
@@ -52,7 +51,6 @@ export class SeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    this._columnVersion = col.version;
     const units = this._column.getTag(DG.TAGS.UNITS);
     if (units !== null && units !== undefined)
       this._units = units;
@@ -98,6 +96,7 @@ export class SeqHandler {
     }
 
     this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    this.columnVersion = this.column.version;
   }
 
   public static setUnitsToFastaColumn(uh: SeqHandler) {
@@ -751,8 +750,8 @@ export class SeqHandler {
   public static forColumn(col: DG.Column<string>): SeqHandler {
     // TODO: Invalidate col.temp[Temps.uh] checking column's metadata
     let res = col.temp[SeqTemps.seqHandler];
-    if (!res || res.columnVersion !== col.version) res = col.temp[SeqTemps.seqHandler] = new SeqHandler(col);
-
+    if (!res || res.columnVersion !== col.version)
+      res = col.temp[SeqTemps.seqHandler] = new SeqHandler(col);
     return res;
   }
 

@@ -10,6 +10,8 @@ import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 
 
+const ERROR_CLASS = 'd4-viewer-error';
+
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   curvesColumnNames?: string[] = [];
   showSelectedRowsCurves: boolean = false;
@@ -74,9 +76,21 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       else
         this.data.series?.push(...series);
     }
+    this.data.series?.forEach((series, i) => {
+      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.showCurveConfidenceInterval = false;
+      series.droplines = [];
+      if (this.data.series?.length! > 20) {
+        series.showPoints = '';
+        series.lineStyle = 'solid';
+      }
+    });
   }
 
   onPropertyChanged(property: DG.Property | null): void {
+    if (property?.name === 'curvesColumnNames')
+      this.props.set('showColumnLabel', this.curvesColumnNames?.length! > 1 as unknown as object);
     this.applyViewerProperties();
     this.createChartData();
     this.render();
@@ -100,14 +114,21 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
   }
 
+  _removeErrorMessage() {
+    const divTextElement = this.root.getElementsByClassName(ERROR_CLASS)[0];
+    if (divTextElement)
+      this.root.removeChild(divTextElement);
+  }
+
   render(): void {
+    const g = this.canvas.getContext('2d')!
+    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     if (this.curvesColumnNames?.length === 0) {
       this._showErrorMessage('The MultiCurveViewer viewer requires a minimum of 1 curves column.');
       return;
     }
-
-    const g = this.canvas.getContext('2d')!
-    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this._removeErrorMessage();
     this.renderer.renderCurves(g, 0, 0, this.canvas.width, this.canvas.height, this.data);
   }
 }

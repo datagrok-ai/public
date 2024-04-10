@@ -5,15 +5,21 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
 import {DetailedLog} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time'],
+  columnNames: ['error', 'reporter', 'report_time', 'report_number'],
 };
 
 export class ReportsView extends UaView {
+  currentFilterGroup: DG.FilterGroup | null;
+  private filters: HTMLDivElement = ui.box();
+
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Reports';
+    this.currentFilterGroup = null;
+    this.filters.style.maxWidth = '250px';
   }
 
   async initViewers(): Promise<void> {
@@ -25,9 +31,6 @@ export class ReportsView extends UaView {
         'data': user,
       };
     });
-
-    const filters = ui.box();
-    filters.style.maxWidth = '250px';
 
     const reportsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
@@ -44,9 +47,9 @@ export class ReportsView extends UaView {
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace',
         });
-        filters.append(DG.Viewer.filters(t, filtersStyle).root);
+        this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
+          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error', 'error_stack_trace']);
           viewer.col('reporter')!.cellType = 'html';
           viewer.col('reporter')!.width = 30;
           viewer.col('report_id')!.cellType = 'html';
@@ -108,16 +111,53 @@ export class ReportsView extends UaView {
     reportsViewer.root.classList.add('ui-panel');
     this.viewers.push(reportsViewer);
     this.root.append(ui.splitH([
-      filters,
+      this.filters,
       reportsViewer.root,
     ]));
+  }
+
+  async reloadViewers(): Promise<void> {
+    this.viewers = [];
+    while (this.root.hasChildNodes())
+      this.root.removeChild(this.root.lastChild!);
+    await this.initViewers();
+    for (const v of this.viewers)
+      await v.reloadViewer();
+  }
+
+  async reloadFilter(table?: DG.DataFrame) {
+    this.currentFilterGroup?.detach();
+    while (this.filters.hasChildNodes())
+      this.filters.removeChild(this.filters.lastChild!);
+    table = table ?? await this.viewers[0].dataFrame;
+    if (table) {
+      const filters_ = DG.Viewer.filters(table, filtersStyle);
+      this.currentFilterGroup = new DG.FilterGroup(filters_.dart);
+      this.filters.append(filters_.root);
+      this.updateFilter();
+    }
+  }
+
+  updateFilter(): void {
+    if (ViewHandler.getCurrentView().name === 'Reports' && ViewHandler.getInstance().getSearchParameters().has('report-number')) {
+      let reportNumber = ViewHandler.getInstance().getSearchParameters().get('report-number');
+      if (reportNumber) {
+        this.currentFilterGroup?.updateOrAdd({
+          type: DG.FILTER_TYPE.MULTI_VALUE,
+          column: 'report_number',
+          selected: [reportNumber]}
+        );
+      }
+    }
   }
 
   async showReportContextPanel(table: DG.DataFrame): Promise<void> {
     if (!table.selection.anyTrue) return;
     let df = table.clone(table.selection);
     const reportId = df.getCol('report_id').get(0);
-    if (!reportId) return
-    grok.shell.o = ui.div([await DetailedLog.getAccordion(reportId)]);
+    if (!reportId) return;
+    grok.shell.o = ui.wait(async () => {
+      return ui.div([await DetailedLog.getAccordion(reportId)]);
+    });
   }
 }

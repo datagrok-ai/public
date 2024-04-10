@@ -270,6 +270,8 @@ export function rGroupAnalysis(col: DG.Column): void {
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
     { [key: string]: string | boolean }): Promise<RGroupsRes> {
+  if (!coreMolecule)
+      throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
       .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');

@@ -1,5 +1,29 @@
 # Bio changelog
 
+## 2.12.8 (2024-04-09)
+
+### Features
+
+* To atomic level: STEABS block contains less than 80 symbols per row
+
+## 2.12.7 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+
+## 2.12.6 (2024-04-07)
+
+### Bug fixes
+
+* Fix detectMacromolecule to invalidate on custom notation
+
+## 2.12.5 (2024-04-05)
+
+### Features
+
+* Add KNN computation on webGPU for UMAP (sequence space).
+
 ## 2.12.4 (2024-04-05)
 
 ### Features

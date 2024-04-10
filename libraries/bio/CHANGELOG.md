@@ -1,5 +1,24 @@
 # bio changelog
 
+## 5.40.4 (2024-04-09)
+
+### Features
+
+* Modified STEABS block generation when linking monomers (adding not more than 80 symbols per row)
+
+## 5.40.3 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+* Adding STEABS block when linking monomers
+
+## 5.40.2 (2024-04-07)
+
+### Bug fixes
+
+Bio: Fix SeqHandler for column version
+
 ## 5.40.1 (2024-04-05)
 
 ### Features
