@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import {option} from './constants';
+import {MAXIMUM_SERIES_NUMBER, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 
@@ -24,7 +24,6 @@ export class RadarViewer extends EChartViewer {
   min: MinimalIndicator;
   max: MaximumIndicator;
   showOnlyCurrentRow: boolean;
-  showAllRows: boolean;
   showTooltip: boolean;
   showMin: boolean;
   showMax: boolean;
@@ -38,13 +37,13 @@ export class RadarViewer extends EChartViewer {
 
   constructor() {
     super();
+    this.rowSource = 'CurrentRow';
     this.title = this.string('title', 'Radar');
     this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
     this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', true, {description: 'Hides max and min values'});
-    this.showAllRows = this.bool('showAllRows', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFBCE2F5);
@@ -101,14 +100,6 @@ export class RadarViewer extends EChartViewer {
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
 
-  initChartEventListeners() {
-    this.dataFrame.onRowsFiltered.subscribe((_) => {
-      if (this.dataFrame) {
-        this.render();
-      }
-    });
-  }
-
   getTooltip(params: any): string | null {
     if (params.componentType === 'series') {
       if (params.seriesIndex === 2) {
@@ -123,16 +114,9 @@ export class RadarViewer extends EChartViewer {
 
   onTableAttached() {
     this.init();
-    this.initChartEventListeners();
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
       .map((c: DG.Column) => c.name);
-    this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((_) => {
-      this.init();
-      this.chart.setOption(option);
-    }));
     this.render();
   }
 
@@ -160,29 +144,49 @@ export class RadarViewer extends EChartViewer {
 
     if (this.showOnlyCurrentRow)
       this.updateRow();
-  
-    if (this.showAllRows) {
-      option.series[2].data = [];
-      for (let i = 0; i < this.filter.length; i++) {
-        if (!this.filter.get(i))
-          continue;
-        option.series[2].data.push({
-          value: this.columns.map((c) => {
-            const value = Number(c.get(i));
-            return value !== -2147483648 ? value : 0;
-          }),
+
+    const currentRowIndex = this.dataFrame.currentRowIdx ?? 0;
+    const currentIn = this.filter.get(currentRowIndex);
+    
+    if (!currentIn || !this.showOnlyCurrentRow) {
+      const filter = this.formulaFilter ? this.filter.clone().invert() : this.filter;
+      const seriesData = [];
+      
+      for (let i = 0; i < filter.length && seriesData.length < MAXIMUM_SERIES_NUMBER; i++) {
+        if (!filter.get(i)) continue;
+        if (i === currentRowIndex && currentIn) continue;
+        
+        const value = this.columns.map((c) => {
+          if (c.type === 'datetime')
+            return this.getDate(c, c.getRawData()[i]);
+          const value = Number(c.get(i));
+          return value !== -2147483648 ? value : 0;
+        });
+        
+        seriesData.push({
+          value: value,
           name: `row ${i + 1}`,
           label: { show: this.showValues, formatter: (params: any) => StringUtils.formatNumber(params.value) as string },
         });
       }
+      
+      option.series[2].data = seriesData;
+      if (currentIn && !this.showOnlyCurrentRow)
+        this.updateRow();
     }
-    
-    option.legend.show = !this.showAllRows;
+
+    option.legend.show = !(this.filter.length > 1);
     option.silent = !this.showTooltip;
-  }  
+  }
+
+  getDate(c: DG.Column, value: number) {
+    const date = this.getYearFromDate(value);
+    const isRight = date >= this.getYearFromDate(c.min) && date <= this.getYearFromDate(c.max);
+    return isRight ? date : this.getYearFromDate(c.min);
+  }
 
   getYearFromDate(value: number) {
-    return new Date(Math.floor(value) / 1000).getFullYear()
+    return new Date(Math.floor(value) / 1000).getFullYear();
   }
 
   updateMin() {
@@ -219,10 +223,10 @@ export class RadarViewer extends EChartViewer {
 
   updateRow() {
     const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
-    option.series[2].data[0] = {
+    option.series[2].data.unshift({
       value: this.columns.map((c) => {
         if (c.type === 'datetime')
-          return this.getYearFromDate(c.getRawData()[currentRow]);
+          return this.getDate(c, c.getRawData()[currentRow]);
         const value = Number(c.get(currentRow));
         return value != -2147483648 ? value : 0;
       }),
@@ -242,7 +246,7 @@ export class RadarViewer extends EChartViewer {
           return StringUtils.formatNumber(params.value) as string;
         },
       },
-    };
+    });
   }
 
   clearData(indexes: number[]) {
@@ -287,7 +291,7 @@ export class RadarViewer extends EChartViewer {
   getQuantile(columns: DG.Column<any>[], percent: number) {
     const result = [];
     for (const c of columns) {
-      const datetime = c.getRawData().map((value: number) => this.getYearFromDate(value));
+      const datetime = c.getRawData().map((value: number) => this.getDate(c, value));
       const values = c.type === 'datetime' ? datetime : Array.from(c.values());
       const isValidValue = (value: number) => typeof value === 'bigint' 
         ? value !== BigInt('-2147483648')
