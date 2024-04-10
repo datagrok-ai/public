@@ -39,7 +39,7 @@ export async function generateScaffoldTree(
   data: DG.DataFrame,
   smilesColumn: string,
   ringCutoff: number = 0,
-  dischargeAndDeradicalize: boolean = false) : Promise<string> {
+  dischargeAndDeradicalize: boolean = false) : Promise<DG.FileInfo> {
   return await grok.functions.call('Chem: GenerateScaffoldTree', {
     data, smilesColumn, ringCutoff, dischargeAndDeradicalize,
   });
