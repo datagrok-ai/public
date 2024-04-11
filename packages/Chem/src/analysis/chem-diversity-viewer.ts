@@ -31,6 +31,11 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
+      this.error = '';
+      if (this.moleculeColumn.type !== DG.TYPE.STRING) {
+        this.closeWithError('Incorrect target column type');
+        return;
+      }
       let progressBar: DG.TaskBarProgressIndicator;
       if (!this.tooltipUse)
         progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
