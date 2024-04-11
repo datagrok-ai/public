@@ -1,5 +1,11 @@
 # Bio changelog
 
+# 2.12.10 (2024-04-11)
+
+## Bug fixes
+
+* Bio: Fix detector for non-fasta seqs of the same length
+
 ## 2.12.9 (2024-04-10)
 
 ### Bug fixes

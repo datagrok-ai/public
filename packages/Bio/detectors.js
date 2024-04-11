@@ -236,7 +236,9 @@ class BioPackageDetectors extends DG.Package {
       const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
         this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
 
-      if (statsAsChars.sameLength) { // MSA FASTA single character
+      if (statsAsChars.sameLength && !separator &&
+        !(['[', ']'].some((c) => c in statsAsChars.freq)) // not fasta ext notation
+      ) { // MSA FASTA single character
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
         if (alphabet === ALPHABET.UN) {
@@ -367,8 +369,8 @@ class BioPackageDetectors extends DG.Package {
     const expSepRate = 1 / Object.keys(freq).length; // expected
     // const freqThreshold = (1 / (Math.log2(Object.keys(freq).length) + 2));
 
-    return (sepRate / expSepRate > 2.2 && mLengthVarN < 0.7) ||
-    (sepRate / expSepRate > 4) ? sep : null;
+    return (sepRate / expSepRate > 2.2 && mLengthVarN < 0.8) ||
+    (sepRate / expSepRate > 3.5) ? sep : null;
   }
 
   checkForbiddenSeparator(separator) {
