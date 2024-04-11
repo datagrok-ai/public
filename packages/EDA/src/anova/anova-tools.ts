@@ -61,30 +61,18 @@ type OneWayAnova = {
   pValue: number,
 };
 
+/** One-way ANOVA report */
+export type OneWayAnovaReport = {
+  anovaTable: OneWayAnova,
+  fCritical: number,
+  significance: number,
+};
+
 /** Categorical column */
 type CatCol = DG.Column<DG.COLUMN_TYPE.STRING | DG.COLUMN_TYPE.BOOL>;
 
 /** Numerical column */
 type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
-
-/** Create dataframe with one-way ANOVA results. */
-export function getOneWayAnovaDF(
-  anova: OneWayAnova, alpha: number, fCritical: number, hypothesis: string, testResult: string,
-): DG.DataFrame {
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Source of variance',
-      ['Between groups', 'Within groups', 'Total', '', hypothesis, '', testResult]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares',
-      [anova.ssBn, anova.ssWn, anova.ssTot, null, null, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom',
-      [anova.dfBn, anova.dfWn, anova.dfTot, null, null, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anova.msBn, anova.msWn, null, null, null, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anova.fStat, null, null, null, null, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null, null, null, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT,
-      `${alpha}-critical value`, [fCritical, null, null, null, null, null, null]),
-  ]);
-} // getOneWayAnovaDF
 
 /** Check correctness of significance level. */
 export function checkSignificanceLevel(alpha: number) {
@@ -272,8 +260,7 @@ export class FactorizedData {
 } // FactorizedData
 
 /** Perform one-way analysis of variances. */
-export function oneWayAnova(
-  categores: CatCol, values: NumCol, alpha: number, validate: boolean): DG.DataFrame {
+export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number, validate: boolean): OneWayAnovaReport {
   checkSignificanceLevel(alpha);
 
   const uniqueCount = categores.stats.uniqueCount;
@@ -289,11 +276,15 @@ export function oneWayAnova(
   }
 
   const anova = factorized.getOneWayAnova();
-  const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
 
+  return {
+    anovaTable: anova,
+    fCritical: jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn),
+    significance: alpha,
+  };
+  // getOneWayAnovaDF(anova, alpha, fCrit, hypothesis, testResult);
+  const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
   const hypothesis = `THE NULL HYPOTHESIS: the "${categores.name}" 
     factor does not produce a significant difference in the "${values.name}" feature.`;
   const testResult = `Test result: ${(anova.fStat > fCrit) ? 'REJECTED.' : 'FAILED TO REJECT.'}`;
-
-  return getOneWayAnovaDF(anova, alpha, fCrit, hypothesis, testResult);
 } // oneWayAnova

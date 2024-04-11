@@ -4,27 +4,80 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {oneWayAnova} from './anova-tools';
+import {oneWayAnova, OneWayAnovaReport} from './anova-tools';
 
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
 
+const ANOVA_HELP_URL = '/help/explore/anova';
 
 /** Add one-way ANOVA results */
-function addOneWayAnovaVizualization(
-  table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: DG.DataFrame,
-): void {
-  const view = grok.shell.getTableView(table.name);
-  view.addViewer(DG.VIEWER.BOX_PLOT, {
+function addVizualization(df: DG.DataFrame, factors: DG.Column, values: DG.Column, report: OneWayAnovaReport): void {
+  const test = report.anovaTable.fStat > report.fCritical;
+
+  const shortConclusion = test ?
+    `"${factors.name}" affects the "${values.name}"` :
+    `"${factors.name}" doesn't affect the "${values.name}"`;
+
+  const view = grok.shell.getTableView(df.name);
+  const boxPlot = DG.Viewer.boxPlot(df, {
     categoryColumnName: factors.name,
     valueColumnName: values.name,
     showPValue: false,
-    showValueSelector: false,
-    showCategorySelector: false,
     showStatistics: false,
+    description: shortConclusion,
   });
-  view.addViewer(DG.Viewer.grid(anova));
+  const boxPlotNode = view.dockManager.dock(boxPlot.root, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
+
+  const hypoMd = ui.markdown(`**H0:** the "${factors.name}" 
+  factor does not produce a significant difference in the "${values.name}" feature.`);
+  ui.tooltip.bind(hypoMd, 'Null hypothesis');
+
+  const testMd = ui.markdown(`**Test result:** ${test ?
+    'there is significant differences among sample averages.' :
+    'there is no significant differences among sample averages.'}`,
+  );
+
+  const sign = test ? '>' : '<';
+  ui.tooltip.bind(testMd, () => ui.markdown(`${test ?
+    'Reject the null hypothesis' :
+    'Fail to reject the null hypothesis'}, since F ${sign} F-critical: 
+    ${report.anovaTable.fStat.toFixed(2)} ${sign} ${report.fCritical.toFixed(2)}.`));
+
+  const divResult = ui.divV([
+    hypoMd,
+    testMd,
+    ui.link('Learn more',
+      () => window.open('https://en.wikipedia.org/wiki/F-test', '_blank'),
+      'Click to open in a new tab',
+    ),
+  ]);
+  divResult.style.marginLeft = '20px';
+
+  const hypoNode = grok.shell.dockManager.dock(divResult, DG.DOCK_TYPE.DOWN, boxPlotNode, 'F-test', 0.3);
+
+  const reportViewer = getAnovaGrid(report);
+  grok.shell.dockManager.dock(reportViewer.root, DG.DOCK_TYPE.FILL, hypoNode, 'Analysis');
 }
+
+/** Create dataframe with one-way ANOVA results. */
+function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
+  const anova = report.anovaTable;
+
+  const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'SS', [anova.ssBn, anova.ssWn, anova.ssTot]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'DF', [anova.dfBn, anova.dfWn, anova.dfTot]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'MS', [anova.msBn, anova.msWn, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F', [anova.fStat, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-critical', [report.fCritical, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
+  ]));
+
+  grid.helpUrl = ANOVA_HELP_URL;
+
+  return grid;
+} // getOneWayAnovaDF
 
 /** Return warning div */
 function getWarning(msg: string): HTMLElement {
@@ -34,7 +87,7 @@ function getWarning(msg: string): HTMLElement {
     ${msg}`),
     ui.link('Learn more',
       () => window.open('https://en.wikipedia.org/wiki/Analysis_of_variance#Assumptions', '_blank'),
-      'Open link in a new tab',
+      'Click to open in a new tab',
     ),
   ]);
 }
@@ -115,7 +168,7 @@ export function runOneWayAnova(): void {
   validateInput.onChanged(() => validate = validateInput.value);
   validateInput.setTooltip('Indicates whether to check applicability of ANOVA.');
 
-  const dlg = ui.dialog({title: 'ANOVA', helpUrl: '/help/explore/anova'});
+  const dlg = ui.dialog({title: 'ANOVA', helpUrl: ANOVA_HELP_URL});
   const view = grok.shell.getTableView(df.name);
   view.root.appendChild(dlg.root);
   dlg.addButton('Run', () => {
@@ -123,10 +176,11 @@ export function runOneWayAnova(): void {
 
     try {
       const res = oneWayAnova(factor!, feature!, significance, validate);
-      addOneWayAnovaVizualization(df, factor!, feature!, res);
+      addVizualization(df, factor!, feature!, res);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));
+
         view.addViewer(DG.VIEWER.BOX_PLOT, {
           categoryColumnName: factor!.name,
           valueColumnName: feature!.name,
