@@ -27,9 +27,19 @@ type StepState = {
   options?: {friendlyName?: string, helpUrl?: string | HTMLElement, customId?: string}
 }
 
+type StepConfig = {
+  funcName: string,
+  friendlyName?: string,
+  hiddenOnInit?: VISIBILITY_STATE,
+  helpUrl?: string | HTMLElement,
+  customId?: string,
+}
+
 const getVisibleStepName = (step: StepState) => {
   return step.options?.friendlyName ?? step.func.name;
 };
+
+const getStepId = (stepConfig: StepConfig) => stepConfig.customId ?? stepConfig.funcName;
 
 export class PipelineView extends FunctionView {
   public steps = {} as {[stepId: string]: StepState};
@@ -145,13 +155,7 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: {
-      funcName: string,
-      friendlyName?: string,
-      hiddenOnInit?: VISIBILITY_STATE,
-      helpUrl?: string | HTMLElement,
-      customId?: string,
-    }[],
+    private initialConfig: StepConfig[],
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,
@@ -168,7 +172,7 @@ export class PipelineView extends FunctionView {
 
     this.initialConfig.forEach((stepConfig, idx) => {
       //@ts-ignore
-      this.steps[stepConfig.customId ?? stepConfig.funcName] = {
+      this.steps[getStepId(stepConfig)] = {
         idx,
         visibility: new BehaviorSubject(
           stepConfig.hiddenOnInit ?? VISIBILITY_STATE.VISIBLE,
@@ -192,7 +196,7 @@ export class PipelineView extends FunctionView {
 
     const stepScripts = this.initialConfig.map(async (config) => {
       const stepScript = await grok.functions.eval(config.funcName);
-      return {stepScript, stepId: config.customId ?? config.funcName};
+      return {stepScript, stepId: getStepId(config)};
     });
     const scriptsWithStepId = await Promise.all(stepScripts) as {stepScript: DG.Script, stepId: string}[];
     scriptsWithStepId.forEach((scriptWithStepId) => {
@@ -524,17 +528,18 @@ export class PipelineView extends FunctionView {
     this.stepTabs = pipelineTabs;
 
     this.initialConfig.forEach((stepConfig) => {
+      const stepId = getStepId(stepConfig);
       this.subs.push(
-        this.steps[stepConfig.customId ?? stepConfig.funcName].visibility.subscribe((newValue) => {
+        this.steps[stepId].visibility.subscribe((newValue) => {
           if (newValue === VISIBILITY_STATE.VISIBLE) {
             $(this.stepTabs.getPane(
-              getVisibleStepName(this.steps[stepConfig.customId ?? stepConfig.funcName]),
+              getVisibleStepName(this.steps[stepId]),
             ).header).css('display', 'inherit');
           }
 
           if (newValue === VISIBILITY_STATE.HIDDEN) {
             $(this.stepTabs.getPane(
-              getVisibleStepName(this.steps[stepConfig.customId ?? stepConfig.funcName]),
+              getVisibleStepName(this.steps[stepId]),
             ).header).hide();
           }
         }),
