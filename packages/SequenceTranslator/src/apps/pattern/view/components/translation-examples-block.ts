@@ -5,10 +5,10 @@ import '../style.css';
 import {StringInput} from '../types';
 
 import $ from 'cash-dom';
+import {NUCLEOTIDES} from '../../../common/model/const';
+import {STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
 import {DataManager} from '../../model/data-manager';
 import {EventBus} from '../../model/event-bus';
-import {STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
-import {NUCLEOTIDES} from '../../../common/model/const';
 import {applyPatternToRawSequence} from '../../model/translator';
 
 
@@ -20,7 +20,7 @@ export class TranslationExamplesBlock {
 
   createContainer(): HTMLDivElement {
     return ui.div([
-      ui.h1('Translation examples'),
+      ui.h1('Translation example'),
       this.createTranslationExamples(),
     ], {style: {paddingTop: '20px'}});
   }
@@ -91,12 +91,15 @@ export class TranslationExamplesBlock {
 
   private createTextInputForExamples(): StringInput {
     const input = ui.textInput('', '');
+    this.applyStylingToInput(input);
 
+    return input;
+  }
+
+  private applyStylingToInput(input: StringInput): void {
     const textarea = input.root.getElementsByTagName('textarea')[0];
     textarea.setAttribute('readonly', 'true');
     $(textarea).css('resize', 'none');
     $(input.root).css('opacity', '75%');
-
-    return input;
   }
 }

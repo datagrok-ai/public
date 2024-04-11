@@ -6,8 +6,10 @@ import $ from 'cash-dom';
 import _ from 'lodash';
 
 import {EventBus} from '../../model/event-bus';
-import {PatternConfiguration} from '../../model/types';
+import {PatternConfiguration, StrandType} from '../../model/types';
 import {SubscriptionManager} from '../../model/subscription-manager';
+import {STRAND, STRANDS, STRAND_LABEL, TERMINI, TERMINUS} from '../../model/const';
+import {StringInput} from '../types';
 
 export class TerminalModificationEditorDialog {
   private static isDialogOpen = false;
@@ -59,7 +61,7 @@ export class TerminalModificationEditorDialog {
 
   private onStrandsUpdated(editorBody: HTMLDivElement) {
     this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
-    const controls = ui.divText('Controls');
+    const controls = new StrandTerminalModificationControls(this.eventBus).create();
 
     $(editorBody).empty();
     $(editorBody).append(controls);
@@ -70,3 +72,55 @@ export class TerminalModificationEditorDialog {
   }
 }
 
+class StrandTerminalModificationControls {
+  constructor(
+    private eventBus: EventBus
+  ) { }
+
+  create(): HTMLDivElement {
+    const inputPanels = STRANDS.map((strand) => this.constructControlsPanel(strand));
+
+    const container = ui.divH(inputPanels, {style: {gap: '24px'}});
+    return container;
+  }
+
+  private constructControlsPanel(strand: StrandType): HTMLDivElement {
+    if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
+      return ui.div([]);
+
+    const modificationControls = this.createInputs(strand);
+
+    const container = ui.block([
+      ui.h1(`${STRAND_LABEL[strand]}`),
+      modificationControls,
+    ], {style: {paddingTop: '12px'}});
+
+    return container;
+  }
+
+  private createInputs(strand: StrandType): HTMLElement {
+    const inputs = TERMINI.map((terminus) => this.createInputForTerminus(strand, terminus)) as DG.InputBase[];
+    return ui.form(inputs);
+  }
+
+  private createInputForTerminus(strand: StrandType, terminus: TERMINUS): StringInput {
+    const initialValue = this.eventBus.getTerminalModifications()[strand][terminus];
+    const input = ui.textInput(terminus, initialValue);
+    this.applyStylingToInput(input);
+
+    input.onInput(() => {
+      const newValue = input.value;
+      if (newValue === null)
+        return;
+
+      this.eventBus.updateTerminusModification(strand, terminus, newValue);
+    });
+
+    return input;
+  }
+
+  private applyStylingToInput(input: StringInput): void {
+    const textarea = input.root.getElementsByTagName('textarea')[0];
+    $(textarea).css('resize', 'none');
+  }
+}

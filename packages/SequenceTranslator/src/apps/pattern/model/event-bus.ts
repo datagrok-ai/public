@@ -3,8 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
-import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS} from './const';
-// import {PatternDefaultsProvider} from './defaults-provider';
+import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINUS} from './const';
 import {
   NucleotideSequences, PatternConfigRecord, PatternConfiguration,
   PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
@@ -202,6 +201,12 @@ export class EventBus {
 
   updateTerminalModifications(terminalModifications: StrandTerminusModifications) {
     this._terminalModifications.next(terminalModifications);
+  }
+
+  updateTerminusModification(strand: StrandType, terminus: TERMINUS, modification: string) {
+    const terminalModifications = this.getTerminalModifications();
+    terminalModifications[strand][terminus] = modification;
+    this.updateTerminalModifications(terminalModifications);
   }
 
   terminalModificationsUpdated$(): rxjs.Observable<StrandTerminusModifications> {
