@@ -5,15 +5,13 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import _ from 'lodash';
 
-import {EventBus} from '../../../model/event-bus';
-import {PatternConfiguration} from '../../../model/types';
-import {HeaderControls} from './header-controls';
-import {StrandControls} from './strand-controls';
-import {SubscriptionManager} from '../../../model/subscription-manager';
+import {EventBus} from '../../model/event-bus';
+import {PatternConfiguration} from '../../model/types';
+import {SubscriptionManager} from '../../model/subscription-manager';
 
-export class StrandEditorDialog {
+export class TerminalModificationEditorDialog {
   private static isDialogOpen = false;
-  private static instance: StrandEditorDialog;
+  private static instance: TerminalModificationEditorDialog;
 
   private initialPatternConfig: PatternConfiguration;
   private subscriptions = new SubscriptionManager();
@@ -23,18 +21,18 @@ export class StrandEditorDialog {
   ) { }
 
   static open(eventBus: EventBus): void {
-    if (StrandEditorDialog.isDialogOpen)
+    if (TerminalModificationEditorDialog.isDialogOpen)
       return;
 
-    if (!StrandEditorDialog.instance)
-      StrandEditorDialog.instance = new StrandEditorDialog(eventBus);
+    if (!TerminalModificationEditorDialog.instance)
+      TerminalModificationEditorDialog.instance = new TerminalModificationEditorDialog(eventBus);
 
-    StrandEditorDialog.instance.openDialog();
+    TerminalModificationEditorDialog.instance.openDialog();
   }
 
   private openDialog(): void {
     this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
-    StrandEditorDialog.isDialogOpen = true;
+    TerminalModificationEditorDialog.isDialogOpen = true;
     this.createDialog().show();
   }
 
@@ -44,14 +42,14 @@ export class StrandEditorDialog {
       this.eventBus.strandsUpdated$.subscribe(() => this.onStrandsUpdated(editorBody))
     );
 
-    const dialog = ui.dialog('Edit strands')
+    const dialog = ui.dialog('Edit terminal modifications')
       .add(editorBody)
       .onOK(() => {})
       .onCancel(() => this.resetToInitialState());
 
     this.subscriptions.add(
       dialog.onClose.subscribe(() => {
-        StrandEditorDialog.isDialogOpen = false;
+        TerminalModificationEditorDialog.isDialogOpen = false;
         this.subscriptions.unsubscribeAll();
       })
     );
@@ -61,11 +59,10 @@ export class StrandEditorDialog {
 
   private onStrandsUpdated(editorBody: HTMLDivElement) {
     this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
-    const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
-    const controls = new StrandControls(this.eventBus).create();
+    const controls = ui.divText('Controls');
 
     $(editorBody).empty();
-    $(editorBody).append(header, controls);
+    $(editorBody).append(controls);
   }
 
   private resetToInitialState(): void {

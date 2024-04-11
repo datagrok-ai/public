@@ -1,7 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 
-import {SubscriptionManager} from '../../model/subscription-manager';
-
 import '../style.css';
 
 import {StringInput} from '../types';
@@ -11,11 +9,10 @@ import {DataManager} from '../../model/data-manager';
 import {EventBus} from '../../model/event-bus';
 import {STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
 import {NUCLEOTIDES} from '../../../common/model/const';
+import {applyPatternToRawSequence} from '../../model/translator';
 
 
 export class TranslationExamplesBlock {
-  private subscriptions = new SubscriptionManager();
-
   constructor(
     private eventBus: EventBus,
     private dataManager: DataManager
@@ -24,16 +21,16 @@ export class TranslationExamplesBlock {
   createContainer(): HTMLDivElement {
     return ui.div([
       ui.h1('Translation examples'),
-      this.createStrandExamples(),
+      this.createTranslationExamples(),
     ], {style: {paddingTop: '20px'}});
   }
 
-  private createStrandExamples(): HTMLDivElement {
+  private createTranslationExamples(): HTMLDivElement {
     const strandExamples = ui.divH([
       ...this.getExampleElements(),
     ], 'ui-form');
 
-    this.eventBus.strandsUpdated$.subscribe(() => {
+    this.eventBus.strandsAndLinkagesUpdated$.subscribe(() => {
       $(strandExamples).empty();
       $(strandExamples).append(this.getExampleElements());
     });
@@ -50,7 +47,8 @@ export class TranslationExamplesBlock {
       return ui.div([]);
 
     const inputExample = this.createInputExample(strand);
-    const outputExample = this.createOutputExample(strand);
+    const rawSequence = inputExample.value!;
+    const outputExample = this.createOutputExample(strand, rawSequence);
     const strandExample = ui.block50([
       ui.h2(STRAND_LABEL[strand]),
       inputExample.root,
@@ -79,15 +77,16 @@ export class TranslationExamplesBlock {
     return exampleSequence;
   }
 
-  private createOutputExample(strand: STRAND): StringInput {
-    const input = this.createTextInputForExamples();
+  private createOutputExample(strand: STRAND, rawNucleotideSequence: string): StringInput {
+    const output = this.createTextInputForExamples();
 
-    const exampleRawNucleotides = this.generateExampleSequence(strand);
-    input.value = exampleRawNucleotides;
+    const modifications = this.eventBus.getNucleotideSequences()[strand];
+    const ptoFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand];
+    output.value = applyPatternToRawSequence(rawNucleotideSequence, modifications, ptoFlags);
 
-    input.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[strand]}`);
+    output.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[strand]}`);
 
-    return input;
+    return output;
   }
 
   private createTextInputForExamples(): StringInput {

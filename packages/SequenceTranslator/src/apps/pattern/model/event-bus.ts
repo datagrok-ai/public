@@ -204,6 +204,10 @@ export class EventBus {
     this._terminalModifications.next(terminalModifications);
   }
 
+  terminalModificationsUpdated$(): rxjs.Observable<StrandTerminusModifications> {
+    return this._terminalModifications.asObservable();
+  }
+
   getComment(): string {
     return this._comment$.getValue();
   }
@@ -361,6 +365,13 @@ export class EventBus {
     ).pipe(
       debounceTime(10)
     ) as rxjs.Observable<void>;
+  }
+
+  get strandsAndLinkagesUpdated$(): rxjs.Observable<void> {
+    return rxjs.merge(
+      this.strandsUpdated$,
+      this._phosphorothioateLinkageFlags.asObservable().pipe(map(() => {}))
+    );
   }
 
   updateControlsUponPatternLoaded(patternHash: string) {

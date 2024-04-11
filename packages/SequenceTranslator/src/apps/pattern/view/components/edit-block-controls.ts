@@ -10,8 +10,9 @@ import {MAX_SEQUENCE_LENGTH, STRAND, STRANDS, STRAND_LABEL} from '../../model/co
 import {EventBus} from '../../model/event-bus';
 import {StrandType} from '../../model/types';
 import {NumberInput, StringInput} from '../types';
-import {isDialogOpen, StrandEditorDialog} from './strand-editor/dialog';
+import {StrandEditorDialog} from './strand-editor/dialog';
 import {DataManager} from '../../model/data-manager';
+import {TerminalModificationEditorDialog} from './terminal-modification-editor';
 
 export class PatternEditControlsManager {
   constructor(
@@ -31,6 +32,7 @@ export class PatternEditControlsManager {
     const patternNameInputBlock = this.createPatternNameInputBlock();
 
     const editPatternButton = this.createEditPatternButton();
+    const editTerminalModificationsButton = this.createEditTerminalModificationsButton();
 
     return [
       ui.h1('Edit'),
@@ -41,6 +43,7 @@ export class PatternEditControlsManager {
       patternNameInputBlock,
       patternCommentInput,
       ui.buttonsInput([
+        editTerminalModificationsButton,
         editPatternButton,
       ]),
     ];
@@ -49,14 +52,24 @@ export class PatternEditControlsManager {
   private createEditPatternButton(): HTMLButtonElement {
     const editPatternButton = ui.button(
       'Edit strands',
-      () => {
-        if (!isDialogOpen)
-          new StrandEditorDialog(this.eventBus).open();
-      });
+      () => StrandEditorDialog.open(this.eventBus)
+    );
 
     ui.tooltip.bind(editPatternButton, 'Edit modifications and PTOs per strand');
 
     return editPatternButton;
+  }
+
+  private createEditTerminalModificationsButton(): HTMLButtonElement {
+    const editTerminalModificationsButton = ui.button(
+      'Edit terminals',
+      () => TerminalModificationEditorDialog.open(this.eventBus)
+    );
+
+    ui.tooltip.bind(editTerminalModificationsButton, 'Edit terminal modifications');
+    $(editTerminalModificationsButton).css('margin-right', '20px');
+
+    return editTerminalModificationsButton;
   }
 
 

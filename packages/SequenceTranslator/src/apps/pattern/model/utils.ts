@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
 import {NucleotideSequences} from './types';
-import {EventBus} from './event-bus';
 
 
 export function isOverhangNucleotide(nucleotide: string): boolean {
@@ -36,45 +35,6 @@ export function getMostFrequentNucleotide(sequences: NucleotideSequences): strin
     .reduce((a, b) => a[1] > b[1] ? a : b, ['', 0])[0];
 
   return mostFrequentNucleotide;
-}
-
-export function generateExample(sequenceLength: number, sequenceBasis: string): string {
-  const AXOLABS_MAP = AXOLABS_STYLE_MAP;
-  const uniqueSymbols = AXOLABS_MAP[sequenceBasis].symbols.join('');
-  return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
-}
-
-export function findDuplicates(data: Int32Array | Float32Array | Float64Array | Uint32Array): number[] {
-  return Array.from(new Set(data)).filter((value) => data.indexOf(value) !== data.lastIndexOf(value));
-}
-
-export async function isPatternCreatedByCurrentUser(patternName: string): Promise<boolean> {
-  return await grok.dapi.users.current().then((user) => {
-    const [firstName, lastName] = getUserName(patternName);
-    return (user.firstName !== firstName || user.lastName !== lastName);
-  });
-}
-
-export function getShortName(patternName: string): string {
-  let first = patternName.length + 1;
-  for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] === '(') {
-      first = i;
-      break;
-    }
-  }
-  return patternName.slice(0, first - 1);
-}
-
-function getUserName(patternName: string): string[] {
-  let first = -1;
-  for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] === '(') {
-      first = i;
-      break;
-    }
-  }
-  return (first === -1) ? ['', ''] : patternName.slice(first + 9, patternName.length - 1).split(' ').slice(1);
 }
 
 export function translateSequence(

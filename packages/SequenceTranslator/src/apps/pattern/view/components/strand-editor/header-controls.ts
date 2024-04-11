@@ -28,6 +28,7 @@ export class HeaderControls {
       (strand) => flags[strand].filter((flag) => flag).length
     )
       .reduce((a, b) => a + b, 0);
+
     const totalNumberOfNucleotides = STRANDS.map(
       (strand) => this.initialPatternConfig.nucleotideSequences[strand].length
     ).reduce((a, b) => a + b, 0);
