@@ -15,8 +15,28 @@ function addOneWayAnovaVizualization(
   table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: DG.DataFrame,
 ): void {
   const view = grok.shell.getTableView(table.name);
-  view.addViewer(DG.Viewer.boxPlot(DG.DataFrame.fromColumns([factors, values])));
+  view.addViewer(DG.VIEWER.BOX_PLOT, {
+    categoryColumnName: factors.name,
+    valueColumnName: values.name,
+    showPValue: false,
+    showValueSelector: false,
+    showCategorySelector: false,
+    showStatistics: false,
+  });
   view.addViewer(DG.Viewer.grid(anova));
+}
+
+/** Return warning div */
+function getWarning(msg: string): HTMLElement {
+  return ui.divV([
+    ui.markdown(`ANOVA cannot be performed:
+        
+    ${msg}`),
+    ui.link('Learn more',
+      () => window.open('https://en.wikipedia.org/wiki/Analysis_of_variance#Assumptions', '_blank'),
+      'Open link in a new tab',
+    ),
+  ]);
 }
 
 /** Run one-way analysis of variances */
@@ -33,7 +53,7 @@ export function runOneWayAnova(): void {
   const featureColNames = [] as string[];
 
   for (const col of df.columns) {
-    if ((col.stats.missingValueCount < 1) && (col.stats.uniqueCount > 1)) {
+    if (col.stats.missingValueCount < 1) {
       if (FEATURE_TYPES.includes(col.type))
         featureColNames.push(col.name);
       else if (FACTOR_TYPES.includes(col.type))
@@ -61,7 +81,7 @@ export function runOneWayAnova(): void {
   }
 
   let factor = df.col(factorColNames[0]);
-  const factorInput = ui.columnInput('Factor', df, factor, () => factor = factorInput.value, {
+  const factorInput = ui.columnInput('Category', df, factor, () => factor = factorInput.value, {
     filter: (col: DG.Column) => factorColNames.includes(col.name),
   });
   factorInput.setTooltip('Column with factor values');
@@ -70,7 +90,7 @@ export function runOneWayAnova(): void {
   const featureInput = ui.columnInput('Feature', df, feature, () => feature = featureInput.value, {
     filter: (col: DG.Column) => featureColNames.includes(col.name),
   });
-  factorInput.setTooltip('Column with feature values');
+  featureInput.setTooltip('Column with feature values');
 
   let significance = 0.05;
   const signInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -86,14 +106,14 @@ export function runOneWayAnova(): void {
   });
   signInput.setTooltip('Specifies the criterion used for rejecting the null hypothesis.');
 
-  let validate = false;
+  let validate = true;
   const validateInput = ui.input.forProperty(DG.Property.fromOptions({
     name: 'validate',
     defaultValue: validate,
     inputType: 'Bool',
   }));
   validateInput.onChanged(() => validate = validateInput.value);
-  validateInput.setTooltip('Indicates whether to check the normality of distribution and an eqaulity of varainces.');
+  validateInput.setTooltip('Indicates whether to check applicability of ANOVA.');
 
   const dlg = ui.dialog({title: 'ANOVA', helpUrl: '/help/explore/anova'});
   const view = grok.shell.getTableView(df.name);
@@ -105,7 +125,16 @@ export function runOneWayAnova(): void {
       const res = oneWayAnova(factor!, feature!, significance, validate);
       addOneWayAnovaVizualization(df, factor!, feature!, res);
     } catch (error) {
-      grok.shell.error(error instanceof Error ? error.message : 'Analysis of variances failes: the platform issue');
+      if (error instanceof Error) {
+        grok.shell.warning(getWarning(error.message));
+        view.addViewer(DG.VIEWER.BOX_PLOT, {
+          categoryColumnName: factor!.name,
+          valueColumnName: feature!.name,
+          showStatistics: false,
+          showPValue: false,
+        });
+      } else
+        grok.shell.error('ANOVA fails: the platform issue');
     }
   }, undefined, 'Perform analysis of variances');
 
