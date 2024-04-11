@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class QueryStreamAppender extends AppenderBase<ILoggingEvent> {
-    private static final String COMPONENT = "Component";
+    private static final String COMPONENT = "source";
     private static final String COMPONENT_NAME = "GrokConnect";
     private static final String DESTINATION_KEY = "DESTINATION";
     private static final String EVENT_STAGE_KEY = "EVENT_STAGE_KEY";
