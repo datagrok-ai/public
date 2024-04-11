@@ -7,9 +7,12 @@ import {MAXIMUM_SERIES_NUMBER, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 
+import '../../../css/radar-viewer.css';
+
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 const ERROR_CLASS = 'd4-viewer-error';
+const WARNING_CLASS = 'radar-warning';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 @grok.decorators.viewer({
@@ -30,6 +33,7 @@ export class RadarViewer extends EChartViewer {
   showValues: boolean;
   backgroundMinColor: number;
   backgroundMaxColor: number;
+  currentRowColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
   title: string;
@@ -47,8 +51,9 @@ export class RadarViewer extends EChartViewer {
     this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFBCE2F5);
-    this.showMin = this.bool('showMin', true);
-    this.showMax = this.bool('showMax', true);
+    this.currentRowColor = this.int('currentRowColor', 0xFFBAFFBA);
+    this.showMin = this.bool('showMin', false);
+    this.showMax = this.bool('showMax', false);
     this.showValues = this.bool('showValues', true);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL});
@@ -151,7 +156,8 @@ export class RadarViewer extends EChartViewer {
     if (!currentIn || !this.showOnlyCurrentRow) {
       const filter = this.formulaFilter ? this.filter.clone().invert() : this.filter;
       const seriesData = [];
-      
+      let colorIndex = 0;
+
       for (let i = 0; i < filter.length && seriesData.length < MAXIMUM_SERIES_NUMBER; i++) {
         if (!filter.get(i)) continue;
         if (i === currentRowIndex && currentIn) continue;
@@ -162,10 +168,15 @@ export class RadarViewer extends EChartViewer {
           const value = Number(c.get(i));
           return value !== -2147483648 ? value : 0;
         });
-        
+
+        const colors = DG.Color.categoricalPalette;
+        const color = colors[colorIndex % colors.length];
+        ++colorIndex;
+
         seriesData.push({
           value: value,
           name: `row ${i + 1}`,
+          itemStyle: { color: DG.Color.toHtml(color) },
           label: { show: this.showValues, formatter: (params: any) => StringUtils.formatNumber(params.value) as string },
         });
       }
@@ -234,11 +245,11 @@ export class RadarViewer extends EChartViewer {
       lineStyle: {
         width: 2,
         type: 'dashed',
-        color: 'rgba(66, 135, 204, 0.8)',
+        color: DG.Color.toHtml(this.currentRowColor),
       },
       symbolSize: 6,
       itemStyle: {
-        color: 'rgba(66, 135, 204, 0.8)',
+        color: DG.Color.toHtml(this.currentRowColor),
       },
       label: {
         show: this.showValues,
@@ -269,22 +280,28 @@ export class RadarViewer extends EChartViewer {
     return columns;
   }
 
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, ERROR_CLASS));}
+  _showMessage(msg: string, className: string) {this.root.appendChild(ui.divText(msg, className));}
 
-  _removeErrorMessage() {
-    const divTextElement = this.root.getElementsByClassName(ERROR_CLASS)[0];
+  _removeMessage(className: string) {
+    const divTextElement = this.root.getElementsByClassName(className)[0];
     if (divTextElement)
       this.root.removeChild(divTextElement);
   }
 
   render() {
     if (this.valuesColumnNames.length < 1) {
-      this._showErrorMessage('The Radar viewer requires a minimum of 1 numerical column.');
+      this._showMessage('The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
-    this._removeErrorMessage();
+
+    this._removeMessage(WARNING_CLASS);
+    this._removeMessage(ERROR_CLASS);
     this.getSeriesData();
     this.chart.setOption(option);
+
+    if ((!this.showOnlyCurrentRow && this.filter.trueCount > MAXIMUM_SERIES_NUMBER) ||
+      (this.showOnlyCurrentRow && option.series[2].data.length > 1))
+      this._showMessage('Only first 100 rows are shown', WARNING_CLASS);
   }
 
   /* Going to be replaced with perc in stats */
