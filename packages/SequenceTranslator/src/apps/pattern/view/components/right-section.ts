@@ -6,6 +6,7 @@ import {DataManager} from '../../model/data-manager';
 import {PatternExistsError, PatternNameExistsError} from '../../model/types';
 import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
 import {NumericLabelVisibilityControls} from './numeric-label-visibility-controls';
+import {TranslationExamplesBlock} from './translation-examples-block';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -20,11 +21,14 @@ export class PatternAppRightSection {
   getLayout(): HTMLDivElement {
     const numericLabelTogglesContainer = new NumericLabelVisibilityControls(this.eventBus).getContainer();
     const downloadAndEditControls = this.generateDownloadControls();
+    const translationExamplesContainer = new TranslationExamplesBlock(
+      this.eventBus, this.dataManager
+    ).createContainer();
     const layout = ui.panel([
       this.svgDisplay,
       numericLabelTogglesContainer,
       downloadAndEditControls,
-      // generateStrandSectionDisplays(),
+      translationExamplesContainer,
       // ui.h1('Additional modifications'),
       // ui.form([
       //   terminalModificationInputs[STRAND.SENSE][FIVE_PRIME_END],
@@ -98,9 +102,9 @@ class OverwritePatternDialog {
 
   show(): void {
     const patternName = this.eventBus.getPatternName();
-    const dialog = ui.dialog(`Pattern ${patternName} already exists`);
+    const dialog = ui.dialog(`Pattern "${patternName}" already exists`);
     dialog.add(ui.divText(
-      `Pattern ${patternName} already exists. Do you want to overwrite it?`
+      `Pattern "${patternName}" already exists. Do you want to overwrite it?`
     ));
     dialog.show();
 

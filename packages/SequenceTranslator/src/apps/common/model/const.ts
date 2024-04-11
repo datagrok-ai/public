@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const NUCLEOTIDES = ['A', 'G', 'C', 'U', 'T'];
+export const NUCLEOTIDES = ['A', 'G', 'C', 'U'];
 
 export const TECHNOLOGIES = {
   DNA: 'DNA',
