@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {debounceTime, map, skip, throttle, switchMap} from 'rxjs/operators';
+import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS} from './const';
 // import {PatternDefaultsProvider} from './defaults-provider';
@@ -133,10 +133,6 @@ export class EventBus {
       this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.SENSE].length);
 
     this._isAntisenseStrandActive$.next(isActive);
-  }
-
-  isAntiSenseStrandActive(): boolean {
-    return this._isAntisenseStrandActive$.getValue();
   }
 
   getNucleotideSequences(): NucleotideSequences {
@@ -334,7 +330,7 @@ export class EventBus {
   getPatternConfig(): PatternConfiguration {
     return {
       [L.PATTERN_NAME]: this.getPatternName(),
-      [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntiSenseStrandActive(),
+      [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntisenseStrandActive(),
       [G.NUCLEOTIDE_SEQUENCES]: this.getNucleotideSequences(),
       [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: this.getPhosphorothioateLinkageFlags(),
       [G.STRAND_TERMINUS_MODIFICATIONS]: this.getTerminalModifications(),
@@ -357,13 +353,13 @@ export class EventBus {
     this.updateNucleotideSequences(sequences);
   }
 
-  get updatePatternEditor$(): rxjs.Observable<void> {
+  get strandsUpdated$(): rxjs.Observable<void> {
     return rxjs.merge(
       this._isAntisenseStrandActive$.asObservable().pipe(map(() => {})),
       this._nucleotideSequences$.asObservable().pipe(map(() => {})),
       this._patternLoaded$.asObservable().pipe(map(() => {}))
     ).pipe(
-      debounceTime(50)
+      debounceTime(10)
     ) as rxjs.Observable<void>;
   }
 

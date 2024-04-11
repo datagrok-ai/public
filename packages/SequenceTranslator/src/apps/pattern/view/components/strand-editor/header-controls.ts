@@ -72,7 +72,7 @@ export class HeaderControls {
 
   private createFirstPtoInputs(): BooleanInput [] {
     return STRANDS.map((strand) => {
-      if (!this.eventBus.isAntiSenseStrandActive() && strand === STRAND.ANTISENSE)
+      if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
         return;
       const initialValue = this.isFirstPtoActive(strand);
       const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue);

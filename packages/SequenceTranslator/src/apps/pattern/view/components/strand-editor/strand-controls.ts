@@ -28,7 +28,7 @@ export class StrandControls {
   }
 
   private constructControlsPanel(strand: StrandType): HTMLDivElement {
-    if (!this.eventBus.isAntiSenseStrandActive() && strand === STRAND.ANTISENSE)
+    if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
       return ui.div([]);
 
 

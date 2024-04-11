@@ -30,16 +30,28 @@ export class TranslationExamplesBlock {
 
   private createStrandExamples(): HTMLDivElement {
     const strandExamples = ui.divH([
-      ...STRANDS.map((strand) => this.createStrandExample(strand)),
+      ...this.getExampleElements(),
     ], 'ui-form');
+
+    this.eventBus.strandsUpdated$.subscribe(() => {
+      $(strandExamples).empty();
+      $(strandExamples).append(this.getExampleElements());
+    });
 
     return strandExamples;
   }
 
+  private getExampleElements(): HTMLDivElement[] {
+    return STRANDS.map((strand) => this.createStrandExample(strand));
+  }
+
   private createStrandExample(strand: STRAND): HTMLDivElement {
+    if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
+      return ui.div([]);
+
     const inputExample = this.createInputExample(strand);
     const outputExample = this.createOutputExample(strand);
-    const strandExample = ui.block([
+    const strandExample = ui.block50([
       ui.h2(STRAND_LABEL[strand]),
       inputExample.root,
       outputExample.root,
@@ -48,15 +60,12 @@ export class TranslationExamplesBlock {
   }
 
   private createInputExample(strand: STRAND): StringInput {
+    const input = this.createTextInputForExamples();
+
     const exampleRawNucleotides = this.generateExampleSequence(strand);
-    const input = ui.textInput('', exampleRawNucleotides);
+    input.value = exampleRawNucleotides;
 
-    const textarea = input.root.getElementsByTagName('textarea')[0];
-    textarea.setAttribute('readonly', 'true');
-    $(textarea).css('resize', 'none');
-    $(input.root).css('opacity', '75%');
-
-    input.setTooltip(`Example input for ${STRAND_LABEL[strand]}`);
+    input.setTooltip(`Example raw nucleotides input for ${STRAND_LABEL[strand]}`);
 
     return input;
   }
@@ -71,6 +80,24 @@ export class TranslationExamplesBlock {
   }
 
   private createOutputExample(strand: STRAND): StringInput {
-    return this.createInputExample(strand);
+    const input = this.createTextInputForExamples();
+
+    const exampleRawNucleotides = this.generateExampleSequence(strand);
+    input.value = exampleRawNucleotides;
+
+    input.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[strand]}`);
+
+    return input;
+  }
+
+  private createTextInputForExamples(): StringInput {
+    const input = ui.textInput('', '');
+
+    const textarea = input.root.getElementsByTagName('textarea')[0];
+    textarea.setAttribute('readonly', 'true');
+    $(textarea).css('resize', 'none');
+    $(input.root).css('opacity', '75%');
+
+    return input;
   }
 }

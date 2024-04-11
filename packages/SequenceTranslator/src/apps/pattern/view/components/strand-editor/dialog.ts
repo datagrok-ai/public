@@ -28,7 +28,7 @@ export class StrandEditorDialog {
 
   private createDialog(): DG.Dialog {
     const editorBody = ui.divV([]);
-    this.eventBus.updatePatternEditor$.subscribe(() => {
+    this.eventBus.strandsUpdated$.subscribe(() => {
       this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
       const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
       const controls = new StrandControls(this.eventBus).create();
