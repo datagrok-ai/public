@@ -3,7 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
-import {GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINUS} from './const';
+import {
+  GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINI, TERMINUS
+} from './const';
+import {DataManager} from './data-manager';
 import {
   NucleotideSequences, PatternConfigRecord, PatternConfiguration,
   PhosphorothioateLinkageFlags, StrandTerminusModifications, StrandType
@@ -11,7 +14,6 @@ import {
 import {
   getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels, StrandEditingUtils
 } from './utils';
-import {DataManager} from './data-manager';
 
 /** Manager of all events in the application, *the* central state manager.
  * Use for communication between app's components to avoid tight coupling. */
@@ -48,10 +50,22 @@ export class EventBus {
   ) {
     this.initializeAuthorSelection(initialPaternConfigRecord);
     this.initializePatternState(initialPaternConfigRecord);
+    this.setupSubscriptions();
+  }
 
+  private setupSubscriptions(): void {
     this._nucleotideSequences$.subscribe(() => {
       this.updateUniqueNucleotides();
       this.updateSequenceBase();
+    });
+
+    this._isAntisenseStrandActive$.subscribe((isActive) => {
+      if (isActive)
+        return;
+
+      TERMINI.forEach((terminus) => {
+        this.updateTerminusModification(STRAND.ANTISENSE, terminus, '');
+      });
     });
   }
 

@@ -61,11 +61,13 @@ export class StrandEditorDialog {
 
   private onStrandsUpdated(editorBody: HTMLDivElement) {
     this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
-    const header = new HeaderControls(this.eventBus, this.initialPatternConfig).getPhosphorothioateLinkageControls();
-    const controls = new StrandControls(this.eventBus).create();
+    const headerControls = new HeaderControls(
+      this.eventBus, this.initialPatternConfig, this.subscriptions
+    ).create();
+    const strandControls = new StrandControls(this.eventBus, this.subscriptions).create();
 
     $(editorBody).empty();
-    $(editorBody).append(header, controls);
+    $(editorBody).append(headerControls, strandControls);
   }
 
   private resetToInitialState(): void {

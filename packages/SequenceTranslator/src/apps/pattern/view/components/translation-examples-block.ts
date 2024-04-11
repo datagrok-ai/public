@@ -10,9 +10,11 @@ import {STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
 import {DataManager} from '../../model/data-manager';
 import {EventBus} from '../../model/event-bus';
 import {applyPatternToRawSequence} from '../../model/translator';
+import {SubscriptionManager} from '../../model/subscription-manager';
 
 
 export class TranslationExamplesBlock {
+  private subscriptions = new SubscriptionManager();
   constructor(
     private eventBus: EventBus,
     private dataManager: DataManager
@@ -31,6 +33,7 @@ export class TranslationExamplesBlock {
     ], 'ui-form');
 
     this.eventBus.antisenseStrandToggled$.subscribe(() => {
+      this.subscriptions.unsubscribeAll();
       $(strandExamples).empty();
       $(strandExamples).append(this.getExampleElements());
     });
@@ -39,7 +42,9 @@ export class TranslationExamplesBlock {
   }
 
   private getExampleElements(): HTMLDivElement[] {
-    return STRANDS.map((strand) => new StrandExample(strand, this.eventBus).create());
+    return STRANDS.map(
+      (strand) => new StrandExample(strand, this.eventBus, this.subscriptions).create()
+    );
   }
 }
 
@@ -49,7 +54,8 @@ class StrandExample {
 
   constructor(
     private strand: STRAND,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private subscriptions: SubscriptionManager
   ) { }
 
   create(): HTMLDivElement {
@@ -69,11 +75,14 @@ class StrandExample {
   }
 
   private subscribeToEvents(): void {
-    this.eventBus.strandsLinkagesAndTerminalsUpdated$.subscribe(() => {
+    const subscription = this.eventBus.strandsLinkagesAndTerminalsUpdated$.subscribe(() => {
       const exampleInputSequence = this.generateExampleSequence();
       this.inputExample.value = exampleInputSequence;
       this.outputExample.value = this.computeOutputValue(exampleInputSequence);
     });
+
+    if (this.strand === STRAND.ANTISENSE)
+      this.subscriptions.add(subscription);
   }
 
   private createInputExample(): StringInput {

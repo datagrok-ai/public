@@ -8,16 +8,19 @@ import {EventBus} from '../../../model/event-bus';
 import {StrandType} from '../../../model/types';
 import {isOverhangNucleotide} from '../../../model/utils';
 import {BooleanInput, StringInput} from '../../types';
+import {SubscriptionManager} from '../../../model/subscription-manager';
 
 export class StrandControls {
   private displayedInputLabels: Map<StrandType, string[]>;
 
   constructor(
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private subscriptions: SubscriptionManager
   ) {
-    this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
+    const subscription = this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       this.displayedInputLabels = this.computeDisplayedInputLabels();
     });
+    this.subscriptions.add(subscription);
   }
 
   create(): HTMLDivElement {
@@ -94,10 +97,12 @@ export class StrandControls {
         this.eventBus.setPhosphorothioateLinkageFlag(strand, index + 1, newValue);
       });
 
-      this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
+      const subscription = this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
         const newValue = flags[strand][index + 1];
         input.value = newValue;
       });
+      this.subscriptions.add(subscription);
+
       return input;
     });
 
@@ -128,13 +133,14 @@ export class StrandControls {
     const labels = this.createLabels(strand);
     const labelDivs = labels.map((label) => ui.div([label], {style: {width: '20px'}}));
 
-    this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
+    const subscription = this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       const newLabels = this.createLabels(strand);
       newLabels.forEach((newLabel, index) => {
         $(labelDivs[index]).empty();
         $(labelDivs[index]).append(newLabel);
       });
     });
+    this.subscriptions.add(subscription);
 
     return labelDivs;
   }

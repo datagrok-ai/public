@@ -4,14 +4,16 @@ import {STRAND, STRANDS} from '../../../model/const';
 import {EventBus} from '../../../model/event-bus';
 import {PatternConfiguration, PhosphorothioateLinkageFlags} from '../../../model/types';
 import {BooleanInput} from '../../types';
+import {SubscriptionManager} from '../../../model/subscription-manager';
 
 export class HeaderControls {
   constructor(
     private eventBus: EventBus,
-    private initialPatternConfig: PatternConfiguration
+    private initialPatternConfig: PatternConfiguration,
+    private subscriptions: SubscriptionManager
   ) { }
 
-  getPhosphorothioateLinkageControls(): HTMLDivElement {
+  create(): HTMLDivElement {
     const container = ui.divV([
       ui.h1('PTO'),
       ui.divH([
@@ -48,11 +50,12 @@ export class HeaderControls {
       this.eventBus.setAllPTOLinkages(value);
     });
 
-    this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe(() => {
+    const subscription = this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe(() => {
       const flags = this.eventBus.getPatternConfig().phosphorothioateLinkageFlags;
       const newValue = this.areAllPtoLinkagesSet(flags);
       allPtoActivationInput.value = newValue;
     });
+    this.subscriptions.add(subscription);
 
     this.addStyleToPtoInput(allPtoActivationInput);
     ui.tooltip.bind(allPtoActivationInput.captionLabel, 'Activate all phosphothioates');
@@ -83,10 +86,11 @@ export class HeaderControls {
         this.eventBus.setPhosphorothioateLinkageFlag(strand, 0, value);
       });
 
-      this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
+      const subscription = this.eventBus.phosphorothioateLingeFlagsChanged$.subscribe((flags) => {
         const newValue = flags[strand][0];
         firstPtoInput.value = newValue;
       });
+      this.subscriptions.add(subscription);
 
       this.addStyleToPtoInput(firstPtoInput);
       ui.tooltip.bind(firstPtoInput.captionLabel, `Activate first phosphothioate in ${strand}`);
