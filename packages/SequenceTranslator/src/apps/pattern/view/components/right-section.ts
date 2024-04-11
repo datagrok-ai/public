@@ -42,6 +42,7 @@ export class PatternAppRightSection {
   private generateDownloadControls(): HTMLDivElement {
     return ui.divH([
       this.createSavePatternButton(),
+      this.createShareLinkButton(),
       this.createDownloadPngButton(),
     ], {style: {gap: '12px', marginTop: '12px'}});
   }
@@ -54,8 +55,26 @@ export class PatternAppRightSection {
     return svgDownloadButton;
   }
 
+  private createShareLinkButton(): HTMLButtonElement {
+    const shareLinkButton = ui.button('Share',
+      () => navigator.clipboard.writeText(window.location.href)
+        .then(() => grok.shell.info('Link to pattern copied to clipboard'))
+    );
+
+    this.eventBus.patternHasUnsavedChanges$.subscribe((hasUnsavedChanges: boolean) => {
+      shareLinkButton.disabled = hasUnsavedChanges;
+    });
+
+    ui.tooltip.bind(shareLinkButton, 'Share pattern link');
+    return shareLinkButton;
+  }
+
   private createSavePatternButton(): HTMLButtonElement {
-    const savePatternButton = ui.button('Save pattern', () => this.processSaveButtonClick());
+    const savePatternButton = ui.button('Save', () => this.processSaveButtonClick());
+
+    this.eventBus.patternHasUnsavedChanges$.subscribe((hasUnsavedChanges: boolean) => {
+      savePatternButton.disabled = !hasUnsavedChanges;
+    });
 
     ui.tooltip.bind(savePatternButton, 'Save pattern to user storage');
 

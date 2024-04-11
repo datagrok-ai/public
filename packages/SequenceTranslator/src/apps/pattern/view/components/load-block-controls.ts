@@ -180,7 +180,8 @@ export class PatternLoadControlsManager {
     ui.tooltip.bind(button, 'Delete pattern from user storage');
 
     const subscription = this.eventBus.userSelection$.subscribe(() => {
-      $(button).toggle(this.isCurrentUserSelected());
+      // $(button).toggle(this.isCurrentUserSelected());
+      button.disabled = !this.isCurrentUserSelected();
     });
     this.subscriptions.add(subscription);
 

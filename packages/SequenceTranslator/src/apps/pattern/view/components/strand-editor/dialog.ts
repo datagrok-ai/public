@@ -70,6 +70,7 @@ export class StrandEditorDialog {
   }
 
   private resetToInitialState(): void {
+    this.eventBus.setLastLoadedPatternConfig(this.initialPatternConfig);
     this.eventBus.setPatternConfig(this.initialPatternConfig);
   }
 }
