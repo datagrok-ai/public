@@ -24,15 +24,25 @@ type StepState = {
   idx: number,
   visibility: BehaviorSubject<VISIBILITY_STATE>,
   ability: BehaviorSubject<ABILITY_STATE>,
-  options?: {friendlyName?: string, helpUrl?: string | HTMLElement}
+  options?: {friendlyName?: string, helpUrl?: string | HTMLElement, customId?: string}
+}
+
+type StepConfig = {
+  funcName: string,
+  friendlyName?: string,
+  hiddenOnInit?: VISIBILITY_STATE,
+  helpUrl?: string | HTMLElement,
+  customId?: string,
 }
 
 const getVisibleStepName = (step: StepState) => {
   return step.options?.friendlyName ?? step.func.name;
 };
 
+const getStepId = (stepConfig: StepConfig) => stepConfig.customId ?? stepConfig.funcName;
+
 export class PipelineView extends FunctionView {
-  public steps = {} as {[scriptNqName: string]: StepState};
+  public steps = {} as {[stepId: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
   private stepTabs!: DG.TabControl;
@@ -43,8 +53,12 @@ export class PipelineView extends FunctionView {
       this.stepTabs.currentPane = this.stepTabs.getPane(name);
   }
 
-  public getStepView<T extends FunctionView>(name: string) {
-    return this.steps[name]?.view as T;
+  /** View instance used by the step with the given id.
+   * @param id Step ID. Equals customId property or function's nqName.
+   * @returns View instance used in the Pipeline.
+   */
+  public getStepView<T extends FunctionView = RichFunctionView>(id: string) {
+    return this.steps[id]?.view as T;
   }
 
   // PipelineView unites several export files into single ZIP file
@@ -141,12 +155,7 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: {
-      funcName: string,
-      friendlyName?: string,
-      hiddenOnInit?: VISIBILITY_STATE,
-      helpUrl?: string | HTMLElement,
-    }[],
+    private initialConfig: StepConfig[],
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,
@@ -163,7 +172,7 @@ export class PipelineView extends FunctionView {
 
     this.initialConfig.forEach((stepConfig, idx) => {
       //@ts-ignore
-      this.steps[stepConfig.funcName] = {
+      this.steps[getStepId(stepConfig)] = {
         idx,
         visibility: new BehaviorSubject(
           stepConfig.hiddenOnInit ?? VISIBILITY_STATE.VISIBLE,
@@ -171,7 +180,7 @@ export class PipelineView extends FunctionView {
         ability: new BehaviorSubject<ABILITY_STATE>(
           this.isHistorical.value || (idx === 0) ? ABILITY_STATE.ENABLED : ABILITY_STATE.DISABLED,
         ),
-        options: {friendlyName: stepConfig.friendlyName, helpUrl: stepConfig.helpUrl},
+        options: {friendlyName: stepConfig.friendlyName, helpUrl: stepConfig.helpUrl, customId: stepConfig.customId},
       };
     });
 
@@ -185,13 +194,13 @@ export class PipelineView extends FunctionView {
       }),
     );
 
-    const stepScripts = Object.keys(this.steps).map((stepNqName) => {
-      const stepScript = (grok.functions.eval(stepNqName) as Promise<DG.Func>);
-      return stepScript;
+    const stepScripts = this.initialConfig.map(async (config) => {
+      const stepScript = await grok.functions.eval(config.funcName);
+      return {stepScript, stepId: getStepId(config)};
     });
-    const loadedScripts = await Promise.all(stepScripts) as DG.Script[];
-    loadedScripts.forEach((loadedScript) => {
-      this.steps[loadedScript.nqName].func = loadedScript;
+    const scriptsWithStepId = await Promise.all(stepScripts) as {stepScript: DG.Script, stepId: string}[];
+    scriptsWithStepId.forEach((scriptWithStepId) => {
+      this.steps[scriptWithStepId.stepId].func = scriptWithStepId.stepScript;
     });
     this.root.classList.remove('ui-panel');
 
@@ -213,24 +222,24 @@ export class PipelineView extends FunctionView {
       return editorFuncName;
     };
 
-    const editorsLoading = loadedScripts.map(async (loadedScript) => {
+    const editorsLoading = scriptsWithStepId.map(async (scriptWithId) => {
       // TO DO: replace for type guard
-      const editorName = (loadedScript.script) ? extractEditor(loadedScript): DEFAULT_EDITOR;
+      const editorName = (scriptWithId.stepScript.script) ? extractEditor(scriptWithId.stepScript): DEFAULT_EDITOR;
       if (!editorFuncs[editorName])
         editorFuncs[editorName] = await(grok.functions.eval(editorName.split(' ').join('')) as Promise<DG.Func>);
-      this.steps[loadedScript.nqName].editor = editorName;
+      this.steps[scriptWithId.stepId].editor = editorName;
 
       return Promise.resolve();
     });
 
     await Promise.all(editorsLoading);
 
-    const viewsLoading = loadedScripts.map(async (loadedScript) => {
-      const currentStep = this.steps[loadedScript.nqName];
-      const scriptCall: DG.FuncCall = loadedScript.prepare();
+    const viewsLoading = scriptsWithStepId.map(async (scriptWithId) => {
+      const currentStep = this.steps[scriptWithId.stepId];
+      const scriptCall: DG.FuncCall = scriptWithId.stepScript.prepare();
       const editorFunc = editorFuncs[currentStep.editor];
 
-      await this.onBeforeStepFuncCallApply(loadedScript.nqName, scriptCall, editorFunc);
+      await this.onBeforeStepFuncCallApply(scriptWithId.stepScript.nqName, scriptCall, editorFunc);
       const view = await editorFunc.apply({'call': scriptCall}) as RichFunctionView;
 
       const backBtn = ui.button('Back', () => {}, 'Go to the previous step');
@@ -245,9 +254,9 @@ export class PipelineView extends FunctionView {
         backBtn, nextBtn,
       ]);
 
-      this.steps[loadedScript.nqName].view = view;
+      this.steps[scriptWithId.stepId].view = view;
 
-      const step = this.steps[loadedScript.nqName];
+      const step = this.steps[scriptWithId.stepId];
 
       const disableFollowingTabs = () => {
         Object.values(this.steps).forEach((iteratedStep) => {
@@ -312,7 +321,7 @@ export class PipelineView extends FunctionView {
       });
       this.subs.push(histSub);
 
-      await this.onAfterStepFuncCallApply(loadedScript.nqName, scriptCall, view);
+      await this.onAfterStepFuncCallApply(scriptWithId.stepScript.nqName, scriptCall, view);
 
       return view;
     });
@@ -365,7 +374,7 @@ export class PipelineView extends FunctionView {
       if (helpUrl) {
         const path = `System:AppData/${this.func.package.name}/${helpUrl}`;
         const file = await grok.dapi.files.readAsText(path);
-        this.helpFiles[step.func.nqName] = file;
+        this.helpFiles[step.options?.customId ?? step.func.nqName] = file;
       }
     }));
   }
@@ -519,15 +528,20 @@ export class PipelineView extends FunctionView {
     this.stepTabs = pipelineTabs;
 
     this.initialConfig.forEach((stepConfig) => {
+      const stepId = getStepId(stepConfig);
       this.subs.push(
-        this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
+        this.steps[stepId].visibility.subscribe((newValue) => {
           if (newValue === VISIBILITY_STATE.VISIBLE) {
-            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header)
-              .css('display', 'inherit');
+            $(this.stepTabs.getPane(
+              getVisibleStepName(this.steps[stepId]),
+            ).header).css('display', 'inherit');
           }
 
-          if (newValue === VISIBILITY_STATE.HIDDEN)
-            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
+          if (newValue === VISIBILITY_STATE.HIDDEN) {
+            $(this.stepTabs.getPane(
+              getVisibleStepName(this.steps[stepId]),
+            ).header).hide();
+          }
         }),
       );
     });
@@ -668,9 +682,10 @@ export class PipelineView extends FunctionView {
             throw Error(`${step.func.name} was not called`);
 
           scriptCall.options['parentCallId'] = this.funcCall.id;
+          if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
           scriptCall.newId();
 
-          await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+          await step.view.saveRun(scriptCall);
 
           return Promise.resolve();
         });
@@ -708,15 +723,22 @@ export class PipelineView extends FunctionView {
     await this.onBeforeLoadRun();
 
     for (const step of Object.values(this.steps)) {
-      const corrChildRun = pulledChildRuns.find((pulledChildRun) =>
+      const corrChildRuns = pulledChildRuns.filter((pulledChildRun) =>
         pulledChildRun.func.nqName === step.func.nqName);
 
-      if (corrChildRun) {
-        await step.view.loadRun(corrChildRun.id);
-
-        step.visibility.next(VISIBILITY_STATE.VISIBLE);
-      } else
+      if (corrChildRuns.length === 0)
         step.visibility.next(VISIBILITY_STATE.HIDDEN);
+
+      if (corrChildRuns.length === 1) {
+        await step.view.loadRun(corrChildRuns[0].id);
+        step.visibility.next(VISIBILITY_STATE.VISIBLE);
+      }
+
+      if (corrChildRuns.length > 1) {
+        const foundByCustomId = corrChildRuns.find((run) => run.options['customId'] === step.options?.customId)!;
+        await step.view.loadRun(foundByCustomId.id);
+        step.visibility.next(VISIBILITY_STATE.VISIBLE);
+      }
     };
 
     this.lastCall = pulledParentRun;
@@ -731,15 +753,15 @@ export class PipelineView extends FunctionView {
     return pulledParentRun;
   }
 
-  public async hideSteps(...nqFuncNames: string[]) {
-    nqFuncNames.forEach((nqName) => {
-      this.steps[nqName].visibility.next(VISIBILITY_STATE.HIDDEN);
+  public async hideSteps(...stepIds: string[]) {
+    stepIds.forEach((stepId) => {
+      this.steps[stepId].visibility.next(VISIBILITY_STATE.HIDDEN);
     });
   }
 
-  public async showSteps(...nqFuncNames: string[]) {
-    nqFuncNames.forEach((nqName) => {
-      this.steps[nqName].visibility.next(VISIBILITY_STATE.VISIBLE);
+  public async showSteps(...stepIds: string[]) {
+    stepIds.forEach((stepId) => {
+      this.steps[stepId].visibility.next(VISIBILITY_STATE.VISIBLE);
     });
   }
 
@@ -748,10 +770,10 @@ export class PipelineView extends FunctionView {
       const res: any = {
         isPipeline: true,
       };
-      for (const [nqName, step] of Object.entries(this.steps)) {
+      for (const [stepId, step] of Object.entries(this.steps)) {
         const lastCall = step.view.lastCall;
         if (lastCall)
-          res[nqName] = await fcToSerializable(lastCall, step.view);
+          res[stepId] = await fcToSerializable(lastCall, step.view);
       }
       const data = serialize(res, 0);
       return data;
