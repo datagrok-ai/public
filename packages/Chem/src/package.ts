@@ -757,6 +757,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 
 //top-menu: Chem | Calculate | To InchI...
 //name: To InchI
+//tags: Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
@@ -765,6 +766,7 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 
 //top-menu: Chem | Calculate | To InchI Keys...
 //name: To InchI Keys
+//tags: Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
