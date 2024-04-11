@@ -374,7 +374,7 @@ export class PipelineView extends FunctionView {
       if (helpUrl) {
         const path = `System:AppData/${this.func.package.name}/${helpUrl}`;
         const file = await grok.dapi.files.readAsText(path);
-        this.helpFiles[step.func.nqName] = file;
+        this.helpFiles[step.options?.customId ?? step.func.nqName] = file;
       }
     }));
   }
