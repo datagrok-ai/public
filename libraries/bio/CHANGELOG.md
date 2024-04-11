@@ -1,10 +1,16 @@
 # bio changelog
 
-## 5.40.4 (2024-04-10)
+## 5.40.5 (2024-04-10)
 
 ### Bug fixes
 
-Bio: Fix SDF to JSON for Biovia lib
+* Fix SDF to JSON for Biovia lib
+
+## 5.40.4 (2024-04-09)
+
+### Features
+
+* Modified STEABS block generation when linking monomers (adding not more than 80 symbols per row)
 
 ## 5.40.3 (2024-04-08)
 
@@ -17,7 +23,7 @@ Bio: Fix SDF to JSON for Biovia lib
 
 ### Bug fixes
 
-Bio: Fix SeqHandler for column version
+* Fix SeqHandler for column version
 
 ## 5.40.1 (2024-04-05)
 

@@ -245,12 +245,12 @@ export async function addTransformedColumn(
 
   const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
+  molCol.semType = DG.SEMTYPE.MOLECULE;
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');
+    targetHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     df.columns.add(targetHelmCol);
   }
   df.columns.add(molCol, true);
-
-  await grok.data.detectSemanticTypes(df);
 }

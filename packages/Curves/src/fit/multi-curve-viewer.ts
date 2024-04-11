@@ -77,10 +77,14 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
         this.data.series?.push(...series);
     }
     this.data.series?.forEach((series, i) => {
-      if (this.data.series?.length! > 20)
-        series.showPoints = '';
       series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
       series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.showCurveConfidenceInterval = false;
+      series.droplines = [];
+      if (this.data.series?.length! > 20) {
+        series.showPoints = '';
+        series.lineStyle = 'solid';
+      }
     });
   }
 
