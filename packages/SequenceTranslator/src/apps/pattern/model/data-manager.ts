@@ -214,7 +214,6 @@ export class DataManager {
     this.currentUserPatternNameToHash.delete(patternName);
     eventBus.updatePatternList();
 
-    // todo: load default pattern in case there are no patterns left
     const hashOfPatternToBeLoaded = this.getHashOfPatternToBeLoadedAfterDeletion();
     eventBus.requestPatternLoad(hashOfPatternToBeLoaded);
   }

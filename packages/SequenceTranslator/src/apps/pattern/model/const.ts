@@ -36,32 +36,10 @@ export const STRAND_TO_END_TERMINUS_MAP = {
 
 export const MAX_SEQUENCE_LENGTH = 34;
 
-// todo: remove after refactoring
-export const enum PATTERN_KEY {
-  SS_BASES = 'ssBases',
-  AS_BASES = 'asBases',
-  SS_PTO = 'ssPtoLinkages',
-  AS_PTO = 'asPtoLinkages',
-  SS_3 = 'ssThreeModification',
-  SS_5 = 'ssFiveModification',
-  AS_3 = 'asThreeModification',
-  AS_5 = 'asFiveModification',
-  COMMENT = 'comment',
-};
-
 export const STORAGE_NAME: string = 'OligoToolkit';
 export const EXAMPLE_MIN_WIDTH: string = '400px';
 
 export const OTHER_USERS = 'Other users';
-
-// export namespace DEFAULT_PATTERN_CONFIG {
-//   export const SEQUENCE_LENGTH = 23;
-//   export const PHOSPHOROTHIOATE = true;
-//   export const TERMINUS_MODIFICATION = '';
-//   export const COMMENT = '';
-//   export const IS_ANTISENSE_STRAND_VISIBLE = true;
-//   export const PATTERN_NAME = 'Pattern';
-// }
 
 export namespace GRAPH_SETTINGS_KEYS {
   export const IS_ANTISENSE_STRAND_INCLUDED = 'isAntisenseStrandIncluded';
