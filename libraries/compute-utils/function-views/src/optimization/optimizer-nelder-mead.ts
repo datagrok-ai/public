@@ -1,6 +1,4 @@
-/** Monte Carlo optimizer */
-
-import {Extremum, OptimizationTask} from './definitions';
+import {Extremum, IOptimizer} from './optimizer-misc';
 
 const TOLERANCE = 1e-4;
 const MAX_ITER = 50;
@@ -11,17 +9,10 @@ const SCALE_REFLECTION = 1;
 const SCALE_EXPANSION = 2;
 const SCALE_CONTRACTION = -0.5;
 
-export async function optimizeNM(
-  objectiveFunc: (x: Float32Array) => Promise<number>,
-  paramsBottom: Float32Array,
-  paramsTop: Float32Array,
-  samplesCount: number): Promise<Extremum> {
-  const params = new Float32Array(paramsBottom.length);
-  for (let i = 0; i < paramsBottom.length; i++)
-    params[i] = (paramsBottom[i] + paramsTop[i])/2;
-
-  const dim = params.length + 1;
-  const dimParams = params.length;
+export const optimizeNM:IOptimizer = async function(
+  objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array) : Promise<Extremum> {
+  const dim = paramsInitial.length + 1;
+  const dimParams = paramsInitial.length;
 
   const optParams = new Array<Float32Array>(dim);
   const pointObjectives = new Array<number>(dim);
@@ -29,12 +20,12 @@ export async function optimizeNM(
   for (let i = 0; i < dim; i++) {
     optParams[i] = new Float32Array(dimParams);
     for (let j = 0; j < dimParams; j++) {
-      optParams[i][j] = params[j];
+      optParams[i][j] = paramsInitial[j];
       if (i != 0 && i - 1 === j) {
-        if (params[j] == 0)
+        if (paramsInitial[j] == 0)
           optParams[i][j] = NON_ZERO_PARAM;
         else
-          optParams[i][j] += INITIAL_SCALE * params[i - 1];
+          optParams[i][j] += INITIAL_SCALE * paramsInitial[i - 1];
       }
     }
 
@@ -56,7 +47,7 @@ export async function optimizeNM(
   const reflectionPoint = new Float32Array(dimParams);
   const expansionPoint = new Float32Array(dimParams);
   const contractionPoint = new Float32Array(dimParams);
-
+  const iterationProfile = new Array<number>(MAX_ITER);
 
   if (dim > 1) {
     while (true) {
@@ -70,7 +61,7 @@ export async function optimizeNM(
         best = pointObjectives[0];
         previousBest = 2*pointObjectives[indexes[0]];
       }
-
+      iterationProfile[iteration] = best;
       iteration++;
 
       best = pointObjectives[indexes[0]];
@@ -84,12 +75,9 @@ export async function optimizeNM(
 
       previousBest = best;
 
-      console.log(iteration);
-      for (let i = 0; i < dimParams; i++)
-        console.log(optParams[indexes[0]][i]);
       //centroid
       for (let i = 0; i < dimParams; i++)
-        centroid[i] = params[i];
+        centroid[i] = paramsInitial[i];
       for (let i = 0; i < dimParams; i++) {
         let val = 0;
         for (let j = 0; j < dim; j++) {
@@ -154,10 +142,11 @@ export async function optimizeNM(
 
       break;
     }
+
+
+    for (let i = iteration; i < MAX_ITER; i++)
+      iterationProfile[i] = pointObjectives[indexes[0]];
   }
 
-  for (let i = 0; i < dimParams; i++)
-    params[i] = optParams[indexes[0]][i];
-
-  return {arg: params, cost: pointObjectives[indexes[0]]};
-}
+  return {arg: optParams[indexes[0]], cost: pointObjectives[indexes[0]], iterationProfile};
+};
