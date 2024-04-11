@@ -56,5 +56,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "meta": {
+    "dartium": false
+  }
 }
