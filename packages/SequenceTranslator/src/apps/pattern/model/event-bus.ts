@@ -15,6 +15,8 @@ import {
   getMostFrequentNucleotide, getUniqueNucleotides, getUniqueNucleotidesWithNumericLabels, StrandEditingUtils
 } from './utils';
 
+import _ from 'lodash';
+
 /** Manager of all events in the application, *the* central state manager.
  * Use for communication between app's components to avoid tight coupling. */
 export class EventBus {
@@ -44,12 +46,16 @@ export class EventBus {
   private _loadPatternInNewTabRequested$ = new rxjs.Subject<string>();
   private _urlStateUpdated$ = new rxjs.Subject<string>();
 
+  private _patternHasUnsavedChanges$ = new rxjs.BehaviorSubject<boolean>(false);
+  private _lastLoadedPatternConfig: rxjs.BehaviorSubject<PatternConfiguration >;
+
   constructor(
     private dataManager: DataManager,
     initialPaternConfigRecord: PatternConfigRecord
   ) {
     this.initializeAuthorSelection(initialPaternConfigRecord);
     this.initializePatternState(initialPaternConfigRecord);
+    this._lastLoadedPatternConfig = new rxjs.BehaviorSubject(this.getPatternConfig());
     this.setupSubscriptions();
   }
 
@@ -66,6 +72,15 @@ export class EventBus {
       TERMINI.forEach((terminus) => {
         this.updateTerminusModification(STRAND.ANTISENSE, terminus, '');
       });
+    });
+
+    this.patternStateChanged$.pipe(
+      debounceTime(150)
+    ).subscribe(() => {
+      const currentConfig = this.getPatternConfig();
+      const lastLoadedConfig = this._lastLoadedPatternConfig.getValue();
+      const hasUnsavedChanges = !_.isEqual(currentConfig, lastLoadedConfig);
+      this._patternHasUnsavedChanges$.next(hasUnsavedChanges);
     });
   }
 
@@ -350,6 +365,10 @@ export class EventBus {
     this._modificationsWithNumericLabels$.next(patternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]);
   }
 
+  setLastLoadedPatternConfig(patternConfiguration: PatternConfiguration) {
+    this._lastLoadedPatternConfig.next(patternConfiguration);
+  }
+
   getPatternConfig(): PatternConfiguration {
     return {
       [L.PATTERN_NAME]: this.getPatternName(),
@@ -428,6 +447,10 @@ export class EventBus {
 
   get urlStateUpdated$(): rxjs.Observable<string> {
     return this._urlStateUpdated$.asObservable();
+  }
+
+  get patternHasUnsavedChanges$(): rxjs.Observable<boolean> {
+    return this._patternHasUnsavedChanges$.asObservable();
   }
 }
 

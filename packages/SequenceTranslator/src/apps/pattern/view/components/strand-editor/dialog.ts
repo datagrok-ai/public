@@ -60,7 +60,6 @@ export class StrandEditorDialog {
   }
 
   private onStrandsUpdated(editorBody: HTMLDivElement) {
-    this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
     const headerControls = new HeaderControls(
       this.eventBus, this.initialPatternConfig, this.subscriptions
     ).create();

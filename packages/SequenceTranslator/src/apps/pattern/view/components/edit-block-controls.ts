@@ -102,7 +102,7 @@ export class PatternEditControlsManager {
       );
       input.onInput(() => updateStrandLengthInputs(strand, input));
 
-      this.eventBus.patternStateChanged$.subscribe(() => {
+      this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
         input.value = this.eventBus.getNucleotideSequences()[strand].length;
       });
 
@@ -146,7 +146,7 @@ export class PatternEditControlsManager {
 
     sequenceBaseInput.onInput(() => this.eventBus.replaceSequenceBase(sequenceBaseInput.value!));
 
-    this.eventBus.patternStateChanged$.subscribe(() => {
+    this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
       sequenceBaseInput.value = this.eventBus.getSequenceBase();
     });
 

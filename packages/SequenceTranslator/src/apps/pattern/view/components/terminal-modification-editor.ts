@@ -60,7 +60,6 @@ export class TerminalModificationEditorDialog {
   }
 
   private onStrandsUpdated(editorBody: HTMLDivElement) {
-    this.initialPatternConfig = _.cloneDeep(this.eventBus.getPatternConfig());
     const controls = new StrandTerminalModificationControls(this.eventBus).create();
 
     $(editorBody).empty();

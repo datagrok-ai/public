@@ -26,19 +26,14 @@ export class PatternLoadControlsManager {
     });
   }
 
-  // private selectedPattern: string;
-
   private async handlePatternChoice(patternHash: string): Promise<void> {
     let patternConfiguration = await this.dataManager.getPatternConfig(patternHash);
     if (patternConfiguration === null)
       patternConfiguration = this.dataManager.getDefaultPatternConfig();
 
     this.eventBus.setPatternConfig(patternConfiguration);
-
-    // const patternName = patternConfiguration.patternName;
-    // this.selectedPattern = patternName;
-
     this.eventBus.updateControlsUponPatternLoaded(patternHash);
+    this.eventBus.setLastLoadedPatternConfig(patternConfiguration);
   }
 
   private isCurrentUserSelected(): boolean {
