@@ -1,15 +1,21 @@
+import {TERMINI, TERMINUS} from './const';
+
 export function applyPatternToRawSequence(
   rawNucleotideSequence: string,
   modifications: string[],
-  ptoFlags: boolean[]
+  ptoFlags: boolean[],
+  terminalModifications: Record<TERMINUS, string>
 ): string {
   const rawNucleotides = rawNucleotideSequence.split('');
+
   const modifiedNucleotides = rawNucleotides.map((nucleotide, i) => {
     const modifiedNucleotide = getModifiedNucleotide(nucleotide, modifications[i]);
     return modifiedNucleotide;
   });
 
-  const modificationsWithPTOLinkages = getModificationsWithPTOLinkages(modifiedNucleotides, ptoFlags);
+  const modificationsWithPTOLinkages = getModificationsWithPTOLinkages(
+    modifiedNucleotides, ptoFlags, terminalModifications
+  );
 
   return modificationsWithPTOLinkages.join('');
 }
@@ -24,17 +30,22 @@ function getPhosphorothioateLinkageSymbol(): string {
 
 function getModificationsWithPTOLinkages(
   modifiedNucleotides: string[],
-  ptoFlags: boolean[]
+  ptoFlags: boolean[],
+  terminalModifications: Record<TERMINUS, string>
 ): string[] {
   const modificationsWithPTOLinkages = new Array<string>(
-    modifiedNucleotides.length + ptoFlags.filter((flag) => flag).length
+    modifiedNucleotides.length + ptoFlags.filter((flag) => flag).length + TERMINI.length
   );
 
   const ptoLinkage = getPhosphorothioateLinkageSymbol();
-  let idxShift = 0;
+
+  modificationsWithPTOLinkages[0] = terminalModifications[TERMINUS.FIVE_PRIME];
+  modificationsWithPTOLinkages[modificationsWithPTOLinkages.length - 1] = terminalModifications[TERMINUS.THREE_PRIME];
+
+  let idxShift = 1;
 
   if (ptoFlags[0]) {
-    modificationsWithPTOLinkages[0] = ptoLinkage;
+    modificationsWithPTOLinkages[idxShift] = ptoLinkage;
     idxShift++;
   }
 
@@ -48,4 +59,3 @@ function getModificationsWithPTOLinkages(
 
   return modificationsWithPTOLinkages;
 }
-

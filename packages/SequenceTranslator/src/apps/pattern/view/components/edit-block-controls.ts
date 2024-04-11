@@ -55,7 +55,7 @@ export class PatternEditControlsManager {
       () => StrandEditorDialog.open(this.eventBus)
     );
 
-    ui.tooltip.bind(editPatternButton, 'Edit modifications and PTOs per strand');
+    ui.tooltip.bind(editPatternButton, 'Edit strand modifications and PTOs');
 
     return editPatternButton;
   }

@@ -372,10 +372,11 @@ export class EventBus {
     ) as rxjs.Observable<void>;
   }
 
-  get strandsAndLinkagesUpdated$(): rxjs.Observable<void> {
+  get strandsLinkagesAndTerminalsUpdated$(): rxjs.Observable<void> {
     return rxjs.merge(
       this.strandsUpdated$,
-      this._phosphorothioateLinkageFlags.asObservable().pipe(map(() => {}))
+      this._phosphorothioateLinkageFlags.asObservable().pipe(map(() => {})),
+      this._terminalModifications.asObservable().pipe(map(() => {}))
     );
   }
 

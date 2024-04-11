@@ -30,7 +30,7 @@ export class TranslationExamplesBlock {
       ...this.getExampleElements(),
     ], 'ui-form');
 
-    this.eventBus.strandsAndLinkagesUpdated$.subscribe(() => {
+    this.eventBus.antisenseStrandToggled$.subscribe(() => {
       $(strandExamples).empty();
       $(strandExamples).append(this.getExampleElements());
     });
@@ -39,37 +39,56 @@ export class TranslationExamplesBlock {
   }
 
   private getExampleElements(): HTMLDivElement[] {
-    return STRANDS.map((strand) => this.createStrandExample(strand));
+    return STRANDS.map((strand) => new StrandExample(strand, this.eventBus).create());
   }
+}
 
-  private createStrandExample(strand: STRAND): HTMLDivElement {
-    if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
+class StrandExample {
+  private inputExample: StringInput;
+  private outputExample: StringInput;
+
+  constructor(
+    private strand: STRAND,
+    private eventBus: EventBus
+  ) { }
+
+  create(): HTMLDivElement {
+    if (!this.eventBus.isAntisenseStrandActive() && this.strand === STRAND.ANTISENSE)
       return ui.div([]);
 
-    const inputExample = this.createInputExample(strand);
-    const rawSequence = inputExample.value!;
-    const outputExample = this.createOutputExample(strand, rawSequence);
+    this.inputExample = this.createInputExample();
+    this.outputExample = this.createOutputExample(this.inputExample.value!);
+    this.subscribeToEvents();
+
     const strandExample = ui.block50([
-      ui.h2(STRAND_LABEL[strand]),
-      inputExample.root,
-      outputExample.root,
+      ui.h2(STRAND_LABEL[this.strand]),
+      this.inputExample.root,
+      this.outputExample.root,
     ], {style: {paddingRight: '20px'}});
     return strandExample;
   }
 
-  private createInputExample(strand: STRAND): StringInput {
+  private subscribeToEvents(): void {
+    this.eventBus.strandsLinkagesAndTerminalsUpdated$.subscribe(() => {
+      const exampleInputSequence = this.generateExampleSequence();
+      this.inputExample.value = exampleInputSequence;
+      this.outputExample.value = this.computeOutputValue(exampleInputSequence);
+    });
+  }
+
+  private createInputExample(): StringInput {
     const input = this.createTextInputForExamples();
 
-    const exampleRawNucleotides = this.generateExampleSequence(strand);
-    input.value = exampleRawNucleotides;
+    const exampleInputSequence = this.generateExampleSequence();
+    input.value = exampleInputSequence;
 
-    input.setTooltip(`Example raw nucleotides input for ${STRAND_LABEL[strand]}`);
+    input.setTooltip(`Example raw nucleotides input for ${STRAND_LABEL[this.strand]}`);
 
     return input;
   }
 
-  private generateExampleSequence(strand: STRAND): string {
-    const sourceSequence = this.eventBus.getNucleotideSequences()[strand];
+  private generateExampleSequence(): string {
+    const sourceSequence = this.eventBus.getNucleotideSequences()[this.strand];
     const exampleSequence = sourceSequence.map((_, index) => {
       return NUCLEOTIDES[index % NUCLEOTIDES.length];
     }).join('');
@@ -77,16 +96,22 @@ export class TranslationExamplesBlock {
     return exampleSequence;
   }
 
-  private createOutputExample(strand: STRAND, rawNucleotideSequence: string): StringInput {
+  private createOutputExample(exampleInputSequence: string): StringInput {
     const output = this.createTextInputForExamples();
+    output.value = this.computeOutputValue(exampleInputSequence);
 
-    const modifications = this.eventBus.getNucleotideSequences()[strand];
-    const ptoFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand];
-    output.value = applyPatternToRawSequence(rawNucleotideSequence, modifications, ptoFlags);
-
-    output.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[strand]}`);
+    output.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[this.strand]}`);
 
     return output;
+  }
+
+  private computeOutputValue(exampleInputSequence: string): string {
+    const modifications = this.eventBus.getNucleotideSequences()[this.strand];
+    const terminals = this.eventBus.getTerminalModifications()[this.strand];
+    const ptoFlags = this.eventBus.getPhosphorothioateLinkageFlags()[this.strand];
+    return applyPatternToRawSequence(
+      exampleInputSequence, modifications, ptoFlags, terminals
+    );
   }
 
   private createTextInputForExamples(): StringInput {

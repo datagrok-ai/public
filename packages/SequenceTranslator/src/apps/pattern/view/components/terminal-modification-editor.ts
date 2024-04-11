@@ -99,7 +99,8 @@ class StrandTerminalModificationControls {
   }
 
   private createInputs(strand: StrandType): HTMLElement {
-    const inputs = TERMINI.map((terminus) => this.createInputForTerminus(strand, terminus)) as DG.InputBase[];
+    const termini = strand === STRAND.SENSE ? [...TERMINI].reverse() : TERMINI;
+    const inputs = termini.map((terminus) => this.createInputForTerminus(strand, terminus)) as DG.InputBase[];
     return ui.form(inputs);
   }
 

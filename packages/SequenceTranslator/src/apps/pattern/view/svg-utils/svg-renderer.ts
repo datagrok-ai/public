@@ -187,8 +187,7 @@ class SVGElementFactoryWrapper {
     numberOfNucleotides: StrandToNumberMap,
     isAntisenseStrandActive: boolean
   ) {
-    const titleText = `${patternName} for ${numberOfNucleotides[STRAND.SENSE]}${isAntisenseStrandActive ? `/${numberOfNucleotides[STRAND.ANTISENSE]}` : ''}mer`;
-
+    const titleText = this.getTitleText(patternName, numberOfNucleotides, isAntisenseStrandActive);
     const titleTextPosition = this.dimensionsCalculator.getTitleTextPosition();
     return this.svgElementFactory.createTextElement(
       titleText,
@@ -196,6 +195,18 @@ class SVGElementFactoryWrapper {
       SVG_TEXT_FONT_SIZES.NUCLEOBASE,
       SVG_ELEMENT_COLORS.TITLE_TEXT
     );
+  }
+
+  private getTitleText(
+    patternName: string,
+    numberOfNucleotides: StrandToNumberMap,
+    isAntisenseStrandActive: boolean
+  ): string {
+    const senseStrandLength = `${numberOfNucleotides[STRAND.SENSE]}`;
+    const antisenseStrandLength = isAntisenseStrandActive ? `/${numberOfNucleotides[STRAND.ANTISENSE]}` : '';
+    const titleText = `${patternName} for ${senseStrandLength}${antisenseStrandLength}-mer`;
+
+    return titleText;
   }
 
   createPhosphorothioateLinkageStar(strand: StrandType, index: number): SVGElement | null {
