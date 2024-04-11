@@ -286,11 +286,11 @@ export class HistoricalRunsList extends DG.Widget {
           this._historyFilters.root,
           this.toggleCompactMode,
           this.showMetadataIcon.root,
-          ...this.visibleProps.length > 0 ? [this.showInputsIcon.root]: [],
           this.trashIcon,
           this.compareIcon,
           this.showFiltersIcon,
         ], true);
+        ui.setDisplay(this.showInputsIcon.root, this.visibleProps(func).length > 0);
 
         this._onRunsDfChanged.next(newRunsGridDf);
       } else {

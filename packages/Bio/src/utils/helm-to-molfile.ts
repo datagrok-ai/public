@@ -90,7 +90,7 @@ export class HelmToMolfileConverter {
   }
 
   async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
-    const beautifiedMolV2000 =  beautifiedMols.map((mol) => {
+    const beautifiedMolV2000 = beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
       const molBlock = mol.get_molblock();
@@ -103,11 +103,11 @@ export class HelmToMolfileConverter {
       const oclMolecule = OCL.Molecule.fromMolfile(beautifiedMolV2000[i]);
       const molV3000 = oclMolecule.toMolfileV3();
       molv3000Arr[i] = molV3000.replace('STERAC1', 'STEABS');
-      const progress = i/beautifiedMolV2000.length*100;
+      const progress = i / beautifiedMolV2000.length * 100;
       chiralityPb.update(progress, `${progress?.toFixed(2)}% of molecules completed`);
     }
     chiralityPb.close();
-    return DG.Column.fromStrings(columnName, molv3000Arr); 
+    return DG.Column.fromStrings(columnName, molv3000Arr);
   }
 
   async convertToRdKitBeautifiedMolfileColumn(chiralityEngine?: boolean): Promise<DG.Column<string>> {
@@ -133,7 +133,7 @@ export class HelmToMolfileConverter {
       const molBlock = mol.get_v3Kmolblock();
       mol!.delete();
       return molBlock;
-    })); 
+    }));
   }
 
   async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {

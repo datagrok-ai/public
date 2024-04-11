@@ -35,6 +35,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   isComputing = false;
   recalculateOnFilter = false;
   filterSub: Subscription | null = null;
+  error = '';
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -96,8 +97,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this));
-      if (col?.semType === DG.SEMTYPE.MOLECULE)
-        this.moleculeColumn = col;
+      this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
       this.limit = MAX_LIMIT;
@@ -144,14 +144,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   beforeRender() {
-    if (!this.initialized || !this.dataFrame)
-      return false;
-    if (this.dataFrame && this.moleculeColumnName &&
-          this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {
-      grok.shell.error(`${this.moleculeColumnName} is not Molecule type or missing`);
-      return false;
-    }
-    return true;
+    return this.initialized && this.dataFrame;
   }
 
   createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement {
@@ -205,5 +198,18 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     return this.moleculeColumn!.dataFrame.columns.names()
       .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
+  }
+
+  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator) {
+    this.error = error;
+    this.clearResults();
+    this.root.append(ui.divText(this.error));
+    this.root.classList.add(`chem-malformed-molecule-error`);
+    progressBar?.close();
+  }
+
+  clearResults() {
+    if (this.root.hasChildNodes())
+      this.root.removeChild(this.root.childNodes[0]);
   }
 }
