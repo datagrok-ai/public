@@ -130,11 +130,10 @@ export const getDfFromRuns = (
   const uniqueRunNames = [] as string[];
   comparedRuns.forEach((run) => {
     let defaultRunName = run.options['title'] ??
-        `${run.func.name} - ${new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+        `${run.func.name} - ${getStarted(run)}`;
     let idx = 2;
     while (uniqueRunNames.includes(defaultRunName)) {
-      defaultRunName = `${run.func.name} - ${new Date(run.started.toString())
+      defaultRunName = `${run.func.name} - ${getStarted(run)})
         .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})} - ${idx}`;
       idx++;
     }
@@ -245,4 +244,13 @@ export const getDfFromRuns = (
   });
 
   return comparisonDf;
+};
+
+export const getStarted = (call: DG.FuncCall) => {
+  try {
+    return call.started.toDate()
+      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+  } catch {
+    return 'Not completed';
+  }
 };

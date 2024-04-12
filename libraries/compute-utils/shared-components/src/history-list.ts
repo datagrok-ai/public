@@ -12,6 +12,7 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
 import {camel2title, extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {getStarted} from '../../function-views/src/shared/utils';
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -234,7 +235,7 @@ export class HistoricalRunsList extends DG.Widget {
         if (key === STARTED_COLUMN_NAME) {
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
+            .init((idx) => (<any>window).grok_DayJs_To_DateTime(getStarted(newRuns[idx])));
         }
 
         return DG.Column.fromStrings(
@@ -560,8 +561,7 @@ export class HistoricalRunsList extends DG.Widget {
           ui.setDisplay(addToFavorites, true);
         }
 
-        const dateStarted = new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        const dateStarted = getStarted(run);
 
         const card = ui.divH([
           ui.divH([

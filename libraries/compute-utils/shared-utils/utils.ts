@@ -41,12 +41,18 @@ export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
   const dfOutputs = wu(call.outputParams.values())
-    .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((output) =>
+      output.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.outputs[output.name],
+    );
   for (const output of dfOutputs)
     deepClone.outputs[output.name] = call.outputs[output.name].clone();
 
   const dfInputs = wu(call.inputParams.values())
-    .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((input) =>
+      input.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.inputs[input.name],
+    );
   for (const input of dfInputs)
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 

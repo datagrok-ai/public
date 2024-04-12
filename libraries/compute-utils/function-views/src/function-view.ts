@@ -16,7 +16,7 @@ import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
-import {properUpdateIndicator} from './shared/utils';
+import {getStarted, properUpdateIndicator} from './shared/utils';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -107,7 +107,7 @@ export abstract class FunctionView extends DG.ViewBase {
       const historySub = this.isHistorical.subscribe((newValue) => {
         if (newValue) {
           this.path = `?id=${this.funcCall.id}`;
-          const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          const dateStarted = getStarted(this.funcCall);
           if ((this.name.indexOf(' — ') < 0))
             this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
           else
@@ -373,6 +373,10 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
+  protected async onSaveClick() {
+    await this.saveRun(this.funcCall);
+  }
+
   protected historyBlock = null as null | HistoryPanel;
   /**
    * Override to create a custom historical runs control.
@@ -409,7 +413,7 @@ export abstract class FunctionView extends DG.ViewBase {
       newHistoryBlock.afterRunEdited.subscribe((editedCall) => {
         if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
           this.path = `?id=${this.funcCall.id}`;
-          const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          const dateStarted = getStarted(editedCall);
           if ((this.name.indexOf(' — ') < 0))
             this.name = `${this.name} — ${editedCall.options['title'] ?? dateStarted}`;
           else
@@ -459,6 +463,10 @@ export abstract class FunctionView extends DG.ViewBase {
         this.historyRoot.classList.add('ui-box');
       }
     });
+
+    const saveBtn = ui.iconFA('save', async () => {
+      await this.onSaveClick();
+    }, 'Save current state');
 
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
@@ -510,6 +518,7 @@ export abstract class FunctionView extends DG.ViewBase {
         ...!this.options.isTabbed && this.isHistoryEnabled && this.options.historyEnabled ? [
           historyButton,
         ]: [],
+        ...!this.options.isTabbed && this.isHistoryEnabled ? [saveBtn] : [],
         ...!this.options.isTabbed && this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0 ? [
           exportBtn,
         ]: [],
