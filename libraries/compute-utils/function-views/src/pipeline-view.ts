@@ -16,6 +16,7 @@ import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {fcToSerializable} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
+import {deepCopy} from './shared/utils';
 
 type StepState = {
   func: DG.Func,
@@ -436,7 +437,7 @@ export class PipelineView extends FunctionView {
     return merge(...observables).pipe(mapTo(true));
   }
 
-  public override async onAfterSaveRun() {
+  public override async onAfterSaveRun(call: DG.FuncCall) {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
 
@@ -664,46 +665,54 @@ export class PipelineView extends FunctionView {
     return newRibbonPanels;
   }
 
-  public override async run(): Promise<void> {
-    if (!this.funcCall) throw new Error('The correspoding function is not specified');
+  // public override async run(): Promise<void> {
+  //   if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
-    ui.setUpdateIndicator(this.root, true);
-    try {
-      await this.onBeforeRun(this.funcCall);
-      this.funcCall.newId();
-      await this.funcCall.call(); // mutates the funcCall field
+  //   ui.setUpdateIndicator(this.root, true);
+  //   try {
+  //     await this.onBeforeRun(this.funcCall);
+  //     this.funcCall.newId();
+  //     await this.funcCall.call(); // mutates the funcCall field
+  //   } catch (e: any) {
+  //     grok.shell.error(e.toString());
+  //     console.log(e);
+  //   } finally {
+  //     ui.setUpdateIndicator(this.root, false);
+  //   }
+  // }
 
-      const stepsSaving = Object.values(this.steps)
-        .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
-        .map(async (step) => {
-          const scriptCall = step.view.lastCall;
+  public override async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
+    await this.onBeforeSaveRun(callToSave);
 
-          if (!scriptCall)
-            throw Error(`${step.func.name} was not called`);
+    const stepsSaving = Object.values(this.steps)
+      .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      .map(async (step) => {
+        const scriptCall = step.view.funcCall;
 
-          scriptCall.options['parentCallId'] = this.funcCall.id;
-          if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
-          scriptCall.newId();
+        scriptCall.options['parentCallId'] = this.funcCall.id;
+        if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
+        scriptCall.newId();
 
-          await step.view.saveRun(scriptCall);
+        await step.view.saveRun(scriptCall);
 
-          return Promise.resolve();
-        });
+        return Promise.resolve();
+      });
 
-      await Promise.all(stepsSaving);
+    await Promise.all(stepsSaving);
 
-      await this.onAfterRun(this.funcCall);
+    if (callToSave.options['title'])
+      callToSave.options['title'] = `${callToSave.options['title']} (copy)`;
 
-      if (this.funcCall.options['title'])
-        this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
+    const savedCall = await historyUtils.saveRun(callToSave);
 
-      this.lastCall = await this.saveRun(this.funcCall);
-    } catch (e: any) {
-      grok.shell.error(e.toString());
-      console.log(e);
-    } finally {
-      ui.setUpdateIndicator(this.root, false);
-    }
+    if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
+      this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+
+    this.isHistorical.next(true);
+
+    await this.onAfterSaveRun(callToSave);
+
+    return savedCall;
   }
 
   /**
@@ -745,8 +754,10 @@ export class PipelineView extends FunctionView {
     this.linkFunccall(pulledParentRun);
     this.isHistorical.next(true);
 
-    this.stepTabs.currentPane = this.stepTabs.panes
-      .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
+    if (idxBeforeLoad >= 0) {
+      this.stepTabs.currentPane = this.stepTabs.panes
+        .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
+    }
 
     await this.onAfterLoadRun(pulledParentRun);
 
