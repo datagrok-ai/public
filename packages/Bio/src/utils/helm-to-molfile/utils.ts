@@ -9,9 +9,9 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {MonomerLibManager} from './monomer-lib/lib-manager';
+import {MonomerLibManager} from '../monomer-lib/lib-manager';
 
-import {_package} from '../package';
+import {_package} from '../../package';
 
 const enum V2K_CONST {
   MAX_ATOM_COUNT = 999,
