@@ -802,6 +802,10 @@ export class RichFunctionView extends FunctionView {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
           const viewerWithStubRoot = ui.wait(async () => {
             const viewerWithStub = await promisedViewer;
+            $(viewerWithStub.loadedViewer.root).css({
+              'height': '100%',
+              'width': '100%',
+            });
             return ui.divV(
               [
                 viewerWithStub.loadedViewer.root,
