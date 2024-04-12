@@ -106,20 +106,3 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where u.id = @user and @date(e.event_time)
 --end
-
-
---name: @user events by hours
---tags: log
---input: string @user { suggestions: logAnalysis:userCompleter }
---connection: System:Datagrok
-select hh as hours_ago, description  from
-(select e.description, extract(hour from now() - e.event_time) as hh
-from users u
-inner join events e
-inner join event_parameter_values v on v.event_id = e.id
-inner join event_parameters p on p.event_type_id = e.event_type_id and
-p.type = 'entity_id' and p.name = 'user' and p.id = v.parameter_id
-on  u.id::varchar = v.value
-where u.id = @user and e.event_time >= (now() - '1 day'::INTERVAL)) data
-order by hours_ago
---end
