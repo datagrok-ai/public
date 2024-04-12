@@ -233,6 +233,14 @@ export class HistoricalRunsList extends DG.Widget {
 
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
+          const getStartedOrNull = (run: DG.FuncCall) => {
+            try {
+              return run.started;
+            } catch {
+              return null;
+            }
+          };
+
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) => getStartedOrNull(newRuns[idx]) ?
