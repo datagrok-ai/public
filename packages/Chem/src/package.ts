@@ -467,6 +467,21 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   }
 }
 
+//name: Fingerprints
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Molecule
+//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
+//input: column col {semType: Molecule}
+//input: string _metric {optional: true}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
+//output: object result
+export async function getFingerprints(
+  col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  malformedDataWarning(fpColumn, col);
+  return {entries: fpColumn, options: {}};
+}
 
 //name: ChemSpaceEditor
 //tags: editor
@@ -491,23 +506,6 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
     .show();
 }
 
-//name: Fingerprints
-//tags: dim-red-preprocessing-function
-//meta.supportedSemTypes: Molecule
-//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-//input: column col {semType: Molecule}
-//input: string _metric {optional: true}
-// eslint-disable-next-line max-len
-//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
-//output: object result
-export async function getFingerprints(
-  col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
-  malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
-}
-
-
 //top-menu: Chem | Analyze | Chemical Space...
 //name: Chem Space
 //description: Maps the dataset to 2D plot based on similarity
@@ -524,12 +522,50 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
 ): Promise<DG.Viewer | undefined> {
-  const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options,
-    preprocessingFunction, clusterEmbeddings);
-  drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
+  const embedColsNames: string[] = getEmbeddingColsNames(table);
+  const funcCall = await DG.Func.find({ name: 'chemSpaceTransform' })[0].prepare({
+    table: table,
+    molecules: molecules,
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    plotEmbeddings: false,
+    options: options,
+    preprocessingFunction: preprocessingFunction,
+    clusterEmbeddings: clusterEmbeddings
+  }).call(undefined, undefined, { processed: false });
+  let res = funcCall.getOutputParamValue();
+
+  if (plotEmbeddings) {
+    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
+    if (clusterEmbeddings)
+      res.props.colorColumnName = clusterColName;
+    drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
+  }
   return res;
 }
 
+//name: chemSpaceTransform
+//tags: Transform
+//input: dataframe table
+//input: column molecules { semType: Molecule }
+//input: string methodName
+//input: string similarityMetric
+//input: bool plotEmbeddings = true
+//input: object options {optional: true}
+//input: func preprocessingFunction {optional: true}
+//input: bool clusterEmbeddings {optional: true}
+export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
+  options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
+): Promise<DG.Viewer | undefined> {
+  return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options,
+    preprocessingFunction, clusterEmbeddings);
+}
 
 //name: Chem Space Embeddings
 //input: string col
@@ -581,35 +617,18 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 //input: column molecules { semType: Molecule }
 //input: bool radarViewer = false { description: Add a standalone radar viewer }
 //input: bool radarGrid = false { description: Show radar in grid cells }
-export function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean,
-  radarGrid: boolean): void {
+export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean,
+  radarGrid: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
     return;
   }
 
-  const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
-  const columnNames: string[] = [];
-
-  if (invalid.filter((el) => el !== null).length > 0) {
-    console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
-    grok.shell.warning('Dataset contains malformed data!');
-  }
-
-  const extendedElementsTable = ['R'].concat(elementsTable).concat(['Molecule Charge']);
-
-  for (const elName of extendedElementsTable) {
-    const value = elements.get(elName);
-    if (value) {
-      const column = DG.Column.fromInt32Array(elName, value);
-      column.name = table.columns.getUnusedName(column.name);
-      invalid.map((i) => {
-        column.set(i, null);
-      });
-      table.columns.add(column);
-      columnNames.push(column.name);
-    }
-  }
+  const funcCall = await DG.Func.find({ name: 'runElementalAnalysis' })[0].prepare({
+    table: table,
+    molecules: molecules,
+  }).call(undefined, undefined, { processed: false });
+  const columnNames: string[] = funcCall.getOutputParamValue();
 
   const view = grok.shell.getTableView(table.name);
 
@@ -633,6 +652,38 @@ export function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, rad
     } else
       grok.shell.warning('PowerGrid package is not installed');
   }
+}
+
+//name: runElementalAnalysis
+//tags: Transform
+//input: dataframe table
+//input: column molecules { semType: Molecule }
+//output: list res
+export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column): string[] {
+
+  const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
+  const columnNames: string[] = [];
+
+  if (invalid.filter((el) => el !== null).length > 0) {
+    console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+    grok.shell.warning('Dataset contains malformed data!');
+  }
+
+  const extendedElementsTable = ['R'].concat(elementsTable).concat(['Molecule Charge']);
+
+  for (const elName of extendedElementsTable) {
+    const value = elements.get(elName);
+    if (value) {
+      const column = DG.Column.fromInt32Array(elName, value);
+      column.name = table.columns.getUnusedName(column.name);
+      invalid.map((i) => {
+        column.set(i, null);
+      });
+      table.columns.add(column);
+      columnNames.push(column.name);
+    }
+  }
+  return columnNames;
 }
 
 //name: R-Groups Analysis
@@ -795,6 +846,38 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     return;
   }
 
+  await DG.Func.find({ name: 'runStructuralAlerts' })[0].prepare({
+    table: table,
+    molecules: molecules,
+    pains: pains,
+    bms: bms,
+    sureChembl: sureChembl,
+    mlsmr: mlsmr,
+    dandee: dandee,
+    inpharmatica: inpharmatica,
+    lint: lint,
+    glaxo: glaxo
+  }).call(undefined, undefined, { processed: false });
+
+  return table;
+}
+
+//name: runStructuralAlerts
+//tags: Transform
+//input: dataframe table [Input data table] {caption: Table}
+//input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
+//input: bool pains {caption: PAINS; default: true; description: "Pan Assay Interference Compounds filters"}
+//input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
+//input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
+//input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
+//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
+//input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
+//input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
+export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
+  sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
+): Promise<DG.DataFrame | void> {
+ 
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1256,6 +1339,7 @@ export async function callChemDiversitySearch(
 //top-menu: Chem | Calculate | Properties...
 //name: Chemical Properties
 //tags: HitTriageFunction
+//tags: Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool MW = true
@@ -1287,6 +1371,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 //top-menu: Chem | Calculate | Toxicity Risks...
 //name: Toxicity risks
 //tags: HitTriageFunction
+//tags: Transform
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool mutagenicity = true
