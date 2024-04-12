@@ -42,8 +42,8 @@ export class PatternAppRightSection {
   private generateDownloadControls(): HTMLDivElement {
     return ui.divH([
       this.createSavePatternButton(),
-      this.createShareLinkButton(),
       this.createDownloadPngButton(),
+      this.createShareLinkButton(),
     ], {style: {gap: '12px', marginTop: '12px'}});
   }
 
@@ -56,7 +56,8 @@ export class PatternAppRightSection {
   }
 
   private createShareLinkButton(): HTMLButtonElement {
-    const shareLinkButton = ui.button('Share',
+    const shareLinkButton = ui.button(
+      ui.iconFA('link'),
       () => navigator.clipboard.writeText(window.location.href)
         .then(() => grok.shell.info('Link to pattern copied to clipboard'))
     );

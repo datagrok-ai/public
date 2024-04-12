@@ -55,7 +55,9 @@ export class EventBus {
   ) {
     this.initializeAuthorSelection(initialPaternConfigRecord);
     this.initializePatternState(initialPaternConfigRecord);
-    this._lastLoadedPatternConfig = new rxjs.BehaviorSubject(this.getPatternConfig());
+    this._lastLoadedPatternConfig = new rxjs.BehaviorSubject(
+      _.cloneDeep(this.getPatternConfig())
+    );
     this.setupSubscriptions();
   }
 
@@ -77,8 +79,8 @@ export class EventBus {
     this.patternStateChanged$.pipe(
       debounceTime(150)
     ).subscribe(() => {
-      const currentConfig = this.getPatternConfig();
       const lastLoadedConfig = this._lastLoadedPatternConfig.getValue();
+      const currentConfig = this.getPatternConfig();
       const hasUnsavedChanges = !_.isEqual(currentConfig, lastLoadedConfig);
       this._patternHasUnsavedChanges$.next(hasUnsavedChanges);
     });
@@ -366,7 +368,9 @@ export class EventBus {
   }
 
   setLastLoadedPatternConfig(patternConfiguration: PatternConfiguration) {
-    this._lastLoadedPatternConfig.next(patternConfiguration);
+    this._lastLoadedPatternConfig.next(
+      _.cloneDeep(patternConfiguration)
+    );
   }
 
   getPatternConfig(): PatternConfiguration {
