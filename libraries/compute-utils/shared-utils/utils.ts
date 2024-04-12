@@ -10,6 +10,14 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const getStartedOrNull = (run: DG.FuncCall) => {
+  try {
+    return run.started;
+  } catch {
+    return null;
+  }
+};
+
 export const extractStringValue = (run: DG.FuncCall, key: string) => {
   if (key === AUTHOR_COLUMN_NAME) return run.author?.friendlyName ?? grok.shell.user.friendlyName;
 

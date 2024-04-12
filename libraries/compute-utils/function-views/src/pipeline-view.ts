@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {fcToSerializable} from '../../shared-utils/utils';
+import {fcToSerializable, getStartedOrNull} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
 
@@ -315,12 +315,6 @@ export class PipelineView extends FunctionView {
         stepToEnable?.ability.next(ABILITY_STATE.ENABLED);
       });
       this.subs.push(enableSub);
-
-      const histSub = this.isHistorical.subscribe((newValue) => {
-        if (newValue)
-          Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
-      });
-      this.subs.push(histSub);
 
       await this.onAfterStepFuncCallApply(scriptWithId.stepScript.nqName, scriptCall, view);
 
@@ -731,6 +725,7 @@ export class PipelineView extends FunctionView {
 
     await this.onBeforeLoadRun();
 
+    let lastEnabledStep = null as StepState | null;
     for (const step of Object.values(this.steps)) {
       const corrChildRuns = pulledChildRuns.filter((pulledChildRun) =>
         pulledChildRun.func.nqName === step.func.nqName);
@@ -741,14 +736,25 @@ export class PipelineView extends FunctionView {
       if (corrChildRuns.length === 1) {
         await step.view.loadRun(corrChildRuns[0].id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
+        if (getStartedOrNull(corrChildRuns[0])) {
+          step.ability.next(ABILITY_STATE.ENABLED);
+          lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
+        }
       }
 
       if (corrChildRuns.length > 1) {
         const foundByCustomId = corrChildRuns.find((run) => run.options['customId'] === step.options?.customId)!;
         await step.view.loadRun(foundByCustomId.id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
+        if (getStartedOrNull(foundByCustomId)) {
+          step.ability.next(ABILITY_STATE.ENABLED);
+          lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
+        }
       }
     };
+
+    if (lastEnabledStep && this.getNextStep(lastEnabledStep))
+      this.getNextStep(lastEnabledStep)!.ability.next(ABILITY_STATE.ENABLED);
 
     this.lastCall = pulledParentRun;
     this.linkFunccall(pulledParentRun);

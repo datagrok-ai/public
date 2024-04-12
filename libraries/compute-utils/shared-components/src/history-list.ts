@@ -11,7 +11,7 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
@@ -233,14 +233,6 @@ export class HistoricalRunsList extends DG.Widget {
 
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
-          const getStartedOrNull = (run: DG.FuncCall) => {
-            try {
-              return run.started;
-            } catch {
-              return null;
-            }
-          };
-
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) => getStartedOrNull(newRuns[idx]) ?
