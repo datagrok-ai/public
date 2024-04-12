@@ -1,5 +1,5 @@
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
+import {MonomerLibManager} from '../../monomer-lib/lib-manager';
 import {MolfileWrapper} from './mol-wrapper';
 
 export class MonomerWrapper {

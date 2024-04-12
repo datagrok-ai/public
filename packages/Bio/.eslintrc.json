@@ -20,7 +20,7 @@
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "require-jsdoc": "off",
-    "valid-jsdoc": "warn",
+    "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
     "curly": [

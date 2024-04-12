@@ -1,4 +1,3 @@
-import {_package} from '../../package';
 import {R_GROUP_ELEMENT_SYMBOL} from './const';
 
 export class MolfileAtoms {

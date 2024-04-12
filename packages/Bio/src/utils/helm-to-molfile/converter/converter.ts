@@ -5,7 +5,7 @@ import * as OCL from 'openchemlib/full';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {_package} from '../../package';
+import {_package} from '../../../package';
 import {Polymer} from './polymer';
 import {GlobalMonomerPositionHandler} from './position-handler';
 
