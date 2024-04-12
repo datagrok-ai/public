@@ -1456,6 +1456,8 @@ export class RichFunctionView extends FunctionView {
         t.notify = true;
       }
       if (field === SYNC_FIELD.INPUTS) {
+        this.isHistorical.next(false);
+
         this.hideOutdatedOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
@@ -1486,8 +1488,6 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub3);
 
     const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
-      if (this.isHistorical.value)
-        this.isHistorical.next(false);
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;
