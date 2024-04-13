@@ -1,15 +1,16 @@
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {MolfileAtoms} from './mol-atoms';
 import {MolfileBonds} from './mol-bonds';
 import {MolfileWrapper} from './mol-wrapper';
 import {RGroupHandler} from './r-group-handler';
+import {MolfileAtomsV2K} from './mol-atoms-v2k';
+import {MolfileAtoms} from './mol-atoms';
 
 export class MolfileV2KWrapper extends MolfileWrapper {
   constructor(molfileV2K: string, protected monomerSymbol: string) {
     super();
     const molfileHandler = MolfileHandler.getInstance(molfileV2K);
 
-    this.atoms = new MolfileAtoms(molfileHandler);
+    this.atoms = new MolfileAtomsV2K(molfileHandler);
     this.bonds = new MolfileBonds(molfileHandler);
 
     this.rGroups = new RGroupHandler(molfileHandler, this.atoms, this.bonds);
