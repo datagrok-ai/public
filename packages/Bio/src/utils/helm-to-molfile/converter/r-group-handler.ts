@@ -1,12 +1,13 @@
-import {HYDROGEN_SYMBOL, V2K_CONST} from './const';
+import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
+import {HYDROGEN_SYMBOL} from './const';
 import {MolfileAtoms} from './mol-atoms';
 import {MolfileBonds} from './mol-bonds';
 import {PositionInBonds} from './types';
 
 
 export class RGroupHandler {
-  constructor(rGroupLines: string[], private atoms: MolfileAtoms, private bonds: MolfileBonds) {
-    this.rGroupIdToAtomicIndexMap = this.getRGroupIdToAtomicIdxMap(rGroupLines);
+  constructor(molfileHandler: MolfileHandlerBase, private atoms: MolfileAtoms, private bonds: MolfileBonds) {
+    this.rGroupIdToAtomicIndexMap = molfileHandler.getRGroupIdToAtomicIdxMap();
   }
 
   /** Relates R group id (starting from 1) to its atomic index within the
@@ -72,50 +73,6 @@ export class RGroupHandler {
       if (rGroupAtomicIdx > deletedAtomicIdx)
         this.rGroupIdToAtomicIndexMap.set(rGroupId, rGroupAtomicIdx - 1);
     }
-  }
-
-  private getRGroupIdToAtomicIdxMap(lines: string[]): Map<number, number> {
-    function getAtomIdxToRgpIdxList(rgpLine: string): [number, number][] {
-      const indices = rgpLine.split(/\s+/).filter((item) => item)
-        .slice(3).map((item) => parseInt(item));
-      const atomIdxToRgpIdxList = new Array<[number, number]>(indices.length / 2);
-      for (let i = 0; i < indices.length; i += 2)
-        atomIdxToRgpIdxList[i / 2] = [indices[i + 1], indices[i] - 1];
-      return atomIdxToRgpIdxList;
-    }
-
-    const map = new Map<number, number>();
-
-    const rgroupLines = lines.filter((line: string) => line.startsWith(V2K_CONST.RGP_LINE_START));
-    rgroupLines.forEach((line: string) => {
-      const atomIdxToRgpIdxList = getAtomIdxToRgpIdxList(line);
-      for (const [key, value] of atomIdxToRgpIdxList) {
-        if (map.has(key))
-          throw new Error(`R group ${key} is already in the map`);
-        map.set(key, value);
-      }
-    });
-
-    const atomAliasLinesIndices = lines.map((line: string, idx: number) => {
-      if (line.startsWith(V2K_CONST.ATOM_ALIAS_LINE_START))
-        return idx;
-    }).filter((idx) => idx !== undefined) as number[];
-    const atomAliasLines = atomAliasLinesIndices.map((idx) => lines[idx]);
-    const atomAliasTextLines = atomAliasLinesIndices.map((idx) => lines[idx + 1]);
-    atomAliasLines.forEach((line: string, idx: number) => {
-      const rgpAtomIdx = parseInt(line.split(/\s+/)[1]) - 1;
-      const rgpId = parseInt(atomAliasTextLines[idx].substring(1));
-      if (map.has(rgpId))
-        throw new Error(`R group ${rgpId} is already in the map`);
-      map.set(rgpId, rgpAtomIdx);
-    });
-
-    const rGroupAtomicIndices = this.atoms.getRGroupAtomicIndices();
-    const unaccounted = rGroupAtomicIndices.filter((idx) => !Array.from(map.values()).includes(idx));
-    if (unaccounted.length !== 0)
-      throw new Error(`Unaccounted R group indices: ${unaccounted}`);
-
-    return map;
   }
 
   deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {

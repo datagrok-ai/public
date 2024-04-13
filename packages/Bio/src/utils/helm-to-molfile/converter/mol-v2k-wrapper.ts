@@ -1,3 +1,4 @@
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileAtoms} from './mol-atoms';
 import {MolfileBonds} from './mol-bonds';
 import {MolfileWrapper} from './mol-wrapper';
@@ -6,24 +7,12 @@ import {RGroupHandler} from './r-group-handler';
 export class MolfileV2KWrapper extends MolfileWrapper {
   constructor(molfileV2K: string, protected monomerSymbol: string) {
     super();
-    const lines = molfileV2K.split('\n');
+    const molfileHandler = MolfileHandler.getInstance(molfileV2K);
 
-    // TODO: port to consts
-    const atomCountIdx = {begin: 0, end: 3};
-    const bondCountIdx = {begin: 3, end: 6};
-    const countsLineIdx = 3;
-    const atomBlockIdx = 4;
+    this.atoms = new MolfileAtoms(molfileHandler);
+    this.bonds = new MolfileBonds(molfileHandler);
 
-    const atomCount = parseInt(lines[countsLineIdx].substring(atomCountIdx.begin, atomCountIdx.end));
-    const bondCount = parseInt(lines[countsLineIdx].substring(bondCountIdx.begin, bondCountIdx.end));
-
-    const atomLines = lines.slice(atomBlockIdx, atomBlockIdx + atomCount);
-    this.atoms = new MolfileAtoms(atomLines);
-
-    const bondLines = lines.slice(atomBlockIdx + atomCount, atomBlockIdx + atomCount + bondCount);
-    this.bonds = new MolfileBonds(bondLines);
-
-    this.rGroups = new RGroupHandler(lines, this.atoms, this.bonds);
+    this.rGroups = new RGroupHandler(molfileHandler, this.atoms, this.bonds);
 
     this.shiftMonomerToDefaultPosition();
   }
@@ -31,38 +20,6 @@ export class MolfileV2KWrapper extends MolfileWrapper {
   protected atoms: MolfileAtoms;
   protected bonds: MolfileBonds;
   protected rGroups: RGroupHandler;
-
-  deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {
-    this.rGroups.deleteBondLineWithSpecifiedRGroup(rGroupId);
-  }
-
-  shiftCoordinates(shift: {x: number, y: number}): void {
-    this.atoms.shift(shift);
-  }
-
-  rotateCoordinates(angle: number): void {
-    this.atoms.rotate(angle);
-  }
-
-  getBondLines(): string[] {
-    return this.bonds.getBondLines();
-  }
-
-  getAtomLines(): string[] {
-    return this.atoms.atomLines;
-  }
-
-  removeRGroups(rGroupIds: number[]): void {
-    this.rGroups.removeRGroups(rGroupIds);
-  }
-
-  replaceRGroupWithAttachmentAtom(rGroupId: number, externalAtom: number): void {
-    this.rGroups.replaceRGroupWithAttachmentAtom(rGroupId, externalAtom);
-  }
-
-  getAttachmentAtomByRGroupId(rgroupId: number): number {
-    return this.rGroups.getAttachmentAtomIdByRGroupId(rgroupId);
-  }
 
   protected shiftR1GroupToOrigin(): void {
     const r1Idx = this.rGroups.getAtomicIdx(1);
@@ -89,14 +46,6 @@ export class MolfileV2KWrapper extends MolfileWrapper {
     const r2Idx = this.rGroups.getAtomicIdx(2);
     if (r2Idx !== null)
       this.alignR2AlongX();
-  }
-
-  shiftBonds(shift: number): void {
-    this.bonds.shift(shift);
-  }
-
-  capRGroups(capGroupElements: string[]): void {
-    this.rGroups.capRGroups(capGroupElements);
   }
 }
 

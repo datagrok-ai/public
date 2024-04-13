@@ -1,14 +1,28 @@
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
 import {V3K_CONST} from '../formats/molfile-v3k-const';
-import {L, R} from './const';
-import {isAlpha} from './utils';
 
 export class MolfileV3KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
     super(molfile);
     this.init(molfile);
   }
+
+  getAtomLines(): string[] {
+    const atomBlockIdx = this.getAtomBlockIdx();
+    const end = this.getBondBlockIdx();
+    return this.fileContent.substring(atomBlockIdx, end).split('\n').slice(0, this.atomCount);
+  }
+
+  getBondLines(): string[] {
+    const bondBlockIdx = this.getBondBlockIdx();
+    return this.fileContent.substring(bondBlockIdx).split('\n').slice(0, this.bondCount);
+  }
+
+  getRGroupIdToAtomicIdxMap(): Map<number, number> {
+    return new Map<number, number>();
+  }
+
 
   protected shiftIdxToAtomType(lineStartIdx: number): number {
     return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.ATOM_TYPE_COL);

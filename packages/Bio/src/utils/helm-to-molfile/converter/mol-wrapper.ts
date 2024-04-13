@@ -4,21 +4,9 @@ import {RGroupHandler} from './r-group-handler';
 
 export abstract class MolfileWrapper {
   protected monomerSymbol: string;
-
   protected atoms: MolfileAtoms;
   protected bonds: MolfileBonds;
   protected rGroups: RGroupHandler;
-
-  abstract deleteBondLineWithSpecifiedRGroup(rGroupId: number): void;
-  abstract shiftCoordinates(shift: {x: number, y: number}): void;
-  abstract rotateCoordinates(angle: number): void;
-  abstract getBondLines(): string[];
-  abstract getAtomLines(): string[];
-  abstract removeRGroups(rGroupIds: number[]): void;
-  abstract replaceRGroupWithAttachmentAtom(rGroupId: number, externalAtom: number): void;
-  abstract getAttachmentAtomByRGroupId(rgroupId: number): number;
-  abstract shiftBonds(shift: number): void;
-  abstract capRGroups(capGroupElements: string[]): void;
 
   protected shiftR1GroupToOrigin(): void {
     const r1Idx = this.rGroups.getAtomicIdx(1);
@@ -45,6 +33,46 @@ export abstract class MolfileWrapper {
     const r2Idx = this.rGroups.getAtomicIdx(2);
     if (r2Idx !== null)
       this.alignR2AlongX();
+  }
+
+  deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {
+    this.rGroups.deleteBondLineWithSpecifiedRGroup(rGroupId);
+  }
+
+  shiftCoordinates(shift: {x: number, y: number}): void {
+    this.atoms.shift(shift);
+  }
+
+  rotateCoordinates(angle: number): void {
+    this.atoms.rotate(angle);
+  }
+
+  getBondLines(): string[] {
+    return this.bonds.getBondLines();
+  }
+
+  getAtomLines(): string[] {
+    return this.atoms.atomLines;
+  }
+
+  removeRGroups(rGroupIds: number[]): void {
+    this.rGroups.removeRGroups(rGroupIds);
+  }
+
+  replaceRGroupWithAttachmentAtom(rGroupId: number, externalAtom: number): void {
+    this.rGroups.replaceRGroupWithAttachmentAtom(rGroupId, externalAtom);
+  }
+
+  getAttachmentAtomByRGroupId(rgroupId: number): number {
+    return this.rGroups.getAttachmentAtomIdByRGroupId(rgroupId);
+  }
+
+  shiftBonds(shift: number): void {
+    this.bonds.shift(shift);
+  }
+
+  capRGroups(capGroupElements: string[]): void {
+    this.rGroups.capRGroups(capGroupElements);
   }
 }
 

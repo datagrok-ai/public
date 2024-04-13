@@ -68,4 +68,8 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
     }
     return false;
   };
+
+  abstract getAtomLines(): string[];
+  abstract getBondLines(): string[];
+  abstract getRGroupIdToAtomicIdxMap(): Map<number, number>;
 }

@@ -1,8 +1,9 @@
+import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {PositionInBonds} from './types';
 
 export class MolfileBonds {
-  constructor(bondLines: string[]) {
-    this.rawBondLines = bondLines;
+  constructor(molfileHandler: MolfileHandlerBase) {
+    this.rawBondLines = molfileHandler.getBondLines();
     this.bondedPairs = this.rawBondLines.map((line: string) => {
       const firstAtom = parseInt(line.substring(0, 3));
       const secondAtom = parseInt(line.substring(3, 6));

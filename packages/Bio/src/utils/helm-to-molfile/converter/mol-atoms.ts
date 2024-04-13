@@ -1,8 +1,9 @@
+import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {R_GROUP_ELEMENT_SYMBOL} from './const';
 
 export class MolfileAtoms {
-  constructor(atomLines: string[]) {
-    this.rawAtomLines = atomLines;
+  constructor(molfileHandler: MolfileHandlerBase) {
+    this.rawAtomLines = molfileHandler.getAtomLines();
     this.coordinates = this.rawAtomLines.map((line: string) => {
       const x = parseFloat(line.substring(0, 10));
       const y = parseFloat(line.substring(10, 20));
