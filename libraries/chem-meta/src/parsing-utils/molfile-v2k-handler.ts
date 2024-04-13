@@ -1,15 +1,13 @@
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
 import {V2K_CONST} from '../formats/molfile-v2k-const';
-import { L, R } from './const';
-import { isAlpha } from './utils';
 
 export class MolfileV2KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
     super(molfile);
   }
 
-  public static validate(molfile: string): boolean {
+  static isValidMolfile(molfile: string): boolean {
     return (molfile.indexOf(V2K_CONST.HEADER) !== -1 &&
     molfile.indexOf(V2K_CONST.END) !== -1);
   }

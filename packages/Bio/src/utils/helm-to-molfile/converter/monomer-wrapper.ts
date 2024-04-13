@@ -1,6 +1,7 @@
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {MonomerLibManager} from '../../monomer-lib/lib-manager';
-import {MolfileWrapper} from './mol-wrapper';
+import {MolfileWrapperBase} from './mol-wrapper-base';
+import {MolfileWrapper} from './mol-wrapper-new';
 
 export class MonomerWrapper {
   constructor(
@@ -11,7 +12,7 @@ export class MonomerWrapper {
     const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
-    this.molfileWrapper = new MolfileWrapper(monomer.molfile, monomerSymbol);
+    this.molfileWrapper = MolfileWrapper.getInstance(monomer.molfile, monomerSymbol);
     this.capGroupElements = monomer.rgroups.map((rgroup) => {
       const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
         // WARNING: ignore because both key variants coexist in HELM Core Library!
@@ -22,7 +23,7 @@ export class MonomerWrapper {
     });
   }
 
-  private molfileWrapper: MolfileWrapper;
+  private molfileWrapper: MolfileWrapperBase;
   private capGroupElements: string[] = [];
 
   shiftCoordinates(shift: {x: number, y: number}): void {

@@ -1,8 +1,8 @@
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
 import {V3K_CONST} from '../formats/molfile-v3k-const';
-import { L, R } from './const';
-import { isAlpha } from './utils';
+import {L, R} from './const';
+import {isAlpha} from './utils';
 
 export class MolfileV3KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
@@ -46,7 +46,7 @@ export class MolfileV3KHandler extends MolfileHandlerBase {
     return this.getNextLineIdx(this.fileContent.indexOf(V3K_CONST.BEGIN_BOND_BLOCK));
   }
 
-  public static validate(molfile: string): boolean {
+  static isValidMolfile(molfile: string): boolean {
     return (molfile.indexOf(V3K_CONST.HEADER) !== -1 &&
     molfile.indexOf(V3K_CONST.END) !== -1);
   }

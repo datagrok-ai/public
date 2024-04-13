@@ -7,11 +7,19 @@ export class MolfileHandler {
   private constructor() {}
 
   static getInstance(molfile: string): MolfileHandlerBase {
-    if (MolfileV2KHandler.validate(molfile))
+    if (MolfileHandler.isMolfileV2K(molfile))
       return new MolfileV2KHandler(molfile);
-    else if (MolfileV3KHandler.validate(molfile))
+    else if (MolfileHandler.isMolfileV3K(molfile))
       return new MolfileV3KHandler(molfile);
     else
       throw new Error('Malformed molfile');
+  }
+
+  static isMolfileV2K(molfile: string): boolean {
+    return MolfileV2KHandler.isValidMolfile(molfile);
+  }
+
+  static isMolfileV3K(molfile: string): boolean {
+    return MolfileV3KHandler.isValidMolfile(molfile);
   }
 }

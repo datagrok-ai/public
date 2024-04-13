@@ -23,7 +23,7 @@
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-all": "npm link",
-    "build": "tsc",
+    "build": "git clean -f -X -d ./src && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm run build"

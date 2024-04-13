@@ -20,6 +20,7 @@ export class Polymer {
 
   private monomerWrappers: MonomerWrapper[] = [];
   private helm: Helm;
+
   /** Maps global monomer index to r-group ids (starting from 1) participating
    * in connection */
   private bondedRGroupsMap: Map<number, number[]>;
