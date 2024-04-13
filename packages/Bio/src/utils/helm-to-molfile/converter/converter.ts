@@ -30,7 +30,7 @@ export class HelmToMolfileConverter {
     return smiles;
   }
 
-  async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
+  private async getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string) {
     const beautifiedMolV2000 = beautifiedMols.map((mol) => {
       if (mol === null)
         return '';
@@ -77,7 +77,7 @@ export class HelmToMolfileConverter {
     }));
   }
 
-  async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {
+  private async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
