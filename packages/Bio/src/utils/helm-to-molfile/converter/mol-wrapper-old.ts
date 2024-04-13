@@ -1,11 +1,9 @@
 import {MolfileAtoms} from './mol-atoms';
 import {MolfileBonds} from './mol-bonds';
-import {MolfileWrapper} from './mol-wrapper';
 import {RGroupHandler} from './r-group-handler';
 
-export class MolfileV2KWrapper extends MolfileWrapper {
-  constructor(molfileV2K: string, protected monomerSymbol: string) {
-    super();
+export class MolfileWrapper {
+  constructor(molfileV2K: string, private monomerSymbol: string) {
     const lines = molfileV2K.split('\n');
 
     // TODO: port to consts
@@ -28,9 +26,9 @@ export class MolfileV2KWrapper extends MolfileWrapper {
     this.shiftMonomerToDefaultPosition();
   }
 
-  protected atoms: MolfileAtoms;
-  protected bonds: MolfileBonds;
-  protected rGroups: RGroupHandler;
+  private atoms: MolfileAtoms;
+  private bonds: MolfileBonds;
+  private rGroups: RGroupHandler;
 
   deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {
     this.rGroups.deleteBondLineWithSpecifiedRGroup(rGroupId);
@@ -64,7 +62,7 @@ export class MolfileV2KWrapper extends MolfileWrapper {
     return this.rGroups.getAttachmentAtomIdByRGroupId(rgroupId);
   }
 
-  protected shiftR1GroupToOrigin(): void {
+  private shiftR1GroupToOrigin(): void {
     const r1Idx = this.rGroups.getAtomicIdx(1);
     if (r1Idx === null)
       throw new Error(`Cannot find R1 group for monomer ${this.monomerSymbol}`);
@@ -72,7 +70,7 @@ export class MolfileV2KWrapper extends MolfileWrapper {
     this.atoms.shift({x: -x, y: -y});
   }
 
-  protected alignR2AlongX(): void {
+  private alignR2AlongX(): void {
     const r2Idx = this.rGroups.getAtomicIdx(2);
     if (r2Idx === null)
       throw new Error(`Cannot find R2 group for monomer ${this.monomerSymbol}`);
@@ -84,7 +82,7 @@ export class MolfileV2KWrapper extends MolfileWrapper {
     this.rotateCoordinates(-angle);
   }
 
-  protected shiftMonomerToDefaultPosition(): void {
+  private shiftMonomerToDefaultPosition(): void {
     this.shiftR1GroupToOrigin();
     const r2Idx = this.rGroups.getAtomicIdx(2);
     if (r2Idx !== null)

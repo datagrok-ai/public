@@ -1,11 +1,11 @@
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {MolfileWrapperBase} from './mol-wrapper-base';
+import {MolfileWrapper} from './mol-wrapper';
 import {MolfileV2KWrapper} from './mol-v2k-wrapper';
 
-export class MolfileWrapper {
-  static getInstance(molfile: string, monomerSymbol: string): MolfileWrapperBase {
+export class MolfileWrapperFactory {
+  static getInstance(molfile: string, monomerSymbol: string): MolfileWrapper {
     if (MolfileHandler.isMolfileV2K(molfile))
-      return new MolfileV2KWrapper(molfile, monomerSymbol) as MolfileWrapperBase;
+      return new MolfileV2KWrapper(molfile, monomerSymbol) as MolfileWrapper;
     else
       throw new Error('Unsupported molfile version');
   }
