@@ -3,10 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
+
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {MonomerLibManager} from '../utils/monomer-lib/lib-manager';
 
 import {_package} from '../package-test';
 
@@ -100,6 +103,7 @@ id3,QHIRE--LT
           separatorWidth: sepWidth,
           monomerToShort: monomerToShort,
           monomerLengthLimit: monLength,
+          monomerLib: MonomerLibManager.instance.getBioLib(),
         };
       });
 
