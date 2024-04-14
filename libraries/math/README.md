@@ -1,7 +1,7 @@
 # math
 
 math is a [library](https://datagrok.ai/help/develop/develop#libraries) for the [Datagrok](https://datagrok.ai) platform.
-This library will contain high performance computation code using wasm + web-workers.
+This library will contain high performance computation code using wasm/webGPU + web-workers.
 
 ## Current content
 
