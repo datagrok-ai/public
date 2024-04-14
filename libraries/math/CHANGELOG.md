@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.1 (2024-04-14)
+
+Add checks for webGPU distances.
+
 ## 1.1.0 (2024-04-14)
 
 ### Features

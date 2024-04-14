@@ -38,19 +38,27 @@ export async function multiColWebGPUKNN(
     throw new Error('All entry lists must be the same length');
 
 
+  const availableDistanceMetrics = Object.values(WEBGPUDISTANCE);
+  if (distanceMetrics.some((metric) => !availableDistanceMetrics.includes(metric)))
+    throw new Error('Invalid distance metrics provided: ' + distanceMetrics.join(', '));
+
+  const availableAggregationFunctions = Object.values(WEBGSLAGGREGATION);
+  if (!availableAggregationFunctions.includes(aggregationFunction))
+    throw new Error('Invalid aggregation function provided: ' + aggregationFunction);
+
   const numOfColumns = entryList.length; // number of columns
+  if (numOfColumns === 0)
+    throw new Error('No columns provided. Please provide at least one column of data.');
+
+  const device = await getGPUDevice();
+  if (!device)
+    return null;
+
   const listSize = entryList[0].length; // size of each list (or column)
   const processInfo = entryList.map((entry, i) => {
     return webGPUProcessInfo(entry, distanceMetrics[i], i, options[i]);
   });
 
-  if (numOfColumns === 0)
-    throw new Error('No columns provided. Please provide at least one column of data.');
-
-
-  const device = await getGPUDevice();
-  if (!device)
-    return;
 
   if (numOfColumns === 1)
     aggregationFunction = WEBGSLAGGREGATION.MANHATTAN; // save a bit of time

@@ -39,6 +39,14 @@ export async function multiColWebGPUSparseMatrix(
   if (!device)
     return null; // if no device, return null, as we cannot do anything without it.
 
+  const availableDistanceMetrics = Object.values(WEBGPUDISTANCE);
+  if (distanceMetrics.some((metric) => !availableDistanceMetrics.includes(metric)))
+    throw new Error('Invalid distance metrics provided: ' + distanceMetrics.join(', '));
+
+  const availableAggregationFunctions = Object.values(WEBGSLAGGREGATION);
+  if (!availableAggregationFunctions.includes(aggregationFunction))
+    throw new Error('Invalid aggregation function provided: ' + aggregationFunction);
+
   const maxDistance = 1 - threshold; // maximum distance
 
   // first, check that all the supplementary options are provided and are the same length:
