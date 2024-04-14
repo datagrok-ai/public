@@ -20,9 +20,25 @@ export class MolfileV3KHandler extends MolfileHandlerBase {
   }
 
   getRGroupIdToAtomicIdxMap(): Map<number, number> {
-    return new Map<number, number>();
-  }
+    const map = new Map<number, number>();
+    this.getAtomLines().forEach((line, idx) => {
+      const rGroupMatches = line.match(/RGROUPS=\(([\d\s]+)\)/);
 
+      if (rGroupMatches) {
+        const rGroupData = rGroupMatches[1].split(/\s+/).map((rgId) => parseInt(rgId));
+        // todo: handle cases when there are more than 2 r groups
+        if (rGroupData.length > 2)
+          throw new Error(`R group data ${rGroupData} has more than 2 elements`);
+        const rGroupId = rGroupData[1];
+        if (map.has(rGroupId))
+          throw new Error(`R group ${rGroupId} is already in the map`);
+
+        map.set(rGroupId, idx);
+      }
+    });
+
+    return map;
+  }
 
   protected shiftIdxToAtomType(lineStartIdx: number): number {
     return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.ATOM_TYPE_COL);
