@@ -5,14 +5,16 @@ import {SimplePolymer} from './simple-polymer';
 import {Bond} from './types';
 
 export class Helm {
-  constructor(private helm: string) {
-    const helmSections = this.helm.split(HELM_SECTION_SEPARATOR);
+  constructor(private helmString: string) {
+    const helmSections = this.helmString.split(HELM_SECTION_SEPARATOR);
     const simplePolymers = helmSections[0].split(HELM_ITEM_SEPARATOR);
     this.simplePolymers = simplePolymers
       .map((item) => new SimplePolymer(item));
     if (helmSections[1] !== '')
       this.connectionList = new ConnectionList(helmSections[1]);
     this.bondData = this.getBondData();
+
+    this.bondedRGroupsMap = this.getBondedRGroupsMap();
   }
 
   /** List of pairs for bonded monomers, monomers indexed globally (withing the
@@ -22,7 +24,11 @@ export class Helm {
   private simplePolymers: SimplePolymer[];
   private connectionList?: ConnectionList;
 
-  getBondedRGroupsMap(): Map<number, number[]> {
+  /** Maps global monomer index to r-group ids (starting from 1) participating
+   * in connection */
+  readonly bondedRGroupsMap: Map<number, number[]>;
+
+  private getBondedRGroupsMap(): Map<number, number[]> {
     const bondedRGroupsMap = new Map<number, number[]>();
     this.bondData.forEach((bond) => {
       bond.forEach((bondPart) => {
@@ -38,7 +44,7 @@ export class Helm {
   }
 
   toString() {
-    return this.helm;
+    return this.helmString;
   }
 
   getPolymerTypeByMonomerIdx(monomerGlobalIdx: number): HELM_POLYMER_TYPE {

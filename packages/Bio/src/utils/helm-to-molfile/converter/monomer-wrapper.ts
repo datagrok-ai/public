@@ -1,19 +1,46 @@
-import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {Monomer} from '@datagrok-libraries/bio/src/types';
+import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {MonomerLibManager} from '../../monomer-lib/lib-manager';
+import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
 
 export class MonomerWrapper {
+  private molfileWrapper: MolfileWrapper;
+  private capGroupElements: string[] = [];
+
   constructor(
-    monomerSymbol: string,
-    polymerType: HELM_POLYMER_TYPE,
+    private monomerSymbol: string,
+    private monomerIdx: number,
+    private helm: Helm,
+    shift: {x: number, y: number}
   ) {
+    const libraryMonomerObject = this.getLibraryMonomerObject();
+
+    this.molfileWrapper = MolfileWrapperFactory.getInstance(libraryMonomerObject.molfile, monomerSymbol);
+    this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
+
+    if (helm.bondedRGroupsMap.has(monomerIdx))
+      this.removeRGroups(helm.bondedRGroupsMap.get(monomerIdx)!);
+    this.capRemainingRGroups();
+
+    this.shiftCoordinates(shift);
+  }
+
+  private getLibraryMonomerObject(): Monomer {
+    const polymerType = this.helm.getPolymerTypeByMonomerIdx(this.monomerIdx);
     const monomerLib = MonomerLibManager.instance.getBioLib();
-    const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
+    const monomer = monomerLib.getMonomer(polymerType, this.monomerSymbol);
     if (!monomer)
-      throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
-    this.molfileWrapper = MolfileWrapperFactory.getInstance(monomer.molfile, monomerSymbol);
-    this.capGroupElements = monomer.rgroups.map((rgroup) => {
+      throw new Error(`Monomer ${this.monomerSymbol} is not found in the library`);
+    return monomer;
+  }
+
+  private getCapGroupElements(
+    libraryMonomerObject: Monomer
+  ): string[] {
+    const rgroups = libraryMonomerObject.rgroups;
+    const result = rgroups.map((rgroup) => {
       const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
         // WARNING: ignore because both key variants coexist in HELM Core Library!
         // @ts-ignore
@@ -21,12 +48,11 @@ export class MonomerWrapper {
       // extract the element symbol
       return smiles.replace(/(\[|\]|\*|:|\d)/g, '');
     });
+
+    return result;
   }
 
-  private molfileWrapper: MolfileWrapper;
-  private capGroupElements: string[] = [];
-
-  shiftCoordinates(shift: {x: number, y: number}): void {
+  private shiftCoordinates(shift: {x: number, y: number}): void {
     this.molfileWrapper.shiftCoordinates(shift);
   }
 
@@ -38,11 +64,11 @@ export class MonomerWrapper {
     return this.molfileWrapper.getBondLines();
   }
 
-  removeBondedRGroups(rGroupIds: number[]): void {
+  private removeRGroups(rGroupIds: number[]): void {
     this.molfileWrapper.removeRGroups(rGroupIds);
   }
 
-  capTrailingRGroups(): void {
+  private capRemainingRGroups(): void {
     this.molfileWrapper.capRGroups(this.capGroupElements);
   }
 

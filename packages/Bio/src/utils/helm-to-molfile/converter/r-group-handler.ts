@@ -107,7 +107,7 @@ export class RGroupHandler {
     return this.bonds.bondedAtoms[bondLineIdx][(nodeIdx + 1) % 2];
   }
 
-  /** WARNING: capping RGRoups and deletion of the bonded ones don't commute */
+  /** WARNING: capping RGroups and deletion of the bonded ones don't commute */
   capRGroups(capGroupElements: string[]): void {
     this.rGroupIdToAtomicIndexMap.forEach((atomicIdx, rGroupId) => {
       const element = capGroupElements[rGroupId - 1];

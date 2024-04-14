@@ -3,45 +3,28 @@ import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
 
 export class Polymer {
-  constructor(helm: string) {
-    this.helm = new Helm(helm);
-    this.bondedRGroupsMap = this.helm.getBondedRGroupsMap();
+  constructor(helmString: string) {
+    this.helm = new Helm(helmString);
   }
 
   private monomerWrappers: MonomerWrapper[] = [];
   private helm: Helm;
-
-  /** Maps global monomer index to r-group ids (starting from 1) participating
-   * in connection */
-  private bondedRGroupsMap: Map<number, number[]>;
 
   addMonomer(
     monomerSymbol: string,
     monomerIdx: number,
     shift: {x: number, y: number},
   ): void {
-    const polymerType = this.helm.getPolymerTypeByMonomerIdx(monomerIdx);
-    const monomerWrapper = new MonomerWrapper(monomerSymbol, polymerType);
-    monomerWrapper.shiftCoordinates(shift);
+    const monomerWrapper = new MonomerWrapper(monomerSymbol, monomerIdx, this.helm, shift);
 
     this.monomerWrappers.push(monomerWrapper);
   }
 
-  private removeRGroups(): void {
-    this.monomerWrappers.forEach((monomerWrapper, monomerIdx) => {
-      if (this.bondedRGroupsMap.has(monomerIdx))
-        monomerWrapper.removeBondedRGroups(this.bondedRGroupsMap.get(monomerIdx)!);
-      monomerWrapper.capTrailingRGroups();
-    });
-  }
-
   private getAtomNumberShifts(): number[] {
-    const atomNumberShifts: number[] = [];
     let shift = 0;
-    this.monomerWrappers.forEach((monomerWrapper) => {
-      atomNumberShifts.push(shift);
-      shift += monomerWrapper.getAtomLines().length;
-    });
+    const atomNumberShifts = this.monomerWrappers.map(
+      (monomerWrapper) => shift += monomerWrapper.getAtomLines().length
+    );
     return atomNumberShifts;
   }
 
@@ -61,8 +44,6 @@ export class Polymer {
     const molfileHeader = '\nDatagrok\n';
     const atomLines: string[] = [];
     const bondLines: string[] = [];
-
-    this.removeRGroups();
 
     const atomNumberShifts = this.getAtomNumberShifts();
     this.monomerWrappers.forEach((monomerWrapper, idx) => {
