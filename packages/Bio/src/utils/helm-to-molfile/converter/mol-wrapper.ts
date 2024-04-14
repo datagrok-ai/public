@@ -3,7 +3,8 @@ import {MolfileBonds} from './mol-bonds';
 import {RGroupHandler} from './r-group-handler';
 
 export abstract class MolfileWrapper {
-  protected monomerSymbol: string;
+  constructor(protected monomerSymbol: string) { }
+
   protected atoms: MolfileAtoms;
   protected bonds: MolfileBonds;
   protected rGroups: RGroupHandler;

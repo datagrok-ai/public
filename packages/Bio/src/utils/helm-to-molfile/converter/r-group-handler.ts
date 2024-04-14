@@ -115,7 +115,7 @@ export class RGroupHandler {
         this.removeRGroups([rGroupId]);
         this.deleteBondLineWithSpecifiedRGroup(rGroupId);
       } else
-        this.atoms.replaceElementSymbol(atomicIdx, element);
+        this.atoms.replaceRGroupSymbolByElement(atomicIdx, element);
     });
   }
 }

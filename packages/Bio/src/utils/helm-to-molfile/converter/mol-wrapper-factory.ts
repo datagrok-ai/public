@@ -1,6 +1,6 @@
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileWrapper} from './mol-wrapper';
-import {MolfileV2KWrapper} from './mol-v2k-wrapper';
+import {MolfileV2KWrapper} from './mol-wrapper-v2k';
 
 export class MolfileWrapperFactory {
   static getInstance(molfile: string, monomerSymbol: string): MolfileWrapper {

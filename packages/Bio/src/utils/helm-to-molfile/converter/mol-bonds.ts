@@ -1,29 +1,11 @@
-import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {PositionInBonds} from './types';
 
-export class MolfileBonds {
-  constructor(molfileHandler: MolfileHandlerBase) {
-    this.rawBondLines = molfileHandler.getBondLines();
-    this.bondedPairs = this.rawBondLines.map((line: string) => {
-      const firstAtom = parseInt(line.substring(0, 3));
-      const secondAtom = parseInt(line.substring(3, 6));
-      return [firstAtom, secondAtom];
-    });
-  }
-
-  private bondedPairs: number[][] = [];
-  private rawBondLines: string[] = [];
+export abstract class MolfileBonds {
+  protected bondedPairs: number[][] = [];
+  protected rawBondLines: string[] = [];
 
   /** Get bond lines with new values for bonded atoms  */
-  getBondLines(): string[] {
-    return this.bondedPairs.map((bondedPair, idx) => {
-      if (bondedPair.some((atom) => atom === -1))
-        throw new Error(`Bonded pair ${bondedPair} contains -1`);
-      return `${bondedPair[0].toString().padStart(3, ' ')}${
-        bondedPair[1].toString().padStart(3, ' ')
-      }${this.rawBondLines[idx].substring(6)}`;
-    });
-  }
+  abstract getBondLines(): string[];
 
   get bondedAtoms(): number[][] {
     return this.bondedPairs;

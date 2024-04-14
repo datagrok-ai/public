@@ -22,6 +22,21 @@ export class Helm {
   private simplePolymers: SimplePolymer[];
   private connectionList?: ConnectionList;
 
+  getBondedRGroupsMap(): Map<number, number[]> {
+    const bondedRGroupsMap = new Map<number, number[]>();
+    this.bondData.forEach((bond) => {
+      bond.forEach((bondPart) => {
+        const monomerIdx = bondPart.monomerIdx;
+        const rGroupId = bondPart.rGroupId;
+        if (!bondedRGroupsMap.get(monomerIdx))
+          bondedRGroupsMap.set(monomerIdx, []);
+        bondedRGroupsMap.get(monomerIdx)!.push(rGroupId);
+      });
+    });
+
+    return bondedRGroupsMap;
+  }
+
   toString() {
     return this.helm;
   }

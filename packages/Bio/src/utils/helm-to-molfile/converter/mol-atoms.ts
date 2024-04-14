@@ -10,7 +10,7 @@ export abstract class MolfileAtoms {
 
   abstract get atomLines(): string[];
 
-  replaceElementSymbol(atomIdx: number, newElementSymbol: string): void {
+  replaceRGroupSymbolByElement(atomIdx: number, newElementSymbol: string): void {
     this.rawAtomLines[atomIdx] = this.rawAtomLines[atomIdx].replace(R_GROUP_ELEMENT_SYMBOL, newElementSymbol);
   }
 

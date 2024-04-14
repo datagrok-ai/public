@@ -5,17 +5,7 @@ import {MonomerWrapper} from './monomer-wrapper';
 export class Polymer {
   constructor(helm: string) {
     this.helm = new Helm(helm);
-
-    this.bondedRGroupsMap = new Map<number, number[]>();
-    this.helm.bondData.forEach((bond) => {
-      bond.forEach((bondPart) => {
-        const monomerIdx = bondPart.monomerIdx;
-        const rGroupId = bondPart.rGroupId;
-        if (!this.bondedRGroupsMap.get(monomerIdx))
-          this.bondedRGroupsMap.set(monomerIdx, []);
-        this.bondedRGroupsMap.get(monomerIdx)!.push(rGroupId);
-      });
-    });
+    this.bondedRGroupsMap = this.helm.getBondedRGroupsMap();
   }
 
   private monomerWrappers: MonomerWrapper[] = [];
