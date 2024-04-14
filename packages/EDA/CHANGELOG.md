@@ -1,5 +1,12 @@
 # EDA changelog
 
+## 1.1.17 (2024-04-14)
+
+### Features
+* Add webGPU UMAP implementation.
+* Add webGPU Sparse matrix calculation.
+* Add webGPU option for MCL.
+
 ## 1.1.16 (2024-04-05)
 
 Add webGPU KNN calculation option to UMAP.
