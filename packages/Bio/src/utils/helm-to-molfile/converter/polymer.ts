@@ -1,9 +1,10 @@
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V2K_CONST} from './const';
 import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
 
 export class Polymer {
-  constructor(helmString: string) {
+  constructor(helmString: string, private rdKitModule: RDModule) {
     this.helm = new Helm(helmString);
   }
 
@@ -15,7 +16,7 @@ export class Polymer {
     monomerIdx: number,
     shift: {x: number, y: number},
   ): void {
-    const monomerWrapper = new MonomerWrapper(monomerSymbol, monomerIdx, this.helm, shift);
+    const monomerWrapper = new MonomerWrapper(monomerSymbol, monomerIdx, this.helm, shift, this.rdKitModule);
 
     this.monomerWrappers.push(monomerWrapper);
   }

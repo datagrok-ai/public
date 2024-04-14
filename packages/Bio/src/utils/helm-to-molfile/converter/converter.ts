@@ -79,6 +79,7 @@ export class HelmToMolfileConverter {
 
   private async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
+    const rdKitModule = await grok.functions.call('Chem:getRdKitModule');
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
         const helm = this.helmColumn.get(idx);
@@ -86,7 +87,7 @@ export class HelmToMolfileConverter {
           return '';
         let result = '';
         try {
-          result = this.getPolymerMolfile(helm, pseudoMolfile);
+          result = this.getPolymerMolfile(helm, pseudoMolfile, rdKitModule);
         } catch (err: any) {
           const [errMsg, errStack] = errInfo(err);
           _package.logger.error(errMsg, undefined, errStack);
@@ -105,9 +106,13 @@ export class HelmToMolfileConverter {
     return polymerGraphColumn;
   }
 
-  private getPolymerMolfile(helm: string, polymerGraph: string): string {
+  private getPolymerMolfile(
+    helm: string,
+    polymerGraph: string,
+    rdKitModule: RDModule
+  ): string {
     const globalPositionHandler = new GlobalMonomerPositionHandler(polymerGraph);
-    const polymer = new Polymer(helm);
+    const polymer = new Polymer(helm, rdKitModule);
     globalPositionHandler.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = globalPositionHandler.getMonomerShifts(monomerIdx);
       polymer.addMonomer(monomerSymbol, monomerIdx, shift);

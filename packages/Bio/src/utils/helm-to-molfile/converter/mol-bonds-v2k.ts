@@ -5,7 +5,7 @@ export class MolfileBondsV2K extends MolfileBonds {
   constructor(molfileHandler: MolfileHandlerBase) {
     super();
     this.rawBondLines = molfileHandler.getBondLines();
-    this.bondedPairs = this.rawBondLines.map((line: string) => {
+    this.bondedAtomPairs = this.rawBondLines.map((line: string) => {
       const firstAtom = parseInt(line.substring(0, 3));
       const secondAtom = parseInt(line.substring(3, 6));
       return [firstAtom, secondAtom];
@@ -14,7 +14,7 @@ export class MolfileBondsV2K extends MolfileBonds {
 
   /** Get bond lines with new values for bonded atoms  */
   getBondLines(): string[] {
-    return this.bondedPairs.map((bondedPair, idx) => {
+    return this.bondedAtomPairs.map((bondedPair, idx) => {
       if (bondedPair.some((atom) => atom === -1))
         throw new Error(`Bonded pair ${bondedPair} contains -1`);
       return `${bondedPair[0].toString().padStart(3, ' ')}${

@@ -4,7 +4,7 @@ import {RGroupHandler} from './r-group-handler';
 import {MolfileAtomsV2K} from './mol-atoms-v2k';
 import {MolfileBondsV2K} from './mol-bonds-v2k';
 
-export class MolfileV2KWrapper extends MolfileWrapper {
+export class MolfileV3KWrapper extends MolfileWrapper {
   constructor(
     molfileV2K: string, monomerSymbol: string
   ) {

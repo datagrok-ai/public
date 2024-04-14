@@ -1,9 +1,11 @@
 import {Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MonomerLibManager} from '../../monomer-lib/lib-manager';
 import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export class MonomerWrapper {
   private molfileWrapper: MolfileWrapper;
@@ -13,11 +15,16 @@ export class MonomerWrapper {
     private monomerSymbol: string,
     private monomerIdx: number,
     private helm: Helm,
-    shift: {x: number, y: number}
+    shift: {x: number, y: number},
+    rdKitModule: RDModule
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
 
-    this.molfileWrapper = MolfileWrapperFactory.getInstance(libraryMonomerObject.molfile, monomerSymbol);
+    let molfile = libraryMonomerObject.molfile;
+    if (MolfileHandler.isMolfileV2K(molfile))
+      molfile = this.convertMolfileToV3KFormat(molfile, rdKitModule);
+
+    this.molfileWrapper = MolfileWrapperFactory.getInstance(molfile, monomerSymbol);
     this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
 
     if (helm.bondedRGroupsMap.has(monomerIdx))
@@ -25,6 +32,10 @@ export class MonomerWrapper {
     this.capRemainingRGroups();
 
     this.shiftCoordinates(shift);
+  }
+
+  private convertMolfileToV3KFormat(molfileV2K: string, rdKitModule: RDModule): string {
+    return rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true})).get_v3Kmolblock();
   }
 
   private getLibraryMonomerObject(): Monomer {
