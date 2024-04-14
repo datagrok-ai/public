@@ -81,7 +81,7 @@ export class DimReductionBaseEditor {
     };
     dbScanParams = new DBScanOptions();
     similarityMetricInput!: DG.InputBase<string | null>;
-    get algorithmOptions(): IUMAPOptions | ITSNEOptions {
+    get algorithmOptions(): (IUMAPOptions | ITSNEOptions) & Options {
       const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
       const options: any = {};
       Object.keys(algorithmParams).forEach((key: string) => {
