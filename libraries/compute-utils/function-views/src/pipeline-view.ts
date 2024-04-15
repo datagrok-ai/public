@@ -715,9 +715,10 @@ export class PipelineView extends FunctionView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    const idxBeforeLoad = this.stepTabs.panes
-      .filter((tab) => ($(tab.header).css('display') !== 'none'))
-      .findIndex((tab) => tab.name === this.stepTabs.currentPane.name);
+    const stepIdxBeforeLoad = Object.values(this.steps)
+      .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      .findIndex((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
+    console.log(stepIdxBeforeLoad);
 
     await this.onBeforeLoadRun();
 
@@ -761,10 +762,17 @@ export class PipelineView extends FunctionView {
     this.linkFunccall(pulledParentRun);
     this.isHistorical.next(true);
 
-    if (idxBeforeLoad >= 0) {
-      this.stepTabs.currentPane = this.stepTabs.panes
-        .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
+    const paneAfterLoad = this.stepTabs.panes
+      .filter((tab) => ($(tab.header).css('display') !== 'none'))[stepIdxBeforeLoad];
+    if (stepIdxBeforeLoad >= 0) {
+      if (Object.values(this.steps)[stepIdxBeforeLoad].ability.value === ABILITY_STATE.ENABLED)
+        this.stepTabs.currentPane = paneAfterLoad;
+      else {
+        this.currentTabName = lastEnabledStep ? getVisibleStepName(lastEnabledStep):
+          getVisibleStepName(Object.values(this.steps)[0]);
+      }
     }
+
 
     await this.onAfterLoadRun(pulledParentRun);
 
