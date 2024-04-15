@@ -20,6 +20,10 @@ export class ReportsView extends UaView {
     this.name = 'Reports';
     this.currentFilterGroup = null;
     this.filters.style.maxWidth = '250px';
+    this.ribbonMenu = DG.Menu.create();
+    this.ribbonMenu.item('Text', () => {
+      console.log('From ribbon');
+    });
   }
 
   async initViewers(): Promise<void> {
@@ -38,32 +42,17 @@ export class ReportsView extends UaView {
       queryName: 'UserReports',
       createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.grid(t, {
-          'showColumnLabels': false,
-          'showRowHeader': false,
-          'showColumnGridlines': false,
-          'allowRowSelection': false,
-          'allowColumnSelection': false,
-          'allowBlockSelection': false,
-          'showCurrentCellOutline': false,
-          'defaultCellFont': '13px monospace',
+          'defaultCellFont': '13px monospace'
         });
         this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error', 'error_stack_trace']);
+          viewer.columns.setOrder(['report_number', 'reporter', 'description', 'same_errors_count', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
-          viewer.col('reporter')!.width = 30;
-          viewer.col('report_id')!.cellType = 'html';
-          viewer.col('report_id')!.width = 20;
-          viewer.col('report_number')!.visible = false;
+          viewer.col('error_stack_trace_hash')!.visible = false;
         });
 
         viewer.onCellPrepare(async function(gc) {
-          if (gc.gridColumn.name === 'report_time') {
-            gc.style.textColor = 0xFFB8BAC0;
-            gc.style.font = '13px Roboto';
-          }
-
-          if (gc.gridColumn.name === 'reporter') {
+          if (gc.gridColumn.name === 'reporter' && gc.cell.value) {
             const user = users[gc.cell.value];
             const img = ui.div();
             img.style.width = '20px';
@@ -75,22 +64,13 @@ export class ReportsView extends UaView {
               img.style.backgroundImage = user.avatar.style.backgroundImage;
             else
               img.style.backgroundImage = 'url(/images/entities/grok.png);';
-            img.addEventListener('click', () => {
+            const span = ui.span([ui.span([img, ui.label(user.name)], 'grok-markup-user')], 'd4-link-label');
+            span.addEventListener('click', () => {
               grok.shell.o = user.data;
             });
-            gc.style.element = ui.tooltip.bind(img, user.name);
-          }
-
-          if (gc.gridColumn.name === 'report_id') {
-            const icon = ui.iconFA('arrow-to-bottom', () => {
-              const indicator = DG.TaskBarProgressIndicator.create('Receiving user report...');
-              //@ts-ignore
-              grok.dapi.admin.getUserReport(gc.cell.value)
-                .then((bytes: any) => DG.Utils.download(`report_${gc.cell.value}.zip`, bytes))
-                .finally(() => indicator.close());
+            gc.style.element = ui.tooltip.bind(span, () => {
+              return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
             });
-            icon.style.marginTop = '7px';
-            gc.style.element = ui.tooltip.bind(icon, 'Download report');
           }
         });
 

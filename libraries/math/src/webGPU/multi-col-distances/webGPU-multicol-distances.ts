@@ -27,7 +27,7 @@ export function webGPUHamming(_maxArraySize: number, entryIndex: number) {
   var diff: f32 = 0.0;
   for (var i = 0u; i < ${_maxArraySize}; i = i + 1u) {
       diff = diff + f32(a[i] != b[i]);
-      if (diff >= maxIntDistance) {
+      if (diff > maxIntDistance) {
             return 1.0;
         }
   }
@@ -52,7 +52,7 @@ export function webGPUMonomerChemicalDistance(_maxArraySize: number, entryIndex:
   var diff: f32 = 0.0;
   for (var i = 0u; i < ${_maxArraySize}; i = i + 1u) {
       diff = diff + 1.0 - (*simMatrix)[u32(a[i])][u32(b[i])];
-      if (diff >= maxIntDistance) {
+      if (diff > maxIntDistance) {
             return 1.0;
         }
   }
@@ -109,7 +109,7 @@ export function webGPULevenstein(maxArraySize: number, entryIndex: number) {
       let temp: u32 = prevIndex;
       prevIndex = curIndex;
       curIndex = temp;
-      if (minEntry >= maxIntDistance) {
+      if (minEntry > maxIntDistance) {
           return 1.0;
       }
   }
@@ -203,7 +203,7 @@ export function webGPUNeedlemanWunsch(maxArraySize: number, entryIndex: number) 
           let temp: u32 = prevIndex;
           prevIndex = curIndex;
           curIndex = temp;
-          if (minEntry >= maxIntDistance) {
+          if (minEntry > maxIntDistance) {
               return 1.0;
           }
       }
@@ -376,10 +376,10 @@ export const distanceFunctionComplexity: { [key in WEBGPUDISTANCE]: (maxEntrySiz
   [WEBGPUDISTANCE.HAMMING]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 30),
   [WEBGPUDISTANCE.EUCLIDEAN]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 30),
   [WEBGPUDISTANCE.MANHATTAN]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 30),
-  [WEBGPUDISTANCE.TANIMOTO]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 80),
-  [WEBGPUDISTANCE.SOKAL]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 80),
-  [WEBGPUDISTANCE.COSINE]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 80),
-  [WEBGPUDISTANCE.ASYMMETRIC]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 80),
+  [WEBGPUDISTANCE.TANIMOTO]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 60),
+  [WEBGPUDISTANCE.SOKAL]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 60),
+  [WEBGPUDISTANCE.COSINE]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 60),
+  [WEBGPUDISTANCE.ASYMMETRIC]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 60),
   [WEBGPUDISTANCE.LEVENSTEIN]: (maxEntrySize: number) => Math.ceil(maxEntrySize * maxEntrySize / 60),
   [WEBGPUDISTANCE.NEEDLEMAN_WUNSCH]: (maxEntrySize: number) => Math.ceil(maxEntrySize * maxEntrySize / 60),
   [WEBGPUDISTANCE.MONOMER_CHEMICAL_DISTANCE]: (maxEntrySize: number) => Math.ceil(maxEntrySize / 25),
@@ -392,11 +392,12 @@ export type BioDistanceFnOptions = {
     [monomerId: string]: number;
 }, gapOpenPenalty?: number, gapExtensionPenalty?: number
 }
-export type SupportedEntryTypes = string | Uint32Array | Float32Array | number | {_data: Uint32Array, _length: number}//last is bitarray;
+export type SupportedEntryTypes = string | Uint32Array | Int32Array | Float32Array | number | {_data: Uint32Array, _length: number}//last is bitarray;
 
 export const enum WGPUENTRYTYPE {
   STRING = 'STRING',
   UINT32ARRAY = 'UINT32ARRAY',
+  INT32ARRAY = 'INT32ARRAY',
   FLOAT32ARRAY = 'FLOAT32ARRAY',
   NUMBER = 'NUMBER',
   BITARRAY = 'BITARRAY'
@@ -405,6 +406,7 @@ export const enum WGPUENTRYTYPE {
 export const TypeSupportedDistances: {[key in WGPUENTRYTYPE] : Set<WEBGPUDISTANCE>} = {
   [WGPUENTRYTYPE.STRING]: new Set([WEBGPUDISTANCE.HAMMING, WEBGPUDISTANCE.LEVENSTEIN, WEBGPUDISTANCE.NEEDLEMAN_WUNSCH, WEBGPUDISTANCE.MONOMER_CHEMICAL_DISTANCE, WEBGPUDISTANCE.OneHot]),
   [WGPUENTRYTYPE.UINT32ARRAY]: new Set([WEBGPUDISTANCE.HAMMING, WEBGPUDISTANCE.EUCLIDEAN, WEBGPUDISTANCE.MANHATTAN, WEBGPUDISTANCE.MONOMER_CHEMICAL_DISTANCE, WEBGPUDISTANCE.LEVENSTEIN, WEBGPUDISTANCE.NEEDLEMAN_WUNSCH, WEBGPUDISTANCE.TANIMOTO, WEBGPUDISTANCE.COSINE, WEBGPUDISTANCE.SOKAL, WEBGPUDISTANCE.ASYMMETRIC, WEBGPUDISTANCE.OneHot, WEBGPUDISTANCE.Difference]),
+  [WGPUENTRYTYPE.INT32ARRAY]: new Set([WEBGPUDISTANCE.EUCLIDEAN, WEBGPUDISTANCE.MANHATTAN, WEBGPUDISTANCE.OneHot, WEBGPUDISTANCE.Difference]),
   [WGPUENTRYTYPE.FLOAT32ARRAY]: new Set([WEBGPUDISTANCE.EUCLIDEAN, WEBGPUDISTANCE.MANHATTAN, WEBGPUDISTANCE.Difference]),
   [WGPUENTRYTYPE.NUMBER]: new Set([WEBGPUDISTANCE.EUCLIDEAN, WEBGPUDISTANCE.MANHATTAN, WEBGPUDISTANCE.Difference]),
   [WGPUENTRYTYPE.BITARRAY]: new Set([WEBGPUDISTANCE.TANIMOTO, WEBGPUDISTANCE.COSINE, WEBGPUDISTANCE.SOKAL, WEBGPUDISTANCE.ASYMMETRIC])

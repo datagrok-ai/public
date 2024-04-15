@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
-import {BioDistanceFnOptions, distanceFunctionComplexity, SupportedEntryTypes,
-  TypeSupportedDistances, WEBGPUDISTANCE, WGPUENTRYTYPE} from './webGPU-multicol-distances';
+import {BioDistanceFnOptions, distanceFunctionComplexity,
+  SupportedEntryTypes, TypeSupportedDistances, WEBGPUDISTANCE, WGPUENTRYTYPE} from '../multi-col-distances/webGPU-multicol-distances';
 
 export function webGPUProcessInfo(
   entryList: Array<SupportedEntryTypes>,
@@ -18,8 +18,7 @@ export function webGPUProcessInfo(
       entryType = WGPUENTRYTYPE.NUMBER;
       return entryList.map((entry) => new Float32Array([entry as number]));
     }
-    if (typeof entryList[0] == 'object' &&
-         entryList.some((e) => '_data' in (e as Object) && '_length' in (e as Object))) {
+    if (typeof entryList[0] == 'object' && entryList.some((e) => '_data' in (e as Object) && '_length' in (e as Object))) {
       entryType = WGPUENTRYTYPE.BITARRAY;
       return entryList.map((entry) => (entry as {_data: Uint32Array, _length: number})._data);
     }
@@ -31,15 +30,19 @@ export function webGPUProcessInfo(
       entryType = WGPUENTRYTYPE.UINT32ARRAY;
       return entryList as Uint32Array[];
     }
+    if (entryList.some((e) => e instanceof Int32Array)) {
+      entryType = WGPUENTRYTYPE.INT32ARRAY;
+      return entryList as Int32Array[];
+    }
     //return entryList as Uint32Array[];
   })();
 
   if (!encodedList || !entryType)
     throw new Error('Invalid entry type, could not determine entry type from input list');
 
-  const isUint32Array = encodedList[0] instanceof Uint32Array;
-  // sizes of each entries might differ, so we need
-  //to keep track of that for some distance metrics, like hamming for example
+  const encodedListType = encodedList[0] instanceof Int32Array ? WGPUENTRYTYPE.INT32ARRAY :
+    encodedList[0] instanceof Float32Array ? WGPUENTRYTYPE.FLOAT32ARRAY : WGPUENTRYTYPE.UINT32ARRAY;
+  // sizes of each entries might differ, so we need to keep track of that for some distance metrics, like hamming for example
   const arraySizes = new Uint32Array(encodedList.map((arr) => arr.length));
 
   if (!TypeSupportedDistances[entryType] || !TypeSupportedDistances[entryType].has(distanceMetric))
@@ -50,25 +53,24 @@ export function webGPUProcessInfo(
   // get the complexity of used algorithm
   const complexity = distanceFunctionComplexity[distanceMetric](maxEntryLen);
 
-  const flatSourceArray = isUint32Array ? new Uint32Array(encodedList.length * maxEntryLen) :
-    new Float32Array(encodedList.length * maxEntryLen);
+  const EncodedArrayConstructor = encodedListType === WGPUENTRYTYPE.INT32ARRAY ? Int32Array :
+    (encodedListType === WGPUENTRYTYPE.FLOAT32ARRAY ? Float32Array : Uint32Array);
 
-  // when setting, we need to set each array at a
-  // specific offset, which is controlled by maxArrayLen because each array might have different sizes.
+  const flatSourceArray = new EncodedArrayConstructor(encodedList.length * maxEntryLen);
+
+  // when setting, we need to set each array at a specific offset, which is controlled by maxArrayLen because each array might have different sizes.
   // this way we will get correct matrix representation in the compute shader
   encodedList.forEach((seq, i) => {
     flatSourceArray.set(seq, i * maxEntryLen);
   });
 
-  // NB! all this before the line was generic,
-  //now we need to calculate some specific things for some specific distance metrics
+  // NB! all this before the line was generic, now we need to calculate some specific things for some specific distance metrics
   // initialize supp info line that will be included in the final shader;
   let suppInfoStructWgsl: string = ''; // the code that will be included in the struct of suppInfo
   let suppInfoSize: number = 0;
   let suppInfoType: WGPUENTRYTYPE.FLOAT32ARRAY | WGPUENTRYTYPE.UINT32ARRAY = WGPUENTRYTYPE.FLOAT32ARRAY;
   let suppInfoBuffer: Float32Array | Uint32Array | null = null;
-  if (distanceMetric === WEBGPUDISTANCE.NEEDLEMAN_WUNSCH ||
-    distanceMetric === WEBGPUDISTANCE.MONOMER_CHEMICAL_DISTANCE) {
+  if (distanceMetric === WEBGPUDISTANCE.NEEDLEMAN_WUNSCH || distanceMetric === WEBGPUDISTANCE.MONOMER_CHEMICAL_DISTANCE) {
     let maxMonomerIndex = options.scoringMatrix && options.alphabetIndexes ?
       Object.keys(options.alphabetIndexes).reduce((prev, n) => Math.max(prev, n.charCodeAt(0)), 0) : -1;
     // generate default similarity matrix if it is not provided
@@ -87,8 +89,7 @@ export function webGPUProcessInfo(
       }
     }
     const similarityMatrixSize = (maxMonomerIndex + 1) * (maxMonomerIndex + 1);
-    const transferedSimilarityMatrix =
-        new Array(maxMonomerIndex + 1).fill(null).map(() => new Float32Array(maxMonomerIndex + 1));
+    const transferedSimilarityMatrix = new Array(maxMonomerIndex + 1).fill(null).map(() => new Float32Array(maxMonomerIndex + 1));
     // set diagonal to 1
     for (let i = 0; i < maxMonomerIndex + 1; i++)
       transferedSimilarityMatrix[i][i] = 1;
@@ -104,8 +105,7 @@ export function webGPUProcessInfo(
       }
     }
 
-    // in memory layout, we will have 2 float32 s for gapOpen and gapExtension penalties,
-    // and then f32 array<array<f32>> for similarity matrix.
+    // in memory layout, we will have 2 float32 s for gapOpen and gapExtension penalties, and then f32 array<array<f32>> for similarity matrix.
     // because of primitives, there will be no padding, so we can calculate the size directly
     suppInfoSize = 2 + similarityMatrixSize;
     suppInfoType = WGPUENTRYTYPE.FLOAT32ARRAY;
@@ -138,7 +138,8 @@ export function webGPUProcessInfo(
             range${entryIndex}: f32`;
   }
 
-  const dataStructWgsl = `data${entryIndex}: array<array<${isUint32Array ? 'u32' : 'f32'}, ${maxEntryLen}>, ${encodedList.length}>`;
+  const dataTypeWGSL = flatSourceArray instanceof Int32Array ? 'i32' : (flatSourceArray instanceof Float32Array ? 'f32' : 'u32');
+  const dataStructWgsl = `data${entryIndex}: array<array<${dataTypeWGSL}, ${maxEntryLen}>, ${encodedList.length}>`;
 
   // for now, other distances do not require any additional information, so we can skip that
   return {
@@ -152,8 +153,9 @@ export function webGPUProcessInfo(
     suppInfoType: suppInfoType as WGPUENTRYTYPE.FLOAT32ARRAY | WGPUENTRYTYPE.UINT32ARRAY,
     suppInfoStructWgsl,
     entryType,
-    isUint32Array,
-    dataStructWgsl
+    dataTypeWGSL,
+    dataStructWgsl,
+    EncodedArrayConstructor
   };
 }
 

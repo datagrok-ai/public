@@ -1,0 +1,8 @@
+
+.ui-form.ui-tooltip .ui-input-root > label.ui-input-label:not(:empty) {
+    /* min-width: 30px; /* Breaks right margin /**/
+}
+
+.ui-form.ui-tooltip .ui-input-root > div.ui-input-text:not(:empty) {
+    margin-top: 6px;
+}

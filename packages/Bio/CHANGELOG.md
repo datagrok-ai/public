@@ -1,5 +1,15 @@
 # Bio changelog
 
+## 2.12.11 (2024-04-12)
+
+### Features 
+
+* Add displaying a monomer's origin lib
+
+### Bug fixes
+
+* Fix the cell-renderer tooltip not showing a hovered monomer
+
 ## 2.12.10 (2024-04-11)
 
 ### Bug fixes

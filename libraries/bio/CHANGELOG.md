@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.40.6 (2024-04-11)
+
+### Features
+
+* Add displaying a monomer's origin lib
+
 ## 5.40.5 (2024-04-10)
 
 ### Bug fixes
