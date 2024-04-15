@@ -700,7 +700,6 @@ export class PipelineView extends FunctionView {
     const stepIdxBeforeLoad = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       .findIndex((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name);
-    console.log(stepIdxBeforeLoad);
 
     await this.onBeforeLoadRun();
 
@@ -709,8 +708,10 @@ export class PipelineView extends FunctionView {
       const corrChildRuns = pulledChildRuns.filter((pulledChildRun) =>
         pulledChildRun.func.nqName === step.func.nqName);
 
-      if (corrChildRuns.length === 0)
+      if (corrChildRuns.length === 0) {
         step.visibility.next(VISIBILITY_STATE.HIDDEN);
+        step.ability.next(ABILITY_STATE.DISABLED);
+      }
 
       if (corrChildRuns.length === 1) {
         await step.view.loadRun(corrChildRuns[0].id);
@@ -734,26 +735,23 @@ export class PipelineView extends FunctionView {
       }
     };
 
-    if (lastEnabledStep && this.getNextStep(lastEnabledStep))
-      this.getNextStep(lastEnabledStep)!.ability.next(ABILITY_STATE.ENABLED);
+    const stepToEnable = lastEnabledStep && this.getNextStep(lastEnabledStep) ?
+      this.getNextStep(lastEnabledStep)!:
+      Object.values(this.steps)[0];
 
-    if (!lastEnabledStep)
-      Object.values(this.steps)[0].ability.next(ABILITY_STATE.ENABLED);
+    stepToEnable.ability.next(ABILITY_STATE.ENABLED);
 
     this.lastCall = pulledParentRun;
     this.linkFunccall(pulledParentRun);
     this.isHistorical.next(true);
 
-    const paneAfterLoad = this.stepTabs.panes
-      .filter((tab) => ($(tab.header).css('display') !== 'none'))[stepIdxBeforeLoad];
-    if (stepIdxBeforeLoad >= 0) {
-      if (Object.values(this.steps)[stepIdxBeforeLoad].ability.value === ABILITY_STATE.ENABLED)
-        this.stepTabs.currentPane = paneAfterLoad;
-      else {
-        this.currentTabName = lastEnabledStep ? getVisibleStepName(lastEnabledStep):
-          getVisibleStepName(Object.values(this.steps)[0]);
-      }
-    }
+    const stepToShow = Object.values(this.steps)
+      .filter((step) => step.visibility.value == VISIBILITY_STATE.VISIBLE)[stepIdxBeforeLoad];
+
+    if (stepToShow.ability.value === ABILITY_STATE.ENABLED)
+      this.currentTabName = getVisibleStepName(stepToShow);
+    else
+      this.currentTabName = getVisibleStepName(stepToEnable);
 
 
     await this.onAfterLoadRun(pulledParentRun);
