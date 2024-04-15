@@ -65,10 +65,11 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const plsCols = result.tScores;
   const cols = input.table.columns;
   const featuresNames = input.features.names();
+  const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
 
   // add PLS components to the table
   plsCols.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${RESULT_NAMES.PREFIX}${idx + 1}`);
+    col.name = cols.getUnusedName(`${prefix}${idx + 1}`);
     cols.add(col);
   });
 
@@ -129,12 +130,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   // 4. Scores Scatter Plot
 
   // 4.1) data
-  const scoreNames = [] as string[];
-
-  plsCols.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${TITLE.XSCORE}${idx + 1}`);
-    scoreNames.push(col.name);
-  });
+  const scoreNames = plsCols.map((col) => col.name);
   result.uScores.forEach((col, idx) => {
     col.name = cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`);
     cols.add(col);
@@ -155,6 +151,18 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   // 4.3) create lines & circles
   const lines = [] as DG.FormulaLine[];
 
+  const addLine = (formula: string, radius: number) => {
+    lines.push({
+      type: 'line',
+      formula: formula,
+      width: LINE_WIDTH,
+      visible: true,
+      title: ' ',
+      min: -radius,
+      max: radius,
+      color: COLOR.CIRCLE,
+  })};
+
   scoreNames.forEach((xName) => {
     const x = '${' + xName + '}';
     lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
@@ -163,29 +171,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       const y = '${' + yName + '}';
 
       RADIUS.forEach((r) => {
-        const formula1 = y + ` = sqrt(${r*r} - ${x} * ${x})`;
-        lines.push({
-          type: 'line',
-          formula: formula1,
-          width: LINE_WIDTH,
-          visible: true,
-          title: ' ',
-          min: -r,
-          max: r,
-          color: COLOR.CIRCLE,
-        });
-
-        const formula2 = y + ` = -sqrt(${r*r} - ${x} * ${x})`;
-        lines.push({
-          type: 'line',
-          formula: formula2,
-          width: LINE_WIDTH,
-          visible: true,
-          title: ' ',
-          min: -r,
-          max: r,
-          color: COLOR.CIRCLE,
-        });
+        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
+        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
       });
     });
   });
@@ -204,7 +191,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const A = input.components;
   const yExplVars = new Float32Array(A);
   const compNames = [] as string[];
-  const xExplVars = [] as Float32Array[];
+  const xExplVars: Float32Array[] = [];
   for (let i = 0; i < m; ++i)
     xExplVars.push(new Float32Array(A));
 
