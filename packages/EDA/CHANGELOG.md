@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.18 (2024-04-15)
+
+Fixed webGPU numeric distance with 0 range
+
 ## 1.1.17 (2024-04-14)
 
 ### Features
