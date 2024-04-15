@@ -20,8 +20,8 @@ export class MolfileAtomsV3K extends MolfileAtoms {
 
 
   get atomLines(): string[] {
-    // todo: optimize, port to molfile-handler
-    const coordinateRegex = /^(M  V30 .*)(-?\d+\.\d+)(  )(-?\d+\.\d+)(.*)$/;
+    // todo: optimize, optionally port to molfile-handler
+    const coordinateRegex = /^(M  V30 .*)(-?\d+\.\d+)( )(-?\d+\.\d+)( -?\d+\.\d+.*)$/;
     const rGroupsRegex = /\sRGROUPS=\(\d+(\s+\d+)*\)/;
 
     return this.rawAtomLines.map((line: string, idx: number) => {
