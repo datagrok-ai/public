@@ -22,10 +22,12 @@ export class Polymer {
   }
 
   private getAtomNumberShifts(): number[] {
+    const atomNumberShifts: number[] = [];
     let shift = 0;
-    const atomNumberShifts = this.monomerWrappers.map(
-      (monomerWrapper) => shift += monomerWrapper.getAtomLines().length
-    );
+    this.monomerWrappers.forEach((monomerWrapper) => {
+      atomNumberShifts.push(shift);
+      shift += monomerWrapper.getAtomLines().length;
+    });
     return atomNumberShifts;
   }
 
