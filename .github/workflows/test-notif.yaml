@@ -3,7 +3,7 @@ on:
   workflow_dispatch: { }
   push:
     branches:
-        - vhlushchenko/GROK-15351-github-notification
+      - vhlushchenko/GROK-15351-github-notification
 jobs:
   notif:
     name: Check version
@@ -11,11 +11,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Slack Failed-Cancelled Notification
+      - name: ls
+        run: ls -la
+      - name: Slack Ftest Notification
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml" 
+          # config: ".github/config/slack.yml" 
           channel: "vhlushchenko@datagrok.ai"       
           webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
