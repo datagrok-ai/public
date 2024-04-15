@@ -129,7 +129,7 @@ export function webGPUProcessInfo(
       options.range = max - min;
     }
     if (options.range <= 0)
-      throw new Error('Invalid range for difference distance metric: ' + options.range);
+      options.range = 1.0; // this means that all values are the same, and all distances will produce 0.
 
     suppInfoSize = 1;
     suppInfoType = WGPUENTRYTYPE.FLOAT32ARRAY;

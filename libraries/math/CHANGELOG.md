@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.2 (2024-04-15)
+
+Fix webGPU numeric distance with 0 range
+
 ## 1.1.1 (2024-04-14)
 
 Add checks for webGPU distances.
