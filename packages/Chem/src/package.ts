@@ -534,7 +534,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     methodName: methodName,
     similarityMetric: similarityMetric,
     plotEmbeddings: false,
-    options: options,
+    options: JSON.stringify(options),
     preprocessingFunction: preprocessingFunction,
     clusterEmbeddings: clusterEmbeddings
   }).call(undefined, undefined, { processed: false });
@@ -556,15 +556,16 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: string methodName
 //input: string similarityMetric
 //input: bool plotEmbeddings = true
-//input: object options {optional: true}
-//input: func preprocessingFunction {optional: true}
+//input: string options {optional: true}
 //input: bool clusterEmbeddings {optional: true}
 export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
+  options?: string, clusterEmbeddings?: boolean,
 ): Promise<DG.Viewer | undefined> {
-  return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options,
-    preprocessingFunction, clusterEmbeddings);
+  const res =  await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
+    undefined, clusterEmbeddings);
+  console.log(`returned from runChemSpace`);
+  return res;
 }
 
 //name: Chem Space Embeddings

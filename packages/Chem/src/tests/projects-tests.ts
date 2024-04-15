@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 
 import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import { createTableView } from './utils';
+import { RGroupDecompRes } from '../analysis/r-group-analysis';
+import { _package } from '../package-test';
 
 
 category('projects', () => {
@@ -21,9 +23,9 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchi, ['smiles', 'inchi'], '');
   });
 
-  // test('inchi_sync', async () => {
-  //   await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchi, ['smiles', 'inchi'], '', true);
-  // });
+  test('inchi_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchi, ['smiles', 'inchi'], '', true);
+  });
 
   test('inchi_key', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '');
@@ -86,7 +88,14 @@ category('projects', () => {
 //viewerType: viewer which has been created by analysis
 async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: DG.TableView) => Promise<void>,
 colList: string[], viewerType: string, dataSync?: boolean) {
-  const tv = await createTableView(tableName);
+  //const tv = await createTableView(tableName);
+
+  const df = await DG.Func.find({ name: 'OpenFile'})[0].prepare({
+    fullPath: `System:AppData/Chem/${tableName}`
+  }).call(undefined, undefined, { processed: false });
+
+  const tv = grok.shell.tv;
+  await delay(500);
   await analysisFunc(tv);
   await delay(10);
   await saveAndOpenProject(tv, dataSync);
@@ -188,10 +197,10 @@ async function runToInchiKeys(tv: DG.TableView): Promise<void> {
 }
 
 async function runToInchi(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:addInchisTopMenu`, {
+  await DG.Func.find({ package: 'Chem', name: 'addInchisTopMenu' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runAddChemRisksColumns(tv: DG.TableView): Promise<void> {
@@ -206,7 +215,7 @@ async function runAddChemRisksColumns(tv: DG.TableView): Promise<void> {
 }
 
 async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:rGroupDecomposition`, {
+  const funcCall = await DG.Func.find({ package: 'Chem', name: 'rGroupDecomposition' })[0].prepare({
     df: tv.dataFrame,
     molColName: 'smiles',
     core: '[#8]=[#6]1-[#6]-[#7]=[#6](-[#6])-[#6]2:[#6](-[#7]-1):[#6]:[#6]:[#6]:[#6]:2',
@@ -215,19 +224,19 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
     rGroupMatchingStrategy: 'Greedy',
     rGroupAlignment: 'MCS',
     visualAnalysis: true
-  });
+  }).call(undefined, undefined, { processed: false });
+  const res: RGroupDecompRes = funcCall.getOutputParamValue();
   tv.trellisPlot({
-    xColumnNames: ['R1'],
-    yColumnNames: ['R2'],
+    xColumnNames: res.xAxisColName,
+    yColumnNames: res.yAxisColName,
   });
 }
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   let project = DG.Project.create();
   let tableInfo = tv.dataFrame.getTableInfo();
-  if (dataSync) {
-    //logic for data sync
-  }
+  if (dataSync)
+    tv.dataFrame.setTag('.data-sync', 'sync');
   let layoutInfo = tv.getInfo();
   project.addChild(tableInfo);
   project.addChild(layoutInfo);
