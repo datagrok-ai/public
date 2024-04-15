@@ -131,12 +131,3 @@ export function addPLSvisualization(
   // 4. Scores Scatter Plot
   view.addViewer(scoresScatterPlot(samplesNames, plsOutput[2], plsOutput[3]));
 }
-
-// Add one-way ANOVA results
-export function addOneWayAnovaVizualization(
-  table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: DG.DataFrame,
-) {
-  const view = grok.shell.getTableView(table.name);
-  view.addViewer(DG.Viewer.boxPlot(DG.DataFrame.fromColumns([factors, values])));
-  view.addViewer(DG.Viewer.grid(anova));
-}
