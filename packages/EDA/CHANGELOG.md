@@ -1,5 +1,10 @@
 # EDA changelog
 
+## 1.1.19 (2024-04-15)
+
+* PLS components computation
+* Update UI for `Multivariate Analysis` - main feature & demo app
+
 ## 1.1.18 (2024-04-15)
 
 Fixed webGPU numeric distance with 0 range
