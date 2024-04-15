@@ -23,15 +23,11 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-      - name: Send Slack notification for job status
-        id: notifyjobstatus-id
-        uses: KK-Repos/NotifyJobStatus@v1
+      - uses: mdecoleman/slack-job-status-notifier@v1
+        if: always()
         with:
-          GH_PROJECT_ORGNAME: 'your-organization'
-          GH_PROJECT_REPONAME: 'your-repository'
-          RUN_ID: ${{ github.run_id }}
-          JOB_NAME_1: 'job_name_1'
-          JOB_NAME_2: 'job_name_2'  # Optional
-          CHANNEL_ID: ${{ env.SLACK_CHANNEL }}
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+          slack_token:  ${{ secrets.SLACKBOT_TOKEN }}
+          slack_channel: ${{ env.SLACK_CHANNEL }}
+          status: ${{ job.status }}
+          job_name: "123"
 
