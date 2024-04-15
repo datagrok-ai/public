@@ -754,6 +754,9 @@ export class PipelineView extends FunctionView {
     if (lastEnabledStep && this.getNextStep(lastEnabledStep))
       this.getNextStep(lastEnabledStep)!.ability.next(ABILITY_STATE.ENABLED);
 
+    if (!lastEnabledStep)
+      Object.values(this.steps)[0].ability.next(ABILITY_STATE.ENABLED);
+
     this.lastCall = pulledParentRun;
     this.linkFunccall(pulledParentRun);
     this.isHistorical.next(true);
