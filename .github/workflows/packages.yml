@@ -706,6 +706,8 @@ jobs:
           matrix: ${{ toJson(matrix) }}
           config: ".github/config/slack.yml"        
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: ls
+        run: ls -la
       - name: Slack Failed-Cancelled Notification
         if: failure() || cancelled()
         uses: act10ns/slack@v2.1.0
@@ -713,5 +715,5 @@ jobs:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
           matrix: ${{ toJson(matrix) }}
-          config: ".github/config/slack.yml"        
+          # config: ".github/config/slack.yml"        
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
