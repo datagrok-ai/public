@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
+import {deepCopy, fcToSerializable, getStartedOrNull} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
@@ -482,8 +482,8 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
-        $(exportBtn).show();
-        $(editBtn).show();
+        ui.setDisplay(exportBtn, !!getStartedOrNull(this.funcCall));
+        ui.setDisplay(editBtn, true);
       } else {
         $(exportBtn).hide();
         $(editBtn).hide();
