@@ -7,7 +7,7 @@ import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {HELM_WRAPPER} from './const';
-import {getMolColumnFromHelm} from '../helm-to-molfile';
+import {getMolColumnFromHelm} from '../helm-to-molfile/utils';
 
 export const RULES_PATH = 'System:AppData/Bio/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -76,9 +76,9 @@ class TransformationCommon {
               secondFound = true;
               secondEntryIndex = j;
               break;
-            } else {
+            } else
               continue;
-            }
+
             //result[i][1] = j;
             // secondFound = true;
             // break;
@@ -91,9 +91,9 @@ class TransformationCommon {
               firstFound = true;
               firstIsFirst = false;
               firstEntryIndex = j;
-            } else {
+            } else
               continue;
-            }
+
             //result[i] = [j, 0];
           }
         }
@@ -249,8 +249,9 @@ export async function addTransformedColumn(
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');
-    targetHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    //targetHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     df.columns.add(targetHelmCol);
   }
   df.columns.add(molCol, true);
+  await grok.data.detectSemanticTypes(df);
 }
