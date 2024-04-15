@@ -45,7 +45,7 @@ jobs:
           base_ref: ${{ github.base_ref }}
           job-status: ${{ job.status }}
           slack-bot-token: ${{ secrets.SLACKBOT_TOKEN }}
-          channel: ${{ env.SLACK_CHANNEL }}  
+          channel: "vhlushchenko@datagrok.ai"
         #   - uses: mdecoleman/slack-job-status-notifier@v1
         # if: always()
         # with:
