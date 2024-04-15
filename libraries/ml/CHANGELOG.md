@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.2 (2024-04-15)
+
+Dimentionality reduction: create table view only in case plotEmbeddings parameter is true
+
 ## 6.6.1 (2024-04-15)
 
 Fix webGPU numeric distance with 0 range
