@@ -75,7 +75,7 @@ export const SDF_MONOMER_NAME = 'MonomerName';
 export const jsonSdfMonomerLibDict = {
   'monomerType': null,
   'smiles': null,
-  'name': 'MonomerName',
+  'name': 'Name',
   'author': null,
   'molfile': 'molecule',
   'naturalAnalog': 'MonomerNaturalAnalogCode',
@@ -83,7 +83,7 @@ export const jsonSdfMonomerLibDict = {
   'createDate': null,
   'id': null,
   'polymerType': 'MonomerType',
-  'symbol': 'MonomerCode'
+  'symbol': 'MonomerName'
 };
 
 export const DUMMY_MONOMER = {

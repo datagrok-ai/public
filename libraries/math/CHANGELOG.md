@@ -1,5 +1,21 @@
 # math changelog
 
+## 1.1.2 (2024-04-15)
+
+Fix webGPU numeric distance with 0 range
+
+## 1.1.1 (2024-04-14)
+
+Add checks for webGPU distances.
+
+## 1.1.0 (2024-04-14)
+
+### Features
+
+* Add webGPU Sparse matrix calculation.
+* Add webGPU UMAP implementation.
+* Restructure API to be more modular.
+
 ## 1.0.8 (2024-04-05)
 
 Add webGPU KNN calculation.

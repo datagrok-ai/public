@@ -1,5 +1,15 @@
 # Charts changelog
 
+## 1.3.1 (2024-04-09)
+
+### Features
+
+* GROK-15340: Charts | Radar: Support multiple series
+
+### Bug Fixes
+
+* GROK-15132: Charts | Timelines: Error when using the legend
+
 ## 1.3.0 (2024-03-21)
 
 ### Features

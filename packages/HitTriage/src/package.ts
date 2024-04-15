@@ -5,8 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from './app/hit-triage-app';
 import {HitDesignApp} from './app/hit-design-app';
 import {GasteigerPngRenderer} from './pngRenderers';
-import {tree} from "datagrok-api/ui";
-import {BrowseView} from "datagrok-api/dg";
+// import {loadCampaigns} from './app/utils';
 
 export const _package = new DG.Package();
 
@@ -18,13 +17,28 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
   return new HitTriageApp(c).multiView;
 }
 
-//input: dynamic treeNode
-//input: view browseView
-export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  treeNode.item('Foo').onSelected.subscribe((_) => browseView.preview = DG.View.fromRoot(ui.divText('foo')));
-  treeNode.item('Bar').onSelected.subscribe((_) => browseView.preview = DG.View.fromRoot(ui.divText('bar')));
-}
+// //input: dynamic treeNode
+// //input: view browseView
+// export async function TODOhitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+//   const camps = await loadCampaigns('Hit Triage', []);
 
+//   for (const [_, camp] of Object.entries(camps)) {
+//     treeNode.item(camp.name).onSelected.subscribe(async (_) => {
+//       try {
+//         const df = await grok.dapi.files.readCsv(camp.ingest.query);
+//         if (!df)
+//           return;
+//         const tv = DG.TableView.create(df, false);
+//         const layout = camp.layout;
+//         if (layout)
+//           tv.loadLayout(DG.ViewLayout.fromViewState(layout));
+//         browseView.preview = tv;
+//       } catch (e) {
+
+//       }
+//     });
+//   }
+// }
 
 //tags: app
 //name: Hit Design

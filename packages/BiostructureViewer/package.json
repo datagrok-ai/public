@@ -104,5 +104,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Bioinformatics"
+  "category": "Bioinformatics",
+  "meta": {
+    "dartium": false
+  }
 }

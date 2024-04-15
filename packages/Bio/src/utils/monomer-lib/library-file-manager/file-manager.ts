@@ -98,7 +98,7 @@ export class MonomerLibFileManager {
       monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
     });
 
-    return new MonomerLib(monomers);
+    return new MonomerLib(monomers, fileName);
   }
 
   getValidLibraryPaths(): string[] {
@@ -148,7 +148,7 @@ export class MonomerLibFileManager {
 
     if (invalidFiles.length > 0) {
       const message = `Invalid monomer library files in ${LIB_PATH}` +
-      `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
+        `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
 
       console.warn(message);
       // grok.shell.warning(message);

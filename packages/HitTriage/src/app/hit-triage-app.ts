@@ -21,6 +21,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: InfoView;
+  get infoView(): InfoView {return this._infoView;}
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 

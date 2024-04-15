@@ -383,6 +383,10 @@
   margin-left: 0px!important;
 }
 
+.chem-mcs-settings-label {
+  width: 98px!important;
+}
+
 .chem-viewer-grid {
   margin: 6px 0;
   gap: 6px;
@@ -538,21 +542,21 @@
   z-index: 10000;
 }
 
-.chem-rgroup-undo-icon {
-  padding-left: 70px;
-  padding-top: 6px
-}
-
 .chem-rgroup-settings-icon {
-  padding-left: 10px;
-  padding-top: 2px;
-  font-size: 20px;
+  position: absolute;
+  padding-left: 20px;
+  font-size: 14px;
+  top: 546px;
 }
 
-.chem-rgroup-settings-header {
-  color: var(--grey-4);
-  font-weight: bold;
-  align-self: center;
+.chem-rgroup-replace-latest {
+  position: absolute!important;
+  top: 540px;
+  left: 148px;
+}
+
+.chem-rgroup-settings-div > .ui-input-root {
+  padding: 0px!important;
 }
 
 .grok-chem-filter-options {

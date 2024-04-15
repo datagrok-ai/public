@@ -297,6 +297,12 @@ The `Fermentation` example illustrates the kinetics of the biochemical reactions
 
 ![add-to-workspace](pics/DiffStudio-fermentation.gif)
 
+### PK
+
+[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The `PK` example simulates this process.
+
+![add-to-workspace](pics/DiffStudio-pk.png)
+
 ### PK-PD
 
 PK-PD modeling simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046). It is used in drug discovery and development. The `PK-PD` example illustrates the usage of the `loop` feature for dosing specification

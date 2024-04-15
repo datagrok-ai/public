@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME,
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
 import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
@@ -124,6 +124,12 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
           monomer[key] = table.get((jsonSdfMonomerLibDict as { [key: string]: string | any })[key], i);
       }
     });
+    monomer[HELM_REQUIRED_FIELD.AUTHOR] ??= '';
+    monomer[HELM_REQUIRED_FIELD.ID] ??= 0;
+    monomer[HELM_REQUIRED_FIELD.SMILES] ??= '';
+    monomer[HELM_REQUIRED_FIELD.MONOMER_TYPE] ??= 'Backbone';
+    monomer[HELM_REQUIRED_FIELD.CREATE_DATE] ??= null;
+
     resultLib.push(monomer);
   }
   return resultLib;

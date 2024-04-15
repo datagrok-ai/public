@@ -502,9 +502,16 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  //TODO: get rid of fallback
+  let fingerprintTypeStr = fingerprintType as string;
+  if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
+    fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+    fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
+
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
+  return { entries: fpColumn, options: {} };
+
 }
 
 
@@ -1328,7 +1335,8 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }
 

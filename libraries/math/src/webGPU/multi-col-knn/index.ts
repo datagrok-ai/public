@@ -1,2 +1,2 @@
 export * from './multiCol-KNN';
-export * from './webGPU-multicol-distances';
+export * from '../multi-col-distances/webGPU-multicol-distances';

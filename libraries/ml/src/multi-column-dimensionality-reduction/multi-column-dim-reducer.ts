@@ -12,6 +12,7 @@ import seedRandom from 'seedrandom';
 //import {TSNE} from '@keckelt/tsne';
 import {TSNE} from '../t-sne/t-sne';
 import {multiColWebGPUKNN} from '@datagrok-libraries/math';
+import {WebGPUUMAP} from '@datagrok-libraries/math/src/webGPU/umap';
 
 export interface IUMAPOptions {
     learningRate?: number;
@@ -22,7 +23,7 @@ export interface IUMAPOptions {
     minDist?: number;
     progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
     randomSeed?: string;
-    useWEBGPU?: boolean;
+    useWebGPU?: boolean;
 }
 
 export interface ITSNEOptions {
@@ -73,6 +74,7 @@ class TSNEReducer extends MultiColumnReducer {
       super(options);
       const randomSeed: string = options.randomSeed ?? Date();
       const randomFn = seedRandom(randomSeed);
+      options.dim = 2; // TODO: make it configurable
       options.random = randomFn;
       this.reducer = new TSNE(options);
       this.iterations = options?.iterations ?? this.reducer.getIterSize(this.data[0].length);
@@ -127,7 +129,8 @@ class UMAPReducer extends MultiColumnReducer {
     protected vectors: number[];
     protected progressFunc?: (epoc: number, epochsLength: number, embedding: number[][]) => void;
     protected distanceFnArgs: {[_: string]: any}[];
-    protected useWEBGPU: boolean = false;
+    protected useWebGPU: boolean = false;
+    protected webGPUReducer: WebGPUUMAP | undefined;
     /**
      * Creates an instance of UMAPReducer.
      * @param {Options} options Options to pass to the constructor.
@@ -142,8 +145,9 @@ class UMAPReducer extends MultiColumnReducer {
       this.distanceFnArgs = options.distanceFnArgs;
       this.distanceFns = options.distanceFns!;
       this.progressFunc = options.progressFunc;
-      this.useWEBGPU = options.useWEBGPU ?? false;
+      this.useWebGPU = options.useWebGPU ?? false;
       this.distanceFnames = options.distanceFnames!;
+      options.nComponents = 2; // TODO: make it configurable
       //Umap uses vector indexing, so we need to create an array of vectors as indeces.
       this.vectors = new Array(this.data[0].length).fill(0).map((_, i) => i);
 
@@ -162,24 +166,40 @@ class UMAPReducer extends MultiColumnReducer {
     public async transform(_parallelDistanceWorkers?: boolean): Promise<Matrix> {
       console.time('knn graph');
       let knnGraph: KnnResult | undefined = undefined;
-      if (this.useWEBGPU) {
+      if (this.useWebGPU) {
         try {
           knnGraph = await multiColWebGPUKNN(
             this.data, this.reducer.neighbors, this.distanceFnames as any, this.aggregationMethod as any,
             this.weights, this.distanceFnArgs
           ) as unknown as KnnResult;
         } catch (e) {
-          console.error('WEBGPU KNN failed, falling back to multithreaded CPU implementation');
           console.error(e);
         }
       }
       if (!knnGraph) {
+        if (this.useWebGPU)
+          console.error('WEBGPU KNN failed, falling back to multithreaded CPU implementation');
         knnGraph = await new SparseMatrixService()
           .multiColumnKNN(this.data, this.distanceFnames, this.reducer.neighbors,
             this.distanceFnArgs, this.weights, this.aggregationMethod);
       }
       console.timeEnd('knn graph');
-      this.reducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
+      if (this.useWebGPU) {
+        this.webGPUReducer = new WebGPUUMAP(this.vectors.length, {
+          nComponents: this.reducer.nComponents,
+          gamma: this.reducer.repulsionStrength,
+          alpha: this.reducer.learningRate,
+          nNeighbours: this.reducer.neighbors,
+          spread: this.reducer.spread,
+          minDist: this.reducer.minDist,
+          negativeSampleRate: this.reducer.negativeSampleRate,
+          localConnectivity: this.reducer.localConnectivity,
+          setOpMixRatio: this.reducer.setOpMixRatio,
+        });
+        this.webGPUReducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
+      } else {
+        this.reducer.setPrecomputedKNN(knnGraph.knnIndexes, knnGraph.knnDistances);
+      }
 
       // needed so that garbage collector can free memory from distance matrix
       await new Promise<void>((resolve) => {
@@ -188,16 +208,32 @@ class UMAPReducer extends MultiColumnReducer {
         }, 300);
       });
 
-      const embedding = await this.reducer.fitAsync(this.vectors, (epoc) => {
-        if (this.progressFunc)
-          this.progressFunc(epoc, this.reducer.getNEpochs(), this.reducer.getEmbedding());
-      });
-
-      function arrayCast2Coordinates(data: number[][]): Coordinates {
+      let embedding: number[][] | Float32Array[] | undefined |null = null;
+      console.time('fit');
+      try {
+        if (this.useWebGPU && this.webGPUReducer) {
+          embedding = await this.webGPUReducer.fit();
+          if (!embedding)
+            throw new Error('Failed to compute embedding');
+          embedding = // transpose TODO: do a better job here
+            new Array(embedding[0].length).fill(null).map((_, i) => new Float32Array(embedding!.map((v) => v[i])));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      if (!embedding) {
+        if (this.useWebGPU)
+          console.error('WEBGPU UMAP failed, falling back to CPU implementation');
+        embedding = await this.reducer.fitAsync(this.vectors, (epoc) => {
+          if (this.progressFunc)
+            this.progressFunc(epoc, this.reducer.getNEpochs(), this.reducer.getEmbedding());
+        });
+      }
+      console.timeEnd('fit');
+      return arrayCast2Coordinates(embedding);
+      function arrayCast2Coordinates(data: number[][] | Float32Array[]): Coordinates {
         return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
       }
-
-      return arrayCast2Coordinates(embedding);
     }
 }
 

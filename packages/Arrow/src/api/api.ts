@@ -58,17 +58,19 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
       case arrow.Type.Int16:
       case arrow.Type.Int32:
       case arrow.Type.Int:
-        if (ArrayBuffer.isView(values) && type.bitWidth < 64)
-          columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
-        else if (type.bitWidth === 64)
-          columns.push(DG.Column.fromBigInt64Array(name, values));
+        if (ArrayBuffer.isView(values)) {
+          if (type.bitWidth < 64)
+            columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
+          else
+            columns.push(convertInt64Column(values as BigInt64Array, name));
+        }
         else
           columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
         break;
       case arrow.Type.Uint32:
       case arrow.Type.Int64:
       case arrow.Type.Uint64:
-        columns.push(DG.Column.fromBigInt64Array(name, values));
+        columns.push(convertInt64Column(values, name));
         break;
       case arrow.Type.Float:
       case arrow.Type.Decimal:
@@ -92,10 +94,10 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values));
         break;
       case arrow.Type.Time:
-        if (type?.bitWidth < 64 && ArrayBuffer.isView(values))
+        if (type?.bitWidth < 64)
           columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
         else
-          columns.push(DG.Column.fromBigInt64Array(name, values));
+          columns.push(convertInt64Column(values, name));
         break;
       default:
         columns.push(DG.Column.fromStrings(name, values));
@@ -165,4 +167,15 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
     }
   }
   return DG.Column.fromIndexes(name, data, indexes);
+}
+
+function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string): DG.Column {
+  for (const i of array) {
+    if (i > 2**31 - 1)
+      return DG.Column.fromBigInt64Array(name, array);
+  }
+  const result: Int32Array = new Int32Array(new ArrayBuffer(array.length * 4));
+  for (let i = 0; i < array.length; i++)
+    result[i] = Number(array[i]);
+  return DG.Column.fromInt32Array(name, result);
 }

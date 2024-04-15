@@ -3,8 +3,8 @@ import {DistanceAggregationMethod, DistanceAggregationMethods} from './types';
 import {insertSmaller, isNil} from './utils';
 
 export type SparseMatrixResult = {
-  i: Int32Array,
-  j: Int32Array,
+  i: Int32Array | Uint32Array,
+  j: Int32Array | Uint32Array,
   distance: Float32Array,
   idx?: number
 };

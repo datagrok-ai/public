@@ -11,29 +11,25 @@ export class ModelCatalogView extends DG.CustomCardView {
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
-    let modelsView = this.findModelCatalogView(funcName);
-    if (modelsView == null) {
-      modelsView = this.createModelCatalogView(viewName, funcName, currentPackage);
-      grok.shell.addView(modelsView);
-    } else
-      grok.shell.v = modelsView;
+    const modelsView = this.findModelCatalogView(funcName) ??
+      this.createModelCatalogView(viewName, funcName, currentPackage);
 
     return modelsView as ModelCatalogView;
   }
 
-  private static createModelCatalogView(
+  static createModelCatalogView(
     viewName: string,
     funcName: string,
     currentPackage: DG.Package,
   ): ModelCatalogView {
     const mc: DG.Func = DG.Func.find({package: currentPackage.name, name: funcName})[0];
     const fc = mc.prepare();
-    const view = new this(viewName);
+    const view = new this(viewName, funcName);
     view.parentCall = fc;
     return view;
   }
 
-  private static findModelCatalogView(
+  static findModelCatalogView(
     funcName: string,
   ): ModelCatalogView | undefined {
     return wu(grok.shell.views).find((v) => v.parentCall?.func.name == funcName) as ModelCatalogView;
@@ -44,7 +40,7 @@ export class ModelCatalogView extends DG.CustomCardView {
 
     const parentCall = this.parentCall;
     if (parentCall != null) {
-      parentCall.aux['view'] = this;
+      parentCall.aux['view'] = ModelCatalogView.findModelCatalogView(this.funcName) ?? this;
       fc.parentCall = parentCall;
     }
   }
@@ -53,6 +49,7 @@ export class ModelCatalogView extends DG.CustomCardView {
 
   constructor(
     viewName: string,
+    private funcName: string,
   ) {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
@@ -94,7 +91,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = this.isHelpOpen;
 
-    setTimeout(async () => {
+    if (!ModelCatalogView.findModelCatalogView(this.funcName)) {
       const bindSub = grok.functions.onBeforeRunAction.subscribe((fc) => {
         if (fc.func.hasTag('model'))
           this.bindModel(fc);
@@ -103,12 +100,12 @@ export class ModelCatalogView extends DG.CustomCardView {
       });
 
       const helpOpenSub = grok.events.onCurrentViewChanged.subscribe(async () => {
-        if (grok.shell.v.path === this.path)
+        if (grok.shell.v === this)
           grok.shell.windows.showHelp = this.isHelpOpen;
       });
 
       this.subs.push(bindSub, helpOpenSub);
-    });
+    }
   }
 
   initRibbon() {
