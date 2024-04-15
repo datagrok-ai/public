@@ -40,6 +40,8 @@ services:
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
       GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
+      GROK_SPAWNER_CVM_HOST: 3.16.158.240:2375
+
     ports:
       - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:

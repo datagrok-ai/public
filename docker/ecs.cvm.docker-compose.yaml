@@ -1,6 +1,5 @@
 version: "3"
 
-x-aws-logs_retention: 14
 
 networks:
   cvm:

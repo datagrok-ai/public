@@ -1,0 +1,22 @@
+name: Test Notif
+on:
+  workflow_dispatch: { }
+  push:
+    branches:
+        - vhlushchenko/GROK-15351-github-notification
+jobs:
+  notif:
+    name: Check version
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Slack Failed-Cancelled Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+            status: ${{ job.status }}
+            steps: ${{ toJson(steps) }}
+            matrix: ${{ toJson(matrix) }}
+            config: ".github/config/slack.yml" 
+            channel: "vhlushchenko@datagrok.ai"       
+            webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
