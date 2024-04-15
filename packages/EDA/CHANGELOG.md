@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.18 (2024-04-15)
+
+Updated one-way ANOVA.
+
 ## 1.1.16 (2024-04-05)
 
 Add webGPU KNN calculation option to UMAP.
