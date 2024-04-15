@@ -23,11 +23,34 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-      - uses: mdecoleman/slack-job-status-notifier@v1
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: ${{ env.SLACK_CHANNEL }}
+          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: 'Post Content :rocket:'
+          SLACK_TITLE: Post Title
+          SLACK_USERNAME: rtCamp
+          SLACK_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+      
+      - name: Some action
+        uses: trabe/github-actions-slack-job-status@v1
+        id: post-to-slack
         if: always()
         with:
-          slack_token:  ${{ secrets.SLACKBOT_TOKEN }}
-          slack_channel: ${{ env.SLACK_CHANNEL }}
-          status: ${{ job.status }}
-          job_name: "123"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          event: ${{ toJson(github.event) }}
+          head_ref: ${{ github.head_ref }}
+          base_ref: ${{ github.base_ref }}
+          job-status: ${{ job.status }}
+          slack-bot-token: ${{ secrets.SLACKBOT_TOKEN }}
+          channel: ${{ env.SLACK_CHANNEL }}  
+        #   - uses: mdecoleman/slack-job-status-notifier@v1
+        # if: always()
+        # with:
+        #   slack_token:  ${{ secrets.SLACKBOT_TOKEN }}
+        #   slack_channel: ${{ env.SLACK_CHANNEL }}
+        #   status: ${{ job.status }}
+        #   job_name: "123"
 
