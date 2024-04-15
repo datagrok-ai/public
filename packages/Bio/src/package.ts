@@ -1,4 +1,4 @@
-/* Do not change these import lines to match external modules in webpack configuration */
+/* eslint max-lines: "off" */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -486,7 +486,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: fasta,separator,helm
-//meta.supportedDistanceFunctions: Levenshtein,Hamming,Monomer chemical distance,Needlemann-Wunsch
+//meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}

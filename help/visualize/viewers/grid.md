@@ -26,13 +26,14 @@ Certain features and functionalities described in this article are part of the [
 |                                       |                                 |
 |---------------------------------------|---------------------------------|
 |<h4>**Select**</h4>        ||
+|Select all rows                        | Ctrl+A                          |
 |Select rows                            | Shift+Mouse Drag                |
 |Deselect rows                          | Ctrl+Shift+Mouse Drag           |
 |Select columns and rows                | Mouse Drag rows                 |
 |Select columns                         | Shift+drag column headers       |
 |Select columns                         | Ctrl+click column headers       |
 |Deselect columns                       | Ctrl+Shift+click column headers |
-| Invert column selection               | Ctrl+click                      |
+|Invert column selection                | Ctrl+click                      |
 |(De)select rows                        | (Ctrl+) Shift + ↑↓              |
 |(De)select columns                     | (Ctrl+) Shift + ←→              |
 |(De)select rows                        | (Ctrl+) Shift + mouse-drag      |
@@ -46,11 +47,10 @@ Certain features and functionalities described in this article are part of the [
 | Jump to last row                      | Ctrl+End                        |
 | Jump to first column                  | Home                            |
 | Jump to last column                   | End                             |
-| Prev / next selected row              | Ctrl+UP / DOWN                  |
+| Prev / next selected row              | Ctrl + ↑↓                       |
 | Show in full screen                   | Alt+F                           |
 |<h4>**Sort**</h4>||
 | Sort a column                          | Double-click column header      |
-| Sort current column                    | Ctrl+Shift+UP                   |
 |<h4>**Edit**</h4>||
 | Edit cell                              | Double-click                    |
 | Copy cell value                        | Ctrl+C                          |
@@ -371,7 +371,7 @@ See:
 
 :::
 
-### Add rows or columns
+### Add rows and columns
 
 To add a new row, either click the **plus (+)** icon after the bottom row in your dataset. Alternatively, go to the **Top Menu** and select **Edit** > **Add rows..**. This opens a dialog where you can specify the number of rows to add, as well as their position relative to your current row.
 

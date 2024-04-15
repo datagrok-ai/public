@@ -16,6 +16,8 @@ import {getNormalizedEmbeddings} from '../multi-column-dimensionality-reduction/
 import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {MCLMethodName, createMCLWorker} from '../MCL';
+import {multiColWebGPUSparseMatrix} from '@datagrok-libraries/math/src/webGPU/sparse-matrix/webGPU-sparse-matrix';
+import {WEBGSLAGGREGATION} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
 
 export let activityCliffsIdx = 0;
 
@@ -102,9 +104,10 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       [encodingFuncInputs[1].name]: similarityMetric, ...(seqSpaceOptions.preprocessingFuncArgs ?? {})});
 
   let embeddingsMatrix: Matrix = [];
-  if (methodName as any === MCLMethodName) {
+  if ((methodName as any) === MCLMethodName) {
     const mclRes = await createMCLWorker([encodedColWithOptions.entries], similarity, [1], 'MANHATTAN',
-      [similarityMetric], [encodedColWithOptions.options??{}], seqSpaceOptions?.maxIterations ?? 5).promise;
+      [similarityMetric], [encodedColWithOptions.options??{}],
+      seqSpaceOptions?.maxIterations ?? 5, seqSpaceOptions.useWebGPU ?? false).promise;
     df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
     embeddingsMatrix = [mclRes.embedX, mclRes.embedY];
   } else {
@@ -116,8 +119,24 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   for (let i = 0; i < embeddingsMatrix.length; ++i)
     df.columns.addNewFloat(axesNames[i]).init((idx) => embeddingsMatrix[i][idx]);
 
-  const sparseMatrixRes = await new SparseMatrixService()
-    .calc(encodedColWithOptions.entries, similarityMetric, similarityLimit, encodedColWithOptions.options);
+  let sparseMatrixRes: SparseMatrixResult | null = null;
+  if (seqSpaceOptions.useWebGPU) {
+    try {
+      sparseMatrixRes = await multiColWebGPUSparseMatrix(
+        [encodedColWithOptions.entries], similarityLimit,
+        [similarityMetric as any], WEBGSLAGGREGATION.MANHATTAN, [1],
+        [encodedColWithOptions.options ?? {}]);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if (!sparseMatrixRes) {
+    if (seqSpaceOptions.useWebGPU)
+      console.error('WebGPU sparse matrix calculation failed, falling back to CPU implementation');
+    sparseMatrixRes = await new SparseMatrixService()
+      .calc(encodedColWithOptions.entries, similarityMetric, similarityLimit, encodedColWithOptions.options);
+  }
+
   const cliffsMetrics: IActivityCliffsMetrics = await getSparseActivityCliffsMetrics(sparseMatrixRes, activities);
 
   const sali: DG.Column = getSaliCountCol(seqCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,

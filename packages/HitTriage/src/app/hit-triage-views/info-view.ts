@@ -7,7 +7,7 @@ import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
@@ -16,7 +16,6 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
-  private deletedCampaigns: string[] = [];
   private dataSourceFunctionsMap: {[key: string]: DG.Func | DG.DataQuery} = {};
   constructor(app: HitTriageApp) {
     super(app);
@@ -128,14 +127,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   private async getCampaignsTable() {
-    const campaignFolders = (await _package.files.list('Hit Triage/campaigns'))
-      .filter((f) => this.deletedCampaigns.indexOf(f.name) === -1);
-    const campaignNamesMap: {[name: string]: HitTriageCampaign} = {};
-    for (const folder of campaignFolders) {
-      const campaignJson: HitTriageCampaign = JSON.parse(await _package.files
-        .readAsText(`Hit Triage/campaigns/${folder.name}/${CampaignJsonName}`));
-      campaignNamesMap[campaignJson.name] = campaignJson;
-    }
+    const campaignNamesMap = await loadCampaigns('Hit Triage', this.deletedCampaigns);
 
     const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
       ({name: campaign.name, createDate: campaign.createDate,
@@ -159,7 +151,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     return table;
   }
 
-  private async setCampaign(campaignName: string) {
+  public async setCampaign(campaignName: string) {
     const campaign = await this.checkCampaign(campaignName);
     this.app.campaign = campaign;
   }

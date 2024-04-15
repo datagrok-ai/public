@@ -1,5 +1,11 @@
 # Docking changelog
 
+## 1.0.2 (2024-04-12)
+
+### Bug fixes
+
+* Upgraded BiostructureViewer package to a newer version
+
 ## 1.0.1 (2024-04-08)
 
 ### Bug Fixes

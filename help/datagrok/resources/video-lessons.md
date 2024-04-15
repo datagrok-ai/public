@@ -1,5 +1,6 @@
 ---
 title: "Video lessons"
+sidebar position: 5
 ---
 
 Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) for more videos.

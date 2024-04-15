@@ -10,8 +10,9 @@ export enum V2K_CONST {
 
 
   RGP_SHIFT = 8,
-  RGP_LINE = 'M  RGP',
-  A_LINE = 'A  ',
+
+  RGP_LINE_START = 'M  RGP',
+  ATOM_ALIAS_LINE_START = 'A  ',
 
   END = 'M  END',
 }

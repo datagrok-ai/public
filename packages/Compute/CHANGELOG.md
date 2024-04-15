@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.31.0 (2024-04-10)
+
+### Features
+
+- ModelCatalog: Adaptation for BrowseView
+
 ## 1.30.1 (2024-04-08)
 
 ### Bug fixes

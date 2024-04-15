@@ -13,9 +13,9 @@ import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
-  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
-  nComponents: IDimReductionParam =
-  {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
+  {uiName: 'Learninig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  // nComponents: IDimReductionParam =
+  // {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
   nEpochs: IDimReductionParam =
     {uiName: 'Epochs', value: 0,
       tooltip: 'The number of epochs to optimize embeddings via SGD. Computed automatically if set to 0'};
@@ -31,8 +31,8 @@ export class UMAPOptions {
     tooltip: `The effective minimum distance between embedded points, 
   used with spread to control the clumped/dispersed nature of the embedding`};
   randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
-  useWEBGPU: IDimReductionParam<boolean> =
-    {uiName: 'Use WEBGPU', value: false, tooltip: 'Use WEBGPU for KNN computations (EXPERIMENTAL)', type: 'boolean'};
+  useWebGPU: IDimReductionParam<boolean> =
+    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations (EXPERIMENTAL)', type: 'boolean'};
   constructor() {};
 }
 
@@ -41,7 +41,7 @@ export class TSNEOptions {
   {uiName: 'Epsilon', value: 10, tooltip: 'Epsilon is learning rate'};
   perplexity: IDimReductionParam =
   {uiName: 'Perplexity', value: 30, tooltip: 'Roughly how many neighbors each point influences'};
-  dim: IDimReductionParam = {uiName: 'Dimensionality', value: 2, tooltip: 'Dimensionality of the embedding'};
+  // dim: IDimReductionParam = {uiName: 'Dimensionality', value: 2, tooltip: 'Dimensionality of the embedding'};
 
   constructor() {};
 }

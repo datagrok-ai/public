@@ -6,7 +6,7 @@
 #input: string smilesColumn
 #input: int ringCutoff = 10 [Ignore molecules with # rings > N]
 #input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
-#output: string result
+#output: blob result
 
 import scaffoldgraph as sg
 import networkx as nx
@@ -139,5 +139,5 @@ tree = sg.ScaffoldTree.from_dataframe(
     discharge_and_deradicalize=dischargeAndDeradicalize,
 )
 
-res = get_json_representation(tree)
-result = json.dumps(res)
+json_tree = get_json_representation(tree)
+result = json.dumps(json_tree).encode('utf-8')

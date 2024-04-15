@@ -134,22 +134,24 @@ export function monomerSeqToMolfile(
 
 
 function getCollectionBlock(collection: number[]): string {
-  let collectionBlock = 'M  V30 BEGIN COLLECTION\n';
-  const entries = 4;
-  const collNumber = Math.ceil(collection.length / entries);
+  //one row in STEABS block can be no longer than 80 symbols
+  //maxSymbols = 80 symbols minus ' -\n' (4 symbols)
+  const maxSymbols = 76;
+  const rowsArray = [];
 
-  collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
-  for (let i = 0; i < collNumber; i++) {
-    collectionBlock += 'M  V30 ';
-    const entriesCurrent = i + 1 === collNumber ? collection.length - (collNumber - 1) * entries : entries;
-    for (let j = 0; j < entriesCurrent; j++) {
-      collectionBlock += (j + 1 === entriesCurrent) ?
-        (i === collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
-        collection[entries * i + j] + ' ';
-    }
+  let newCollectionRow = `M  V30 MDLV30/STEABS ATOMS=(${collection.length}`;
+  for (let i = 0; i < collection.length; i++) {
+    const updatedRow = `${newCollectionRow} ${collection[i]}`;
+    if (updatedRow.length > maxSymbols) {
+      rowsArray.push(`${newCollectionRow} -\n`);
+      newCollectionRow = `M  V30 ${collection[i]}`
+    } else
+      newCollectionRow = updatedRow;
+    //in case last atom was added - close the block
+    if (i === collection.length - 1)
+      rowsArray.push(`${newCollectionRow})\n`);
   }
-  collectionBlock += 'M  V30 END COLLECTION\n';
-  return collectionBlock;
+  return `M  V30 BEGIN COLLECTION\n${rowsArray.join('')}M  V30 END COLLECTION\n`;
 }
 
 /** Cap the resulting (after sewing up all the monomers) molfile with 'O'

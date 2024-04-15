@@ -30,3 +30,5 @@ export const option: { [key: string]: any } = {
     data: [],
   }],
 };
+
+export const MAXIMUM_SERIES_NUMBER = 100;

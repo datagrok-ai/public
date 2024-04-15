@@ -8,7 +8,7 @@
 
 ## 1.0.25 (2024-01-29)
 
-## Features
+### Features
 
 * MolstarViewer optimize buildView postponed, destroyView detach only
 

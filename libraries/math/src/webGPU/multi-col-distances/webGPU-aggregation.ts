@@ -21,7 +21,7 @@ function manhattanAggregationWgsl(arraySize: number) {
 }
 
 
-export const enum WEBGSLAGGREGATION {
+export enum WEBGSLAGGREGATION {
     EUCLIDEAN = 'EUCLIDEAN',
     MANHATTAN = 'MANHATTAN'
 }
