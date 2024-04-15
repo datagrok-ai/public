@@ -24,7 +24,7 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
       
-      - uses: xaroth/action-slack-notification
+      - uses: xaroth/action-slack-notification@v1
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
