@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
-import {debounceTime, filter, map, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, filter, map, mapTo, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
@@ -327,9 +327,7 @@ export class PipelineView extends FunctionView {
         if (isHistoricalArr.some((flag, idx) =>
           !flag &&
           Object.values(this.steps).find((step) => step.idx === idx)?.visibility.value === VISIBILITY_STATE.VISIBLE,
-        ) &&
-          this.isHistorical.value
-        )
+        ) && this.isHistorical.value)
           this.isHistorical.next(false);
       });
     this.subs.push(plvHistorySub);
