@@ -431,10 +431,6 @@ export class PipelineView extends FunctionView {
     return merge(...observables).pipe(mapTo(true));
   }
 
-  public override async onAfterSaveRun(call: DG.FuncCall) {
-    Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
-  }
-
   public override async onComparisonLaunch(funcCalls: DG.FuncCall[]) {
     const parentCall = grok.shell.v.parentCall;
 
@@ -739,7 +735,8 @@ export class PipelineView extends FunctionView {
         if (getStartedOrNull(corrChildRuns[0])) {
           step.ability.next(ABILITY_STATE.ENABLED);
           lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
-        }
+        } else
+          step.ability.next(ABILITY_STATE.DISABLED);
       }
 
       if (corrChildRuns.length > 1) {
@@ -749,7 +746,8 @@ export class PipelineView extends FunctionView {
         if (getStartedOrNull(foundByCustomId)) {
           step.ability.next(ABILITY_STATE.ENABLED);
           lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
-        }
+        } else
+          step.ability.next(ABILITY_STATE.DISABLED);
       }
     };
 
