@@ -23,17 +23,11 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_CHANNEL: ${{ env.SLACK_CHANNEL }}
-          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-          SLACK_ICON: https://github.com/rtCamp.png?size=48
-          SLACK_MESSAGE: 'Post Content :rocket:'
-          SLACK_TITLE: Post Title
-          SLACK_USERNAME: rtCamp
-          SLACK_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
       
+      - uses: xaroth/action-slack-notification
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          slack-token: ${{ secrets.SLACKBOT_TOKEN }}
       - name: Some action
         uses: trabe/github-actions-slack-job-status@v1
         id: post-to-slack
