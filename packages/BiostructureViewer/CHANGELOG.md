@@ -1,5 +1,9 @@
 # BiostructureViewer changelog
 
+## 1.0.27 (2024-04-15)
+
+Fix description for Docking Conformations demo 
+
 ## 1.0.26 (2024-03-30)
 
 ### Features
