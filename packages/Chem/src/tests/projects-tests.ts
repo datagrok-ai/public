@@ -90,15 +90,16 @@ async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: D
 colList: string[], viewerType: string, dataSync?: boolean) {
   //const tv = await createTableView(tableName);
 
-  const df = await DG.Func.find({ name: 'OpenFile'})[0].prepare({
-    fullPath: `System:AppData/Chem/${tableName}`
-  }).call(undefined, undefined, { processed: false });
-
+  await DG.Func.find({name: 'OpenFile'})[0].prepare({
+    fullPath: `System:AppData/Chem/${tableName}`,
+  }).call(undefined, undefined, {processed: false});
   const tv = grok.shell.tv;
-  await delay(500);
+
+  await delay(10);
   await analysisFunc(tv);
   await delay(10);
   await saveAndOpenProject(tv, dataSync);
+  await delay(10);
   await dataFrameContainsColumns(colList);
   if (viewerType)
     await checkViewerAdded(viewerType);
@@ -247,7 +248,7 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   const projId = project.id;
   grok.shell.closeAll();
   const p = await grok.dapi.projects.find(projId);
-  p.open();
+  await p.open();
 }
 
 async function dataFrameContainsColumns(colArr: string[]): Promise<void> {
