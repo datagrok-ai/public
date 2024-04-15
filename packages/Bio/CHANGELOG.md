@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.12 (2024-04-15)
+
+### Features 
+
+* Polytool: working with molV3000
+
 ## 2.12.11 (2024-04-12)
 
 ### Features 
