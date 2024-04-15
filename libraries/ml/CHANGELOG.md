@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.1 (2024-04-15)
+
+Fix webGPU numeric distance with 0 range
+
 ## 6.6.0 (2024-04-14)
 
 ### Features
