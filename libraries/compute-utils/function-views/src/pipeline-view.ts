@@ -655,22 +655,6 @@ export class PipelineView extends FunctionView {
     return newRibbonPanels;
   }
 
-  // public override async run(): Promise<void> {
-  //   if (!this.funcCall) throw new Error('The correspoding function is not specified');
-
-  //   ui.setUpdateIndicator(this.root, true);
-  //   try {
-  //     await this.onBeforeRun(this.funcCall);
-  //     this.funcCall.newId();
-  //     await this.funcCall.call(); // mutates the funcCall field
-  //   } catch (e: any) {
-  //     grok.shell.error(e.toString());
-  //     console.log(e);
-  //   } finally {
-  //     ui.setUpdateIndicator(this.root, false);
-  //   }
-  // }
-
   public override async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
 
