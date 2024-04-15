@@ -34,15 +34,23 @@ function addVizualization(df: DG.DataFrame, factors: DG.Column, values: DG.Colum
   ui.tooltip.bind(hypoMd, 'Null hypothesis');
 
   const testMd = ui.markdown(`**Test result:** ${test ?
-    'there is significant differences among sample averages.' :
-    'there is no significant differences among sample averages.'}`,
+    'means differ significantly.' :
+    'means do not differ significantly.'}`,
   );
 
-  const sign = test ? '>' : '<';
-  ui.tooltip.bind(testMd, () => ui.markdown(`${test ?
-    'Reject the null hypothesis' :
-    'Fail to reject the null hypothesis'}, since F ${sign} F-critical: 
-    ${report.anovaTable.fStat.toFixed(2)} ${sign} ${report.fCritical.toFixed(2)}.`));
+  const tooltipDiv = test ?
+    ui.divV([
+      ui.p(`Reject the null hypothesis, since F > F-critical: 
+      ${report.anovaTable.fStat.toFixed(2)} > ${report.fCritical.toFixed(2)}.`),
+      ui.h2('There is a significant difference among sample averages.'),
+    ]) :
+    ui.divV([
+      ui.p(`Fail to reject the null hypothesis, since F < F-critical: 
+      ${report.anovaTable.fStat.toFixed(2)} < ${report.fCritical.toFixed(2)}.`),
+      ui.h2('There is no significant difference among sample averages.'),
+    ]);
+
+  ui.tooltip.bind(testMd, () => tooltipDiv);
 
   const divResult = ui.divV([
     hypoMd,
