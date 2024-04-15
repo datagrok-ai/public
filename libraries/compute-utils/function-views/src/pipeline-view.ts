@@ -746,9 +746,9 @@ export class PipelineView extends FunctionView {
     this.isHistorical.next(true);
 
     const stepToShow = Object.values(this.steps)
-      .filter((step) => step.visibility.value == VISIBILITY_STATE.VISIBLE)[stepIdxBeforeLoad];
+      .filter((step) => step.visibility.value == VISIBILITY_STATE.VISIBLE).at(stepIdxBeforeLoad);
 
-    if (stepToShow.ability.value === ABILITY_STATE.ENABLED)
+    if (stepToShow && stepToShow.ability.value === ABILITY_STATE.ENABLED)
       this.currentTabName = getVisibleStepName(stepToShow);
     else
       this.currentTabName = getVisibleStepName(stepToEnable);
