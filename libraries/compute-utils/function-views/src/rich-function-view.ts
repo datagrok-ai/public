@@ -56,6 +56,13 @@ interface ValidationRequestPayload {
   context?: any,
 }
 
+const getNoDataStub = () => ui.divText('[No data to display]', {style: {
+  'text-align': 'center',
+  'align-content': 'center',
+  'width': '100%',
+  'height': '100%',
+}});
+
 /**
  * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
  *
@@ -731,12 +738,7 @@ export class RichFunctionView extends FunctionView {
           this.dfToViewerMapping[dfProp.name].push(viewer);
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
-          return {viewer, stub: ui.divText('[No data to display]', {style: {
-            'text-align': 'center',
-            'align-content': 'center',
-            'width': '100%',
-            'height': '100%',
-          }})};
+          return {viewer, stub: getNoDataStub()};
         });
 
         const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then(({viewer: loadedViewer, stub}) => {
@@ -832,10 +834,7 @@ export class RichFunctionView extends FunctionView {
 
         if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
           const blockWidth = dfProp.options.block;
-          const graphics = ui.div([], {style: {
-            'width': '100%',
-            'height': '100%',
-          }});
+          const graphics = getNoDataStub();
           graphics.classList.add('grok-scripting-image-container');
           const graphicsWrapper = ui.divV([
             ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
@@ -850,7 +849,14 @@ export class RichFunctionView extends FunctionView {
 
           const updateGraphics = () => {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
-            graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+
+            if (currentParam.value) {
+              graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+              graphics.textContent = '';
+            } else {
+              graphics.style.removeProperty('background-image');
+              graphics.textContent = '[No data to display]';
+            }
           };
 
           const paramSub = this.funcCallReplaced.pipe(
