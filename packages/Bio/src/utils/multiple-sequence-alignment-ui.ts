@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
 
 import {runKalign} from './multiple-sequence-alignment';
@@ -160,9 +160,9 @@ async function onColInputChange(
       gapOpenInput.value = null;
       gapExtendInput.value = null;
       terminalGapInput.value = null;
-      const potentialColUH = UnitsHandler.getOrCreate(col);
-      const performCol: DG.Column<string> = potentialColUH.isFasta() ? col :
-        potentialColUH.convert(NOTATION.FASTA);
+      const potentialColSh = SeqHandler.forColumn(col);
+      const performCol: DG.Column<string> = potentialColSh.isFasta() ? col :
+        potentialColSh.convert(NOTATION.FASTA);
       return async () => await runKalign(performCol, false, unusedName, clustersColInput.value);
     } else if (checkInputColumnUI(col, col.name,
       [NOTATION.HELM], [], false)
@@ -178,8 +178,8 @@ async function onColInputChange(
       };
     } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
-      const potentialColUH = UnitsHandler.getOrCreate(col);
-      const helmCol = potentialColUH.convert(NOTATION.HELM);
+      const potentialColSh = SeqHandler.forColumn(col);
+      const helmCol = potentialColSh.convert(NOTATION.HELM);
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
       gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
       gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;

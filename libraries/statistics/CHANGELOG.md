@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.2.12 (2024-03-14)
+
+### Features
+
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Added outlier color property.
+
 ## 1.2.11 (2023-11-17)
 
 ### Features

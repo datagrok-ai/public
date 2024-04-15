@@ -79,8 +79,7 @@ public class SessionHandler {
             dataFrame = queryManager.isResultSetInitialized() ? queryManager.getSubDF(dfNumber) : new DataFrame();
         }
         else if (message.startsWith(SIZE_RECEIVED_MESSAGE)) {
-            if (!queryManager.isFinished)
-                fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
+            fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
             Marker start = EventType.SOCKET_BINARY_DATA_EXCHANGE.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary data with id {} to the server...", dfNumber);
             session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
@@ -101,7 +100,7 @@ public class SessionHandler {
             else {
                 firstTry = true;
                 oneDfSent = true;
-                if (queryManager.isResultSetInitialized() && !queryManager.isFinished) {
+                if (queryManager.isResultSetInitialized()) {
                     logger.debug("-- GrokConnect thread is doing nothing. Blocking to receive next dataframe --");
                     dataFrame = fdf.get();
                     logger.debug("-- Received next dataframe from executing thread --");

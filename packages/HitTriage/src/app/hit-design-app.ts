@@ -21,6 +21,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: HitDesignInfoView;
+  get infoView(): HitDesignInfoView {return this._infoView;}
   private _designView?: DG.TableView;
   public _submitView?: HitDesignSubmitView;
   private _tilesView?: HitDesignTilesView;
@@ -38,6 +39,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
   public mainView: DG.ViewBase;
+
   constructor(c: DG.FuncCall) {
     super(c);
     this._infoView = new HitDesignInfoView(this);
@@ -47,8 +49,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
     this.multiView.parentCall = c;
-    //this.mainView = this.multiView;
-    this.mainView = grok.shell.addView(this.multiView);
+
+    this.mainView = this.multiView;
+    //this.mainView = grok.shell.addView(this.multiView);
+
     grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
         if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
@@ -56,10 +60,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
           this.setBaseUrl();
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-          if (grok.shell.v?.name === this.currentTilesViewId)
+          if (this.currentTilesViewId && grok.shell.v?.name === this.currentTilesViewId)
             await this._tilesView?.render();
-          else
-            this._tilesView?.destroy();
+          else {
+            const sketchStateString = this._tilesView?.sketchStateString;
+            if (sketchStateString && sketchStateString != '' && this.campaign)
+              this.campaign.tilesViewerFormSketch = sketchStateString;
+          }
 
           const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
             grok.shell.v = this.mainView;
@@ -93,6 +100,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             col.semType = semtype;
         });
       }
+      if (this._campaign?.columnTypes) {
+        Object.entries(this._campaign.columnTypes).forEach(([colName, type]) => {
+          const col = this.dataFrame!.columns.byName(colName);
+          if (col && col.type !== type)
+            try {this.dataFrame!.changeColumnType(colName, type as DG.COLUMN_TYPE);} catch (e) {console.error(e);}
+        });
+      }
       //await this.dataFrame.meta.detectSemanticTypes();
     }
 
@@ -110,7 +124,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     grok.shell.windows.showHelp = false;
 
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
-    const designV = grok.shell.addView(this.designView);
+    const designV = this.designView;
     this.currentDesignViewId = designV.name;
     this.setBaseUrl();
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
@@ -135,7 +149,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
-    const view = DG.TableView.create(this.dataFrame!, false);
+    const view = grok.shell.addTableView(this.dataFrame!);
     this._designViewName = this.campaign?.name ?? this._designViewName;
     view.name = this._designViewName;
     this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
@@ -406,14 +420,16 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const tilesButton = ui.bigButton('Progress tracker', () => {
-          if (!this.currentTilesViewId || !grok.shell.view(this.currentTilesViewId)) {
-            this._tilesView = new HitDesignTilesView(this);
-            this._tilesView.parentCall = this.parentCall;
-            this._tilesViewTab = grok.shell.addView(this._tilesView);
-            this.currentTilesViewId = this._tilesViewTab.name;
-            this._tilesView.onActivated();
-          } else
-            grok.shell.v = grok.shell.view(this.currentTilesViewId)!;
+          if (this.currentTilesViewId && grok.shell.view(this.currentTilesViewId))
+            grok.shell.view(this.currentTilesViewId)?.close();
+
+          this._tilesView = new HitDesignTilesView(this);
+          this._tilesView.parentCall = this.parentCall;
+          this._tilesViewTab = grok.shell.addView(this._tilesView);
+          this.currentTilesViewId = this._tilesViewTab.name;
+          this._tilesView.onActivated();
+
+          grok.shell.v = grok.shell.view(this.currentTilesViewId)!;
         });
 
         const submitButton = ui.bigButton('Submit', () => {
@@ -549,6 +565,9 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const campaignName = campaignId;
     const columnSemTypes: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+    const colTypeMap: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
+    const sketchStateString = this._tilesView?.sketchStateString ?? this.campaign?.tilesViewerFormSketch ?? undefined;
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
@@ -559,6 +578,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       rowCount: enrichedDf.col(ViDColName)?.toList().filter((s) => s !== EmptyStageCellValue).length ?? 0,
       filteredRowCount: enrichedDf.filter.trueCount,
       savePath: this._filePath,
+      columnTypes: colTypeMap,
+      tilesViewerFormSketch: sketchStateString,
     };
     console.log(this._filePath);
     const csvDf = DG.DataFrame.fromColumns(

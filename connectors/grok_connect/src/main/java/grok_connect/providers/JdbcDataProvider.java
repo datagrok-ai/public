@@ -149,7 +149,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters. Detected {} parameters", names.size());
-                queryLogger.debug("Query before execution: {}", query);
+                queryLogger.info("Query before execution: {}", query);
 
                 queryLogger.debug("Creating PreparedStatement...");
                 PreparedStatement statement = connection.prepareStatement(query);
@@ -180,10 +180,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
                 query = manualQueryInterpolation(query, dataQuery);
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
-                queryLogger.debug("Query before execution: {}", query);
+                queryLogger.info("Query before execution: {}", query);
                 resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
             }
         } else {
+            queryLogger.info("Query before execution: {}", query);
             resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
         }
 
@@ -194,7 +195,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                        int timeout, String mainCallId, int fetchSize) throws SQLException {
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
-        queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
+        queryLogger.debug(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
         statement.setFetchSize(fetchSize);
         ResultSet resultSet = executeStatement(statement);
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Executed Statement");
@@ -344,7 +345,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
             } else {
                 queryLogger.debug("Executing batch mode...");
-                String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n", commentStart));
+                String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n|\n--batch\n", commentStart));
                 for (String currentQuery : queries)
                     resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize);
                 queryLogger.debug("Executed batch mode");

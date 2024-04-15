@@ -5,4 +5,4 @@ Canada, 2, 3, 5, 4, 5`);
 
 let unpivoted = table.unpivot(['country'], ['jan', 'feb', 'mar', 'apr', 'may']);
 
-grok.shell.add(unpivoted);
+grok.shell.addTableView(unpivoted);

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {RichFunctionView} from "@datagrok-libraries/compute-utils";
+import {RichFunctionView, UiUtils} from "@datagrok-libraries/compute-utils";
 import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import './css/model-card.css';
@@ -174,23 +174,61 @@ let startUriLoaded = false;
 
 //name: Model Catalog
 //tags: app
-//sidebar: @compute
+//output: view v
 export function modelCatalog() {
-  const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package);
-  
-  const optionalPart = grok.shell.startUri.indexOf('?');
-  const pathSegments = grok.shell.startUri
-    .substring('https://'.length, optionalPart > 0 ? optionalPart: undefined)
+  // Separately process direct link access
+  const startOptionalPart = grok.shell.startUri.indexOf('?');
+  const startPathSegments = grok.shell.startUri
+    .substring('https://'.length, startOptionalPart > 0 ? startOptionalPart: undefined)
     .split('/');
-  if (!startUriLoaded && pathSegments.length > 3) {
-    grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
-      if (lst.length == 1)
-        ModelHandler.openModel(lst[0]);
-        startUriLoaded = true;
-    });
+
+  if (!startUriLoaded && startPathSegments.includes('Compute')) {
+    const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package);
+
+    grok.shell.addView(view);
+    startUriLoaded = true;
+
+    if (startPathSegments.length > 3) {
+      grok.dapi.functions.filter(`shortName = "${startPathSegments[3]}" and #model`).list().then((lst) => {
+        if (lst.length == 1) {
+          ModelHandler.openModel(lst[0]);
+        }
+      });
+    }
+
+    return;
   }
 
-  return view;
+  const optionalPart = window.location.href.indexOf('?');
+  const pathSegments = window.location.href
+    .substring('https://'.length, optionalPart > 0 ? optionalPart: undefined)
+    .split('/');
+
+  if (pathSegments.includes('browse')) {
+    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
+
+    // If there is existing view, then switch on it
+    if (view) {
+      grok.shell.v = view;
+    }
+
+    // Always return new with no subscribtions to show in Browse tree
+    const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
+    return newView;
+  }
+
+   // Separately process double-clicking on Model Catalog card
+  if (pathSegments.includes('apps')) {
+    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
+
+    // If there is existing view, then switch on it
+    if (view) {
+      grok.shell.v = view;
+    } else {
+      const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
+      grok.shell.addView(newView);
+    }
+  }
 }
 
 
@@ -279,4 +317,14 @@ export function CustomStringInput(params: any) {
   defaultInput.root.style.backgroundColor = 'aqua';
   defaultInput.input.style.backgroundColor = 'aqua';
   return defaultInput;
+}
+
+//name: ObjectCoolingSelector
+//input: object params
+//output: object input
+export function ObjectCoolingSelector(params: any) {
+  return UiUtils.historyInputJSON(
+    'Previous run',
+    'ObjectCooling',
+  );
 }

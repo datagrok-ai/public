@@ -1,5 +1,111 @@
 # Bio changelog
 
+## 2.12.12 (2024-04-15)
+
+### Features 
+
+* Polytool: working with molV3000
+
+## 2.12.11 (2024-04-12)
+
+### Features 
+
+* Add displaying a monomer's origin lib
+
+### Bug fixes
+
+* Fix the cell-renderer tooltip not showing a hovered monomer
+
+## 2.12.10 (2024-04-11)
+
+### Bug fixes
+
+* Bio: Fix detector for non-fasta seqs of the same length
+
+## 2.12.9 (2024-04-10)
+
+### Bug fixes
+
+* Fix SDF to JSON for Biovia lib
+
+## 2.12.8 (2024-04-09)
+
+### Features
+
+* To atomic level: STEABS block contains less than 80 symbols per row
+
+## 2.12.7 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+
+## 2.12.6 (2024-04-07)
+
+### Bug fixes
+
+* Fix detectMacromolecule to invalidate on custom notation
+
+## 2.12.5 (2024-04-05)
+
+### Features
+
+* Add KNN computation on webGPU for UMAP (sequence space).
+
+## 2.12.4 (2024-04-05)
+
+### Features
+
+* Add support for custom notations, splitters
+* Add notation provider, splitter for cyclized macromolecules
+
+### Bug fixes
+
+* Fix cell renderer for original and tooltip with canonical
+* Fix WebLogo for positions out of seq length
+
+## 2.12.3 (2024-04-03)
+
+Updated version of openchemlib in dependencies
+
+## 2.12.2 (2024-04-03)
+
+Harmonized MM distance function with monomer similarity matrices.
+
+## 2.12.1 (2024-04-02)
+
+### Bug fixes
+
+* Fix bioSubstructureFilter with two columns
+* Fix bioSubstructureFilter error on filters reopen
+* GROK-15292: Fix bioSubstructureFilter for reset
+
+## 2.12.0 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to monomer
+
+## 2.11.42 (2024-03-27)
+
+### Bug fixes
+
+* Fix MacromoleculeColumnWidget error with WebLogo disabled
+* Fix WebLogo for GAP_SYMBOL
+* Fix CompositionAnalysisWidget for gaps
+
+## 2.11.41 (2024-03-26)
+
+### Features
+
+* Polytool: ability to use special engine to create molV3000 with CFG flags in the atoms block
+
+## 2.11.40 (2024-03-22)
+
+### Features
+
+* Polytool rules file handling
+
 ## 2.11.39 (2024-03-11)
 
 ### Bug fixes

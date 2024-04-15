@@ -432,8 +432,8 @@ export abstract class Tutorial extends DG.Widget {
     return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
   }
 
-  protected getMenuItem(name: string): HTMLElement | null {
-    return this.getElement(this.menuRoot, 'div.d4-menu-item.d4-menu-group',
+  protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
+    return this.getElement(this.menuRoot, `div.d4-menu-item.d4-menu-group${horizontalMenu ? '.d4-menu-item-horz' : ''}`,
       (idx, el) => Array.from(el.children).some((c) => c.textContent === name));
   }
 

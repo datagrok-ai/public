@@ -1,17 +1,13 @@
 {
   "name": "@datagrok/docking",
   "friendlyName": "Docking",
+  "fullName": "Docking",
+  "version": "1.0.3",
   "author": {
-    "name": "Aleksandr Tanas",
-    "email": "atanas@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
-  "version": "0.0.2",
   "description": "Integrates Datagrok with molecular docking algorithms and tools.",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Docking"
-  },
   "dependencies": {
     "@datagrok-libraries/bio": "^5.39.13",
     "@datagrok-libraries/utils": "^4.1.36",
@@ -22,7 +18,7 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/biostructure-viewer": "^1.0.18",
+    "@datagrok/biostructure-viewer": "^1.0.26",
     "@types/wu": "latest",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
@@ -54,5 +50,10 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Docking"
+  }
 }

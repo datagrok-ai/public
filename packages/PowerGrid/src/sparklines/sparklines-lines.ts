@@ -27,8 +27,7 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const cols = constants.cols;
   const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
   const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
-  const r: number = settings.globalScale ? ((cols[col].type === DG.COLUMN_TYPE.BIG_INT ?
-    Number(cols[col].get(row)) : cols[col].get(row)) - gmin) / (gmax - gmin) : cols[col].scale(row);
+  const r: number = settings.globalScale ? (cols[col].getNumber(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
     (b.top + b.height) - b.height * r);

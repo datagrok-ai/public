@@ -28,7 +28,7 @@ const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 const PRE_CALCULATED_FP = 'chem-precalculated-fp';
 const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
-let id = 0;
+let chemFilterid = 0;
 
 const searchTypeHints  = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
@@ -123,7 +123,7 @@ export class SubstructureFilter extends DG.Filter {
   constructor() {
     super();
     initRdKitService(); // No await
-    this.filterId = id++;
+    this.filterId = chemFilterid++;
     this.root = ui.divV([]);
     this.calculating = false;
 
@@ -363,10 +363,10 @@ export class SubstructureFilter extends DG.Filter {
     this.terminatePreviousSearch();
     const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
-    super.detach();
-    this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
+    super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter 
+    this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {

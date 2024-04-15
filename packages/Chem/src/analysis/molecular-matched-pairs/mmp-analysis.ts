@@ -287,33 +287,34 @@ export class MmpAnalysis {
       tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
-  findSpecificRule(diffFromSubstrCol: DG.Column) : [idxPairs: number, cases: number[] ] {
+  findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
     const idxParent = this.parentTable.currentRowIdx;
     let idxPairs = -1;
-    const idx = this.allPairsGrid.table.currentRowIdx;
-
-    const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
-    const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
-    const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
-    const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
-
-    let counter = 0;
     const cases: number[] = [];
-    for (let i = 0; i < this.mmpRules.rules.length; i++) {
-      const first = this.mmpRules.rules[i].smilesRule1;
-      const second = this.mmpRules.rules[i].smilesRule2;
-      for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
-        if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
-          this.pairsMask.set(counter, true, false);
-          if (diffFromSubstrCol.get(counter) === null)
-            cases.push(counter);
-          if (this.mmpRules.rules[i].pairs[j].firstStructure == idxParent)
-            idxPairs = counter;
+    const idx = this.allPairsGrid.table.currentRowIdx;
+    if (idx !== -1) {
+      const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
+      const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
+      const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
+      const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
+
+      let counter = 0;
+
+      for (let i = 0; i < this.mmpRules.rules.length; i++) {
+        const first = this.mmpRules.rules[i].smilesRule1;
+        const second = this.mmpRules.rules[i].smilesRule2;
+        for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
+          if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
+            this.pairsMask.set(counter, true, false);
+            if (diffFromSubstrCol.get(counter) === null)
+              cases.push(counter);
+            if (this.mmpRules.rules[i].pairs[j].firstStructure == idxParent)
+              idxPairs = counter;
+          }
+          counter++;
         }
-        counter++;
       }
     }
-
     return [idxPairs, cases];
   }
 

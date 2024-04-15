@@ -1,6 +1,6 @@
 import {ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser-base';
-import { ASTERISK, D_QUOTE, L, R, S_QUOTE } from './const';
-import { isAlpha } from './utils';
+import {ASTERISK, D_QUOTE, L, R, S_QUOTE} from './const';
+import {isAlpha} from './utils';
 
 export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   constructor(molfile: string) {
@@ -46,14 +46,14 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   public isQuery(): boolean {
     return this.isQueryOrFragment((char: number, idx: number) => {
       return char === S_QUOTE || char === D_QUOTE ||
-      (char === L && !isAlpha(this.fileContent.charCodeAt(idx + 1)))
-    })
+      (char === L && !isAlpha(this.fileContent.charCodeAt(idx + 1)));
+    });
   };
 
   public isFragment(): boolean {
     return this.isQueryOrFragment((char: number) => {
       return char === R || char === ASTERISK;
-    })
+    });
   };
 
   protected isQueryOrFragment(condition: (char: number, idx: number) => boolean): boolean {
@@ -68,4 +68,8 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
     }
     return false;
   };
+
+  abstract getAtomLines(): string[];
+  abstract getBondLines(): string[];
+  abstract getRGroupIdToAtomicIdxMap(): Map<number, number>;
 }

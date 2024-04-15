@@ -1,5 +1,11 @@
 # Dendrogram changelog
 
+## 1.2.28 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to monomer
+
 ## 1.2.27 (2024-03-07)
 
 ### Bug fixes

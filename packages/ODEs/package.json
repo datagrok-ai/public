@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/diff-studio",
   "friendlyName": "Diff Studio",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "WebAutoSolver tools for solving ODEs in a browser.",
   "author": {
     "name": "Viktor Makarichev",

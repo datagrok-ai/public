@@ -5,33 +5,32 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {getHelmMonomers} from '../package';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {GAP_SYMBOL, ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const V2000_ATOM_NAME_POS = 31;
 
 export async function getMonomericMols(
   mcol: DG.Column<string>, pattern: boolean = false, monomersDict?: Map<string, string>
 ): Promise<DG.Column> {
-  const uh = UnitsHandler.getOrCreate(mcol);
+  const sh = SeqHandler.forColumn(mcol);
   let molV3000Array;
   monomersDict ??= new Map();
-  const monomers = uh.isHelm() ?
-    getHelmMonomers(mcol) : Object.keys(uh.stats.freq).filter((it) => it !== '');
+  const monomers = sh.isHelm() ?
+    getHelmMonomers(mcol) : Object.keys(sh.stats.freq).filter((it) => it !== '');
 
   for (let i = 0; i < monomers.length; i++) {
     if (!monomersDict.has(monomers[i]))
       monomersDict.set(monomers[i], `${monomersDict.size + 1}`);
   }
 
-  if (uh.isHelm()) {
+  if (sh.isHelm()) {
     molV3000Array = await grok.functions.call('HELM:getMolFiles', {col: mcol});
     molV3000Array = changeV2000ToV3000(molV3000Array, monomersDict, pattern);
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = wu(uh.splitted[i]).filter((it) => it !== '').toArray();
-      const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
+      const molV3000 = molV3000FromNonHelmSequence(sh.getSplitted(i), monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }
   }
@@ -51,9 +50,12 @@ M  V30 BEGIN CTAB
   molV3000 += 'M  V30 BEGIN ATOM\n';
 
   for (let atomRowI = 0; atomRowI < monomers.length; atomRowI++) {
-    molV3000 += pattern ?
-      `M  V30 ${atomRowI + 1} R${monomersDict.get(monomers[atomRowI])} 0.000 0.000 0 0\n` :
-      `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(monomers[atomRowI])}\n`;
+    const cm: string = monomers.getCanonical(atomRowI);
+    if (cm !== GAP_SYMBOL) {
+      molV3000 += pattern ?
+        `M  V30 ${atomRowI + 1} R${monomersDict.get(cm)} 0.000 0.000 0 0\n` :
+        `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(cm)}\n`;
+    }
   }
 
   molV3000 += 'M  V30 END ATOM\n';

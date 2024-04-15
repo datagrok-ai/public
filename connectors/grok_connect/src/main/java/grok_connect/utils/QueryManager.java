@@ -95,7 +95,7 @@ public class QueryManager {
 
     public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
-        if (!resultSet.isClosed() && !connection.isClosed()) {
+        if (!isFinished && !resultSet.isClosed() && !connection.isClosed()) {
             if (dfNumber != 1) resultSetManager.empty();
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
@@ -107,7 +107,7 @@ public class QueryManager {
             }
             else {
                 isFinished = true;
-                logger.debug("Received all data");
+                logger.info("Received all data");
             }
             df.tags = new LinkedHashMap<>();
             df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
@@ -142,7 +142,7 @@ public class QueryManager {
             logger.debug("Calculating dynamically next fetch size...");
             currentFetchSize = getFetchSize(df);
             resultSet.setFetchSize(currentFetchSize);
-            logger.debug("Calculated new fetch size. Fetch size was set to {}", currentFetchSize);
+            logger.info("Calculated new fetch size. Fetch size was set to {}", currentFetchSize);
         }
     }
 
@@ -172,16 +172,16 @@ public class QueryManager {
         else {
             changedFetchSize = true;
             currentFetchSize = Double.valueOf(optionValue).intValue();
-            logger.debug("Fetch size was set to {} for all chunks except initial", currentFetchSize);
+            logger.info("Fetch size was set to {} for all chunks except initial", currentFetchSize);
         }
     }
 
     private void setInitFetchSize(String optionValue) {
         if (optionValue == null || optionValue.isEmpty()) {
-            logger.debug("Default init fetch size of {} will be used", initFetchSize);
+            logger.info("Default init fetch size of {} will be used", initFetchSize);
             return;
         }
         initFetchSize = Double.valueOf(optionValue).intValue();
-        logger.debug("Init fetch size was set to {}", initFetchSize);
+        logger.info("Init fetch size was set to {}", initFetchSize);
     }
 }

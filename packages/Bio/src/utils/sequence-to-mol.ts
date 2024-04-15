@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {helm2mol} from './helm-to-molfile';
+import {helm2mol} from './helm-to-molfile/utils';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {checkInputColumnUI} from './check-input-column';
 import {getMonomerLibHelper} from '../package';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export async function sequenceToMolfile(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
@@ -17,9 +17,9 @@ export async function sequenceToMolfile(df: DG.DataFrame, macroMolecule: DG.Colu
     return;
   }
   if (nonlinear) {
-    const seqUh = UnitsHandler.getOrCreate(macroMolecule);
-    if (!seqUh.isHelm())
-      macroMolecule = seqUh.convert(NOTATION.HELM);
+    const seqSh = SeqHandler.forColumn(macroMolecule);
+    if (!seqSh.isHelm())
+      macroMolecule = seqSh.convert(NOTATION.HELM);
     helm2mol(df, macroMolecule);
     return;
   }

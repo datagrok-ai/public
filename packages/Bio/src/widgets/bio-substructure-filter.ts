@@ -10,14 +10,14 @@ import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
 import $ from 'cash-dom';
-import {fromEvent, Observable, Subject, Subscription, Unsubscribable} from 'rxjs';
+import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor, IWebEditorApp} from '@datagrok-libraries/bio/src/helm/types';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
@@ -44,9 +44,10 @@ class FilterState {
 export class SeparatorFilterProps extends BioFilterProps {
   constructor(
     substructure: string,
-    public separator?: string
+    public readonly separator?: string,
   ) {
-    super(substructure);
+    super(substructure, false);
+    this.readOnly = true;
   }
 }
 
@@ -119,8 +120,14 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const logPrefix = `${this.filterToLog()}.attach()`;
     this.filterSyncer.sync(logPrefix, async () => {
       superAttach(dataFrame);
-      this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-      const uh = UnitsHandler.getOrCreate(this.column!);
+
+      if (!this.column) {
+        if (this.columnName)
+          this.column = this.dataFrame!.getCol(this.columnName);
+        else
+          this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+      }
+      const sh = SeqHandler.forColumn(this.column!);
       this.columnName ??= this.column?.name;
       this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
 
@@ -134,7 +141,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
       this.viewSubs.push(DG.debounce(this.bioFilter!.onChanged, this.debounceTime)
         .subscribe(this.bioFilterOnChangedDebounced.bind(this)));
       this.viewSubs.push(grok.events.onResetFilterRequest
-        .subscribe((_value: any) => { this.bioFilter?.resetFilter(); }));
+        .subscribe(this.grokEventsOnResetFilterRequest.bind(this)));
       this.viewSubs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT)
         .subscribe(this.filterOnSync.bind(this)));
     });
@@ -164,6 +171,8 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   // -- Layout --
 
   applyFilter(): void {
+    const logPrefix = `${this.filterToLog()}.applyFilter()`;
+    this.logger.debug(`${logPrefix}, IN`);
     if (this.bitset && !this.isDetached)
       this.dataFrame?.filter.and(this.bitset);
   }
@@ -172,8 +181,10 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
    * @return {any} - filter state
    */
   saveState(): any {
+    const logPrefix = `${this.filterToLog()}.saveState()`;
     const state = super.saveState();
-    state.props = this.bioFilter!.props.save();
+    this.logger.debug(`${logPrefix}, super.state = ${JSON.stringify(state)}`);
+    state.props = this.bioFilter!.saveProps();
     return state;
   }
 
@@ -181,21 +192,20 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
    * @param {any} state - filter state
    */
   applyState(state: any): void {
+    const logPrefix = `${this.filterToLog()}.applyState()`;
     super.applyState(state); //column, columnName
-    if (state.props)
-      this.bioFilter!.props.apply(state.props);
 
-    // if (state.bioSubstructure) {
-    //   // (async () => { await this.bioFilterOnChangedDebounced(); })();
-    //   this.bioFilter!.substructure = state.bioSubstructure;
-    // }
+    this.filterSyncer.sync(logPrefix, async () => {
+      if (state.props && this.bioFilter)
+        this.bioFilter.props = state.props;
+    });
   }
 
   private fireFilterSync(): void {
     const logPrefix = `${this.filterToLog()}.fireFilterSync()`;
     _package.logger.debug(`${logPrefix}, ` +
       `bioFilter = ${!!this.bioFilter ? this.bioFilter.constructor.name : 'null'}` +
-      (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter!.props.save())}` : ''));
+      (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter!.saveProps())}` : ''));
 
     grok.events.fireCustomEvent(FILTER_SYNC_EVENT, new FilterState(
       this.bioFilter!.props, this.filterId, this.dataFrame!.id, this.columnName!, this.bitset));
@@ -213,7 +223,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const logPrefix = `${this.filterToLog()}.bioFilterOnChangedDebounced()`;
     _package.logger.debug(`${logPrefix}, start, ` +
       `isFiltering = ${this.isFiltering}, ` +
-      `props = ${JSON.stringify(this.bioFilter!.props.save())}`);
+      `props = ${JSON.stringify(this.bioFilter!.saveProps())}`);
 
     if (!this.isFiltering) {
       this.bitset = null;
@@ -239,6 +249,12 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
         _package.logger.debug(`${logPrefix}, end`);
       }
     });
+  }
+
+  grokEventsOnResetFilterRequest(): void {
+    const logPrefix = `${this.filterToLog()}.grokEventsOnResetFilterRequest()`;
+    _package.logger.debug(`${logPrefix}`);
+    this.bioFilter?.resetFilter();
   }
 
   // -- IRenderer --
@@ -282,13 +298,14 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
     super();
 
     this.substructureInput = ui.stringInput('', '', () => {
-      this.props.substructure = this.substructureInput.value;
+      this.props = new BioFilterProps(this.substructureInput.value);
       if (!this._propsChanging) this.onChanged.next();
     }, {placeholder: 'Substructure'});
   }
 
   public applyProps() {
-    this.substructureInput.value = this.props.substructure;
+    if (this.substructureInput.value !== this.props.substructure)
+      this.substructureInput.value = this.props.substructure;
   }
 
   get filterPanel() {
@@ -309,7 +326,7 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
 }
 
 export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
-  readonly emptyProps = new SeparatorFilterProps('');
+  readonly emptyProps = new SeparatorFilterProps('', undefined);
 
   readonly substructureInput: DG.InputBase<string>;
   readonly separatorInput: DG.InputBase<string>;
@@ -321,18 +338,23 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
     super();
 
     this.substructureInput = ui.stringInput('', '', () => {
-      this.props.substructure = this.substructureInput.value;
+      this.props = new SeparatorFilterProps(this.substructureInput.value, this.props.separator);
       if (!this._propsChanging) this.onChanged.next();
     }, {placeholder: 'Substructure'});
     this.separatorInput = ui.stringInput('', this.colSeparator = colSeparator, () => {
-      this.props.separator = !!this.separatorInput.value ? this.separatorInput.value : undefined;
+      const separator: string | undefined = !!this.separatorInput.value ? this.separatorInput.value : undefined;
+      this.props = new SeparatorFilterProps(this.props.substructure, separator);
       if (!this._propsChanging) this.onChanged.next();
     }, {placeholder: 'Separator'});
   }
 
   applyProps(): void {
-    this.substructureInput.value = this.props.substructure;
-    this.separatorInput.value = this.props.separator ?? this.colSeparator;
+    if (this.substructureInput.value !== this.props.substructure)
+      this.substructureInput.value = this.props.substructure;
+
+    const separatorValue = this.props.separator ?? this.colSeparator;
+    if (this.separatorInput.value !== separatorValue)
+      this.separatorInput.value = separatorValue;
   }
 
   get filterSummary(): string {

@@ -2,16 +2,14 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {BiostructureDataJson, BiostructureData,} from '@datagrok-libraries/bio/src/pdb/types';
-import {BiostructureProps, IBiostructureViewer,} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {
   IAutoDockService, getAutoDockService, GridSize,
 } from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {_package, CACHED_DOCKING, BINDING_ENERGY_COL} from '../utils/constants';
+import {_package, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, ERROR_COL_NAME} from '../utils/constants';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 
 export type AutoDockDataType = {
@@ -117,8 +115,14 @@ export class AutoDockApp {
     const pi = DG.TaskBarProgressIndicator.create('AutoDock running...');
     try {
       const ligandCol = this.data.ligandDf.getCol(this.data.ligandMolColName);
-      const posesAllDf = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
+      const result = await runAutoDock(this.data.receptor, ligandCol, this.data.gpfFile!, this.data.confirmationNum!, this.poseColName, pi);
+      const posesAllDf = result?.posesAllDf;
+      const errorValues = result?.errorValues;
       if (posesAllDf !== undefined) {
+        errorValues?.forEach(({index, value}) => {
+          posesAllDf.rows.insertAt(index, 1);
+          posesAllDf.set(POSE_COL, index, value);
+        });
         //@ts-ignore
         CACHED_DOCKING.K.push(this.data);
         //@ts-ignore
@@ -145,7 +149,7 @@ export class AutoDockApp {
 // -- Routines --
 async function runAutoDock(
   receptorData: BiostructureData, ligandCol: DG.Column<string>, gpfFile: string, confirmationNum: number, poseColName: string, pi: DG.ProgressIndicator
-): Promise<DG.DataFrame | undefined> {
+) {
   let adSvc!: IAutoDockService;
   try {
     adSvc = await getAutoDockService();
@@ -157,6 +161,7 @@ async function runAutoDock(
 
   const pdbHelper: IPdbHelper = await getPdbHelper();
   let posesAllDf: DG.DataFrame | undefined = undefined;
+  const errorValues: { index: number, value: string }[] = []
 
   const ligandRowCount = ligandCol.length;
   for (let lRowI = 0; lRowI < ligandRowCount; ++lRowI) {
@@ -172,7 +177,12 @@ async function runAutoDock(
     const autodockGpf: string = buildDefaultAutodockGpf(receptorData.options!.name!, npts);
     const posesDf = await adSvc.dockLigand(
       receptorData, ligandData, gpfFile ?? autodockGpf, confirmationNum ?? 10, poseColName);
-    
+
+    if (posesDf.col(ERROR_COL_NAME)) {
+      errorValues[errorValues.length] = {index: lRowI, value: posesDf.get(ERROR_COL_NAME, 0)};
+      continue;
+    }
+
     posesDf.rows.removeWhere((row) => row.get(BINDING_ENERGY_COL) !== posesDf.col(BINDING_ENERGY_COL)?.min);
     if (posesDf!.rowCount > 1) {
       posesDf!.rows.removeAt(1, posesDf!.rowCount - 1);
@@ -189,8 +199,9 @@ async function runAutoDock(
       posesAllDf = posesDf;
     else
       posesAllDf!.append(posesDf, true);
+
     pi.update(100 * lRowI / ligandRowCount, 'AutoDock running...');
   }
 
-  return posesAllDf;
+  return {posesAllDf, errorValues};
 }

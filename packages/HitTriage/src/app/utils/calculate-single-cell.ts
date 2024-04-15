@@ -21,16 +21,21 @@ export async function calculateSingleCellValues(
     await grok.chem.descriptors(table, col.name, descriptors);
 
   for (const func of functions) {
-    const props = func.args;
-    const fs = DG.Func.find({package: func.package, name: func.name});
-    if (!fs.length || !fs[0]) {
-      console.warn(`Function ${func.name} from package ${func.package} is not found`);
+    try {
+      const props = func.args;
+      const fs = DG.Func.find({package: func.package, name: func.name});
+      if (!fs.length || !fs[0]) {
+        console.warn(`Function ${func.name} from package ${func.package} is not found`);
+        continue;
+      }
+      const f = fs[0];
+      const tablePropName = f.inputs[0].name;
+      const colPropName = f.inputs[1].name;
+      await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+    } catch (e) {
+      console.error(e);
       continue;
     }
-    const f = fs[0];
-    const tablePropName = f.inputs[0].name;
-    const colPropName = f.inputs[1].name;
-    await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
   }
 
   for (const script of scripts) {
@@ -110,12 +115,16 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
     await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
 
   for (const funcName of Object.keys(resultMap.externals)) {
-    const props = resultMap.externals[funcName];
-    const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
-    const tablePropName = f.inputs[0].name;
-    const colPropName = f.inputs[1].name;
-    if (props)
-      await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+    try {
+      const props = resultMap.externals[funcName];
+      const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
+      const tablePropName = f.inputs[0].name;
+      const colPropName = f.inputs[1].name;
+      if (props)
+        await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molColName});
+    } catch (e) {
+      console.error(e);
+    }
   };
   // handling scripts
   for (const scriptName of Object.keys(resultMap.scripts ?? {})) {

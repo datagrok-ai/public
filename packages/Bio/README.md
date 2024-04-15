@@ -16,7 +16,7 @@ initial notation. Datagrok allows you to convert sequences between different not
 See:
 
 * [detectMacromolecule()](../Bio/detectors.js)
-* [class UnitsHandler](../../libraries/bio/src/utils/units-handler.ts)
+* [class SeqHandler](../../libraries/bio/src/utils/seq-handler.ts)
 
 ## Atomic-Level structures from sequences
 

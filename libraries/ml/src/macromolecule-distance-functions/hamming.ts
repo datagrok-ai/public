@@ -24,7 +24,7 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
       });
     });
     return (a: string, b: string) => {
-      return scorringArray[a.charCodeAt(0) * matrix.length + b.charCodeAt(0)];
+      return 1 - scorringArray[a.charCodeAt(0) * matrix.length + b.charCodeAt(0)];
     };
   }
   const distanceF = getDistanceF();

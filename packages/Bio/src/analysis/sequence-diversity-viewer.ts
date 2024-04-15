@@ -7,7 +7,7 @@ import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -29,8 +29,8 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.dataFrame) {
       if (computeData && this.moleculeColumn) {
-        const uh = UnitsHandler.getOrCreate(this.moleculeColumn);
-        await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
+        const sh = SeqHandler.forColumn(this.moleculeColumn);
+        await (sh.isFasta() ? this.computeByMM() : this.computeByChem());
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
           `diverse (${this.moleculeColumnName})`;

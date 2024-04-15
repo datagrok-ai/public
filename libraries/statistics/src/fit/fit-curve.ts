@@ -115,6 +115,7 @@ export interface IFitPoint {
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  outlierColor?: string;   // overrides the outlier color defined in IFitSeriesOptions
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
@@ -150,7 +151,9 @@ export interface IFitChartOptions {
   logY?: boolean;            // defines whether the y data should be logarithmic or not
 
   allowXZeroes?: boolean;    // defines whether x zeroes allowed for logarithmic data or not
+  mergeSeries?: boolean;     // defines whether to merge series or not
 
+  showColumnLabel?: boolean; // defines whether to show the column label in the legend or not
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
 }
@@ -180,6 +183,8 @@ export interface IFitSeriesOptions {
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
+  outlierColor?: string;                // overrides the standardized series outlier color
+  connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
@@ -187,6 +192,7 @@ export interface IFitSeriesOptions {
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
+  columnName?: string;                  // defines the column name where the series is stored
 }
 // TODO: show labels in property panel if present, color by default from series
 
@@ -217,8 +223,12 @@ export const fitChartDataProperties: DG.Property[] = [
   DG.Property.js('logX', DG.TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
   DG.Property.js('logY', DG.TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
   DG.Property.js('allowXZeroes', DG.TYPE.BOOL, {description: 'Whether x zeroes allowed for logarithmic data or not', defaultValue: true}),
+  DG.Property.js('mergeSeries', DG.TYPE.BOOL, {description: 'Whether to merge series or not', defaultValue: false}),
+  DG.Property.js('showColumnLabel', DG.TYPE.BOOL, {description: 'Whether to show the column label in the legend or not', defaultValue: false}),
   DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
-    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice',
+    //@ts-ignore
+    friendlyName: 'Statistics'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
@@ -229,8 +239,11 @@ export const fitSeriesProperties: DG.Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('fitLineColor', DG.TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('outlierColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
+  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
   DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
     'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
   DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
@@ -239,7 +252,8 @@ export const fitSeriesProperties: DG.Property[] = [
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
-      caption: 'Confidence interval'}),
+      //@ts-ignore
+      friendlyName: 'Confidence Interval'}),
   DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
@@ -247,6 +261,7 @@ export const fitSeriesProperties: DG.Property[] = [
     choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
   DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
     choices: DROPLINES, inputType: 'MultiChoice'}),
+  DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';

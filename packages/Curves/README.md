@@ -34,9 +34,11 @@ To render a fitted curve based on series points, you need to write it in the fol
       "pointColor": "#2ca02c",
       "fitLineColor": "#2ca02c",
       "confidenceIntervalColor": "#fbec5d",
+      "outlierColor": "#d62728",
       "markerType": "circle",
       "lineStyle": "dashed",
       "errorModel": "proportional",
+      "connectDots": false,
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
@@ -52,7 +54,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "droplines": ["IC50"],
       "points": [
         { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square" },
-        { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
+        { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true, "outlierColor": "#ff7f0e" },
         { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c", "size": 5 },
         // ...
       ]
@@ -80,9 +82,11 @@ Each series has its own parameters, such as:
 - `pointColor` - overrides the standardized series point color
 - `fitLineColor` - overrides the standardized series fit line color
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
+- `outlierColor` - overrides the standardized series outlier color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `errorModel` - defines the series error model, which could be either `constant` or `proportional`
+- `connectDots` - defines whether to connect the points with lines or not
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a

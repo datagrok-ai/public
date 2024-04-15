@@ -1,6 +1,16 @@
 # Charts changelog
 
-## 1.2.3 (WIP)
+## 1.3.1 (2024-04-09)
+
+### Features
+
+* GROK-15340: Charts | Radar: Support multiple series
+
+### Bug Fixes
+
+* GROK-15132: Charts | Timelines: Error when using the legend
+
+## 1.3.0 (2024-03-21)
 
 ### Features
 
@@ -17,6 +27,7 @@
 * Radar viewer minor imrpovements
 * Links fixes
 * [#2500](https://github.com/datagrok-ai/public/issues/2500): Sunburst: Labels were hidden after the structures were added
+* GROK-15166: Charts | Sunburst: Error when trying to switch the Table property
 
 ## 1.2.2 (2023-09-19)
 

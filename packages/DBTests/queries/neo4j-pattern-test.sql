@@ -18,7 +18,7 @@ MATCH(p:Person) WHERE p.id = @id RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpMore
 //connection: Neo4jDBTests
 //input: string id = ">28" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMore(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMore('>28'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -27,7 +27,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpMoreEq
 //connection: Neo4jDBTests
 //input: string id = ">=29" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMoreEq('>=29'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -36,7 +36,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpLessEq
 //connection: Neo4jDBTests
 //input: string id = "<=1" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpLessEq(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpLessEq('<=1'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -45,7 +45,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpLess
 //connection: Neo4jDBTests
 //input: string id = "<2" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpLess(), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpLess('<2'), OpenFile('System:AppData/Dbtests/common/data1.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -54,7 +54,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpIn
 //connection: Neo4jDBTests
 //input: string id = "in(29, 30)" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpIn(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpIn(id='in(29, 30)'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -63,7 +63,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpNotIn
 //connection: Neo4jDBTests
 //input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpNotIn(), OpenFile('System:AppData/Dbtests/neo4j/data1-20.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpNotIn(id='not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)'), OpenFile('System:AppData/Dbtests/neo4j/data1-20.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -72,7 +72,7 @@ MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
 //name: Neo4jStringTypeIntPatternOpMinMax
 //connection: Neo4jDBTests
 //input: string id = "min-max 29-30" {pattern: int}
-//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMinMax(), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypeIntPatternOpMinMax(id='min-max 29-30'), OpenFile('System:AppData/Dbtests/common/data29-30.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @id(p.id) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -90,7 +90,7 @@ MATCH(p:Person) WHERE p.some_number = @some_number RETURN p.id AS id, p.first_na
 //name: Neo4jStringTypePatternDoubleOpMore
 //connection: Neo4jDBTests
 //input: string some_number = ">975" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMore(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -99,7 +99,7 @@ MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_nam
 //name: Neo4jStringTypePatternDoubleOpMoreEq
 //connection: Neo4jDBTests
 //input: string some_number = ">=975" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -108,7 +108,7 @@ MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_nam
 //name: Neo4jStringTypePatternDoubleOpLess
 //connection: Neo4jDBTests
 //input: string some_number = "<20" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpLess(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpLess('<20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -117,7 +117,7 @@ MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_nam
 //name: Neo4jStringTypePatternDoubleOpLessEq
 //connection: Neo4jDBTests
 //input: string some_number = "<=20" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpLessEq('<=20'), OpenFile('System:AppData/Dbtests/common/data5.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -153,7 +153,7 @@ MATCH(p:Person) WHERE @first_name(p.first_name) RETURN p.id AS id, p.first_name 
 //name: Neo4jStringTypePatternStringOpIn
 //connection: Neo4jDBTests
 //input: string country = "in (Poland, Brazil)" {pattern: string}
-//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpIn(), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @country(p.country) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;

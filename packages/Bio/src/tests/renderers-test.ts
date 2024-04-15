@@ -1,11 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
-
-import {category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
@@ -148,8 +146,8 @@ category('renderers', () => {
     expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
-    // check newColumn with UnitsHandler constructor
-    const _uh: UnitsHandler = UnitsHandler.getOrCreate(msaSeqCol);
+    // check newColumn with SeqHandler constructor
+    const _sh: SeqHandler = SeqHandler.forColumn(msaSeqCol);
   }
 
   async function _testAfterConvert() {
@@ -172,8 +170,8 @@ category('renderers', () => {
     const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
 
-    // check tgtCol with UnitsHandler constructor
-    const _uh: UnitsHandler = UnitsHandler.getOrCreate(tgtCol);
+    // check tgtCol with SeqHandler constructor
+    const _sh: SeqHandler = SeqHandler.forColumn(tgtCol);
   }
 
   async function _selectRendererBySemType() {

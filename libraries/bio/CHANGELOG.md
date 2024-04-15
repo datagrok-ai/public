@@ -1,5 +1,66 @@
 # bio changelog
 
+## 5.40.7 (2024-04-15)
+
+Invalidate monomer placer cache on monomer lib changed
+
+## 5.40.6 (2024-04-11)
+
+### Features
+
+* Add displaying a monomer's origin lib
+
+## 5.40.5 (2024-04-10)
+
+### Bug fixes
+
+* Fix SDF to JSON for Biovia lib
+
+## 5.40.4 (2024-04-09)
+
+### Features
+
+* Modified STEABS block generation when linking monomers (adding not more than 80 symbols per row)
+
+## 5.40.3 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+* Adding STEABS block when linking monomers
+
+## 5.40.2 (2024-04-07)
+
+### Bug fixes
+
+* Fix SeqHandler for column version
+
+## 5.40.1 (2024-04-05)
+
+### Features
+
+* Add support for custom notations, splitters
+
+### Bug fixes
+
+bio: Fix monomer placer to render original monomers
+bio: Fix SeqHandler.getRegion for out of seq length
+
+## 5.40.0 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to ISeqSplitted
+
+### Bug fixes
+
+* Bio: Fix SeqHandler.splitted cache for changing data
+* Bio: Fix SeqHandler.forColumn temp cache for changing column
+
+### Breaking changes
+
+* Rename UnitsHandler to SeqHandler, .getOrCreate() to forColumn()
+
 ## 5.39.29 (2024-03-07)
 
 ### Features

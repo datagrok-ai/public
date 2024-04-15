@@ -19,7 +19,6 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
-  //const scripts = (await DG.Script.findAll({tags: [HitTriageComputeFunctionTag]})).filter((s) => s.type === 'script')
   const scripts: HitTriageTemplateScript[] = computeFunctions.scripts
     .filter(({inputs: i}) => i.length >= 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((s) => ({name: s.name, id: s.id, args: template?.compute?.scripts?.find((ts) => ts.id === s.id)?.args ?? {}}));
@@ -83,6 +82,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.functions?.some(
@@ -112,6 +112,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.scripts?.some(
@@ -141,6 +142,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
       const inputs = await funcCall.buildEditor(editor, {condensed: false});
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
+      editor.style.removeProperty('max-width');
       tabControlArgs[f.friendlyName ?? f.name] = editor;
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = template?.compute?.queries?.some(
@@ -159,6 +161,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   }
 
   const tc = ui.tabControl(tabControlArgs, true);
+  tc.onTabChanged.subscribe(() => {try {tc.currentPane.content.style.removeProperty('max-width');} catch (e) {}});
   tc.header.style.overflow = 'scroll';
   tc.root.style.width = '100%';
   tc.root.style.minWidth = '350px';

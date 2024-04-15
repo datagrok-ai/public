@@ -121,11 +121,9 @@ export class SunburstViewer extends EChartViewer {
     });
     this.chart.on('mouseover', async (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
-      const isSelected = this.dataFrame.selection.anyTrue && 
-        this.selectedOptions.includes(this.rowSource!);
+      const bitset = this.filter;
       const matchDf = this.dataFrame.clone();
-      const bitset = isSelected ? this.dataFrame.selection : this.dataFrame.filter;
-      matchDf.rows.removeWhere((row) => !bitset.get(row.idx));
+      matchDf.rows.removeWhere(row => bitset && !bitset.get(row.idx));
 
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
@@ -195,9 +193,8 @@ export class SunburstViewer extends EChartViewer {
     if (categoricalColumns.length < 1)
       return;
 
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
-      this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-    
+    this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.addSelectionOrDataSubs();

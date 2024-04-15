@@ -29,6 +29,8 @@
     3. Check the range slider functionality
     4. Save to Layout. Check
 10. Formula lines
+11. Line chart: Custom tooltip [#2357](https://github.com/datagrok-ai/public/issues/2357)
+12. [#2623](https://github.com/datagrok-ai/public/issues/2623) Line chart: implement the one-click way to set the Split by columns
 ---
 {
   "order": 5

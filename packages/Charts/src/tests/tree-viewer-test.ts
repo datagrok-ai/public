@@ -25,6 +25,8 @@ category('TreeViewer', () => {
   test('Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
+      rowSource: 'Filtered',
+      filter: '',
       top: '5px',
       left: '5px',
       bottom: '5px',
@@ -39,9 +41,9 @@ category('TreeViewer', () => {
       edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,
-      sizeColumnName: null,
+      sizeColumnName: '',
       sizeAggrType: DG.AGG.AVG,
-      colorColumnName: null,
+      colorColumnName: '',
       colorAggrType: DG.AGG.AVG,
       hierarchyColumnNames: ['sex', 'disease', 'site'],
     };

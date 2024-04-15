@@ -79,3 +79,10 @@ export function dummyDataFrameFunction(table: DG.DataFrame) {
   const tableOut = table;
   return {tableOut, count};
 }
+
+//name: testStringAsync
+//input: int a
+//output: int b
+export async function testIntAsync(a: number): Promise<number> {
+  return new Promise((r) => r(a + 10));
+}

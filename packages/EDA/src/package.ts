@@ -127,7 +127,7 @@ export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
 //name: None (string)
 //tags: dim-red-preprocessing-function
 //meta.supportedTypes: string
-//meta.supportedDistanceFunctions: Levenshtein,Hamming,One-Hot
+//meta.supportedDistanceFunctions: One-Hot,Levenshtein,Hamming
 //input: column col
 //input: string _metric {optional: true}
 //output: object result
@@ -167,6 +167,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
           df: params.table, cols: params.columns, metrics: params.distanceMetrics,
           weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
           preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
+          useWebGPU: params.useWebGPU,
         }).call(true);
       }).show();
   } catch (err: any) {
@@ -190,12 +191,15 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: object preprocessingFuncArgs
 //input: int threshold = 80
 //input: int maxIterations = 10
+//input: bool useWebGPU = false
 //editor: EDA: GetMCLEditor
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
-  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10) {
-  return await markovCluster(df, cols, metrics, weights,
-    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations);
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false,
+): Promise< DG.ScatterPlotViewer | undefined> {
+  const res = (await markovCluster(df, cols, metrics, weights,
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU));
+  return res?.sc;
 }
 
 //name: PLS

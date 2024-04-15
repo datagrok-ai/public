@@ -301,6 +301,8 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
         return { atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors };
       }
     }
+  } catch {
+    //do nothing, if molecule is invalid - return empty substruct obj
   } finally {
     mol?.delete();
   }

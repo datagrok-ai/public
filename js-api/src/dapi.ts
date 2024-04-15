@@ -27,6 +27,7 @@ import {toJs, toDart} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
+import { StickyMeta } from "./sticky_meta";
 
 const api: IDartApi = <any>window;
 
@@ -233,6 +234,8 @@ export class Dapi {
   get logTypes(): HttpDataSource<LogEventType> {
     return new HttpDataSource(api.grok_Dapi_LogTypes());
   }
+
+  stickyMeta = new StickyMeta();
 }
 
 
@@ -407,6 +410,10 @@ export class AdminDataSource {
 
   getUserReport(reportId: string): Promise<Uint8Array> {
     return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
+  }
+
+  postEventReport(eventId: string): Promise<void> {
+    return api.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId);
   }
 }
 

@@ -1,24 +1,22 @@
 --name: UserReports
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
-with report_info as (
-    select er.report_id report_id, e.event_time report_time, e.description description,
-           array_agg(er.event_id) errors_ids, u.friendly_name as reporter from events_reports er
-           inner join events e on e.id = er.report_id
-           inner join users_sessions s on e.session_id = s.id
-           inner join users u on u.id = s.user_id
-    group by er.report_id, e.event_time, e.description, u.friendly_name
-    having @date(e.event_time)
-)
+with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time report_time, e.description,
+    e.options ->> 'error_message' as error, e.options ->> 'error_stack_trace' error_stack_trace,
+    e.options ->> 'error_stack_trace_hash' error_stack_trace_hash, u.friendly_name reporter
+from events e
+join event_types t on e.event_type_id = t.id
+join users_sessions s on e.session_id = s.id
+join users u on u.id = s.user_id
+where t.source = 'usage' and t.friendly_name = 'user report posted'
+and @date(e.event_time))
 
-SELECT r.report_id, r.report_time, r.description,
-       case
-           when cardinality(r.errors_ids) > 1
-               then cardinality(r.errors_ids) || ' ' || 'same errors'
-           else '1 error' end as same_errors_count,
-       r.reporter,
-       COALESCE(e.description, t.error_source || ': ' || e.friendly_name || E'\\n' || COALESCE(e.error_stack_trace, ''))
-                              AS error
-FROM report_info r
-         inner join events e on e.id = r.errors_ids[1]
-         inner join event_types t on e.event_type_id = t.id
+select (count(e.id)) same_errors_count, c.report_id, c.report_number, c.report_time, c.description, c.error,
+       c.error_stack_trace, c.error_stack_trace_hash, c.reporter
+from events e
+join event_types t on e.event_type_id = t.id
+right join cte c on ((t.error_stack_trace_hash = c.error_stack_trace_hash and c.error_stack_trace_hash is not null) or t.friendly_name = c.error)
+group by c.report_id, c.report_number, c.report_time, c.description, c.error,
+         c.error_stack_trace, c.error_stack_trace_hash, c.reporter
+order by report_time desc
+--end

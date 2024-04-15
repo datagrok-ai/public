@@ -9,6 +9,8 @@ export class UsageType {
 
   static DIALOG_SHOW = 'dialog show';
 
+  static USER_REPORT_POSTED = 'user report posted';
+
 }
 export class ViewerEvent {
   public dart: any;
@@ -46,9 +48,13 @@ export class InputType {
 
   static Switch = 'Switch';
 
+  static Text = 'Text';
+
   static TextArea = 'TextArea';
 
-  static Text = 'Text';
+  static Markdown = 'Markdown';
+
+  static Code = 'Code';
 
   static Search = 'Search';
 
@@ -78,7 +84,7 @@ export class InputType {
 
   static Molecule = 'Molecule';
 
-  static Users = 'Users';
+  static User = 'User';
 
   static UserGroups = 'UserGroups';
 
