@@ -26,9 +26,10 @@ enum ERROR_MSG {
   NON_NORMAL_DISTRIB = 'non-normal distribution',
   UNSUPPORTED_COLUMN_TYPE = 'unsupported feature column type',
   INCORRECT_CATEGORIES_COL_TYPE = 'incorrect categories column type',
-  SINGLE_FACTOR = 'single category',
+  SINGLE_FACTOR = 'single category features',
   CATS_EQUAL_SIZE = 'single value in each category',
   NO_FEATURE_VARIATION = 'no feature variation',
+  NO_FEATURE_VARIATION_WITHIN_GROUPS = 'no feature variation within groups',
 };
 
 type SampleData = {
@@ -175,6 +176,9 @@ export class FactorizedData {
     const ssBn = buf - sum ** 2 / N;
     const ssWn = ssTot - ssBn;
 
+    if (ssWn === 0)
+      throw new Error(ERROR_MSG.NO_FEATURE_VARIATION_WITHIN_GROUPS);
+
     const dfBn = K - 1;
     const dfWn = N - K;
     const dfTot = N - 1;
@@ -260,7 +264,8 @@ export class FactorizedData {
 } // FactorizedData
 
 /** Perform one-way analysis of variances. */
-export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number, validate: boolean): OneWayAnovaReport {
+export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number,
+  toValidate: boolean = true): OneWayAnovaReport {
   checkSignificanceLevel(alpha);
 
   const uniqueCount = categores.stats.uniqueCount;
@@ -270,7 +275,7 @@ export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number, va
 
   const factorized = new FactorizedData(categores, values, uniqueCount);
 
-  if (validate) {
+  if (toValidate) {
     if (!factorized.areVarsEqual(alpha))
       throw new Error(ERROR_MSG.NON_EQUAL_VARIANCES);
   }
@@ -282,9 +287,4 @@ export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number, va
     fCritical: jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn),
     significance: alpha,
   };
-  // getOneWayAnovaDF(anova, alpha, fCrit, hypothesis, testResult);
-  const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
-  const hypothesis = `THE NULL HYPOTHESIS: the "${categores.name}" 
-    factor does not produce a significant difference in the "${values.name}" feature.`;
-  const testResult = `Test result: ${(anova.fStat > fCrit) ? 'REJECTED.' : 'FAILED TO REJECT.'}`;
 } // oneWayAnova

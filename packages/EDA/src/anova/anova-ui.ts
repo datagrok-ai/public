@@ -74,6 +74,23 @@ function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
   ]));
 
+  const tooltip = new Map([
+    ['Source of variance', 'List of the explored variation sources'],
+    ['SS', 'Sum of squares (SS)'],
+    ['DF', 'Degrees of freedom (DF)'],
+    ['MS', 'Mean square (MS)'],
+    ['F', 'F-statistics (F)'],
+    ['F-critical', `${report.significance}-critical value of F-statistics (F)`],
+    ['p-value', `Probability to obtain F-statistics (F) greater than the actual observation.`],
+  ]);
+
+  grid.onCellTooltip(function(cell, x, y) {
+    if (cell.isColHeader) {
+      ui.tooltip.show(ui.divV([ui.p(tooltip.get(cell.tableColumn!.name)!)]), x, y);
+      return true;
+    }
+  });
+
   grid.helpUrl = ANOVA_HELP_URL;
 
   return grid;
@@ -147,7 +164,7 @@ export function runOneWayAnova(): void {
 
   let significance = 0.05;
   const signInput = ui.input.forProperty(DG.Property.fromOptions({
-    name: 'significance',
+    name: 'alpha',
     defaultValue: significance,
     inputType: 'Float',
     min: 0.01,
@@ -157,16 +174,7 @@ export function runOneWayAnova(): void {
     significance = signInput.value;
     runBtn.disabled = (significance <= 0) || (significance >= 1);
   });
-  signInput.setTooltip('Specifies the criterion used for rejecting the null hypothesis.');
-
-  let validate = true;
-  const validateInput = ui.input.forProperty(DG.Property.fromOptions({
-    name: 'validate',
-    defaultValue: validate,
-    inputType: 'Bool',
-  }));
-  validateInput.onChanged(() => validate = validateInput.value);
-  validateInput.setTooltip('Indicates whether to check applicability of ANOVA.');
+  signInput.setTooltip('Significance level');
 
   const dlg = ui.dialog({title: 'ANOVA', helpUrl: ANOVA_HELP_URL});
   const view = grok.shell.getTableView(df.name);
@@ -175,7 +183,7 @@ export function runOneWayAnova(): void {
     dlg.close();
 
     try {
-      const res = oneWayAnova(factor!, feature!, significance, validate);
+      const res = oneWayAnova(factor!, feature!, significance);
       addVizualization(df, factor!, feature!, res);
     } catch (error) {
       if (error instanceof Error) {
@@ -197,6 +205,5 @@ export function runOneWayAnova(): void {
   dlg.add(factorInput)
     .add(featureInput)
     .add(signInput)
-    .add(validateInput)
     .show();
 } // runOneWayAnova

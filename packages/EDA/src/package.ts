@@ -433,7 +433,7 @@ export function anovaOld(table: DG.DataFrame, factor: DG.Column, feature: DG.Col
 
 //top-menu: ML | Analyze | ANOVA...
 //name: ANOVA
-//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.
 export function anova(): void {
   runOneWayAnova();
 }
