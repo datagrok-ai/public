@@ -13,9 +13,21 @@ jobs:
         uses: actions/checkout@v3
       - name: ls
         run: ls -la
-      - name: Slack Ftest Notification
-        uses: act10ns/slack@v2.1.0
+      - name: Prepare Slack Message
+        if: ${{ steps.publish.outcome == 'success' && !contains(matrix.package, 'Meta') }}
+        id: slack-prepare
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+      - name: Slack Success
+        if: always()
+        uses: kpritam/slack-job-status-action@v1
         with:
-          status: ${{ job.status }}
-          # channel: "vhlushchenko"       
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_TEST_VLAD }}
+          job-status: ${{ job.status }}
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel: ${{ env.SLACK_CHANNEL }}
+
