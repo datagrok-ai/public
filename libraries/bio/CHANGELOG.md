@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.40.7 (2024-04-15)
+
+Invalidate monomer placer cache on monomer lib changed
+
 ## 5.40.6 (2024-04-11)
 
 ### Features

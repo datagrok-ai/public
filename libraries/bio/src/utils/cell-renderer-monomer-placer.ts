@@ -5,9 +5,8 @@ import {Unsubscribable} from 'rxjs';
 import wu from 'wu';
 
 import {SeqHandler} from './seq-handler';
-import {MonomerToShortFunc, ALPHABET} from './macromolecule';
-import {IMonomerLib, Monomer} from '../types';
-import {HELM_POLYMER_TYPE} from './const';
+import {MonomerToShortFunc} from './macromolecule';
+import {IMonomerLib} from '../types';
 import {SeqSplittedBase} from './macromolecule/types';
 
 type MonomerPlacerProps = {
@@ -50,6 +49,9 @@ export class MonomerPlacer {
         } catch (err: any) {
           console.error(err);
         }
+      }));
+      this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
+        this._monomerStructureMap = {};
       }));
       this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
         try {
