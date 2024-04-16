@@ -873,7 +873,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   private helpCache = null as string | null;
 
-  protected async getContextHelp() {
+  public async getContextHelp() {
     const helpPath = this.func.options['help'];
 
     if (!helpPath) return null;

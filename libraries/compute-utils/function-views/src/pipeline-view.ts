@@ -364,11 +364,13 @@ export class PipelineView extends FunctionView {
   private helpFiles = {} as Record<string, string>;
   private async loadHelp() {
     return Promise.all(Object.values(this.steps).map(async (step) => {
-      const helpUrl = step.options?.helpUrl;
+      const helpUrl: string | undefined = step.options?.helpUrl ?? step.func.options['help'];
       if (helpUrl) {
-        const path = `System:AppData/${this.func.package.name}/${helpUrl}`;
-        const file = await grok.dapi.files.readAsText(path);
-        this.helpFiles[step.options?.customId ?? step.func.nqName] = file;
+        const currentPackagePath = `System:AppData/${this.func.package.name}/${helpUrl}`;
+        const file = (await grok.dapi.files.exists(currentPackagePath)) ?
+          await grok.dapi.files.readAsText(currentPackagePath):
+          await step.view.getContextHelp();
+        if (file) this.helpFiles[step.options?.customId ?? step.func.nqName] = file;
       }
     }));
   }
