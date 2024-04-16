@@ -1,6 +1,6 @@
 # chem-meta changelog
 
-## 1.2.4 (2024-03-29)
+## 1.2.4 (2024-04-15)
 
 ### Features
 
