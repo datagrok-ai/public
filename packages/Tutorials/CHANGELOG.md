@@ -1,6 +1,6 @@
 # Tutorials changelog
 
-## 1.3.23 (2024-03-23)
+## 1.3.25 (2024-04-16)
 
 Updated the Multivariate analysis tutorial.
 
