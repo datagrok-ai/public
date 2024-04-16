@@ -16,6 +16,11 @@ keywords:
   - calculate fingerprints
   - drug likeness
   - structural alerts
+  - Matched molecular pairs
+  - MMP
+  - docking
+  - admetox
+  - admet
 ---
 
 ```mdx-code-block
@@ -56,7 +61,7 @@ with chemical data:
   * [Substructure search](#substructure-search--filtering).
   * [Chemical space analysis](#similarity-and-diversity-search).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
-  * SAR: [activity cliffs](#structure-relationship-analysis).
+  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
   <!--* [ADME/Tox calculators](#admetox).-->
   * Property and descriptor [calculators](#calculators).
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
@@ -244,7 +249,7 @@ The following code snippet defines a converter function that retrieves the SMILE
 --friendlyName: Converters | ChEMBL to SMILES
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
---connection: ChemblSql
+--connection: Chembl
 --input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
 --tags: unit-test
@@ -345,8 +350,9 @@ Datagrok lets you analyze chemical space using distance-based dimensionality red
 
 R-group analysis decomposes a set of molecules into a core and R-groups (ligands at certain attachment positions), and visualizes the results. The query molecule
 consists of the scaffold and ligand attachment points represented by R-groups.
+R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/r-group-analysis.gif').default} width="800px"/>
+<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
 
 <details>
 <summary> How to use </summary>
@@ -354,14 +360,19 @@ consists of the scaffold and ligand attachment points represented by R-groups.
 1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
 A [sketcher](#sketching) opens.
 1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
-   * Draw or paste a scaffold in the sketcher.
+   * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups.
    * Click **MCS** to automatically identify the most common substructure.
+   * Click the **Gear** icon to adjust R group analysis parameters.
 1. Click **OK** to execute. The R-group columns are added to the dataframe, along with a [trellis plot](../../../../visualize/viewers/trellis-plot.md) for visual exploration.
+
+R-groups are highlighted with different colorsin the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isHeat** column.
 
 The trellis plot initially displays pie charts. To change the chart type, use the **Viewer** control in the top-left corner to select a different viewer.
 
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
 during Step 2. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
+
+Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
 
 </details>
 
@@ -493,6 +504,91 @@ To explore the molecule pairs:
 
 As you browse the dataset, the **Context Panel** updates with relevant information.
 
+</details>
+
+### Matched molecular pairs
+
+:::note
+
+This feature is in Beta.
+
+:::
+
+The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
+identify structural transformation rules that can be used to improve potency and
+ADMET properties during lead optimization. This tool automatically detects
+matched molecule pairs in your dataset and calculates the difference in property
+or activity values between them. The mean change in property or activity values
+across your dataset represents the expected size of the change when the
+transformation is applied to a molecule.
+
+The results of the MMP analysis are presented in a series of tables and
+visualizations, allowing you to:
+
+* View fragments and substitutions in your dataset 
+* Analyze the effect of specific fragments on the chosen activity or property of
+  a lead compound
+* Generate new molecules based on the transformations present in your dataset
+  and view their predicted properties and activities.
+
+<details>
+<summary>How to use</summary>
+
+To run MMP analysis:
+
+1. In the **Top Menu**, select **Chem** > **Analyze ** > **Matched Molecular
+   Pairs...** A dialog opens.
+1. In the dialog, select the table you want to analyze (**Table**), the column
+   containing molecules within this table (**Molecules**), and the
+   activity/property columns (**Activity**). Click **OK**. An MMP section is
+   added to the view. It has four tabs:
+
+<Tabs>
+<TabItem value="transformations" label="Transformations" default> 
+
+The **Transformations** tab has two tables:
+
+* **The upper table** shows all fragment substitutions found in the dataset for
+  the current molecule. It includes the frequency of each substitution and the
+  corresponding change in the analyzed activity or property.
+* **The lower table** shows all pairs of molecules associated with the
+  substitution from the upper table.  It provides details about the analyzed
+  activity or property for each pair of molecules.
+
+</TabItem>
+<TabItem value="fragments" label="Fragments">
+
+In the **Fragments** tab, a 
+[trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
+fragments on the x and y axes. Each intersection in the plot displays the change
+in the analyzed activity or property resulting from a fragment substitution.
+
+</TabItem>
+<TabItem value="cliffs" label="Cliffs"> 
+
+In the **Cliffs** tab, a
+[scatterplot](../../../../visualize/viewers/scatter-plot.mdx) shows clusters of
+molecules with similar structures but significant differences in the analyzed
+activity or property. Arrows connecting molecules represent changes in the
+specified activity or property, with the arrow pointing toward the molecule with
+the higher value. Clicking an arrow shows both molecules in the **Context
+Panel**, along with the information about the analyzed activity or property.
+
+</TabItem>
+<TabItem value="generation" label="Generation">
+
+In the **Generation** tab, transformation rules derived from the matched molecule pairs in
+your dataset are used to generate new molecules and predict their property and
+activity values. For every molecule in your dataset, the table shows each
+potential transformation, providing:
+
+* Both the starting and new compounds.
+* The maximum common substructure for this pair and the substituted fragment.
+* Original and predicted values for one of the analyzed activities or
+  properties.
+
+</TabItem>
+</Tabs>
 </details>
 
 <!--### ADME/Tox-->

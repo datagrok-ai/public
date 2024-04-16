@@ -37,7 +37,7 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 | startPositionName    | null    | name of the first position to display Logo partially |
 | endPositionName      | null    | name of the last position to display Logo partially  |
 
-![Web Logo](web-logo-properties.gif "Web Logo")
+![Web Logo](img/web-logo-properties.gif "Web Logo")
 
 ## See also
 

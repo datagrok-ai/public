@@ -35,6 +35,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, molecules?: string[]) =>
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);
 
+  rGroupAnalysis = async (molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string) =>
+    this.call(WORKER_CALL.R_GROUP_ANALYSIS, [molecules, coreMolecule, coreIsQMol, options]);
+
   mmpGetFragments = async (molecules: string[]) =>
     this.call(WORKER_CALL.MMP_GET_FRAGMENTS, [molecules]);
 

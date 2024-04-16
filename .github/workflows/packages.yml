@@ -191,6 +191,14 @@ jobs:
         run: |
           echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
+      - name: Slack Failed Notification
+        if: failure()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.package }}: ${{ matrix.job_name }}"
@@ -547,11 +555,11 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
-#      - name: Cleanup datagrok-tools
-#        if: steps.datagrok-tools.outcome == 'success'
-#        timeout-minutes: 15
-#        run: |
-#          npm uninstall -g datagrok-tools@latest
+      # - name: Cleanup datagrok-tools
+      #   if: steps.datagrok-tools.outcome == 'success'
+      #   timeout-minutes: 15
+      #   run: |
+      #     npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
@@ -689,3 +697,20 @@ jobs:
         run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
         env:
           GH_TOKEN: ${{ github.token }}
+      
+      - name: Slack Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          matrix: ${{ toJson(matrix) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: Slack Failed-Cancelled Notification
+        if: failure() || cancelled()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

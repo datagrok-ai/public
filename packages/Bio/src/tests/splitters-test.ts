@@ -2,21 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {
-  after, before, category, test, expect, expectArray, delay, awaitCheck
+  after, before, category, test, expect, expectArray
 } from '@datagrok-libraries/utils/src/test';
-import {
-  TAGS as bioTAGS,
-  splitterAsFasta,
-  splitterAsHelm,
-  NOTATION
-} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
-
 import {getHelmMonomers} from '../package';
+
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+import {_package} from '../package-test';
 
 category('splitters', async () => {
   before(async () => {
@@ -132,7 +133,7 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
   });
 
   // test('helmAsFasta', async () => {
-  //   // The columns can't be empty for UnitsHandler
+  //   // The columns can't be empty for SeqHandler
   //   /* eslint-disable max-len */
   //   const srcSeq = '[meI][Pip][dK][Thr_PO3H2][L-hArg(Et,Et)][D-Tyr_Et][Tyr_ab-dehydroMe][dV]EN[D-Orn][D-aThr][Phe_4Me]';
   //   const tgtSeqA = ['meI', 'Pip', 'dK', 'Thr_PO3H2', 'L-hArg(Et,Et)', 'D-Tyr_Et', 'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn', 'D-aThr', 'Phe_4Me'];
@@ -143,13 +144,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: string[] = splitterAsFasta(src);
+  const res: ISeqSplitted = splitterAsFasta(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(res, tgt);
+  expectArray(wu(res.originals).toArray(), tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: string[] = splitterAsHelm(src);
+  const res: ISeqSplitted = splitterAsHelm(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
-  expectArray(res, tgt);
+  expectArray(wu(res.originals).toArray(), tgt);
 }

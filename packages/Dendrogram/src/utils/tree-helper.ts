@@ -9,7 +9,7 @@ import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
@@ -494,27 +494,26 @@ export class TreeHelper implements ITreeHelper {
   }
 
   async encodeSequences(seqs: DG.Column): Promise<string[]> {
-    const ncUH = UnitsHandler.getOrCreate(seqs);
+    const ncSh = SeqHandler.forColumn(seqs);
     const seqList = seqs.toList();
-    const splitter = ncUH.getSplitter();
     const seqColLength = seqList.length;
     let charCodeCounter = 36;
     const charCodeMap = new Map<string, string>();
-    for (let i = 0; i < seqColLength; i++) {
-      const seq = seqList[i];
-      if (seqList[i] === null || seqs.isNone(i)) {
-        seqList[i] = null;
+    for (let rowIdx = 0; rowIdx < seqColLength; rowIdx++) {
+      const seq = seqList[rowIdx];
+      if (seqList[rowIdx] === null || seqs.isNone(rowIdx)) {
+        seqList[rowIdx] = null;
         continue;
       }
-      seqList[i] = '';
-      const splittedSeq = splitter(seq);
-      for (let j = 0; j < splittedSeq.length; j++) {
-        const char = splittedSeq[j];
+      seqList[rowIdx] = '';
+      const ss = ncSh.getSplitted(rowIdx);
+      for (let j = 0; j < ss.length; j++) {
+        const char = ss.getCanonical(j);
         if (!charCodeMap.has(char)) {
           charCodeMap.set(char, String.fromCharCode(charCodeCounter));
           charCodeCounter++;
         }
-        seqList[i] += charCodeMap.get(char)!;
+        seqList[rowIdx] += charCodeMap.get(char)!;
       }
     }
     return seqList;

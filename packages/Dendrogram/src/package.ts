@@ -245,7 +245,8 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 
 // -- File preview --
 
-//tags: fileViewer, fileViewer-nwk, fileViewer-newick
+//tags: fileViewer
+//meta.fileViewer: nwk,newick
 //input: file file
 //output: view preview
 export async function previewNewick(file: DG.FileInfo) {

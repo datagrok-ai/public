@@ -1,8 +1,8 @@
 let v = grok.shell.newView('demo: column inputs');
 let t = grok.data.testData('demog', 100);
 
-let predict = ui.columnInput('Predict', t, t.col('age'));
-let features = ui.columnsInput('Features', t);
+let predict = ui.input.column('Predict', {value: t.col('age'), table: t});
+let features = ui.input.columns('Features', {table: t});
 features.value = [t.col('height'), t.col('weight')];
 
 // events

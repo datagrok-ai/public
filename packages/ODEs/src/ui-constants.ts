@@ -15,8 +15,9 @@ export enum HINT {
   ADV = 'Open advanced template',
   EXT = 'Open extended template',
   CHEM = 'Mass-action kinetics illustration',
-  ROB = "Robertson's chemical reaction model",
+  ROB = `Robertson's chemical reaction model`,
   FERM = 'Fermentation process simulation',
+  PK = 'Pharmacokinetic model',
   PKPD = 'Pharmacokinetic-pharmacodynamic model',
   ACID = 'Gluconic acid production model',
   NIM = 'Nimotuzumab disposition model',
@@ -35,13 +36,14 @@ export enum TITLE {
   LOAD = 'Load...',
   FROM_FILE = 'From file...',
   TEMPL = 'Templates',
-  BASIC = 'Basic',  
+  BASIC = 'Basic',
   ADV = 'Advanced',
   EXT = 'Extended',
   CASES = 'Examples',
   CHEM = 'Chem reactions',
-  ROB = "Robertson's model",  
+  ROB = `Robertson's model`,
   FERM = 'Fermentation',
+  PK = 'PK',
   PKPD = 'PK-PD',
   ACID = 'Acid production',
   NIM = 'Nimotuzumab',
@@ -52,6 +54,7 @@ export enum TITLE {
   VARY = 'Vary inputs',
   MODEL = 'Model',
   IPUTS = 'Run',
+  FIT = 'Fit',
   SOLUTION = 'Solution',
   OPEN = 'Open',
   BROWSE = 'Browse',
@@ -59,7 +62,7 @@ export enum TITLE {
 };
 
 /** Help links */
-export enum LINK {  
+export enum LINK {
   DIF_STUDIO_REL = '/help/compute/diff-studio',
   DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
   SENS_AN = 'https://datagrok.ai/help/compute#sensitivity-analysis',
@@ -67,6 +70,7 @@ export enum LINK {
   FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
   GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
   NIMOTUZUMAB = `${DIF_STUDIO_REL}#nimotuzumab`,
+  PK = `${DIF_STUDIO_REL}#pk`,
   PKPD = `${DIF_STUDIO_REL}#pk-pd`,
   ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
   BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
@@ -99,7 +103,7 @@ export enum WARNING {
 
 /** Other UI constants */
 export enum MISC {
-  VIEW_DEFAULT_NAME = 'Template',  
+  VIEW_DEFAULT_NAME = 'Template',
   FILE_EXT = 'ivp',
   FILE_DEFAULT_NAME = `equations.${FILE_EXT}`,
 };
@@ -157,7 +161,7 @@ export enum PATH {
   APPS_DS = '/apps/DiffStudio',
   MODEL = `?model=`,
   CUSTOM = `${MODEL}custom`,
-  EMPTY = `${MODEL}empty`,  
+  EMPTY = `${MODEL}empty`,
   EQ = '=',
   AND = '&',
   PARAM = `?params:`,
@@ -167,4 +171,5 @@ export enum PATH {
 export enum TIMEOUT {
   PREVIEW_DOCK_EDITOR = 1000,
   PREVIEW_RUN_SOLVING = 1100,
+  APP_RUN_SOLVING = 1100,
 };

@@ -88,6 +88,38 @@ ${CONTROL_EXPR.PARAMS}:
   
 ${CONTROL_EXPR.TOL}: 1e-7`;
 
+/** PK simulation */
+const PK_MODEL = `${CONTROL_EXPR.NAME}: PK
+${CONTROL_EXPR.TAGS}: model
+${CONTROL_EXPR.DESCR}: Pharmacokinetic (PK) simulation: one-compartment model
+${CONTROL_EXPR.DIF_EQ}:
+  d(depot)/dt = -KA * depot
+  d(centr)/dt = KA * depot - CL * C2
+
+${CONTROL_EXPR.EXPR}:
+  C2 = centr / V2
+
+${CONTROL_EXPR.LOOP}:
+  count = 1 {category: Dosing; min: 1; max: 10} [Number of doses]
+  depot += dose
+
+${CONTROL_EXPR.ARG}: t
+  start = 0 {units: h; caption: begin; category: Dosing; min: 0; max: 1} [Begin of dosing interval]
+  final = 12 {units: h; caption: end; category: Dosing; min: 5; max: 15} [End of dosing interval]
+  step = 0.01 {units: h; caption: step; category: Dosing; min: 0.01; max: 0.1} [Time step of simlulation]  
+
+${CONTROL_EXPR.INITS}:  
+  depot = 0 {category: Initial values}
+  centr = 0 {category: Initial values} [Central]
+
+${CONTROL_EXPR.PARAMS}:  
+  dose = 1e4 {category: Dosing; min: 1e3; max: 2e4; step: 1e3} [Dosage]
+  KA = 0.3 {caption: rate constant; category: Paramters; min: 0.1; max: 1}
+  CL = 2 {caption: clearance; category: Paramters; min: 1; max: 5}
+  V2 = 4 {caption: central volume; category: Paramters; min: 1; max: 10} [Central compartment volume]
+  
+${CONTROL_EXPR.TOL}: 1e-9`;
+
 /** PK-PD simulation */
 const PK_PD_MODEL = `${CONTROL_EXPR.NAME}: PK-PD
 ${CONTROL_EXPR.TAGS}: model
@@ -365,6 +397,7 @@ export enum USE_CASES {
   CHEM_REACT = CHEM_REACT_MODEL,
   ROBERTSON = ROBERTSON_MODEL,
   FERMENTATION = FERMENTATION_MODEL,
+  PK = PK_MODEL,
   PK_PD = PK_PD_MODEL,
   ACID_PROD = ACID_PROD_MODEL,
   NIMOTUZUMAB = NIMOTUZUMAB_MODEL,

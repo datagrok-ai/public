@@ -31,6 +31,11 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
+      this.error = '';
+      if (this.moleculeColumn.type !== DG.TYPE.STRING) {
+        this.closeWithError('Incorrect target column type');
+        return;
+      }
       let progressBar: DG.TaskBarProgressIndicator;
       if (!this.tooltipUse)
         progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
@@ -40,7 +45,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         this.renderMolIds =
           await chemDiversitySearch(
             this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-            this.fingerprint as Fingerprint, this.tooltipUse);
+            this.fingerprint as Fingerprint, this.tooltipUse, this.recalculateOnFilter);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -101,7 +106,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
+  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false, filterSync = false): Promise<number[]> {
   let fingerprintArray: (BitArray | null)[];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
@@ -125,7 +130,9 @@ export async function chemDiversitySearch(
   } else
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);
 
-  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
+  let indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
+  if (filterSync && moleculeColumn.dataFrame)
+    indexes = indexes.filter((it) => moleculeColumn.dataFrame.filter.get(it));
   if (!tooltipUse)
     malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);

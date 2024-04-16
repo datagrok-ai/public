@@ -54,6 +54,11 @@ export interface IScatterPlot3dLookSettings {
 
   markerRandomRotation: boolean;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -101,6 +106,11 @@ export interface ITreeMapLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -256,6 +266,11 @@ export interface IHistogramLookSettings {
 
   aggTooltipColumns: string;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -333,11 +348,6 @@ export interface IFiltersLookSettings {
 }
 
 export interface IScatterPlotLookSettings {
-  /// Determines the rows shown on the scatter plot.
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
-  filter: string;
-
   /// Invalid are null values and not positive numbers if axis is logarithmic.
   filterOutInvalid: boolean;
 
@@ -537,6 +547,11 @@ export interface IScatterPlotLookSettings {
 
   defaultRenderer: boolean;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -561,10 +576,6 @@ export interface IScatterPlotLookSettings {
 }
 
 export interface ILineChartLookSettings {
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
-  filter: string;
-
   /// Deprecated, use splitColumnNames instead
   splitColumnName: string;
 
@@ -580,6 +591,8 @@ export interface ILineChartLookSettings {
   /// When true, X axis is synchronized with the corresponding filter's range values.
   /// Otherwise, when the filter is changed points are filtered out on a chart but the min-max stays.
   axesFollowFilter: boolean;
+
+  packCategories: boolean;
 
   /// When true, multiple *Y Columns* charts get rendered on top of each other,
   /// otherwise they are stacked
@@ -755,6 +768,11 @@ export interface ILineChartLookSettings {
 
   aggTooltipColumns: string;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -843,6 +861,12 @@ export interface IBarChartLookSettings {
   showSelectedRows: boolean;
 
   showMouseOverRect: boolean;
+
+  /// Show which part is filtered
+  /// Only works with RowSource = All
+  showFilteredRows: boolean;
+
+  showMouseOverRows: boolean;
 
   autoLayout: boolean;
 
@@ -942,6 +966,11 @@ export interface IDensityPlotLookSettings {
 
   backColor: number;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -966,11 +995,6 @@ export interface IDensityPlotLookSettings {
 }
 
 export interface IBoxPlotLookSettings {
-  /// Determines the rows shown on the box plot.
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
-  filter: string;
-
   showStatistics: boolean;
 
   categoryColumnName: string;
@@ -1066,6 +1090,11 @@ export interface IBoxPlotLookSettings {
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1147,6 +1176,11 @@ export interface IPieChartLookSettings {
 
   aggTooltipColumns: string;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1188,6 +1222,11 @@ export interface IMatrixPlotLookSettings {
   showYAxes: boolean;
 
   backColor: number;
+
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1315,7 +1354,6 @@ export interface ISparklinesLookSettings {
 }
 
 export interface IGridLookSettings {
-  /// Determines the rows shown in grid
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1519,6 +1557,11 @@ export interface IGridLookSettings {
 
   maxHeatmapColumns: number;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1555,6 +1598,11 @@ export interface ICalendarLookSettings {
 
   evenMonthColor: number;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1585,8 +1633,6 @@ export interface ITrellisPlotLookSettings {
 
   viewerType: string;
 
-  filter: string;
-
   categoryLabelFont: string;
 
   innerViewerLooks: Map<string, any>;
@@ -1616,6 +1662,11 @@ export interface ITrellisPlotLookSettings {
   autoLayout: boolean;
 
   backColor: number;
+
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1709,6 +1760,11 @@ export interface IPcPlotLookSettings {
 
   horzMargin: number;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1751,6 +1807,11 @@ export interface IMapViewerLookSettings {
 
   categoricalColorScheme: Array<number>;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1781,7 +1842,10 @@ export interface IStatsViewerLookSettings {
 
   backColor: number;
 
-  rows: string;
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1820,6 +1884,11 @@ export interface ICorrelationPlotLookSettings {
   showTooltip: boolean;
 
   backColor: number;
+
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -2097,6 +2166,11 @@ export interface ITileViewerLookSettings {
 
   lanes: Array<string>;
 
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
+
   //StreamController _changes;
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -2128,7 +2202,6 @@ export interface ITileViewerLookSettings {
 }
 
 export interface IPivotViewerLookSettings {
-  /// Determines the rows used in pivot viewer.
   showHeader: boolean;
 
   pivotColumnNames: Array<string>;
@@ -2140,6 +2213,11 @@ export interface IPivotViewerLookSettings {
   aggregateAggTypes: Array<string>;
 
   viewerSettings: Array<any>;
+
+  /// Determines the rows shown on the plot.
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
+  filter: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

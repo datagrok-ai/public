@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -211,6 +211,7 @@ export class UserSession extends Entity {
   get user(): User { return toJs(api.grok_UserSession_Get_User(this.dart)); }
 }
 
+
 /** Represents a function
  * @extends Entity
  * {@link https://datagrok.ai/help/datagrok/functions/function}
@@ -271,12 +272,20 @@ export class Func extends Entity {
     return (await (this.prepare(parameters)).call()).getOutputParamValue();
   }
 
+  /** Executes the function synchronously, and returns the result.
+   *  If the function is asynchronous, throws an exception. */
+  applySync(parameters: {[name: string]: any} = {}): any {
+    return this.prepare(parameters).callSync().getOutputParamValue();
+  }
+
   /** Returns functions with the specified attributes. */
   static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Func[] {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);
   }
 
-  /** Returns functions (including queries and scripts) with the specified attributes. */
+  /**
+   * @deprecated Use find, it's the same now but does not make a server query and synchronous.
+   */
   static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
     let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
@@ -631,8 +640,11 @@ export class Notebook extends Entity {
  * */
 export class TableInfo extends Entity {
   /** @constructs TableInfo */
+  public tags: {[key: string]: any};
+
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_TableInfo_Get_Tags(this.dart), 'tags');
   }
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
@@ -1226,6 +1238,10 @@ export class Property {
   get description(): string { return api.grok_Property_Get_Description(this.dart); }
   set description(s: string) { api.grok_Property_Set_Description(this.dart, s); }
 
+  /** Nullable */
+  get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
+  set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
+
   /** Default value */
   get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.dart); }
   set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, s); }
@@ -1355,7 +1371,7 @@ export class EntityType {
   };
 
   static create(name: string, matching: string): EntityType {
-    return toJs(api.grok_EntityType_Create(toJs(name), toJs(matching)));
+    return toJs(api.grok_EntityType_Create(toDart(name), toDart(matching)));
   }
 
   get name(): string { return toJs(api.grok_EntityType_Get_Name(this.dart)); }

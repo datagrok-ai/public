@@ -11,7 +11,7 @@ On radar viewer, you can compare the numerical values of different columns
 within a row and rows' values within a dataset. Radar viewer is commonly used in
 the comparison, decision-making, and analysis, for example, in [elemental analysis in cheminformatics](../../datagrok/solutions/domains/chem/chem.md#elemental-analysis).
 
-![Radar viewer](radar-viewer.png)
+![Radar viewer](img/radar-viewer.png)
 
 You can use a radar viewer as a standalone chart or as an [inline viewer in
 summary column](grid.md#row-summary-columns) of [grid](grid.md).
@@ -56,12 +56,12 @@ For example, you can:
 A radar viewer responds to the current row selection and doesn't respond to data
 filters.
 
-![Radar viewer](radar-viewer.gif)
+![Radar viewer](img/radar-viewer.gif)
 
 ## See also
 
-* [Viewers](../viewers/viewers.md)
+* [Viewers](viewers.md)
 * [PC plot](pc-plot.md)
-* [Bar chart](bar-chart.md)
-* Pie bar chart
-* Sparkline
+* [Barchart](bar-chart.md)
+* [Piechart](pie-chart.md)
+* [Sparklines](grid.md#cell-renderers)

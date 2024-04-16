@@ -1,11 +1,11 @@
 // Demonstrates how to create and manipulate drag-n-dropped objects.
 
-let control = ui.searchInput('', 'Drag column header or image here...');
+let control = ui.input.search('', {value: 'Drag column header or image here...'});
 
 // Allow dragging and dropping objects into the search field:
 ui.makeDroppable(control.input, {
-  acceptDrop: (o) => true,  // Allow to drag anything into the field
-  doDrop: (o, _) => {       // Let's check what fell into the input field
+  acceptDrop: (_) => true,  // Allow to drag anything into the field
+  doDrop: (o, _) => {          // Let's check what fell into the input field
     if (o instanceof DG.Column)
       control.value = o.name.toUpperCase() + ' was dropped';
     else if (o instanceof HTMLDivElement)

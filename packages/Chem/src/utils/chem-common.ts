@@ -1,4 +1,6 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {getMolSafe} from './mol-creation_rdkit';
+import {MolList, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export const defaultMorganFpRadius = 2;
 export const defaultMorganFpLength = 2048;
@@ -69,6 +71,27 @@ export function hexToPercentRgb(hex: string): number[] | null {
       parseInt(result[3], 16) / 256,
       result.length > 4 ? parseInt(result[4], 16) / 256 : 0.3
   ] : null;
+}
+
+export function stringArrayToMolList(molecules: string[], rdkit: RDModule): MolList {
+  const mols = new rdkit.MolList();
+  for (let i = 0; i < molecules.length; i++)
+    appendMolList(molecules[i], mols, rdkit);
+  return mols;
+}
+
+export function appendMolList(molString: string | null, mols: MolList, rdkit: RDModule) {
+  let molSafe;
+  try {
+    molSafe = getMolSafe(molString ?? '', {}, rdkit);
+    if (molSafe.mol === null || molSafe.isQMol || !molSafe.kekulize) {
+      molSafe.mol?.delete();
+      molSafe = getMolSafe('', {}, rdkit);
+    }
+    mols.append(molSafe.mol!);
+  } finally {
+    molSafe?.mol?.delete();
+  }
 }
 
 export function getSigFigs(n: number, sig: number) {

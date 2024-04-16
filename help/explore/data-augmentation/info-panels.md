@@ -1,40 +1,113 @@
 ---
 title: "Info panes"
+keywords:
+ - info panel
+ - info pane
+format: mdx
 ---
 
-Info panes provide additional information about the current context (which can be a table, a column, or pretty much any
-other [object](../../datagrok/concepts/objects.md)). Info panes are meant to be easily developed by the users of the platform, and
-shared with other users. You can use all features of the Datagrok platform, such as scripting, data querying and
-transformation pipeline, user-defined functions, markup, viewers, predictive models.
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
 
-Info panes could be developed in any language supported by the platform.
+Info panes provide contextual information about current objects, such as tables,
+queries, or molecules. The concept is similar to an email client, where clicking
+a subject reveals the content of an email in another pane. However, in Datagrok,
+info panes serve a wider range of functions, making use of all Datagrok's
+capabilities, including [scripting](../../compute/scripting.md),
+[queries](../../access/access.md#data-query),
+[functions](../../datagrok/concepts/functions/functions.md),
+[viewers](../../visualize/viewers/viewers.md), [predictive
+models](../../learn/learn.md), and so on.
 
-![Info Pane](cell-imaging-segmentation.png "Cell Imaging Segmentation")
-*Cell Imaging Segmentation Info Pane*
+Examples:
+
+<Tabs>
+<TabItem value="details-actions" label="Details and actions" default>
+
+In this example, the info panes help you browse database objects, get data, and more. For example,
+when you click a table, the info panes let you view the table's metadata,
+dynamically preview the table's contents, or run queries.
+
+<br/>
+
+![](../../access/databases/img/db-hierarchy-browser.gif)
+
+</TabItem>
+
+<TabItem value="molecule" label="Calculation and visualization">
+
+In this example, a number of scripts execute when you click a molecule,
+including calculation and visualization of the molecule's Gasteiger partial charges,
+solubility prediction, toxicity and so on. 
+[Learn more about the cheminformatics info panes](../../datagrok/solutions/domains/chem/chem.md#exploring-chemical-data).
+
+<br/>
+
+![](../../uploads/gifs/chem-model-augment.gif)
+
+</TabItem>
+<TabItem value="image-augmentation" label="Image augmentation">
+
+In this example, a Python script executes against JPEG and JPG files during the
+indexing process to get custom metadata (cell count) and performs specified
+transformations (segmenting cells). When you click a corresponding image,
+the info pane shows augmented file preview and the number of detected cell
+segments.
+
+<br/>
+
+![](../../access/files/img/Cell-image-segmentation.gif)
+
+</TabItem>
+<TabItem value="dialogs-apps" label="Dialogs and mini apps">
+
+In this example, a query executes a similarity search on the ChEMBL database.
+When you click the query, it displays relevant info panes. You can then run the
+query by drawing a chemical structure. As you draw, the info panes update
+dynamically to provide details about your substructure. Once the query runs, it
+opens a table with matching structures.
+
+<br/>
+
+![](info-panes-mini-app.gif)
+
+</TabItem>
+</Tabs>
+
+<br/>
+
+:::note developers
+
+[Create custom info panes](../../develop/how-to/add-info-panel.md).
+
+:::
 
 ## What gets shown and when?
 
-There are thousands (OK slight exaggeration :) of info panes currently available in the Datagrok platform, and
-certainly we do not want to overwhelm users by showing all of them to everyone. To solve this issue, we designed a
-powerful, easy-to-use mechanism that allows us to show panes exactly to the people that need it, when they need it. In
-order for the pane to be shown, the following conditions have to be satisfied:
+Info panes are displayed based on specific conditions:
 
-* user condition
-* dataset condition
-* context condition
+* user
+* dataset
+* context
 * user preferences
 
-Whenever the current object changes, conditions of all registered info panes are evaluated against the current user,
-dataset, context, and user preferences. Condition is a GrokScript, and therefore any functions and operators can be used
-there.
+These conditions are defined using GrokScript, allowing the use of various
+functions and operators. When the current object changes, the conditions of all
+registered info panes are checked against the specified parameters, and matching
+info panes are displayed accordingly. 
 
 ### User condition
 
-It is possible to restrict access to the particular class of info panes based on the [user](../../govern/user.md)
-attributes, including user's roles, groups he belongs to, or other attributes. This condition can be either specified
-right in the script, or set externally in the [global permissions](../../govern/global-permissions.md).
+You can control access to specific types of info panes based on user attributes
+such as roles, groups, etc. This condition can be set directly within the script
+or externally through [global permissions](../../govern/global-permissions.md).
 
-To specify the condition in the script, use the 'user' variable in the following way:
+<details>
+<summary>Code snippet</summary>
+
+To set the user condition in a script, use the `user` variable like this:
 
 ```
 # condition: user.name == "john doe" || user.name == "jack smith"
@@ -42,50 +115,107 @@ To specify the condition in the script, use the 'user' variable in the following
 # condition: user.inteam("high-throughput screening")
 ```
 
+</details>
+
 ### Dataset condition
 
-Certain info panes only make sense when applied to data that was retrieved from a particular data source.
+Certain info panes are only relevant when applied to data retrieved from
+specific data sources. You can define the dataset condition to specify the data
+source for the table. 
 
-To specify the condition in the script, use the 'table' variable in the following way:
+<details>
+<summary>Code snippet</summary>
+
+To set the dataset condition in a script, use the `table` variable like this:
 
 ```
 # condition: table.gettag("database") == "northwind"
 ```
 
+</details>
+
 ### Context condition
 
-Info panes always accept strictly one parameter. It can be a column, a table, a table cell, or any
-other [object](../../datagrok/concepts/objects.md). A condition might perform checks against that object by using the parameter
-name ("x" in the example below):
+Info panes accept only one input parameter, which can be a column, a table, a table
+cell, or any other [object](../../datagrok/concepts/objects.md). A condition
+may check against that object using the parameter name ("x" in a
+sample code snippet below).
+
+<details>
+<summary>Code snippet</summary>
 
 ```
 #input: column x
 #condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0
 ```
 
+</details>
+
 ### User preferences
 
-Finally, a user has the ability to turn a particular pane off and not show it anymore. To do that, click on the '
-settings' icon on the pane header, and select "Do not show anymore". To manage suppressed panes, open Tools | Settings
-| Info Panes.
+Subject to your permissions, you can control the display of an info pane from
+the UI. To hide a specific info pane, click the **Gear** icon on the pane
+header, then click **Do not show**. To manage hidden panes, on the **Sidebar**,
+click **Settings** > **Panels**, and add or remove hidden columns from there.
 
-## Examples
+## Default info panes for tabular data
 
-### Retrieving more details
+When working with the [grid](../../visualize/viewers/grid.md), the default info panes are:
 
-A common concept in applications is master-detail view - i.e., when current record changes, additional details are
-dynamically retrieved and visualized in a different pane. Perhaps the most famous example is your favorite email client,
-where you would click on a subject in order for the content to appear in another pane. Typically, implementing such a
-feature would require coding - but this can be done in a minute using the Datagrok platform.
+| <div style={{ width:100 }}></div>||
+|---|---|
+|Table, Column, Row, Selection, Current object|<h5>**Actions**</h5>Lists available actions (subject to permissions) |
+|Table, Column|<h5>**Dev**</h5>Provides access to documentation, class references, and code snippets for the current object. It also has an editor with template scripts for common actions related to the object <br/><br/> [Learn more](https://github.com/datagrok-ai/public/tree/master/packages/DevTools#components)| 
+|Table|<h5>**General**</h5>Shows basic metadata, such as number of rows, columns, source, etc.|
+|Table|<h5>**Columns**</h5> Shows all table columns as clickable links, enabling navigation to individual column info panes|
+|Table|<h5>**Models**</h5>Shows relevant models for your dataset (created by you or shared by others). From here, you can manage or train models <br/><br/> ![](info-pane-models-0.png)|
+|Table|<h5>**History**</h5>Shows the history of actions performed on the table|
+|Column|<h5>**Details**</h5>Shows column properties and summary statistics or distributions for the column's data |
+|Column|<h5>**Filter**</h5>Quick access to a column's filter|
+|Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](info-panes-colors.gif)|
+|Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](<context panel -stats.gif>)|
+|Column|<h5>**Permissions**</h5> Specify who can edit a column |
+|Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../deploy/releases/platform/img/plots-info-pane.gif)|
+|Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](info-pane-distributions-0.png)|
+|Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../deploy/releases/platform/img/content-info-pane.gif)|
+
+<!--
+|Table|<h5>**Properties**</h5>|
+|Table|<h5>**Script**</h5>|
+|Table|<h5>**Markup Button Widget**</h5>|
+|Table|<h5>**Column Grid Widget**</h5>|
+|Column|<h5>**Serialization**</h5>|
+
+-->
+
+:::note
+
+Certain grid info panes are provided with the 
+[PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md),
+which is recommended for installation.
+
+In addition, domain-specific info panes are available in specialized packages,
+such as the [cheminformatics info panes](../../datagrok/solutions/domains/chem/chem.md#exploring-chemical-data)
+from the 
+[Chem package](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md).
+
+:::
+
+<!--
+## Custom info panes examples
 
 ### Using predefined visualizations
 
-Oftentimes, it is beneficial to show users an interactive plot, pre-customized based on the structure of the table that
-is currently open.
+Oftentimes, it is beneficial to show users an interactive plot, pre-customized
+based on the structure of the table that is currently open.
 
-See the following info pane (viewer-scatter.grok) in action by opening (project:demog). It creates
-a [Scatter Plot](../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined columns, and adds a regression
-line.
+See the following info pane (viewer-scatter.grok) in action by opening
+(project:demog). It creates a [Scatter
+Plot](../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined
+columns, and adds a regression line.
+
+<details>
+<summary>Code snippet</summary>
 
 ```
 #name: Scatter plot
@@ -99,6 +229,7 @@ line.
 plot = table.ScatterPlot("height", "weight", "age", "sex")
 plot.showRegressionLine = true
 ```
+</details>
 
 ### Digital signal processing
 
@@ -146,6 +277,7 @@ user, or update a record in the database.
 
 actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId)")}"
 ```
+<!--TODO: Move to the Develop section
 
 ### Predicting molecule solubility
 
@@ -170,7 +302,7 @@ ApplyModel(Demo:PredictSolubility, table, showProgress=false)
 predictions = ExtractColumns(table, ["outcome"])
 ```
 
-### Example: predicting yearly sales of a franchise store
+### Predicting yearly sales of a franchise store
 
 Info pane scripts can use all features of the Datagrok platform, including predictive modeling capabilities. The
 following script would do the following behind the scenes when user clicks on a row that contains store address:
@@ -193,7 +325,10 @@ statistics = AddressToStatistics()
 predictedSales = PredictSalesByStatistics(statistics)
 ```
 
-See also:
+
+-->
+
+## See also
 
 * [Data augmentation](data-augmentation.md)
 * [Scripting](../../compute/scripting.md)

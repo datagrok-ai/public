@@ -3,8 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
 import {ISeqSplitted} from '../../utils/macromolecule/types';
 import {splitAlignedSequences} from '../splitter';
-import {getSplitter} from './utils';
-import {TAGS as bioTAGS} from '../../utils/macromolecule';
+import {SeqHandler} from '../seq-handler';
 
 export enum SCORE {
   IDENTITY = 'identity',
@@ -21,8 +20,10 @@ export async function calculateScores(
   table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE
 ): Promise<DG.Column<number>> {
   const splitSeqDf = splitAlignedSequences(col);
-  const splitter = getSplitter(col.getTag(DG.TAGS.UNITS), col.getTag(bioTAGS.separator));
-  const refSplitted = splitter(ref);
+  const srcSh = SeqHandler.forColumn(col);
+  const refCol = srcSh.getNewColumnFromList('ref', [ref]);
+  const refUh = SeqHandler.forColumn(refCol);
+  const refSplitted = refUh.getSplitted(0); // ref is at 0
 
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
     scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf) : null;
@@ -47,7 +48,7 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
     const posCol = positionsDf.columns.byIndex(posIdx);
     positionCols[posIdx] = posCol.getRawData() as Uint32Array;
     positionEmptyCategories[posIdx] = posCol.categories.indexOf('');
-    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(reference[posIdx] ?? '');
+    categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(reference.getOriginal(posIdx) ?? '');
   }
 
   const identityScoresCol = DG.Column.float('Identity', positionsDf.rowCount);
@@ -68,7 +69,7 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
 /** Calculates similarity scores as sum of monomer fingerprint similarities on the same position.
  * @param {ISeqSplitted} reference Splitted reference sequence.
  * @param {DG.DataFrame} positionsDf Table which only contains position columns with semantic type Monomer.
- * @returns {DG.Column<number>} Scores column. */
+ * @return {DG.Column<number>} Scores column. */
 export async function calculateSimilarity(
   reference: ISeqSplitted, positionsDf: DG.DataFrame
 ): Promise<DG.Column<number>> {

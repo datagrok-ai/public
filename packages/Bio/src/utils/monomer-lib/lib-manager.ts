@@ -28,7 +28,7 @@ export async function getLibFileNameList(): Promise<string[]> {
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
  * the platform  */
 export class MonomerLibManager implements IMonomerLibHelper {
-  private readonly _monomerLib = new MonomerLib({});
+  private readonly _monomerLib = new MonomerLib({}, 'MAIN');
 
   /** Protect constructor to prevent multiple instantiation. */
   protected constructor() {}
@@ -70,7 +70,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
             return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
               const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
                 `${err instanceof Error ? err.message : err.toString()}`;
-              return new MonomerLib({}, errMsg);
+              return new MonomerLib({}, libFileName, errMsg);
             });
           }));
         this._monomerLib.updateLibs(libs, reload);

@@ -3,11 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {HELM_WRAPPER} from './const';
-import {getMolColumnFromHelm} from '../helm-to-molfile';
+import {getMolColumnFromHelm} from '../helm-to-molfile/utils';
 
 export const RULES_PATH = 'System:AppData/Bio/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -76,9 +76,9 @@ class TransformationCommon {
               secondFound = true;
               secondEntryIndex = j;
               break;
-            } else {
+            } else
               continue;
-            }
+
             //result[i][1] = j;
             // secondFound = true;
             // break;
@@ -91,9 +91,9 @@ class TransformationCommon {
               firstFound = true;
               firstIsFirst = false;
               firstEntryIndex = j;
-            } else {
+            } else
               continue;
-            }
+
             //result[i] = [j, 0];
           }
         }
@@ -221,11 +221,11 @@ function getHelmCycle(helm: string, source: ConnectionData): string {
 }
 
 export async function addTransformedColumn(
-  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[]
+  molColumn: DG.Column<string>, addHelm: boolean, ruleFiles: string[], chiralityEngine?: boolean
 ): Promise<void> {
   const df = molColumn.dataFrame;
-  const uh = UnitsHandler.getOrCreate(molColumn);
-  const sourceHelmCol = uh.convert(NOTATION.HELM);
+  const sh = SeqHandler.forColumn(molColumn);
+  const sourceHelmCol = sh.convert(NOTATION.HELM);
   const pt = PolymerTransformation.getInstance(sourceHelmCol);
   const fileSource = new DG.FileSource(RULES_PATH);
 
@@ -243,14 +243,15 @@ export async function addTransformedColumn(
   addCommonTags(targetHelmCol);
   targetHelmCol.setTag('units', NOTATION.HELM);
 
-  const molCol = await getMolColumnFromHelm(df, targetHelmCol);
+  const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
+  molCol.semType = DG.SEMTYPE.MOLECULE;
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');
+    //targetHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     df.columns.add(targetHelmCol);
   }
   df.columns.add(molCol, true);
-
   await grok.data.detectSemanticTypes(df);
 }

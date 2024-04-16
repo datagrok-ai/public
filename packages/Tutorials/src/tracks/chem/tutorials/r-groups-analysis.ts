@@ -33,20 +33,18 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     'impact on crucial compound properties, and find gaps.<hr>');
 
     this.t = await grok.data.files.openTable('System:AppData/Tutorials/sar_small-R-groups.csv');
-    grok.shell.addTableView(this.t);
+    const tv = grok.shell.addTableView(this.t);
 
     this.title('Start the R-Groups Analysis tool', true);
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
     <li><b>Chem</b> menu (it contains all chemical tools)</li>
-    <li>Context menu (right-click for access)</li>
-    <li><b>Context Panel</b> on the right.</li>
     </ul><br>
     Let’s launch the RGA tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > R-Groups Analysis...', 'R-Groups Analysis',
-      this.getMenuItem('Chem'));
+      this.getMenuItem('Chem', true));
 
     this.title('Specify the scaffold', true);
     this.describe(`In the sketcher, you have two options to specify the scaffold:<br>
@@ -77,12 +75,12 @@ export class RGroupsAnalysisTutorial extends Tutorial {
 
     await this.action('In the trellis plot, click the gear icon for the embedded viewer',
       new Observable((subscriber: any) => {
-        $('.grok-icon.grok-font-icon-settings.d4-viewer-icon').one('click', () => subscriber.next(true));
-      }), $('.grok-icon.grok-font-icon-settings.d4-viewer-icon').get(0),
-      `The <b>Context Panel</b> on the right now shows the settings for the pie chart.`);
+        $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
+      }), v!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement,
+      `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`);
    
     grok.shell.windows.showContextPanel = true;
-    await this.action('Under Inner Viewer tab > Data, set Category to LC/MS', new Observable((subscriber: any) => {
+    await this.action('Under <b>Pie chart</b> tab > <b>Data</b>, set Category to LC/MS', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           if (m.previousSibling?.textContent === 'LC/MS') {
@@ -99,7 +97,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     The <b>Context Panel</b> provides information and actions relevant to your selection.<br>
     Let’s explore.`);
 
-    await this.action('Click any segment on a bar chart', this.t.onSelectionChanged, undefined, 'Scroll to see the selected rows in the grid.');
+    await this.action('Click any segment on a pie chart', this.t.onSelectionChanged, undefined, 'Scroll to see the selected rows in the grid.');
 
     await this.action('Press Escape', new Observable((subscriber: any) => {
       document.addEventListener("keydown", ({key}) => {
@@ -165,18 +163,21 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       });
       observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
     }), undefined, `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
-      the histogram’s settings, and under <b>Inner Viewer</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`);
+      the histogram’s settings, and under <b>Histogram</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`);
 
     this.title('Switch axes', true);
     this.describe(`Finally, let’s change the R-groups used on the plot.`);
 
     await this.action('Set the value for the X axis to R4', new Observable((subscriber: any) => {
-      const s = v.root.querySelectorAll('.d4-columns-host')[0].children[1] as HTMLSelectElement;
-      s.addEventListener('change', (e) => {
-        //@ts-ignore
-        if (e.target.value === 'R4')
-          subscriber.next(true);
+      const observer = new MutationObserver((mutationsList, observer) => {
+        mutationsList.forEach((m) => {
+          if (m.target.textContent === 'R4') {
+            subscriber.next(true);
+            observer.disconnect();
+          }
+        });
       });
+      observer.observe(v.root.querySelectorAll('.d4-columns-host')[0].children[0].children[1], {childList: true, subtree: true});
     }));
   }
 }

@@ -1,5 +1,25 @@
 # EDA changelog
 
+## 1.1.19 (2024-04-15)
+
+* PLS components computation
+* Update UI for `Multivariate Analysis` - main feature & demo app
+
+## 1.1.18 (2024-04-15)
+
+Fixed webGPU numeric distance with 0 range
+
+## 1.1.17 (2024-04-14)
+
+### Features
+* Add webGPU UMAP implementation.
+* Add webGPU Sparse matrix calculation.
+* Add webGPU option for MCL.
+
+## 1.1.16 (2024-04-05)
+
+Add webGPU KNN calculation option to UMAP.
+
 ## 1.1.15 (2024-02-27)
 
 Add support for post processing functions in dimensionality reduction. The method `Dimensionality Reduction` (see Top Menu > ML > Dimensionality Reduction) now allows to apply post processing functions to the resulting embeddings.

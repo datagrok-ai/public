@@ -1,6 +1,13 @@
 # Sequence Translator changelog
 
+## 1.2.9 (2024-03-30)
+
+### Features
+
+* #2707: Add original and canonical to monomer
+
 ## 1.2.7 (2024-01-29)
+
 ### Features
 
 * Bulk translation for formats

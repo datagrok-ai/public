@@ -21,7 +21,6 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
   static UA: DG.MultiView;
-  dockFilters: DG.DockNode | null = null;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -29,7 +28,7 @@ export class ViewHandler {
     return ViewHandler.instance;
   }
 
-  async init() {
+  async init(): Promise<void> {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
@@ -37,11 +36,13 @@ export class ViewHandler {
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView, ReportsView];
+    const inits: Promise<void>[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      currentView.tryToinitViewers();
+      inits.push(currentView.tryToinitViewers());
       ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
+    await Promise.all(inits);
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('groups');
     const paramsHavePackages = params.has('packages');
@@ -143,10 +144,9 @@ export class ViewHandler {
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
-    const urlTab = window.location.pathname.match(/UsageAnalysis\/([a-zA-Z]+)/)?.[1];
-    ViewHandler.UA.path = APP_PREFIX + (urlTab ?? 'Overview');
-    if (urlTab) ViewHandler.changeTab(urlTab);
-    grok.shell.addView(ViewHandler.UA);
+    const urlTab = window.location.pathname.match(/UsageAnalysis\/UsageAnalysis\/([a-zA-Z]+)/)?.[1] ?? 'Overview';
+    ViewHandler.UA.path = `/${urlTab}`;
+    if (viewClasses.some((v) => v.name === `${urlTab}View`)) ViewHandler.changeTab(urlTab);
   }
 
   public static getView(name: string) {

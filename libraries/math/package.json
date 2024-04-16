@@ -8,28 +8,30 @@
     "access": "public"
   },
   "friendlyName": "Datagrok math library",
-  "version": "1.0.7",
+  "version": "1.1.2",
   "description": "Library for high performance computations",
   "dependencies": {
+    "@webgpu/types": "^0.1.40",
     "cash-dom": "latest",
     "datagrok-api": "^1.15.0",
     "dayjs": "latest",
-    "rxjs": "^6.5.5",
-    "wu": "latest",
     "file-loader": "latest",
+    "rxjs": "^6.5.5",
+    "source-map-loader": "^4.0.1",
     "worker-loader": "latest",
-    "source-map-loader": "^4.0.1"
+    "wu": "latest",
+    "ml-levenberg-marquardt": "^4.1.3"
   },
   "devDependencies": {
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
+    "css-loader": "^6.7.3",
     "eslint": "latest",
     "eslint-config-google": "latest",
-    "ts-loader": "^9.2.6",
-    "typescript": "^4.9.5",
     "style-loader": "^3.3.2",
-    "css-loader": "^6.7.3"
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "link": "npm link",

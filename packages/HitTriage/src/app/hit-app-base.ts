@@ -13,7 +13,9 @@ export class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
     this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
-      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+      //TODO: remove this when everyone is upgraded to support DG.FUNC.FIND returning all functions, queries and scripts
+        .filter((f) => f.type === 'function-package');
       const scripts = await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list();
       const queries = await grok.dapi.queries.include('params,connection')
         .filter(`#${HitTriageComputeFunctionTag}`).list();

@@ -6,7 +6,7 @@ import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -21,13 +21,20 @@ for (let i = 0; i < df.columns.length; i++) {
 
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
+
+class PosCol {
+  constructor(
+    public readonly units: string,
+    public readonly aligned: string | null,
+    public readonly alphabet: string | null,
+    public readonly alphabetSize: number,
+    public readonly alphabetIsMultichar?: boolean,
+    public readonly separator?: string,
+  ) { };
+}
+
 category('detectors', () => {
   const enum csvTests {
-    negEmpty = 'negEmpty',
-    neg1 = 'neg1',
-    neg2 = 'neg2',
-    neg3 = 'neg3',
-    negSmiles = 'negSmiles',
     fastaDna1 = 'csvFastaDna1',
     fastaRna1 = 'fastaRna1',
     fastaPt1 = 'fastaPt1',
@@ -42,34 +49,128 @@ category('detectors', () => {
     sepComplex = 'sepComplex',
     fastaMsaDna1 = 'fastaMsaDna1',
     fastaMsaPt1 = 'fastaMsaPt1',
+    fastaMsaSameLength = 'fastaMsaSameLength',
+    fastaExtSameLength = 'fastaExtSameLength',
+    fastaMsaExtSameLength = 'fastaMsaExtSameLength',
+    sepSameLength = 'sepSameLength',
+    sepMsaSameLength = 'sepMsaSameLength',
+    helmSameLength = 'helmSameLength',
   }
 
-  const csvData = new class {
-    [csvTests.negEmpty]: string = `id,col1
+  const csvData2: { [testName: string]: { csv: string, neg?: string[], pos?: { [colName: string]: PosCol } } } = {
+    'negEmpty': {
+      csv: `id,col1
 1,
 2,
 3,
 4,
-5,`;
-    [csvTests.neg1]: string = `col1
+5,`,
+      neg: ['col1']
+    },
+    'negNum1': {
+      csv: `col1
 1
 2
-3`;
-    [csvTests.neg2]: string = `col1
+3`,
+      neg: ['col1'],
+    },
+    'negNum2': {
+      csv: `col1
 4
 5
 6
-7`;
-    [csvTests.neg3]: string = `col1
+7`,
+      neg: ['col1'],
+    },
+    'negNum3': {
+      csv: `col1
 8
 9
 10
 11
-12`;
-    [csvTests.negSmiles]: string = `col1
+12`,
+      neg: ['col1'],
+    },
+
+    'negSmiles': {
+      csv: `col1
 CCCCN1C(=O)CN=C(c2cc(F)ccc12)C3CCCCC3
 C1CCCCC1
-CCCCCC`;
+CCCCCC`,
+      neg: ['col1'],
+    },
+
+    // Same length
+    'fastaMsaSameLength': {
+      csv: `seq
+FWPHEYFWPHEYYV
+YNRQWYVYNRQWYV
+MKPSEYVMKPSEYV`,
+      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.PT, 20, false, undefined)}
+    },
+    'fastaExtSameLength': {
+      csv: `seq
+FW[Ac]PHEYFWPH
+YN[Re]VYNRQWYV
+[Me]EYVMPS[Et]`,
+      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.UN, 16, true, undefined)},
+    },
+    'fastaMsaExtSameLength': {
+      csv: `seq
+FW[Ac]PHEY[Re]WPH
+YN[Re]VYNR[Ac]WYV
+[Me]EYVMPSFW[Me]H`,
+      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true, undefined)},
+    },
+    'sepSameLength': {
+      csv: `seq
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
+        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-'),
+      }
+    },
+    'sepMsaSameLength': {
+      csv: `seq
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
+Ac(1)-A-A(2)-A-A-A-C(2)-A-A-A-A-C(1)-G-NH2
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
+        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-'),
+      }
+    },
+    'helmSameLength': {
+      csv: `seq
+PEPTIDE1{Ac(1).A.A.A.A.A.A.A.A.A.A.A.A.A.C(1).G.NH2}$$$$
+PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
+PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
+      pos: {
+        'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)
+      }
+    },
+  };
+
+  const readCsv2: (key: keyof typeof csvData2) => DfReaderFunc = (key: keyof typeof csvData2) => {
+    return async () => {
+      const csv: string = csvData2[key].csv;
+      const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+      await grok.data.detectSemanticTypes(df);
+      return df;
+    };
+  };
+
+  for (const [testName, testData] of Object.entries(csvData2)) {
+    test(`csvData2-${testName}`, async () => {
+      const reader = readCsv2(testName as csvTests);
+      for (const negColName of testData.neg ?? [])
+        await _testNeg(reader, negColName);
+      for (const [posColName, posCol] of Object.entries(testData.pos ?? {})) {
+        await _testPos(reader, posColName, posCol.units, posCol.aligned,
+          posCol.alphabet, posCol.alphabetSize, posCol.alphabetIsMultichar, posCol.separator);
+      }
+    });
+  }
+
+  const csvData = new class {
     [csvTests.fastaDna1]: string = `seq
 ACGTCACGTC
 CAGTGTCAGTGT
@@ -208,7 +309,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     return df;
   }
 
-  const readCsv: (key: csvTests) => DfReaderFunc = (key: keyof typeof csvData) => {
+  const readCsv: (key: keyof typeof csvData) => DfReaderFunc = (key: keyof typeof csvData) => {
     return async () => {
       // Always recreate test data frame from CSV for reproducible detector behavior in tests.
       const csv: string = csvData[key];
@@ -218,12 +319,6 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     };
   };
 
-
-  test('NegativeEmpty', async () => { await _testNeg(readCsv(csvTests.negEmpty), 'col1'); });
-  test('Negative1', async () => { await _testNeg(readCsv(csvTests.neg1), 'col1'); });
-  test('Negative2', async () => { await _testNeg(readCsv(csvTests.neg2), 'col1'); });
-  test('Negative3', async () => { await _testNeg(readCsv(csvTests.neg3), 'col1'); });
-  test('NegativeSmiles', async () => { await _testNeg(readCsv(csvTests.negSmiles), 'col1'); });
   test('NegativeStartEnd', async () => { await _testNegList(['START', 'END']); });
   test('NegativeStartEndIntermediate', async () => { await _testNegList(['START', 'END', 'INTERMEDIATE']); });
 
@@ -433,18 +528,18 @@ export async function _testPosList(list: string[], units: NOTATION,
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = UnitsHandler.getOrCreate(col);
-  expect(uh.getAlphabetSize(), alphabetSize);
-  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
-  if (!uh.isHelm()) {
-    expect(uh.aligned, aligned);
-    expect(uh.alphabet, alphabet);
+  const sh = SeqHandler.forColumn(col);
+  expect(sh.getAlphabetSize(), alphabetSize);
+  expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!sh.isHelm()) {
+    expect(sh.aligned, aligned);
+    expect(sh.alphabet, alphabet);
   }
 }
 
 export async function _testPos(
-  readDf: DfReaderFunc, colName: string, units: string,
-  aligned: string | null, alphabet: string | null, alphabetSize: number, alphabetIsMultichar: boolean,
+  readDf: DfReaderFunc, colName: string, units: string, aligned: string | null,
+  alphabet: string | null, alphabetSize: number, alphabetIsMultichar?: boolean,
   separator: string | null = null,
 ) {
   const df: DG.DataFrame = await readDf();
@@ -461,25 +556,15 @@ export async function _testPos(
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = UnitsHandler.getOrCreate(col);
-  expect(uh.getAlphabetSize(), alphabetSize);
-  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
-  if (!uh.isHelm()) {
-    expect(uh.aligned, aligned);
-    expect(uh.alphabet, alphabet);
+  const sh = SeqHandler.forColumn(col);
+  expect(sh.getAlphabetSize(), alphabetSize);
+  expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!sh.isHelm()) {
+    expect(sh.aligned, aligned);
+    expect(sh.alphabet, alphabet);
   }
 }
 
-class PosCol {
-  constructor(
-    public readonly units: string,
-    public readonly aligned: string | null,
-    public readonly alphabet: string | null,
-    public readonly alphabetSize: number,
-    public readonly alphabetIsMultichar: boolean,
-    public readonly separator?: string,
-  ) { };
-}
 
 export async function _testDf(readDf: DfReaderFunc, posCols: { [colName: string]: PosCol }): Promise<void> {
   const df: DG.DataFrame = await readDf();

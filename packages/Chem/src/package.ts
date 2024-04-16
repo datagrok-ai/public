@@ -498,13 +498,20 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //input: column col {semType: Molecule}
 //input: string _metric {optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  //TODO: get rid of fallback
+  let fingerprintTypeStr = fingerprintType as string;
+  if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
+    fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+    fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
+
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
+  return { entries: fpColumn, options: {} };
+
 }
 
 
@@ -1280,8 +1287,8 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
-//top-menu: Chem | Analyze | Molecular Matched Pairs...
-//name:  Molecular Matched Pairs
+//top-menu: Chem | Analyze | Matched Molecular Pairs...
+//name:  Matched Molecular Pairs
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type:numerical}
@@ -1328,7 +1335,8 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }
 
