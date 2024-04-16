@@ -1,5 +1,4 @@
-import {MolNotationType, OCLServiceCall} from './consts';
-import {CHEM_PROP_MAP} from './calculations';
+import {MolNotationType, OCLServiceCall} from '../consts';
 import * as OCL from 'openchemlib/full';
 
 type OCLWorkerReturnType = {res: {[key: string]: Array<number>}, errors: string[]};
@@ -75,3 +74,34 @@ function getDrugLikeliness(molList: Array<string>, notationType: string): OCLWor
   return {res, errors};
 }
 
+// duplication required for webpack to separate the worker OCL context from main thread context
+const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
+  'MW': {name: 'MW', type: 'float', valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
+  'HBA': {name: 'HBA', type: 'int', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).acceptorCount},
+  'HBD': {name: 'HBD', type: 'int', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).donorCount},
+  'LogP': {name: 'LogP', type: 'float', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).logP},
+  'LogS': {name: 'LogS', type: 'float', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).logS},
+  'PSA': {
+    name: 'PSA', type: 'float', valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).polarSurfaceArea},
+  'Rotatable bonds': {name: 'Rotatable bonds', type: 'int',
+    valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).rotatableBondCount},
+  'Stereo centers': {name: 'Stereo centers', type: 'int',
+    valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).stereoCenterCount},
+  'Molecule charge': {name: 'Molecule charge', type: 'int', valueFunc: (m: OCL.Molecule) => getMoleculeCharge(m)},
+};
+
+function getMoleculeCharge(mol: OCL.Molecule): number {
+  const atomsNumber = mol.getAllAtoms();
+  let moleculeCharge = 0;
+  for (let atomIndx = 0; atomIndx <= atomsNumber; ++atomIndx)
+    moleculeCharge += mol.getAtomCharge(atomIndx);
+
+  return moleculeCharge;
+}
+interface IChemProperty {
+  name: string;
+  valueFunc: (mol: OCL.Molecule) => any;
+  type: IChemPropertyType;
+}
+// we need this instead of DG.TYPE.FLOAT or int, because anything used by workers can not import DG, as it is external
+type IChemPropertyType = 'float' | 'int';

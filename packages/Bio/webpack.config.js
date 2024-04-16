@@ -2,11 +2,12 @@ const path = require('path');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const mode = 'development';
 module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: mode,
   entry: {
     package: ['./src/package.ts'],
     test: {
@@ -29,7 +30,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: 'source-map',
+  devtool: mode === 'development' ? 'source-map' : 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

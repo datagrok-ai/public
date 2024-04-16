@@ -103,7 +103,8 @@
     "All users"
   ],
   "sources": [
-    "css/helm.css"
+    "css/helm.css",
+    "common/openchemlib-full.js"
   ],
   "category": "Bioinformatics",
   "meta": {

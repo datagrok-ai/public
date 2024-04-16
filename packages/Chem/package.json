@@ -107,5 +107,6 @@
     "browserFeatures": [
       "wasm"
     ]
-  }
+  },
+  "sources": ["common/openchemlib-full.js"]
 }
