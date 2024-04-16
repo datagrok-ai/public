@@ -679,7 +679,7 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit parameters');
+    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit inputs');
 
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
