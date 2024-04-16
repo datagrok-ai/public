@@ -127,21 +127,23 @@ category('top menu similarity/diversity', () => {
   test('testSimilaritySearch.smiles', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
     await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0),
-      BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan);
+      BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan, DG.BitSet.create(df.rowCount).setAll(true));
   });
 
   test('testDiversitySearch.smiles', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Samples:Files/chem/smiles_1M.zip') : molecules;
-    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint,
+      DG.BitSet.create(df.rowCount).setAll(true));
   });
 
   test('testDiversitySearch.molV2000', async () => {
-    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
+    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint,
+      DG.BitSet.create(spgi100.rowCount).setAll(true));
   });
 
   test('testDiversitySearch.molV3000', async () => {
     await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10,
-      Fingerprint.Morgan as Fingerprint);
+      Fingerprint.Morgan as Fingerprint, DG.BitSet.create(approvedDrugs100.rowCount).setAll(true));
   });
 
   test('diversity.emptyValues', async () => {
@@ -281,7 +283,7 @@ async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetric
   const molecules = await readDataframe('tests/sar-small_test.csv');
   const moleculeColumn = molecules.col('smiles');
   const similarityDf = await chemSimilaritySearch(molecules, moleculeColumn!, moleculeColumn!.get(0),
-    distanceMetric, 10, 0.01, fingerprint as Fingerprint);
+    distanceMetric, 10, 0.01, fingerprint as Fingerprint, DG.BitSet.create(molecules.rowCount).setAll(true));
     //@ts-ignore
   const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
   for (let i = 0; i < testResults.length; i++) {
