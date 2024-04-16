@@ -140,17 +140,38 @@ export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
 //name: Multi Column Dimensionality Reduction
 export async function reduceDimensionality(): Promise<void> {
   const editor = new MultiColumnDimReductionEditor();
-  ui.dialog('Dimensionality reduction').add(editor.getEditor()).onOK(async () => {
-    const params = editor.getParams();
-    if (params.columns.length === 0)
-      return;
-    await multiColReduceDimensionality(params.table, params.columns, params.methodName as DimReductionMethods,
+  const dialog = ui.dialog('Dimensionality reduction')
+    .add(editor.getEditor())
+    .onOK(async () => {
+      const params = editor.getParams();
+      if (params.columns.length === 0)
+        return;
+      await multiColReduceDimensionality(params.table, params.columns, params.methodName as DimReductionMethods,
       params.distanceMetrics as KnownMetrics[],
       params.weights, params.preprocessingFunctions, params.aggreaggregationMethod as DistanceAggregationMethods,
       !!params.plotEmbeddings, !!params.clusterEmbeddings, params.options, {
         fastRowCount: 10000,
       }, params.postProcessingFunction, params.postProcessingFunctionArgs);
-  }).show();
+    }).show();
+  const validate = () => {
+    const cols = editor.columnsInput.value;
+    const okButton = dialog.getButton('OK');
+    if (!okButton)
+      return;
+    const isDisabled = !cols || cols.length === 0;
+    if (isDisabled)
+      okButton.classList.add('disabled');
+    else
+      okButton.classList.remove('disabled');
+  };
+  editor.onColumnsChanged.subscribe(() => {
+    try {
+      validate();
+    } catch (e) {
+      console.error(e);
+    }
+  });
+  validate();
 }
 
 //name: GetMCLEditor
