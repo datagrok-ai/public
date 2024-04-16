@@ -875,7 +875,7 @@ export abstract class FunctionView extends DG.ViewBase {
     return this.getFeature('upload', false);
   }
 
-  protected get isOptimizationEnabled() {
-    return this.getFeature('optimization', false);
+  protected get isFittingEnabled() {
+    return this.getFeature('fitting', false);
   }
 }

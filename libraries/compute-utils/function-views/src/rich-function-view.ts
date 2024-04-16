@@ -679,7 +679,7 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
-    const optimization = ui.iconFA('chart-line', async () => await this.onOptimizationLaunch(), 'Run optimization');
+    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit parameters');
 
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
@@ -697,7 +697,7 @@ export class RichFunctionView extends FunctionView {
         ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
-      ...this.isOptimizationEnabled ? [optimization]: [],
+      ...this.isFittingEnabled ? [fitting]: [],
       ...this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
@@ -1117,7 +1117,7 @@ export class RichFunctionView extends FunctionView {
     await SensitivityAnalysis.fromEmpty(this.func);
   }
 
-  private async onOptimizationLaunch(): Promise<void> {
+  private async onFittingLaunch(): Promise<void> {
     await Optimization.fromEmpty(this.func);
   }
 
