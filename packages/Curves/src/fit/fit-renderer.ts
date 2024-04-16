@@ -82,7 +82,6 @@ function clamp(value: number, min: number, max: number): number {
 function showIncorrectFitCell(g: CanvasRenderingContext2D, screenBounds: DG.Rect, message: string): void {
   DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, screenBounds.midX, screenBounds.midY, DG.Color.red,
     clamp(Math.min(screenBounds.width, screenBounds.height) * 0.8,0, 30));
-  // grok.shell.error(message);
 }
 
 /** Merges properties of the two objects by iterating over the specified {@link properties}
@@ -359,8 +358,25 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
 
-    if (data.series?.some((series) => series.points.length === 0))
+    if (data.series?.length === 0) {
+      grok.shell.o = ui.divText('No series to show', {style: {color: 'red'}});
       return;
+    }
+
+    if (data.series?.some((series) => series.points.length === 0)) {
+      grok.shell.o = ui.divText('There were series with no points', {style: {color: 'red'}});
+      return;
+    }
+
+    if (data.series?.some((series) => series.points.every((point) => point.x === 0))) {
+      grok.shell.o = ui.divText('There were series with all x zeroes', {style: {color: 'red'}});
+      return;
+    }
+
+    if (data.series?.some((series) => series.points.every((point) => point.y === 0))) {
+      grok.shell.o = ui.divText('There were series with all y zeroes', {style: {color: 'red'}});
+      return;
+    }
 
     grok.shell.o = gridCell;
 
