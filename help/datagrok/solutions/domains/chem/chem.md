@@ -350,8 +350,9 @@ Datagrok lets you analyze chemical space using distance-based dimensionality red
 
 R-group analysis decomposes a set of molecules into a core and R-groups (ligands at certain attachment positions), and visualizes the results. The query molecule
 consists of the scaffold and ligand attachment points represented by R-groups.
+R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/r-group-analysis.gif').default} width="800px"/>
+<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
 
 <details>
 <summary> How to use </summary>
@@ -359,14 +360,19 @@ consists of the scaffold and ligand attachment points represented by R-groups.
 1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
 A [sketcher](#sketching) opens.
 1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
-   * Draw or paste a scaffold in the sketcher.
+   * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups.
    * Click **MCS** to automatically identify the most common substructure.
+   * Click the **Gear** icon to adjust R group analysis parameters.
 1. Click **OK** to execute. The R-group columns are added to the dataframe, along with a [trellis plot](../../../../visualize/viewers/trellis-plot.md) for visual exploration.
+
+R-groups are highlighted with different colorsin the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isHeat** column.
 
 The trellis plot initially displays pie charts. To change the chart type, use the **Viewer** control in the top-left corner to select a different viewer.
 
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
 during Step 2. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
+
+Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
 
 </details>
 

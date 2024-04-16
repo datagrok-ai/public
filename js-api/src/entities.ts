@@ -640,8 +640,11 @@ export class Notebook extends Entity {
  * */
 export class TableInfo extends Entity {
   /** @constructs TableInfo */
+  public tags: {[key: string]: any};
+
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_TableInfo_Get_Tags(this.dart), 'tags');
   }
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }

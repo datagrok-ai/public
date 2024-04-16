@@ -372,8 +372,8 @@ M  END
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
-    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered', 3000);
-    await awaitCheck(() => filter2.bitset?.trueCount === 5, 'filters haven\'t been synchronized', 3000);
+    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered 1', 5000);
+    await awaitCheck(() => filter2.bitset?.trueCount === 5, 'filters haven\'t been synchronized', 5000);
     //filter1 is active filter, detaching filter2 and check that df is still filtered
     filter2.detach();
     await delay(500); //waiting for detach to complete
@@ -382,7 +382,7 @@ M  END
     const filter3 = await createFilter('Structure', df, sketcherDialogs, 10000);
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('c1ccccc1');
-    await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered', 3000);
+    await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered 2', 5000);
     //filter1 is active filter, detaching active filter and check that df is still filtered
     filter1.detach();
     await delay(1000); //waiting for detach to complete

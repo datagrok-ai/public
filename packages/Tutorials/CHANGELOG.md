@@ -1,5 +1,13 @@
 # Tutorials changelog
 
+## 1.3.24 (2024-04-15)
+
+Fixed demo cards' images for Docking and Bio Docking conformations
+
+## 1.3.23 (2024-04-11)
+
+Fixed a couple of bugs in Cheminformatics tutorials
+
 ## 1.3.22 (2023-12-21)
 
 ### Features

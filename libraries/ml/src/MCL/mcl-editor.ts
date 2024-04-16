@@ -8,10 +8,12 @@ import {MultiColumnDimReductionEditor}
 export class MCLEditor extends MultiColumnDimReductionEditor {
     public similarityThresholdInput: DG.InputBase<number | null>;
     public maxIterationsInput: DG.InputBase<number | null>;
+    public useWebGPUInput: DG.InputBase<boolean | null>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       super(editorSettings);
       this.similarityThresholdInput = ui.intInput('Similarity threshold', 80);
       this.maxIterationsInput = ui.intInput('Max iterations', 5);
+      this.useWebGPUInput = ui.boolInput('Use WebGPU', false);
     }
 
     public getEditor(): HTMLElement {
@@ -22,6 +24,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
         this.aggregationMethodInput.root,
         this.similarityThresholdInput.root,
         this.maxIterationsInput.root,
+        this.useWebGPUInput.root,
       ], {style: {minWidth: '420px'}, classes: 'ui-form'});
       return div;
     }
@@ -38,6 +41,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
         aggreaggregationMethod: this.aggregationMethodInput.value,
         threshold: this.similarityThresholdInput.value,
         maxIterations: this.maxIterationsInput.value ?? 5,
+        useWebGPU: this.useWebGPUInput.value ?? false,
       };
     }
 }

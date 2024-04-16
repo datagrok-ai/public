@@ -1,13 +1,43 @@
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
 import {V3K_CONST} from '../formats/molfile-v3k-const';
-import { L, R } from './const';
-import { isAlpha } from './utils';
 
 export class MolfileV3KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
     super(molfile);
     this.init(molfile);
+  }
+
+  getAtomLines(): string[] {
+    const atomBlockIdx = this.getAtomBlockIdx();
+    const end = this.getBondBlockIdx();
+    return this.fileContent.substring(atomBlockIdx, end).split('\n').slice(0, this.atomCount);
+  }
+
+  getBondLines(): string[] {
+    const bondBlockIdx = this.getBondBlockIdx();
+    return this.fileContent.substring(bondBlockIdx).split('\n').slice(0, this.bondCount);
+  }
+
+  getRGroupIdToAtomicIdxMap(): Map<number, number> {
+    const map = new Map<number, number>();
+    this.getAtomLines().forEach((line, idx) => {
+      const rGroupMatches = line.match(/RGROUPS=\(([\d\s]+)\)/);
+
+      if (rGroupMatches) {
+        const rGroupData = rGroupMatches[1].split(/\s+/).map((rgId) => parseInt(rgId));
+        // todo: handle cases when there are more than 2 r groups
+        if (rGroupData.length > 2)
+          throw new Error(`R group data ${rGroupData} has more than 2 elements`);
+        const rGroupId = rGroupData[1];
+        if (map.has(rGroupId))
+          throw new Error(`R group ${rGroupId} is already in the map`);
+
+        map.set(rGroupId, idx);
+      }
+    });
+
+    return map;
   }
 
   protected shiftIdxToAtomType(lineStartIdx: number): number {
@@ -46,7 +76,7 @@ export class MolfileV3KHandler extends MolfileHandlerBase {
     return this.getNextLineIdx(this.fileContent.indexOf(V3K_CONST.BEGIN_BOND_BLOCK));
   }
 
-  public static validate(molfile: string): boolean {
+  static isValidMolfile(molfile: string): boolean {
     return (molfile.indexOf(V3K_CONST.HEADER) !== -1 &&
     molfile.indexOf(V3K_CONST.END) !== -1);
   }

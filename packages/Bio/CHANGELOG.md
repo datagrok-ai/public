@@ -1,5 +1,33 @@
 # Bio changelog
 
+## 2.12.12 (2024-04-15)
+
+### Features 
+
+* Polytool: working with molV3000
+
+## 2.12.11 (2024-04-12)
+
+### Features 
+
+* Add displaying a monomer's origin lib
+
+### Bug fixes
+
+* Fix the cell-renderer tooltip not showing a hovered monomer
+
+## 2.12.10 (2024-04-11)
+
+### Bug fixes
+
+* Bio: Fix detector for non-fasta seqs of the same length
+
+## 2.12.9 (2024-04-10)
+
+### Bug fixes
+
+* Fix SDF to JSON for Biovia lib
+
 ## 2.12.8 (2024-04-09)
 
 ### Features

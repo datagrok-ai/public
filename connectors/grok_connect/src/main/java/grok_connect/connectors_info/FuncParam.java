@@ -9,14 +9,13 @@ public class FuncParam {
     public String propertySubType;
     public String name;
     public Object value;
-    public boolean isInput;
+    public boolean isInput = true;
     public Map<String, String> options;
 
     public FuncParam() {
     }
 
     public FuncParam(String type, String name, Object value) {
-        isInput = true;
         this.name = name;
         propertyType = type;
         setValue(value);

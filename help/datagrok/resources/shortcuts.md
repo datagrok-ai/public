@@ -1,11 +1,11 @@
 ---
-
 title: Controls
 keywords:
  - shortcuts
  - controls
  - hot keys
 sidebar position: 2
+format: mdx
 ---
 
 This article lists key Datagrok controls. Certain tools
@@ -21,7 +21,11 @@ different actions. For details, see the documentation for such tool or viewer.
 
 
 * <kbd>F1</kbd>: <b>Context Help</b> | Toggle
-* <kbd>F2</kbd>: <b>Viewers | Grid</b> | Open column properties
+* <kbd>F2</kbd>: 
+
+  * <b>Viewers | Grid</b> | Open column properties
+  * <b>Viewers | Other than grid</b> | Edit title
+
 * <kbd>F4</kbd>: <b>Context Panel</b> | Toggle
 * <kbd>F5</kbd>: <b>Editors (e.g., scripts, queries)</b> | Run (requires an open editor)
 * <kbd>F7</kbd>: <b>Presentation mode</b> | Toggle
@@ -36,8 +40,8 @@ different actions. For details, see the documentation for such tool or viewer.
 -->
 <br/>
 
-* <kbd>L</kbd>: <b>Viewers | Scatterplot</b> | Toggle regression line
-* <kbd>R</kbd>: <b>Viewers | Scatterplot</b> | Toggle rectangle/lasso selection mode
+* <kbd>L</kbd>: <b>Viewers | Scatterplot</b> | Toggle rectangle/lasso selection mode
+* <kbd>R</kbd>: <b>Viewers | Scatterplot</b> | Toggle regression line
 
 <br/>
 
@@ -48,24 +52,27 @@ different actions. For details, see the documentation for such tool or viewer.
 * <kbd>Ctrl + O</kbd>: <b>Browse</b> | Open the <b>Open File</b> dialog
 * <kbd>Ctrl + S</kbd>: <b>Table View | Layouts</b> | Save to Gallery (requires an open Table View)
 * <kbd>Ctrl + V</kbd>: <b>Viewers | Grid</b> | Paste into cell
-* <kbd>Ctrl + Z</kbd>: <b>Viewers | Grid</b> | Undo. You can reverse only one action
+* <kbd>Ctrl + Z</kbd>: <b>Viewers | Grid</b> | Undo. You can reverse only one action. Supported actions:
 
+   * Manually changing a cell value via a double-click
+   * Deleting rows
+   * Closing a viewer
+ 
 <!--
 * <kbd>Ctrl + J</kbd>: Viewers | Grid | Undo. You can reverse only one action.
 -->
-<br/>
 
 * <kbd>Ctrl + Shift + A</kbd>: <b>Viewers</b> | Deselect all
-* <kbd>Ctrl + Shift + R</kbd>: <b>Table View | Layouts</b> | Clear
+* <kbd>Ctrl + Shift + R</kbd>: <b>Table View | Layouts</b> | Clear everything from a **Table View** except the grid
 * <kbd>Ctrl + Shift + V</kbd>: <b>Table View</b> | Open a new view that is attached to the same table
 * <kbd>Ctrl + Shift + Z</kbd>: <b>Viewers | Grid</b> | Redo. You can use the <b>Redo</b> (Ctrl+Shift+Z) command only after the <b>Undo</b> (Ctrl+Z) command
 
 <br/>
 
-* <kbd>Alt + C</kbd>: <b>Table View | Colum Manager</b> | Open
+* <kbd>Alt + C</kbd>: <b>Table View | Colum Manager</b> | Toggle
 * <kbd>Alt + F</kbd>: <b>Full screen mode</b> | Open
 * <kbd>Alt + S</kbd>: <b>Sidebar | Settings</b> | Open
-* <kbd>Alt + T</kbd>: <b>Table Manager</b> | Open
+* <kbd>Alt + T</kbd>: <b>Table Manager</b> | Toggle
 * <kbd>Alt + V</kbd>: <b>Table View | Variables Panel</b> | Toggle
 * <kbd>Alt + X</kbd>: <b>Table View | Toolbox</b> | Toggle
 
@@ -81,15 +88,22 @@ TBD: Add Alt+ I +R/C to add new row or column
 * <kbd>Click</kbd>:
 
    * **Browse** | Make an object current (e.g., file or query)
-   * **Viewers** | Make a row current 
+   * **Viewers** | Make a row or cell object current 
 
 * <kbd>Double click</kbd>: 
 
    * **Browse** | Open an object (e.g., file or query)
    * **Viewers | Grid** 
      * Cell | Edit a cell
-     * Column header | Sort a column
-   * **Viewers | Scatterplot (empty area)** | Reset view
+     * Column header | Sort a column (Also works for grid-based viewers like a [heatmap](../../visualize/viewers/heat-map.md) or [correlation plot](../../visualize//viewers/correlation-plot.md))
+   * **Viewers | Empty area** | Reset view in these viewers: 
+   
+     * Scatterplot
+     * 3D Scatterplot
+     * Histogram
+     * Bar chart
+     * Pie chart
+     * Network diagram
 
 * <kbd>Right-click</kbd>: Show context menu
 * <kbd>Ctrl + Click</kbd>: <b>Viewers</b> | Toggle selected state, one at a time. For columns, Ctrl+click the column's header
@@ -108,13 +122,12 @@ TBD: Add Alt+ I +R/C to add new row or column
     * Column header | Move a column. Selected columns
   are repositioned simultaneously next to each other
     * Right border of a row or column's header | Resize a row/column
+  
+  * <b>Viewers | Scatterplot, line chart</b>: Pan
 
-* <kbd>Shift + Mouse drag</kbd>: 
-
-  * <b>Viewers | Grid</b> | Select adjacent rows. For grid columns, Shift+drag column headers
-  * <b>Viewers | Scatterplot</b> | Select adjacent data points
-
-* <kbd>Alt + Mouse drag</kbd>: <b>Viewers | Scatterplot</b> | Select an area to zoom in
+* <kbd>Shift + Mouse drag</kbd>: <b>Viewers</b> | Select adjacent rows/data. For grid columns, Shift+drag column headers
+* <kbd>Ctrl + Shift + Mouse drag</kbd>: <b>Viewers</b> | Deselect adjacent rows/data 
+* <kbd>Alt + Mouse drag</kbd>: <b>Viewers | Scatterplot, line chart, bar chart</b> | Select an area to zoom in
 
 <!--  
 * <kbd>Ctrl + Shift + Mouse drag</kbd>: <b>Table Manager, Viewers (grid, scatterplot)</b> | ??? not working?
@@ -125,9 +138,14 @@ TBD: Add Alt+ I +R/C to add new row or column
 * <kbd>Mouse wheel up or down</kbd>:
 
   * <b>Views, Grid</b> | Scroll
-  * <b>Viewers | Scatterplot</b> | Zoom in/out
+  * <b>Viewers</b> | Zoom in/out for these viewers:
+    
+     * Scatterplot
+     * 3D scatterplot
+     * Line chart
+     * Network diagram
+     * Map
 
-<br/>
 
 * <kbd>Up (↑), Down (↓)</kbd>: <b>Browse, Grid</b> | Navigate up/down
 * <kbd>Left (←), Right (→)</kbd>:

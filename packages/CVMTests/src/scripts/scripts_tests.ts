@@ -10,12 +10,11 @@ import {
   after,
 } from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
-import {DataFrame, FileInfo, toDart} from 'datagrok-api/dg';
 
 const langs = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
 
 const TEST_DATAFRAME_1 = grok.data.demo.demog(10000);
-const TEST_DATAFRAME_2 = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
+const TEST_DATAFRAME_2 = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
 
 for (const lang of langs) {
   category(`Scripts: ${lang} scripts`, () => {
@@ -53,7 +52,7 @@ for (const lang of langs) {
 
     test('Dataframe input/output', async () => {
       function getSample() {
-        return DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
+        return DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`)
       }
       const sample1 = getSample();
       const sample2 = getSample();
@@ -81,13 +80,13 @@ for (const lang of langs) {
       test('DataFrame int column correctness', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
         if (lang !== 'R') {
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.INT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.BIG_INT, true);
+          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.BIG_INT, true);
         }
         else {
           // R returns float columns. They can be easily converted to int
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.FLOAT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.TYPE.FLOAT, true);
+          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
       });
     }
@@ -97,14 +96,14 @@ for (const lang of langs) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': FileInfo.fromString(fileStringData), 'blobInput': FileInfo.fromBytes(fileBinaryData)});
-        expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as FileInfo).data), true);
-        expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as FileInfo).data), true);
+            {'fileInput': DG.FileInfo.fromString(fileStringData), 'blobInput': DG.FileInfo.fromBytes(fileBinaryData)});
+        expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
+        expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
       });
     }
 
     test('Column list', async () => {
-      const df = DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
+      const df = DG.DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
       const result = await grok.functions.call(`CVMTests:${lang}ColumnList`,
         {'df': df, 'cols': ['id', 'date', 'name']});
       df.columns.remove('id');
@@ -112,7 +111,7 @@ for (const lang of langs) {
     });
 
     test('Calculated column test', async () => {
-      const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
+      const df = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
       const column = await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${x} + \${y})`);
       expect(df.columns.contains(column.name), true);
       expect(column.get(0), 6);
@@ -173,7 +172,7 @@ for (const lang of langs) {
           {'df': TEST_DATAFRAME_1}));
       }
       const sum = results.reduce((p, c) => p + c, 0);
-      return toDart({'Average time': sum / results.length,
+      return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
     }, {timeout: 120000});
 
@@ -186,7 +185,7 @@ for (const lang of langs) {
 
       const results = await Promise.all(calls);
       const sum = results.reduce((p, c) => p + c, 0);
-      return toDart({'Average time': sum / results.length,
+      return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
     }, {timeout: 120000});
   });
@@ -235,7 +234,7 @@ category('Scripts: Client cache test', () => {
         {'df': TEST_DATAFRAME_1}));
     }
     const sum = results.reduce((p, c) => p + c, 0);
-    return toDart({'Average time': sum / results.length,
+    return DG.toDart({'Average time': sum / results.length,
       'Min time': Math.min(...results), 'Max time': Math.max(...results)});
   }, {timeout: 120000});
 

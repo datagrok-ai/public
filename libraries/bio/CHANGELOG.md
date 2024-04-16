@@ -1,5 +1,21 @@
 # bio changelog
 
+## 5.40.7 (2024-04-15)
+
+Invalidate monomer placer cache on monomer lib changed
+
+## 5.40.6 (2024-04-11)
+
+### Features
+
+* Add displaying a monomer's origin lib
+
+## 5.40.5 (2024-04-10)
+
+### Bug fixes
+
+* Fix SDF to JSON for Biovia lib
+
 ## 5.40.4 (2024-04-09)
 
 ### Features
@@ -17,7 +33,7 @@
 
 ### Bug fixes
 
-Bio: Fix SeqHandler for column version
+* Fix SeqHandler for column version
 
 ## 5.40.1 (2024-04-05)
 

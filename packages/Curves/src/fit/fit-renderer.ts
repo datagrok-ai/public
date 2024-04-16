@@ -75,6 +75,15 @@ export const LINE_STYLES: {[key: string]: number[]} = {
 };
 
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function showIncorrectFitCell(g: CanvasRenderingContext2D, screenBounds: DG.Rect, message: string): void {
+  DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, screenBounds.midX, screenBounds.midY, DG.Color.red,
+    clamp(Math.min(screenBounds.width, screenBounds.height) * 0.8,0, 30));
+}
+
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
@@ -349,8 +358,25 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
 
-    if (data.series?.some((series) => series.points.length === 0))
+    if (data.series?.length === 0) {
+      grok.shell.o = ui.divText('No series to show', {style: {color: 'red'}});
       return;
+    }
+
+    if (data.series?.some((series) => series.points.length === 0)) {
+      grok.shell.o = ui.divText('There were series with no points', {style: {color: 'red'}});
+      return;
+    }
+
+    if (data.series?.some((series) => series.points.every((point) => point.x === 0))) {
+      grok.shell.o = ui.divText('There were series with all x zeroes', {style: {color: 'red'}});
+      return;
+    }
+
+    if (data.series?.some((series) => series.points.every((point) => point.y === 0))) {
+      grok.shell.o = ui.divText('There were series with all y zeroes', {style: {color: 'red'}});
+      return;
+    }
 
     grok.shell.o = gridCell;
 
@@ -646,17 +672,27 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
 
-    if (data.series?.length === 0)
-      return;
+    const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
 
-    if (data.series?.some((series) => series.points.length === 0))
+    if (data.series?.length === 0) {
+      showIncorrectFitCell(g, screenBounds,'No series to show');
       return;
+    }
 
-    if (data.series?.some((series) => series.points.every((point) => point.x === 0)))
+    if (data.series?.some((series) => series.points.length === 0)) {
+      showIncorrectFitCell(g, screenBounds, 'There were series with no points');
       return;
+    }
 
-    if (data.series?.some((series) => series.points.every((point) => point.y === 0)))
-      return;
+    if (data.series?.some((series) => series.points.every((point) => point.x === 0))) {
+        showIncorrectFitCell(g, screenBounds, 'There were series with all x zeroes');
+        return;
+    }
+
+    if (data.series?.some((series) => series.points.every((point) => point.y === 0))) {
+        showIncorrectFitCell(g, screenBounds, 'There were series with all y zeroes');
+        return;
+    }
 
     data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
     if (data.chartOptions?.mergeSeries)

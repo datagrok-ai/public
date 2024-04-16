@@ -13,7 +13,7 @@ import './tests/msa-tests';
 import './tests/splitters-test';
 import './tests/monomer-libraries-tests';
 import './tests/renderers-test';
-import './tests/renderers-monomer-placer';
+import './tests/renderers-monomer-placer-tests';
 import './tests/converters-test';
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';

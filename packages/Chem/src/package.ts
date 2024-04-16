@@ -467,21 +467,6 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   }
 }
 
-//name: Fingerprints
-//tags: dim-red-preprocessing-function
-//meta.supportedSemTypes: Molecule
-//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-//input: column col {semType: Molecule}
-//input: string _metric {optional: true}
-// eslint-disable-next-line max-len
-//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
-//output: object result
-export async function getFingerprints(
-  col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
-  malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
-}
 
 //name: ChemSpaceEditor
 //tags: editor
@@ -504,6 +489,29 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
       }).call();
     })
     .show();
+}
+
+//name: Fingerprints
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Molecule
+//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
+//input: column col {semType: Molecule}
+//input: string _metric {optional: true}
+// eslint-disable-next-line max-len
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
+//output: object result
+export async function getFingerprints(
+  col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
+  //TODO: get rid of fallback
+  let fingerprintTypeStr = fingerprintType as string;
+  if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
+    fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+    fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
+
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
+  malformedDataWarning(fpColumn, col);
+  return { entries: fpColumn, options: {} };
+
 }
 
 //top-menu: Chem | Analyze | Chemical Space...

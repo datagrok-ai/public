@@ -1,5 +1,15 @@
 # Docking changelog
 
+## 1.0.3 (2024-04-15)
+
+Add description to the Docking demo card.
+
+## 1.0.2 (2024-04-12)
+
+### Bug fixes
+
+* Upgraded BiostructureViewer package to a newer version
+
 ## 1.0.1 (2024-04-08)
 
 ### Bug Fixes
