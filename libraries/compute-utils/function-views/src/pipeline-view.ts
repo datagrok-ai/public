@@ -17,6 +17,7 @@ import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {fcToSerializable, getStartedOrNull} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
+import dayjs from 'dayjs';
 
 type StepState = {
   func: DG.Func,
@@ -654,14 +655,21 @@ export class PipelineView extends FunctionView {
   }
 
   public override async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    await this.onBeforeSaveRun(callToSave);
+    let callCopy = deepCopy(callToSave);
+    await this.onBeforeSaveRun(callCopy);
+
+    if (!getStartedOrNull(callToSave) || (getStartedOrNull(callToSave) && !this.isHistorical.value)) {
+      // Used to reset 'started' field
+      callCopy = (await grok.functions.eval(callCopy.func.nqName)).prepare();
+      callCopy.newId();
+    }
 
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       .map(async (step) => {
         const scriptCall = step.view.funcCall;
 
-        scriptCall.options['parentCallId'] = this.funcCall.id;
+        scriptCall.options['parentCallId'] = callCopy.id;
         if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
         scriptCall.newId();
 
@@ -672,17 +680,17 @@ export class PipelineView extends FunctionView {
 
     await Promise.all(stepsSaving);
 
-    if (callToSave.options['title'])
-      callToSave.options['title'] = `${callToSave.options['title']} (copy)`;
+    if (callCopy.options['title'])
+      callCopy.options['title'] = `${callCopy.options['title']} (copy)`;
 
-    const savedCall = await historyUtils.saveRun(callToSave);
+    const savedCall = await historyUtils.saveRun(callCopy);
 
     if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
       this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
 
     this.isHistorical.next(true);
 
-    await this.onAfterSaveRun(callToSave);
+    await this.onAfterSaveRun(callCopy);
 
     return savedCall;
   }

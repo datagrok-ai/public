@@ -48,6 +48,8 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
+  call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
+
   const dfOutputs = wu(call.outputParams.values())
     .filter((output) =>
       output.property.propertyType === DG.TYPE.DATA_FRAME &&

@@ -640,8 +640,23 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
    */
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    await this.onBeforeSaveRun(callToSave);
-    const savedCall = await historyUtils.saveRun(callToSave);
+    let callCopy = deepCopy(callToSave);
+    await this.onBeforeSaveRun(callCopy);
+
+    if (this.options.isTabbed) {
+      if (!getStartedOrNull(callToSave) || (getStartedOrNull(callToSave) && !this.isHistorical.value)) {
+      // Used to reset 'started' field
+      //@ts-ignore
+        callCopy = (await grok.functions.eval(callCopy.func.nqName)).prepare([...callCopy.inputs].reduce((acc, [key, val]) => {
+          acc[key] = val;
+          return acc;
+        }, {} as Record<string, any>));
+        callCopy.newId();
+        callToSave.options.forEach((key: string) => callCopy.options[key] = callToSave.options[key]);
+      }
+    }
+
+    const savedCall = await historyUtils.saveRun(callCopy);
 
     if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
       this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
