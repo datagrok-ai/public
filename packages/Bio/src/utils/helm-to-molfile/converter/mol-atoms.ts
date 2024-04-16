@@ -1,4 +1,4 @@
-import {R_GROUP_ELEMENT_SYMBOL} from './const';
+import {R_GROUP_ELEMENT_SYMBOL} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
 
 export abstract class MolfileAtoms {
   protected coordinates: {x: number, y: number}[] = [];

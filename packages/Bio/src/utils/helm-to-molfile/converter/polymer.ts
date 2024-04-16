@@ -1,5 +1,5 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {V2K_CONST, V3K_CONST} from './const';
+import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
 import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
 
@@ -44,7 +44,6 @@ export class Polymer {
   }
 
   compileToMolfile(): string {
-    const molfileHeader = '\nDatagrok\n';
     const atomLines: string[] = [];
     const bondLines: string[] = [];
 
@@ -73,8 +72,8 @@ export class Polymer {
   }
 
   private getV3KHeader(atomCount: number, bondCount: number): string {
-    const countsLine = `${V3K_CONST.COUNTS_LINE_START}${atomCount} ${bondCount}${V3K_CONST.COUNTS_LINE_END}`;
-    return `${V3K_CONST.HEADER}\n${V3K_CONST.BEGIN_CTAB}\n${countsLine}`;
+    const countsLine = `${V3K_CONST.COUNTS_LINE_START}${atomCount} ${bondCount}${V3K_CONST.COUNTS_LINE_DUMMY_END}`;
+    return `${V3K_CONST.DUMMY_HEADER}\n${V3K_CONST.BEGIN_CTAB}\n${countsLine}`;
   }
 
   private getV3KAtomBlock(atomLines: string[]): string {

@@ -1,7 +1,6 @@
+import {R_GROUP_ELEMENT_SYMBOL, V2K_CONST} from '../formats/molfile-const';
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
-import {V2K_CONST} from '../formats/molfile-v2k-const';
-import {R_GROUP_ELEMENT_SYMBOL} from '../formats/const';
 
 export class MolfileV2KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
@@ -71,7 +70,7 @@ export class MolfileV2KHandler extends MolfileHandlerBase {
   }
 
   static isValidMolfile(molfile: string): boolean {
-    return (molfile.indexOf(V2K_CONST.HEADER) !== -1 &&
+    return (molfile.indexOf(V2K_CONST.TYPE) !== -1 &&
     molfile.indexOf(V2K_CONST.END) !== -1);
   }
 
