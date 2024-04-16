@@ -139,18 +139,24 @@ export type ItemsToRemove = {
   itemsToRemove?: ItemPath[];
 }
 
-export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & ItemsToRemove;
+export type CompositionStepsConfig = {
+  pipelinePositionConfig?: { [id: ItemName]: ItemName };
+}
+
+export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & CompositionStepsConfig & ItemsToRemove;
 
 //
 // Internal config
 
 export type PipelineConfigVariants = PipelineConfiguration | CompositionGraphConfig;
 
-export type CompositionGraphConfig = (PipelineConfiguration | PipelineCompositionConfiguration) & {
+export type GraphNestedPipelines = {
   nestedPipelines?: {
     [key: ItemName]: PipelineConfiguration | CompositionGraphConfig;
   };
 }
+
+export type CompositionGraphConfig = (PipelineConfiguration | PipelineCompositionConfiguration) & GraphNestedPipelines;
 
 export function isCompositionConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineCompositionConfiguration {
   return (config as any)?.nestedPipelines;
@@ -614,6 +620,7 @@ export class PipelineRuntime {
 }
 
 export interface StepSpec {
+  id: string;
   funcName: string;
   friendlyName?: string;
   helpUrl?: string | HTMLElement;
@@ -876,7 +883,7 @@ export class CompositionPipeline {
   private nodes = new Map<PathKey, NodeState>();
   private links = new Map<PathKey, LinkState>();
   private hooks: HookSpec[] = [];
-  private steps: { funcName: string, friendlyName?: string, helpUrl?: string | HTMLElement }[] = [];
+  private steps: { id: string, funcName: string, friendlyName?: string, helpUrl?: string | HTMLElement }[] = [];
   private rt?: PipelineRuntime;
 
   private viewInst?: CompositionPipelineView;
@@ -909,7 +916,6 @@ export class CompositionPipeline {
     this.id = this.config.id;
     this.nqName = this.config.nqName;
     this.exportConfig = this.config.exportConfig;
-
   }
 
   public makePipelineView(nqName = this.nqName) {
@@ -1016,15 +1022,17 @@ export class CompositionPipeline {
       throw new Error('No pipeline config');
 
     // process merge config
-    const {toRemove, toAdd} = traverseConfigPipelines(
+    const {toRemove, toAdd, stepConfig} = traverseConfigPipelines(
       this.config,
       (acc, node, path) => {
-        this.processMergeConfig(node, path, acc.toRemove, acc.toAdd);
+        if (isCompositionConfig(node))
+          this.processMergeConfig(node, path, acc.toRemove, acc.toAdd, acc.stepConfig);
         return acc;
       },
       {
         toRemove: new Set<string>(),
         toAdd: new Map<string, ItemsToMerge>(),
+        stepConfig: new Map<string, string>(),
       },
     );
 
@@ -1050,14 +1058,34 @@ export class CompositionPipeline {
     );
 
     // get steps sequence
-    this.steps = traverseConfigPipelines(
+    const {pipelineSteps, pipelineSeq} = traverseConfigPipelines(
       this.config,
       (acc, node) => {
-        acc.unshift(...node.steps.map((s) => ({funcName: s.nqName, friendlyName: s.friendlyName, helpUrl: s.helpUrl})));
+        const id = node.id;
+        const specs = node.steps.map((s) => ({id: s.id, funcName: s.nqName, friendlyName: s.friendlyName, helpUrl: s.helpUrl}));
+        acc.pipelineSteps.set(id, specs);
+        acc.pipelineSeq.unshift(id);
         return acc;
       },
-      [] as StepSpec[],
+      {
+        pipelineSteps: new Map<ItemName, StepSpec[]>(),
+        pipelineSeq: [] as ItemName[],
+      },
     );
+
+    this.steps = pipelineSeq.reduce((acc, id) => {
+      const steps = pipelineSteps.get(id)!;
+      const pos = stepConfig.get(id)!;
+      if (pos) {
+        const idx = acc.findIndex((spec) => spec.id === pos);
+        if (idx > 0) {
+          acc.splice(idx, 0, ...steps)
+        }
+        return acc;
+      } else {
+        return [...acc, ...steps ?? []];
+      }
+    }, [] as StepSpec[]);
   }
 
   // deal with hooks
@@ -1208,7 +1236,7 @@ export class CompositionPipeline {
   // merge config processing
 
   private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
-    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>,
+    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>, stepConfig: Map<string, string>,
   ) {
     const subPath = pathJoin(path, [mergeConf.id]);
     for (const item of mergeConf.itemsToRemove ?? []) {
@@ -1217,6 +1245,12 @@ export class CompositionPipeline {
       toRemove.add(itemKey);
     }
     delete mergeConf.itemsToRemove;
+    for (const [pipelineId, beforeStepId] of Object.entries(mergeConf.pipelinePositionConfig ?? {})) {
+      const pipelineIdFull = pathToKey(pathJoin(path, [pipelineId]));
+      const beforeStepIdFull = pathToKey(pathJoin(path, [beforeStepId]));
+      stepConfig.set(pipelineIdFull, beforeStepIdFull);
+    }
+    delete mergeConf.pipelinePositionConfig;
     const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
     this.processMergeNodeList(stepsToAdd ?? [], subPath, toAdd, 'step');
     this.processMergeNodeList(popupsToAdd ?? [], subPath, toAdd, 'popup');
