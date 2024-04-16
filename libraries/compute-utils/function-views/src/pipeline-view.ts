@@ -162,7 +162,7 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: StepConfig[],
+    protected initialConfig: StepConfig[],
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,

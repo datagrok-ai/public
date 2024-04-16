@@ -445,11 +445,6 @@ export class PipelineRuntime {
     this.updateViewValidation(targetPath);
   }
 
-  getViewNqName(path: ItemName): NqName | undefined {
-    const node = this.nodes.get(path);
-    return (node?.conf as PipelinePopupConfiguration | PipelineStepConfiguration)?.nqName;
-  }
-
   getValidationAction(path: ItemPath, name?: string): ActionItem {
     const k = pathToKey(path);
     const node = this.nodes.get(k);
@@ -797,8 +792,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   }
 
   override getStepView<T = RichFunctionView>(viewId: PathKey) {
-    const nqName = this.rt?.getViewNqName(viewId);
-    const view = super.getStepView<RichFunctionView>(nqName ?? '');
+    const view = super.getStepView<RichFunctionView>(viewId);
     if (!view)
       return this.customViews.get(viewId)! as T;
 
