@@ -339,6 +339,7 @@ export async function _formDemo() {
 //name: shapeMapDemo
 //description: Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
 //meta.demoPath: Visualization | Geographical | Shape Map
+//meta.demoSkip: skip
 export async function _shapeMapDemo() {
   await viewerDemo(DG.VIEWER.SHAPE_MAP);
 }
