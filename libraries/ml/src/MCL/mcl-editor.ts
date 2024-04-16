@@ -36,7 +36,7 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
         methodName: this.methodInput.value!,
         preprocessingFunctions: this.columnOptEditors.map((it) => it.preProcessingFunction),
         distanceMetrics: this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
-        weights: this.weightsEditor.weights,
+        weights: this.columnOptEditors.map((it) => it.weight!),
         preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings),
         aggreaggregationMethod: this.aggregationMethodInput.value,
         threshold: this.similarityThresholdInput.value,
