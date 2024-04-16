@@ -17,7 +17,7 @@ import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInput
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
-import {OptimizationView as Optimization} from './optimization-view';
+import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
 import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';

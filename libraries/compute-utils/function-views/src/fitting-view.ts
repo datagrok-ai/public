@@ -11,17 +11,12 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './optimization/constants';
-import {optimize} from './optimization/optimizer';
+import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './fitting/constants';
+import {optimize} from './fitting/optimizer';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
-
-enum OPTIMIZATION_TYPE {
-  MIN = 'min',
-  MAX = 'max',
-}
 
 enum DF_OPTIONS {
   LAST_ROW = 'Last row',
@@ -56,13 +51,13 @@ type SensitivityConstStore = {
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
 } & InputValues;
 
-type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
+type FittingInputsStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
 const isNumericProp = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT) || (prop.propertyType === DG.TYPE.FLOAT));
 
-export class OptimizationView {
+export class FittingView {
   generateInputFields = (func: DG.Func) => {
     const getInputValue = (input: DG.Property, key: string) => (
       input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
@@ -227,7 +222,7 @@ export class OptimizationView {
       }
 
       return acc;
-    }, {} as Record<string, SensitivityStore>);
+    }, {} as Record<string, FittingInputsStore>);
 
     const outputs = func.outputs.filter((outputProp) => isNumericProp(outputProp))
       .reduce((acc, outputProp) => {
@@ -247,7 +242,6 @@ export class OptimizationView {
                 this.toSetSwitched,
                 (v: boolean) => {
                   this.targetCount += v ? 1 : -1;
-                  this.optTypeInput.root.hidden = (this.targetCount !== 1);
                   this.optSettingsIcon.hidden = (this.targetCount < 1);
                   this.showHideSettings();
                   temp.isInterest.next(v);
@@ -269,7 +263,6 @@ export class OptimizationView {
               temp.value.colName = v;
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
-            input.root.hidden = true;
             input.setTooltip(`Name of column of the '${outputProp.caption ?? outputProp.name}' dataframe`);
             return input;
           })(),
@@ -310,10 +303,10 @@ export class OptimizationView {
   };
 
   private openedViewers = [] as DG.Viewer[];
-  private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run optimization');
-  private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run optimization');
+  private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run fitting');
+  private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
   private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute.md#optimization', '_blank');
+    window.open('https://datagrok.ai/help/compute.md#fitting', '_blank');
   }, 'Open help in a new tab');
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
@@ -330,12 +323,6 @@ export class OptimizationView {
     min: 1,
     step: 10,
     value: this.samplesCount,
-  });
-
-  private optType = OPTIMIZATION_TYPE.MAX;
-  private optTypeInput = ui.input.radio('Goal', {
-    value: this.optType,
-    items: [OPTIMIZATION_TYPE.MAX as string, OPTIMIZATION_TYPE.MIN as string],
   });
 
   private methodSettingsDiv = ui.divV([ui.label('TO BE ADDED')]); // HERE, TO ADD UI for modifying optimizer settings
@@ -397,18 +384,16 @@ export class OptimizationView {
       return;
     }
 
-    this.runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run optimization');
+    this.runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
     this.runIcon.style.color = 'var(--green-2)';
     this.runIcon.classList.add('fas');
 
     this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute.md#optimization', '_blank');
+      window.open('https://datagrok.ai/help/compute.md#fitting', '_blank');
     }, 'Open help in a new tab');
 
     this.samplesCountInput.onChanged(() => this.samplesCount = this.samplesCountInput.value);
-    this.optTypeInput.onChanged(() => this.optType = (this.optTypeInput.value as OPTIMIZATION_TYPE));
     this.samplesCountInput.root.insertBefore(getSwitchMock(), this.samplesCountInput.captionLabel);
-    this.optTypeInput.root.insertBefore(getSwitchMock(), this.optTypeInput.captionLabel);
 
     this.optSettingsDiv.hidden = true;
 
@@ -435,7 +420,7 @@ export class OptimizationView {
     this.comparisonView.setRibbonPanels(rbnPanels);
 
     this.comparisonView.name = this.comparisonView.name.replace('comparison', 'optimization');
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#optimization';
+    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#fitting';
     this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
@@ -478,31 +463,7 @@ export class OptimizationView {
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
 
-    const form = Object.values(this.store.outputs)
-      .reduce((container, outputConfig) => {
-        const prop = outputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.p(prop.category));
-          prevCategory = prop.category;
-        }
-
-        container.append(
-          outputConfig.input.root,
-          ...outputConfig.analysisInputs.map((input) => input.root),
-        );
-
-        return container;
-      }, ui.div([
-        ui.h2('Optimize'),
-        ui.div([this.optSettingsIcon], {style: {'margin-top': '-22px', 'text-align': 'right'}}),
-      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
-
-    form.appendChild(this.optTypeInput.root);
-    form.appendChild(this.optSettingsDiv);
-    form.appendChild(ui.h2('with respect to'));
-    prevCategory = 'Misc';
-
-    Object.values(this.store.inputs)
+    const form = Object.values(this.store.inputs)
       .reduce((container, inputConfig) => {
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
@@ -513,6 +474,28 @@ export class OptimizationView {
         container.append(
           ...inputConfig.constForm.map((input) => input.root),
           ...inputConfig.saForm.map((input) => input.root),
+        );
+
+        return container;
+      }, ui.div([
+        ui.h2('Fit'),
+      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
+
+    form.appendChild(this.optSettingsDiv);
+    form.appendChild(ui.h2('Target'));
+    prevCategory = 'Misc';
+
+    Object.values(this.store.outputs)
+      .reduce((container, outputConfig) => {
+        const prop = outputConfig.prop;
+        if (prop.category !== prevCategory) {
+          container.append(ui.p(prop.category));
+          prevCategory = prop.category;
+        }
+
+        container.append(
+          outputConfig.input.root,
+          ...outputConfig.analysisInputs.map((input) => input.root),
         );
 
         return container;
@@ -554,7 +537,6 @@ export class OptimizationView {
 
   private addTooltips(): void {
     this.samplesCountInput.setTooltip('Number of the function evaluations');
-    this.optTypeInput.setTooltip('Type of optimization');
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
@@ -788,16 +770,13 @@ export class OptimizationView {
     }
     const outputName = outputsOfInterest[0].prop.name;
 
-    // for maximization
-    const multiplier = (this.optType === OPTIMIZATION_TYPE.MIN) ? 1 : -1;
-
     /** Cost function to be optimized */
     const costFunc = async (x: Float32Array): Promise<number> => {
       x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
 
-      return multiplier * calledFuncCall.getParamValue(outputName);
+      return calledFuncCall.getParamValue(outputName);
     };
 
     const extr = await optimize(costFunc,
