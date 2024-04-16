@@ -31,21 +31,26 @@ export async function testPipeline(
   spec: any, view: PipelineView, options: PipelineTestOptions = {}
 ) {
   await waitForViewReady(view, options.initWaitTimeout ?? defaultInitTimeout);
-  for (const [name, step] of Object.entries(view.steps)) {
-    const stepSpec = spec[name];
-    if (!stepSpec)
-      continue;
-    const stepOptions = options.stepOptions?.[name] ?? {};
-    const prefix = stepOptions.prefix ? `${stepOptions.prefix}: ${name}` : name;
-    const {updateMode} = options;
-    const defaultSettings = {
-      validatorsWaitTimeout: defaultValidatorsTimeout,
-      initWaitTimeout: defaultInitTimeout,
-      parent: view,
-      interactive: options.interactive,
-      updateMode
-    };
-    await testFunctionView(stepSpec, step.view, {...defaultSettings, ...stepOptions, prefix});
+  view.disableSetters(true);
+  try {
+    for (const [name, step] of Object.entries(view.steps)) {
+      const stepSpec = spec[name];
+      if (!stepSpec)
+        continue;
+      const stepOptions = options.stepOptions?.[name] ?? {};
+      const prefix = stepOptions.prefix ? `${stepOptions.prefix}: ${name}` : name;
+      const {updateMode} = options;
+      const defaultSettings = {
+        validatorsWaitTimeout: defaultValidatorsTimeout,
+        initWaitTimeout: defaultInitTimeout,
+        parent: view,
+        interactive: options.interactive,
+        updateMode
+      };
+      await testFunctionView(stepSpec, step.view, {...defaultSettings, ...stepOptions, prefix});
+    }
+  } finally {
+    view.disableSetters(false);
   }
   if (options.interactive)
     grok.shell.info(`${view.name} test passed`);

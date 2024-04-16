@@ -353,6 +353,7 @@ export class LinkState {
 }
 
 export class PipelineState {
+  disableSetters = new BehaviorSubject<boolean>(false);
   globalLoading = new BehaviorSubject<boolean>(true);
   runChanging = new BehaviorSubject<boolean>(false);
   closed = new Subject<true>();
@@ -420,7 +421,7 @@ export class PipelineRuntime {
 
   updateState<T>(path: ItemPath, value: T, inputState: InputState = 'user input'): void {
     const {state} = this.getNodeState(path)!;
-    if (state)
+    if (state && !this.pipelineState.disableSetters.value)
       state.setValue(value, inputState);
   }
 
@@ -570,6 +571,10 @@ export class PipelineRuntime {
     }
   }
 
+  getRunningUpdates() {
+    return [...this.runningLinks];
+  }
+
   goToStep(path: ItemPath): void {
     console.log('TODO: goToStep not implemented');
   }
@@ -602,7 +607,9 @@ export class PipelineRuntime {
     const keys = [...targetState.keys()].sort();
     const validations = keys.map(k => targetState.get(k));
     const {state, node} = this.getNodeState(targetPath)!;
-    this.view.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
+    if (!this.pipelineState.disableSetters.value) {
+      this.view.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
+    }
   }
 }
 
@@ -737,12 +744,13 @@ export class RuntimeControllerImpl implements RuntimeController {
 export interface ICompositionView {
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
   getStateBindings<T = any>(viewId: PathKey, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
-  isUpdating: BehaviorSubject<boolean>;
-  getRunningUpdates(): string[];
   showSteps(...id: NqName[]): void;
   hideSteps(...id: NqName[]): void;
   getStepView<T = RichFunctionView>(viewId?: PathKey): T;
   setExternalValidationResults(viewId: PathKey, stateId: string, results: ValidationResult): void;
+  isUpdating: BehaviorSubject<boolean>;
+  disableSetters(state: boolean): void;
+  getRunningUpdates(): string[];
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
@@ -761,7 +769,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     this.initialConfig = steps;
     this.hooks = hooks;
     this.rt = rt;
-    this.isUpdating = this.rt.isUpdating;
+    this.rt.isUpdating.pipe(takeUntil(this.rt.pipelineState.closed)).subscribe((val) => this.isUpdating.next(val));
   }
 
   public getStateBindings(viewId: PathKey, stateId: string) {
@@ -775,6 +783,10 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     const view = this.getStepView(viewId);
     if (view)
       view.setExternalValidationResults(inputName, results);
+  }
+
+  override getRunningUpdates() {
+    return this.rt!.getRunningUpdates();
   }
 
   override getStepView<T = RichFunctionView>(viewId: PathKey) {

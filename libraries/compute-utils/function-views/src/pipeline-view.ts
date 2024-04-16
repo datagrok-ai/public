@@ -52,6 +52,8 @@ export class PipelineView extends FunctionView {
     return [];
   }
 
+  public disableSetters(_state: boolean) {}
+
   // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
