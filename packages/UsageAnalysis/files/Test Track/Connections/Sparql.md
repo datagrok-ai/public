@@ -1,4 +1,4 @@
-1. Go to **Data** > **Databases** .
+1. Go to **Browse** > **Databases** .
 2. Right-click the **Sparql** provider and select **Add new connection** from the context menu.
 3. Enter `test_sparql` to the Name field.
 4. Fill in other fields with the following data:

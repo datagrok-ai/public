@@ -1,5 +1,9 @@
 # NLP changelog
 
+## 1.0.9 (2024-04-05)
+
+Fixed multiple filters creating.
+
 ## 1.0.8 (2024-02-23)
 
 Updated help: stemming-based search tools description is added.

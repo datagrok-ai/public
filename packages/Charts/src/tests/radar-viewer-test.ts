@@ -32,11 +32,12 @@ category('Radar', () => {
   test('Standard Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
+      rowSource: 'CurrentRow',
+      filter: '',
       title: 'Radar',
       min: '5',
       max: '95',
-      showOnlyCurrentRow: false,
-      showAllRows: false,
+      showOnlyCurrentRow: true,
       showTooltip: true,
       backgroundMinColor: 0xFFB0D7FF,
       backgroundMaxColor: 0xFFBCE2F5,

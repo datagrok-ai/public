@@ -1,5 +1,12 @@
 # Chem changelog
 
+## 1.9.1 (2024-04-12)
+
+### Features
+
+* R Group analysis: in browser R group analysis using RDKit JS, highlight of r groups, ability to define enumerated R groups in core
+* Similarity/Diversity search: ability to recalculate results on filtering
+
 ## 1.9.0 (2024-03-21)
 
 ### Features

@@ -1,15 +1,15 @@
-**Open Column properties for the molecule column and change the semantic type**
-1. Open Mol-SMILES.csv
-2. Check Smiles stereometry
+1. Open smiles.csv
+2. Click the canonical_smiles column's header.
+3. Go to the Context Pane and check all info panels (tabs).
 
-<a/>
+***
 
-1. Open "smiles" table (For example from Files -> Demo Files/chem/smiles.csv)
-2. Make sure that structures of molecules are rendered
-3. Click on chem structure from smiles column (click the cell with molecule)
-4. Check that all necessary panels are displayed on the **Property Panel (Gasteiger Partial Charges**, **Structure 3D**, **Structure 2D**, **Toxicity**, **Identifiers**, **Structural Alerts**, **Drug Likeness**, **Properties**, **Chem Descriptors)**
-5. Expand each panel on **Property Panel**
-6. Make sure the content for each panel is displayed correctly
+1. Open smiles.csv.
+2. Make sure that structures of molecules are rendered.
+3. Click a cell with a structure.
+4. Check that all necessary panels are displayed on the **Context Panel.**
+5. Expand each tab on the **Context Panel**.
+6. Make sure the content for each info panel is displayed correctly.
 ---
 {
   "order": 1

@@ -6,12 +6,15 @@ export * from './types';
 
 export function createMCLWorker(data: any[][], threshold: number,
   weights: number[], aggregationMethod: DistanceAggregationMethod,
-  distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number = 10) {
+  distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number = 10, useWebGPU: boolean = false) {
   const worker = new Worker(new URL('mcl-worker', import.meta.url));
-  worker.postMessage({data, threshold, weights, aggregationMethod, distanceFns, distanceFnArgs, maxIterations});
+  worker.postMessage({data, threshold, weights, aggregationMethod, distanceFns,
+    distanceFnArgs, maxIterations, useWebGPU});
   let resolveF: Function;
   const promise = new Promise<{
-    clusters: number[], embedX: Float32Array, embedY: Float32Array, is: number[], js: number[]}>((resolve, reject) => {
+    clusters: number[], embedX: Float32Array, embedY: Float32Array,
+     is: Uint32Array, js: Uint32Array
+    }>((resolve, reject) => {
       resolveF = resolve;
       worker.onmessage = (event) => {
         setTimeout(() => worker.terminate(), 100);

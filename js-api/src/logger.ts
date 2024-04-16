@@ -88,7 +88,7 @@ export class Logger {
     const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
       const std = f.bind(console);
       return (...args: any[]) => {
-        try { this.consoleLogs.push({'time': dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
+        try { this.consoleLogs.push({'time': dayjs().utc().valueOf(),
           'message': args.map((x) => `${x}`).join(' ')}); }
         catch (_) {}
         std(...args);
@@ -118,6 +118,13 @@ export class PackageLogger extends Logger {
     //@ts-ignore
     msg.params['packageName'] = this.package.name;
     super._log(msg);
+  }
+}
+
+
+export class DetailedLog {
+  static async getAccordion(reportId: string): Promise<HTMLElement> {
+    return api.grok_DetailedLog_Get_Accordion(reportId);
   }
 }
 

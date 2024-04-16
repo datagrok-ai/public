@@ -44,7 +44,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
       'must have the same length');
   }
 
-  const tv = grok.shell.tableView(table.name) ?? grok.shell.addTableView(table);
+  const tv = plotEmbeddings ? grok.shell.tableView(table.name) ?? grok.shell.addTableView(table) : null;
 
   const doReduce = async () => {
     const pg = DG.TaskBarProgressIndicator.create(
@@ -59,7 +59,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
           embedXCol = table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
           embedYCol = table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
           if (plotEmbeddings && !scatterPlot) {
-            scatterPlot = tv
+            scatterPlot = tv!
               .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
                 title: uiOptions.scatterPlotName ?? 'Embedding space'});
           }
@@ -82,7 +82,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
         let resolveF: Function | null = null;
         if (plotEmbeddings) {
-          scatterPlot = tv
+          scatterPlot = tv!
             .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
               title: uiOptions.scatterPlotName ?? 'Embedding space'});
           ui.setUpdateIndicator(scatterPlot.root, true);

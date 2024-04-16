@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {MmDistanceFunctionsNames, mmDistanceFunctions}
   from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -42,20 +42,20 @@ ATCGAATCGA
 ATCGAATCGA`;
 
   test('protein-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(protTable);
-    const distFunc = uh.getDistanceFunctionName();
+    const sh = await _initMacromoleculeColumn(protTable);
+    const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(DNATable);
-    const distFunc = uh.getDistanceFunctionName();
+    const sh = await _initMacromoleculeColumn(DNATable);
+    const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('MSA-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(MSATable);
-    const distFunc = uh.getDistanceFunctionName();
+    const sh = await _initMacromoleculeColumn(MSATable);
+    const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.HAMMING);
   });
 
@@ -125,7 +125,7 @@ ATCGAATCGA`;
   });
 });
 
-async function _initMacromoleculeColumn(csv: string): Promise<UnitsHandler> {
+async function _initMacromoleculeColumn(csv: string): Promise<SeqHandler> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
   const seqCol = srcDf.col('seq')!;
   const semType: string = await grok.functions
@@ -133,8 +133,8 @@ async function _initMacromoleculeColumn(csv: string): Promise<UnitsHandler> {
   if (semType)
     seqCol.semType = semType;
   await grok.data.detectSemanticTypes(srcDf);
-  const uh = UnitsHandler.getOrCreate(seqCol);
-  return uh;
+  const sh = SeqHandler.forColumn(seqCol);
+  return sh;
 }
 
 function _testDistance(seq1: string, seq2: string, df: (a: string, b: string) => number, expected: number) {

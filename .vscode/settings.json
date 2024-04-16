@@ -70,5 +70,13 @@
         "USRCAT",
         "versionable",
         "Webservices"
-    ]
+    ],
+
+    "files.exclude": {
+        "**/*-test.md": {},
+        "**/*-test.side": {},
+        "**/*.d.ts": {"when": "$(basename).ts"},
+        "**/*.js": {"when": "$(basename).ts"},
+        "**/*.map": {"when": "$(basename).map"}
+    }
 }

@@ -51,6 +51,7 @@ export type MolGraph = {
     atoms: Atoms,
     bonds: Bonds,
     meta: MonomerMetadata,
+    stereoAtoms?: number[]
 }
 
 export type Point = {

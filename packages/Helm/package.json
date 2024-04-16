@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.30",
+  "version": "2.1.32",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -15,8 +15,8 @@
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.39.29",
-    "@datagrok-libraries/chem-meta": "^1.2.2",
+    "@datagrok-libraries/bio": "^5.40.7",
+    "@datagrok-libraries/chem-meta": "^1.2.3",
     "@datagrok-libraries/utils": "^4.1.45",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.17.0",
@@ -37,8 +37,8 @@
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/bio": "^2.11.38",
-    "@datagrok/chem": "^1.8.13"
+    "@datagrok/bio": "^2.12.11",
+    "@datagrok/chem": "^1.9.0"
   },
   "scripts": {
     "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",

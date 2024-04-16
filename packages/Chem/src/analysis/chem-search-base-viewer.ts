@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { AVAILABLE_FPS } from '../constants';
 import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
@@ -33,6 +33,9 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeProperties: string[];
   renderCompleted = new Subject<void>();
   isComputing = false;
+  recalculateOnFilter = false;
+  filterSub: Subscription | null = null;
+  error = '';
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -40,6 +43,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
+    this.recalculateOnFilter = this.bool('recalculateOnFilter', this.recalculateOnFilter);
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
@@ -58,6 +62,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
+    this.filterSub?.unsubscribe();
   }
 
   async onTableAttached(): Promise<void> {
@@ -92,14 +97,21 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this));
-      if (col?.semType === DG.SEMTYPE.MOLECULE)
-        this.moleculeColumn = col;
+      this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
       this.limit = MAX_LIMIT;
     if (property.name === 'moleculeProperties') {
       this.render(false);
       return;
+    }
+    if (property.name === 'recalculateOnFilter') {
+      const recalcOnFilter = property.get(this);
+      if (!recalcOnFilter) {
+        this.filterSub?.unsubscribe();
+        this.filterSub = null;
+      } else
+        this.filterSub = DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe(async (_: any) => await this.render());
     }
     this.render();
   }
@@ -132,14 +144,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   beforeRender() {
-    if (!this.initialized || !this.dataFrame)
-      return false;
-    if (this.dataFrame && this.moleculeColumnName &&
-          this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {
-      grok.shell.error(`${this.moleculeColumnName} is not Molecule type or missing`);
-      return false;
-    }
-    return true;
+    return this.initialized && this.dataFrame;
   }
 
   createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement {
@@ -193,5 +198,18 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     return this.moleculeColumn!.dataFrame.columns.names()
       .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
+  }
+
+  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator) {
+    this.error = error;
+    this.clearResults();
+    this.root.append(ui.divText(this.error));
+    this.root.classList.add(`chem-malformed-molecule-error`);
+    progressBar?.close();
+  }
+
+  clearResults() {
+    if (this.root.hasChildNodes())
+      this.root.removeChild(this.root.childNodes[0]);
   }
 }

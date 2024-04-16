@@ -37,12 +37,10 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     and shows molecule-specific tools, actions, and information. Access them through:<br>
     <ul>
     <li><b>Chem</b> menu (it contains all chemical tools)</li>
-    <li>Context menu (right-click for access)</li>
-    <li><b>Context Panel</b> on the right.</li>
     </ul><br>
     Let’s use the <b>Chem</b> menu.`);
 
-    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '', this.getMenuItem('Chem'));
+    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '', this.getMenuItem('Chem', true));
 
     this.title('Specify substructure using sketcher', true);
     this.describe('In the sketcher, draw naphthalene.' +

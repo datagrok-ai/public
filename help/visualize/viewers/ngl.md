@@ -8,7 +8,7 @@ It allows you to view 3D structures, explore docking results,
 and offers multiple rendering modes for different visual representations.
 The viewer is based on the  [NGL Viewer](https://github.com/nglviewer/ngl) library.
 
-![NGL viewer](ngl-viewer.png)
+![NGL viewer](img/ngl-viewer.png)
 
 ## Creating an NGL viewer
 
@@ -36,7 +36,7 @@ You can:
 * Select the ligand column using the **Ligand** control.
 * Change macromolecule representation mode using the **Representation** control.
 
-![NGL viewer macromolecule representations](ngl-viewer-representations.gif)
+![NGL viewer macromolecule representations](img/ngl-viewer-representations.gif)
 
 ## Interaction with other viewers
 
@@ -50,7 +50,7 @@ then the ligand of the current row is displayed in 'green',
 the mouse-over row ligand is displayed in 'light gray',
 and selected rows ligands are displayed in orange.
 
-![NGL viewer ligand selection modes](ngl-viewer-ligand-interactivity.gif)
+![NGL viewer ligand selection modes](img/ngl-viewer-ligand-interactivity.gif)
 
 ## Viewer controls
 

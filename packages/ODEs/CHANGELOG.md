@@ -1,5 +1,16 @@
 # Diff Studio changelog
 
+## 1.0.8 (2024-04-08)
+
+Added
+
+* Application view feature
+* One-compartment pharmacokinetic (PK) simulation example
+
+## 1.0.7 (2024-03-28)
+
+Added siderbar feature to the generated JS-scripts
+
 ## 1.0.6 (2024-03-08)
 
 * E-notation use

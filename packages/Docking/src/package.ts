@@ -11,7 +11,7 @@ import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/sr
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
 import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
 import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
-  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME} from './utils/constants';
+  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
 import { _demoDocking } from './demo/demo-docking';
 
 //name: info
@@ -171,11 +171,22 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
     grid.sort([BINDING_ENERGY_COL_UNUSED]);
 
     await grok.data.detectSemanticTypes(table);
-    grid.onCellRender.subscribe(() => {
-      grid.setOptions({'rowHeight': desirableHeight});
+
+    grid.onCellRender.subscribe((args) => {
+      grid.setOptions({ 'rowHeight': desirableHeight });
       grid.col(POSE_COL_UNUSED)!.width = desirableWidth;
       grid.col(BINDING_ENERGY_COL_UNUSED)!.width = desirableWidth + 50;
-      grid.invalidate();
+
+      const { cell, g, bounds } = args;
+      const value = cell.cell.value;
+      const isPoseCell = cell.isTableCell && cell.cell.column.name === POSE_COL_UNUSED;
+      const isErrorValue = typeof value === 'string' && value.toLowerCase().includes(ERROR_COL_NAME);
+    
+      if (isPoseCell && isErrorValue) {
+        g.fillStyle = 'black';
+        g.fillText(ERROR_MESSAGE, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        args.preventDefault();
+      }
     });
   } finally {
     pi.close();
@@ -282,7 +293,7 @@ function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElem
 }
 
 //name: Demo Docking
-//description: 
+//description: Small molecule docking to a macromolecule with pose visualization
 //meta.demoPath: Bioinformatics | Docking
 export async function demoDocking(): Promise<void> {
   _demoDocking();

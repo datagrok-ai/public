@@ -2,10 +2,10 @@
   "name": "@datagrok/bio",
   "friendlyName": "Bio",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
   },
-  "version": "2.11.40",
+  "version": "2.12.12",
   "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
@@ -34,29 +34,30 @@
   ],
   "dependencies": {
     "@biowasm/aioli": "^3.1.0",
-    "@datagrok-libraries/bio": "5.39.29",
-    "@datagrok-libraries/chem-meta": "^1.2.1",
-    "@datagrok-libraries/ml": "^6.4.10",
-    "@datagrok-libraries/tutorials": "^1.3.11",
+    "@datagrok-libraries/bio": "^5.40.6",
+    "@datagrok-libraries/chem-meta": "^1.2.4",
+    "@datagrok-libraries/ml": "^6.6.0",
+    "@datagrok-libraries/tutorials": "^1.3.12",
+    "@datagrok-libraries/utils": "^4.2.0",
+    "@datagrok-libraries/math": "^1.1.1",
+    "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
     "ajv-errors": "^3.0.0",
-    "@datagrok-libraries/utils": "^4.1.44",
-    "@datagrok-libraries/math": "^1.0.7",
     "cash-dom": "^8.0.0",
     "css-loader": "^6.7.3",
     "datagrok-api": "^1.17.4",
     "dayjs": "^1.11.4",
     "fastest-levenshtein": "^1.0.16",
-    "openchemlib": "6.0.1",
+    "openchemlib": "^7.2.3",
     "rxjs": "^6.5.5",
     "style-loader": "^3.3.1",
     "umap-js": "^1.3.3",
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/chem": "^1.8.11",
-    "@datagrok/dendrogram": "^1.2.22",
-    "@datagrok/helm": "^2.1.27",
+    "@datagrok/chem": "^1.9.0",
+    "@datagrok/dendrogram": "^1.2.27",
+    "@datagrok/helm": "^2.1.30",
     "@types/node": "^17.0.24",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
@@ -106,6 +107,7 @@
   ],
   "category": "Bioinformatics",
   "meta": {
+    "dartium": false,
     "menu": {
       "Bio": {
         "Analyze": {

@@ -1,5 +1,13 @@
 # HitTriage changelog
 
+## 1.1.10 (2024-04-09)
+
+Fixed bugs with tiles viewer forms and functions loading.
+
+## 1.1.9 (2024-03-27)
+
+Bug and style fixes.
+
 ## 1.1.8 (2024-02-22)
 
 Add python script support.

@@ -53,15 +53,15 @@ acc.addPane('menus', () => ui.button('SHOW', () => {
   });
 }));
 
-acc.addPane('text area', () => ui.textInput('', 'multi\nline\ntext').root);
+acc.addPane('text area', () => ui.input.textArea('', {value: 'multi\nline\ntext'}).root);
 
 acc.addPane('range ', () => ui.rangeSlider(0, 10, 2, 5).root);
 
 let persistentAcc = ui.accordion('keyThatGivesPersistence');
 
 persistentAcc.addPane('persistent pane', () =>
-    ui.divText('If this pane is expanded, then it will be expanded next time'));
+  ui.divText('If this pane is expanded, then it will be expanded next time'));
 
 //v.root.appendChild(acc.root);
 v.append(acc.root);
-v.append(persistentAcc.root)
+v.append(persistentAcc.root);

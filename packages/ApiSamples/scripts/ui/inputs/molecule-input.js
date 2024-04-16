@@ -1,3 +1,3 @@
 grok.shell
   .newView('demo: inputs')
-  .append(ui.inputs([ui.moleculeInput('Molecule', 'CN1CCC(O)(CC1)c2ccccc2')]));
+  .append(ui.inputs([ui.input.molecule('Molecule', {value: 'CN1CCC(O)(CC1)c2ccccc2'})]));

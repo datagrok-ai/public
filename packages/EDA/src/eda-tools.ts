@@ -21,7 +21,7 @@ export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, c
   return await _principalComponentAnalysisInWebWorker(table, features, components, centerNum, scaleNum);
 }
 
-// Partial least square regression (PLS)
+// Partial least square regression (PLS): TO REMOVE
 export async function computePLS(
   table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number,
 ): Promise<any> {
