@@ -297,6 +297,7 @@ export async function _statisticsDemo() {
 //name: correlationPlotDemo
 //description: A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman's rank correlation coefficient . Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
 //meta.demoPath: Visualization | Statistical |Correlation Plot
+//meta.demoSkip: skip
 export async function _correlationPlotDemo() {
   await viewerDemo(DG.VIEWER.CORR_PLOT);
 }
@@ -325,6 +326,7 @@ export async function _markupDemo() {
 //name: tileViewerDemo
 //description: Visualizes rows as a collection of forms that are positioned as tiles.
 //meta.demoPath: Visualization | General | Tile Viewer
+//meta.demoSkip: skip
 export async function _tileViewerDemo() {
   await viewerDemo(DG.VIEWER.TILE_VIEWER);
 }
