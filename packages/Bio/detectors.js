@@ -30,6 +30,12 @@ const ALIGNMENT = {
   SEQ: 'SEQ',
 };
 
+const SeqTemps = {
+  seqHandler: `seq-handler`,
+  notationProvider: `seq-handler.notation-provider`,
+};
+
+
 /** Class for handling notation units in Macromolecule columns */
 const SeqHandler = {
   TAGS: {
@@ -121,6 +127,9 @@ class BioPackageDetectors extends DG.Package {
     return last;
   }
 
+  /** Detector MUST NOT be async, causes error:
+   *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
+   */
   //tags: semTypeDetector
   //input: column col
   //output: string semType
@@ -227,7 +236,9 @@ class BioPackageDetectors extends DG.Package {
       const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
         this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
 
-      if (statsAsChars.sameLength) { // MSA FASTA single character
+      if (statsAsChars.sameLength && !separator &&
+        !(['[', ']'].some((c) => c in statsAsChars.freq)) // not fasta ext notation
+      ) { // MSA FASTA single character
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
         if (alphabet === ALPHABET.UN) {
@@ -291,6 +302,9 @@ class BioPackageDetectors extends DG.Package {
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+
+        refineSeqSplitter(col, stats, separator).then(() => { });
+
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } catch (err) {
@@ -301,15 +315,17 @@ class BioPackageDetectors extends DG.Package {
       this.logger.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}` +
         `${errStack ? '\n' + errStack : ''}` + `\n${colTops}`);
     } finally {
-      const t2 = Date.now();
-      this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
+      // Prevent too much log spam
+      // const t2 = Date.now();
+      // this.logger.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
     }
   }
 
   /** Detects the most frequent char with a rate of at least 0.15 of others in sum.
    * Does not use any splitting strategies, estimates just by single characters.
    * @param freq Dictionary of characters freqs
-   * @param sample A string array of seqs sample
+   * @param categoriesSample A string array of seqs sample
+   * @param seqMinLength A threshold on min seq length for contributing to stats
    */
   detectSeparator(freq, categoriesSample, seqMinLength) {
     // To detect a separator we analyze col's sequences character frequencies.
@@ -353,8 +369,8 @@ class BioPackageDetectors extends DG.Package {
     const expSepRate = 1 / Object.keys(freq).length; // expected
     // const freqThreshold = (1 / (Math.log2(Object.keys(freq).length) + 2));
 
-    return (sepRate / expSepRate > 2.2 && mLengthVarN < 0.7) ||
-    (sepRate / expSepRate > 4) ? sep : null;
+    return (sepRate / expSepRate > 2.2 && mLengthVarN < 0.8) ||
+    (sepRate / expSepRate > 3.5) ? sep : null;
   }
 
   checkForbiddenSeparator(separator) {
@@ -403,12 +419,10 @@ class BioPackageDetectors extends DG.Package {
     for (const seq of values) {
       const mSeq = !!seq ? splitter(seq) : [];
 
-      if (firstLength === null) {
-        //
+      if (firstLength === null)
         firstLength = mSeq.length;
-      } else if (mSeq.length !== firstLength) {
+      else if (mSeq.length !== firstLength)
         sameLength = false;
-      }
 
       if (mSeq.length >= minLength) {
         for (const m of mSeq) {
@@ -436,9 +450,8 @@ class BioPackageDetectors extends DG.Package {
     if (maxSim > 0) {
       const sim = candidatesSims.find((cs) => cs[4] === maxSim);
       alphabetName = sim[0];
-    } else {
+    } else
       alphabetName = ALPHABET.UN;
-    }
     return alphabetName;
   }
 
@@ -583,5 +596,26 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
     });
+  }
+}
+
+async function refineSeqSplitter(col, stats, separator) {
+  let invalidateRequired = false;
+  const isCyclized = Object.keys(stats.freq).some((om) => om.match(/.+\(\d+\)/));
+  if (isCyclized) {
+    await grok.functions.call('Bio:applyNotationProviderForCyclized', {col: col, separator: separator});
+    // SeqHandler will be recreated and replaced with the next call .forColumn()
+    // because of changing tags of the column
+    invalidateRequired = true;
+  }
+
+  if (invalidateRequired) {
+    // Applying custom notation provider MUST invalidate SeqHandler
+    delete col.temp[SeqTemps.seqHandler];
+
+    for (const view of grok.shell.tableViews) {
+      if (view.dataFrame === col.dataFrame)
+        view.grid.invalidate();
+    }
   }
 }

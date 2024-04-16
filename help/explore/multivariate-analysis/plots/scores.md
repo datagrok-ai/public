@@ -2,7 +2,15 @@
 title: "Scores"
 ---
 
-Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
+The **Scores** scatterplot shows the values of the latent factors for each observation in the dataset:
 
-The scores plot shows correlations between observations (how observations related to each other, occurrence groups or
-trends).
+* the predictors (T-scores)
+* the response variable (U-scores).
+
+It indicates correlations between observations (how observations related to each other, occurrence groups or trends).
+
+![add-to-workspace](scores.png)
+
+Combine it with the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot to explore data samples:
+
+![add-to-workspace](scores-n-model.gif)

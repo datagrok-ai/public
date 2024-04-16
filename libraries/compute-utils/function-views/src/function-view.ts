@@ -830,8 +830,8 @@ export abstract class FunctionView extends DG.ViewBase {
     return this.func.options['runOnOpen'] === 'true';
   }
 
-  protected get mainInputs(): string[] | null {
-    return this.func.options['mainInputs'] ? JSON.parse(this.func.options['mainInputs']): null;
+  protected get mainParams(): string[] | null {
+    return this.func.options['mainParams'] ? JSON.parse(this.func.options['mainParams']): null;
   }
 
   protected get mandatoryConsistent() {

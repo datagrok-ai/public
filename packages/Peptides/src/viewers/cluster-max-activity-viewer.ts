@@ -31,7 +31,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
   renderDebounceTime = 500;
   static clusterSizeColName = '~cluster.size' as const;
   static maxActivityInClusterSizeColName = '~max.activity.for.cluster.size' as const;
-  private scFilterQuery = `\$\{${ClusterMaxActivityViewer.maxActivityInClusterSizeColName}\} == true` as const;
+  private scFilterQuery = `\$\{${ClusterMaxActivityViewer.maxActivityInClusterSizeColName}\} == 1` as const;
   get scViewer(): DG.ScatterPlotViewer | null {
     if (!this._scViewer)
       this._scViewer = this.createSCViewer();
@@ -132,11 +132,11 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     }
 
     const maxAtivityInClusterSizeCol = this.dataFrame.columns.getOrCreate(
-      ClusterMaxActivityViewer.maxActivityInClusterSizeColName, DG.COLUMN_TYPE.BOOL, this.dataFrame.rowCount);
+      ClusterMaxActivityViewer.maxActivityInClusterSizeColName, DG.COLUMN_TYPE.INT, this.dataFrame.rowCount);
     maxAtivityInClusterSizeCol.init((i) => {
       if (clusterSizeCol.isNone(i))
-        return false;
-      return i === maxActivityIndexPerClusterSizeMap[clusterSizeCol.get(i)];
+        return 0;
+      return i === maxActivityIndexPerClusterSizeMap[clusterSizeCol.get(i)] ? 1 : 0;
     });
     scatterPlotProps.xColumnName = ClusterMaxActivityViewer.clusterSizeColName;
     scatterPlotProps.yColumnName = this.activityColumnName;

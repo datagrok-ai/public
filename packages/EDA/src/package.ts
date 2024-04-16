@@ -5,15 +5,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS} from './eda-tools';
-import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart,
-  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
-import {carsDataframe, testDataForBinaryClassification} from './data-generators';
+import {computePCA} from './eda-tools';
+import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
+import {testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
+
+import {PLS_ANALYSIS} from './pls/pls-constants';
+import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 
 import {oneWayAnova} from './stat-tools';
 import {getDbscanWorker} from '@datagrok-libraries/math';
@@ -71,7 +71,7 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean): Promise<void> {
   const pcaTable = await computePCA(table, features, components, center, scale);
-  addPrefixToEachColumnName('PCA', pcaTable.columns);
+  addPrefixToEachColumnName('PC', pcaTable.columns);
 
   if (table.id === null) // table is loaded from a local file
     grok.shell.addTableView(pcaTable);
@@ -127,7 +127,7 @@ export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
 //name: None (string)
 //tags: dim-red-preprocessing-function
 //meta.supportedTypes: string
-//meta.supportedDistanceFunctions: Levenshtein,Hamming,One-Hot
+//meta.supportedDistanceFunctions: One-Hot,Levenshtein,Hamming
 //input: column col
 //input: string _metric {optional: true}
 //output: object result
@@ -167,6 +167,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
           df: params.table, cols: params.columns, metrics: params.distanceMetrics,
           weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
           preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
+          useWebGPU: params.useWebGPU,
         }).call(true);
       }).show();
   } catch (err: any) {
@@ -190,77 +191,54 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: object preprocessingFuncArgs
 //input: int threshold = 80
 //input: int maxIterations = 10
+//input: bool useWebGPU = false
 //editor: EDA: GetMCLEditor
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
-  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10) {
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false,
+): Promise< DG.ScatterPlotViewer | undefined> {
   const res = (await markovCluster(df, cols, metrics, weights,
-    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations));
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU));
   return res?.sc;
 }
 
-//top-menu: ML | Analyze | Multivariate Analysis...
-//name: Multivariate Analysis (PLS)
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
+//name: PLS
+//description: Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.
 //input: dataframe table
-//input: column names
 //input: column_list features {type: numerical}
 //input: column predict {type: numerical}
 //input: int components = 3
-export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList,
-  predict: DG.Column, components: number): Promise<void> {
-  const plsResults = await computePLS(table, features, predict, components);
-  addPLSvisualization(table, names, features, predict, plsResults);
+//input: column names {type: string}
+//output: object plsResults
+export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number, names: DG.Column): Promise<PlsOutput> {
+  return await getPlsAnalysis({
+    table: table,
+    features: features,
+    predict: predict,
+    components: components,
+    names: names,
+  });
+}
+
+//top-menu: ML | Analyze | PLS...
+//name: topMenuPLS
+//description: Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.
+export async function topMenuPLS(): Promise<void> {
+  await runMVA(PLS_ANALYSIS.COMPUTE_COMPONENTS);
+}
+
+//top-menu: ML | Analyze | Multivariate Analysis...
+//name: multivariateAnalysis
+//description: Multidimensional data analysis using partial least squares (PLS) regression.
+export async function MVA(): Promise<void> {
+  await runMVA(PLS_ANALYSIS.PERFORM_MVA);
 }
 
 //name: MVA demo
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate analysis
-//meta.isDemoScript: True
 export async function demoMultivariateAnalysis(): Promise<any> {
-  const demoScript = new DemoScript('Partial least squares regression',
-    'Analysis of multidimensional data.');
-
-  const cars = carsDataframe();
-
-  const components = 3;
-  const names = cars.columns.byName('model');
-  const predict = cars.columns.byName('price');
-  const features = cars.columns.remove('price').remove('model');
-  const plsOutput = await computePLS(cars, features, predict, components);
-
-  const sourceCars = carsDataframe();
-  sourceCars.name = 'Cars';
-  let view: any;
-  let dialog: any;
-
-  await demoScript
-    .step('Data', async () => {
-      grok.shell.addTableView(sourceCars);
-      view = grok.shell.getTableView(sourceCars.name);
-    }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
-    .step('Model', async () => {
-      dialog = ui.dialog({title: 'Multivariate Analysis (PLS)'})
-        .add(ui.tableInput('Table', sourceCars))
-        .add(ui.columnsInput('Features', cars, features.toList, {available: undefined, checked: features.names()}))
-        .add(ui.columnInput('Names', cars, names, undefined))
-        .add(ui.columnInput('Predict', cars, predict, undefined))
-        .add(ui.intInput('Components', components, undefined))
-        .onOK(() => {
-          grok.shell.info('Multivariate analysis has been already performed.');
-        })
-        .show({x: 400, y: 140});
-    }, {description: 'Predict car price by its other features.', delay: 0})
-    .step('Regression coeffcicients', async () => {
-      dialog.close();
-      view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));
-    },
-    {description: 'The feature "diesel" affects the price the most.', delay: 0})
-    .step('Scores', async () => {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]));},
-      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
-    .step('Prediction', async () => {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]));},
-      {description: 'Closer to the line means better price prediction.', delay: 0})
-    .start();
+  runDemoMVA();
 }
 
 //name: Generate linear separable dataset

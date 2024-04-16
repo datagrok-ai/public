@@ -458,14 +458,13 @@ export class RichFunctionView extends FunctionView {
       const historyRuns = new HistoricalRunsList(simulatedFunccalls.length > 0 ?
         simulatedFunccalls:
         [...this.historyBlock!.history.values()],
-      [],
       {
         fallbackText: 'No historical runs found',
         showActions: !(simulatedFunccalls.length > 0),
         showBatchActions: !(simulatedFunccalls.length > 0),
       });
       const uploadedRuns = new HistoricalRunsList(uploadedFunccalls,
-        [], {
+        {
           fallbackText: 'No runs uploaded',
           showActions: false,
           showBatchActions: false,
@@ -575,7 +574,7 @@ export class RichFunctionView extends FunctionView {
 
         uploadDialog.close();
 
-        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, [], {
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
           fallbackText: 'No runs uploaded',
           showActions: true,
           showBatchActions: true,
@@ -596,7 +595,7 @@ export class RichFunctionView extends FunctionView {
           call.options['immutable_tags'] = [EXPERIMENTAL_TAG];
       });
 
-      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, [], {
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
         fallbackText: 'No runs uploaded',
         showActions: true,
         showBatchActions: true,
@@ -1692,9 +1691,9 @@ export class RichFunctionView extends FunctionView {
         if (scalarInputs.length) {
           const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
           scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-            caption: scalarInput.options['caption'] || scalarInput.name,
-            value: lastCall.inputs[scalarInput.name],
-            units: scalarInput.options['units'] || '',
+            caption: scalarInput.options['caption'] ?? scalarInput.name,
+            value: lastCall.inputs[scalarInput.name] ?? '',
+            units: scalarInput.options['units'] ?? '',
           })));
         }
 
@@ -1712,9 +1711,9 @@ export class RichFunctionView extends FunctionView {
         if (scalarOutputs.length) {
           const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
           scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-            caption: scalarOutput.options['caption'] || scalarOutput.name,
-            value: lastCall.outputs[scalarOutput.name],
-            units: scalarOutput.options['units'] || '',
+            caption: scalarOutput.options['caption'] ?? scalarOutput.name,
+            value: lastCall.outputs[scalarOutput.name] ?? '',
+            units: scalarOutput.options['units'] ?? '',
           })));
         }
 

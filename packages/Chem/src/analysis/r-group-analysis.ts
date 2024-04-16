@@ -69,10 +69,7 @@ export function rGroupAnalysis(col: DG.Column): void {
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
   const replaceLatest = ui.boolInput('Replace latest', true);
-  const undoLatestAnalysis = ui.icons.undo(() => {
-    removeLatestAnalysis(col);
-  }, 'Undo latest analysis');
-  undoLatestAnalysis.classList.add('chem-rgroup-undo-icon');
+  replaceLatest.root.classList.add('chem-rgroup-replace-latest');
 
   //MCS fields
   const mcsButton = ui.button('MCS', async () => {
@@ -94,6 +91,7 @@ export function rGroupAnalysis(col: DG.Column): void {
   mcsButton.classList.add('chem-mcs-button');
   const mcsExactAtomsCheck = ui.boolInput('Exact atoms', true);
   const mcsExactBondsCheck = ui.boolInput('Exact bonds', true);
+  mcsExactBondsCheck.captionLabel.classList.add('chem-mcs-settings-label');
 
   //R groups fields
   const rGroupMatchingStrategy = ui.choiceInput('Matching strategy', matchingStrategies[0], matchingStrategies);
@@ -101,22 +99,18 @@ export function rGroupAnalysis(col: DG.Column): void {
   const rGroupChunkSize = ui.intInput('Chunk size', 5);
 
   //settings button to adjust mcs and r-groups settings
-  const mcsAndrGroupsSettingsIcon = ui.icons.settings(() => {
+  const mcsAndrGroupsSettingsIcon = ui.iconFA('cog', () => {
     rGroupSettinsOpened = !rGroupSettinsOpened;
     if (!rGroupSettinsOpened)
       ui.empty(mcsAndRGroupSettingsDiv);
     else {
-      mcsAndRGroupSettingsDiv.append(ui.divText('MCS settings', 'chem-rgroup-settings-header'));
-      mcsAndRGroupSettingsDiv.append(mcsExactAtomsCheck.root);
-      mcsAndRGroupSettingsDiv.append(mcsExactBondsCheck.root);
-      mcsAndRGroupSettingsDiv.append(ui.divText('R group analysis settings', 'chem-rgroup-settings-header'));
       mcsAndRGroupSettingsDiv.append(rGroupMatchingStrategy.root);
       mcsAndRGroupSettingsDiv.append(rGroupAlignment.root);
       mcsAndRGroupSettingsDiv.append(rGroupChunkSize.root);
     }
-  }, 'MCS and R group analysis settins');
+  }, 'R group analysis settings');
   mcsAndrGroupsSettingsIcon.classList.add('chem-rgroup-settings-icon');
-  const mcsAndRGroupSettingsDiv = ui.divV([], {style: {paddingTop: '15px'}});
+  const mcsAndRGroupSettingsDiv = ui.inputs([], 'chem-rgroup-settings-div');
   let rGroupSettinsOpened = false;
 
 
@@ -126,10 +120,12 @@ export function rGroupAnalysis(col: DG.Column): void {
   })
     .add(ui.divV([
       sketcher,
-      mcsButton,
+      ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], {style: {paddingLeft: '108px'}}),
       columnInput,
       columnPrefixInput,
-      ui.divH([visualAnalysisCheck.root, replaceLatest.root, undoLatestAnalysis, mcsAndrGroupsSettingsIcon]),
+      visualAnalysisCheck.root,
+      mcsAndrGroupsSettingsIcon,
+      latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null,
       mcsAndRGroupSettingsDiv
     ]))
     .onOK(async () => {
@@ -270,6 +266,8 @@ export function rGroupAnalysis(col: DG.Column): void {
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number, options?:
     { [key: string]: string | boolean }): Promise<RGroupsRes> {
+  if (!coreMolecule)
+      throw new Error('No core was provided');
   const res: IRGroupAnalysisResult =
     await (await getRdKitService())
       .getRGroups(molecules.toList(), coreMolecule, coreIsQMol, options ? JSON.stringify(options) : '');

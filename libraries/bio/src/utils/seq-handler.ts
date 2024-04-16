@@ -8,7 +8,7 @@ import {
 } from './macromolecule';
 import {
   GAP_SYMBOL,
-  ISeqSplitted, SeqColStats, SplitterFunc,
+  ISeqSplitted, SeqColStats, SplitterFunc, INotationProvider,
 } from './macromolecule/types';
 import {detectAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from './macromolecule/utils';
 import {
@@ -18,9 +18,10 @@ import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-d
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from './const';
 
-export const Temps = new class {
-  /** Column's temp slot name for a UnitsHandler object */
-  uh = `units-handler.${DG.SEMTYPE.MACROMOLECULE}`;
+export const SeqTemps = new class {
+  /** Column's temp slot name for a SeqHandler object */
+  seqHandler = `seq-handler`;
+  notationProvider = `seq-handler.notation-provider`;
 }();
 
 export const GapOriginals: {
@@ -39,10 +40,10 @@ export type JoinerFunc = (src: ISeqSplitted) => string;
  */
 export class SeqHandler {
   protected readonly _column: DG.Column; // the column to be converted
-  protected readonly _columnVersion: number;
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
+  protected readonly notationProvider: INotationProvider | null;
 
   private _splitter: SplitterFunc | null = null;
 
@@ -50,7 +51,6 @@ export class SeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    this._columnVersion = col.version;
     const units = this._column.getTag(DG.TAGS.UNITS);
     if (units !== null && units !== undefined)
       this._units = units;
@@ -94,6 +94,9 @@ export class SeqHandler {
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
       }
     }
+
+    this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
+    this.columnVersion = this.column.version;
   }
 
   public static setUnitsToFastaColumn(uh: SeqHandler) {
@@ -483,6 +486,10 @@ export class SeqHandler {
 
   /** Gets function to split seq value to monomers */
   protected getSplitter(limit?: number): SplitterFunc {
+    let splitter: SplitterFunc | null = null;
+    splitter = this.notationProvider ? this.notationProvider.splitter : null;
+    if (splitter) return splitter;
+
     if (this.units.toLowerCase().startsWith(NOTATION.FASTA)) {
       const alphabet: string | null = this.column.getTag(TAGS.alphabet);
       if (alphabet !== null && !this.getAlphabetIsMultichar())
@@ -652,19 +659,19 @@ export class SeqHandler {
     const startIdxVal: number = startIdx ?? 0;
     const endIdxVal: number = endIdx ?? this.maxLength - 1;
 
-    const join = this.getJoiner();
+    const joiner = this.getJoiner();
 
     const regLength = endIdxVal - startIdxVal + 1;
+    const gapOM = GapOriginals[this.notation];
     regCol.init((rowI): string => {
       const seqS = this.getSplitted(rowI);
       // Custom slicing instead of array method to maintain gaps
       const regOMList: string[] = new Array<string>(regLength);
       for (let regJPos: number = 0; regJPos < regLength; ++regJPos) {
         const seqJPos = startIdxVal + regJPos;
-        const seqOM = seqS.getOriginal(seqJPos);
-        regOMList[regJPos] = seqJPos < seqS.length ? seqOM : GapOriginals[this.notation];
+        regOMList[regJPos] = seqJPos < seqS.length ? seqS.getOriginal(seqJPos) : gapOM;
       }
-      return join(new StringListSeqSplitted(regOMList, GapOriginals[this.notation]));
+      return joiner(new StringListSeqSplitted(regOMList, gapOM));
     });
 
     const getRegionOfPositionNames = (str: string): string => {
@@ -742,9 +749,9 @@ export class SeqHandler {
   /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
   public static forColumn(col: DG.Column<string>): SeqHandler {
     // TODO: Invalidate col.temp[Temps.uh] checking column's metadata
-    let res = col.temp[Temps.uh];
-    if (!res || res.columnVersion !== col.version) res = col.temp[Temps.uh] = new SeqHandler(col);
-
+    let res = col.temp[SeqTemps.seqHandler];
+    if (!res || res.columnVersion !== col.version)
+      res = col.temp[SeqTemps.seqHandler] = new SeqHandler(col);
     return res;
   }
 

@@ -21,7 +21,6 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
   static UA: DG.MultiView;
-  dockFilters: DG.DockNode | null = null;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -29,7 +28,7 @@ export class ViewHandler {
     return ViewHandler.instance;
   }
 
-  async init() {
+  async init(): Promise<void> {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
@@ -47,7 +46,6 @@ export class ViewHandler {
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('groups');
     const paramsHavePackages = params.has('packages');
-    const paramsHaveReport = params.has('report');
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
@@ -149,7 +147,6 @@ export class ViewHandler {
     const urlTab = window.location.pathname.match(/UsageAnalysis\/UsageAnalysis\/([a-zA-Z]+)/)?.[1] ?? 'Overview';
     ViewHandler.UA.path = `/${urlTab}`;
     if (viewClasses.some((v) => v.name === `${urlTab}View`)) ViewHandler.changeTab(urlTab);
-    grok.shell.addView(ViewHandler.UA);
   }
 
   public static getView(name: string) {

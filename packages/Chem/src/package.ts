@@ -158,7 +158,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -498,13 +498,20 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //input: column col {semType: Molecule}
 //input: string _metric {optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; optional: true; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  //TODO: get rid of fallback
+  let fingerprintTypeStr = fingerprintType as string;
+  if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
+    fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+    fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
+
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
+  return { entries: fpColumn, options: {} };
+
 }
 
 
@@ -1201,7 +1208,8 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, 
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   return res ?? DG.DataFrame.create();
 }
 
@@ -1217,7 +1225,8 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
-  return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
+  return await chemDiversitySearch(col, similarityMetric[metricName], limit, 
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
 
 //top-menu: Chem | Calculate | Properties...
@@ -1328,7 +1337,8 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptBlob = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+  const scriptRes = new TextDecoder().decode(scriptBlob.data);
   return scriptRes;
 }
 

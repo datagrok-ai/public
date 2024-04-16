@@ -2,4 +2,10 @@
 title: "Regression coefficients"
 ---
 
-Bar chart with regression coefficients (used with the original data scale).
+The **Regression Coefficients** bar chart presents parameters of the obtained linear model (used with the original data scale):
+
+![add-to-workspace](regr-coeffs.png)
+
+Combine it with the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot to explore features:
+
+![add-to-workspace](regr-coeffs-n-loadings.gif)

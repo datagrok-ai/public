@@ -16,8 +16,10 @@ async function openMoleculeDataset(name: string): Promise<DG.TableView> {
 }
 
 export async function _demoDocking(): Promise<void> {
-  const demoScript = new DemoScript('Docking',
-    '', undefined, {autoStartFirstStep: true});
+  const demoScript = new DemoScript(
+    'Docking',
+    'Small molecule docking to a macromolecule with pose visualization', // for Demo card
+    undefined, {autoStartFirstStep: true});
   let table: DG.DataFrame;
   let tv: DG.TableView;
   demoScript

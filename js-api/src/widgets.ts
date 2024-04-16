@@ -1449,8 +1449,20 @@ export class Color {
     return api.grok_Color_CategoricalPalette();
   }
 
+  static get categoricalPalettes(): Array<ColorType[]> {
+    return api.grok_Color_GetCategoricalPalettes();
+  }
+
   static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
     return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
+  }
+
+  static highlight(color: number): number {
+    return api.grok_Color_Highlight(color);
+  }
+
+  static darken(color: number, diff: number): number {
+    return api.grok_Color_Darken(color, diff);
   }
 
   static scale(x: number, min: number, max: number): number {

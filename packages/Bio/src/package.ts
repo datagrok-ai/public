@@ -1,4 +1,4 @@
-/* Do not change these import lines to match external modules in webpack configuration */
+/* eslint max-lines: "off" */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -12,7 +12,7 @@ import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-me
 import {
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -77,6 +77,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
+import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
 
 export const _package = new BioPackage();
 
@@ -485,13 +486,13 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
 //meta.supportedSemTypes: Macromolecule
 //meta.supportedTypes: string
 //meta.supportedUnits: fasta,separator,helm
-//meta.supportedDistanceFunctions: Levenshtein,Hamming,Monomer chemical distance,Needlemann-Wunsch
+//meta.supportedDistanceFunctions: Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch
 //input: column col {semType: Macromolecule}
 //input: string metric
 //input: double gapOpen = 1 {caption: Gap open penalty; default: 1; optional: true}
 //input: double gapExtend = 0.6 {caption: Gap extension penalty; default: 0.6; optional: true}
 // eslint-disable-next-line max-len
-//input: string fingerprintType = Morgan {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; default: Morgan; optional: true}
+//input: string fingerprintType = 'Morgan' {caption: Fingerprint type; choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']; optional: true}
 //output: object result
 export async function macromoleculePreprocessingFunction(
   col: DG.Column, metric: MmDistanceFunctionsNames, gapOpen: number = 1, gapExtend: number = 0.6,
@@ -1045,4 +1046,13 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+// -- Custom notation providers --
+
+//name: applyNotationProviderForCyclized
+//input: column col
+//input: string separator
+export function applyNotationProviderForCyclized(col: DG.Column<string>, separator: string) {
+  col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator);
 }

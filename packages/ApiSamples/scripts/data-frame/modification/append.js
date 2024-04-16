@@ -13,4 +13,4 @@ let t2 = DG.DataFrame.fromCsv(
 BMW,     1.7,    328i,   60000        
 BMW,     1.5,    535i,   35000`);
 
-grok.shell.add(t1.append(t2));
+grok.shell.addTableView(t1.append(t2));

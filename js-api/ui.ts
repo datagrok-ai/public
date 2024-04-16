@@ -39,9 +39,10 @@ import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
 import * as d4 from './src/api/d4.api.g';
+import {IDartApi} from "./src/api/grok_api.g";
 
 
-let api = <any>window;
+let api: IDartApi = <any>window;
 declare let grok: any;
 
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
@@ -1104,6 +1105,10 @@ export class tools {
     element: HTMLElement, resolveF: (element: HTMLElement) => void, timestamp: number
   }[] = [];
 
+  /** Finds entities (such as "CHEMBL25") in the specified html element, and converts
+   * them to hyperlinks */
+  //static void annotateEntities(element: HTMLElement) { }
+
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
     let width = element.clientWidth;
     let height = element.clientHeight;
@@ -1639,7 +1644,7 @@ export class Tooltip {
     return api.grok_Tooltip_Get_Root();
   }
 
-  get isVisible(): boolean { return api.grok_Tooltip_Is_Visible(); }
+  get isVisible(): boolean { return api.grok_Tooltip_Get_IsVisible(); }
 
   get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
   get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
@@ -1772,7 +1777,7 @@ export class ObjectHandler {
     return _objectHandlerSubject.subscribe(observer);
   }
 
-  static forEntity(object: object, context: object | null = null): ObjectHandler | null {
+  static forEntity(object: any, context: any | null = null): ObjectHandler | null {
     let semValue = object instanceof SemanticValue ? object : SemanticValue.fromValueType(object, null);
 
     let args = new ObjectHandlerResolutionArgs(semValue, context);
@@ -1815,12 +1820,12 @@ export class EntityMetaDartProxy extends ObjectHandler {
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
 
-  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
-  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, x); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, x); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
 }
 
 /**
@@ -2139,6 +2144,12 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   _options(c, options);
   return c;
 }
+
+
+export namespace panels {
+  export function infoPanel(x: any): Accordion { return api.grok_InfoPanels_GetAccordion(toDart(x)); }
+}
+
 
 export namespace forms {
 

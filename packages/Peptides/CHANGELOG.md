@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.14 (2024-04-15)
+
+Fix display of the max activity vs cluster size viewer columns.
+
 ## 1.17.13 (2024-04-02)
 
 ### Features

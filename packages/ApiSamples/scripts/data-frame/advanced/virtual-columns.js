@@ -22,4 +22,4 @@ Tesla, Model S,  ,          1.6,    120000`);
 
 table.columns.addNewVirtual('car', (i) => new Car(table.row(i).make, table.row(i).model, table.row(i).price));
 
-grok.shell.add(table);
+grok.shell.addTableView(table);

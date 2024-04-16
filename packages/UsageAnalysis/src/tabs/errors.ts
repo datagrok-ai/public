@@ -179,7 +179,7 @@ export class ErrorsView extends UaView {
       const createReportButton = ui.button('Report', async () => {
         const prog = DG.TaskBarProgressIndicator.create('Reporting...');
         await grok.dapi.admin.postEventReport(eventId);
-        const ev = ViewHandler.getView('User reports');
+        const ev = ViewHandler.getView('Reports');
         ev.viewers[0].reloadViewer();
         while (div.hasChildNodes())
           div.removeChild(div.lastChild!);

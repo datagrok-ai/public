@@ -213,17 +213,17 @@ export interface UMAPSupervisedParams {
  *      step through each epoch of the SGD optimization
  */
 export class UMAP {
-  private learningRate = 1.0;
-  private localConnectivity = 1.0;
-  private minDist = 0.1;
-  private nComponents = 2;
+  public learningRate = 1.0;
+  public localConnectivity = 1.0;
+  public minDist = 0.1;
+  public nComponents = 2;
   private nEpochs = 0;
   private nNeighbors = 15;
-  private negativeSampleRate = 5;
-  private random = Math.random;
-  private repulsionStrength = 1.0;
-  private setOpMixRatio = 1.0;
-  private spread = 1.0;
+  public negativeSampleRate = 5;
+  public random = Math.random;
+  public repulsionStrength = 1.0;
+  public setOpMixRatio = 1.0;
+  public spread = 1.0;
   private transformQueueSize = 4.0;
 
   // Supervised projection params

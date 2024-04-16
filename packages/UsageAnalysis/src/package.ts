@@ -8,14 +8,27 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
+import {ReportsView} from "./tabs/reports";
 
 export const _package = new DG.Package();
 
 
 //name: Usage Analysis
 //tags: app
-export function usageAnalysisApp(): void {
-  if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
+//output: view v
+export async function usageAnalysisApp(): Promise<DG.ViewBase | null> {
+  if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
+    if (window.location.search?.includes('report-number')) {
+      const ev = ViewHandler.getView('Reports');
+      ev.viewers[0].reloadViewer();
+      await (ev as ReportsView).reloadFilter();
+      ViewHandler.changeTab('Reports');
+    }
+    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
+    return null;
+  }
+  await ViewHandler.getInstance().init();
+  return ViewHandler.UA;
 }
 
 //name: Test Track

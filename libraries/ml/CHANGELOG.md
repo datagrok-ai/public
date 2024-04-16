@@ -1,5 +1,29 @@
 # ml changelog
 
+## 6.6.2 (2024-04-15)
+
+Dimentionality reduction: create table view only in case plotEmbeddings parameter is true
+
+## 6.6.1 (2024-04-15)
+
+Fix webGPU numeric distance with 0 range
+
+## 6.6.0 (2024-04-14)
+
+### Features
+
+* Add webGPU Sparse matrix calculation.
+* Add webGPU UMAP implementation.
+* Add webGPU option for activity cliffs + MCL
+
+## 6.5.1 (2024-04-05)
+
+Fix function editor for seq/chem space
+
+## 6.5.0 (2024-04-05)
+
+Add webGPU KNN calculation option to UMAP.
+
 ## 6.4.13 (2024-03-07)
 
 Add Connectivity to MCL, Harmonized macromolecule distance functions.

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.29.1",
+  "version": "1.31.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "rxjs": "^6.6.7",
-    "@datagrok-libraries/compute-utils": "^1.29.1",
+    "@datagrok-libraries/compute-utils": "^1.31.0",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.0",
     "source-map-loader": "^4.0.1",
@@ -56,5 +56,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "meta": {
+    "dartium": false
+  }
 }

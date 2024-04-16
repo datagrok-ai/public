@@ -159,6 +159,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
 
 //name: Oligo Batch Calculator
 //tags: app
+//meta.browsePath: Oligo
 export async function OligoBatchCalculatorApp(): Promise<void> {
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
@@ -255,7 +256,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + SYNTHESIZERS.GCRS +
           '\', please see table below to see list of valid codes';
       }
-    };
+    }
 
     const moleColumnName = (units.value == UNITS.MICRO_MOLE || units.value == UNITS.MILLI_GRAM) ?
       UNITS.MICRO_MOLE : UNITS.NANO_MOLE;

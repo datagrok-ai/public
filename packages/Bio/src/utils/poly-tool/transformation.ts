@@ -6,12 +6,15 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-import {HELM_WRAPPER} from './const';
-import {getMolColumnFromHelm} from '../helm-to-molfile';
+import {getMolColumnFromHelm} from '../helm-to-molfile/utils';
 
 export const RULES_PATH = 'System:AppData/Bio/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
 
+const enum HELM_WRAPPER {
+  LEFT = 'PEPTIDE1{',
+  RIGHT = '}$$$$',
+}
 
 type ConnectionData = {
   allPos1: number[],
@@ -43,19 +46,8 @@ class TransformationCommon {
     this.helmColumn = helmColumn;
   }
 
-  protected hasTerminals(helm: string): boolean {
-    let isLinkable = false;
-    if (helm.includes('(1)'))
-      isLinkable = true;
-    if (helm.includes('(2)'))
-      isLinkable = true;
-
-    return isLinkable;
-  }
-
-  protected getLinkedPositions(helm: string, rules: Rule[]): [number, number][] {
-    const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
-    const monomers = seq.split('.').map((m) => { return m.replace('[', '').replace(']', ''); });
+  protected getLinkedPositions(monomers: string[], rules: Rule[]): [number, number][] {
+    const monomersNames = monomers.map((m) => { return m.replace('[', '').replace(']', ''); });
     const result: [number, number][] = new Array<[number, number]>(rules.length);
 
     for (let i = 0; i < rules.length; i++) {
@@ -65,35 +57,35 @@ class TransformationCommon {
       let firstEntryIndex = -1;
       let secondEntryIndex = -1;
       const add = `(${rules[i].code})`;
-      for (let j = 0; j < monomers.length; j++) {
-        if (monomers[j].includes(add)) {
+      for (let j = 0; j < monomersNames.length; j++) {
+        if (monomersNames[j].includes(add)) {
           if (firstFound) {
-            if (firstIsFirst && monomers[j] == rules[i].secondMonomer + add) {
+            if (firstIsFirst && monomersNames[j] == rules[i].secondMonomer + add) {
               secondFound = true;
               secondEntryIndex = j;
               break;
-            } else if (!firstIsFirst && monomers[j] == rules[i].firstMonomer + add) {
+            } else if (!firstIsFirst && monomersNames[j] == rules[i].firstMonomer + add) {
               secondFound = true;
               secondEntryIndex = j;
               break;
-            } else {
+            } else
               continue;
-            }
+
             //result[i][1] = j;
             // secondFound = true;
             // break;
           } else {
-            if (monomers[j] == rules[i].firstMonomer + add) {
+            if (monomersNames[j] == rules[i].firstMonomer + add) {
               firstFound = true;
               firstIsFirst = true;
               firstEntryIndex = j;
-            } else if (monomers[j] == rules[i].secondMonomer + add) {
+            } else if (monomersNames[j] == rules[i].secondMonomer + add) {
               firstFound = true;
               firstIsFirst = false;
               firstEntryIndex = j;
-            } else {
+            } else
               continue;
-            }
+
             //result[i] = [j, 0];
           }
         }
@@ -141,22 +133,42 @@ class TransformationCommon {
     return rules;
   }
 
-  protected getTransformedHelm(helm: string, rules: Rule[]): string {
-    const ruleCount = rules.length;
-    const positions = this.getLinkedPositions(helm, rules);
+  protected getDimeric(helm: string): [string[], [number, number][]] {
+    const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
+    const monomers = seq.split('.');
+    const duplicates: [number, number][] = [];
 
+    for (let i = 0; i < monomers.length; i++) {
+      if (monomers[i].includes('(#2)')) {
+        monomers[i] = monomers[i].replace('(#2)', '');
+        const duplicateStart = i + 1;
+        let duplicateFinish = 0;
+        for (let j = duplicateStart + 1; j < monomers.length; j++) {
+          if (monomers[j].includes('}')) {
+            duplicateFinish = j; break;
+          }
+        }
+        monomers[duplicateStart] = monomers[duplicateStart].replace('{', '');
+        monomers[duplicateFinish] = monomers[duplicateFinish].replace('}', '');
+        duplicates.push([duplicateStart, duplicateFinish]);
+      }
+    }
+
+    return [monomers, duplicates];
+  }
+
+  protected getAllCycles(rules: Rule[], monomers: string [], positions: [number, number][]) :
+  [string [], number [], number [], number [], number []] {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
     const allAttaches1: number [] = [];
     const allAttaches2: number [] = [];
+    const ruleCount = rules.length;
 
     for (let i = 0; i < ruleCount; i++) {
       if (positions[i][0] == -1)
         continue;
 
-      //helm = helm.replaceAll(`(${i + 1})`, '');
-      const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
-      const monomers = seq.split('.');
       const firstMonomer = monomers[positions[i][0]].replace('[', '').replace(']', '');
       const secondMonomer = monomers[positions[i][1]].replace('[', '').replace(']', '');
 
@@ -167,31 +179,97 @@ class TransformationCommon {
       allPos2.push(positions[i][1] + 1);
       allAttaches1.push(rules[i].firstR);
       allAttaches2.push(rules[i].secondR);
-
-      helm = HELM_WRAPPER.LEFT;
-      for (let i = 0; i < monomers.length; i++) {
-        if (i != monomers.length - 1)
-          helm = helm + monomers[i] + '.';
-        else
-          helm = helm + monomers[i];
-      }
-      helm = helm + HELM_WRAPPER.RIGHT;
     }
 
+    return [monomers, allPos1, allPos2, allAttaches1, allAttaches2];
+  }
 
-    const cycledHelm = getHelmCycle(helm, {allPos1, allPos2, allAttaches1, allAttaches2});
+  protected getHelmCycle(source: ConnectionData, polFirst: number, poSecond: number): string {
+    let cycled = '';
 
-    return cycledHelm;
+    for (let i = 0; i < source.allPos1.length; i++) {
+      if (i == 0)
+        cycled += `PEPTIDE${polFirst},PEPTIDE${poSecond},`;
+      else
+        cycled += `|PEPTIDE${polFirst},PEPTIDE${poSecond},`;
+      cycled += `${source.allPos1[i]}:R${source.allAttaches1[i]}-${source.allPos2[i]}:R${source.allAttaches2[i]}`;
+    }
+    return cycled;
+  }
+
+  //"PEPTIDE1{[(#2)Succ].[{R].F.[Dab(2)].T.G.H.F.G.A.A.Y.P.[E(2)].[NH2}]}$$$$"
+  protected getTransformedHelm(helm: string, rules: Rule[]): string {
+    const [monomers, duplicates] = this.getDimeric(helm);
+    const positions = this.getLinkedPositions(monomers, rules);
+    const [monomersCycled, allPos1, allPos2, allAttaches1, allAttaches2] =
+      this.getAllCycles(rules, monomers, positions);
+
+    helm = 'PEPTIDE1{';
+    for (let i = 0; i < monomersCycled.length; i++)
+      helm += i != monomersCycled.length - 1 ? monomersCycled[i] + '.' : monomersCycled[i];
+
+    helm += '}';
+
+    const dimerCodes = new Array<string>(duplicates.length);
+    const cycleCodes = new Array<string>(duplicates.length);
+    for (let i = 0; i < duplicates.length; i++) {
+      let helmAdd = `|PEPTIDE${i + 2}{`;
+      const lengthAdd = duplicates[i][1] - duplicates[i][0];
+      //const monomersAdd = new Array<string>(lengthAdd);
+      const allPosAdd1: number [] = [];
+      const allPosAdd2: number [] = [];
+      const allAttachesAdd1: number [] = [];
+      const allAttachesAdd2: number [] = [];
+
+      for (let j = 0; j <= lengthAdd; j ++) {
+        const index = j + duplicates[i][0];
+        helmAdd += j != lengthAdd ? monomersCycled[index] + '.' : monomersCycled[index];
+      }
+
+      helmAdd += '}';
+
+      for (let j = 0; j < allPos1.length; j++) {
+        if (allPos1[j] - 1 >= duplicates[i][0] && allPos1[j] - 1 <= duplicates[i][1]) {
+          allPosAdd1.push(allPos1[j] - duplicates[i][0]);
+          allPosAdd2.push(allPos2[j] - duplicates[i][0]);
+          allAttachesAdd1.push(allAttaches1[j]);
+          allAttachesAdd2.push(allAttaches1[j]);
+        }
+      }
+
+      const addCyclysation = this.getHelmCycle({
+        allPos1: allPosAdd1,
+        allPos2: allPosAdd2,
+        allAttaches1: allAttachesAdd1,
+        allAttaches2: allAttachesAdd2}, i + 2, i + 2);
+
+      dimerCodes[i] = helmAdd;
+      cycleCodes[i] = this.getHelmCycle({
+        allPos1: [duplicates[i][0]],
+        allPos2: [1],
+        allAttaches1: [1],
+        allAttaches2: [1]}, 1, i + 2);
+      cycleCodes.push(addCyclysation);
+    }
+
+    for (let i = 0; i < dimerCodes.length; i++)
+      helm += dimerCodes[i];
+
+    helm += '$';
+    const mainCyclysation = this.getHelmCycle({allPos1, allPos2, allAttaches1, allAttaches2}, 1, 1);
+    helm += mainCyclysation;
+    for (let i = 0; i < cycleCodes.length; i++) {
+      helm += '|';
+      helm += cycleCodes[i];
+    }
+    helm += '$$$';
+    return helm;
   }
 
   transform(rulesTables: DG.DataFrame[]): string[] {
     const rules = this.getRules(rulesTables);
     const resultList = this.helmColumn.toList().map((helm: string) => {
-      if (this.hasTerminals(helm))
-        return this.getTransformedHelm(helm, rules);
-
-      console.log(helm);
-      return helm;
+      return this.getTransformedHelm(helm, rules);
     });
     return resultList;
   }
@@ -203,21 +281,6 @@ class PolymerTransformation {
   static getInstance(molColumn: DG.Column<string>) {
     return new TransformationCommon(molColumn);
   }
-}
-
-function getHelmCycle(helm: string, source: ConnectionData): string {
-  let cycled = helm.replace(HELM_WRAPPER.RIGHT, '}$');
-
-  for (let i = 0; i < source.allPos1.length; i++) {
-    if (i == 0)
-      cycled += 'PEPTIDE1,PEPTIDE1,';
-    else
-      cycled += '|PEPTIDE1,PEPTIDE1,';
-    cycled += `${source.allPos1[i]}:R${source.allAttaches1[i]}-${source.allPos2[i]}:R${source.allAttaches2[i]}`;
-  }
-
-  cycled += '$$$';
-  return cycled;
 }
 
 export async function addTransformedColumn(
@@ -245,12 +308,13 @@ export async function addTransformedColumn(
 
   const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
+  molCol.semType = DG.SEMTYPE.MOLECULE;
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');
+    //targetHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     df.columns.add(targetHelmCol);
   }
   df.columns.add(molCol, true);
-
   await grok.data.detectSemanticTypes(df);
 }

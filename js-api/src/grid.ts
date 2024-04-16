@@ -1223,6 +1223,8 @@ export class SemanticValue<T = any> {
     return new SemanticValue(api.grok_SemanticValue_FromGridCell(gridCell.dart));
   }
 
+  static parse(s: string): SemanticValue { return api.grok_SemanticValue_Parse(s); }
+
   get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: T) { api.grok_SemanticValue_Set_Value(this.dart, x); }
 

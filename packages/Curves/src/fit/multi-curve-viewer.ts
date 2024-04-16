@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
-import {FitChartCellRenderer} from './fit-renderer';
+import {FitChartCellRenderer, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
 import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
@@ -10,11 +10,14 @@ import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 
 
+const ERROR_CLASS = 'd4-viewer-error';
+
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   curvesColumnNames?: string[] = [];
   showSelectedRowsCurves: boolean = false;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
+  mergeColumnSeries: boolean = false;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
 
@@ -26,9 +29,10 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
+    this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
 
     for (const p of fitChartDataProperties)
-      this.addProperty(p.name, p.propertyType, p.defaultValue, p.options);
+      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, p.options);
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
@@ -56,16 +60,37 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
     this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
-    for (const colName of this.curvesColumnNames!)
-      for (let i of this.rows) {
+    const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
+    for (const colName of this.curvesColumnNames!) {
+      const series = [];
+      for (const i of new Set(this.rows)) {
         const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
         const cellCurves = getChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
-        this.data.series?.push(...cellCurves.series!);
+        if (mergeCellSeries)
+          cellCurves.series = [mergeSeries(cellCurves.series!)!];
+        series.push(...cellCurves.series!);
       }
+      if (this.mergeColumnSeries)
+        this.data.series?.push(mergeSeries(series)!);
+      else
+        this.data.series?.push(...series);
+    }
+    this.data.series?.forEach((series, i) => {
+      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      series.showCurveConfidenceInterval = false;
+      series.droplines = [];
+      if (this.data.series?.length! > 20) {
+        series.showPoints = '';
+        series.lineStyle = 'solid';
+      }
+    });
   }
 
   onPropertyChanged(property: DG.Property | null): void {
+    if (property?.name === 'curvesColumnNames')
+      this.props.set('showColumnLabel', this.curvesColumnNames?.length! > 1 as unknown as object);
     this.applyViewerProperties();
     this.createChartData();
     this.render();
@@ -89,14 +114,21 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
   }
 
+  _removeErrorMessage() {
+    const divTextElement = this.root.getElementsByClassName(ERROR_CLASS)[0];
+    if (divTextElement)
+      this.root.removeChild(divTextElement);
+  }
+
   render(): void {
+    const g = this.canvas.getContext('2d')!
+    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     if (this.curvesColumnNames?.length === 0) {
       this._showErrorMessage('The MultiCurveViewer viewer requires a minimum of 1 curves column.');
       return;
     }
-
-    const g = this.canvas.getContext('2d')!
-    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this._removeErrorMessage();
     this.renderer.renderCurves(g, 0, 0, this.canvas.width, this.canvas.height, this.data);
   }
 }
