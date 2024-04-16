@@ -1,11 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 
 import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import { createTableView } from './utils';
 import { RGroupDecompRes } from '../analysis/r-group-analysis';
-import { _package } from '../package-test';
 
 
 category('projects', () => {
@@ -14,10 +12,10 @@ category('projects', () => {
       ['smiles', 'Core', 'R1', 'R2', 'R3', 'isHit'], DG.VIEWER.TRELLIS_PLOT);
   });
 
-  // test('r-group-analysis-sync', async () => {
-  //   await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
-  //     ['smiles', 'Core', 'R1', 'R2', 'R3', 'isHit'], DG.VIEWER.TRELLIS_PLOT, true);
-  // });
+  test('r-group-analysis-sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
+      ['smiles', 'Core', 'R1', 'R2', 'R3', 'isHit'], DG.VIEWER.TRELLIS_PLOT, true);
+  });
 
   test('inchi', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchi, ['smiles', 'inchi'], '');
@@ -31,18 +29,28 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '');
   });
 
-  // test('inchi_key_sync', async () => {
-  //   await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '', true);
-  // });
+  test('inchi_key_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '', true);
+  });
 
   test('toxicity_risks', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemRisksColumns,
       ['smiles', 'Mutagenicity'], '');
   });
 
+  test('toxicity_risks_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemRisksColumns,
+      ['smiles', 'Mutagenicity'], '', true);
+  });
+
   test('properties', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemPropertiesColumns,
       ['smiles', 'MW'], '');
+  });
+
+  test('properties_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemPropertiesColumns,
+      ['smiles', 'MW'], '', true);
   });
 
   test('curate', async () => {
@@ -55,9 +63,19 @@ category('projects', () => {
       ['Name', 'canonical_smiles'], '');
   });
 
+  test('names_to_smiles_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
+      ['Name', 'canonical_smiles'], '', true);
+  });
+
   test('convert_notation', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runConvertNotation,
       ['smiles', 'smiles_molblock'], '');
+  });
+
+  test('convert_notation_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runConvertNotation,
+      ['smiles', 'smiles_molblock'], '', true);
   });
 
   test('elemental_analysis', async () => {
@@ -66,9 +84,20 @@ category('projects', () => {
     expect(grok.shell.tv.grid.col('elements (smiles)') != null);
   });
 
+  test('elemental_analysis_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runElementalAnalysis,
+      ['smiles', 'C', 'N', 'O', 'Cl', 'Molecule Charge'], DG.VIEWER.RADAR_VIEWER, true);
+    expect(grok.shell.tv.grid.col('elements (smiles)') != null);
+  });
+
   test('structural_alerts', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runStructuralAlerts,
     ['smiles', 'PAINS (smiles)'], '');
+  });
+
+  test('structural_alerts_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runStructuralAlerts,
+    ['smiles', 'PAINS (smiles)'], '', true);
   });
 
   test('chemical_space', async () => {
@@ -79,23 +108,32 @@ category('projects', () => {
     await delay(100);
   });
 
+  test('chemical_space_sync', async () => {
+    //column '~smiles.Morgan' is not saved to project since it is an object type column
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runChemicalSpace,
+    ['smiles', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT, true);
+    //need delay to avoid unhandled exception when calling closeAll()
+    await delay(100);
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });
 });
 
-//colList: list of column which have been added to dataframe by analysis
+//colList: list of columns which have been added to dataframe by analysis
 //viewerType: viewer which has been created by analysis
 async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: DG.TableView) => Promise<void>,
 colList: string[], viewerType: string, dataSync?: boolean) {
-  //const tv = await createTableView(tableName);
-
-  await DG.Func.find({name: 'OpenFile'})[0].prepare({
-    fullPath: `System:AppData/Chem/${tableName}`,
-  }).call(undefined, undefined, {processed: false});
-  const tv = grok.shell.tv;
-
-  await delay(10);
+  let tv;
+  if (dataSync) {
+    await DG.Func.find({ name: 'OpenFile'})[0].prepare({
+      fullPath: `System:AppData/Chem/${tableName}`
+    }).call(undefined, undefined, { processed: false });
+    tv = grok.shell.tv;
+  } else
+    tv = await createTableView(tableName);
+  await delay(100);
   await analysisFunc(tv);
   await delay(10);
   await saveAndOpenProject(tv, dataSync);
@@ -106,7 +144,7 @@ colList: string[], viewerType: string, dataSync?: boolean) {
 }
 
 async function runChemicalSpace(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:chemSpaceTopMenu`, {
+  await DG.Func.find({ package: 'Chem', name: 'chemSpaceTopMenu' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     methodName: 'UMAP',
@@ -115,13 +153,13 @@ async function runChemicalSpace(tv: DG.TableView): Promise<void> {
     options: undefined,
     preprocessingFunction: undefined,
     clusterEmbeddings: true
-  });
+  }).call(undefined, undefined, { processed: false });
   //need for scatter plot to render
   await delay(10);
 }
 
 async function runStructuralAlerts(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:runStructuralAlerts`, {
+  await DG.Func.find({ package: 'Chem', name: 'runStructuralAlerts' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     pains: true,
@@ -132,32 +170,32 @@ async function runStructuralAlerts(tv: DG.TableView): Promise<void> {
     inpharmatica: false,
     lint: false,
     glaxo: false
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runElementalAnalysis(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:elementalAnalysis`, {
+  await DG.Func.find({ package: 'Chem', name: 'elementalAnalysis' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     radarViewer: true,
     radarGrid: true
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runConvertNotation(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:convertNotation`, {
+  await DG.Func.find({ package: 'Chem', name: 'convertNotation' })[0].prepare({
     data: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     targetNotation: 'molblock',
     overwrite: false
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runNamesToSmiles(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:namesToSmiles`, {
+  await DG.Func.find({ package: 'Chem', name: 'namesToSmiles' })[0].prepare({
     data: tv.dataFrame,
     names: tv.dataFrame.col('Name'),
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runCurate(tv: DG.TableView): Promise<void> {
@@ -175,7 +213,7 @@ async function runCurate(tv: DG.TableView): Promise<void> {
 }
 
 async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:addChemPropertiesColumns`, {
+  await DG.Func.find({ package: 'Chem', name: 'addChemPropertiesColumns' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     MW: true,
@@ -187,14 +225,14 @@ async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {
     rotatableBonds: false,
     stereoCenters: false,
     moleculeCharge: false,
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runToInchiKeys(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:addInchisKeysTopMenu`, {
+  await DG.Func.find({ package: 'Chem', name: 'addInchisKeysTopMenu' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runToInchi(tv: DG.TableView): Promise<void> {
@@ -205,14 +243,14 @@ async function runToInchi(tv: DG.TableView): Promise<void> {
 }
 
 async function runAddChemRisksColumns(tv: DG.TableView): Promise<void> {
-  await grok.functions.call(`Chem:addChemRisksColumns`, {
+  await DG.Func.find({ package: 'Chem', name: 'addChemRisksColumns' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     mutagenicity: true,
     tumorigenicity: false,
     irritatingEffects: false,
     reproductiveEffects: false,
-  });
+  }).call(undefined, undefined, { processed: false });
 }
 
 async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
@@ -228,16 +266,20 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
   }).call(undefined, undefined, { processed: false });
   const res: RGroupDecompRes = funcCall.getOutputParamValue();
   tv.trellisPlot({
-    xColumnNames: res.xAxisColName,
-    yColumnNames: res.yAxisColName,
+    xColumnNames: [res.xAxisColName],
+    yColumnNames: [res.yAxisColName],
   });
 }
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   let project = DG.Project.create();
   let tableInfo = tv.dataFrame.getTableInfo();
-  if (dataSync)
-    tv.dataFrame.setTag('.data-sync', 'sync');
+  if (dataSync) {
+    //@ts-ignore
+    tableInfo.tags['.data-sync'] = 'sync';
+    //@ts-ignore
+    tableInfo.tags['.script'] = grok.shell.tv.dataFrame.getTag('.script');  
+  }
   let layoutInfo = tv.getInfo();
   project.addChild(tableInfo);
   project.addChild(layoutInfo);

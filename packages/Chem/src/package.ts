@@ -1521,6 +1521,7 @@ export async function demoScaffold(): Promise<void> {
 
 //top-menu: Chem | Transform | Names To Smiles...
 //name: namesToSmiles
+//tags: Transform
 //input: dataframe data
 //input: column names
 export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>): Promise<void> {
@@ -1534,6 +1535,7 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 
 //top-menu: Chem | Transform | Convert Notation...
 //name: convertNotation
+//tags: Transform
 //input: dataframe data
 //input: column molecules {semType: Molecule}
 //input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
