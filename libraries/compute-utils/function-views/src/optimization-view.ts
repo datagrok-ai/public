@@ -12,7 +12,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './optimization/constants';
-import {optimizeNM} from './optimization/monte-carlo-optimizer';
+import {optimize} from './optimization/optimizer';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -800,7 +800,7 @@ export class OptimizationView {
       return multiplier * calledFuncCall.getParamValue(outputName);
     };
 
-    const extr = await optimizeNM(costFunc,
+    const extr = await optimize(costFunc,
       minVals,
       maxVals,
       this.samplesCount,
