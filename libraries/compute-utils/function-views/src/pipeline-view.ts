@@ -713,7 +713,6 @@ export class PipelineView extends FunctionView {
 
     await this.onBeforeLoadRun();
 
-    let lastEnabledStep = null as StepState | null;
     for (const step of Object.values(this.steps)) {
       const corrChildRuns = pulledChildRuns.filter((pulledChildRun) =>
         pulledChildRun.func.nqName === step.func.nqName);
@@ -726,10 +725,9 @@ export class PipelineView extends FunctionView {
       if (corrChildRuns.length === 1) {
         await step.view.loadRun(corrChildRuns[0].id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
-        if (!isIncomplete(corrChildRuns[0])) {
+        if (!isIncomplete(corrChildRuns[0]))
           step.ability.next(ABILITY_STATE.ENABLED);
-          lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
-        } else
+        else
           step.ability.next(ABILITY_STATE.DISABLED);
       }
 
@@ -737,19 +735,27 @@ export class PipelineView extends FunctionView {
         const foundByCustomId = corrChildRuns.find((run) => run.options['customId'] === step.options?.customId)!;
         await step.view.loadRun(foundByCustomId.id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
-        if (!isIncomplete(foundByCustomId)) {
+        if (!isIncomplete(foundByCustomId))
           step.ability.next(ABILITY_STATE.ENABLED);
-          lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
-        } else
+        else
           step.ability.next(ABILITY_STATE.DISABLED);
       }
     };
 
-    const stepToEnable = lastEnabledStep && this.getNextStep(lastEnabledStep) ?
-      this.getNextStep(lastEnabledStep)!:
-      Object.values(this.steps)[0];
+    const firstDisabledStep = Object.values(this.steps)
+      .find((step) => step.ability.value === ABILITY_STATE.DISABLED &&
+      step.visibility.value === VISIBILITY_STATE.VISIBLE);
+    const stepToEnable = firstDisabledStep ?? Object.values(this.steps)[0];
 
     stepToEnable.ability.next(ABILITY_STATE.ENABLED);
+
+    if (firstDisabledStep) {
+      let stepToDisable = this.getNextStep(firstDisabledStep);
+      while (stepToDisable) {
+        stepToDisable.ability.next(ABILITY_STATE.DISABLED);
+        stepToDisable = this.getNextStep(stepToDisable);
+      }
+    }
 
     this.lastCall = pulledParentRun;
     this.linkFunccall(pulledParentRun);
