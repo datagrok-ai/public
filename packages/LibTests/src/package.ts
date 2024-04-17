@@ -742,17 +742,17 @@ export async function TestCompositionPipeline13() {
       {
         id: 'step1',
         nqName: 'LibTests:MockTripple',
-        friendlyName: 'MockTripple1'
+        friendlyName: 'MockTripple1',
       },
       {
         id: 'step2',
         nqName: 'LibTests:MockTripple',
-        friendlyName: 'MockTripple2'
+        friendlyName: 'MockTripple2',
       },
     ],
     pipelinePositionConfig: {
-      'testPipeline1': 'step2'
-    }
+      'testPipeline1': 'step2',
+    },
   };
   const conf = CompositionPipeline.compose(conf2, [conf1]);
   const pipeline = new CompositionPipeline(conf);

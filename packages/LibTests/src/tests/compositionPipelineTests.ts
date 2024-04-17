@@ -689,9 +689,9 @@ category('CompositionPipeline composition config', async () => {
     const pconf: PipelineCompositionConfiguration = {
       ...sconfig2,
       pipelinePositionConfig: {
-        'testPipeline1': 'step2'
-      }
-    }
+        'testPipeline1': 'step2',
+      },
+    };
     const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
