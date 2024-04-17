@@ -343,6 +343,8 @@ export class HistoricalRunsList extends DG.Widget {
         this.redrawSelectionState();
       });
 
+      this.redrawSelectionState();
+
       this.subs.push(currentDfSub, selectionSub);
     });
 
