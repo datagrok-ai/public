@@ -9,6 +9,7 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 import {HistoricalRunsList} from './history-list';
 import {extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {getStarted} from '../../function-views/src/shared/utils';
 
 class DatabaseService {
   static getHistoryRuns(funcName: string): Observable<DG.FuncCall[]> {
@@ -187,8 +188,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       this.stringValue = this.options?.stringValueFunc ?
         this.options?.stringValueFunc(val):
         [
-          `${new Date(val.started.toString())
-            .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})} \\ ${val.author.name}`,
+          `${getStarted(val)} \\ ${val.author.name}`,
           (this.options?.mainProps ?? getMainParams(val.func) ?? [])
             .map((param) => extractStringValue(val, param)).join(' \\ '),
         ].join(' \\ ');

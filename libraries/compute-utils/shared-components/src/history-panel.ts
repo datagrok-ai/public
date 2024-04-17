@@ -7,6 +7,7 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
 import {HistoricalRunsList} from './history-list';
 import {filter} from 'rxjs/operators';
+import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
@@ -65,8 +66,20 @@ export class HistoryPanel extends DG.Widget {
 
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])
+      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((historicalRuns) => {
+          historicalRuns.sort((a, b) => {
+            const startedA = getStartedOrNull(a);
+            const startedB = getStartedOrNull(b);
+            if (startedA && startedB)
+              return startedA.unix() - startedB.unix();
+
+            if (startedA) return startedA.unix() - b.options['createdOn'];
+
+            if (startedB) return a.options['createdOn'] - startedB.unix();
+
+            return 0;
+          });
           ui.empty(this.root);
           this.root.appendChild(this.panel);
           this.updateHistoryPane(historicalRuns.reverse());
