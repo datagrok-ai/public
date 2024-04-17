@@ -391,10 +391,12 @@ export class HistoricalRunsList extends DG.Widget {
         $(gridWithControls).css({
           ...this.compactMode ? {'width': '100%'} : {'height': '100%'},
         });
-      });
 
-      this.styleHistoryGrid();
-      this.styleHistoryFilters();
+        setTimeout(() => {
+          this.styleHistoryGrid();
+          this.styleHistoryFilters();
+        }, 100);
+      });
     });
 
     this.subs.push(listChangedSub, compactModeSub, runDfChangedSub, filterSub);
