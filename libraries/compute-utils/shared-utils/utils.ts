@@ -10,6 +10,22 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const createPartialCopy = async (call: DG.FuncCall) => {
+  const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
+    //@ts-ignore
+    .prepare([...call.inputs].reduce((acc, [key, val]) => {
+      acc[key] = val;
+      return acc;
+    }, {} as Record<string, any>));
+  call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
+
+  return callCopy;
+};
+
+export const isIncomplete = (run: DG.FuncCall) => {
+  return !getStartedOrNull(run) || !run.id;
+};
+
 export const getStartedOrNull = (run: DG.FuncCall) => {
   try {
     return run.started;

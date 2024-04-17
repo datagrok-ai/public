@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {fcToSerializable, getStartedOrNull} from '../../shared-utils/utils';
+import {createPartialCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
 import dayjs from 'dayjs';
@@ -658,11 +658,11 @@ export class PipelineView extends FunctionView {
     let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
-    if (!getStartedOrNull(callToSave) || (getStartedOrNull(callToSave) && !this.isHistorical.value)) {
+    if (isIncomplete(callToSave)) {
       // Used to reset 'started' field
-      callCopy = (await grok.functions.eval(callCopy.func.nqName)).prepare();
-      callCopy.newId();
+      callCopy = await createPartialCopy(callToSave);
     }
+    if (callCopy.id) callToSave.newId();
 
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
@@ -671,7 +671,7 @@ export class PipelineView extends FunctionView {
 
         scriptCall.options['parentCallId'] = callCopy.id;
         if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
-        scriptCall.newId();
+        if (scriptCall.id) scriptCall.newId();
 
         await step.view.saveRun(scriptCall);
 
@@ -724,7 +724,7 @@ export class PipelineView extends FunctionView {
       if (corrChildRuns.length === 1) {
         await step.view.loadRun(corrChildRuns[0].id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
-        if (getStartedOrNull(corrChildRuns[0])) {
+        if (!isIncomplete(corrChildRuns[0])) {
           step.ability.next(ABILITY_STATE.ENABLED);
           lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
         } else
@@ -735,7 +735,7 @@ export class PipelineView extends FunctionView {
         const foundByCustomId = corrChildRuns.find((run) => run.options['customId'] === step.options?.customId)!;
         await step.view.loadRun(foundByCustomId.id);
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
-        if (getStartedOrNull(foundByCustomId)) {
+        if (!isIncomplete(foundByCustomId)) {
           step.ability.next(ABILITY_STATE.ENABLED);
           lastEnabledStep = step.idx > (lastEnabledStep?.idx ?? -1) ? step: lastEnabledStep;
         } else

@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {deepCopy, fcToSerializable, getStartedOrNull} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
@@ -103,20 +103,32 @@ export abstract class FunctionView extends DG.ViewBase {
       this.setAsLoaded();
     }
 
-    if (this.isHistoryEnabled && this.func && !this.options.isTabbed) {
-      const historySub = this.isHistorical.subscribe((newValue) => {
-        if (newValue) {
-          this.path = `?id=${this.funcCall.id}`;
-          const dateStarted = getStarted(this.funcCall);
-          if ((this.name.indexOf(' — ') < 0))
-            this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
-          else
-            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
-        } else {
-          this.path = ``;
-          this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
-        }
-      });
+    if (this.isHistoryEnabled && this.func) {
+      const historySub = this.options.isTabbed ?
+        this.isHistorical.subscribe((newValue) => {
+          if (!newValue) {
+            console.log('id reset on', this.funcCall.func.nqName);
+            //@ts-ignore
+            this.funcCall.id = null;
+          }
+        }) :
+        this.isHistorical.subscribe((newValue) => {
+          if (newValue) {
+            this.path = `?id=${this.funcCall.id}`;
+            const dateStarted = getStarted(this.funcCall);
+            if ((this.name.indexOf(' — ') < 0))
+              this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
+            else
+              this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
+          } else {
+            this.path = ``;
+            // Resetting Funccall's id to flag it as incomplete
+            //@ts-ignore
+            this.funcCall.id = null;
+            console.log('id reset on', this.funcCall.func.nqName);
+            this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
+          }
+        });
       this.subs.push(historySub);
     }
   }
@@ -482,7 +494,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
-        ui.setDisplay(exportBtn, !!getStartedOrNull(this.funcCall));
+        ui.setDisplay(exportBtn, isIncomplete(this.funcCall));
         ui.setDisplay(editBtn, true);
       } else {
         $(exportBtn).hide();
@@ -643,18 +655,11 @@ export abstract class FunctionView extends DG.ViewBase {
     let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
-    if (this.options.isTabbed) {
-      if (!getStartedOrNull(callToSave) || (getStartedOrNull(callToSave) && !this.isHistorical.value)) {
+    if (isIncomplete(callToSave)) {
       // Used to reset 'started' field
-      //@ts-ignore
-        callCopy = (await grok.functions.eval(callCopy.func.nqName)).prepare([...callCopy.inputs].reduce((acc, [key, val]) => {
-          acc[key] = val;
-          return acc;
-        }, {} as Record<string, any>));
-        callCopy.newId();
-        callToSave.options.forEach((key: string) => callCopy.options[key] = callToSave.options[key]);
-      }
+      callCopy = await createPartialCopy(callToSave);
     }
+    if (callCopy.id) callCopy.newId();
 
     const savedCall = await historyUtils.saveRun(callCopy);
 
@@ -748,7 +753,6 @@ export abstract class FunctionView extends DG.ViewBase {
 
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
-    this.funcCall.newId();
     try {
       await this.funcCall.call(); // CAUTION: mutates the funcCall field
 

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {deepCopy, getStartedOrNull} from '../../shared-utils/utils';
+import {deepCopy, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import dayjs from 'dayjs';
 
 type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
@@ -125,7 +125,7 @@ export namespace historyUtils {
     }
 
     const callCopy = deepCopy(callToSave);
-    if (!getStartedOrNull(callCopy)) callCopy.options['createdOn'] = dayjs().unix();
+    if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().unix();
 
     const dfOutputs = wu(callCopy.outputParams.values() as DG.FuncCallParam[])
       .filter((output) =>
