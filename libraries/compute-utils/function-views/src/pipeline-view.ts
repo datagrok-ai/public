@@ -683,9 +683,12 @@ export class PipelineView extends FunctionView {
       callCopy.options['title'] = `${callCopy.options['title']} (copy)`;
 
     const savedCall = await historyUtils.saveRun(callCopy);
+    const loadedCall = await historyUtils.loadRun(savedCall.id);
 
     if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
       this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+
+    this.linkFunccall(loadedCall);
 
     this.isHistorical.next(true);
 

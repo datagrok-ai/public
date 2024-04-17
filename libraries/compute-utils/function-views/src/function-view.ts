@@ -107,7 +107,6 @@ export abstract class FunctionView extends DG.ViewBase {
       const historySub = this.options.isTabbed ?
         this.isHistorical.subscribe((newValue) => {
           if (!newValue) {
-            console.log('id reset on', this.funcCall.func.nqName);
             //@ts-ignore
             this.funcCall.id = null;
           }
@@ -125,7 +124,6 @@ export abstract class FunctionView extends DG.ViewBase {
             // Resetting Funccall's id to flag it as incomplete
             //@ts-ignore
             this.funcCall.id = null;
-            console.log('id reset on', this.funcCall.func.nqName);
             this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
           }
         });
@@ -662,9 +660,11 @@ export abstract class FunctionView extends DG.ViewBase {
     if (callCopy.id) callCopy.newId();
 
     const savedCall = await historyUtils.saveRun(callCopy);
+    const loadedCall = await historyUtils.loadRun(savedCall.id);
 
     if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
-      this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+      this.historyBlock.addRun(loadedCall);
+    this.linkFunccall(loadedCall);
 
     this.isHistorical.next(true);
 
