@@ -662,7 +662,7 @@ export class PipelineView extends FunctionView {
       // Used to reset 'started' field
       callCopy = await createPartialCopy(callToSave);
     }
-    if (callCopy.id) callToSave.newId();
+    if (callCopy.id) callCopy.newId();
 
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
@@ -671,7 +671,6 @@ export class PipelineView extends FunctionView {
 
         scriptCall.options['parentCallId'] = callCopy.id;
         if (step.options?.customId) scriptCall.options['customId'] = step.options?.customId;
-        if (scriptCall.id) scriptCall.newId();
 
         await step.view.saveRun(scriptCall);
 
