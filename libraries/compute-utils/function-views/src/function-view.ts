@@ -75,7 +75,8 @@ export abstract class FunctionView extends DG.ViewBase {
       this.parentCall = initValue;
 
     this.parentView = this.parentCall?.parentCall?.aux?.['view'];
-    this.basePath = `/${this.parentCall.func.name}`;
+    if (this.parentCall?.func?.name)
+      this.basePath = `/${this.parentCall.func.name}`;
 
     if (!options.skipInit)
       this.init();

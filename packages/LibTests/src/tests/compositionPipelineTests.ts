@@ -21,6 +21,7 @@ import threeConfsAddNested from './snapshots/3-confs-add-nested-items.json';
 import twoConfsAddSteps from './snapshots/2-confs-add-steps.json';
 import twoConfsAddRemoveSteps from './snapshots/2-confs-add-remove-steps.json';
 import threeConfsAddNestedSteps from './snapshots/3-confs-nested-add-steps.json';
+import twoConfsSteps from './snapshots/2-confs-steps.json';
 
 export function removeObservables<T>(config: T): T {
   return cloneDeepWith(config, (val) => {
@@ -683,6 +684,28 @@ category('CompositionPipeline composition config', async () => {
       expectDeepEqual(actual, applyTransformations(threeConfsAddNestedSteps));
 
   });
+
+  test('2 configs step config', async () => {
+    const pconf: PipelineCompositionConfiguration = {
+      ...sconfig2,
+      pipelinePositionConfig: {
+        'testPipeline1': 'step2'
+      }
+    }
+    const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
+    const pipeline = new CompositionPipeline(composedConfig);
+    const _view = pipeline.makePipelineView();
+    if (ADD_VIEW)
+      grok.shell.addView(_view);
+    await pipeline.init();
+    const actual = pickPipelineConfData(pipeline);
+    if (IS_UPDATE)
+      DG.Utils.download('2-confs-steps.json', actual);
+    else
+      expectDeepEqual(actual, applyTransformations(twoConfsSteps));
+
+  });
+
 
 });
 

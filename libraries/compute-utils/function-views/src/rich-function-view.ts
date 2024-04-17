@@ -1570,11 +1570,10 @@ export class RichFunctionView extends FunctionView {
   }
 
   private updateInputValidationReuslts(inputName: string) {
-    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName])
+    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName]);
     const input = this.inputsMap[inputName];
-    if (isFuncCallInputValidated(input)) {
+    if (isFuncCallInputValidated(input))
       input.setValidation(results);
-    }
   }
 
   private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {

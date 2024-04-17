@@ -80,7 +80,6 @@ export type PipelineHookConfiguration = {
 export type ActionConfiguraion = PipelineHookConfiguration & {
   position: 'buttons' | 'none';
   friendlyName: string;
-  runStepOnComplete?: boolean;
 }
 
 export type PipelinePopupConfiguration = {
@@ -342,7 +341,7 @@ export class LinkState {
 
   public getValuesChanges() {
     return this.valueChanges.pipe(
-      withLatestFrom(this.enabled, this.pipelineState.globalLoading, this.pipelineState.runChanging),
+      withLatestFrom(this.enabled, this.pipelineState.initialLoading, this.pipelineState.runChanging),
       filter(([, enabled, initialLoading, runChanging]) => {
         if (!enabled)
           return false;
@@ -360,7 +359,7 @@ export class LinkState {
 
 export class PipelineState {
   disableSetters = new BehaviorSubject<boolean>(false);
-  globalLoading = new BehaviorSubject<boolean>(true);
+  initialLoading = new BehaviorSubject<boolean>(true);
   runChanging = new BehaviorSubject<boolean>(false);
   closed = new Subject<true>();
 }
@@ -409,14 +408,11 @@ export class PipelineRuntime {
 
   setStepState(path: ItemPath, enabled: boolean): void {
     const k = pathToKey(path);
-    const conf = this.nodes.get(k)?.conf;
-    if (!conf)
-      return;
 
     if (enabled)
-      this.view.showSteps((conf as PipelineStepConfiguration).nqName);
+      this.view.showSteps(k);
     else
-      this.view.hideSteps((conf as PipelineCompositionConfiguration).nqName);
+      this.view.hideSteps(k);
   }
 
   getState<T = any>(path: ItemPath): T | void {
@@ -466,10 +462,10 @@ export class PipelineRuntime {
             await callHandler(handler, {controller});
           } catch (e) {
             grok.shell.error(String(e));
-            throw(e);
+            throw (e);
           }
-        }
-      }
+        },
+      };
     } else {
       const conf = node.conf as PipelinePopupConfiguration;
       const view = this.view.getStepView(conf.id);
@@ -496,10 +492,10 @@ export class PipelineRuntime {
             });
           } catch (e) {
             grok.shell.error(String(e));
-            throw(e);
+            throw (e);
           }
-        }
-      }
+        },
+      };
     }
   }
 
@@ -519,7 +515,7 @@ export class PipelineRuntime {
   wireLinks() {
     for (const [, link] of this.links) {
       const changes = link.controllerConfig.from.map((input) => {
-        const {state} = this.getNodeState(input)!
+        const {state} = this.getNodeState(input)!;
         const value = state.value;
         const notifier = state.notifier;
         if (link.conf.ignoreNotifier || !notifier)
@@ -546,7 +542,7 @@ export class PipelineRuntime {
             const controller = new RuntimeControllerImpl(link.conf.id, link.controllerConfig, this, signal);
             let done = false;
             const sub = from(callHandler(handler, {controller})).pipe(
-              finalize(() => this.removeRunningHandler(link.conf.id))
+              finalize(() => this.removeRunningHandler(link.conf.id)),
             ).subscribe(
               (val) => {
                 done = true;
@@ -606,11 +602,10 @@ export class PipelineRuntime {
     const targetId = pathToKey(targetPath);
     const targetState = this.validationState.get(targetId)!;
     const keys = [...targetState.keys()].sort();
-    const validations = keys.map(k => targetState.get(k));
+    const validations = keys.map((k) => targetState.get(k));
     const {state, node} = this.getNodeState(targetPath)!;
-    if (!this.pipelineState.disableSetters.value) {
+    if (!this.pipelineState.disableSetters.value)
       this.view.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
-    }
   }
 }
 
@@ -768,7 +763,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     if (exportConfig)
       this.exportConfig = {...this.exportConfig, ...exportConfig};
 
-    this.initialConfig = steps;
+    this.initialConfig = steps.map((step) => ({...step, customId: step.id}));
     this.hooks = hooks;
     this.rt = rt;
     this.rt.isUpdating.pipe(takeUntil(this.rt.pipelineState.closed)).subscribe((val) => this.isUpdating.next(val));
@@ -830,15 +825,15 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     super.build();
     this.rt!.wireViews();
     this.rt!.wireLinks();
-    this.rt!.pipelineState.globalLoading.next(false);
+    this.rt!.pipelineState.initialLoading.next(false);
     this.execHooks('onViewReady', {view: this});
   }
 
   override close() {
     this.rt!.pipelineState.closed.next(true);
-    for (const v of this.customViews.values()) {
+    for (const v of this.customViews.values())
       v.customClose();
-    }
+
     super.close();
   }
 
@@ -898,9 +893,8 @@ export class CompositionPipeline {
   }
 
   constructor(conf?: PipelineConfigVariants) {
-    if (conf) {
+    if (conf)
       this.setConfig(conf);
-    }
   }
 
   public setConfig(conf: PipelineConfigVariants) {
@@ -1072,13 +1066,12 @@ export class CompositionPipeline {
       const pos = stepConfig.get(id)!;
       if (pos) {
         const idx = acc.findIndex((spec) => spec.id === pos);
-        if (idx > 0) {
-          acc.splice(idx, 0, ...steps)
-        }
+        if (idx > 0)
+          acc.splice(idx, 0, ...steps);
+
         return acc;
-      } else {
+      } else
         return [...acc, ...steps ?? []];
-      }
     }, [] as StepSpec[]);
   }
 
@@ -1240,8 +1233,8 @@ export class CompositionPipeline {
     }
     delete mergeConf.itemsToRemove;
     for (const [pipelineId, beforeStepId] of Object.entries(mergeConf.pipelinePositionConfig ?? {})) {
-      const pipelineIdFull = pathToKey(pathJoin(path, [pipelineId]));
-      const beforeStepIdFull = pathToKey(pathJoin(path, [beforeStepId]));
+      const pipelineIdFull = pathToKey(pathJoin(subPath, [pipelineId]));
+      const beforeStepIdFull = pathToKey(pathJoin(subPath, [beforeStepId]));
       stepConfig.set(pipelineIdFull, beforeStepIdFull);
     }
     delete mergeConf.pipelinePositionConfig;

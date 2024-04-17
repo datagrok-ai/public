@@ -145,10 +145,8 @@
           "pipelinePath": [
             "testPipeline"
           ],
-          "parentNodePath": [
-            "testPipeline"
-          ],
           "pipelineState": {
+            "disableSetters": "$observable",
             "initialLoading": "$observable",
             "runChanging": "$observable",
             "closed": "$observable"
@@ -165,6 +163,7 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -184,6 +183,7 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -203,6 +203,7 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -248,10 +249,8 @@
           "pipelinePath": [
             "testPipeline"
           ],
-          "parentNodePath": [
-            "testPipeline"
-          ],
           "pipelineState": {
+            "disableSetters": "$observable",
             "initialLoading": "$observable",
             "runChanging": "$observable",
             "closed": "$observable"
@@ -268,6 +267,7 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -287,6 +287,7 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -306,6 +307,7 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
+                    "disableSetters": "$observable",
                     "initialLoading": "$observable",
                     "runChanging": "$observable",
                     "closed": "$observable"
@@ -346,6 +348,7 @@
             "testPipeline"
           ],
           "pipelineState": {
+            "disableSetters": "$observable",
             "initialLoading": "$observable",
             "runChanging": "$observable",
             "closed": "$observable"
@@ -415,9 +418,11 @@
   ],
   "steps": [
     {
+      "id": "testPipeline/step1",
       "funcName": "LibTests:AddMock"
     },
     {
+      "id": "testPipeline/step2",
       "funcName": "LibTests:MulMock"
     }
   ]

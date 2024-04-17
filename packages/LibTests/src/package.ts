@@ -155,6 +155,12 @@ export function MockWrapper11() {}
 //name: MockWrapper12
 export function MockWrapper12() {}
 
+//name: MockWrapper13
+export function MockWrapper13() {}
+
+//name: MockWrapper14
+export function MockWrapper14() {}
+
 
 //name: MockHook1
 //input: object params
@@ -265,15 +271,6 @@ export function TestFn5(a: number, b: number, c: number, d: number, e: number) {
 export function TestFn6(a: number, b: number, c: number, d: number, e: number) {
   return a * b * c * d * e;
 }
-
-//name: AddMockD
-//input: double a = 2
-//input: double b = 3
-//output: double res
-export function AddMockD(a: number, b: number) {
-  return a + b;
-}
-
 
 //name: TestCompositionPipeline1
 export async function TestCompositionPipeline1() {
@@ -718,6 +715,47 @@ export async function TestCompositionPipeline12() {
       },
     }],
   });
+  grok.shell.addView(pipeline.makePipelineView());
+  await pipeline.init();
+}
+
+//name: TestCompositionPipeline13
+export async function TestCompositionPipeline13() {
+  const conf1: PipelineConfiguration = {
+    id: 'testPipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:AddMock',
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MulMock',
+      },
+    ],
+  };
+  const conf2: PipelineCompositionConfiguration = {
+    id: 'testPipeline2',
+    nqName: 'LibTests:MockWrapper13',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:MockTripple',
+        friendlyName: 'MockTripple1'
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:MockTripple',
+        friendlyName: 'MockTripple2'
+      },
+    ],
+    pipelinePositionConfig: {
+      'testPipeline1': 'step2'
+    }
+  };
+  const conf = CompositionPipeline.compose(conf2, [conf1]);
+  const pipeline = new CompositionPipeline(conf);
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
 }

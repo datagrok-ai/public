@@ -28,7 +28,7 @@ const defaultValidatorsTimeout = 5000;
 const defaultParentTimeout = 5000;
 
 export async function testPipeline(
-  spec: any, view: PipelineView, options: PipelineTestOptions = {}
+  spec: any, view: PipelineView, options: PipelineTestOptions = {},
 ) {
   await waitForViewReady(view, options.initWaitTimeout ?? defaultInitTimeout);
   view.disableSetters(true);
@@ -45,7 +45,7 @@ export async function testPipeline(
         initWaitTimeout: defaultInitTimeout,
         parent: view,
         interactive: options.interactive,
-        updateMode
+        updateMode,
       };
       await testFunctionView(stepSpec, step.view, {...defaultSettings, ...stepOptions, prefix});
     }
@@ -57,7 +57,7 @@ export async function testPipeline(
 }
 
 export async function testFunctionView(
-  spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions = {}
+  spec: any, view: FunctionView | RichFunctionView, options: FunctionViewTestOptions = {},
 ) {
   // For RFV step inside of a pipeline:
   // 0. waiting for step view ready
@@ -82,11 +82,11 @@ export async function testFunctionView(
         const msg = `{options.prefix}: parent updates failed to complete in ${parentWaitTimeout}ms, updates: ${runningUpdates.join(',')}`;
         const err = new Error(msg);
         if (options.interactive)
-          grok.shell.error(String(err))
+          grok.shell.error(String(err));
         throw err;
       }
     }
-  }
+  };
   await waitForParentReady();
   for (const [name, data] of Object.entries(spec.inputs)) {
     const propertyType = view.funcCall.inputParams[name].property.propertyType;
@@ -99,11 +99,11 @@ export async function testFunctionView(
     }
   }
   await waitForParentReady();
-  const waitForValidators = async() => {
+  const waitForValidators = async () => {
     if (view instanceof RichFunctionView) {
       const validatorsWaitTimeout = options.validatorsWaitTimeout ?? defaultValidatorsTimeout;
       const pendingValidators = await view.pendingValidations.pipe(
-        map(vals => Object.keys(vals)),
+        map((vals) => Object.keys(vals)),
         debounceTime(100),
         takeUntil(of(null).pipe(delay(validatorsWaitTimeout))),
         takeWhile(() => !view.isValid(), true),
@@ -113,11 +113,11 @@ export async function testFunctionView(
         const msg = `{options.prefix}: validators failed to accept input in ${validatorsWaitTimeout}ms, inputs: ${pendingValidators.join(',')}`;
         const err = new Error(msg);
         if (options.interactive)
-          grok.shell.error(String(err))
+          grok.shell.error(String(err));
         throw err;
       }
     }
-  }
+  };
   await waitForValidators();
   console.log(`running ${view.func.nqName}`);
   await view.run();
