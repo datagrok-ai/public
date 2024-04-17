@@ -492,7 +492,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
-        ui.setDisplay(exportBtn, isIncomplete(this.funcCall));
+        ui.setDisplay(exportBtn, !isIncomplete(this.funcCall));
         ui.setDisplay(editBtn, true);
       } else {
         $(exportBtn).hide();
