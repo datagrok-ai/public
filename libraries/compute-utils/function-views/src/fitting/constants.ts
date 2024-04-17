@@ -13,53 +13,46 @@ export const ROW_HEIGHT = 25;
 enum HELP_ITEMS {
   GOAL = '`Goal`',
   SAMPLES = '`Samples`',
+  FIT = '`Fit`',
+  MIN = '`min`',
+  MAX = '`max`',
+  TO_GET = '`Target`',
+  METHOD = '`Method`',
+  CONTEXT = '`Context Panel (F4)`',
 };
 
 /** Starting help markdown */
-export const STARTING_HELP = `# Optimization
+export const STARTING_HELP = `# Fitting
 
-Function [optimization](https://en.wikipedia.org/wiki/Mathematical_optimization) involves
-determining the input values that either maximize or minimize a given output.
+Fitting involves determining the input values providing the given output constraints.
 
-1. Use switchers to specify **target** scalar outputs:   
-   * If you select one of them, then the [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
-method runs. Set type of optimization in ${HELP_ITEMS.GOAL}   
-   * If you select several scalars, then the [Monte Carlo](https://en.wikipedia.org/wiki/Monte_Carlo_method)
-method performs
+1. In the ${HELP_ITEMS.FIT} block, use switchers to specify inputs to be found:
+   * Set ${HELP_ITEMS.MIN} and ${HELP_ITEMS.MAX} values for each selected item. They define the variation range
+   * Set values of all other inputs
 
-2. Apply switchers to set inputs for optimization. Once you choose any of them, set a range of its variation.
+2. Set output constraints in the ${HELP_ITEMS.TO_GET} block:
+   * Use switchers to specify target outputs
+   * Set target value for each selected item
 
-3. Press **Run** or <i class="fas fa-play"></i> on the top panel.
+3. Set ${HELP_ITEMS.METHOD}. Press <i class="grok-icon fal fa-cog"></i>
+to edit its settings.
 
-4. Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
-[Optimization](https://datagrok.ai/help/compute.md#optimization).
+4. Press **Run** or <i class="fas fa-play"></i> on the top panel to perform fitting. You will get:  
 
-## Single target optimization
+   * [Line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the learning process
 
-If you select one **target** output, then the 
-[Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method method runs. 
-Press <i class="grok-icon fal fa-cog"></i> to edit its settings.
+   * [Grid](https://datagrok.ai/help/visualize/viewers/grid) containing values of the fitted inputs and
+the cost function for each iteration. 
 
-You will get
+5. To get some evaluations of particular interests: 
+   * Click on grid row
+   * Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected row
 
-**TO ADD**
+5. Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
+[parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization).
 
-## Multi target analysis
+Learn more
 
-If you select more than one **target** output, then the 
-[Monte Carlo](https://en.wikipedia.org/wiki/Monte_Carlo_method) method runs. 
-It computates the function multiple times with varying inputs, 
-and analyzes the relationship between them and outputs. Press <i class="grok-icon fal fa-cog"></i>
-to set a number of the function evaluations.
-
-You will get
-
-  * [PC plot](https://datagrok.ai/help/visualize/viewers/pc-plot) visualizing multivariate data
-and providing variations of the selected inputs & outputs
-
-  * [Line chart](https://datagrok.ai/help/visualize/viewers/line-chart) or 
-[Scatterplot](https://datagrok.ai/help/visualize/viewers/scatter-plot) (dependently on the varied
-inputs count) showing a behavior of each output separately
-
-  * [Grid](https://datagrok.ai/help/visualize/viewers/grid) containing inputs and outputs values 
-of each function evaluation`;
+* [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization).
+* [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
+* [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent)`;

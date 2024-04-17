@@ -12,8 +12,15 @@ import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {STARTING_HELP} from './fitting/constants';
 import {optimize} from './fitting/optimizer';
 
+import {NELDER_MEAD_DEFAULTS} from './fitting/optimizer-nelder-mead';
+
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
+
+enum METHOD {
+  NELDER_MEAD = 'Nelder-Mead',
+  GRAD_DESC = 'Gradient descent',
+};
 
 type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
@@ -61,12 +68,12 @@ export class FittingView {
       ui.tooltip.bind(input.root, () => {
         if (isInput) {
           return (input.value) ?
-            `Switch OFF fitting this input` :
-            `Switch ON fitting this input`;
+            `Switch OFF fitting the input` :
+            `Switch ON fitting the input`;
         } else {
           return !input.value ?
-            `Mark this output as a target` :
-            `Mark this output as not a target`;
+            `Mark the output as a target` :
+            `Mark the output as not a target`;
         }
       });
 
@@ -85,15 +92,18 @@ export class FittingView {
           this.updateRunWidgetsState();
         });
 
+        const caption = inputProp.caption ?? inputProp.name;
+
         const temp = {
           type: inputProp.propertyType,
           prop: inputProp,
           const: {
             input:
             (() => {
-              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(caption, inputProp.defaultValue, (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
+              inp.setTooltip(`Value of the '${caption}' input`);
               return inp;
             })(),
             value: inputProp.defaultValue,
@@ -104,6 +114,7 @@ export class FittingView {
                 const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (min)`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
+                inp.setTooltip(`Min value of the '${caption}' input`);
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
@@ -112,6 +123,7 @@ export class FittingView {
             input: (() => {
               const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (max)`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
               inp.addPostfix(inputProp.options['units']);
+              inp.setTooltip(`Max value of the '${caption}' input`);
               return inp;
             })(),
             value: getInputValue(inputProp, 'max'),
@@ -240,30 +252,47 @@ export class FittingView {
   private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run fitting');
   private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
   private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute.md#fitting', '_blank');
+    window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
   }, 'Open help in a new tab');
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
   private gridSubscription: any = null;
   private toSetSwitched = true;
 
+  private method = METHOD.NELDER_MEAD;
+  private methodInput = ui.choiceInput('Method', this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
+    this.method = this.methodInput.value!;
+    this.showHideSettingInputs();
+  });
+
+  // The Nelder-Mead method settings
+  private nelderMeadSettings = {
+    tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
+    maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
+    nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
+    initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
+    scaleReflaction: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
+    scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
+    scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
+  };
+
+  // Foo settings
+  private gradDescentSettings = {
+    iterCount: 10,
+    learningRate: 0.0001,
+  };
+
+  private settingsInputs = new Map<METHOD, DG.InputBase[]>();
+
   store = this.generateInputFields(this.func);
   comparisonView!: DG.TableView;
 
-  // Optimization settings: TO ADD METHOD's SETTINGS HERE
+  private fittingSettingsIcon = ui.iconFA('cog', () => {
+    const prevState = this.fittingSettingsDiv.hidden;
+    this.fittingSettingsDiv.hidden = !prevState;
+  }, 'Modify fitting settings');
 
-
-  private methodSettingsDiv = ui.divV([ui.label('TO BE ADDED')]); // HERE, TO ADD UI for modifying optimizer settings
-
-  private optSettingsIcon = ui.iconFA('cog', () => {
-    const prevState = this.optSettingsDiv.hidden;
-    this.optSettingsDiv.hidden = !prevState;
-  }, 'Modify optimization settings');
-
-  private optSettingsDiv = ui.divV([
-    ui.h2('Settings'),
-    this.methodSettingsDiv,
-  ]);
+  private fittingSettingsDiv = ui.divV([]);
 
   static async fromEmpty(
     func: DG.Func,
@@ -305,7 +334,7 @@ export class FittingView {
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
-      grok.shell.warning('Optimization is not applicable: the function has no scalar outputs.');
+      grok.shell.warning('Fitting is not applicable: the function has no scalar outputs.');
       baseView.close();
       return;
     }
@@ -314,11 +343,7 @@ export class FittingView {
     this.runIcon.style.color = 'var(--green-2)';
     this.runIcon.classList.add('fas');
 
-    this.helpIcon = ui.iconFA('question', () => {
-      window.open('https://datagrok.ai/help/compute.md#fitting', '_blank');
-    }, 'Open help in a new tab');
-
-    this.optSettingsDiv.hidden = true;
+    this.fittingSettingsDiv.hidden = true;
 
     const form = this.buildFormWithBtn();
     this.runButton.disabled = !this.canEvaluationBeRun();
@@ -329,7 +354,7 @@ export class FittingView {
       form,
       DG.DOCK_TYPE.LEFT,
       null,
-      `${this.func.name} - Sensitivity Analysis`,
+      `${this.func.name} - Fitting`,
       0.25,
     );
 
@@ -339,13 +364,14 @@ export class FittingView {
     rbnPanels.push([this.helpIcon, this.runIcon]);
     this.comparisonView.setRibbonPanels(rbnPanels);
 
-    this.comparisonView.name = this.comparisonView.name.replace('comparison', 'optimization');
-    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute.md#fitting';
+    this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
+    this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute/#input-parameter-optimization';
     this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
     this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+    this.methodInput.setTooltip('Numerical method for minimizing objective function');
   }
 
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -362,8 +388,110 @@ export class FittingView {
     this.runIcon.hidden = this.runButton.disabled;
   }
 
+  private generateNelderMeadSettingsInputs(): void {
+    const tolInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'tolerance',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.TOLERANCE,
+      min: 1e-20,
+      max: 1e-1,
+    }));
+    tolInp.onChanged(() => this.nelderMeadSettings.tolerance = tolInp.value);
+
+    const maxIterInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Max iterations',
+      inputType: 'Int',
+      defaultValue: NELDER_MEAD_DEFAULTS.MAX_ITER,
+      min: 1,
+      max: 10000,
+    }));
+    maxIterInp.onChanged(() => this.nelderMeadSettings.maxIter = maxIterInp.value);
+
+    const nonZeroParamInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Non-zero param',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
+      min: 1e-20,
+      max: 1e-1,
+    }));
+    nonZeroParamInp.onChanged(() => this.nelderMeadSettings.nonZeroParam = nonZeroParamInp.value);
+
+    const initialScaleInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Initial scale',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
+      min: 1e-20,
+      max: 1e-1,
+    }));
+    initialScaleInp.onChanged(() => this.nelderMeadSettings.initialScale = initialScaleInp.value);
+
+    const scaleReflactionInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Scale reflection',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
+    }));
+    scaleReflactionInp.onChanged(() => this.nelderMeadSettings.scaleReflaction = scaleReflactionInp.value);
+
+    const scaleExpansionInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Scale expansion',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
+    }));
+    scaleExpansionInp.onChanged(() => this.nelderMeadSettings.scaleExpansion = scaleExpansionInp.value);
+
+    const scaleContractionInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Scale contraction',
+      inputType: 'Float',
+      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
+    }));
+    scaleContractionInp.onChanged(() => this.nelderMeadSettings.scaleContraction = scaleContractionInp.value);
+
+    this.settingsInputs.set(METHOD.NELDER_MEAD, [
+      tolInp,
+      maxIterInp,
+      nonZeroParamInp,
+      initialScaleInp,
+      scaleReflactionInp,
+      scaleExpansionInp,
+      scaleContractionInp,
+    ]);
+  }
+
+  private generateGradDescentSettingsInputs(): void {
+    const iterInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'iterations',
+      inputType: 'Int',
+      defaultValue: this.gradDescentSettings.iterCount,
+      min: 1,
+      max: 10000,
+    }));
+    iterInp.onChanged(() => this.gradDescentSettings.iterCount = iterInp.value);
+
+    const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
+      name: 'Learning rate',
+      inputType: 'Float',
+      defaultValue: this.gradDescentSettings.learningRate,
+      min: 1e-6,
+      max: 1000,
+    }));
+    learningRateInp.onChanged(() => this.gradDescentSettings.learningRate = learningRateInp.value);
+
+    this.settingsInputs.set(METHOD.GRAD_DESC, [iterInp, learningRateInp]);
+  }
+
+  private generateSettingInputs(): void {
+    this.generateNelderMeadSettingsInputs();
+    this.generateGradDescentSettingsInputs();
+  }
+
+  private showHideSettingInputs(): void {
+    this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
+  }
+
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
+    const fitHeader = ui.h2('Fit');
+    ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
 
     const form = Object.values(this.store.inputs)
       .reduce((container, inputConfig) => {
@@ -380,11 +508,12 @@ export class FittingView {
 
         return container;
       }, ui.div([
-        ui.h2('Fit'),
+        fitHeader,
       ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
 
-    form.appendChild(this.optSettingsDiv);
-    form.appendChild(ui.h2('To get'));
+    const toGetHeader = ui.h2('Target');
+    ui.tooltip.bind(toGetHeader, 'Select target outputs');
+    form.appendChild(toGetHeader);
     prevCategory = 'Misc';
 
     Object.values(this.store.outputs)
@@ -416,7 +545,23 @@ export class FittingView {
       // firstOutput.isInterest.input.value = true;
     }
 
-    form.appendChild(ui.h2('Using'));
+    const usingHeader = ui.h2('Using');
+    ui.tooltip.bind(usingHeader, 'Specify fitting method');
+    form.appendChild(usingHeader);
+    this.methodInput.root.insertBefore(this.fittingSettingsIcon, this.methodInput.captionLabel);
+    this.fittingSettingsIcon.style.minWidth = '50px';
+    form.appendChild(this.methodInput.root);
+
+    const settingsHeader = ui.h3('with settings');
+    ui.tooltip.bind(settingsHeader, () => `Settings of the ${this.method} method`);
+    this.fittingSettingsDiv.appendChild(settingsHeader);
+    this.generateSettingInputs();
+    this.showHideSettingInputs();
+    form.appendChild(this.fittingSettingsDiv);
+    this.settingsInputs.forEach((array) => array.forEach((input) => {
+      input.root.insertBefore(getSwitchMock(), input.captionLabel);
+      this.fittingSettingsDiv.append(input.root);
+    }));
 
     $(form).addClass('ui-form');
 
@@ -445,7 +590,11 @@ export class FittingView {
   }
 
   private isAnyOutputSelected(): boolean {
-    return true; //this.targetCount > 0;
+    for (const propName of Object.keys(this.store.outputs)) {
+      if (this.store.outputs[propName].isInterest.value === true)
+        return true;
+    }
+    return false;
   }
 
   private canEvaluationBeRun(): boolean {

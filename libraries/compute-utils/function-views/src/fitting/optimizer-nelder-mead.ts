@@ -1,5 +1,15 @@
 import {Extremum, IOptimizer} from './optimizer-misc';
 
+export enum NELDER_MEAD_DEFAULTS {
+  TOLERANCE = 1e-4,
+  MAX_ITER = 50,
+  NON_ZERO_PARAM = 0.0001,
+  INITIAL_SCALE = 0.02,
+  SCALE_REFLECTION = 1,
+  SCALE_EXPANSION = 2,
+  SCALE_CONTRACTION = -0.5,
+};
+
 const TOLERANCE = 1e-4;
 const MAX_ITER = 50;
 const NON_ZERO_PARAM = 0.0001;
