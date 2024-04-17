@@ -754,6 +754,7 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
     try {
+      this.funcCall.newId();
       await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
       await this.onAfterRun(this.funcCall);
