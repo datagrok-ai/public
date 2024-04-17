@@ -446,6 +446,8 @@ export interface IScatterPlotLookSettings {
 
   showRegressionLineEquation: boolean;
 
+  regressionPerCategory: boolean;
+
   /// Control the visibility of dataframe-originated formula lines.
   /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
   /// Requires the PowerPack plugin.
@@ -2213,6 +2215,8 @@ export interface IPivotViewerLookSettings {
   aggregateAggTypes: Array<string>;
 
   viewerSettings: Array<any>;
+
+  allowViewers: boolean;
 
   /// Determines the rows shown on the plot.
   /// Formula that filters out rows to show.
