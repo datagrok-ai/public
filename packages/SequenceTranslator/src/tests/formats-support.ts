@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {DEFAULT_FORMATS} from '../model/const';
-import {getJsonData} from '../model/data-loading-utils/json-loader';
+import {DEFAULT_FORMATS} from '../apps/common/model/const';
+import {loadJsonData} from '../apps/common/model/data-loader/json-loader';
 import {formatsToHelm} from './const';
-import {SequenceValidator} from '../model/parsing-validation/sequence-validator';
-import {getTranslatedSequences} from '../model/translator-app/conversion-utils';
+import {SequenceValidator} from '../apps/common/model/parsing-validation/sequence-validator';
+import {getTranslatedSequences} from '../apps/translator/model/conversion-utils';
 import {_package} from '../package';
 
 function getTranslationObject(sequence: string, format: string): {[format: string]: string} {
@@ -19,11 +19,11 @@ function getTranslationObject(sequence: string, format: string): {[format: strin
 const inputs = {
   [DEFAULT_FORMATS.AXOLABS]: 'Afcgacsu',
   [DEFAULT_FORMATS.HELM]: 'RNA1{[fR](A)p.[25r](C)p.[25r](G)p.[25r](A)p.[25r](C)[sp].[25r](U)}$$$$'
-}
+};
 
 category('Formats support', () => {
   before(async () => {
-    await getJsonData();
+    await loadJsonData();
     await _package.initMonomerLib();
   });
 
