@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.12.13 (2024-04-15)
+
+Bio: Fix cell renderer for scatter plot, add test
+
 ## 2.12.12 (2024-04-15)
 
 ### Features 
