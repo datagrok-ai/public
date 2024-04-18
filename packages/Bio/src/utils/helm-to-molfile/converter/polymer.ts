@@ -72,7 +72,7 @@ export class Polymer {
   }
 
   private getV3KHeader(atomCount: number, bondCount: number): string {
-    const countsLine = `${V3K_CONST.COUNTS_LINE_START}${atomCount} ${bondCount}${V3K_CONST.COUNTS_LINE_DUMMY_END}`;
+    const countsLine = `${V3K_CONST.COUNTS_LINE_START}${atomCount} ${bondCount} 0 0 1`;
     return `${V3K_CONST.DUMMY_HEADER}\n${V3K_CONST.BEGIN_CTAB}\n${countsLine}`;
   }
 
