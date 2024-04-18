@@ -13,6 +13,7 @@ import {STARTING_HELP} from './fitting/constants';
 import {optimize} from './fitting/optimizer';
 
 import {NELDER_MEAD_DEFAULTS} from './fitting/optimizer-nelder-mead';
+import {getErrors} from './fitting/fitting-utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -171,7 +172,9 @@ export class FittingView {
 
         const tempDefault = {
           input: (() => {
-            const temp = ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
+            const temp = ui.input.forProperty(inputProp);
+            temp.onChanged(() => tempDefault.value = temp.value);
+            //, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
             temp.root.insertBefore(switchMock, temp.captionLabel);
 
             temp.addPostfix(inputProp.options['units']);
@@ -633,12 +636,11 @@ export class FittingView {
 
     if (!this.canEvaluationBeRun())
       return;
-    //await this.runLocalMinimumOptimization();
+    await this.runLocalMinimumOptimization();
   }
 
   private getFixedInputs() {
-    return Object.keys(this.store.inputs)
-      .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && !this.store.inputs[propName].isChanging.value);
+    return Object.keys(this.store.inputs).filter((propName) => !this.store.inputs[propName].isChanging.value);
   }
 
   private getVariedInputs() {
@@ -653,6 +655,7 @@ export class FittingView {
 
     // add fixed inputs
     this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+    console.log(inputs);
 
     // get varied inputs, optimization is performed with respect to them
     const variedInputs = this.getVariedInputs();
@@ -673,11 +676,11 @@ export class FittingView {
 
     // get selected output
     const outputsOfInterest = this.getOutputsOfInterest();
-    if (outputsOfInterest.length !== 1) {
+    if (outputsOfInterest.length < 1) {
       grok.shell.error('No output is selected for optimization.');
       return;
     }
-    const outputName = outputsOfInterest[0].name;
+    //const outputName = outputsOfInterest[0].name;
 
     /** Cost function to be optimized */
     const costFunc = async (x: Float32Array): Promise<number> => {
@@ -685,16 +688,31 @@ export class FittingView {
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
 
-      return calledFuncCall.getParamValue(outputName);
+      console.log('================================================================');
+      outputsOfInterest.forEach((output) => {
+        if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+          console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
+        else {
+          const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
+          console.log(errs);
+        }
+        //console.log(output.target);
+        console.log('---------------------------------------------------------------');
+        //console.log(calledFuncCall.getParamValue(output.prop.name));
+      });
+
+      return 10;// calledFuncCall.getParamValue(outputName);
     };
 
-    const extr = await optimize(costFunc,
+    await costFunc(new Float32Array(dim));
+
+    /*const extr = await optimize(costFunc,
       minVals,
       maxVals,
       100,
     );
 
-    console.log(extr);
+    console.log(extr);*/
   } // runNelderMeadMethod
 
   private getOutputsOfInterest() {
@@ -704,7 +722,7 @@ export class FittingView {
       const output = this.store.outputs[outputName];
 
       if (output.isInterest.value)
-        outputsOfInterest.push(output.prop);
+        outputsOfInterest.push(output);
     }
 
     return outputsOfInterest;
