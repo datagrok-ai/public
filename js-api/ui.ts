@@ -2145,6 +2145,16 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
+export function actionLink(text: string, onClick?: Function, tooltipMessage?: string): HTMLLabelElement {
+  let c = document.createElement('label');
+  c.textContent = text;
+  $(c).addClass('d4-link-action');
+  if (onClick)
+    c.addEventListener('click', (e: MouseEvent) => onClick(e));
+  if (tooltipMessage)
+    tooltip.bind(c, tooltipMessage);
+  return c;
+}
 
 export namespace panels {
   export function infoPanel(x: any): Accordion { return api.grok_InfoPanels_GetAccordion(toDart(x)); }

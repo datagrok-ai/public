@@ -8,7 +8,7 @@ import * as ui from 'datagrok-api/ui';
 import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time', 'report_number'],
+  columnNames: ['error', 'reporter', 'report_time', 'report_number', 'is_resolved'],
 };
 
 export class ReportsView extends UaView {
@@ -46,13 +46,19 @@ export class ReportsView extends UaView {
         });
         this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['report_number', 'reporter', 'description', 'same_errors_count', 'error', 'error_stack_trace', 'report_time', 'report_id']);
+          viewer.columns.setOrder(['is_resolved', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'requests_count', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
+          viewer.col('assignee')!.cellType = 'html';
+          viewer.col('is_resolved')!.editable = false;
+          viewer.col('requests_count')!.editable = false;
+          viewer.col('same_errors_count')!.editable = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
         });
-
+        const isResolvedCol = t.getCol('is_resolved');
         viewer.onCellPrepare(async function(gc) {
-          if (gc.gridColumn.name === 'reporter' && gc.cell.value) {
+          if (isResolvedCol.get(gc.gridRow))
+            gc.style.textColor = 0xFFB8BAC0;
+          if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
             const user = users[gc.cell.value];
             const img = ui.div();
             img.style.width = '20px';
@@ -133,11 +139,42 @@ export class ReportsView extends UaView {
 
   async showReportContextPanel(table: DG.DataFrame): Promise<void> {
     if (!table.selection.anyTrue) return;
+    const index = table.selection.getSelectedIndexes()[0];
     let df = table.clone(table.selection);
     const reportId = df.getCol('report_id').get(0);
     if (!reportId) return;
     grok.shell.o = ui.wait(async () => {
-      return ui.div([await DetailedLog.getAccordion(reportId)]);
+      const accordion = await DetailedLog.getAccordion(reportId);
+      const pane = accordion.root.querySelectorAll('[d4-title="ACTIONS"]')[0];
+      let reopen: HTMLLabelElement;
+      let close: HTMLLabelElement;
+      let isActive: boolean = false;
+
+      async function resolve(e: MouseEvent, value: boolean, replacement: HTMLElement, action: Function) {
+        if (isActive) return;
+        isActive = true;
+        (e.target as HTMLElement).replaceWith(ui.wait(async () => {
+          (e.target as HTMLElement).style.color = '#286344';
+          await action();
+          table.getCol('is_resolved').set(index, value);
+          isActive = false;
+          return replacement;
+        }));
+      }
+      reopen = ui.actionLink('Reopen issue...', async (e: MouseEvent) => {
+        const dialog = DG.Dialog.create('Specify the reason');
+        const description = ui.input.textArea('Description', {'size': {height: 150, width: 250}, 'nullable': false, 'tooltipText': 'Provide reason of reopening'});
+        const notify = ui.input.bool('Notify assignee', {'tooltipText': 'Email with notification will be sent to the assignee'});
+        dialog.add(description);
+        dialog.add(notify);
+        dialog.onOK(async () => await resolve(e, false, close, async () => await grok.dapi.reports.reopen(reportId, description.value, notify.value)));
+        dialog.show();
+      });
+      close = ui.actionLink('Mark as resolved...', async (e: MouseEvent) => {
+        await resolve(e, true, reopen, async () => await grok.dapi.reports.resolve(reportId));
+      });
+      pane.children[1].children[0].append(df.getCol('is_resolved').get(0) ? reopen : close);
+      return ui.div([accordion.root]);
     });
   }
 }

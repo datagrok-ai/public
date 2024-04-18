@@ -176,18 +176,18 @@ export class ErrorsView extends UaView {
       ];
       const results = await Promise.all(promises);
       let div: HTMLDivElement;
-      const createReportButton = ui.button('Report', async () => {
-        const prog = DG.TaskBarProgressIndicator.create('Reporting...');
-        await grok.dapi.admin.postEventReport(eventId);
-        const ev = ViewHandler.getView('Reports');
-        ev.viewers[0].reloadViewer();
-        while (div.hasChildNodes())
-          div.removeChild(div.lastChild!);
-        div.appendChild(ui.span([1]));
-        div.appendChild(detailsButton);
-        prog.close();
-      });
-      div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : createReportButton]);
+      // const createReportButton = ui.button('Report', async () => {
+      //   const prog = DG.TaskBarProgressIndicator.create('Reporting...');
+      //   await window.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId)(eventId);
+      //   const ev = ViewHandler.getView('Reports');
+      //   ev.viewers[0].reloadViewer();
+      //   while (div.hasChildNodes())
+      //     div.removeChild(div.lastChild!);
+      //   div.appendChild(ui.span([1]));
+      //   div.appendChild(detailsButton);
+      //   prog.close();
+      // });
+      div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : null]);
       div.style.alignItems = 'center';
       const map = {'Reports': div, 'Same errors': results[1]};
       return ui.tableFromMap(map);
