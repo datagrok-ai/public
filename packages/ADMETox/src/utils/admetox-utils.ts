@@ -44,7 +44,7 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
     headers: {
       'Accept': 'text/csv',
       'Content-type': 'text/csv'
-      },
+    },
     body: csvString
   };
 
@@ -455,7 +455,7 @@ export function createTabControl(template: Template, selected: string[]) {
 async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: any): Promise<void> {
   let selectedItems: string[] = [];
   await setProperties();
-  const items = (await grok.dapi.files.list('System:AppData/Admetox/templates')).map((file) => file.fileName.split('.')[0]);
+  const items = (await grok.dapi.files.list(TEMPLATES_FOLDER)).map((file) => file.fileName.split('.')[0]);
   const result = createTabControl(properties, selectedItems);
   const tabsV = result.tabsV;
   selectedItems = result.selected;
