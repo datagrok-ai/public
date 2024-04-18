@@ -74,7 +74,6 @@ export async function addFormViewer(molecules: DG.Column) {
 //input: string property
 //output: list<string> result
 export function getModels(property: string): string[] {
-  //@ts-ignore
   return properties[property].models
     .filter((model: any) => !model.skip)
     .map((model: any) => model.name);;

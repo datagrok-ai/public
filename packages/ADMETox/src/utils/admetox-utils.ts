@@ -9,7 +9,7 @@ import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Te
 
 export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_APPLICABILITY_VALUE = 0.43;
+export let DEFAULT_APPLICABILITY_VALUE = 0.5;
 export let properties: any;
 
 async function getAdmetoxContainer() {
@@ -176,7 +176,7 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
           const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
           weightProperty = model.properties.find((prop: any) => prop.property.name === 'weight');
           if (directionProperty && directionProperty.object.direction === 'Lower is better')
-            [min, max] = [max, min]; // Swap min and max
+            [min, max] = [max, min];
         }
           
         sector.subsectors.push({
@@ -321,8 +321,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   canvas.height = 200;
   const ctx = canvas.getContext('2d');
   const pieChartRenderer = new PieChartCellRenderer();
-      
-  //@ts-ignore
+
   pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
   container.appendChild(canvas);
   return container;
@@ -354,7 +353,6 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       result.appendChild(ui.divText('Couldn\'t analyse properties'));
       //console.log(e);
     }
-
   };
 
   for (const subgroup of properties.subgroup) {
@@ -370,7 +368,6 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     result.append(ui.loader());
     try {
       createPieChartPane(semValue).then((canvas) => {
-        canvas.style.marginLeft = '-70px';
         ui.empty(result);
         result.appendChild(canvas);
       });
@@ -411,8 +408,6 @@ function createLinearInput(coloring: ModelColoring) {
   const minInput = ui.intInput('min', coloring.min!);
   const maxInput = ui.intInput('max', coloring.max!);
   linearInput.removeChild(linearInput.firstChild!);
-  minInput.root.style.marginLeft = '-113px';
-  maxInput.root.style.marginLeft = '-110px';
   const div = ui.divV([linearInput, minInput, maxInput]);
   return div;
 }

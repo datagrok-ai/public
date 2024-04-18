@@ -23,7 +23,8 @@ interface Subsector {
   lowThreshold: number;
   highThreshold: number;
   weight: number;
-  //erroneous: boolean;
+  applicability: number;
+  probabilities: number[];
 }
 
 interface PieChartSettings extends SummarySettingsBase {
@@ -36,6 +37,7 @@ interface PieChartSettings extends SummarySettingsBase {
       sectorColor: string;
       subsectors: Subsector[];
     }[];
+    values: string;
   };
 }
 
@@ -109,7 +111,7 @@ function renderDiagonalStripes(
 function renderSubsector(
   g: CanvasRenderingContext2D, box: DG.Rect, sectorColor: string,
   sectorAngle: number, currentAngle: number, subsector: Subsector,
-  minRadius: number,cols: DG.Column[], df: DG.DataFrame, row: number,
+  minRadius: number, cols: DG.Column[], row: number,
   sectorWeight: number
 ): number {
   const normalizedSubsectorWeight = subsector.weight / sectorWeight;
@@ -118,15 +120,17 @@ function renderSubsector(
   const subsectorName = subsector.name;
   const subsectorCol = cols.find((col) => col.name === subsectorName);
   let value;
+  let erroneous;
   if (subsectorCol) {
-    value = df.cell(row, subsector.name).value;
-    const normalizedValue = value && subsectorCol.name !== 'PPBR' ? normalizeValue(value, subsector) : 1;
+    value = subsectorCol.get(row);
+    erroneous = subsector.probabilities[row] < subsector.applicability; 
+    const normalizedValue = value && !erroneous ? normalizeValue(value, subsector) : 1;
     r = normalizedValue * (Math.min(box.width, box.height) / 2);
     r = Math.max(r, minRadius);
   }
-  if (subsectorCol?.name === 'PPBR') {
+  if (erroneous)
     renderDiagonalStripes(g, box, r, currentAngle, subsectorAngle);
-  } else {
+  else {
     g.beginPath();
     g.moveTo(box.midX, box.midY);
     g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
@@ -255,8 +259,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     if (w < 5 || h < 5 || df === void 0) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const row: number = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    let row: number = gridCell.cell.row.idx;
+    let cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {
@@ -278,7 +282,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         g.stroke();
       }
     } else if (settings.sectors) {
-      const { lowerBound, upperBound, sectors } = settings.sectors;
+      const { lowerBound, upperBound, sectors, values } = settings.sectors;
+      cols = values ? Array.from(DG.DataFrame.fromCsv(values).columns) : cols;
+      row = values ? 0 : row;
       sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
 
       let currentAngle = 0;
@@ -300,7 +306,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         // Render subsectors
         let subsectorCurrentAngle = currentAngle;
         for (const subsector of sector.subsectors)
-          subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, df, row, sectorWeight);
+          subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, row, sectorWeight);
 
         // Render inner circle representing the range
         g.beginPath();
