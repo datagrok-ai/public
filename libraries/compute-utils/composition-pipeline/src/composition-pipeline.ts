@@ -30,6 +30,7 @@ export type NqName = string;
 export interface RuntimeController {
   enableLink(path: ItemPath): void;
   disableLink(path: ItemPath): void;
+  triggerLink(path: ItemPath): void;
   enableStep(path: ItemPath): void;
   disableStep(path: ItemPath): void;
   getState<T = any>(path: ItemPath): T | void;
@@ -77,19 +78,19 @@ export type PipelineHookConfiguration = {
   handler: Handler;
 }
 
-export type ActionConfiguraion = PipelineHookConfiguration & {
-  position: 'buttons' | 'none';
+export type PipelineActionConfiguraion = PipelineHookConfiguration & {
+  position: 'buttons' | 'menu' | 'none';
   friendlyName: string;
 }
 
 export type PipelinePopupConfiguration = {
   id: ItemName;
   nqName: NqName;
-  position: 'buttons' | 'none';
+  position: 'buttons' | 'menu' | 'none';
   friendlyName: string;
   helpUrl?: string;
   states?: StateItemConfiguration[];
-  actions?: ActionConfiguraion[];
+  actions?: PipelineActionConfiguraion[];
 }
 
 export type PipelineStepConfiguration = {
@@ -98,7 +99,7 @@ export type PipelineStepConfiguration = {
   friendlyName?: string;
   helpUrl?: string;
   states?: StateItemConfiguration[];
-  actions?: ActionConfiguraion[];
+  actions?: PipelineActionConfiguraion[];
   popups?: PipelinePopupConfiguration[];
 }
 
@@ -119,6 +120,7 @@ export type PipelineConfiguration = {
   steps: PipelineStepConfiguration[];
   hooks?: PipelineHooks;
   links?: PipelineLinkConfiguration[];
+  actions?: PipelineActionConfiguraion[];
   // non-composable
   states?: StateItemConfiguration[];
   exportConfig?: ExportConfig;
@@ -131,7 +133,7 @@ export type PipelineConfiguration = {
 export type ItemsToAdd = {
   stepsToAdd?: [PipelineStepConfiguration, ItemPath][];
   popupsToAdd?: [PipelinePopupConfiguration, ItemPath][];
-  actionsToAdd?: [ActionConfiguraion, ItemPath][];
+  actionsToAdd?: [PipelineActionConfiguraion, ItemPath][];
 }
 
 export type ItemsToRemove = {
@@ -243,10 +245,11 @@ export class Aborted extends Error {}
 export type ItemsToMerge = {
   step?: PipelineStepConfiguration[];
   popup?: PipelinePopupConfiguration[];
-  action?: ActionConfiguraion[];
+  action?: PipelineActionConfiguraion[];
 }
-export type SubNodeConf = ActionConfiguraion | PipelinePopupConfiguration | PipelineStepConfiguration;
+
 export type SubNodeConfTypes = 'action' | 'popup' | 'step';
+export type SubNodeConf =  PipelineActionConfiguraion | PipelinePopupConfiguration | PipelineStepConfiguration;
 export type NodeConfTypes = SubNodeConfTypes | 'pipeline';
 export type NodeConf = SubNodeConf | PipelineConfiguration;
 
@@ -295,10 +298,16 @@ export class NodeState {
 
   constructor(
     public conf: NodeConf,
-    public type: SubNodeConfTypes,
+    public type: NodeConfTypes,
     public pipelinePath: ItemPath,
     public pipelineState: PipelineState,
   ) {
+    if (type === 'pipeline') {
+      const states = (conf as PipelineStepConfiguration).states;
+      for (const state of states ?? [])
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
+    }
+
     if (type === 'step') {
       const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
@@ -312,7 +321,7 @@ export class NodeState {
     }
 
     if (type === 'action') {
-      const link = conf as ActionConfiguraion;
+      const link = conf as PipelineActionConfiguraion;
       this.controllerConfig = new ControllerConfig(pipelinePath, link.from, link.to);
     }
   }
@@ -323,6 +332,7 @@ export class LinkState {
   public controllerConfig: ControllerConfig;
   public enabled = new BehaviorSubject(true);
   private currentSource = new BehaviorSubject<Observable<any>>(of());
+  private externalTrigger = new Subject<true>();
   public valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
   );
@@ -336,7 +346,11 @@ export class LinkState {
   }
 
   public setSources(sources: Observable<any>[]) {
-    this.currentSource.next(merge(...sources));
+    this.currentSource.next(merge(...sources, this.externalTrigger));
+  }
+
+  public trigger() {
+    this.externalTrigger.next(true);
   }
 
   public getValuesChanges() {
@@ -415,6 +429,13 @@ export class PipelineRuntime {
       this.view.hideSteps(k);
   }
 
+  triggerLink(path: ItemPath): void {
+    const k = pathToKey(path);
+    const link = this.links.get(k);
+    if (link)
+      link.trigger();
+  }
+
   getState<T = any>(path: ItemPath): T | void {
     const {state} = this.getNodeState(path)!;
     const val = state?.getValue();
@@ -441,7 +462,7 @@ export class PipelineRuntime {
     this.updateViewValidation(targetPath);
   }
 
-  getValidationAction(path: ItemPath, name?: string): ActionItem {
+  getAction(path: ItemPath, name?: string): ActionItem {
     const k = pathToKey(path);
     const node = this.nodes.get(k);
     if (node?.type !== 'action' && node?.type !== 'popup') {
@@ -451,7 +472,7 @@ export class PipelineRuntime {
     }
 
     if (node.type === 'action') {
-      const conf = node.conf as ActionConfiguraion;
+      const conf = node.conf as PipelineActionConfiguraion;
       const handler = conf.handler;
       const ctrlConf = node.controllerConfig!;
       return {
@@ -654,6 +675,12 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.setStepState(fullPath, false);
   }
 
+  triggerLink(path: ItemPath): void {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.triggerLink(fullPath);
+  }
+
   getState<T = any>(path: ItemPath): T | void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
@@ -696,7 +723,7 @@ export class RuntimeControllerImpl implements RuntimeController {
   getValidationAction(path: ItemPath, name?: string): ActionItem {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    return this.rt.getValidationAction(fullPath, name);
+    return this.rt.getAction(fullPath, name);
   }
 
   private checkAborted() {
@@ -902,6 +929,8 @@ export class CompositionPipeline {
       throw new Error('Pipeline already has config');
     this.config = cloneConfig(conf);
     this.id = this.config.id;
+    if (this.nqName && this.nqName !== this.config.nqName)
+      throw new Error(`Config different wrapper nqName ${this.config.nqName}, already set to ${this.nqName}`);
     this.nqName = this.config.nqName;
     this.exportConfig = this.config.exportConfig;
   }
@@ -913,7 +942,11 @@ export class CompositionPipeline {
     if (!nqName)
       throw new Error('No nqName for pipeline');
 
+    if (this.nqName && this.nqName !== nqName)
+      throw new Error(`View different wrapper nqName ${nqName}, already set to ${this.nqName}`);
+
     this.viewInst = new CompositionPipelineView(nqName);
+    this.nqName = nqName;
     return this.viewInst;
   }
 
@@ -944,7 +977,7 @@ export class CompositionPipeline {
   }
 
   private addSystemHooks() {
-    const stepIdsToNodes = new Map<PathKey, NodeState[]>();
+    const stepIdsToBtnNodes = new Map<PathKey, NodeState[]>();
     const additionalViewNames = new Map<PathKey, NqName>();
     const additionalViews = this.viewInst!.customViews;
 
@@ -955,14 +988,19 @@ export class CompositionPipeline {
           additionalViewNames.set(conf.id, conf.nqName);
         }
 
-        const conf = node.conf as (ActionConfiguraion | PipelinePopupConfiguration);
+        const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
+
         if (conf.position === 'none')
           continue;
 
         const parentPathKey = getParentKey(node.conf.id);
-        const nodes = stepIdsToNodes.get(parentPathKey) ?? [];
-        nodes.push(node);
-        stepIdsToNodes.set(parentPathKey, nodes);
+
+        // TODO: menu handling
+        if (conf.position === 'buttons') {
+          const nodes = stepIdsToBtnNodes.get(parentPathKey) ?? [];
+          nodes.push(node);
+          stepIdsToBtnNodes.set(parentPathKey, nodes);
+        }
       }
     }
 
@@ -983,10 +1021,10 @@ export class CompositionPipeline {
     const onViewReady = [{
       id: '_SystemButtonsAdd_',
       handler: async ({controller}: { controller: RuntimeController }) => {
-        for (const [viewKey, nodes] of stepIdsToNodes.entries()) {
+        for (const [viewKey, nodes] of stepIdsToBtnNodes.entries()) {
           const btns = nodes.map((node) => {
-            const conf = node.conf as (ActionConfiguraion | PipelinePopupConfiguration);
-            const action = this.rt!.getValidationAction(keyToPath(conf.id));
+            const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
+            const action = this.rt!.getAction(keyToPath(conf.id));
             return ui.button(action.actionName, action.action);
           });
           const view = controller.getView(keyToPath(viewKey))!;
@@ -1097,18 +1135,18 @@ export class CompositionPipeline {
   // pipeline config processing
 
   private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
-    const subPath = this.updateFullPathNode(pipelineConf, pipelinePath);
+    const subPath = this.proccessPipelineNodeConfig(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
     for (const stepConf of this.getAllSteps(pipelineConf.steps, subPath, toRemove, toAdd)) {
       const sKey = stepConf.id;
       const popups: PipelinePopupConfiguration[] = [];
-      for (const popupConf of this.getAllConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
+      for (const popupConf of this.getSubConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
         const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'popup');
         if (!pPopupConf)
           continue;
 
-        const actions: ActionConfiguraion[] = [];
-        for (const actionConf of this.getAllConfItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
+        const actions: PipelineActionConfiguraion[] = [];
+        for (const actionConf of this.getSubConfItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
           const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(pPopupConf.id), subPath, toRemove);
           if (!pActionConf)
             continue;
@@ -1118,8 +1156,8 @@ export class CompositionPipeline {
         popupConf.actions = actions;
         popups.push(popupConf);
       }
-      const actions: ActionConfiguraion[] = [];
-      for (const actionConf of this.getAllConfItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
+      const actions: PipelineActionConfiguraion[] = [];
+      for (const actionConf of this.getSubConfItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
         const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(sKey), subPath, toRemove);
         if (!pActionConf)
           continue;
@@ -1138,8 +1176,18 @@ export class CompositionPipeline {
 
       links.push(plink);
     }
+    const actions: PipelineActionConfiguraion[] = [];
+    for (const actionConf of this.getSubConfItems(pipelineConf.actions ?? [], pipelineConf.id, toAdd, 'action')) {
+      const pActionConf = this.processActionNodeConfig(actionConf, subPath, subPath, toRemove);
+      if (!pActionConf)
+        continue;
+
+      actions.push(pActionConf);
+    }
+
     pipelineConf.steps = steps;
     pipelineConf.links = links;
+    pipelineConf.actions = actions;
   }
 
   private getAllSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
@@ -1153,15 +1201,20 @@ export class CompositionPipeline {
     return nData;
   }
 
-  private getAllConfItems<T extends SubNodeConf>(data: T[], prefix: string,
-    toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes,
-  ) {
+  private getSubConfItems<T extends SubNodeConf>(data: T[], prefix: string, toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes) {
     const moreItems = toAdd.get(prefix)?.[type] ?? [];
     return [...data, ...moreItems] as T[];
   }
 
+  private proccessPipelineNodeConfig(conf: PipelineConfiguration, pipelinePath: ItemPath) {
+    const nodePath = this.updateFullPathNode(conf, pipelinePath);
+    const nodeKey = pathToKey(nodePath);
 
-  private processActionNodeConfig(conf: ActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
+    this.nodes.set(nodeKey, new NodeState(conf, 'pipeline', pipelinePath, this.pipelineState));
+    return nodePath;
+  }
+
+  private processActionNodeConfig(conf: PipelineActionConfiguraion, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>) {
     this.updateFullPathLink(conf, pipelinePath, false);
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
@@ -1172,7 +1225,7 @@ export class CompositionPipeline {
     return conf;
   }
 
-  private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: SubNodeConfTypes) {
+  private processNodeConfig<T extends NodeConf>(conf: T, path: ItemPath, pipelinePath: ItemPath, toRemove: Set<string>, type: NodeConfTypes) {
     const nodePath = this.updateFullPathNode(conf, path);
     const nodeKey = pathToKey(nodePath);
 
