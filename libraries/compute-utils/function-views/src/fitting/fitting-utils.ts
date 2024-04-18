@@ -42,7 +42,7 @@ function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
 //input: string arg
 //input: dataframe expDf
 //input: dataframe simDf
-export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame): void {
+export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame): Float32Array {
   const expArg = expDf.col(arg);
   const simArg = simDf.col(arg);
 
@@ -78,5 +78,5 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
     }
   }
 
-  console.log(errors);
+  return errors;
 } // getErrors

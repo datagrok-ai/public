@@ -174,15 +174,14 @@ export class FittingView {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
             temp.onChanged(() => tempDefault.value = temp.value);
-            //, undefined, {onValueChanged: (v: DG.InputBase) => tempDefault.value = v.value});
             temp.root.insertBefore(switchMock, temp.captionLabel);
-
             temp.addPostfix(inputProp.options['units']);
 
             return temp;
           })(),
           value: inputProp.defaultValue,
         };
+        tempDefault.input.value = null;
         acc[inputProp.name] = {
           const: tempDefault,
           constForm: [tempDefault.input],
@@ -632,11 +631,10 @@ export class FittingView {
   }
 
   private async runOptimization(): Promise<void> {
-    console.log(this.store);
-
+    //console.log(this.store);
     if (!this.canEvaluationBeRun())
       return;
-    await this.runLocalMinimumOptimization();
+    await this.runNelderMeadOptimization();
   }
 
   private getFixedInputs() {
@@ -649,20 +647,20 @@ export class FittingView {
   }
 
   /** Perform Nelder-Mead method */
-  private async runLocalMinimumOptimization() {
+  private async runNelderMeadOptimization() {
     // inputs of the source function
     const inputs: any = {};
 
     // add fixed inputs
     this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
-    console.log(inputs);
+    //console.log(inputs);
 
     // get varied inputs, optimization is performed with respect to them
     const variedInputs = this.getVariedInputs();
     const dim = variedInputs.length;
 
     // varied inputs specification
-    const variedInputNames = [] as string[];
+    const variedInputNames: string[] = [];
     const minVals = new Float32Array(dim);
     const maxVals = new Float32Array(dim);
 
@@ -680,7 +678,6 @@ export class FittingView {
       grok.shell.error('No output is selected for optimization.');
       return;
     }
-    //const outputName = outputsOfInterest[0].name;
 
     /** Cost function to be optimized */
     const costFunc = async (x: Float32Array): Promise<number> => {
@@ -688,31 +685,34 @@ export class FittingView {
       const funcCall = this.func.prepare(inputs);
       const calledFuncCall = await funcCall.call();
 
-      console.log('================================================================');
+      let cost = 0;
+
       outputsOfInterest.forEach((output) => {
         if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-          console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
+          cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
+          //console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
         else {
-          const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
-          console.log(errs);
+          //const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
+          //console.log(errs);
+          getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
         }
         //console.log(output.target);
-        console.log('---------------------------------------------------------------');
+        //console.log('---------------------------------------------------------------');
         //console.log(calledFuncCall.getParamValue(output.prop.name));
       });
 
-      return 10;// calledFuncCall.getParamValue(outputName);
+      return cost;
     };
 
-    await costFunc(new Float32Array(dim));
+    //console.log(await costFunc(new Float32Array(dim)));
 
-    /*const extr = await optimize(costFunc,
+    const extr = await optimize(costFunc,
       minVals,
       maxVals,
       100,
     );
 
-    console.log(extr);*/
+    console.log(extr);
   } // runNelderMeadMethod
 
   private getOutputsOfInterest() {
