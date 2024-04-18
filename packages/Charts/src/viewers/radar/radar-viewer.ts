@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import {MAXIMUM_SERIES_NUMBER, option} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 import _ from 'lodash';
@@ -38,11 +38,12 @@ export class RadarViewer extends EChartViewer {
   backgroundMinColor: number;
   backgroundMaxColor: number;
   currentRowColor: number;
+  mouseOverRowColor: number;
+  lineColor: number;
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
   title: string;
   resizeScheduled: boolean = false;
-  //limitReached: boolean = false;
 
   constructor() {
     super();
@@ -59,6 +60,8 @@ export class RadarViewer extends EChartViewer {
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFBB845D);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFE7CDCD);
     this.currentRowColor = this.int('currentRowColor', 0xFF00FF00);
+    this.mouseOverRowColor = this.int('mouseOverRowColor', 0xAAAAAA);
+    this.lineColor = this.int('lineColor', 0xADD8E6);
     this.showMin = this.bool('showMin', false);
     this.showMax = this.bool('showMax', false);
     this.showValues = this.bool('showValues', false);
@@ -87,20 +90,37 @@ export class RadarViewer extends EChartViewer {
 
     this.columns = this.getColumns();
     for (const c of this.columns) {
-      const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-      if (c.type === 'datetime')
-        option.radar.indicator.push({name: this.formatLabel(c.name), max: this.getYearFromDate(c.max), min: this.getYearFromDate(c.min)});
-      else
-        option.radar.indicator.push({name: this.formatLabel(c.name), max: c.max, min: minimalVal});
+      const indicator = this.createRadarIndicator(c);
+      option.radar.indicator.push(indicator);
     }
-
-    //this.render();
+  
     this.updateMin();
     this.updateMax();
-    const color = this.showCurrentRow ? DG.Color.toHtml(this.currentRowColor) : '#add8e6';
+  
+    const color = DG.Color.toHtml(this.showCurrentRow ? this.currentRowColor : this.lineColor);
     const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
     this.updateRow(color, currentRow);
-
+  
+    this.setupChartEvents();
+    
+    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
+  }
+  
+  highlightRowIfEnabled(params: any) {
+    if (!this.showMouseOverRow) {
+      return;
+    }
+  
+    const optionCopy = _.cloneDeep(option);
+    const series = optionCopy.series[2].data.find((series: any) => series.name === params.name);
+    if (series) {
+      series.lineStyle.width = HIGHLIGHT_WIDTH;
+      series.itemStyle.color = DG.Color.toHtml(this.mouseOverRowColor);
+    }
+    this.chart.setOption(optionCopy);
+  }
+  
+  setupChartEvents() {
     this.chart.on('mouseover', (params: any) => {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
@@ -108,20 +128,12 @@ export class RadarViewer extends EChartViewer {
           return true;
         return false;
       }, params.event.event.x, params.event.event.y);
+
       const tooltipText = this.getTooltip(params);
       if (tooltipText)
         ui.tooltip.root.innerText = tooltipText;
 
-      if (!this.showMouseOverRow)
-        return;
-
-      const optionCopy = _.cloneDeep(option);
-      const obj = optionCopy.series[2].data.find((series: any) => series.name === params.name);
-      if (obj) {
-        obj.lineStyle.width = '2.5';
-        obj.itemStyle.color = '#aaaaaa';
-      }
-      this.chart.setOption(optionCopy);
+      this.highlightRowIfEnabled(params);
     });
 
     this.chart.on('mouseout', () => {
@@ -136,7 +148,6 @@ export class RadarViewer extends EChartViewer {
         this.render();
       }
     });
-    this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/radar';
   }
 
   getTooltip(params: any): string | null {
@@ -157,13 +168,11 @@ export class RadarViewer extends EChartViewer {
   onTableAttached() {
     this.init();
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
-      .map((c: DG.Column) => c.name).slice(0, 10);
+      .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMouseOverRowChanged.subscribe((_) => {
-      if (this.showMouseOverRow) {
-        //const currentRow = this.dataFrame.mouseOverRowIdx;
+      if (this.showMouseOverRow)
         this.render();
-      }
     }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
@@ -181,8 +190,8 @@ export class RadarViewer extends EChartViewer {
       const func = this.dataFrame.rows.mouseOverRowFunc;
       if (func) {
         //@ts-ignore
-        const iterable = this.dataFrame.rows.where(func);
-        this.render(Array.from(iterable));
+        const indexes = this.dataFrame.rows.where(func);
+        this.render(Array.from(indexes));
       }
     }));
     this.render();
@@ -194,54 +203,15 @@ export class RadarViewer extends EChartViewer {
     this.render();
   }
 
-  getSeriesData(colors?: DG.ColumnColorHelper, filter?: number[]): void {
-    //this.limitReached = false;
+  getSeriesData(colors?: DG.ColumnColorHelper, indexes?: number[]): void {
     option.radar.indicator = [];
     this.clearData([0, 1, 2]);
     this.columns = this.getColumns();
-    for (const c of this.columns) {
-      const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-      if (c.type === 'datetime')
-        option.radar.indicator.push({ name: this.formatLabel(c.name), max: this.getYearFromDate(c.max), min: this.getYearFromDate(c.min) });
-      else
-        option.radar.indicator.push({ name: this.formatLabel(c.name), max: c.max, min: minimalVal });
-    }
 
-    const seriesData = [];
-    let currentRowIdx = this.dataFrame.currentRowIdx || 0;
-    currentRowIdx = Math.max(currentRowIdx, 0);
-    const currentIn = this.filter.get(currentRowIdx);
-    const exceedMax = this.filter.trueCount > MAXIMUM_SERIES_NUMBER;
-
-    for (let i = 0; i < this.filter.length; i++) {
-      if (!this.filter.get(i)) continue;
-      if (i === currentRowIdx && currentIn) continue;
-        
-      const value = this.columns.map((c) => {
-        if (c.type === 'datetime')
-          return this.getDate(c, c.getRawData()[i]);
-        const value = Number(c.get(i));
-        return value !== -2147483648 ? value : 0;
-      });
-
-      const color = colors ? DG.Color.toHtml(colors.getColor(i)) : '#add8e6';
-
-      seriesData.push({
-        value: value,
-        name: `row ${i + 1}`,
-        symbol: 'none',
-        lineStyle: { 
-          width: exceedMax ? '0.5' : '2',
-          opacity: 0.8,
-        },
-        itemStyle: { 
-          color: filter && filter.includes(i) ? '#20CDCD' : color,
-        },
-        label: { show: this.showValues, formatter: (params: any) => StringUtils.formatNumber(params.value) as string },
-      });
-    }
-      
-    option.series[2].data = seriesData;
+    for (const c of this.columns)
+      option.radar.indicator.push(this.createRadarIndicator(c));
+    
+    option.series[2].data = this.createSeriesData(colors, indexes);
   
     if (this.showMin)
       this.updateMin();
@@ -249,22 +219,87 @@ export class RadarViewer extends EChartViewer {
     if (this.showMax)
       this.updateMax();
 
-    if (currentIn) {
-      const color = this.showCurrentRow ? DG.Color.toHtml(this.currentRowColor) : '#add8e6';
-      //const currentRow = Math.max(this.dataFrame.currentRowIdx, 0);
-      this.updateRow(color, currentRowIdx);
-    }
+    this.updateCurrentRow();
+    this.updateMouseOverRow();
+    option.legend.show = !(this.filter.length > 1);
+    option.silent = !this.showTooltip;
+  }
 
+  createSeriesData(colors?: DG.ColumnColorHelper, filter?: number[]): any[] {
+    const seriesData = [];
+    const currentRowIdx = this.getCurrentRowIdx();
+  
+    for (let i = 0; i < this.filter.length; i++) {
+      if (!this.filter.get(i)) continue;
+      if (i === currentRowIdx && this.filter.get(currentRowIdx)) continue;
+
+      const value = this.columns.map((c) => {
+        if (c.type === 'datetime')
+          return this.getDate(c, c.getRawData()[i]);
+        const numValue = Number(c.get(i));
+        return numValue !== -2147483648 ? numValue : 0;
+      });
+
+      const color = DG.Color.toHtml(colors ? colors.getColor(i) : this.lineColor);
+
+      seriesData.push({
+        value: value,
+        name: `row ${i + 1}`,
+        symbol: 'none',
+        lineStyle: {
+          width: this.filter.trueCount > MAXIMUM_SERIES_NUMBER ? LINE_MIN_WIDTH : LINE_MAX_WIDTH,
+          opacity: 0.8,
+        },
+        itemStyle: {
+          color: filter && filter.includes(i) ? MOUSE_OVER_GROUP_COLOR : color,
+        },
+        label: {
+          show: this.showValues,
+          formatter: (params: any) => StringUtils.formatNumber(params.value) as string,
+        },
+      });
+    }
+  
+    return seriesData;
+  }
+
+  updateCurrentRow(): void {
+    const currentIn = this.filter.get(this.getCurrentRowIdx());
+    if (currentIn) {
+      const color = DG.Color.toHtml(this.showCurrentRow ? this.currentRowColor : this.lineColor);
+      this.updateRow(color, this.getCurrentRowIdx());
+    }
+  }
+  
+  updateMouseOverRow(): void {
     const mouseOverIn = this.filter.get(this.dataFrame.mouseOverRowIdx);
     if (mouseOverIn && this.showMouseOverRow) {
-      const color = '#aaaaaa';
+      const color = DG.Color.toHtml(this.mouseOverRowColor);
       const currentRow = this.dataFrame.mouseOverRowIdx;
       if (currentRow !== -1)
         this.updateRow(color, currentRow);
     }
+  }
 
-    option.legend.show = !(this.filter.length > 1);
-    option.silent = !this.showTooltip;
+  getCurrentRowIdx(): number {
+    let currentRowIdx = this.dataFrame.currentRowIdx || 0;
+    currentRowIdx = Math.max(currentRowIdx, 0);
+    return currentRowIdx;
+  }
+
+  createRadarIndicator(c: DG.Column): RadarIndicator {
+    const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
+    const indicator: RadarIndicator = { name: this.formatLabel(c.name) };
+  
+    if (c.type === 'datetime') {
+      indicator.max = this.getYearFromDate(c.max);
+      indicator.min = this.getYearFromDate(c.min);
+    } else {
+      indicator.max = c.max;
+      indicator.min = minimalVal;
+    }
+  
+    return indicator;
   }
 
   getDate(c: DG.Column, value: number) {
@@ -372,7 +407,7 @@ export class RadarViewer extends EChartViewer {
     return value.split(specialCharactersRegex).join("\n");
   }
 
-  render(filter?: number[]) {
+  render(indexes?: number[]) {
     if (this.valuesColumnNames.length < 1) {
       this._showMessage('The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
@@ -382,8 +417,14 @@ export class RadarViewer extends EChartViewer {
       colors = this.dataFrame.getCol(this.colorColumnName).meta.colors;
     this._removeMessage(WARNING_CLASS);
     this._removeMessage(ERROR_CLASS);
-    this.getSeriesData(colors, filter!);
+    this.getSeriesData(colors, indexes!);
     this.chart.setOption(option);
+  }
+
+  detach() {
+    for (const sub of this.subs)
+      sub.unsubscribe();
+    super.detach();
   }
 
   /* Going to be replaced with perc in stats */

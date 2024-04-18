@@ -45,6 +45,8 @@ category('Radar', () => {
       backgroundMinColor: 0xFFBB845D,
       backgroundMaxColor: 0xFFE7CDCD,
       currentRowColor: 0xFF00FF00,
+      mouseOverRowColor: 0xAAAAAA,
+      lineColor: 0xADD8E6,
       showMin: false,
       showMax: false,
       showValues: false,
