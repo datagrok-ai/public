@@ -2,9 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {getPropertiesDict} from '../widgets/properties-widget';
 
@@ -60,6 +62,22 @@ const TestsData: {
 };
 
 category('properties-widget', () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  /** Backup actual user's monomer libraries settings */
+  let userLibSettings: any = null;
+
+  before(async () => {
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = getUserLibSettings();
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.loadLibraries(true); // load default libraries
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+  });
+
   for (const [testName, testData] of Object.entries(TestsData)) {
     test(testName, async () => {
       testPropertiesDict(testData.seq, testData.units, testData.separator, testData.alphabet, testData.res);

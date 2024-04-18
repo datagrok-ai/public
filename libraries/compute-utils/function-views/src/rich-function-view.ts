@@ -56,6 +56,13 @@ interface ValidationRequestPayload {
   context?: any,
 }
 
+const getNoDataStub = () => ui.divText('[No data to display]', {style: {
+  'text-align': 'center',
+  'align-content': 'center',
+  'width': '100%',
+  'height': '100%',
+}});
+
 /**
  * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
  *
@@ -642,23 +649,20 @@ export class RichFunctionView extends FunctionView {
     uploadDialog.show({modal: true, center: true, resizable: true});
   }
 
+  protected override async onSaveClick(): Promise<void> {
+    if (this.isUploadMode.value) {
+      await this.saveExperimentalRun(this.funcCall);
+      return;
+    }
+
+    await this.saveRun(this.funcCall);
+  }
+
   buildRibbonPanels(): HTMLElement[][] {
     super.buildRibbonPanels();
 
     const play = ui.iconFA('play', async () => await this.doRun(), 'Run computations');
     play.classList.add('fas');
-
-    const save = ui.iconFA('save', async () => {
-      if (this.isUploadMode.value) {
-        await this.saveExperimentalRun(this.funcCall);
-        return;
-      }
-
-      if (this.lastCall)
-        await this.saveRun(this.lastCall);
-      else
-        grok.shell.warning('Function was not called. Call it before saving');
-    }, this.isUploadMode.value ? 'Save uploaded data': 'Save the last run');
 
     const toggleUploadMode = ui.iconFA('arrow-to-top', async () => {
       if (this.uploadFunc) {
@@ -689,8 +693,6 @@ export class RichFunctionView extends FunctionView {
     const newRibbonPanels = [[
       ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
-      ...(!this.options.isTabbed &&
-        ((this.hasUploadMode && this.isUploadMode.value) || (this.isHistoryEnabled && this.runningOnInput))) ? [save] : [],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...this.hasContextHelp ? [contextHelpIcon]: [],
@@ -723,8 +725,11 @@ export class RichFunctionView extends FunctionView {
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
         this.dfToViewerMapping[dfProp.name] = [];
 
-        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, _) => {
-          const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
+        const promisedViewers: Promise<{viewer: DG.Viewer, stub: HTMLElement}>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, _) => {
+          const initialValue: DG.DataFrame =
+            this.funcCall.outputs[dfProp.name]?.value ??
+            this.funcCall.inputParams[dfProp.name]?.value ??
+            grok.data.demo.demog(1);
 
           const viewerType = viewerDesc['type'] as string;
           const viewer = Object.values(viewerTypesMapping).includes(viewerType) ? DG.Viewer.fromType(viewerType, initialValue): await initialValue.plot.fromType(viewerType) as DG.Viewer;
@@ -733,26 +738,35 @@ export class RichFunctionView extends FunctionView {
           this.dfToViewerMapping[dfProp.name].push(viewer);
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
-          return viewer;
+          return {viewer, stub: getNoDataStub()};
         });
 
-        const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
+        const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then(({viewer: loadedViewer, stub}) => {
           const updateViewerSource = async () => {
-            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            const currentParam =
+              this.funcCall.outputParams[dfProp.name] ??
+              this.funcCall.inputParams[dfProp.name];
 
             this.showOutputTabsElem();
 
-            if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
-              loadedViewer.dataFrame = currentParam.value;
-            else {
-              // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-              const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
-              loadedViewer.root.replaceWith(newViewer.root);
-              loadedViewer = newViewer;
+            if (currentParam.value) {
+              ui.setDisplay(loadedViewer.root, true);
+              ui.setDisplay(stub, false);
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+                loadedViewer.dataFrame = currentParam.value;
+              else {
+                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+                const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+                loadedViewer.root.replaceWith(newViewer.root);
+                loadedViewer = newViewer;
+              }
+              // Workaround for https://reddata.atlassian.net/browse/GROK-13884
+              if (Object.keys(parsedTabDfProps[dfIndex][viewerIdx]).includes('color')) loadedViewer.setOptions({'color': parsedTabDfProps[dfIndex][viewerIdx]['color']});
+              this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
+            } else {
+              ui.setDisplay(loadedViewer.root, false);
+              ui.setDisplay(stub, true);
             }
-            // Workaround for https://reddata.atlassian.net/browse/GROK-13884
-            if (Object.keys(parsedTabDfProps[dfIndex][viewerIdx]).includes('color')) loadedViewer.setOptions({'color': parsedTabDfProps[dfIndex][viewerIdx]['color']});
-            this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
           };
 
           const paramSub = this.funcCallReplaced.pipe(
@@ -765,7 +779,7 @@ export class RichFunctionView extends FunctionView {
           ).subscribe(updateViewerSource);
           this.subs.push(paramSub);
 
-          return loadedViewer;
+          return {loadedViewer, stub};
         }));
 
         const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: ' ';
@@ -788,15 +802,27 @@ export class RichFunctionView extends FunctionView {
 
         const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
-          const viewerRoot = ui.wait(async () => (await promisedViewer).root);
-          $(viewerRoot).css({
+          const viewerWithStubRoot = ui.wait(async () => {
+            const viewerWithStub = await promisedViewer;
+            $(viewerWithStub.loadedViewer.root).css({
+              'height': '100%',
+              'width': '100%',
+            });
+            return ui.divV(
+              [
+                viewerWithStub.loadedViewer.root,
+                viewerWithStub.stub,
+              ],
+            );
+          });
+          $(viewerWithStubRoot).css({
             'min-height': '300px',
             'flex-grow': '1',
           });
 
           return ui.divV([
             ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
-            viewerRoot,
+            viewerWithStubRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
             'max-width': `${blockWidth}%`,
@@ -808,10 +834,7 @@ export class RichFunctionView extends FunctionView {
 
         if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
           const blockWidth = dfProp.options.block;
-          const graphics = ui.div([], {style: {
-            'width': '100%',
-            'height': '100%',
-          }});
+          const graphics = getNoDataStub();
           graphics.classList.add('grok-scripting-image-container');
           const graphicsWrapper = ui.divV([
             ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
@@ -826,7 +849,14 @@ export class RichFunctionView extends FunctionView {
 
           const updateGraphics = () => {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
-            graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+
+            if (currentParam.value) {
+              graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+              graphics.textContent = '';
+            } else {
+              graphics.style.removeProperty('background-image');
+              graphics.textContent = '[No data to display]';
+            }
           };
 
           const paramSub = this.funcCallReplaced.pipe(
@@ -852,11 +882,15 @@ export class RichFunctionView extends FunctionView {
           (scalarProp: DG.Property) => {
             const precision = scalarProp.options.precision;
 
+            const scalarValue = precision && scalarProp.propertyType === DG.TYPE.FLOAT && this.funcCall.outputs[scalarProp.name] ?
+              this.funcCall.outputs[scalarProp.name].toPrecision(precision):
+              this.funcCall.outputs[scalarProp.name];
+
+            const units = scalarProp.options['units'] ? ` [${scalarProp.options['units']}]`: ``;
+
             return [
-              scalarProp.caption ?? scalarProp.name,
-              precision && scalarProp.propertyType === DG.TYPE.FLOAT && this.funcCall.outputs[scalarProp.name]?
-                this.funcCall.outputs[scalarProp.name].toPrecision(precision) : this.funcCall.outputs[scalarProp.name],
-              scalarProp.options['units'],
+              `${scalarProp.caption ?? scalarProp.name}${units}`,
+              scalarValue ?? '[No value]',
             ];
           },
         ).root;
@@ -1428,6 +1462,8 @@ export class RichFunctionView extends FunctionView {
         t.notify = true;
       }
       if (field === SYNC_FIELD.INPUTS) {
+        this.isHistorical.next(false);
+
         this.hideOutdatedOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
@@ -1458,8 +1494,6 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub3);
 
     const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
-      if (this.isHistorical.value)
-        this.isHistorical.next(false);
       try {
         stopUIUpdates = true;
         this.funcCall[field][val.name] = t.value;

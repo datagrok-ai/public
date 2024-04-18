@@ -329,6 +329,7 @@ export interface IDartApi {
   grok_FilterGroup_GetFilterSummary(filterGroup: any): any;
   grok_FilterGroup_Get_Filters(filterGroup: any): any;
   grok_FilterGroup_SetEnabled(filterGroup: any, filter: any, active: Bool): any;
+  grok_FilterGroup_SetExpanded(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
@@ -612,6 +613,8 @@ export interface IDartApi {
   grok_RowList_Get_Filters(rows: any): any;
   grok_RowList_AddFilterState(rows: any, obj: any): any;
   grok_RowList_Highlight(rows: any, check: any): any;
+  grok_RowList_MouseOverRowFunc(rows: any): any;
+  grok_RowList_Where(rows: any, check: any): any;
   grok_RowMatcher_Select(m: any): any;
   grok_RowMatcher_Filter(m: any): any;
   grok_RowMatcher_Highlight(m: any): any;
@@ -908,6 +911,7 @@ export interface IDartApi {
   grok_Project_Open(p: any, closeAll: Bool, openViews: Bool, createViews: Bool): Promise<any>;
   grok_TableInfo_Get_DataFrame(ti: any): any;
   grok_TableInfo_Get_Columns(ti: any): any;
+  grok_TableInfo_Get_Tags(ti: any): any;
   grok_ColumnInfo_Get_Type(ci: any): any;
   grok_ColumnInfo_Get_SemType(ci: any): any;
   grok_ColumnInfo_Get_LayoutColumnId(ci: any): any;
@@ -1422,8 +1426,8 @@ export interface IDartApi {
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
   grok_InfoPanels_GetAccordion(x: any): any;
+  grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

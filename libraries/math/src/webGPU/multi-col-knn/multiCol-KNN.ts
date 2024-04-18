@@ -1,8 +1,9 @@
 /* eslint-disable max-len */
-import {WEBGSLAGGREGATION, WEBGSLAGGREGATIONFUNCTIONS} from './webGPU-aggregation';
+import {getGPUDevice} from '../getGPUDevice';
+import {WEBGSLAGGREGATION, WEBGSLAGGREGATIONFUNCTIONS} from '../multi-col-distances/webGPU-aggregation';
 import {SupportedEntryTypes, WEBGPUDISTANCE, webGPUFunctions,
-  WGPUENTRYTYPE} from './webGPU-multicol-distances';
-import {webGPUProcessInfo} from './webGPU-process-info';
+  WGPUENTRYTYPE} from '../multi-col-distances/webGPU-multicol-distances';
+import {webGPUProcessInfo} from '../preprocessing/webGPU-process-info';
 
 
 /** generate KNN based on list of lists of entries.
@@ -37,14 +38,26 @@ export async function multiColWebGPUKNN(
     throw new Error('All entry lists must be the same length');
 
 
+  const availableDistanceMetrics = Object.values(WEBGPUDISTANCE);
+  if (distanceMetrics.some((metric) => !availableDistanceMetrics.includes(metric)))
+    throw new Error('Invalid distance metrics provided: ' + distanceMetrics.join(', '));
+
+  const availableAggregationFunctions = Object.values(WEBGSLAGGREGATION);
+  if (!availableAggregationFunctions.includes(aggregationFunction))
+    throw new Error('Invalid aggregation function provided: ' + aggregationFunction);
+
   const numOfColumns = entryList.length; // number of columns
+  if (numOfColumns === 0)
+    throw new Error('No columns provided. Please provide at least one column of data.');
+
+  const device = await getGPUDevice();
+  if (!device)
+    return null;
+
   const listSize = entryList[0].length; // size of each list (or column)
   const processInfo = entryList.map((entry, i) => {
     return webGPUProcessInfo(entry, distanceMetrics[i], i, options[i]);
   });
-
-  if (numOfColumns === 0)
-    throw new Error('No columns provided. Please provide at least one column of data.');
 
 
   if (numOfColumns === 1)
@@ -79,12 +92,6 @@ export async function multiColWebGPUKNN(
   // also, as the computation per thread takes some time, we also need to divide the work into smaller chunks. meaning
   // that we will divide nummper of pair computations per pass. start and end of the pair comparisons will be stored in startAtEndAt buffer (vec4<u32>) as z and w coordinates.
   const pairComparisonsPerPass = Math.ceil(10000 / combinedComplexity);
-
-  // get the adapter
-  const adapter = await navigator.gpu?.requestAdapter();
-  const device = await adapter?.requestDevice();
-  if (!device)
-    return;
 
 
   const workGroupDivision = 10; // how many threads inside of one workgroup dimension (in this case 10 * 10 threads per workgroup)
@@ -248,7 +255,7 @@ export async function multiColWebGPUKNN(
   computeInfoOffSet += numOfColumns * Float32Array.BYTES_PER_ELEMENT;
   for (const info of processInfo) {
     //device.queue.writeBuffer(computeInfoBuffer, computeInfoOffSet, info.flatSourceArray, 0, chunkByteSize);
-    const ArrayConstructor = info.isUint32Array ? Uint32Array : Float32Array;
+    const ArrayConstructor = info.EncodedArrayConstructor;
     const chunkSize = info.sourceArraySize;
     const dataView = new ArrayConstructor(mappedComputeInfoArrayBuffer, computeInfoOffSet, chunkSize);//new ArrayConstructor(computeInfoBuffer.getMappedRange(computeInfoOffSet, chunkByteSize));
     dataView.set(info.flatSourceArray);
@@ -445,6 +452,7 @@ export async function multiColWebGPUKNN(
       // console.timeEnd("decode");
     }
   }
+  device.destroy();
 
   return {knnIndexes: resultIndexes, knnDistances: resultDistances};
 }

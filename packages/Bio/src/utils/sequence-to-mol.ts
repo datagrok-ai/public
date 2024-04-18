@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {helm2mol} from './helm-to-molfile';
+import {helm2mol} from './helm-to-molfile/utils';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {checkInputColumnUI} from './check-input-column';
 import {getMonomerLibHelper} from '../package';

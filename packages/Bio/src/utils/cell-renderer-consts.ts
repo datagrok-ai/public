@@ -22,13 +22,13 @@ export const enum Temps {
   compareWithCurrent = '.mm.cellRenderer.compareWithCurrent',
   highlightDifference = '.mm.cellRenderer.highlightDifference',
   gapLength = '.mm.cellRenderer.gapLength',
+  monomerPlacer = '.mm.cellRenderer.monomerPlacer',
 }
 
 export const enum tempTAGS {
   referenceSequence = 'reference-sequence',
   currentWord = 'current-word',
   monomerWidth = 'monomer-width',
-  bioSeqCol = 'bio-seqCol',
 }
 
 // export const MacromoleculeCellRendererDefaults = new class {

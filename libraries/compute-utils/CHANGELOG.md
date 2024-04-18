@@ -1,5 +1,19 @@
 # compute-utils changelog
 
+## 1.32.0 (2024-04-18)
+
+### Features
+
+- Added partial save feature for RFV & Wizard
+- Run deletion is now implemented via flag
+- Wizard: annotation and in-code help pages are now both supported
+- History panel: "Params" switch is now hidden if no params exist
+- Wizard: Steps now support customId-s
+
+### Bug fixes
+
+- History panel: Fixed grid keeping its size
+
 ## 1.31.0 (2024-04-10)
 
 ### Features

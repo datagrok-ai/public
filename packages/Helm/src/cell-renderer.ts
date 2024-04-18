@@ -29,7 +29,7 @@ function getSeqMonomerFromHelm(
       resSeqMonomer = {symbol: symbol, polymerType: polymerType};
   }
   if (!resSeqMonomer)
-    resSeqMonomer = {symbol: symbol};
+    throw new Error(`Monomer not found for symbol = '${symbol}' and helmPrefix = '${helmPrefix}'.`);
   return resSeqMonomer;
 }
 
@@ -162,7 +162,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
+      const helmPlacer = HelmMonomerPlacer.getOrCreate(gridCell.gridColumn, tableCol);
       const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
@@ -189,15 +189,10 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
       if (seqMonomer) {
         if (!missedMonomers.has(seqMonomer.symbol)) {
-          const monomer = helmPlacer.getMonomer(seqMonomer);
-          if (monomer) {
-            const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-            const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-            ui.tooltip.show(ui.divV([
-              ui.divText(seqMonomer.symbol),
-              monomerSvg,
-            ]), e.x + 16, e.y + 16);
-          }
+          const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
+          const monomerDiv = helmPlacer.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+          tooltipElements.push(monomerDiv);
+          ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
         } else {
           ui.tooltip.show(ui.divV([
             ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
@@ -244,7 +239,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
+      const helmPlacer = HelmMonomerPlacer.getOrCreate(gridCell.gridColumn, tableCol);
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth

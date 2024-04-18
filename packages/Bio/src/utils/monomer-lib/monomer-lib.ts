@@ -1,26 +1,30 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
-import {_package} from '../../package';
+import '../../../css/cell-renderer.css';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
 export class MonomerLib implements IMonomerLib {
-  public readonly error: string | undefined;
-
   private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
-  constructor(monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } }, error?: string) {
+  constructor(
+    monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } },
+    public readonly source: string | undefined = undefined,
+    public readonly error: string | undefined = undefined,
+  ) {
     this._monomers = monomers;
-    this.error = error;
+    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
+      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
+        monomer.lib = this;
+    }
   }
 
   getMonomer(polymerType: string, monomerSymbol: string): Monomer | null {
@@ -110,5 +114,57 @@ export class MonomerLib implements IMonomerLib {
   public clear(): void {
     this._monomers = {};
     this._onChanged.next();
+  }
+
+  getTooltip(polymerType: string, monomerSymbol: string): HTMLElement {
+    // getTooltip(monomer: Monomer): HTMLElement;
+    // getTooltip(monomerOrPolymerType: string | Monomer, symbol?: string): HTMLElement {
+    //   let polymerType: string;
+    //   let monomerSymbol: string;
+    //   if (typeof monomerOrPolymerType === 'string' || monomerOrPolymerType instanceof String) {
+    //     polymerType = monomerOrPolymerType as string;
+    //     monomerSymbol = symbol!;
+    //   } else {
+    //     const m = monomerOrPolymerType as Monomer;
+    //     polymerType = m[HELM_REQUIRED_FIELD.POLYMER_TYPE];
+    //     monomerSymbol = m[HELM_REQUIRED_FIELD.SYMBOL];
+    //   }
+    const res = ui.div([], {classes: 'ui-form ui-tooltip'});
+    const monomer = this.getMonomer(polymerType, monomerSymbol);
+    if (monomer) {
+      const label = (s: string) => {
+        return ui.label(s /* span ? */, {classes: 'ui-input-label'});
+      };
+      res.append(ui.div([
+        label('Name'),
+        ui.divText(monomer.name, {classes: 'ui-input-text'})
+      ], {classes: 'ui-input-root'}));
+
+      // Structure
+      const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      if (monomer.molfile) {
+        res.append(ui.div([
+          label('Mol file'),
+          grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions),
+        ], {classes: 'ui-input-root'}));
+      } else if (monomer.smiles) {
+        res.append(ui.div([
+          label('Smiles'),
+          grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
+        ], {classes: 'ui-input-root'}));
+      } else {
+        // Unable to get monomer's structure
+        res.append(ui.div([
+          label('No structure')
+        ], {classes: 'ui-input-root'}));
+      }
+
+      res.append(ui.div([
+        label('Source'),
+        ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
+      ], {classes: 'ui-input-root'}));
+    } else
+      res.append(ui.divText('Monomer not found'));
+    return res;
   }
 }

@@ -433,7 +433,7 @@ export function addContextMenu(event: DG.EventData): void {
 // demoBio06b
 //name: demoBioDockingConformations
 //meta.demoPath: Bioinformatics | Docking Conformations
-//descriptions: Display ligand poses along the structure
+//description: Display ligand poses along the structure
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
 //meta.demoWait: 3000
 //meta.demoSkip: GROK-15250

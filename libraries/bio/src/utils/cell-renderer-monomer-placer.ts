@@ -5,23 +5,15 @@ import {Unsubscribable} from 'rxjs';
 import wu from 'wu';
 
 import {SeqHandler} from './seq-handler';
-import {MonomerToShortFunc, ALPHABET} from './macromolecule';
-import {IMonomerLib, Monomer} from '../types';
-import {HELM_POLYMER_TYPE} from './const';
+import {MonomerToShortFunc} from './macromolecule';
+import {IMonomerLib} from '../types';
 import {SeqSplittedBase} from './macromolecule/types';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
-  monomerLib?: IMonomerLib,
+  monomerLib: IMonomerLib,
   monomerCharWidth: number, separatorWidth: number,
   monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
-};
-
-const polymerTypeMap = {
-  [ALPHABET.DNA]: HELM_POLYMER_TYPE.RNA,
-  [ALPHABET.RNA]: HELM_POLYMER_TYPE.RNA,
-  [ALPHABET.PT]: HELM_POLYMER_TYPE.PEPTIDE,
-  [ALPHABET.UN]: HELM_POLYMER_TYPE.PEPTIDE,
 };
 
 export class MonomerPlacer {
@@ -29,15 +21,17 @@ export class MonomerPlacer {
 
   // width of separator symbol
   private separatorWidth = 5;
-  private props: MonomerPlacerProps;
+  public props: MonomerPlacerProps;
   private _rowsProcessed: DG.BitSet; // rows for which monomer lengths were processed
 
   private _updated: boolean = false;
   public get updated(): boolean { return this._updated; }
 
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
-  public _monomerStructureMap: { [key: string]: HTMLDivElement } = {}; // caches the atomic structures of monomers
+  public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
+
   private readonly subs: Unsubscribable[] = [];
+  private destroyed: boolean = false;
 
   /** View is required to subscribe and handle for data frame changes */
   constructor(
@@ -54,15 +48,29 @@ export class MonomerPlacer {
           this.props = this.propsProvider();
           this._monomerLengthList = null;
           this._rowsProcessed = DG.BitSet.create(this.col.length);
-        } catch (e) {
-          console.error(e);
+        } catch (err: any) {
+          console.error(err);
         }
       }));
-      this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
+      this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
+        this._monomerStructureMap = {};
+      }));
+      this.subs.push(grok.events.onViewRemoving.subscribe((eventData: DG.EventData) => {
         try {
-          if (this.grid?.view?.id === view.id) this.destroy();
-        } catch (e) {
-          console.error(e);
+          const eventView = eventData.args.view;
+          if (this.grid?.dart && this.grid.view?.id === eventView.id && !this.destroyed)
+            this.destroy();
+        } catch (err) {
+          console.error(err);
+        }
+      }));
+      this.subs.push(grok.events.onTableRemoved.subscribe((eventData: DG.EventData) => {
+        try {
+          const eventDf: DG.DataFrame = eventData.args.dataFrame;
+          if (this.col.dataFrame?.dart && this.col.dataFrame.id === eventDf.id && !this.destroyed)
+            this.destroy();
+        } catch (err) {
+          console.error(err);
         }
       }));
     }
@@ -70,6 +78,7 @@ export class MonomerPlacer {
 
   private destroy() {
     for (const sub of this.subs) sub.unsubscribe();
+    this.destroyed = true;
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
@@ -179,12 +188,6 @@ export class MonomerPlacer {
       }
     }
     return left;
-  }
-
-  public getMonomer(symbol: string): Monomer | null {
-    const alphabet = this.props.seqHandler.alphabet ?? ALPHABET.UN;
-    const polymerType = polymerTypeMap[alphabet as ALPHABET];
-    return this.props.monomerLib?.getMonomer(polymerType, symbol) ?? null;
   }
 
   public setMonomerLengthLimit(limit: number): void {
