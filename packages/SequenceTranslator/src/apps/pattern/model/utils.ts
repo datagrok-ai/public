@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
+import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
 import {NucleotideSequences} from './types';
 
 
@@ -47,7 +47,7 @@ export function translateSequence(
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
-    const AXOLABS_MAP = AXOLABS_STYLE_MAP;
+    const AXOLABS_MAP = PATTERN_APP_DATA;
 
     const baseChoices: string[] = Object.keys(AXOLABS_MAP);
     // const defaultBase: string = baseChoices[0];

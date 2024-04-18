@@ -2,14 +2,14 @@
 import * as DG from 'datagrok-api/dg';
 
 import {
-  APP_PATH, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME,
+  APP_PATH, PATTERN_APP_DATA_FILENAME, CODES_TO_HELM_DICT_FILENAME,
   CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME
 } from './const';
-import {AxolabsStyle, CodeToSymbol, FormatToHELMDict} from './types';
+import {PatternAppData, CodeToSymbol, FormatToHELMDict} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 
-export let AXOLABS_STYLE_MAP: AxolabsStyle;
+export let PATTERN_APP_DATA: PatternAppData;
 export let CODES_TO_HELM_DICT: FormatToHELMDict;
 export let CODES_TO_SYMBOLS_DICT: CodeToSymbol;
 export let MONOMERS_WITH_PHOSPHATE: {[key: string]: string[]};
@@ -19,11 +19,11 @@ export async function loadJsonData(): Promise<void> {
     return;
 
   const jsonFileNames = [
-    AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME
+    PATTERN_APP_DATA_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_FILENAME
   ];
 
   [
-    AXOLABS_STYLE_MAP,
+    PATTERN_APP_DATA,
     CODES_TO_HELM_DICT,
     CODES_TO_SYMBOLS_DICT,
     MONOMERS_WITH_PHOSPHATE
@@ -42,7 +42,7 @@ async function loadAndParseJson(filePath: string): Promise<any> {
 }
 
 function isAllJsonDataLoaded(): boolean {
-  const data = [AXOLABS_STYLE_MAP, CODES_TO_HELM_DICT, CODES_TO_SYMBOLS_DICT, MONOMERS_WITH_PHOSPHATE];
+  const data = [PATTERN_APP_DATA, CODES_TO_HELM_DICT, CODES_TO_SYMBOLS_DICT, MONOMERS_WITH_PHOSPHATE];
 
   return data.every((item) => item !== undefined);
 }

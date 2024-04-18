@@ -4,11 +4,12 @@ export type Edges = {
   [key: string]: KeyToValue
 }
 
-export type AxolabsStyle = {
+export type PatternAppData = {
   [index: string]: {
     fullName: string,
     symbols: string[],
     color: string,
+    substitution: string,
   }
 };
 

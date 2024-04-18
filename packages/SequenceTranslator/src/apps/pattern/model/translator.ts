@@ -1,4 +1,5 @@
 import {TERMINI, TERMINUS} from './const';
+import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
 
 export function applyPatternToRawSequence(
   rawNucleotideSequence: string,
@@ -21,7 +22,8 @@ export function applyPatternToRawSequence(
 }
 
 function getModifiedNucleotide(nucleotide: string, modification: string): string {
-  return `[${nucleotide}]`;
+  const substitution = PATTERN_APP_DATA[modification]['substitution'];
+  return nucleotide.replace(/([AGCTU])/, substitution);
 }
 
 function getPhosphorothioateLinkageSymbol(): string {

@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
 
-import {AXOLABS_STYLE_MAP} from '../../../../common/model/data-loader/json-loader';
+import {PATTERN_APP_DATA} from '../../../../common/model/data-loader/json-loader';
 import {STRAND, STRANDS, STRAND_LABEL} from '../../../model/const';
 import {EventBus} from '../../../model/event-bus';
 import {StrandType} from '../../../model/types';
@@ -71,7 +71,7 @@ export class StrandControls {
   }
 
   private createNucleobaseInputs(strand: StrandType): StringInput[] {
-    const nucleotideBaseChoices: string[] = Object.keys(AXOLABS_STYLE_MAP)
+    const nucleotideBaseChoices: string[] = Object.keys(PATTERN_APP_DATA)
       .sort(
         (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
       );

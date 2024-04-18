@@ -11,7 +11,7 @@ import {
 
 import objectHash from 'object-hash';
 import {EventBus} from './event-bus';
-import {AXOLABS_STYLE_MAP} from '../../common/model/data-loader/json-loader';
+import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
 
 
 export class DataManager {
@@ -223,7 +223,7 @@ export class DataManager {
   }
 
   fetchAvailableNucleotideBases(): string[] {
-    const nucleotideBases: string[] = Object.keys(AXOLABS_STYLE_MAP);
+    const nucleotideBases: string[] = Object.keys(PATTERN_APP_DATA);
     return nucleotideBases;
   }
 

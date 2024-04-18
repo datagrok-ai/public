@@ -77,7 +77,7 @@ export class EventBus {
     });
 
     this.patternStateChanged$.pipe(
-      debounceTime(150)
+      debounceTime(20)
     ).subscribe(() => {
       const lastLoadedConfig = this._lastLoadedPatternConfig.getValue();
       const currentConfig = this.getPatternConfig();
