@@ -13,6 +13,7 @@ type FilterOptions = {
   text?: string,
   date?: DateOptions,
   author?: DG.User,
+  includeDeleted?: boolean,
 };
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
@@ -153,7 +154,8 @@ export namespace historyUtils {
   }
 
   export async function deleteRun(callToDelete: DG.FuncCall) {
-    await grok.dapi.functions.calls.allPackageVersions().delete(callToDelete);
+    callToDelete.options['isDeleted'] = true;
+    await grok.dapi.functions.calls.allPackageVersions().save(callToDelete);
   }
 
   /**
@@ -208,6 +210,13 @@ export namespace historyUtils {
           `((options.title like "${filterOption.text}") or (options.annotation like "${filterOption.text}"))`,
         );
       }
+
+      if (!filterOption.includeDeleted) {
+        filterOptionCriteria.push(
+          `((options.isDeleted != "true") or (options.isDeleted = null))`,
+        );
+      }
+
       const filterOptionString = filterOptionCriteria.join(' and ');
       if (filterOptionString !== '') {
         if (filteringString === '')
