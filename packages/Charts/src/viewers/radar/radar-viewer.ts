@@ -52,11 +52,11 @@ export class RadarViewer extends EChartViewer {
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
-    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Hides max and min values'});
-    this.showMouseOverRow = this.bool('showMouseOverRow', true);
-    this.showMouseOverRowGroup = this.bool('showMouseOverRowGroup', true);
+    this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Hides max and min values', category: 'Selection'});
+    this.showMouseOverRow = this.bool('showMouseOverRow', true, {category: 'Selection'});
+    this.showMouseOverRowGroup = this.bool('showMouseOverRowGroup', true, {category: 'Selection'});
     this.showTooltip = this.bool('showTooltip', true);
-    this.colorColumnName = this.string('colorColumnName');
+    this.colorColumnName = this.string('colorColumnName', null, {category: 'Color'});
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFBB845D);
     this.backgroundMaxColor = this.int('backgroundMaxColor', 0xFFE7CDCD);
     this.currentRowColor = this.int('currentRowColor', 0xFF00FF00);
@@ -66,7 +66,7 @@ export class RadarViewer extends EChartViewer {
     this.showMax = this.bool('showMax', false);
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
-      {columnTypeFilter: DG.TYPE.NUMERICAL});
+      {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
     
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
