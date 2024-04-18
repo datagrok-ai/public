@@ -186,10 +186,8 @@ export class RadarViewer extends EChartViewer {
     this.subs.push(this.dataFrame.onMouseOverRowGroupChanged.subscribe((_) => {
       if (!this.showMouseOverRowGroup)
         return;
-      //@ts-ignore
       const func = this.dataFrame.rows.mouseOverRowFunc;
       if (func) {
-        //@ts-ignore
         const indexes = this.dataFrame.rows.where(func);
         this.render(Array.from(indexes));
       }
