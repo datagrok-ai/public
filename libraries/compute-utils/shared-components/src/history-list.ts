@@ -13,6 +13,7 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
 import {ID_COLUMN_NAME} from './history-input';
 import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
+import dayjs from 'dayjs';
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -243,9 +244,9 @@ export class HistoricalRunsList extends DG.Widget {
 
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) => getStartedOrNull(newRuns[idx]) ?
-              (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started):
-              null,
+            .init((idx) =>
+              (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
+                newRuns[idx].started: dayjs.unix(newRuns[idx].options['createdOn'])),
             );
         }
 
@@ -593,16 +594,17 @@ export class HistoricalRunsList extends DG.Widget {
           ]),
         ], 'hp-funccall-card');
 
+        const tableRowIndex = cell.tableRowIndex!;
         card.addEventListener('mouseover', () => {
-          cell.grid.dataFrame.mouseOverRowIdx = cell.gridRow;
+          cell.grid.dataFrame.mouseOverRowIdx = tableRowIndex;
         });
         card.addEventListener('click', (e) => {
           if (e.shiftKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, true);
+            cell.grid.dataFrame.selection.set(tableRowIndex, true);
           else if (e.ctrlKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, false);
+            cell.grid.dataFrame.selection.set(tableRowIndex, false);
           else
-            cell.grid.dataFrame.currentRowIdx = cell.gridRow;
+            cell.grid.dataFrame.currentRowIdx = tableRowIndex;
         });
         cell.element = card;
       }
@@ -754,6 +756,8 @@ export class HistoricalRunsList extends DG.Widget {
       'showColumnLabels': !this.compactMode,
       'extendLastColumn': this.compactMode,
     });
+
+    this._historyGrid.sort([STARTED_COLUMN_NAME], [false]);
 
     for (let i = 0; i < this._historyGrid.columns.length; i++) {
       const col = this._historyGrid.columns.byIndex(i);

@@ -68,21 +68,9 @@ export class HistoryPanel extends DG.Widget {
       ui.setUpdateIndicator(this.root, true);
       historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((historicalRuns) => {
-          historicalRuns.sort((a, b) => {
-            const startedA = getStartedOrNull(a);
-            const startedB = getStartedOrNull(b);
-            if (startedA && startedB)
-              return startedA.unix() - startedB.unix();
-
-            if (startedA) return startedA.unix() - b.options['createdOn'];
-
-            if (startedB) return a.options['createdOn'] - startedB.unix();
-
-            return 0;
-          });
           ui.empty(this.root);
           this.root.appendChild(this.panel);
-          this.updateHistoryPane(historicalRuns.reverse());
+          this.updateHistoryPane(historicalRuns);
         })
         .catch((e) => grok.shell.error(e))
         .finally(() => ui.setUpdateIndicator(this.root, false));
