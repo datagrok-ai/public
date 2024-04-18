@@ -47,7 +47,7 @@ export class DataConnectorsTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
     await this.dlgInputAction(dlg, 'Set "Db" to "starbucks"', 'Db','starbucks');
     await this.dlgInputAction(dlg, 'Set "Login" to "datagrok"', 'Login', 'datagrok');
-    await this.dlgInputAction(dlg, 'Set "Password" to "datagrok"', 'Password', 'datagrok');
+    await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
