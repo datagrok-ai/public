@@ -208,32 +208,56 @@ export class FittingView {
             input.input.hidden = !this.toSetSwitched;
             input.nullable = true;
 
-            input.onChanged(() => temp.target = input.value);
+            input.onChanged(() => {
+              temp.target = input.value;
+
+              if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+                const colNames: string[] = [];
+
+                for (const col of (input.value as DG.DataFrame).columns) {
+                  if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)
+                    colNames.push(col.name);
+                }
+
+                temp.colNameInput.items = colNames;
+                temp.colNameInput.value = colNames[0];
+              }
+            });
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
               (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
 
-            const isInterestInput = supportedOutputTypes.includes(outputProp.propertyType) ?
-              getSwitchElement(
-                this.toSetSwitched,
-                (v: boolean) => {
-                  temp.isInterest.next(v);
-                  this.updateRunWidgetsState();
-                  input.input.hidden = !v;
-                  input.setTooltip(v ? 'Target value' :
-                    (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
-                  if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
-                    (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                },
-                false,
-              ).root: getSwitchMock();
+            const isInterestInput = getSwitchElement(
+              this.toSetSwitched,
+              (v: boolean) => {
+                temp.isInterest.next(v);
+                this.updateRunWidgetsState();
+                input.input.hidden = !v;
+                input.setTooltip(v ? 'Target value' :
+                  (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
+                if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+                  (input.root.lastElementChild as HTMLDivElement).hidden = !v;
+                  temp.colNameInput.root.hidden = !v;
+                }
+              },
+              false,
+            ).root;
             input.root.insertBefore(isInterestInput, input.captionLabel);
+
+            return input;
+          })(),
+          colNameInput: (() => {
+            const input = ui.choiceInput('argument', '', [''], (v: string) => temp.colName = v);
+            input.setTooltip('Column with argument values');
+            input.root.insertBefore(getSwitchMock(), input.captionLabel);
+            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             this.toSetSwitched = false;
 
             return input;
           })(),
           isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
           target: null,
+          colName: '',
         };
 
         acc[outputProp.name] = temp;
@@ -244,6 +268,8 @@ export class FittingView {
       input: DG.InputBase,
       isInterest: BehaviorSubject<boolean>,
       target: number | DG.DataFrame | null,
+      colName: string,
+      colNameInput: DG.InputBase,
     }>);
 
     return {inputs, outputs};
@@ -260,7 +286,7 @@ export class FittingView {
   private toSetSwitched = true;
 
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.choiceInput('Method', this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
+  private methodInput = ui.choiceInput('method', this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
     this.method = this.methodInput.value!;
     this.showHideSettingInputs();
   });
@@ -525,6 +551,7 @@ export class FittingView {
         }
 
         container.append(outputConfig.input.root);
+        container.append(outputConfig.colNameInput.root);
 
         return container;
       }, form);
