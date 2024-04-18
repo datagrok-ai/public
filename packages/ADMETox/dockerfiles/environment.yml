@@ -17,7 +17,7 @@ dependencies:
   - gunicorn
   - Flask
   - chemprop
-  - mkl
+  - mkl=2024.0.0
   - pytorch=*=*cuda11.3*
   - torchvision=*=*_cu*
   - torchaudio=*=*_cu*
