@@ -7,7 +7,7 @@ title: "Diff Studio"
 Differential equations play a crucial role in modeling complex systems in diverse fields, from chemical engineering and drug design to environmental studies and financial modeling.
 
 Using **Diff Studio**, you can create mathematical models, build interactive [visualizations](../visualize/viewers),
-develop platform [applications](../develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
+develop platform [applications](/help/develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
 
 **Key benefits and features**:
 

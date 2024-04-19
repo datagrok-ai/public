@@ -14,10 +14,10 @@ keywords:
 ---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
-[in-memory data engine](../develop/under-the-hood/performance.md#in-memory-database),
+[in-memory data engine](/help/develop/under-the-hood/performance.md#in-memory-database),
 [interactive visualizations](/help/datagrok/solutions/domains/use-cases/eda.md),
-[data access](../access/access.md),
-[machine learning](../learn/learn.md), and [enterprise features](/help/datagrok/datagrok.md#deploy-and-integrate)
+[data access](/help/access/access.md),
+[machine learning](/help/learn/learn.md), and [enterprise features](/help/datagrok/datagrok.md#deploy-and-integrate)
 to enable developing, publishing, discovering, and using scientific applications:
 
 1. [Functions and cross-language support](#functions-and-cross-language-support)
@@ -64,7 +64,7 @@ computations are developed in `Python`, `R`, `Julia`, `Matlab/Octave`, `JavaScri
 uses `SQL`, `SPARQL`, `OpenAPI`, or `JavaScript`.
 
 Functions could either be registered manually, or published as part of a
-[package](../develop/develop.md), which usually is kept under the source control system. Once a package is published,
+[package](/help/develop/develop.md), which usually is kept under the source control system. Once a package is published,
 its content is discoverable (subject to checking privileges).
 
 This is an incredibly powerful concept that allows us to approach scientific computations in a novel way, and unlock
@@ -138,8 +138,8 @@ See also: [auto-generating UI for dynamic data retrieval](#data-access).
 
 On the other side of the spectrum, if necessary the UI could be developed from scratch without any limitations, using
 either vanilla JavaScript, a framework of your choice such as React, or
-[Datagrok UI toolkit](../develop/packages/js-api.md#ui). No matter what you choose,
-Datagrok [JS API](../develop/packages/js-api.md) could always be used. For convenience, a repository of
+[Datagrok UI toolkit](/help/develop/packages/js-api.md#ui). No matter what you choose,
+Datagrok [JS API](/help/develop/packages/js-api.md) could always be used. For convenience, a repository of
 commonly used UI templates is provided.
 
 ### Mobile devices
@@ -206,7 +206,7 @@ It could be done either manually via the UI, or automatically
 
 * **Manual** deployment: choose `Functions | Scripts | New R script`, paste the script in the editor area, and
   hit `SAVE`.
-* **Automatic** deployment: save model as part of the [package](../develop/develop.md#packages), and publish it
+* **Automatic** deployment: save model as part of the [package](/help/develop/develop.md#packages), and publish it
 
 Together with the [script versioning](#versioning) and [script environments](#environment) features outlined below, this
 enables [reproducibility of results](#reproducible-computations).
@@ -220,7 +220,7 @@ published versions are stored in the Datagrok metadata database.
 
 Additionally, a source control system such as Git (or BitBucket) could be used as a source for publishing the packages.
 It is a good idea to use source control anyway, and Datagrok allows to
-publish [packages](../develop/develop.md#packages) that contain models directly from it.
+publish [packages](/help/develop/develop.md#packages) that contain models directly from it.
 
 ### Environment
 
@@ -244,12 +244,12 @@ could also be shared as URL
 
 ### Data access
 
-The platform allows to seamlessly [access](../access/access.md) any machine-readable data source, such
-as [databases](../access/databases/databases.mdx),
-[web services](../access/open-api.md),
-[files](../access/files/files.mdx) (either on network shares on in S3). To make a model retrieve the
+The platform allows to seamlessly [access](/help/access/access.md) any machine-readable data source, such
+as [databases](/help/access/databases/databases.mdx),
+[web services](/help/access/open-api.md),
+[files](/help/access/files/files.mdx) (either on network shares on in S3). To make a model retrieve the
 input data from the data source, annotate the input parameter with the
-corresponding [parameterized query](../access/databases/databases.mdx#parameterized-queries). Since both queries and models are functions,
+corresponding [parameterized query](/help/access/databases/databases.mdx#parameterized-queries). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
 
 By untangling the computation from the data access, implementing both of them as
@@ -259,22 +259,22 @@ applications also automatically benefit from all other cross-cutting features.
 
 The following example illustrates it. Suppose we want to develop an R-based simulation against the freshest data from
 the database. This would require two steps:
-[creating a parameterized query](../access/databases/databases.mdx#parameterized-queries), and creating a computation script. Here are the
+[creating a parameterized query](/help/access/databases/databases.mdx#parameterized-queries), and creating a computation script. Here are the
 query, the computation, and the automatically generated end result:
 
 ![auto-ui-queries](auto-ui-queries.png)
 
 Note that the `Powder` and `Metal` inputs above have lists of allowed values that were retrieved dynamically by
 executing the specified `PowderNames` and `Metals` queries. If these queries slow the UI down,
-consider [caching](../access/databases/databases.mdx#caching-data) the results.
+consider [caching](/help/access/databases/databases.mdx#caching-data) the results.
 
-Parameterized queries work via Datagrok's [data access](../access/access.md#data-connection) mechanism, allowing you to benefit
+Parameterized queries work via Datagrok's [data access](/help/access/access.md#data-connection) mechanism, allowing you to benefit
 from other access-related features:
 
-* [Result caching](../access/databases/databases.mdx#caching-data) (very useful when working with data that changes overnight)
-* [Visual table query builder](../access/databases/databases.mdx#query-editor)
-* [Visual schema query builder](../access/databases/databases.mdx#join-tables)
-* [DB explorer](../access/databases/databases.mdx#database-manager)
+* [Result caching](/help/access/databases/databases.mdx#caching-data) (very useful when working with data that changes overnight)
+* [Visual table query builder](/help/access/databases/databases.mdx#query-editor)
+* [Visual schema query builder](/help/access/databases/databases.mdx#join-tables)
+* [DB explorer](/help/access/databases/databases.mdx#database-manager)
 
 ## Reproducible computations
 
@@ -360,7 +360,7 @@ that is used to define who can see, execute, or edit models. The same mechanism 
 
 ### Exploratory data analysis
 
-Perhaps the most commonly used data structure in computing is [dataframe](../develop/advanced/data-frame.md). To analyze
+Perhaps the most commonly used data structure in computing is [dataframe](/help/develop/advanced/data-frame.md). To analyze
 either input or output dataframe, click the `+`` ("Add to workspace")
 icon. This action opens the dataframe in the [exploratory data analysis](/help/datagrok/solutions/domains/use-cases/eda.md)
 mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,

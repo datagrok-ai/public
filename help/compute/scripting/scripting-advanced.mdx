@@ -66,7 +66,7 @@ result = glom(target, 'a.b.c')  # returns 'd'
 :::tip First launch may take time
 
 When the script runs the first time, Datagrok creates the environment on
-the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components),
+the [Compute Virtual Machine](/help/develop/under-the-hood/infrastructure.md#compute-components),
 which may take up to several minutes.
 For all next script runs, Datagrok will reuse this environment.
 
@@ -197,7 +197,7 @@ In this case, it gets registered in the platform as a
 - From the [transformations editor](../transform/recipe-editor.md)
 - From the [function browser](https://public.datagrok.ai/functions)
 
-Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
+Registered scripts can be called via [JavaScript API](/help/develop/packages/js-api.md) in the following manner:
 
 ```javascript
 const result = grok.functions.call(
@@ -219,14 +219,14 @@ There, you can find more examples, such as
 
 ## Converting your script to an application
 
-A [Datagrok application](../develop/how-to/build-an-app.md)
+A [Datagrok application](/help/develop/how-to/build-an-app.md)
 is a fit-for-purpose solution build on top of the Datagrok platform.
 Applications have its own section in the Datagrok UI and a start icon.
 
 You can convert your script in the application, regardless of the script language.
 Briefly, you need to do the follows:
 
-1. Create a TypeScript [package](../develop/packages).
+1. Create a TypeScript [package](/help/develop/packages).
 
   ```shell
   grok init package_name --ts
@@ -274,13 +274,13 @@ Briefly, you need to do the follows:
   Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
   (what you used in the `//name:` annotation, not the file name).
 
-1. Compile and [publish](../develop/develop.md#publishing) the package:
+1. Compile and [publish](/help/develop/develop.md#publishing) the package:
 
   ```shell
   npm run build && grok publish your_environment
   ```
 
-  If you want to make your package publicly available, use the `--release` [publishing mode](../develop/develop.md#publishing-modes).
+  If you want to make your package publicly available, use the `--release` [publishing mode](/help/develop/develop.md#publishing-modes).
 
   ```shell
   npm run build && grok publish your_environment --release
@@ -332,7 +332,7 @@ to display custom information for your data.
 To do this, specify [semantic type](getting-started#semantic-types),
 for the script input, add `panel` tag and `condition` annotation.
 Read the detailed instruction in the corresponding
-[developer's howto sections](../develop/how-to/add-info-panel#scripts).
+[developer's howto sections](/help/develop/how-to/add-info-panel#scripts).
 
 ### REST API
 
@@ -360,7 +360,7 @@ Both JavaScript and Curl samples are provided.
 ### JS API
 
 JavaScript-based apps have access to the whole Datagrok platform via the
-[JS API](../develop/packages/js-api.md).
+[JS API](/help/develop/packages/js-api.md).
 
 ### Embedding as iframe
 

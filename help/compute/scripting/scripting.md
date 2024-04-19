@@ -45,7 +45,7 @@ wide range of [Datagrok compute possibilities](compute.md):
 * To learn the basics of Datagrok scripting, follow the [getting started tutorial](./getting-started).
 * For advanced features (input/output data validation, environments), review the 
 [Advanced scripting](./scripting-advanced).
-* Review the [developer documentation](../develop/develop.md) for a deep dive into Datagrok scripting, using JS API, and developing custom UI components.
+* Review the [developer documentation](/help/develop/develop.md) for a deep dive into Datagrok scripting, using JS API, and developing custom UI components.
 
 ### Videos
 
@@ -53,7 +53,7 @@ wide range of [Datagrok compute possibilities](compute.md):
 
 ### See also
 
-* [Grok scripting](../develop/under-the-hood/grok-script.md)
+* [Grok scripting](/help/develop/under-the-hood/grok-script.md)
 * [Python](https://www.python.org)
 * [R](https://www.r-project.org/about.html)
 * [Octave](https://octave.org/)
