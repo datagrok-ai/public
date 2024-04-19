@@ -209,7 +209,7 @@ You can add any number of `update` blocks. Simulation stages are marked with a c
 ## Usability improvements
 
 For all Diff Studio parameters, you can add annotations described in
-[functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
+[functional annotations](/help/datagrok/concepts/functions/func-params-annotation.md).
 When you convert your model into the Datagrok script,
 Diff Studio converts it to the script input annotations,
 allowing Datagrok to automatically create rich and self-explaining UI.

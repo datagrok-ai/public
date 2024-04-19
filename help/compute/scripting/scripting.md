@@ -16,12 +16,12 @@ visualizations available in
 Briefly, you only need to do the following:
 
 * Create a new script file in the
-  [Datagrok script editor](./scripting-for-non-developers#working-with-datagrok-script-editor)
-* Write the code in any [supported language](./scripting-for-non-developers#supported-languages).
+  [Datagrok script editor](./getting-started#working-with-datagrok-script-editor)
+* Write the code in any [supported language](./getting-started#supported-languages).
 * Add **header**: the set of annotation comments specifying the script language, tags,
   input and output variables.
 
-That's all. These simple actions turn your script into a **[Datagrok function](../datagrok/concepts/functions)**.
+That's all. These simple actions turn your script into a **[Datagrok function](/help/datagrok/concepts/functions)**.
 Without any additional effort, you have received a 
 wide range of [Datagrok compute possibilities](compute.md):
 
@@ -42,7 +42,7 @@ wide range of [Datagrok compute possibilities](compute.md):
 
 ## Where to find how it works
 
-* To learn the basics of Datagrok scripting, review the [Scripting for non-professional developers](./scripting-for-non-developers).
+* To learn the basics of Datagrok scripting, follow the [getting started tutorial](./getting-started).
 * For advanced features (input/output data validation, environments), review the 
 [Advanced scripting](./scripting-advanced).
 * Review the [developer documentation](../develop/develop.md) for a deep dive into Datagrok scripting, using JS API, and developing custom UI components.
@@ -59,7 +59,7 @@ wide range of [Datagrok compute possibilities](compute.md):
 * [Octave](https://octave.org/)
 * [Julia](https://julialang.org)
 * [JavaScript](https://www.javascript.com)
-* [Packages](../develop/develop.md#packages)
-* [JavaScript API](../develop/packages/js-api.md)
-* [Functions](../datagrok/concepts/functions/functions.md)
-* [Function call](../datagrok/concepts/functions/function-call.md)
+* [Packages](/help/develop/develop.md#packages)
+* [JavaScript API](/help/develop/packages/js-api.md)
+* [Functions](/help/datagrok/concepts/functions/functions.md)
+* [Function call](/help/datagrok/concepts/functions/function-call.md)

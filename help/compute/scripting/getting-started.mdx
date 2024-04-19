@@ -1,5 +1,6 @@
 ---
-title: "Scripting for non-developers"
+title: "Getting started"
+sidebar_position: 0
 ---
 
 ```mdx-code-block
@@ -159,11 +160,11 @@ The template script has the following ones:
 * `tags: template, demo`: The list of the tags used to organize and search scripts.
 * `input: dataframe table [Data table]`: The input parameter specification.
    The `table` is the parameter name, and `dataframe` is the parameter type.
-   See the [supported parameter types](../datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) for details.
+   See the [supported parameter types](/help/datagrok/concepts/functions/func-params-annotation#inputs-and-outputs) for details.
 * `output: int count [Number of cells in the table]`: The output parameter specification:
    The `int` variable with the name `count`.
 
-For more details, refer to the [functions parameter annotation](../datagrok/concepts/functions/func-params-annotation).
+For more details, refer to the [functions parameter annotation](/help/datagrok/concepts/functions/func-params-annotation).
 
 ### Runtime environment
 
@@ -302,7 +303,7 @@ You will see the following output:
 Depending on the metadata associated with the parameters, the editor can be
 enriched by [validators](./scripting-advanced#parameter-validators), [choices](scripting-advanced#parameter-choices),
 and [suggestions](scripting-advanced#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways
+[functions](/help/datagrok/concepts/functions/functions.md), that means they can be implemented in different ways
 (database query, script, etc.), and reused.
 
 :::
@@ -324,509 +325,6 @@ To run the previously saved script, find it in the **Scripts** section and execu
 For additional capabilities of the Datagrok script editor, see the
 [Working with Datagrok script editor](#working-with-datagrok-script-editor) section.
 
-## Datagrok scripting in details
-
-### Input and output parameters
-
-Each script should specify its' input and output parameters.
-Datagrok automatically injects *input* parameters' values before the script starts
-and captures *output* parameters' values when the script finishes.
-
-Datagrok natively supports standard scalar data types:
-`int`, `double`, `bool`, `string`.
-
-For table data, Datagrok supports **Dataframe** as input/output parameters.
-You can pass to the script the whole dataframe (`dataframe` type), dataframe column (`column`), list of columns (`column_list`),
-or a binary file (`file`, `blob`).
-
-:::note
-
-Datagrok's dataframe converts to:
-
-* Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
-* Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
-* [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
-* [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
-* [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
-
-:::
-
-Let's modify the default example to accept and return both dataframes and scalars.
-We copy the original dataframe and add a new ID column to it.
-Also, we return the number of rows in the table.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result" default>
-```
-
-When you run the script, you will see the following dialog:
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/dataframeiddemo-input.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="r" label="R">
-```
-
-```r
-#name: DataframeDemo
-#description: Adding a new column to a dataframe
-#language: r
-#tags: demo, dataframe
-#input: dataframe table [Data table]
-#input: string id_column = 'ID' [Name of ID column]
-#input: string id_prefix = 'id_' [Prefix for ID column]
-#output: dataframe new_table [New table with additional column]
-#output: int last_row [number of last row]
-
-new_table <- table
-new_table[id_column] <- paste0(id_prefix, 1:nrow(new_table))
-last_row <- nrow(new_table)
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="python" label="Python">
-```
-
-```python
-#name: DataframeIdDemo
-#description: Adding ID column to a dataframe
-#language: python
-#tags: demo, dataframe
-#input: dataframe table [Data table]
-#input: string id_column = 'ID' [Name of ID column]
-#input: string id_prefix = 'id_' [Prefix for ID column]
-#output: dataframe new_table [New table with additional column]
-#output: int last_row [number of last row]
-
-new_table = table.copy()
-l = len(new_table)
-new_table[id_column] = [f"{id_prefix}{n:04}" for n in range(l)]
-last_row = len(new_table)
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="javascript" label="JavaScript">
-```
-
-```javascript
-//name: DataframeIdDemo
-//description: Adding ID column to a dataframe
-//language: javascript
-//tags: demo, dataframe
-//sample: cars.csv
-//input: dataframe table [Data table]
-//input: string id_column = 'model' [Name of ID column]
-//input: string id_prefix = 'id_' [Prefix for ID column]
-//output: dataframe new_table [New table with additional column]
-//output: int last_row [number of last row]
-
-const new_table = table.clone();
-const last_row = new_table.rowCount;
-new_table.col(id_column).init((i) => `${id_prefix}${i}`);
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-Datagrok created the script UI,
-populated default values, and created popups with help text.
-
-After running this script, Datagrok automatically opens the new dataframe.
-It will contain an additional column **ID** with the generated row ID.
-
-:::warning Case-insensitive column names
-
-In Datagrok, unlike `Python`/`R` dataframes, column names are case-insensitive.
-If you return a dataframe with columns whose names differ only by letter case,
-Datagrok will automatically add a number to the column header to differentiate them.
-
-To prevent any confusion or issues with column names,
-we recommend using unique names that are distinct regardless of case.
-
-:::
-
-### Using column inputs
-
-Datagrok provides you with data inputs to select one or multiple columns from a dataframe.
-
-* The `column` input parameter allows you to select one column from the dataframe.
-  In the script, the `column` parameter is a string variable containing header name of the selected column.
-* The `column_list` input parameter allows you to select multiple columns from the dataframe.
-  In the script, the `column_list` parameter is a list of strings containing header names of the selected columns.
-
-Both of these selectors require at least one **Dataframe** input
-to choose a dataframe.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result" default>
-```
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/ColumnSelectorDemo.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="python" label="Python">
-```
-
-```python
-#name: ColumnSelectorDemo
-#description: Using column selectors
-#language: python
-#tags: demo, dataframe, column_selector
-#input: dataframe table [Data table]
-#input: column id_column [Fill this column with auto-d=generated ID]
-#input: column_list data_columns [Keep this column and drom all others]
-#output: dataframe new_table [New table with additional column]
-
-new_table = table.copy()
-l = len(new_table)
-new_table[id_column] = [f"id_{n:04}" for n in range(l)]
-new_table = new_table[ [id_column] + data_columns ]
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="javascript" label="JavaScript">
-```
-
-```javascript
-//name: ColumnSelectorDemo
-//description: Using column selectors
-//language: javascript
-//tags: demo, dataframe, column_selector
-//input: dataframe table [Data table]
-//input: column id_column [Fill this column with auto-d=generated ID]
-//input: column_list data_columns [Keep this column and drom all others]
-//output: dataframe new_table [New table with additional column]
-
-const new_table = table.clone();
-const l = new_table.rowCount;
-new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-### File input
-
-When you use the `file` annotation for the input parameter,
-Datagrok creates an interface to load file.
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result" default>
-```
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/Scripting-FileIO-load.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="python" label="Python">
-```
-
-```python
-#name: DfFromJSON
-#description: Loads a dataframe from JSON file
-#language: python
-#tags: template, demo, FileIo
-#input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
-#output: dataframe df 
-
-df = pd.read_json(json_file)
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="javascript" label="JavaScript">
-```
-
-```javascript
-//name: DfFromJSON
-//description: Loads a file and returns first sheet name
-//language: javascript
-//tags: template, demo, FileIo
-//input: file uploadedFile {caption:Excel file}
-//output: string first_sheet_name 
-
-const importWb = new ExcelJS.Workbook();
-await importWb.xlsx.load(uploadedFile.data);
-
-first_sheet_name = importWb.worksheets[0].name;
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-<div style = {{ display: 'flex' }}>
-
-<div style = {{ width: '50%' }}>
-
-You can upload the file from your computer, choose it from Datagrok file storage,
-or use any of the file connectors supported by Datagrok.
-
-</div>
-
-<div style = {{ width: '50%' }}>
-
-```mdx-code-block
-<BrowserWindow url="File I/O connectors">
-```
-
-<img src={require('./pics/Scripting-FileIO-connectors.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-</div>
-
-</div>
-
-The `blob` input works in a very similar way, but provides the binary stream instead of a file name.
-
-```python
-#name: BlobTest
-#description: Example of Blob usage
-#language: python
-#tags: template, demo
-#input: blob array_blob 
-#output: string typeofblob
-
-typeofblob = type(array_blob)
-```
-
-You can use this capability to effectively transfer a large set of data
-from one Datagrok function/script to another.
-
-### File output
-
-You can use files as input or output parameters
-using `file` and `blob` annotations.
-
-The `file` parameter type allows you to read and write a file.
-Inside the `Python`/`R` script this parameter will be a string variable
-containing a path to the local file.
-
-For example, let's save a dataframe to a JSON file:
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result" default>
-```
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/Scripting-FileIO-save.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="python" label="Python">
-```
-
-```python
-#name: DfToJSON
-#description: Saves a dataframe to JSON file
-#language: python
-#tags: template, demo, FileIo
-#input: dataframe df [Dataframe to convert to JSON]
-#output: file json_file
-
-df.to_json(json_file)
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-When you run this script, Datagrok will return the `FileInfo` object in the scalar variables panel.
-To save the file, right-click on the highlighted file link and choose the **Download** option.
-The file name always matches the output variable name.
-Therefore, for scripts, there is no possibility to provide a custom name or extension to the generated file.
-
-:::info
-Some Python functions
-(for example, Numpy [Save](https://numpy.org/doc/stable/reference/generated/numpy.save.html))
-automatically add an extension to the file name if it is provided without an extension.
-In this case, Datagrok won't be able to locate output file,
-and you'll see empty file in the Datagrok output.
-
-To override this behavior, you can open the file via the Python `open` function,
-and use the file object instead of the file name.
-
-```python
-#output: file array_file_binary
-...
-with open(array_file_binary, 'wb') as npfile:
- np.save(npfile, array)
-...
-```
-
-:::
-
-### Semantic types
-
-The Datagrok [semantic types](../govern/catalog/semantic-types) is a very powerful concept,
-allowing you to define the *meaning* of your data,
-For example, you can specify that a particular string contains a chemical molecule in SMILES format,
-E-mail, or URL address.
-
-For example, let's explore the **Gasteiger partial charges** script,
-which takes a molecule in SMILES format as input
-and calculates the Gasteiger charges distribution.
-The script is provided with the `Chem` package.
-
-The script takes as an input the string variable `mol` with the semantic annotation `Molecule`.
-When you run the script, you will see the following:
-
-```mdx-code-block
-<Tabs>
-<TabItem value="result" label="Result">
-```
-
-```mdx-code-block
-<BrowserWindow url=''>
-```
-
-<div style={{'text-align': 'center'}}>
-
-<img src={require('./pics/Scripting-Semtypes-support-UI.png').default} style={{'box-shadow': '#4D5261 0px 0px 5px', 'border': '1px solid #F2F2F5'}}/>
-
-</div>
-
-```mdx-code-block
-</BrowserWindow>
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="python" label="Python">
-```
-
-```python
-#name: GasteigerCharges Demo
-#description: Calculates Gasteiger charge distribution
-#language: python
-#tags: demo, chem, rdkit
-#input: string mol = "COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21" {semType: Molecule} [Molecule, in SMILES format]
-#input: int contours = 10
-#output: graphics charges [The Gasteiger partial charges]
-
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.Draw import SimilarityMaps
-
-mol = Chem.MolFromMolBlock(mol) if ("M  END" in mol) else Chem.MolFromSmiles(mol)
-if mol is not None:
-    AllChem.ComputeGasteigerCharges(mol)
-    contribs = [float(mol.GetAtomWithIdx(i).GetProp('_GasteigerCharge')) for i in range(mol.GetNumAtoms())]
-    charges = SimilarityMaps.GetSimilarityMapFromWeights(mol, contribs, contourLines=contours)
-```
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-Datagrok recognized the `Molecule` semantic types and created the custom UI displaying molecule formula.
-Click on it to open
-[chemical sketcher](../datagrok/solutions/domains/chem/chem.md#sketching)
-and draw your own molecule.
-Datagrok has outstanding [chemoinformatics support](../datagrok/solutions/domains/chem/chem.md),
-so almost all UI elements provide you special viewing and editing options for chemical structures.
-
-You can assign a semantic type to output variables in the same way.
-The semantic types annotation has no benefits for simple scalar output,
-but it is extremely helpful when you integrate your script with the Datagrok platform.
-
-#### Semantic types for columns
-
-Similarly, you can specify the semantic type for dataframe columns.
-For example, let `column` or `column_list` selectors accept only
-columns containing chemical molecules.
-
-```python
-#input: dataframe df {caption: Dataframe}
-#input: column mol {semType:Molecule; caption: Molecules} [Molecules to analyze]
-```
-
-### Graphics output
-
-The script in the [previous section](#semantic-types)
-returns the `graphics` object.
-This is a special data type to transfer graphs from scripts to Datagrok.
-For `Python`, this variable can contain any graph created by the
-`Matplotlib` library (the `matplotlib.figure.Fugure` class).
-When you run the script manually, Datagrok captures the graphics object
-and creates a separate tab to view the results.
-Datagrok can also save the `graphics` output in a dataframe,
-or display it in the cell properties.
-
-:::tip Datagrok Viewers
-Out-of-the-box Datagrok contains many flexible interactive
-[viewers](../visualize/viewers/viewers.md),
-suitable for almost all data visualization tasks.
-
-We suggest you exploring it before implementing custom graphs.
-:::
-
 ## Enhancing script input view
 
 You may customize the script view using additional GUI-related options.
@@ -844,7 +342,7 @@ after the parameter annotation.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="result" label="Result">
+<TabItem value="result" label="Result" default>
 ```
 
 ```mdx-code-block
@@ -859,7 +357,7 @@ after the parameter annotation.
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="input" label="Input" default>
+<TabItem value="input" label="Input">
 ```
 
 ```python
@@ -878,7 +376,7 @@ The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="result" label="Result">
+<TabItem value="result" label="Result" default>
 ```
 
 ```mdx-code-block
@@ -893,7 +391,7 @@ The unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="input" label="Input" default>
+<TabItem value="input" label="Input">
 ```
 
 ```python
