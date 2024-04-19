@@ -43,7 +43,7 @@ export interface ISeqMonomer {
 }
 
 export class HelmMonomerPlacer {
-  private readonly grid: DG.Grid;
+  private readonly grid: DG.Grid | null;
   public readonly monomerLib: IMonomerLib;
 
   private _allPartsList: (string[] | null)[];
@@ -56,11 +56,11 @@ export class HelmMonomerPlacer {
 
   private subs: Unsubscribable[] = [];
 
-  protected constructor(
-    public readonly gridCol: DG.GridColumn,
+  public constructor(
+    public readonly gridCol: DG.GridColumn | null,
     public readonly col: DG.Column<string>
   ) {
-    this.grid = this.gridCol.grid;
+    this.grid = this.gridCol ? this.gridCol.grid : null;
     this.reset();
     if (this.grid) {
       this.subs.push(this.col.dataFrame.onDataChanged.subscribe(() => {
@@ -72,7 +72,7 @@ export class HelmMonomerPlacer {
       }));
       this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
         try {
-          if (this.gridCol.grid.view?.id === view.id) this.destroy();
+          if (this.grid && this.grid.view?.id === view.id) this.destroy();
         } catch (err: any) {
           console.error(err);
         }
@@ -148,12 +148,6 @@ export class HelmMonomerPlacer {
     if (this.grid) this.grid.invalidate();
   }
 
-  public static getOrCreate(gridCol: DG.GridColumn, col: DG.Column<string>): HelmMonomerPlacer {
-    let res: HelmMonomerPlacer = gridCol.temp[Temps.helmMonomerPlacer];
-    if (!res) res = gridCol.temp[Temps.helmMonomerPlacer] = new HelmMonomerPlacer(gridCol, col);
-    return res;
-  }
-
   public setEditor(tableRowIndex: number, editor: IEditor) {
     this._editorList![tableRowIndex] = editor;
   }
@@ -164,6 +158,6 @@ export class HelmMonomerPlacer {
 }
 
 export function getAllParts(seq: string | null): string[] {
-  const monomerList: string[] = seq ? parseHelm(seq) : [];
-  return seq ? getParts(monomerList, seq) : [];
+  const monomerList: string[] = !!seq ? parseHelm(seq) : [];
+  return !!seq ? getParts(monomerList, seq) : [];
 }

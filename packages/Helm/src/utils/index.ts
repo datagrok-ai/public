@@ -24,7 +24,7 @@ export function removeGapsFromHelm(srcHelm: string): string {
 export function getParts(subParts: string[], s: string): string[] {
   const j = 0;
   const allParts: string[] = [];
-  for (let k = 0; k < subParts.length; ++k) {
+  for (let k = 0; k < (subParts ?? []).length; ++k) {
     const indexOfMonomer = s.indexOf(subParts[k]);
     const helmBeforeMonomer = s.slice(j, indexOfMonomer);
     allParts.push(helmBeforeMonomer);

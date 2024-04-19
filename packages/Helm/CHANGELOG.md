@@ -1,11 +1,15 @@
 # Helm changelog
 
+## 2.1.33 (2024-04-19)
+
+Fix cell renderer for scatter plot tooltip, add test
+
 ## 2.1.32 (2024-04-15)
 
 ### Features
 
 * Add displaying a monomer's origin lib
-  
+
 ### Bug fixes
 
 * Fix tests for default lib settings
