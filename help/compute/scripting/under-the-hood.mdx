@@ -95,3 +95,21 @@ import * as html2canvas from 'html2canvas';
 </Tabs>
 ```
 
+### Environment isolation
+
+You can specify an environment for the script to use,
+including the language version and a set of libraries.
+
+Datagrok uses [Conda](https://docs.Conda.io/en/latest/)
+as the environment management system.
+A Conda environment:
+
+- isolates each script run,
+- resolves dependencies,
+- and takes time to be created before a script run.
+
+Later, the script uses the pre-created environment with *no delay* for resolving dependencies.
+
+In Datagrok, Conda environment configuration can be specified either [right inside the script](#specify-environment-in-place),
+or as [part of a package](#specify-the-environment-in-a-package).
+

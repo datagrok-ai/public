@@ -158,3 +158,44 @@ and [suggestions](scripting-advanced#parameter-suggestions). Validators, choices
 
 :::
 
+## Create an error
+
+Datagrok functions return zero, one or more typed variables.
+Datagrok expects that all variables are defined in the script code and have proper values by the end of the script run.
+If this doesn't happen, the two things will follow:
+
+1. The unset output values will be returned as `null`-s.
+2. A warning `Output value ${output.param.name} was not set` will be printed in the
+   [Datagrok Console](/help/datagrok/navigation/navigation.md#console).
+   Open it pressing `~` key or clicking **Console** <i class="fas fa-terminal"></i> button
+   in the right bottom corner of the screen.
+
+In this script, the value `c3` is missed to be set:
+
+```r title="R script with missing output value"
+#name: TestMissingInputsR
+#language: r
+#output: int c1
+#output: int c2
+#output: int c3
+c1 <- 12
+c2 <- 15
+```
+
+Running the script produces the following output to the console:
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+```
+Output value c3 was not set
+  c1: 12
+  c2: 15
+  c3: null
+```
+
+```mdx-code-block
+</BrowserWindow>
+```
+
