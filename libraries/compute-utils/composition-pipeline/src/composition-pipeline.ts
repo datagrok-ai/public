@@ -131,7 +131,6 @@ export type PipelineConfiguration = {
 // Composition Pipeline configuration
 
 export type ItemsToAdd = {
-  stepsToAdd?: [PipelineStepConfiguration, ItemPath][];
   popupsToAdd?: [PipelinePopupConfiguration, ItemPath][];
   actionsToAdd?: [PipelineActionConfiguraion, ItemPath][];
 }
@@ -1235,16 +1234,16 @@ export class CompositionPipeline {
   private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const subPath = this.proccessPipelineNodeConfig(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
-    for (const stepConf of this.getAllSteps(pipelineConf.steps, subPath, toRemove, toAdd)) {
+    for (const stepConf of pipelineConf.steps) {
       const sKey = stepConf.id;
       const popups: PipelinePopupConfiguration[] = [];
-      for (const popupConf of this.getSubConfItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
+      for (const popupConf of this.getAllItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
         const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'popup');
         if (!pPopupConf)
           continue;
 
         const actions: PipelineActionConfiguraion[] = [];
-        for (const actionConf of this.getSubConfItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
+        for (const actionConf of this.getAllItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
           const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(pPopupConf.id), subPath, toRemove);
           if (!pActionConf)
             continue;
@@ -1255,7 +1254,7 @@ export class CompositionPipeline {
         popups.push(popupConf);
       }
       const actions: PipelineActionConfiguraion[] = [];
-      for (const actionConf of this.getSubConfItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
+      for (const actionConf of this.getAllItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
         const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(sKey), subPath, toRemove);
         if (!pActionConf)
           continue;
@@ -1275,7 +1274,7 @@ export class CompositionPipeline {
       links.push(plink);
     }
     const actions: PipelineActionConfiguraion[] = [];
-    for (const actionConf of this.getSubConfItems(pipelineConf.actions ?? [], pipelineConf.id, toAdd, 'action')) {
+    for (const actionConf of this.getAllItems(pipelineConf.actions ?? [], pipelineConf.id, toAdd, 'action')) {
       const pActionConf = this.processActionNodeConfig(actionConf, subPath, subPath, toRemove);
       if (!pActionConf)
         continue;
@@ -1288,18 +1287,7 @@ export class CompositionPipeline {
     pipelineConf.actions = actions;
   }
 
-  private getAllSteps(data: PipelineStepConfiguration[], pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
-    const nData: PipelineStepConfiguration[] = data.flatMap((conf) => {
-      const pconf = this.processNodeConfig<PipelineStepConfiguration>(conf, pipelinePath, pipelinePath, toRemove, 'step');
-      const addConfs = (toAdd.get(conf.id)?.step ?? [])
-        .map((step) => this.processNodeConfig(step, pipelinePath, pipelinePath, toRemove, 'step'))
-        .filter((x) => x) as PipelineStepConfiguration[];
-      return [...(pconf ? [pconf] : []), ...addConfs];
-    });
-    return nData;
-  }
-
-  private getSubConfItems<T extends SubNodeConf>(data: T[], prefix: string, toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes) {
+  private getAllItems<T extends SubNodeConf>(data: T[], prefix: string, toAdd: Map<string, ItemsToMerge>, type: SubNodeConfTypes) {
     const moreItems = toAdd.get(prefix)?.[type] ?? [];
     return [...data, ...moreItems] as T[];
   }
@@ -1389,11 +1377,9 @@ export class CompositionPipeline {
       stepConfig.set(pipelineIdFull, beforeStepIdFull);
     }
     delete mergeConf.pipelinePositionConfig;
-    const {stepsToAdd, popupsToAdd, actionsToAdd} = mergeConf;
-    this.processMergeNodeList(stepsToAdd ?? [], subPath, toAdd, 'step');
+    const {popupsToAdd, actionsToAdd} = mergeConf;
     this.processMergeNodeList(popupsToAdd ?? [], subPath, toAdd, 'popup');
     this.processMergeNodeList(actionsToAdd ?? [], subPath, toAdd, 'action');
-    delete mergeConf.stepsToAdd;
     delete mergeConf.popupsToAdd;
     delete mergeConf.actionsToAdd;
   }
@@ -1427,9 +1413,6 @@ export class CompositionPipeline {
             this.addNodeIOInfo(pconf);
         }
         if (isCompositionConfig(node)) {
-          for (const [conf] of node.stepsToAdd ?? [])
-            this.addNodeIOInfo(conf);
-
           for (const [conf] of node.popupsToAdd ?? [])
             this.addNodeIOInfo(conf);
         }
@@ -1469,9 +1452,6 @@ export class CompositionPipeline {
             names.add(pconf.nqName);
         }
         if (isCompositionConfig(node)) {
-          for (const [conf] of node.stepsToAdd ?? [])
-            names.add(conf.nqName);
-
           for (const [conf] of node.popupsToAdd ?? [])
             names.add(conf.nqName);
         }
