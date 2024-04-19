@@ -1,17 +1,19 @@
 export type Extremum = {
-    arg: Float32Array,
-    cost: number,
-    iterationProfile: number[]
+  point: Float32Array,
+  cost: number,
+  iterCosts: number[],
+  iterPoints: Float32Array[],
+  iterCount: number,
 }
 
 export type OptimizationTask = {
-    costFunc: (x: Float32Array) => Promise<number>,
-    minVals: Float32Array,
-    maxVals: Float32Array,
-    samplesCount: number
+  costFunc: (x: Float32Array) => Promise<number>,
+  minVals: Float32Array,
+  maxVals: Float32Array,
+  samplesCount: number
 };
 
 export interface IOptimizer {
-    (objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array, settings: any):
-    Promise<Extremum>;
+  (objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array, settings: any):
+  Promise<Extremum>;
 };

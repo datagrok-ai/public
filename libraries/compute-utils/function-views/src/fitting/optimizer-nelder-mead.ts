@@ -71,7 +71,13 @@ export const optimizeNM:IOptimizer = async function(
   const reflectionPoint = new Float32Array(dimParams);
   const expansionPoint = new Float32Array(dimParams);
   const contractionPoint = new Float32Array(dimParams);
-  const iterationProfile = new Array<number>(maxIter);
+  const costs = new Array<number>(maxIter);
+
+  const points = new Array<Float32Array>(dimParams);
+  for (let i = 0; i < dimParams; ++i) {
+    points[i] = new Float32Array(maxIter);
+    points[i][0] = optParams[indexes[0]][i];
+  }
 
   if (dim > 1) {
     while (true) {
@@ -85,8 +91,12 @@ export const optimizeNM:IOptimizer = async function(
         best = pointObjectives[0];
         previousBest = 2*pointObjectives[indexes[0]];
       }
-      iterationProfile[iteration] = best;
-      iteration++;
+      costs[iteration] = best;
+
+      ++iteration;
+
+      for (let i = 0; i < dimParams; ++i)
+        points[i][iteration] = optParams[indexes[0]][i];
 
       best = pointObjectives[indexes[0]];
       if (previousBest - best > tolerance)
@@ -167,10 +177,15 @@ export const optimizeNM:IOptimizer = async function(
       break;
     }
 
-
     for (let i = iteration; i < maxIter; i++)
-      iterationProfile[i] = pointObjectives[indexes[0]];
+      costs[i] = pointObjectives[indexes[0]];
   }
 
-  return {arg: optParams[indexes[0]], cost: pointObjectives[indexes[0]], iterationProfile};
+  return {
+    point: optParams[indexes[0]],
+    cost: pointObjectives[indexes[0]],
+    iterCosts: costs,
+    iterPoints: points,
+    iterCount: iteration - 1,
+  };
 };

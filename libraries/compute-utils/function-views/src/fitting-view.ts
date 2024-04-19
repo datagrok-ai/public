@@ -663,12 +663,15 @@ export class FittingView {
       const minVals = new Float32Array(dim);
       const maxVals = new Float32Array(dim);
 
+      const variedInputsCaptions = new Array<string>(dim);
+
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
         const propConfig = this.store.inputs[name] as SensitivityNumericStore;
         minVals[idx] = propConfig.min.value;
         maxVals[idx] = propConfig.max.value;
         variedInputNames.push(name);
+        variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
       });
 
       // get selected output
@@ -703,15 +706,31 @@ export class FittingView {
         return cost;
       };
 
-      //console.log(await costFunc(new Float32Array(dim)));
+      //console.log(await costFunc(new Float32Array([1, 5])));
 
       let extremums: Extremum[];
 
-      if (this.method === METHOD.NELDER_MEAD) {
+      if (this.method === METHOD.NELDER_MEAD)
         extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings);
-        console.log(extremums);
-      } else
+      else
         throw new Error(`The '${this.method}' method has not been implemented.`);
+
+      this.closeOpenedViewers();
+
+      const extr = extremums[0];
+      const rowCount = extr.iterCount;
+
+      const reportTable = DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, 'iteration', [...Array(rowCount).keys()].map((i) => i + 1)),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost', extr.iterCosts.slice(0, rowCount)),
+      ]);
+      this.comparisonView.dataFrame = reportTable;
+      const reportColumns = reportTable.columns;
+
+      extr.iterPoints.forEach((vals, idx) => {
+        variedInputsCaptions[idx] = reportColumns.getUnusedName(variedInputsCaptions[idx]);
+        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], vals.slice(0, rowCount)));
+      });
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -728,5 +747,20 @@ export class FittingView {
     }
 
     return outputsOfInterest;
+  }
+
+  private closeOpenedViewers() {
+    if (this.helpMdNode) {
+      /*this.helpMdNode.detachFromParent();
+      this.helpMdNode.container.destroy();
+      this.helpMdNode = undefined;*/
+      this.comparisonView.dockManager.close(this.helpMdNode);
+      this.helpMdNode = undefined;
+    }
+
+    if (this.gridSubscription) {
+      this.gridSubscription.unsubscribe();
+      this.gridSubscription = null;
+    }
   }
 }
