@@ -84,7 +84,7 @@ export function rGroupAnalysis(col: DG.Column): void {
   ui.tooltip.bind(visualAnalysisCheck.captionLabel, 'Add trellis plot after analysis is completed');
   const replaceLatest = ui.boolInput('Replace latest', true);
   replaceLatest.root.classList.add('chem-rgroup-replace-latest');
-  ui.tooltip.bind(replaceLatest.captionLabel, 'Remove latest analysis results befor run');
+  ui.tooltip.bind(replaceLatest.captionLabel, 'Overwrite latest analysis results by new one');
 
   //MCS fields
   const mcsButton = ui.button('MCS', async () => {
