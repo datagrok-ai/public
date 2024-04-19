@@ -45,7 +45,7 @@ import {createPropPanelElement, createTooltipElement} from './analysis/activity-
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {loadRGroupUserSettings, rGroupAnalysis} from './analysis/r-group-analysis';
 import {MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
@@ -132,6 +132,7 @@ export async function initChem(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
+  await loadRGroupUserSettings();
   _renderers = new Map();
 }
 
