@@ -1,0 +1,85 @@
+---
+title: "Advanced scripting"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+The **RichFunctionView** is an advanced UI editor,
+allowing you to create a complex full-featured interface for your script.
+
+It has all the features of the basic script view, such as
+[captions](getting-started#input-captions),
+[output viewers](getting-started#adding-viewers-for-output-dataframes),
+[parameters grouping](getting-starteds#grouping-inputs)
+etc.
+
+In addition to it, you can:
+
+- Add [viewers for input dataframes](#adding-input-dataframe-viewers)
+- Group [outputs](#grouping-outputs)
+- [Automatically re-run calculations](#re-running-script-on-opening--on-input-change)
+- [Validate inputs](#validating-inputs)
+- [Automate export](#exporting-run-results-to-a-file) of script results.
+- Use [custom inputs](#using-custom-inputs)
+- Save and access [run history](#history)
+
+## Enabling RichFunctionView
+
+To enable **RichFunctionView**, add `editor: Compute:RichFunctionViewEditor` tag
+to your following code as it is shown:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('../pics/rich-function-demo.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python title="Your script header"
+#editor: Compute:RichFunctionViewEditor
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="js" label="Javascript">
+```
+
+```javascript title="Your script header"
+//editor: Compute:RichFunctionViewEditor
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+:::warning Package dependency
+
+The `RichFunctionViewEditor` is a part of the `Compute` package.
+Ensure that the `Compute` package is installed before working with `RichFunctionViewEditor`
+
+:::
+
+:::tip Ensure computations are correct
+
+Use the RichFunctionView only when you are sure that the script works as expected.
+Features of the RichFunctionView affect GUI only and do not affect computations.
+
+:::

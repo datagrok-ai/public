@@ -9,3 +9,89 @@ import TabItem from '@theme/TabItem';
 import BrowserWindow from '@site/src/components/browser-window';
 ```
 
+### Runtime environment
+
+For each language, Datagrok uses a predefined header and creates an environment with the set of pre-installed packages.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="python" label="Python" default>
+```
+
+```python
+import os
+import io
+import json
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="r" label="R">
+```
+
+```r
+require(httr)
+require(repr)
+require(data.table)
+require(R.utils)
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="octave" label="Octave">
+```
+
+Octave scripts run in a separate container on server. This container has following Octave packages pre-installed:
+
+* [symbolic](https://gnu-octave.github.io/packages/symbolic/)
+* [optim](https://gnu-octave.github.io/packages/optim/)
+
+Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="julia" label="Julia">
+```
+
+```julia
+using HTTP
+using DataFrames
+using CSV
+using Compat
+using MbedTLS
+using Dates
+using JSON
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import * as OCL from 'openchemlib/full.js';
+import * as rxjs from 'rxjs';
+import * as rxjs.operators from 'rxjs/operators';
+import * as $ from 'cash-dom';
+import * as dayjs from 'dayjs';
+import * as wu from 'wu';
+import * as exceljs from 'ExcelJS';
+import * as html2canvas from 'html2canvas';
+```
+
+```mdx-code-block
+</TabItem>
+
+</Tabs>
+```
+

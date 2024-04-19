@@ -1,0 +1,82 @@
+---
+title: "Upload file"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+
+## File upload
+
+You can use a file as a function input via RichFunctionView,
+similar to the default [FileIO UI](getting-started#file-input).
+Generated UI allows you to choose any local file or drag'n'drop it directly.
+The chosen file will be available in the
+code as JS [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
+
+:::caution Restriction
+
+Currently, RichFunctionView supports the `file` input
+only for JavaScript functions.
+
+:::
+
+## Re-running script on opening & on input change
+
+You can run scripts automatically on UI opening and/or on any input change.
+This feature is useful for fast prototyping. We recommend using it only
+on fast `Javascript` scripts only to avoid repeatable runs of computational-heavy code.
+
+The automatic function calls are not saved,
+so to save results to the [run history](#history) you should press **Save** button manually.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result">
+```
+
+```mdx-code-block
+<BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
+```
+
+<img src={require('../pics/run-on-input.gif').default} style={{'border-radius': '5px'}}/>
+
+```mdx-code-block
+</BrowserWindow>
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="short" label="Short sample">
+```
+
+```javascript title="Your script header"
+//meta.runOnOpen: true
+//meta.runOnInput: true 
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript title="https://public.datagrok.ai/scripts"
+//name: Data stats
+//language: javascript
+//tags: demo
+//input: dataframe inputDf {caption: Input dataframe; viewer: Grid(); category: Input data}
+//output: dataframe outputDf {caption: Output dataframe; viewer: Line chart(block: 50) | Scatter plot(block: 50) | Statistics(block: 100); category: Stats}
+//editor: Compute:RichFunctionViewEditor
+//meta.runOnOpen: true
+//meta.runOnInput: true
+
+outputDf = inputDf.clone();
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
