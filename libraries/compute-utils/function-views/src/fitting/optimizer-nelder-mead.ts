@@ -1,5 +1,17 @@
 import {Extremum, IOptimizer} from './optimizer-misc';
 
+/** The Nelder-Mead method settings */
+export type NelderMeadSettings = {
+  tolerance: number,
+  maxIter: number,
+  nonZeroParam: number,
+  initialScale: number,
+  scaleReflaction: number,
+  scaleExpansion: number,
+  scaleContraction: number,
+};
+
+/** Default values for the Nelder-Mead method */
 export enum NELDER_MEAD_DEFAULTS {
   TOLERANCE = 1e-4,
   MAX_ITER = 50,
@@ -10,17 +22,19 @@ export enum NELDER_MEAD_DEFAULTS {
   SCALE_CONTRACTION = -0.5,
 };
 
-const TOLERANCE = 1e-4;
-const MAX_ITER = 50;
-const NON_ZERO_PARAM = 0.0001;
-const INITIAL_SCALE = 0.02;
-
-const SCALE_REFLECTION = 1;
-const SCALE_EXPANSION = 2;
-const SCALE_CONTRACTION = -0.5;
-
 export const optimizeNM:IOptimizer = async function(
-  objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array) : Promise<Extremum> {
+  objectiveFunc: (x: Float32Array) => Promise<number>,
+  paramsInitial: Float32Array,
+  settings: NelderMeadSettings) : Promise<Extremum> {
+  // Settings initialization
+  const tolerance = settings.tolerance;
+  const maxIter = settings.maxIter;
+  const nonZeroParam = settings.nonZeroParam;
+  const initScale = settings.initialScale;
+  const scaleReflection = settings.scaleReflaction;
+  const scaleExpansion = settings.scaleExpansion;
+  const scaleContraction = settings.scaleContraction;
+
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
 
@@ -33,9 +47,9 @@ export const optimizeNM:IOptimizer = async function(
       optParams[i][j] = paramsInitial[j];
       if (i != 0 && i - 1 === j) {
         if (paramsInitial[j] == 0)
-          optParams[i][j] = NON_ZERO_PARAM;
+          optParams[i][j] = nonZeroParam;
         else
-          optParams[i][j] += INITIAL_SCALE * paramsInitial[i - 1];
+          optParams[i][j] += initScale * paramsInitial[i - 1];
       }
     }
 
@@ -57,14 +71,14 @@ export const optimizeNM:IOptimizer = async function(
   const reflectionPoint = new Float32Array(dimParams);
   const expansionPoint = new Float32Array(dimParams);
   const contractionPoint = new Float32Array(dimParams);
-  const iterationProfile = new Array<number>(MAX_ITER);
+  const iterationProfile = new Array<number>(maxIter);
 
   if (dim > 1) {
     while (true) {
       indexes.sort((a:number, b:number) => {
         return pointObjectives[a] - pointObjectives[b];
       });
-      if (iteration >= MAX_ITER)
+      if (iteration >= maxIter)
         break;
 
       if (iteration == 0) {
@@ -75,7 +89,7 @@ export const optimizeNM:IOptimizer = async function(
       iteration++;
 
       best = pointObjectives[indexes[0]];
-      if (previousBest - best > TOLERANCE)
+      if (previousBest - best > tolerance)
         noImprovment = 0;
       else {
         ++noImprovment;
@@ -102,7 +116,7 @@ export const optimizeNM:IOptimizer = async function(
       for (let i = 0; i < dimParams; i++)
         reflectionPoint[i] = centroid[i];
       for (let i = 0; i < dimParams; i++)
-        reflectionPoint[i] += SCALE_REFLECTION * (centroid[i] - optParams[indexes[lastIndex]][i]);
+        reflectionPoint[i] += scaleReflection * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
       const reflectionScore = await objectiveFunc(reflectionPoint);
 
@@ -111,7 +125,7 @@ export const optimizeNM:IOptimizer = async function(
         for (let i = 0; i < dimParams; i++)
           expansionPoint[i] = centroid[i];
         for (let i = 0; i < dimParams; i++)
-          expansionPoint[i] += SCALE_EXPANSION * (centroid[i] - optParams[indexes[lastIndex]][i]);
+          expansionPoint[i] += scaleExpansion * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
         const expansionScore = await objectiveFunc(expansionPoint);
 
@@ -137,7 +151,7 @@ export const optimizeNM:IOptimizer = async function(
       for (let i = 0; i < dimParams; i++)
         contractionPoint[i] = centroid[i];
       for (let i = 0; i < dimParams; i++)
-        contractionPoint[i] += SCALE_CONTRACTION * (centroid[i] - optParams[indexes[lastIndex]][i]);
+        contractionPoint[i] += scaleContraction * (centroid[i] - optParams[indexes[lastIndex]][i]);
 
       const contractionScore = await objectiveFunc(contractionPoint);
 
@@ -154,7 +168,7 @@ export const optimizeNM:IOptimizer = async function(
     }
 
 
-    for (let i = iteration; i < MAX_ITER; i++)
+    for (let i = iteration; i < maxIter; i++)
       iterationProfile[i] = pointObjectives[indexes[0]];
   }
 

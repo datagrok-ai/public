@@ -10,10 +10,11 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {STARTING_HELP} from './fitting/constants';
-import {optimize} from './fitting/optimizer';
+import {performNelderMeadOptimization} from './fitting/optimizer';
 
-import {NELDER_MEAD_DEFAULTS} from './fitting/optimizer-nelder-mead';
+import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
+import {Extremum} from './fitting/optimizer-misc';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -294,7 +295,7 @@ export class FittingView {
   });
 
   // The Nelder-Mead method settings
-  private nelderMeadSettings = {
+  private nelderMeadSettings: NelderMeadSettings = {
     tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
     maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
     nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
@@ -630,13 +631,6 @@ export class FittingView {
     return this.isAnyInputSelected() && this.isAnyOutputSelected();
   }
 
-  private async runOptimization(): Promise<void> {
-    //console.log(this.store);
-    if (!this.canEvaluationBeRun())
-      return;
-    await this.runNelderMeadOptimization();
-  }
-
   private getFixedInputs() {
     return Object.keys(this.store.inputs).filter((propName) => !this.store.inputs[propName].isChanging.value);
   }
@@ -646,73 +640,81 @@ export class FittingView {
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
   }
 
-  /** Perform Nelder-Mead method */
-  private async runNelderMeadOptimization() {
-    // inputs of the source function
-    const inputs: any = {};
+  /** Perform the Nelder-Mead method */
+  private async runOptimization(): Promise<void> {
+    try {
+    // check applicability
+      if (!this.canEvaluationBeRun())
+        return;
 
-    // add fixed inputs
-    this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
-    //console.log(inputs);
+      // inputs of the source function
+      const inputs: any = {};
 
-    // get varied inputs, optimization is performed with respect to them
-    const variedInputs = this.getVariedInputs();
-    const dim = variedInputs.length;
+      // add fixed inputs
+      this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+      //console.log(inputs);
 
-    // varied inputs specification
-    const variedInputNames: string[] = [];
-    const minVals = new Float32Array(dim);
-    const maxVals = new Float32Array(dim);
+      // get varied inputs, optimization is performed with respect to them
+      const variedInputs = this.getVariedInputs();
+      const dim = variedInputs.length;
 
-    // set varied inputs specification
-    variedInputs.forEach((name, idx) => {
-      const propConfig = this.store.inputs[name] as SensitivityNumericStore;
-      minVals[idx] = propConfig.min.value;
-      maxVals[idx] = propConfig.max.value;
-      variedInputNames.push(name);
-    });
+      // varied inputs specification
+      const variedInputNames: string[] = [];
+      const minVals = new Float32Array(dim);
+      const maxVals = new Float32Array(dim);
 
-    // get selected output
-    const outputsOfInterest = this.getOutputsOfInterest();
-    if (outputsOfInterest.length < 1) {
-      grok.shell.error('No output is selected for optimization.');
-      return;
-    }
+      // set varied inputs specification
+      variedInputs.forEach((name, idx) => {
+        const propConfig = this.store.inputs[name] as SensitivityNumericStore;
+        minVals[idx] = propConfig.min.value;
+        maxVals[idx] = propConfig.max.value;
+        variedInputNames.push(name);
+      });
 
-    /** Cost function to be optimized */
-    const costFunc = async (x: Float32Array): Promise<number> => {
-      x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-      const funcCall = this.func.prepare(inputs);
-      const calledFuncCall = await funcCall.call();
+      // get selected output
+      const outputsOfInterest = this.getOutputsOfInterest();
+      if (outputsOfInterest.length < 1) {
+        grok.shell.error('No output is selected for optimization.');
+        return;
+      }
 
-      let cost = 0;
+      /** Cost function to be optimized */
+      const costFunc = async (x: Float32Array): Promise<number> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
 
-      outputsOfInterest.forEach((output) => {
-        if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-          cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
+        let cost = 0;
+
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+            cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
           //console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
-        else {
+          else {
           //const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
           //console.log(errs);
-          getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
-        }
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
+          }
         //console.log(output.target);
         //console.log('---------------------------------------------------------------');
         //console.log(calledFuncCall.getParamValue(output.prop.name));
-      });
+        });
 
-      return cost;
-    };
+        return cost;
+      };
 
-    //console.log(await costFunc(new Float32Array(dim)));
+      //console.log(await costFunc(new Float32Array(dim)));
 
-    const extr = await optimize(costFunc,
-      minVals,
-      maxVals,
-      100,
-    );
+      let extremums: Extremum[];
 
-    console.log(extr);
+      if (this.method === METHOD.NELDER_MEAD) {
+        extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings);
+        console.log(extremums);
+      } else
+        throw new Error(`The '${this.method}' method has not been implemented.`);
+    } catch (error) {
+      grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
+    }
   } // runNelderMeadMethod
 
   private getOutputsOfInterest() {

@@ -1,14 +1,16 @@
 /** Monte Carlo optimizer */
 
 import {Extremum} from './optimizer-misc';
-import {optimizeNM} from './optimizer-nelder-mead';
+import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
 
-export async function optimize(
+export async function performNelderMeadOptimization(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   paramsBottom: Float32Array,
   paramsTop: Float32Array,
-  samplesCount: number): Promise<Extremum[]> {
+  settings: NelderMeadSettings,
+  samplesCount: number = 1,
+): Promise<Extremum[]> {
   const params = sampleParams(samplesCount, paramsTop, paramsBottom);
 
   // const threadCount = Math.max(navigator.hardwareConcurrency - 2, 1);
@@ -46,9 +48,7 @@ export async function optimize(
 
   const extremums = new Array<Extremum>(samplesCount);
   for (let i = 0; i < samplesCount; i++)
-    extremums[i] = await optimizeNM(objectiveFunc, params[i]);
-
-  console.log(extremums);
+    extremums[i] = await optimizeNM(objectiveFunc, params[i], settings);
 
   return extremums;
 }

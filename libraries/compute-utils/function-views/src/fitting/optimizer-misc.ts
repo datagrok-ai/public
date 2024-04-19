@@ -12,5 +12,6 @@ export type OptimizationTask = {
 };
 
 export interface IOptimizer {
-    (objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array): Promise<Extremum>;
+    (objectiveFunc: (x: Float32Array) => Promise<number>, paramsInitial: Float32Array, settings: any):
+    Promise<Extremum>;
 };

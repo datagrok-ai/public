@@ -7,7 +7,7 @@ onmessage = async (event) => {
   const warnings = new Array<string>(0);
   for (let parametrization = start; parametrization < end; ++parametrization) {
     try {
-      const extremum = await optimizeNM(objectiveFunc, params[parametrization]);
+      const extremum = await optimizeNM(objectiveFunc, params[parametrization], {});
       extremums[parametrization - start] = extremum;
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
