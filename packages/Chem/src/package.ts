@@ -45,7 +45,7 @@ import {createPropPanelElement, createTooltipElement} from './analysis/activity-
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {loadRGroupUserSettings, rGroupAnalysis} from './analysis/r-group-analysis';
 import {MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
@@ -132,6 +132,7 @@ export async function initChem(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
+  await loadRGroupUserSettings();
   _renderers = new Map();
 }
 
@@ -158,7 +159,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -502,9 +503,16 @@ export function ChemSpaceEditor(call: DG.FuncCall): void {
 //output: object result
 export async function getFingerprints(
   col: DG.Column, _metric?: string, fingerprintType: Fingerprint = Fingerprint.Morgan) {
-  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintType, false);
+  //TODO: get rid of fallback
+  let fingerprintTypeStr = fingerprintType as string;
+  if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
+    fingerprintTypeStr.endsWith('\'') || fingerprintTypeStr.endsWith('"'))
+    fingerprintTypeStr = fingerprintTypeStr.slice(1, -1);
+
+  const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return {entries: fpColumn, options: {}};
+  return { entries: fpColumn, options: {} };
+
 }
 
 
@@ -1201,7 +1209,8 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, 
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   return res ?? DG.DataFrame.create();
 }
 
@@ -1217,7 +1226,8 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
-  return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
+  return await chemDiversitySearch(col, similarityMetric[metricName], limit, 
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
 
 //top-menu: Chem | Calculate | Properties...

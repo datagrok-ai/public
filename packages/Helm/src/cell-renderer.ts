@@ -8,7 +8,7 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {IEditor, HelmMonomerPlacer, IEditorMolAtom, ISeqMonomer} from './helm-monomer-placer';
+import {IEditor, HelmMonomerPlacer, IEditorMolAtom, ISeqMonomer, Temps} from './helm-monomer-placer';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
 // import {_package} from './package'; // NullError: method not found: '_package' on null
@@ -29,7 +29,7 @@ function getSeqMonomerFromHelm(
       resSeqMonomer = {symbol: symbol, polymerType: polymerType};
   }
   if (!resSeqMonomer)
-    resSeqMonomer = {symbol: symbol};
+    throw new Error(`Monomer not found for symbol = '${symbol}' and helmPrefix = '${helmPrefix}'.`);
   return resSeqMonomer;
 }
 
@@ -139,6 +139,28 @@ function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
+type RendererGridCellTemp = {
+  [Temps.helmMonomerPlacer]: HelmMonomerPlacer;
+}
+
+function getRendererGridCellTemp(gridCell: DG.GridCell
+): [DG.GridColumn | null, DG.Column | null, RendererGridCellTemp] {
+  /** Primarily store/get MonomerPlacer at GridColumn, fallback at (Table) Column for scatter plot tooltip  */
+  let temp: RendererGridCellTemp | null = null;
+
+  let gridCol: DG.GridColumn | null = null;
+  try { gridCol = gridCell.gridColumn; } catch { gridCol = null; }
+  temp = gridCol ? gridCol.temp as RendererGridCellTemp : null;
+
+  let tableCol: DG.Column | null = null;
+  if (!temp) {
+    try { tableCol = gridCell.cell.column; } catch { tableCol = null; }
+    temp = tableCol ? tableCol.temp as RendererGridCellTemp : null;
+  }
+  if (temp === null) throw new Error(`Monomer placer store (GridColumn or Column) not found.`);
+  return [gridCol, tableCol, temp];
+}
+
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
  * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
  */
@@ -153,16 +175,15 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     try {
-      /* Can not do anything without tableColumn containing temp */
-      let tableCol: DG.Column | null = null;
-      try { tableCol = gridCell.tableColumn; } catch { }
+      const [_gridCol, tableCol, temp] = getRendererGridCellTemp(gridCell);
+      const helmPlacer = temp[Temps.helmMonomerPlacer];
+      /* Can not do anything without tableColumn */
       if (!tableCol) return;
 
       /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
       const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
@@ -189,15 +210,10 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
       if (seqMonomer) {
         if (!missedMonomers.has(seqMonomer.symbol)) {
-          const monomer = helmPlacer.getMonomer(seqMonomer);
-          if (monomer) {
-            const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-            const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-            ui.tooltip.show(ui.divV([
-              ui.divText(seqMonomer.symbol),
-              monomerSvg,
-            ]), e.x + 16, e.y + 16);
-          }
+          const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
+          const monomerDiv = helmPlacer.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+          tooltipElements.push(monomerDiv);
+          ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
         } else {
           ui.tooltip.show(ui.divV([
             ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
@@ -230,10 +246,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
   ) {
     g.save();
     try {
+      const [gridCol, tableCol, temp] = getRendererGridCellTemp(gridCell);
       /* Can not do anything without tableColumn containing temp */
-      let tableCol: DG.Column | null = null;
-      try { tableCol = gridCell.tableColumn; } catch { }
       if (!tableCol) return;
+      let helmPlacer = temp[Temps.helmMonomerPlacer];
+      if (!helmPlacer) helmPlacer = temp[Temps.helmMonomerPlacer] = new HelmMonomerPlacer(gridCol, tableCol);
 
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
       const missedColor = 'red';
@@ -244,7 +261,6 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth

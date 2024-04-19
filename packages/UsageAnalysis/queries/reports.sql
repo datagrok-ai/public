@@ -3,20 +3,24 @@
 --connection: System:Datagrok
 with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time report_time, e.description,
     e.options ->> 'error_message' as error, e.options ->> 'error_stack_trace' error_stack_trace,
-    e.options ->> 'error_stack_trace_hash' error_stack_trace_hash, u.friendly_name reporter
+    e.options ->> 'error_stack_trace_hash' error_stack_trace_hash, (e.options ->> 'is_resolved')::boolean as is_resolved,
+    e.options ->> 'assignee' assignee,
+    u.friendly_name reporter, (count(e2.id) + 1) as requests_count
 from events e
 join event_types t on e.event_type_id = t.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
+left join events e2 on e2.parent_event_id = e.id
 where t.source = 'usage' and t.friendly_name = 'user report posted'
-and @date(e.event_time))
+and @date(e.event_time)
+group by e.id, u.friendly_name)
 
 select (count(e.id)) same_errors_count, c.report_id, c.report_number, c.report_time, c.description, c.error,
-       c.error_stack_trace, c.error_stack_trace_hash, c.reporter
+       c.error_stack_trace, c.error_stack_trace_hash, c.is_resolved, c.reporter, c.assignee, c.requests_count
 from events e
 join event_types t on e.event_type_id = t.id
 right join cte c on ((t.error_stack_trace_hash = c.error_stack_trace_hash and c.error_stack_trace_hash is not null) or t.friendly_name = c.error)
 group by c.report_id, c.report_number, c.report_time, c.description, c.error,
-         c.error_stack_trace, c.error_stack_trace_hash, c.reporter
-order by report_time desc
+         c.error_stack_trace, c.error_stack_trace_hash, c.is_resolved, c.reporter, c.assignee, c.requests_count
+order by (is_resolved is false) desc, requests_count desc, same_errors_count desc, report_time asc
 --end

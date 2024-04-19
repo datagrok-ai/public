@@ -16,29 +16,19 @@ export const _package = new DG.Package();
 //name: Usage Analysis
 //tags: app
 //output: view v
-export async function usageAnalysisApp(): Promise<DG.ViewBase> {
+export async function usageAnalysisApp(): Promise<DG.ViewBase | null> {
+  if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
+    if (window.location.search?.includes('report-number')) {
+      const ev = ViewHandler.getView('Reports');
+      ev.viewers[0].reloadViewer();
+      await (ev as ReportsView).reloadFilter();
+      ViewHandler.changeTab('Reports');
+    }
+    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
+    return null;
+  }
   await ViewHandler.getInstance().init();
   return ViewHandler.UA;
-}
-
-//name: initWithReportId
-//input: string reportNumber
-export async function initWithReportId(reportNumber: string): Promise<any> {
-  async function setReports(): Promise<void> {
-    ViewHandler.getInstance().setUrlParam('report-number', reportNumber, true);
-    ViewHandler.changeTab('Reports');
-    const view = ViewHandler.getCurrentView() as ReportsView;
-    await view.reloadViewers();
-  }
-  if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
-    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
-    await setReports();
-  }
-  else {
-    await ViewHandler.getInstance().init();
-    grok.shell.addView(ViewHandler.UA);
-    await setReports();
-  }
 }
 
 //name: Test Track

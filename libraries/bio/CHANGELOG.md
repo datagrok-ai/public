@@ -1,5 +1,19 @@
 # bio changelog
 
+## 5.40.8 (2024-04-16)
+
+Fix monomer placer destroying
+
+## 5.40.7 (2024-04-15)
+
+Invalidate monomer placer cache on monomer lib changed
+
+## 5.40.6 (2024-04-11)
+
+### Features
+
+* Add displaying a monomer's origin lib
+
 ## 5.40.5 (2024-04-10)
 
 ### Bug fixes

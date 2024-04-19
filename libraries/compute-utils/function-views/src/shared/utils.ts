@@ -30,12 +30,18 @@ export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
   const dfOutputs = wu(call.outputParams.values())
-    .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((output) =>
+      output.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.outputs[output.name],
+    );
   for (const output of dfOutputs)
     deepClone.outputs[output.name] = call.outputs[output.name].clone();
 
   const dfInputs = wu(call.inputParams.values())
-    .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((input) =>
+      input.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.inputs[input.name],
+    );
   for (const input of dfInputs)
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 
@@ -130,11 +136,10 @@ export const getDfFromRuns = (
   const uniqueRunNames = [] as string[];
   comparedRuns.forEach((run) => {
     let defaultRunName = run.options['title'] ??
-        `${run.func.name} - ${new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+        `${run.func.name} - ${getStarted(run)}`;
     let idx = 2;
     while (uniqueRunNames.includes(defaultRunName)) {
-      defaultRunName = `${run.func.name} - ${new Date(run.started.toString())
+      defaultRunName = `${run.func.name} - ${getStarted(run)})
         .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})} - ${idx}`;
       idx++;
     }
@@ -245,4 +250,13 @@ export const getDfFromRuns = (
   });
 
   return comparisonDf;
+};
+
+export const getStarted = (call: DG.FuncCall) => {
+  try {
+    return call.started.toDate()
+      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+  } catch {
+    return 'Not completed';
+  }
 };

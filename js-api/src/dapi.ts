@@ -179,6 +179,10 @@ export class Dapi {
     return new FileSource();
   }
 
+  get reports(): ReportsDataSource {
+    return new ReportsDataSource();
+  }
+
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @deprecated
    * @param {string} method
@@ -397,7 +401,6 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
-
   /**
    * Sends email
    * @param email - message that will be sent using configured SMTP service
@@ -406,14 +409,6 @@ export class AdminDataSource {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
-  }
-
-  getUserReport(reportId: string): Promise<Uint8Array> {
-    return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
-  }
-
-  postEventReport(eventId: string): Promise<void> {
-    return api.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId);
   }
 }
 
@@ -1084,5 +1079,14 @@ export class FileSource {
     file = this.setRoot(file);
 
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
+  }
+}
+class ReportsDataSource {
+  resolve(reportId: string): Promise<void> {
+    return api.grok_Dapi_Reports_Resolve(reportId);
+  }
+
+  reopen(reportId: string, description: string, notifyAssignee: boolean = true): Promise<void> {
+    return api.grok_Dapi_Reports_Reopen(reportId, description, notifyAssignee);
   }
 }

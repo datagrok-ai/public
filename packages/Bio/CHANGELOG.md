@@ -1,5 +1,39 @@
 # Bio changelog
 
+## 2.12.15 (2024-04-19)
+
+Bio: Some optimization in Polytool
+
+## 2.12.14 (2024-04-18)
+
+Bio: Fixed stereochemistry in Polytool
+
+## 2.12.13 (2024-04-15)
+
+Bio: Fix cell renderer for scatter plot, add test
+
+## 2.12.12 (2024-04-15)
+
+### Features 
+
+* Polytool: working with molV3000
+
+## 2.12.11 (2024-04-12)
+
+### Features 
+
+* Add displaying a monomer's origin lib
+
+### Bug fixes
+
+* Fix the cell-renderer tooltip not showing a hovered monomer
+
+## 2.12.10 (2024-04-11)
+
+### Bug fixes
+
+* Bio: Fix detector for non-fasta seqs of the same length
+
 ## 2.12.9 (2024-04-10)
 
 ### Bug fixes

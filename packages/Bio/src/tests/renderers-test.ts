@@ -1,7 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
-import {category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
+import $ from 'cash-dom';
+import {fromEvent} from 'rxjs';
+
+import {category, expect, test, delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
@@ -11,6 +15,8 @@ import {generateLongSequence, generateManySequences, performanceTest} from './ut
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
+
+import {_package} from '../package-test';
 
 category('renderers', () => {
   test('long sequence performance ', async () => {
@@ -46,6 +52,10 @@ category('renderers', () => {
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
+  });
+
+  test('scatterPlotTooltip', async () => {
+    await _testScatterPlotTooltip();
   });
 
   async function _rendererMacromoleculeFasta() {
@@ -196,5 +206,41 @@ category('renderers', () => {
         `have been manually set on column but after df was added as table, ` +
         `view renderer has set to '${renderer}' instead of correct 'MacromoleculeDifference'.`);
     }
+  }
+
+  const seqCoordsCsv = `seq,x,y
+ACGGTGTCGT,0,0
+CGGTATCCCT,1,0
+CTCGGCATGC,2,0
+`;
+
+  async function _testScatterPlotTooltip(): Promise<void> {
+    const df = DG.DataFrame.fromCsv(seqCoordsCsv);
+    df.currentRowIdx = 0;
+    const view = grok.shell.addTableView(df);
+    const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
+    view.dockManager.dock(sp, DG.DOCK_TYPE.RIGHT, null);
+    await Promise.all([
+      testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 1000),
+      awaitGrid(view.grid, 500)
+    ]);
+
+    const spBcr = sp.root.getBoundingClientRect();
+    const wp = sp.worldToScreen(1, 0);
+    const ev = new MouseEvent('mousemove', {
+      cancelable: true, bubbles: true, view: window, button: 0,
+      clientX: spBcr.left + wp.x, clientY: spBcr.top + wp.y
+    });
+    const spCanvas = $(sp.root).find('canvas').get()[0] as HTMLCanvasElement;
+    await testEvent(fromEvent(spCanvas, 'mousemove'), () => {
+      _package.logger.debug(`Test: event, currentRowIdx=${df.currentRowIdx}`);
+      expect($(ui.tooltip.root).find('div table.d4-row-tooltip-table tr td canvas').length, 1);
+      expect(sp.hitTest(wp.x, wp.y), 1);
+    }, () => {
+      spCanvas.dispatchEvent(ev);
+    }, 500);
+    // TODO: Any error occurred become 'Cannot read properties of null (reading 'get$columns')' because of scatter plot
+    //await testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 200);
+    await awaitGrid(view.grid, 500);
   }
 });

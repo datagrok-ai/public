@@ -1,5 +1,30 @@
 # Curves changelog
 
+## 1.3.0 (2024-04-18)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improve curves properties and rendering:
+  * Added tooltips on points
+  * Added icon to MultiCurveViewer
+  * Added mergeSeries property and method
+  * Added legend rendering with column labels
+* [#2754](https://github.com/datagrok-ai/public/issues/2754): Implemented capability just to connect the points (without fitting)
+* [#1645](https://github.com/datagrok-ai/public/issues/1645): MultiCurveViewer:
+  * Added columns selection
+  * Added column series merging
+  * Added colors and fixed error messages
+  * Added curves limit and fixed showColumnLabel
+  * Turned off droplines and confidence intervals
+  * Made same fit line style in case of 20+ curves
+
+### Bug Fixes
+
+* [#2748](https://github.com/datagrok-ai/public/issues/2748):
+  * Fixed whole table is broken if cell with curves contains specific data
+  * Added red cross if the curve is broken
+  * Added error text
+
 ## 1.2.16 (2024-03-15)
 
 ### Features

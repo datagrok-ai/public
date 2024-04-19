@@ -346,7 +346,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         return {colNames: colNames, smiles: resCols, atomsToHighLight: atomsToHighlight, bondsToHighLight: bondsToHighlight};
       }
       return {colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []};
-    } finally {
+    } catch (e: any) {
+      throw new Error(e.message);
+    }
+    finally {
       core?.delete();
       mols?.delete();
       res?.delete();

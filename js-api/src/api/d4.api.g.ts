@@ -3,6 +3,8 @@ import { toDart } from "../wrappers";
 let api = <any>window;
 
 export class UsageType {
+  static CLICK = 'click';
+
   static MENU_CLICK = 'menu click';
 
   static DIALOG_OK = 'dialog ok';

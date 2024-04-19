@@ -11,7 +11,9 @@ import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
+import {getStarted} from '../../function-views/src/shared/utils';
+import dayjs from 'dayjs';
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -232,9 +234,20 @@ export class HistoricalRunsList extends DG.Widget {
 
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
+          const getStartedOrNull = (run: DG.FuncCall) => {
+            try {
+              return run.started;
+            } catch {
+              return null;
+            }
+          };
+
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
+            .init((idx) =>
+              (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
+                newRuns[idx].started: dayjs.unix(newRuns[idx].options['createdOn'])),
+            );
         }
 
         return DG.Column.fromStrings(
@@ -286,11 +299,11 @@ export class HistoricalRunsList extends DG.Widget {
           this._historyFilters.root,
           this.toggleCompactMode,
           this.showMetadataIcon.root,
-          ...this.visibleProps.length > 0 ? [this.showInputsIcon.root]: [],
           this.trashIcon,
           this.compareIcon,
           this.showFiltersIcon,
         ], true);
+        ui.setDisplay(this.showInputsIcon.root, this.visibleProps(func).length > 0);
 
         this._onRunsDfChanged.next(newRunsGridDf);
       } else {
@@ -330,6 +343,8 @@ export class HistoricalRunsList extends DG.Widget {
 
         this.redrawSelectionState();
       });
+
+      this.redrawSelectionState();
 
       this.subs.push(currentDfSub, selectionSub);
     });
@@ -377,10 +392,12 @@ export class HistoricalRunsList extends DG.Widget {
         $(gridWithControls).css({
           ...this.compactMode ? {'width': '100%'} : {'height': '100%'},
         });
-      });
 
-      this.styleHistoryGrid();
-      this.styleHistoryFilters();
+        setTimeout(() => {
+          this.styleHistoryGrid();
+          this.styleHistoryFilters();
+        }, 100);
+      });
     });
 
     this.subs.push(listChangedSub, compactModeSub, runDfChangedSub, filterSub);
@@ -560,8 +577,7 @@ export class HistoricalRunsList extends DG.Widget {
           ui.setDisplay(addToFavorites, true);
         }
 
-        const dateStarted = new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        const dateStarted = getStarted(run);
 
         const card = ui.divH([
           ui.divH([
@@ -578,16 +594,17 @@ export class HistoricalRunsList extends DG.Widget {
           ]),
         ], 'hp-funccall-card');
 
+        const tableRowIndex = cell.tableRowIndex!;
         card.addEventListener('mouseover', () => {
-          cell.grid.dataFrame.mouseOverRowIdx = cell.gridRow;
+          cell.grid.dataFrame.mouseOverRowIdx = tableRowIndex;
         });
         card.addEventListener('click', (e) => {
           if (e.shiftKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, true);
+            cell.grid.dataFrame.selection.set(tableRowIndex, true);
           else if (e.ctrlKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, false);
+            cell.grid.dataFrame.selection.set(tableRowIndex, false);
           else
-            cell.grid.dataFrame.currentRowIdx = cell.gridRow;
+            cell.grid.dataFrame.currentRowIdx = tableRowIndex;
         });
         cell.element = card;
       }
@@ -739,6 +756,8 @@ export class HistoricalRunsList extends DG.Widget {
       'showColumnLabels': !this.compactMode,
       'extendLastColumn': this.compactMode,
     });
+
+    this._historyGrid.sort([STARTED_COLUMN_NAME], [false]);
 
     for (let i = 0; i < this._historyGrid.columns.length; i++) {
       const col = this._historyGrid.columns.byIndex(i);

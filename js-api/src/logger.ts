@@ -3,6 +3,8 @@ import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
 import dayjs from "dayjs";
+import {Accordion} from "./widgets";
+import {toJs} from "./wrappers";
 
 const api: IDartApi = <any>window;
 
@@ -88,7 +90,7 @@ export class Logger {
     const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
       const std = f.bind(console);
       return (...args: any[]) => {
-        try { this.consoleLogs.push({'time': dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSS[Z]'),
+        try { this.consoleLogs.push({'time': dayjs().utc().valueOf(),
           'message': args.map((x) => `${x}`).join(' ')}); }
         catch (_) {}
         std(...args);
@@ -123,8 +125,8 @@ export class PackageLogger extends Logger {
 
 
 export class DetailedLog {
-  static async getAccordion(reportId: string): Promise<HTMLElement> {
-    return api.grok_DetailedLog_Get_Accordion(reportId);
+  static async getAccordion(reportId: string): Promise<Accordion> {
+    return toJs(await api.grok_DetailedLog_Get_Accordion(reportId));
   }
 }
 

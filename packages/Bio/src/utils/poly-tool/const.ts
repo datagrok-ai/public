@@ -1,9 +1,5 @@
 import {HELM_REQUIRED_FIELD} from '@datagrok-libraries/bio/src/utils/const';
 
-export const enum HELM_WRAPPER {
-  LEFT = 'PEPTIDE1{',
-  RIGHT = '}$$$$',
-}
 export const ALL_MONOMERS = '<All>';
 
 export const enum TRANSFORMATION_TYPE {
