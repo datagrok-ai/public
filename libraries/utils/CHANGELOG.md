@@ -1,8 +1,15 @@
 # utils changelog
 
+## 4.2.1 (2024-04-19)
+
+### Features
+
+* Added svgToImage
+
 ## 4.2.0 (2024-04-01)
 
 ### Features
+
 * Added active files handler
 
 ## 4.1.45 (2024-02-20)
