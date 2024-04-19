@@ -139,11 +139,18 @@ export type ItemsToRemove = {
   itemsToRemove?: ItemPath[];
 }
 
-export type CompositionStepsConfig = {
-  pipelinePositionConfig?: { [id: ItemName]: ItemName };
+export type NestedPipelineConfig = {
+  insertBeforeStep?: ItemName,
+  namePrefix?: string;
 }
 
-export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & CompositionStepsConfig & ItemsToRemove;
+export type ComposedPipelinesConfig = {
+  nestedPipelinesConfig?: {
+    [id: string]: NestedPipelineConfig;
+  }
+}
+
+export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & ComposedPipelinesConfig & ItemsToRemove;
 
 //
 // Internal config
@@ -1155,7 +1162,7 @@ export class CompositionPipeline {
       {
         toRemove: new Set<string>(),
         toAdd: new Map<string, ItemsToMerge>(),
-        stepConfig: new Map<string, string>(),
+        stepConfig: new Map<string, NestedPipelineConfig>(),
       },
     );
 
@@ -1198,7 +1205,7 @@ export class CompositionPipeline {
 
     this.steps = pipelineSeq.reduce((acc, id) => {
       const steps = pipelineSteps.get(id)!;
-      const pos = stepConfig.get(id)!;
+      const pos = stepConfig.get(id)?.insertBeforeStep;
       if (pos) {
         const idx = acc.findIndex((spec) => spec.id === pos);
         if (idx > 0)
@@ -1362,7 +1369,7 @@ export class CompositionPipeline {
   // merge config processing
 
   private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
-    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>, stepConfig: Map<string, string>,
+    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>, stepConfig: Map<string, NestedPipelineConfig>,
   ) {
     const subPath = pathJoin(path, [mergeConf.id]);
     for (const item of mergeConf.itemsToRemove ?? []) {
@@ -1371,12 +1378,16 @@ export class CompositionPipeline {
       toRemove.add(itemKey);
     }
     delete mergeConf.itemsToRemove;
-    for (const [pipelineId, beforeStepId] of Object.entries(mergeConf.pipelinePositionConfig ?? {})) {
+    for (const [pipelineId, conf] of Object.entries(mergeConf.nestedPipelinesConfig ?? {})) {
       const pipelineIdFull = pathToKey(pathJoin(subPath, [pipelineId]));
-      const beforeStepIdFull = pathToKey(pathJoin(subPath, [beforeStepId]));
-      stepConfig.set(pipelineIdFull, beforeStepIdFull);
+      if (conf.insertBeforeStep) {
+        const insertBeforeStep = pathToKey(pathJoin(subPath, [conf.insertBeforeStep]));
+        stepConfig.set(pipelineIdFull, { ...conf, insertBeforeStep });
+      } else {
+        stepConfig.set(pipelineIdFull, { ...conf });
+      }
     }
-    delete mergeConf.pipelinePositionConfig;
+    delete mergeConf.nestedPipelinesConfig;
     const {popupsToAdd, actionsToAdd} = mergeConf;
     this.processMergeNodeList(popupsToAdd ?? [], subPath, toAdd, 'popup');
     this.processMergeNodeList(actionsToAdd ?? [], subPath, toAdd, 'action');
