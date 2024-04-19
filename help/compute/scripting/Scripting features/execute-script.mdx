@@ -1,0 +1,41 @@
+---
+title: "Execute script"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+
+First of all, a script can be executed right from the script editor,
+as described in [run script section](getting-started#how-to-run-a-script).
+
+In this case, it gets registered in the platform as a
+[function](/help/datagrok/concepts/functions/functions.md), and can be invoked in different ways:
+
+- From the [Datagrok console](/help/datagrok/navigation/navigation.md#console)
+- From the data job
+- From the [transformations editor](/help/transform/recipe-editor.md)
+- From the [function browser](https://public.datagrok.ai/functions)
+
+Registered scripts can be called via [JavaScript API](/help/develop/packages/js-api.md) in the following manner:
+
+```javascript
+const result = grok.functions.call(
+  "<PACKAGE_NAME>:<SCRIPT_NAME>", 
+  { 
+    <INPUT_NAME>: <INPUT_VALUE>,
+    <INPUT_NAME_2>: <INPUT_VALUE_2>
+  }
+);
+```
+
+The single output will be assigned to `result` directly. Multiple outputs will be united into a single object.
+You can retrieve any output value by accessing `result` object fields (e.g. `result['<MY_OUTPUT>']`).
+
+To see it in action, open this
+[code snippet](https://public.datagrok.ai/js/samples/scripting/scripting) from our samples gallery.
+There, you can find more examples, such as
+[adding a progress indicator](https://public.datagrok.ai/js/samples/functions/progress) to the user interface.
