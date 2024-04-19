@@ -16,8 +16,8 @@ visualizations available in
 Briefly, you only need to do the following:
 
 * Create a new script file in the
-  [Datagrok script editor](scripting-for-non-developers.mdx#working-with-datagrok-script-editor)
-* Write the code in any [supported language](scripting-for-non-developers.mdx#supported-languages).
+  [Datagrok script editor](./scripting-for-non-developers#working-with-datagrok-script-editor)
+* Write the code in any [supported language](./scripting-for-non-developers#supported-languages).
 * Add **header**: the set of annotation comments specifying the script language, tags,
   input and output variables.
 
@@ -42,9 +42,9 @@ wide range of [Datagrok compute possibilities](compute.md):
 
 ## Where to find how it works
 
-* To learn the basics of Datagrok scripting, review the [Scripting for non-professional developers](scripting-for-non-developers.mdx).
+* To learn the basics of Datagrok scripting, review the [Scripting for non-professional developers](./scripting-for-non-developers).
 * For advanced features (input/output data validation, environments), review the 
-[Advanced scripting](scripting-advanced.mdx).
+[Advanced scripting](./scripting-advanced).
 * Review the [developer documentation](../develop/develop.md) for a deep dive into Datagrok scripting, using JS API, and developing custom UI components.
 
 ### Videos
