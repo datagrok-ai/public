@@ -83,6 +83,7 @@ export class EChartViewer extends DG.JsViewer {
 
   updateTable() {
     const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
-    this.dataFrame = dataFrame!;
+    if (dataFrame)
+      this.dataFrame = dataFrame!;
   }
 }

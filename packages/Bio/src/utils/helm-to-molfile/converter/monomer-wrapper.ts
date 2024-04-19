@@ -1,6 +1,6 @@
 import {Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MonomerLibManager} from '../../monomer-lib/lib-manager';
 import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
@@ -22,7 +22,7 @@ export class MonomerWrapper {
 
     let molfile = libraryMonomerObject.molfile;
     if (MolfileHandler.isMolfileV2K(molfile))
-      molfile = this.convertMolfileToV3KFormat(molfile, rdKitModule);
+      molfile = this.convertMolfileToV3KFormat(molfile, monomerSymbol, rdKitModule);
 
     this.molfileWrapper = MolfileWrapperFactory.getInstance(molfile, monomerSymbol);
     this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
@@ -34,8 +34,17 @@ export class MonomerWrapper {
     this.shiftCoordinates(shift);
   }
 
-  private convertMolfileToV3KFormat(molfileV2K: string, rdKitModule: RDModule): string {
-    return rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true})).get_v3Kmolblock();
+  private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
+    let mol: RDMol | null = null;
+    try {
+      mol = rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true}))
+      if (mol)
+        return mol.get_v3Kmolblock();
+      else
+        throw new Error(`Cannot convert ${monomerSymbol} to molV3000`);
+    } finally {
+      mol?.delete();
+    }
   }
 
   private getLibraryMonomerObject(): Monomer {

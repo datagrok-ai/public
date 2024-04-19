@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getJsonData} from '../model/data-loading-utils/json-loader';
+import {loadJsonData} from '../apps/common/model/data-loader/json-loader';
 import {_package, oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '../package';
-import {tryCatch} from '../model/helpers';
+import {tryCatch} from '../apps/common/model/helpers';
 
 export async function demoOligoTranslatorUI() {
   await tryCatch(async () => oligoTranslatorApp());
@@ -39,7 +39,7 @@ export async function demoOligoPatternUI() {
     asNewValues.forEach(async (value, idx) => {
       emulateUserInput(value, idx, (i) => (len - 2 - 2 * i));
     });
-  })
+  });
 }
 
 export async function demoOligoStructureUI() {
@@ -56,6 +56,6 @@ export async function demoOligoStructureUI() {
     const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
     inputSequences.forEach(async (sequence, idx) => {
       await setInputValue(idx, sequence);
-    })
+    });
   });
 }

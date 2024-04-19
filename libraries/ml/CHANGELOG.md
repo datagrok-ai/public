@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.3 (2024-04-16)
+
+Dimensionality reduction: Better dialog.
+
 ## 6.6.2 (2024-04-15)
 
 Dimentionality reduction: create table view only in case plotEmbeddings parameter is true

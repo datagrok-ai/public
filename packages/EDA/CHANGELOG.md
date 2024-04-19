@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.20 (2024-04-16)
+
+Improve dimensionality reduction dialog.
+
 ## 1.1.19 (2024-04-15)
 
 * PLS components computation

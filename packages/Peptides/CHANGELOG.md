@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.15 (2024-04-17)
+
+Cluster max activity viewer working on level of cluster, not cluster size.
+
 ## 1.17.14 (2024-04-15)
 
 Fix display of the max activity vs cluster size viewer columns.

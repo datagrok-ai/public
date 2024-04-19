@@ -59,6 +59,31 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
+type RendererGridCellTemp = {
+  [mmcrTemps.monomerPlacer]: MonomerPlacer
+}
+
+function getRendererFridCellTempTemp(gridCell: DG.GridCell): RendererGridCellTemp {
+  /** Primarily store/get MonomerPlacer at GridColumn, fallback at (Table) Column for scatter plot tooltip  */
+  let temp: RendererGridCellTemp | null = null;
+
+  let gridCol: DG.GridColumn | null = null;
+  try { gridCol = gridCell.gridColumn; } catch { gridCol = null; }
+  temp = gridCol && gridCol.dart ? gridCol.temp as RendererGridCellTemp : null;
+
+  if (!temp) {
+    let tableCol: DG.Column | null = null;
+    try { tableCol = gridCell.cell.column; } catch { tableCol = null; }
+    if (!tableCol) {
+      const k = 42;
+    }
+    temp = tableCol ? tableCol.temp as RendererGridCellTemp : null;
+  }
+  if (temp === null)
+    throw new Error(`Monomer placer store (GridColumn or Column) not found.`);
+  return temp;
+}
+
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private padding: number = 5;
 
@@ -82,7 +107,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const tableCol: DG.Column = gridCell.cell.column;
     //const tableColTemp: TempType = tableCol.temp;
-    const seqColTemp: MonomerPlacer = gridCell.gridColumn.temp[mmcrTemps.monomerPlacer];
+    const seqColTemp: MonomerPlacer = getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer];
     if (!seqColTemp) return; // Can do nothing without precalculated data
 
     const gridCellBounds: DG.Rect = gridCell.bounds;
@@ -165,7 +190,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
     }
 
-    let seqColTemp: MonomerPlacer = gridCell.gridColumn.temp[mmcrTemps.monomerPlacer];
+    let seqColTemp: MonomerPlacer = getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer];
     if (!seqColTemp) {
       seqColTemp = new MonomerPlacer(grid, tableCol,
         () => {
@@ -192,7 +217,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const _maxIndex = maxLengthWords.length;
 
     // Store updated seqColTemp to the col temp
-    if (seqColTemp.updated) gridCell.gridColumn.temp[mmcrTemps.monomerPlacer] = seqColTemp;
+    if (seqColTemp.updated) getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer] = seqColTemp;
 
     g.save();
     try {

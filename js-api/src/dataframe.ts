@@ -1372,6 +1372,14 @@ export class RowList {
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
+  get mouseOverRowFunc(): IndexPredicate {
+    return api.grok_RowList_MouseOverRowFunc(this.dart);
+  }
+
+  where(indexPredicate: IndexPredicate) {
+    return _toIterable(api.grok_RowList_Where(this.dart, indexPredicate));
+  }
+
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.

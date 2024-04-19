@@ -29,7 +29,9 @@ export class MonomerPlacer {
 
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
   public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
+
   private readonly subs: Unsubscribable[] = [];
+  private destroyed: boolean = false;
 
   /** View is required to subscribe and handle for data frame changes */
   constructor(
@@ -53,9 +55,20 @@ export class MonomerPlacer {
       this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
         this._monomerStructureMap = {};
       }));
-      this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
+      this.subs.push(grok.events.onViewRemoving.subscribe((eventData: DG.EventData) => {
         try {
-          if (this.grid?.view?.id === view.id) this.destroy();
+          const eventView = eventData.args.view;
+          if (this.grid?.dart && this.grid.view?.id === eventView.id && !this.destroyed)
+            this.destroy();
+        } catch (err) {
+          console.error(err);
+        }
+      }));
+      this.subs.push(grok.events.onTableRemoved.subscribe((eventData: DG.EventData) => {
+        try {
+          const eventDf: DG.DataFrame = eventData.args.dataFrame;
+          if (this.col.dataFrame?.dart && this.col.dataFrame.id === eventDf.id && !this.destroyed)
+            this.destroy();
         } catch (err) {
           console.error(err);
         }
@@ -65,6 +78,7 @@ export class MonomerPlacer {
 
   private destroy() {
     for (const sub of this.subs) sub.unsubscribe();
+    this.destroyed = true;
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */

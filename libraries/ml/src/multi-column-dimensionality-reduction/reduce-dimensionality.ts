@@ -25,6 +25,11 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
   return axes.map((it) => `${it}_${colNameInd}`);
 }
 
+export function getEmbeddingViewerName(columns: DG.Column[], method: DimReductionMethods) {
+  const colNames = columns.length > 4 ? `${columns.length} columns` : columns.map((it) => it.name).join(', ');
+  return `${method} (${colNames})`;
+}
+
 export async function multiColReduceDimensionality(table: DG.DataFrame, columns: DG.Column[],
   method: DimReductionMethods, metrics: KnownMetrics[], weights: number[],
   preprocessingFunctions: (DG.Func | null | undefined)[],
@@ -61,7 +66,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
           if (plotEmbeddings && !scatterPlot) {
             scatterPlot = tv!
               .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
-                title: uiOptions.scatterPlotName ?? 'Embedding space'});
+                title: uiOptions.scatterPlotName ?? getEmbeddingViewerName(columns, method)});
           }
         } else {
           embedXCol = table.columns.byName(embedColsNames[0]);
@@ -84,7 +89,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         if (plotEmbeddings) {
           scatterPlot = tv!
             .scatterPlot({...scatterPlotProps, x: embedColsNames[0], y: embedColsNames[1],
-              title: uiOptions.scatterPlotName ?? 'Embedding space'});
+              title: uiOptions.scatterPlotName ?? getEmbeddingViewerName(columns, method)});
           ui.setUpdateIndicator(scatterPlot.root, true);
         }
 

@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.3.25 (2024-04-16)
+
+Updated the Multivariate analysis tutorial.
+
 ## 1.3.24 (2024-04-15)
 
 Fixed demo cards' images for Docking and Bio Docking conformations

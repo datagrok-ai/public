@@ -56,6 +56,9 @@ public class OracleTimestampTZTypeConverter implements Converter<Date> {
         // low order bits
         regionCode += (bytes[12] & 0b11111100) >> 2;
         String regionName = ZONEIDMAP.getRegion(regionCode);
+        // US/Pacific-New is not supported by openjdk-8u302-b08. See also: https://stackoverflow.com/a/64625291/24083346
+        if (regionName.equals("US/Pacific-New"))
+            regionName = "US/Pacific";
         return ZoneId.of(regionName);
     }
 

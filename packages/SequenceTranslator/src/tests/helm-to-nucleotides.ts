@@ -4,15 +4,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {getNucleotidesSequence} from '../model/translator-app/conversion-utils';
-import {getJsonData} from '../model/data-loading-utils/json-loader';
+import {getNucleotidesSequence} from '../apps/translator/model/conversion-utils';
+import {loadJsonData} from '../apps/common/model/data-loader/json-loader';
 import {helmToNucleotides} from './const';
 import {_package} from '../package';
-import {MonomerLibWrapper} from '../model/monomer-lib/lib-wrapper';
+import {MonomerLibWrapper} from '../apps/common/model/monomer-lib/lib-wrapper';
 
 category('HELM to Nucleotides', () => {
   before(async () => {
-    await getJsonData();
+    await loadJsonData();
     await _package.initMonomerLib();
   });
 
@@ -22,5 +22,5 @@ category('HELM to Nucleotides', () => {
       const result = getNucleotidesSequence(helm, MonomerLibWrapper.getInstance());
       expect(result, expected);
     });
-  })
+  });
 });

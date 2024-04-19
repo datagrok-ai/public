@@ -1,5 +1,20 @@
 # statistics changelog
 
+## 1.2.13 (2024-04-18)
+
+### Features
+
+* [#2754](https://github.com/datagrok-ai/public/issues/2754): Implemented capability just to connect the points (without fitting)
+* ODEs: prepare for fitting attachment
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improve curve properties and rendering:
+  * Added mergeSeries property
+  * Added column labels
+
+### Bug Fixes
+
+* Fixed property panel names.
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Renamed Show Statistics to Statistics
+
 ## 1.2.12 (2024-03-14)
 
 ### Features

@@ -10,6 +10,30 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const createPartialCopy = async (call: DG.FuncCall) => {
+  const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
+    //@ts-ignore
+    .prepare([...call.inputs].reduce((acc, [key, val]) => {
+      acc[key] = val;
+      return acc;
+    }, {} as Record<string, any>));
+  call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
+
+  return callCopy;
+};
+
+export const isIncomplete = (run: DG.FuncCall) => {
+  return !getStartedOrNull(run) || !run.id;
+};
+
+export const getStartedOrNull = (run: DG.FuncCall) => {
+  try {
+    return run.started;
+  } catch {
+    return null;
+  }
+};
+
 export const extractStringValue = (run: DG.FuncCall, key: string) => {
   if (key === AUTHOR_COLUMN_NAME) return run.author?.friendlyName ?? grok.shell.user.friendlyName;
 
@@ -40,13 +64,21 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
+  call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
+
   const dfOutputs = wu(call.outputParams.values())
-    .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((output) =>
+      output.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.outputs[output.name],
+    );
   for (const output of dfOutputs)
     deepClone.outputs[output.name] = call.outputs[output.name].clone();
 
   const dfInputs = wu(call.inputParams.values())
-    .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((input) =>
+      input.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.inputs[input.name],
+    );
   for (const input of dfInputs)
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 
