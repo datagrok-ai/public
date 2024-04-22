@@ -1290,6 +1290,8 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
+
+let mmpaNode: DG.DockNode | null = null;
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
 //name:  Matched Molecular Pairs
 //input: dataframe table [Input data table]
@@ -1298,7 +1300,9 @@ export function addScaffoldTree(): void {
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList): Promise<void> {
   const view = grok.shell.tv;
   const mmp = await MmpAnalysis.init(table, molecules, activities);
-  view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+  if (mmpaNode?.parent) //need this workaround since docking an element cannot be added repeatedly
+    view.dockManager.close(mmpaNode);
+  mmpaNode = view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
 }
 
 //name: Scaffold Tree Filter

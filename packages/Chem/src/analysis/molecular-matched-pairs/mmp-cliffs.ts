@@ -13,17 +13,17 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {chemSpace} from '../chem-space';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO, MMP_COLNAME_CHEMSPACE_X,
-  MMP_COLNAME_CHEMSPACE_Y, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO,
+  MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
 import $ from 'cash-dom';
 
-export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[]) :
+export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[], axesColsNames: string[]) :
 [sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[]] {
-  table.columns.addNewFloat('~X');
-  table.columns.addNewFloat('~Y');
+  table.columns.addNewFloat(axesColsNames[0]);
+  table.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(table, {
-    x: '~X',
-    y: '~Y',
+    x: axesColsNames[0],
+    y: axesColsNames[1],
     zoomAndFilter: 'no action',
     //color: activities.name,
     showXSelector: false,
@@ -116,18 +116,17 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
 
 export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, diffs: Array<Float32Array>,
-  rdkitModule: RDModule): ScatterPlotLinesRenderer {
+  rdkitModule: RDModule, embedColsNames: string[]): ScatterPlotLinesRenderer {
   const chemSpaceParams = {
     seqCol: molecules,
     methodName: DimReductionMethods.UMAP,
     similarityMetric: BitArrayMetricsNames.Tanimoto as BitArrayMetrics,
-    embedAxesNames: [MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y],
+    embedAxesNames: embedColsNames,
     options: {},
   };
 
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
-    MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y,
-    lines, ScatterPlotCurrentLineStyle.bold);
+    embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
 
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {

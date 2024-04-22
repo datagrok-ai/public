@@ -17,11 +17,11 @@ import {fillPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME,
-  MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y} from './mmp-constants';
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
 import {drawMoleculeLabels} from '../../rendering/molecule-label';
 import {getGenerations} from './mmp-generations';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
+import { getEmbeddingColsNames } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -248,8 +248,7 @@ export class MmpAnalysis {
     this.mmpView.append(tabs);
 
     const propertiesColumnsNames = this.parentTable.columns.names()
-      .filter((name) => name !== this.parentCol.name && name !== MMP_COLNAME_CHEMSPACE_X &&
-        name !== MMP_COLNAME_CHEMSPACE_Y && !name.startsWith('~'));
+      .filter((name) => name !== this.parentCol.name && !name.startsWith('~'));
     this.propPanelViewer = new FormsViewer();
     this.propPanelViewer.dataframe = this.parentTable;
     this.propPanelViewer.columns = propertiesColumnsNames;
@@ -271,13 +270,14 @@ export class MmpAnalysis {
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames, palette);
 
+    const embedColsNames = getEmbeddingColsNames(table).map((it) => `~${it}`);
     //Cliffs tab
-    const [sp, sliderInputs, sliderInputValueDivs, colorInputs] = getMmpScatterPlot(table, activities, maxActs);
+    const [sp, sliderInputs, sliderInputValueDivs, colorInputs] = getMmpScatterPlot(table, activities, maxActs, embedColsNames);
     drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
     const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, linesActivityCorrespondance,
-      casesGrid.dataFrame, diffs, module);
+      casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
       getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
