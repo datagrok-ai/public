@@ -700,6 +700,8 @@ export class FittingView {
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
 
+        console.log(x);
+
         let cost = 0;
 
         outputsOfInterest.forEach((output) => {
@@ -715,6 +717,8 @@ export class FittingView {
         //console.log('---------------------------------------------------------------');
         //console.log(calledFuncCall.getParamValue(output.prop.name));
         });
+
+        console.log(cost);
 
         return cost;
       };
@@ -896,8 +900,8 @@ export class FittingView {
     }
 
     if (this.gridCellChangeSubscription) {
-      this.gridClickSubscription.unsubscribe();
-      this.gridClickSubscription = null;
+      this.gridCellChangeSubscription.unsubscribe();
+      this.gridCellChangeSubscription = null;
     }
 
     this.openedViewers.forEach((v) => v.close());
