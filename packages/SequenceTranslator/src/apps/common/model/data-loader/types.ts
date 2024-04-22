@@ -1,16 +1,22 @@
+import {MODIFICATION_DATA_FIELDS as F} from './const';
+
 type KeyToValue = {[key: string]: string};
 
 export type Edges = {
   [key: string]: KeyToValue
 }
 
+export type ModificationData = {
+  [F.COLOR]: string,
+  [F.SUBSTITUTION]: string,
+}
+
+export type ModificationEntry = {
+  [modification: string]: ModificationData
+}
+
 export type PatternAppData = {
-  [index: string]: {
-    fullName: string,
-    symbols: string[],
-    color: string,
-    substitution: string,
-  }
+  [format: string]: ModificationEntry
 };
 
 export type CodesInfo = {

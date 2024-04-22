@@ -1,15 +1,17 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import '../../style.css';
 
 import {EventBus} from '../../../model/event-bus';
 import {ColumnInputManager} from './column-input';
 import {TableInputManager} from './table-input';
+import {STRAND} from '../../../model/const';
 
 export class TableControlsManager {
   private tableInputManager: TableInputManager;
   private columnInputManager: ColumnInputManager;
 
-  constructor(eventBus: EventBus) {
+  constructor(private eventBus: EventBus) {
     this.tableInputManager = new TableInputManager(eventBus);
     this.columnInputManager = new ColumnInputManager(eventBus);
   }
@@ -32,5 +34,6 @@ export class TableControlsManager {
   }
 
   private processConvertButtonClick(): void {
+    grok.shell.info(`Selected table: ${this.eventBus.getTableSelection()?.name}, selected AS strand column: ${this.eventBus.getSelectedColumn(STRAND.ANTISENSE)}`);
   }
 }

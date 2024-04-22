@@ -10,7 +10,11 @@ export function applyPatternToRawSequence(
   const rawNucleotides = rawNucleotideSequence.split('');
 
   const modifiedNucleotides = rawNucleotides.map((nucleotide, i) => {
-    const modifiedNucleotide = getModifiedNucleotide(nucleotide, modifications[i]);
+    const modifiedNucleotide = getModifiedNucleotide(
+      nucleotide,
+      modifications[i]
+
+    );
     return modifiedNucleotide;
   });
 
@@ -22,7 +26,8 @@ export function applyPatternToRawSequence(
 }
 
 function getModifiedNucleotide(nucleotide: string, modification: string): string {
-  const substitution = PATTERN_APP_DATA[modification]['substitution'];
+  const format = Object.keys(PATTERN_APP_DATA)[0];
+  const substitution = PATTERN_APP_DATA[format][modification].substitution;
   return nucleotide.replace(/([AGCTU])/, substitution);
 }
 

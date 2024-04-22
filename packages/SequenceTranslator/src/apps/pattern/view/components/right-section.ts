@@ -96,21 +96,23 @@ export class PatternAppRightSection {
       .then(() => {
         grok.shell.info(`Pattern ${patternName} saved`);
       })
-      .catch((e) => {
-        if (e instanceof PatternNameExistsError) {
-          new OverwritePatternDialog(this.eventBus, this.dataManager).show();
-        } else if (e instanceof PatternExistsError) {
-          grok.shell.warning(ui.div([
-            ui.divText(`Pattern already exists`),
-            ui.button('Load', () => {
-              const hash = e.message;
-              this.eventBus.requestLoadPatternInNewTab(hash);
-            }),
-          ]));
-        } else {
-          console.error('Error while saving pattern', e);
-        }
-      });
+      .catch((e) => this.handleErrorWhileSavingPattern(e));
+  }
+
+  private handleErrorWhileSavingPattern(e: Error): void {
+    if (e instanceof PatternNameExistsError) {
+      new OverwritePatternDialog(this.eventBus, this.dataManager).show();
+    } else if (e instanceof PatternExistsError) {
+      grok.shell.warning(ui.div([
+        ui.divText(`Pattern already exists`),
+        ui.button('Load', () => {
+          const hash = e.message;
+          this.eventBus.requestLoadPatternInNewTab(hash);
+        }),
+      ]));
+    } else {
+      console.error('Error while saving pattern', e);
+    }
   }
 }
 

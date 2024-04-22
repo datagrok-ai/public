@@ -47,9 +47,16 @@ export class ColumnInputManager {
   }
 
   private createStrandColumnInput(): Record<StrandType, HTMLElement> {
-    const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
+    const columns = this.selectedTable ?
+      this.selectedTable.columns.names().sort((a, b) => a.localeCompare(b)) :
+      [];
     const strandColumnInput = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.choiceInput(`${STRAND_LABEL[strand]} column`, columns[0], columns, () => { });
+      const input = ui.choiceInput(
+        `${STRAND_LABEL[strand]} column`,
+        columns[0],
+        columns,
+        (colName: string) => this.eventBus.selectColumn(strand, colName)
+      );
       return [strand, input.root];
     })) as Record<StrandType, HTMLElement>;
     return strandColumnInput;

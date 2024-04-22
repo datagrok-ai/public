@@ -37,68 +37,37 @@ export function getMostFrequentNucleotide(sequences: NucleotideSequences): strin
   return mostFrequentNucleotide;
 }
 
-export function translateSequence(
-  sequence: string,
-  bases: DG.InputBase[],
-  ptoLinkages: DG.InputBase[],
-  startModification: DG.InputBase,
-  endModification: DG.InputBase,
-  firstPtoExist: boolean): string {
-  let i: number = -1;
-  let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
-    i++;
-    const AXOLABS_MAP = PATTERN_APP_DATA;
+// export function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
+//   const nameOfNewColumn = 'ID ' + patternName;
+//   const columns = grok.shell.table(tableName).columns;
+//   if (columns.contains(nameOfNewColumn))
+//     columns.remove(nameOfNewColumn);
+//   const columnWithIds = columns.byName(columnName);
+//   return columns.addNewString(nameOfNewColumn).init((i: number) => {
+//     return (columnWithIds.getString(i) === '') ? '' : columnWithIds.get(i) + '_' + patternName;
+//   });
+// }
 
-    const baseChoices: string[] = Object.keys(AXOLABS_MAP);
-    // const defaultBase: string = baseChoices[0];
-    const indexOfSymbol = AXOLABS_MAP['RNA']['symbols'].indexOf(x);
-    let symbol = AXOLABS_MAP[bases[i].value]['symbols'][indexOfSymbol];
-    if (isOverhangNucleotide(bases[i].value)) {
-      if (i < sequence.length / 2 && !isOverhangNucleotide(bases[i + 1].value))
-        symbol = symbol + x + 'f';
-      else if (i > sequence.length / 2 && !isOverhangNucleotide(bases[i - 1].value))
-        symbol = x + 'f' + symbol;
-    }
-    return (ptoLinkages[i].value) ? symbol + 's' : symbol;
-  });
-  if (mainSequence.slice(0, 5).split('mU').length === 3)
-    mainSequence = '(uu)' + mainSequence.slice(4);
-  if (mainSequence.slice(mainSequence.length - 7).split('mU').length === 3)
-    mainSequence = mainSequence.slice(0, mainSequence.length - 4) + '(uu)';
-  return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
-}
-
-export function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
-  const nameOfNewColumn = 'ID ' + patternName;
-  const columns = grok.shell.table(tableName).columns;
-  if (columns.contains(nameOfNewColumn))
-    columns.remove(nameOfNewColumn);
-  const columnWithIds = columns.byName(columnName);
-  return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return (columnWithIds.getString(i) === '') ? '' : columnWithIds.get(i) + '_' + patternName;
-  });
-}
-
-export function addColumnWithTranslatedSequences(
-  tableName: string,
-  columnName: string,
-  bases: DG.InputBase[],
-  ptoLinkages: DG.InputBase[],
-  startModification: DG.InputBase,
-  endModification: DG.InputBase,
-  firstPtoExist: boolean) {
-  const nameOfNewColumn = 'Axolabs ' + columnName;
-  const columns = grok.shell.table(tableName).columns;
-  if (columns.contains(nameOfNewColumn))
-    columns.remove(nameOfNewColumn);
-  const columnWithInputSequences = columns.byName(columnName);
-  return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return columnWithInputSequences.getString(i) === '' ?
-      '' :
-      translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification,
-        firstPtoExist);
-  });
-}
+// export function addColumnWithTranslatedSequences(
+//   tableName: string,
+//   columnName: string,
+//   bases: DG.InputBase[],
+//   ptoLinkages: DG.InputBase[],
+//   startModification: DG.InputBase,
+//   endModification: DG.InputBase,
+//   firstPtoExist: boolean) {
+//   const nameOfNewColumn = 'Axolabs ' + columnName;
+//   const columns = grok.shell.table(tableName).columns;
+//   if (columns.contains(nameOfNewColumn))
+//     columns.remove(nameOfNewColumn);
+//   const columnWithInputSequences = columns.byName(columnName);
+//   return columns.addNewString(nameOfNewColumn).init((i: number) => {
+//     return columnWithInputSequences.getString(i) === '' ?
+//       '' :
+//       translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification,
+//         firstPtoExist);
+//   });
+// }
 
 export namespace StrandEditingUtils {
   export function getTruncatedStrandData(
