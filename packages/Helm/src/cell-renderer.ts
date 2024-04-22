@@ -152,11 +152,9 @@ function getRendererGridCellTemp(gridCell: DG.GridCell
   try { gridCol = gridCell.gridColumn; } catch { gridCol = null; }
   temp = gridCol ? gridCol.temp as RendererGridCellTemp : null;
 
-  let tableCol: DG.Column | null = null;
-  if (!temp) {
-    try { tableCol = gridCell.cell.column; } catch { tableCol = null; }
-    temp = tableCol ? tableCol.temp as RendererGridCellTemp : null;
-  }
+  const tableCol: DG.Column = gridCell.cell.column;
+  if (!temp) temp = tableCol.temp;
+
   if (temp === null) throw new Error(`Monomer placer store (GridColumn or Column) not found.`);
   return [gridCol, tableCol, temp];
 }

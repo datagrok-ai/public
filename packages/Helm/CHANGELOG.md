@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.1.34 (2024-04-22)
+
+Fix Helm grid cell renderer
+
 ## 2.1.33 (2024-04-19)
 
 Fix cell renderer for scatter plot tooltip, add test
