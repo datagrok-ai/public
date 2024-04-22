@@ -1241,7 +1241,10 @@ export class CompositionPipeline {
   private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const subPath = this.proccessPipelineNodeConfig(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
-    for (const stepConf of pipelineConf.steps) {
+    for (const conf of pipelineConf.steps) {
+      const stepConf = this.processNodeConfig<PipelineStepConfiguration>(conf, subPath, subPath, new Set(), 'step');
+      if (!stepConf)
+        continue;
       const sKey = stepConf.id;
       const popups: PipelinePopupConfiguration[] = [];
       for (const popupConf of this.getAllItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
