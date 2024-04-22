@@ -9,6 +9,7 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 
 import {ILogger} from './logger';
 import {errInfo} from './err-info';
+import {CellRendererBackBase} from './cell-renderer-back-base';
 
 export class PropsBase {
   public constructor(
@@ -30,19 +31,23 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
   };
   /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
   private _busy: boolean = false;
+  private _sweeperHandle: number | null = null;
 
   constructor(
     protected readonly logger: ILogger,
     protected readonly retryLimit: number = 3,
     protected _errorCount: number = 0,
     protected readonly errorLimit: number = 3,
+    protected readonly taskTimout: number = 1000,
   ) {
     this._queue = [];
     this._queueDict = {};
+
+    this._sweepToggle(false);
   }
 
   private static viewerCounter: number = -1;
-  private readonly viewerId: number = RenderServiceBase.viewerCounter;
+  private readonly viewerId: number = ++RenderServiceBase.viewerCounter;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.viewerId}>`;
@@ -75,7 +80,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
     this._queue.push({key, task, tryCount, dt: window.performance.now()});
 
     if (!this._busy) {
-      this._busy = true;
+      this._sweepToggle(this._busy = true);
 
       // TODO: Use requestAnimationFrame()
       this.logger.debug(`${logPrefix}, window.setTimeout() -> this._processQueue() `);
@@ -144,10 +149,11 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
     if (this._queue.length === 0) return;
     this.logger.debug(`${logPrefix}, ` +
       `queue: ${JSON.stringify(this._queue.map((t) => t.key))}`);
-    let renderBinding: Unsubscribable | null = null;
+    let renderSub: Unsubscribable | null = null;
+
     const finallyProcessQueue = (caller: string) => {
       const logPrefixR = `${logPrefix}.finallyProcessQueue( <- ${caller} )`;
-      if (renderBinding !== null) renderBinding.unsubscribe();
+      if (renderSub) renderSub.unsubscribe(); // renderSub can be undefined for a sync render service (?)
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
         this.logger.debug(`${logPrefixR}, ` + 'window.setTimeout() -> this._processQueue() ');
@@ -155,7 +161,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
       } else {
         // release flag allowing _processQueue on add queue item
         this.logger.debug(`${logPrefixR}, ` + 'this._busy = false');
-        this._busy = false;
+        this._sweepToggle(this._busy = false);
       }
     };
 
@@ -184,7 +190,8 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
     const timeoutHandle = window.setTimeout(() => {
       if (!handled) {
         this.logger.warning(`${logPrefix}.timeoutHandle(), not handled, ` +
-          `key: ${key?.toString}`);
+          `key: ${key?.toString()}.` + `\n` +
+          `  The .requestRender() overridden method must call renderHandler callback from args.`);
         this._errorCount += 1;
         this.render(task, key, tryCount + 1); // return task to the queue
         finallyProcessQueue('timeout');
@@ -201,47 +208,62 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
     };
 
     this.requestRender(key, task, renderHandler).then((res) => {
-      //[renderBinding, emptyCanvasHash] = res;
-      renderBinding = res[0];
+      const logPrefixInt = `${logPrefix}, requestRender().then()`;
+      renderSub = res[0];
       emptyCanvasHash = res[1];
       const triggerRender = res[2];
       if (emptyCanvasHash === undefined)
-        console.warn(`${logPrefix}, this.requestRender.then() emptyCanvasHash undefined`);
+        console.warn(`${logPrefixInt}, this.requestRender.then() emptyCanvasHash undefined`);
       triggerRender();
     })
       .catch((err: any) => {
+        const logPrefixInt = `${logPrefix}, requestRender().catch()`;
         // Not waiting timeout on error
         const [errMsg, errStack] = errInfo(err);
         this.logger.error(errMsg, undefined, errStack);
         window.clearTimeout(timeoutHandle);
         this._errorCount += 1;
         this.render(task, key, tryCount + 1); // return task to the queue
-        finallyProcessQueue(`${logPrefix} this.requestRender.catch()`);
+        finallyProcessQueue(`${logPrefixInt}`);
       });
   }
 
-  // /** Sweep queue for stalled tasks */
-  // private _sweepQueue(): void {
-  //   const logPrefix: string = `${this.toLog()}._sweepQueue()`;
-  //   const nowDt: number = window.performance.now();
-  //   let swept: boolean = false;
-  //
-  //   for (let qI = this._queue.length - 1; qI >= 0; qI--) {
-  //     const {key, task: _task, dt} = this._queue[qI];
-  //     if ((nowDt - dt) > TASK_TIMEOUT) {
-  //       // stalled task
-  //       this.logger.warning(`${logPrefix}, remove task key = ${key?.toString()}`);
-  //       this._queue.splice(qI);
-  //       delete this._queueDict[key!];
-  //       swept = true;
-  //     }
-  //   }
-  //
-  //   this._busy = this._queue.length > 0;
-  //   if (!this._busy && swept) {
-  //     // Some tasks had been swept
-  //   }
-  // }
+  /** Sweep queue for stalled tasks */
+  private _sweepQueue(): void {
+    const logPrefix: string = `${this.toLog()}._sweepQueue()`;
+    const nowDt: number = window.performance.now();
+    let swept: number = 0;
+
+    for (let qI = this._queue.length - 1; qI >= 0; qI--) {
+      const {key, task: _task, dt} = this._queue[qI];
+      if ((nowDt - dt) > this.taskTimout) {
+        // stalled task
+        this.logger.warning(`${logPrefix}, remove task key = ${key?.toString()}`);
+        this._queue.splice(qI);
+        delete this._queueDict[key!];
+        ++swept;
+      }
+    }
+
+    this._sweepToggle(this._busy = this._queue.length > 0);
+    if (!this._busy && swept) {
+      this.logger.warning(`${logPrefix}, ${swept} task(s) had been swept`);
+    }
+  }
+
+  private _sweepToggle(busy: boolean): boolean {
+    const logPrefix: string = `${this.toLog()}._sweepToggle( busy = ${busy} )`;
+    if (busy && this._sweeperHandle !== null) {
+      this.logger.debug(`${logPrefix}, disable queue sweeper`);
+      window.clearInterval(this._sweeperHandle);
+      this._sweeperHandle = null;
+    }
+    if (!busy && this._sweeperHandle === null) {
+      this.logger.debug(`${logPrefix}, enable queue sweeper`);
+      this._sweeperHandle = window.setInterval(() => { this._sweepQueue(); }, 500);
+    }
+    return busy;
+  }
 
   // -- Actual implementations --
 
@@ -262,14 +284,26 @@ export class RenderTask<TProps extends PropsBase> {
   ) {}
 }
 
-export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> {
+export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extends CellRendererBackBase<string> {
   protected readonly taskQueueMap = new Map<number, RenderTask<TProps>>;
-  protected readonly imageCache = new Map<number, HTMLImageElement>();
+  protected imageCache = new Map<number, HTMLCanvasElement>();
 
   protected constructor(
-    protected readonly gridCol: DG.GridColumn,
-    protected readonly logger: ILogger,
-  ) {}
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column,
+    logger: ILogger,
+    protected readonly cacheEnabled: boolean = true,
+  ) {
+    super(gridCol, tableCol, logger);
+  }
+
+  protected override reset(): void {
+    if (this.imageCache) {
+      for (const image of this.imageCache.values())
+        image.remove();
+    }
+    this.imageCache = new Map<number, HTMLCanvasElement>();
+  }
 
   protected abstract getRenderService(): RenderServiceBase<TProps>;
 
@@ -288,10 +322,9 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> {
 
     g.save();
     try {
-      const cacheDisabled: boolean = false;
       const image = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
 
-      if (cacheDisabled || !image ||
+      if (!this.cacheEnabled || !image ||
         Math.abs(image.width / r - gridCell.gridColumn.width) > 0.5 ||
         Math.abs(image.height / r - gridCell.grid.props.rowHeight) > 0.5
       ) {
@@ -304,16 +337,20 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> {
         const task: RenderTask<TProps> = new RenderTask<TProps>(
           gridCell.cell.rowIndex.toString(),
           this.getRenderTaskProps(gridCell, r),
-          (canvas: HTMLCanvasElement) => {
+          (canvas: CanvasImageSource) => {
             g.save();
             try {
               this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
               service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, canvas);
 
-              const imageStr: string = canvas.toDataURL();
-              base64ToImg(imageStr).then((image) => {
-                this.imageCache.set(rowIdx, image);
-              });
+              // const imageStr: string = canvas.toDataURL();
+              // base64ToImg(imageStr).then((image) => {
+              //   this.imageCache.set(rowIdx, image);
+              // });
+              const image = ui.canvas(task.props.width, task.props.height);
+              const imageCtx = image.getContext('2d')!;
+              imageCtx.drawImage(canvas, 0, 0);
+              this.imageCache.set(rowIdx, image);
             } finally {
               g.restore();
               this.taskQueueMap.delete(rowIdx);
@@ -345,7 +382,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> {
   get onRendered(): Observable<void> { return this._onRendered; }
 
   invalidate(caller?: string): void {
-    this.gridCol.grid.invalidate();
+    this.invalidateGrid();
   }
 
   async awaitRendered(

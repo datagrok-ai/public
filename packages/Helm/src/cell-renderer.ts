@@ -8,8 +8,9 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {IEditor, HelmMonomerPlacer, ISeqMonomer, Temps} from './helm-monomer-placer';
-import {getHoveredMonomerFallback, getHoveredMonomerFromEditor} from './utils/get-hovered';
+import {IEditor, HelmMonomerPlacer, ISeqMonomer, Temps, IEditorMol} from './helm-monomer-placer';
+import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 // import {_package} from './package'; // NullError: method not found: '_package' on null
 
@@ -18,27 +19,6 @@ const enum tempTAGS {
   helmMaxLengthWords = 'helm-maxLengthWords',
 
   helmPlacer = 'bio-helmPlacer',
-}
-
-type RendererGridCellTemp = {
-  [Temps.helmMonomerPlacer]: HelmMonomerPlacer;
-}
-
-function getRendererGridCellTemp(
-  gridCell: DG.GridCell
-): [DG.GridColumn | null, DG.Column | null, RendererGridCellTemp] {
-  /** Primarily store/get MonomerPlacer at GridColumn, fallback at (Table) Column for scatter plot tooltip  */
-  let temp: RendererGridCellTemp | null = null;
-
-  let gridCol: DG.GridColumn | null = null;
-  try { gridCol = gridCell.gridColumn; } catch { gridCol = null; }
-  temp = gridCol ? gridCol.temp as RendererGridCellTemp : null;
-
-  let tableCol: DG.Column | null = null;
-  try { tableCol = gridCell.cell.column; } catch { tableCol = null; }
-  temp = tableCol ? tableCol.temp as RendererGridCellTemp : null;
-  if (temp === null) throw new Error(`Monomer placer store (GridColumn or Column) not found.`);
-  return [gridCol, tableCol, temp];
 }
 
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
@@ -55,8 +35,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     try {
-      const [_gridCol, tableCol, temp] = getRendererGridCellTemp(gridCell);
-      const helmPlacer = temp[Temps.helmMonomerPlacer];
+      const [_gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
+      const helmPlacer = temp['rendererBack'];
       /* Can not do anything without tableColumn */
       if (!tableCol) return;
 
@@ -64,11 +45,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
+      const editorMol: IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
-      if (editor)
-        seqMonomer = getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor);
+      if (editorMol)
+        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
       else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);
@@ -126,11 +107,12 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
   ) {
     g.save();
     try {
-      const [gridCol, tableCol, temp] = getRendererGridCellTemp(gridCell);
+      const [gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
       /* Can not do anything without tableColumn containing temp */
       if (!tableCol) return;
-      let helmPlacer = temp[Temps.helmMonomerPlacer];
-      if (!helmPlacer) helmPlacer = temp[Temps.helmMonomerPlacer] = new HelmMonomerPlacer(gridCol, tableCol);
+      let helmPlacer = temp['rendererBack'];
+      if (!helmPlacer) helmPlacer = temp['rendererBack'] = new HelmMonomerPlacer(gridCol, tableCol);
 
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
       const missedColor = 'red';
@@ -156,7 +138,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
         // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
         const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
-        helmPlacer.setEditor(gridCell.tableRowIndex!, editor);
+        helmPlacer.setEditorMol(gridCell.tableRowIndex!, editor.m);
 
         helmPlacer.skipCell(gridCell.tableRowIndex!);
         return;

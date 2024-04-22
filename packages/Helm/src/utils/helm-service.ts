@@ -2,10 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
+import $ from 'cash-dom';
+import {Subject, Unsubscribable} from 'rxjs';
 
 import {HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
 import {IEditor} from '../helm-monomer-placer';
 
@@ -15,6 +17,7 @@ export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
   private editor: IEditor | null = null;
+  private image: HTMLImageElement | null = null;
 
   constructor() {
     super(_package.logger);
@@ -40,86 +43,54 @@ export class HelmService extends HelmServiceBase {
     if (!this.editor) {
       this.editor = new JSDraw2.Editor(this.hostDiv, {width: 300, height: 300, skin: 'w8', viewonly: true}) as IEditor;
     }
+    const lST = window.performance.now();
+    this.editor.resize(task.props.width, task.props.height);
+    this.editor.setData(task.props.gridCell.cell.valueString, 'helm');
+    const lET = window.performance.now();
 
-    const gridCell = task.props.gridCell;
+    const svgEl = $(this.hostDiv).find('svg').get(0) as unknown as SVGSVGElement;
+    const dpr = window.devicePixelRatio;
 
-    // let tableCol: DG.Column | null = null;
-    // try { tableCol = gridCell.tableColumn; } catch { }
-    // if (!tableCol) return [undefined as unknown as SignalBinding, -1, () => {}];
-    //
-    // const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
-    // const missedColor = 'red';
-    // const monomerColor: string = '#404040';
-    // const frameColor: string = '#C0C0C0';
-    //
-    // const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value);
-    // const monomerList = parseHelm(seq);
-    // const monomers: Set<string> = new Set<string>(monomerList);
-    // const missedMonomers: Set<string> = findMonomers(monomerList);
-    // const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
-    //
-    // let w: number = task.props.width;
-    // let h: number = task.props.height;
-    //
-    // if (missedMonomers.size == 0) {
-    //   // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
-    //   const host = gridCell.element = ui.div([],
-    //     {style: {width: `${w - 2}px`, height: `${h - 2}px`, margin: `${1}px`, backgroundColor: '#FFE0E0'}});
-    //   host.setAttribute('dataformat', 'helm');
-    //   host.setAttribute('data', seq /* gaps skipped */);
-    //   // if grid has neighbour to the left, then shift host to the left
-    //   if (host.parentElement && (gridCell.grid?.canvas?.offsetLeft ?? 0) > 0) {
-    //     host.parentElement.style.left =
-    //       `${(gridCell.grid?.canvas?.offsetLeft ?? 0) + host.parentElement.offsetLeft}px`;
-    //   }
-    //
-    //   // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
-    //   const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
-    //   helmPlacer.setEditor(gridCell.tableRowIndex!, editor);
-    //
-    //   helmPlacer.skipCell(gridCell.tableRowIndex!);
-    //   return [undefined as unknown as SignalBinding, ];
-    // }
-    //
-    // if (missedMonomers.size > 0) {
-    //   if (!grid) {
-    //     const r = window.devicePixelRatio;
-    //     h = 28;
-    //     g.canvas.height = h * r;
-    //     g.canvas.style.height = `${h}px`;
-    //   }
-    //
-    //   w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    //   //g.save();
-    //   g.beginPath();
-    //   g.rect(x, y, w, h);
-    //   g.clip();
-    //   g.transform(1, 0, 0, 1, x, y);
-    //   g.font = '12px monospace';
-    //   g.textBaseline = 'top';
-    //   const [allParts, _lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
-    //
-    //   for (let i = 0; i < allParts.length; ++i) {
-    //     const part: string = allParts[i];
-    //     const color: string =
-    //       part === '.' || part.endsWith('{') || part.startsWith('}') ? frameColor :
-    //         missedMonomers.has(part) ? missedColor :
-    //           monomers.has(part) ? monomerColor :
-    //             frameColor;
-    //     g.fillStyle = color;
-    //     printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0,
-    //       undefined, undefined, undefined, undefined, undefined,
-    //       undefined, undefined, undefined, helmPlacer.monomerTextSizeMap);
-    //   }
-    // }
+    const rST = window.performance.now();
+    const renderHandlerInt = (): void => {
+      const rET: number = window.performance.now();
+      this.logger.debug(`${logPrefix}.renderHandlerInt(), ` +
+        `key: ${key?.toString()}, ` +
+        `load: ${lET - lST} ms,\n    ` + `renderET: ${rET - rST} ms, ` +
+        `emptyCanvasHash: ${emptyCanvasHash}`);
+      renderHandler();
+    };
 
-    const trigger = () => {};
-    return [undefined as unknown as Unsubscribable, emptyCanvasHash, trigger];
+    const renderEvent = new Subject();
+    const renderSub = renderEvent.subscribe(() => {
+      const logPrefixInt = `${logPrefix} on renderEvent`;
+      this.logger.debug(`${logPrefixInt}`);
+    });
+    const trigger = (): void => {
+      svgToImage(svgEl, dpr).then((imageEl) => {
+        this.image = imageEl;
+        renderHandlerInt();
+      });
+    };
+    return [renderSub, -1, trigger];
   }
 
   protected onRendered(
     key: keyof any | undefined, task: RenderTask<HelmProps>, emptyCanvasHash: number
   ): boolean {
+    const dpr = window.devicePixelRatio;
+    const canvas = ui.canvas(task.props.width, task.props.height);
+    try {
+      const g = canvas.getContext('2d');
+      if (!this.image || !g) return false;
+      g.fillStyle = '#C0C0FF';
+      g.fillRect(0, 0, canvas.width, canvas.height);
+      //g.transform(dpr, 0, 0, dpr, 0, 0);
+      g.drawImage(this.image, 0, 0);
+      task.onAfterRender(canvas);
+    } finally {
+      canvas.remove();
+    }
     return true;
   }
 

@@ -16,6 +16,7 @@ import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
+import {HelmGridCellRenderer} from './utils/helm-grid-cell-renderer';
 import {_getHelmService} from './package-utils';
 
 import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
@@ -161,8 +162,8 @@ export function getHelmService(): HelmServiceBase {
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
-  return new HelmCellRenderer(); // old
-  // return new HelmGridCellRenderer(); // new
+  // return new HelmCellRenderer(); // old
+  return new HelmGridCellRenderer(); // new
 }
 
 function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {

@@ -10,20 +10,54 @@ import {
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
-import {HelmMonomerPlacer, IEditor, ISeqMonomer} from '../helm-monomer-placer';
-import {findMonomers, parseHelm, removeGapsFromHelm} from './index';
-import {getHoveredMonomerFallback, getHoveredMonomerFromEditor} from './get-hovered';
+import {IEditorMol, ISeqMonomer, Temps} from '../helm-monomer-placer';
+import {getHoveredMonomerFromEditorMol} from './get-hovered';
 import {_getHelmService} from '../package-utils';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
-import {_package} from '../package';
+import {_package, getMonomerLib} from '../package';
 
-export const enum Temps {
-  renderer = '.renderer.helm'
+class WrapLogger implements ILogger {
+  constructor(
+    private readonly base: ILogger
+  ) {}
+
+  error(message: any, params?: object | undefined, stackTrace?: string | undefined): void {
+    this.base.error(message, params, stackTrace);
+  }
+
+  warning(message: string, params?: object | undefined): void {
+    this.base.warning(message, params);
+  }
+
+  info(message: string, params?: object | undefined): void {
+    // this.base.info(message, params);
+  }
+
+  debug(message: string, params?: object | undefined): void {
+    // this.base.debug(message, params);
+  }
 }
 
 class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
-  constructor(gridCol: DG.GridColumn) {
-    super(gridCol, _package.logger);
+  private readonly monomerLib: IMonomerLib;
+
+  constructor(
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column<string>,
+  ) {
+    super(gridCol, tableCol, new WrapLogger(_package.logger) /* _package.logger */, true);
+    this.monomerLib = getMonomerLib();
+    this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
+  }
+
+  protected override reset(): void {
+    super.reset();
+    this._editorMolList = new Array<IEditorMol | null>(this.tableCol.length).fill(null);
+    if (this.gridCol && this.gridCol.dart) this.gridCol.grid?.invalidate();
   }
 
   protected override getRenderService(): RenderServiceBase<HelmProps> {
@@ -48,66 +82,48 @@ class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
     const argsX = e.offsetX - gcb.x;
     const argsY = e.offsetY - gcb.y;
 
-    //@ts-ignore
-    const helmPlacer: HelmMonomerPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
-    const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
+    const editorMol: IEditorMol | null = this.getEditorMol(gridCell.tableRowIndex!);
+    if (!editorMol) return; // The gridCell is not rendered yet
     let seqMonomer: ISeqMonomer | null;
-    let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
-    if (editor)
-      seqMonomer = getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor);
-    else {
-      const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
-      const monomerList = parseHelm(seq);
-      missedMonomers = findMonomers(monomerList);
-      const parsedMonomers = new Set<string>(monomerList);
-      seqMonomer = getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
-      if (seqMonomer && !parsedMonomers.has(seqMonomer.symbol)) seqMonomer = null;
-      if (seqMonomer) {
-        const textSize = helmPlacer.monomerTextSizeMap[seqMonomer.symbol];
-        if (textSize) {
-          const textBaseLine = gcb.height / 2 -
-            (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
-          const textTop = textBaseLine - textSize.fontBoundingBoxAscent;
-          const textBottom = textBaseLine + textSize.fontBoundingBoxDescent;
-          if (argsY < textTop || textBottom < argsY) seqMonomer = null;
-        }
-      }
-    }
+    seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
+
 
     if (seqMonomer) {
-      if (!missedMonomers.has(seqMonomer.symbol)) {
-        const monomer = helmPlacer.getMonomer(seqMonomer);
-        if (monomer) {
-          const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-          const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-          ui.tooltip.show(ui.divV([
-            ui.divText(seqMonomer.symbol),
-            monomerSvg,
-          ]), e.x + 16, e.y + 16);
-        }
-      } else {
-        ui.tooltip.show(ui.divV([
-          ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
-          ui.divText('Open the Context Panel, then expand Manage Libraries'),
-        ]), e.x + 16, e.y + 16);
-      }
-    } else if (missedMonomers.size == 0) {
-      ui.tooltip.hide();
-      return;
-    } else { // seqMonomer == null && missedMonomers.size > 0
-      const mmStrList = wu(missedMonomers.keys()).toArray().sort()
-        .filter((_, i) => i < 3);
-      const missedMonomersStr = mmStrList.join(', ') + (missedMonomers.size > 3 ? ', ...' : '');
-      ui.tooltip.show(ui.divV([ui.divText('Monomers missed in monomer libraries:'),
-        ui.divText(missedMonomersStr)
+      ui.tooltip.show(ui.divV([
+        ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
+        ui.divText('Open the Context Panel, then expand Manage Libraries'),
       ]), e.x + 16, e.y + 16);
-    }
+    } else
+      ui.tooltip.hide();
   }
 
-  static getOrCreate(gridCol: DG.GridColumn): HelmGridCellRendererBack {
-    let res: HelmGridCellRendererBack = gridCol.temp[Temps.renderer];
-    if (!res) res = gridCol.temp[Temps.renderer] = new HelmGridCellRendererBack(gridCol);
+  // -- Handle events --
+  private monomerLibOnChanged(_value: any): void {
+    this.reset();
+    this.invalidateGrid();
+  }
+
+
+  static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
+    const [gridCol, tableCol, temp] =
+      getGridCellRendererBack<string, HelmGridCellRendererBack>(gridCell);
+
+    let res: HelmGridCellRendererBack = temp['rendererBack'];
+    if (!res) res = temp['rendererBack'] =
+      new HelmGridCellRendererBack(gridCol, tableCol);
     return res;
+  }
+
+  // -- Mol --
+
+  private _editorMolList: (IEditorMol | null)[];
+
+  private setEditorMol(tableRowIndex: number, editorMol: IEditorMol): void {
+    this._editorMolList[tableRowIndex] = editorMol;
+  }
+
+  private getEditorMol(tableRowIndex: number): IEditorMol | null {
+    return this._editorMolList[tableRowIndex];
   }
 }
 
@@ -123,10 +139,10 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
     const logPrefix = `Helm: HelmGridCellRenderer.onMouseMove()`;
     try {
-      HelmGridCellRendererBack.getOrCreate(gridCell.gridColumn).onMouseMove(gridCell, e);
+      HelmGridCellRendererBack.getOrCreate(gridCell).onMouseMove(gridCell, e);
     } catch (err: any) {
-      const errMsg: string = errorToConsole(err);
-      console.error(`${logPrefix} error:\n` + errMsg);
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
     } finally {
       e.preventDefault();
       e.stopPropagation();
@@ -137,6 +153,6 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
-    HelmGridCellRendererBack.getOrCreate(gridCell.gridColumn).render(g, x, y, w, h, gridCell, cellStyle);
+    HelmGridCellRendererBack.getOrCreate(gridCell).render(g, x, y, w, h, gridCell, cellStyle);
   }
 }

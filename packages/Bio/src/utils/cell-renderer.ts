@@ -23,6 +23,7 @@ import {ISeqSplitted, SeqSplittedBase} from '@datagrok-libraries/bio/src/utils/m
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {alphabetPolymerTypes, IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {
   Temps as mmcrTemps, Tags as mmcrTags,
@@ -63,27 +64,6 @@ type RendererGridCellTemp = {
   [mmcrTemps.monomerPlacer]: MonomerPlacer
 }
 
-function getRendererFridCellTempTemp(gridCell: DG.GridCell): RendererGridCellTemp {
-  /** Primarily store/get MonomerPlacer at GridColumn, fallback at (Table) Column for scatter plot tooltip  */
-  let temp: RendererGridCellTemp | null = null;
-
-  let gridCol: DG.GridColumn | null = null;
-  try { gridCol = gridCell.gridColumn; } catch { gridCol = null; }
-  temp = gridCol && gridCol.dart ? gridCol.temp as RendererGridCellTemp : null;
-
-  if (!temp) {
-    let tableCol: DG.Column | null = null;
-    try { tableCol = gridCell.cell.column; } catch { tableCol = null; }
-    if (!tableCol) {
-      const k = 42;
-    }
-    temp = tableCol ? tableCol.temp as RendererGridCellTemp : null;
-  }
-  if (temp === null)
-    throw new Error(`Monomer placer store (GridColumn or Column) not found.`);
-  return temp;
-}
-
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private padding: number = 5;
 
@@ -105,9 +85,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     // if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
     //   return;
 
-    const tableCol: DG.Column = gridCell.cell.column;
-    //const tableColTemp: TempType = tableCol.temp;
-    const seqColTemp: MonomerPlacer = getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer];
+    const [_gridCol, tableCol, temp] =
+      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
+    const seqColTemp: MonomerPlacer = temp['rendererBack'];
     if (!seqColTemp) return; // Can do nothing without precalculated data
 
     const gridCellBounds: DG.Rect = gridCell.bounds;
@@ -121,7 +101,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
     const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX);
 
-    const seqCList: SeqSplittedBase = SeqHandler.forColumn(seqColTemp.col)
+    const seqCList: SeqSplittedBase = SeqHandler.forColumn(tableCol)
       .getSplitted(gridCell.tableRowIndex!).canonicals;
     if (left !== null && left < seqCList.length) {
       const monomerSymbol: string = seqCList[left];
@@ -190,9 +170,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
     }
 
-    let seqColTemp: MonomerPlacer = getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer];
+    const [gridCol, _tc, temp] =
+      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
+    let seqColTemp: MonomerPlacer = temp['rendererBack'];
     if (!seqColTemp) {
-      seqColTemp = new MonomerPlacer(grid, tableCol,
+      seqColTemp = new MonomerPlacer(gridCol, tableCol, _package.logger,
         () => {
           const sh = SeqHandler.forColumn(tableCol);
           return {
@@ -217,7 +199,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const _maxIndex = maxLengthWords.length;
 
     // Store updated seqColTemp to the col temp
-    if (seqColTemp.updated) getRendererFridCellTempTemp(gridCell)[mmcrTemps.monomerPlacer] = seqColTemp;
+    if (seqColTemp.updated) temp['rendererBack'] = seqColTemp;
 
     g.save();
     try {

@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {HelmMonomerPlacer, IEditor, IEditorMolAtom, ISeqMonomer} from '../helm-monomer-placer';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
-export function getHoveredMonomerFromEditor(
-  argsX: number, argsY: number, gridCell: DG.GridCell, editor: IEditor
+import {HelmMonomerPlacer, IEditorMol, IEditorMolAtom, ISeqMonomer} from '../helm-monomer-placer';
+
+export function getHoveredMonomerFromEditorMol(
+  argsX: number, argsY: number, gridCell: DG.GridCell, mol: IEditorMol
 ): ISeqMonomer | null {
   let hoveredSeqMonomer: ISeqMonomer | null = null;
 
@@ -14,10 +15,10 @@ export function getHoveredMonomerFromEditor(
   function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
     let atom: number | undefined = undefined;
     let distance: number | undefined = undefined;
-    for (let atomI = 0; atomI < editor.m.atoms.length; ++atomI) {
+    for (let atomI = 0; atomI < mol.atoms.length; ++atomI) {
       if (!excluded.includes(atomI)) {
-        const aX: number = editor.m.atoms[atomI].p.x;
-        const aY: number = editor.m.atoms[atomI].p.y;
+        const aX: number = mol.atoms[atomI].p.x;
+        const aY: number = mol.atoms[atomI].p.y;
         const distanceToAtomI: number = Math.sqrt((argsX - aX) ** 2 + (argsY - aY) ** 2);
         if (distance === undefined || distance > distanceToAtomI) {
           atom = atomI;
@@ -32,7 +33,7 @@ export function getHoveredMonomerFromEditor(
   const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
 
   if (firstAtomI !== undefined && firstDistance !== undefined) {
-    const firstAtom = editor.m.atoms[firstAtomI];
+    const firstAtom = mol.atoms[firstAtomI];
     const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
     if (secondAtomI !== undefined && secondDistance !== undefined) {
       if (firstDistance < secondDistance * 0.45)

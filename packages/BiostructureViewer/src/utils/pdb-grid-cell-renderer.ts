@@ -10,12 +10,12 @@ import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-v
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {CellRendererBackAsyncBase, RenderServiceBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
 import {_package} from '../package';
-import {GridCell} from 'datagrok-api/dg';
 
 export const enum Temps {
   renderer = '.renderer.pdb',
@@ -24,16 +24,17 @@ export const enum Temps {
 export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProps>
   implements IPdbGridCellRenderer {
   constructor(
-    protected readonly gridCol: DG.GridColumn,
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column<string>
   ) {
-    super(gridCol, _package.logger);
+    super(gridCol, tableCol, _package.logger, true);
   }
 
   protected getRenderService(): RenderServiceBase<NglGlProps> {
     return _getNglGlService();
   }
 
-  protected getRenderTaskProps(gridCell: GridCell, dpr: number): NglGlProps {
+  protected getRenderTaskProps(gridCell: DG.GridCell, dpr: number): NglGlProps {
     return new NglGlProps(
       gridCell.cell.value,
       gridCell.grid.props.backColor,
@@ -101,9 +102,12 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     }
   }
 
-  static getOrCreate(gridCol: DG.GridColumn): PdbGridCellRendererBack {
-    let res: PdbGridCellRendererBack = gridCol.temp[Temps.renderer];
-    if (!res) res = gridCol.temp[Temps.renderer] = new PdbGridCellRendererBack(gridCol);
+  static getOrCreate(gridCell: DG.GridCell): PdbGridCellRendererBack {
+    const [gridCol, tableCol, temp] =
+      getGridCellRendererBack<string, PdbGridCellRendererBack>(gridCell);
+
+    let res: PdbGridCellRendererBack = temp['rendererBack'];
+    if (!res) res = temp['rendererBack'] = new PdbGridCellRendererBack(gridCol, tableCol);
     return res;
   }
 
@@ -127,8 +131,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     _package.logger.debug('BsV: PdbGridCellRenderer.onClick()');
-    const gridCol: DG.GridColumn = gridCell.gridColumn;
-    const back = PdbGridCellRendererBack.getOrCreate(gridCol);
+    const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.onClick(gridCell, e);
   }
 
@@ -147,8 +150,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    const gridCol: DG.GridColumn = gridCell.gridColumn;
-    const back = PdbGridCellRendererBack.getOrCreate(gridCol);
+    const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
   }
 }

@@ -3,26 +3,25 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {Unsubscribable} from 'rxjs';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {getParts, parseHelm} from './utils';
 
 import {_package, getMonomerLib} from './package';
 
-export const enum Temps {
-  helmMonomerPlacer = 'bio-helmMonomerPlacer',
-}
-
 export interface IEditor {
   get m(): IEditorMol;
 
-  redraw(): void;
+  resize(width: number, height: number): void;
+  setData(data: string, format: string): void;
 }
 
 export interface IEditorMol {
   get atoms(): IEditorMolAtom[];
+
+  clone(selectedOnly: boolean): IEditorMol;
 }
 
 export interface IEditorMolAtom {
@@ -42,54 +41,30 @@ export interface ISeqMonomer {
   symbol: string,
 }
 
-export class HelmMonomerPlacer {
-  private readonly grid: DG.Grid | null;
+export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   public readonly monomerLib: IMonomerLib;
 
   private _allPartsList: (string[] | null)[];
   private _lengthsList: (number[] | null)[];
-  private _editorList: (IEditor | null)[];
+  private _editorMolList: (IEditorMol | null)[];
 
   public monomerCharWidth: number = 7;
   public leftPadding: number = 5;
   public monomerTextSizeMap: { [p: string]: TextMetrics } = {};
 
-  private subs: Unsubscribable[] = [];
-
   public constructor(
-    public readonly gridCol: DG.GridColumn | null,
-    public readonly col: DG.Column<string>
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column<string>
   ) {
-    this.grid = this.gridCol ? this.gridCol.grid : null;
-    this.reset();
-    if (this.grid) {
-      this.subs.push(this.col.dataFrame.onDataChanged.subscribe(() => {
-        try {
-          this.reset();
-        } catch (err: any) {
-          console.error(err);
-        }
-      }));
-      this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
-        try {
-          if (this.grid && this.grid.view?.id === view.id) this.destroy();
-        } catch (err: any) {
-          console.error(err);
-        }
-      }));
-    }
+    super(gridCol, tableCol, _package.logger);
     this.monomerLib = getMonomerLib();
     this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
   }
 
-  private reset(): void {
-    this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
-    this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
-    this._editorList = new Array<IEditor | null>(this.col.length).fill(null);
-  }
-
-  private destroy(): void {
-    for (const sub of this.subs) sub.unsubscribe();
+  protected override reset(): void {
+    this._allPartsList = new Array<string[] | null>(this.tableCol.length).fill(null);
+    this._lengthsList = new Array<number[] | null>(this.tableCol.length).fill(null);
+    this._editorMolList = new Array<IEditorMol | null>(this.tableCol.length).fill(null);
   }
 
   /** Skips cell for the fallback rendering */
@@ -112,7 +87,7 @@ export class HelmMonomerPlacer {
   private getCellMonomerLengthsForSeq(rowIdx: number): [string[], number[]] {
     let allParts: string[] | null = this._allPartsList![rowIdx];
     if (allParts === null) {
-      const seq = this.col.get(rowIdx);
+      const seq = this.tableCol.get(rowIdx);
       allParts = this._allPartsList![rowIdx] = getAllParts(seq);
     }
 
@@ -145,15 +120,15 @@ export class HelmMonomerPlacer {
 
   private monomerLibOnChanged(_value: any): void {
     this.reset();
-    if (this.grid) this.grid.invalidate();
+    this.invalidateGrid();
   }
 
-  public setEditor(tableRowIndex: number, editor: IEditor) {
-    this._editorList![tableRowIndex] = editor;
+  public setEditorMol(tableRowIndex: number, editorMol: IEditorMol) {
+    this._editorMolList![tableRowIndex] = editorMol.clone(false);
   }
 
-  public getEditor(tableRowIndex: number): IEditor | null {
-    return this._editorList![tableRowIndex];
+  public getEditorMol(tableRowIndex: number): IEditorMol | null {
+    return this._editorMolList![tableRowIndex];
   }
 }
 
