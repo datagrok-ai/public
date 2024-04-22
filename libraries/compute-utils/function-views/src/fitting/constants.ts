@@ -2,22 +2,33 @@
 
 /** Dock ratios */
 export enum DOCK_RATIO {
-    PC_PLOT = 0.5,
-    LOSS_PLOT = 0.5,
+  PC_PLOT = 0.5,
+  LOSS_PLOT = 0.5,
+  FIT_DIV = LOSS_PLOT,
 }
 
 /** Size constants */
 export const ROW_HEIGHT = 25;
 
+/** UI titles */
+export enum TITLE {
+   ITER = 'Iteration',
+   LOSS = 'Loss',
+   TARGET = 'Target',
+   FIT = 'Fit',
+   METHOD = 'method',
+   VALUE = 'Value',
+   OBJECTIVE = 'Objective',
+ };
+
 /** Items for the fitting help */
 enum HELP_ITEMS {
   GOAL = '`Goal`',
-  SAMPLES = '`Samples`',
-  FIT = '`Fit`',
+  FIT = '`' + TITLE.FIT + '`',
   MIN = '`min`',
   MAX = '`max`',
-  TO_GET = '`Target`',
-  METHOD = '`method`',
+  TARGET = '`' + TITLE.TARGET + '`',
+  METHOD = '`' + TITLE.METHOD + '`',
   CONTEXT = '`Context Panel (F4)`',
 };
 
@@ -31,7 +42,7 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
    * Set ${HELP_ITEMS.MIN} and ${HELP_ITEMS.MAX} values for each selected item. They define the variation range
    * Set values of all other inputs
 
-2. Set output constraints in the ${HELP_ITEMS.TO_GET} block:
+2. Set output constraints in the ${HELP_ITEMS.TARGET} block:
    * Use switchers to specify target outputs
    * Set target value for each selected item
 
@@ -62,8 +73,3 @@ the loss function for each iteration
 * [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 * [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent)`;
-
-export enum TITLE {
-  ITER = 'Iteration',
-  LOSS = 'Loss',
-};

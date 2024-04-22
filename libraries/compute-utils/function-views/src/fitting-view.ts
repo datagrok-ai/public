@@ -287,11 +287,14 @@ export class FittingView {
   }, 'Open help in a new tab');
   private tableDockNode: DG.DockNode | undefined;
   private helpMdNode: DG.DockNode | undefined;
-  private gridSubscription: any = null;
+  private gridClickSubscription: any = null;
+  private gridCellChangeSubscription: any = null;
   private toSetSwitched = true;
 
+  private goodnessOfFitNode: DG.DockNode | undefined = undefined;
+
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.choiceInput('method', this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
+  private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
     this.method = this.methodInput.value!;
     this.showHideSettingInputs();
   });
@@ -521,7 +524,7 @@ export class FittingView {
 
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
-    const fitHeader = ui.h2('Fit');
+    const fitHeader = ui.h2(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
 
     const form = Object.values(this.store.inputs)
@@ -542,7 +545,7 @@ export class FittingView {
         fitHeader,
       ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
 
-    const toGetHeader = ui.h2('Target');
+    const toGetHeader = ui.h2(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
     prevCategory = 'Misc';
@@ -678,10 +681,18 @@ export class FittingView {
 
       // get selected output
       const outputsOfInterest = this.getOutputsOfInterest();
-      if (outputsOfInterest.length < 1) {
+      const outputsCount = outputsOfInterest.length;
+      if (outputsCount < 1) {
         grok.shell.error('No output is selected for optimization.');
         return;
       }
+
+      /** Get call funcCall with the specified inputs */
+      const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        return await funcCall.call();
+      };
 
       /** Cost function to be optimized */
       const costFunc = async (x: Float32Array): Promise<number> => {
@@ -730,15 +741,21 @@ export class FittingView {
       ]);
       this.comparisonView.dataFrame = reportTable;
       const reportColumns = reportTable.columns;
+      const fittedRaw: (Float32Array | Int32Array | Float64Array | Uint32Array)[] = [];
 
       // Add fitting results to the table: fitted parameters
       extr.iterPoints.forEach((vals, idx) => {
         variedInputsCaptions[idx] = reportColumns.getUnusedName(variedInputsCaptions[idx]);
-        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], new Float32Array(vals.buffer, 0, rowCount)));
+        const col = DG.Column.fromFloat32Array(variedInputsCaptions[idx], new Float32Array(vals.buffer, 0, rowCount));
+        fittedRaw.push(col.getRawData());
+        reportColumns.add(col);
       });
 
       // Add PC plot
-      const pcPlot = DG.Viewer.pcPlot(reportTable, {columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITER)});
+      const pcPlot = DG.Viewer.pcPlot(reportTable, {
+        columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITER),
+        description: 'Variation',
+      });
       const pcPlotDockNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
       if (pcPlotDockNode.container.dart.elementTitle)
         pcPlotDockNode.container.dart.elementTitle.hidden = true;
@@ -754,10 +771,96 @@ export class FittingView {
         showYAxis: true,
         description: `${TITLE.LOSS}: sum of squared errors`,
       });
-      const lossLinechartDockNode = this.comparisonView.dockManager.dock(lossLinechart, DG.DOCK_TYPE.DOWN, pcPlotDockNode, '', DOCK_RATIO.LOSS_PLOT);
+      const lossLinechartDockNode = this.comparisonView.dockManager.dock(lossLinechart, DG.DOCK_TYPE.TOP, pcPlotDockNode, '', DOCK_RATIO.LOSS_PLOT);
       if (lossLinechartDockNode.container.dart.elementTitle)
         lossLinechartDockNode.container.dart.elementTitle.hidden = true;
       this.openedViewers.push(lossLinechart);
+
+      // Goodness of fit (GOF)
+      const outputCaptions: string[] = [];
+      const outputDf = new Map<string, DG.DataFrame>();
+      const outputViewer = new Map<string, DG.Viewer>();
+
+      // Initialize output dataframes & viewers
+      outputsOfInterest.forEach((item, idx) => {
+        const name = item.prop.name;
+        const caption = item.prop.caption ?? name;
+        outputCaptions.push(caption);
+        const type = item.prop.propertyType;
+
+        switch (type) {
+        case DG.TYPE.INT:
+        case DG.TYPE.BIG_INT:
+        case DG.TYPE.FLOAT:
+          const df = DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(caption, ['obtained', 'target']),
+            DG.Column.fromList(type, TITLE.VALUE, [idx + 1, item.target]),
+          ]);
+          df.name = caption;
+          outputDf.set(name, df);
+          outputViewer.set(name, DG.Viewer.barChart(df, {
+            valueColumnName: TITLE.VALUE,
+            splitColumnName: caption,
+            valueAggrType: DG.AGG.AVG,
+            showValueSelector: false,
+            showCategorySelector: false,
+            showStackSelector: false,
+          }));
+          break;
+
+        case DG.TYPE.DATA_FRAME:
+          break;
+
+        default:
+          throw new Error(`Unsupported output type: ${item.prop.propertyType}`);
+        }
+      });
+
+      const x = new Float32Array(dim);
+
+      /** Fit output dataframes with respect to the row of the report table */
+      const fillOutputDFs = async (rowIdx: number) => {
+        fittedRaw.forEach((arr, idx) => x[idx] = arr[rowIdx]);
+        const calledFuncCall = await getCalledFuncCall(x);
+
+        outputsOfInterest.forEach((output) => {
+          const name = output.prop.name;
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+            outputDf.get(name)!.set(TITLE.VALUE, 0, calledFuncCall.getParamValue(output.prop.name));
+          else {}
+        });
+      };
+
+      // Fill using data from the last raw
+      fillOutputDFs(rowCount - 1);
+
+      // Build UI
+      let currentOutput = outputCaptions[0];
+      const outputInput = ui.choiceInput(TITLE.OBJECTIVE, currentOutput, outputCaptions, () => {
+        currentOutput = outputInput.value!;
+        outputViewer.forEach((v, caption) => v.root.hidden = caption !== currentOutput);
+      }, {nullable: false});
+      outputInput.setTooltip('Output name');
+      outputInput.root.hidden = outputsCount < 2;
+      const header = ui.h2(currentOutput);
+      ui.tooltip.bind(header, 'Output of the function');
+      header.style.marginRight = '6px';
+      header.hidden = outputsCount > 1;
+      const gofItems = [outputInput.root, header];
+      outputViewer.forEach((v) => gofItems.push(v.root));
+      const gofDiv = ui.divV(gofItems);
+      this.goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.TOP, this.tableDockNode, undefined, DOCK_RATIO.FIT_DIV);
+      if (this.goodnessOfFitNode.container.dart.elementTitle)
+        this.goodnessOfFitNode.container.dart.elementTitle.hidden = true;
+
+      // Add grid cell effects
+      const cellEffect = async (cell: DG.GridCell) => {
+        const selectedRow = cell.tableRowIndex ?? 0;
+        await fillOutputDFs(selectedRow);
+      };
+
+      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe(cellEffect);
+      this.gridCellChangeSubscription = this.comparisonView.grid.onCurrentCellChanged.subscribe(cellEffect);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -782,9 +885,19 @@ export class FittingView {
       this.helpMdNode = undefined;
     }
 
-    if (this.gridSubscription) {
-      this.gridSubscription.unsubscribe();
-      this.gridSubscription = null;
+    if (this.goodnessOfFitNode) {
+      this.comparisonView.dockManager.close(this.goodnessOfFitNode);
+      this.goodnessOfFitNode = undefined;
+    }
+
+    if (this.gridClickSubscription) {
+      this.gridClickSubscription.unsubscribe();
+      this.gridClickSubscription = null;
+    }
+
+    if (this.gridCellChangeSubscription) {
+      this.gridClickSubscription.unsubscribe();
+      this.gridClickSubscription = null;
     }
 
     this.openedViewers.forEach((v) => v.close());
