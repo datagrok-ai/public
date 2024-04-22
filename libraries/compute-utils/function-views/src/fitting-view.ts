@@ -9,7 +9,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {STARTING_HELP} from './fitting/constants';
+import {STARTING_HELP, TITLE, DOCK_RATIO} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
@@ -278,6 +278,8 @@ export class FittingView {
     return {inputs, outputs};
   };
 
+  private openedViewers: DG.Viewer[] = [];
+
   private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run fitting');
   private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
   private helpIcon = ui.iconFA('question', () => {
@@ -400,7 +402,7 @@ export class FittingView {
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
     this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
-    this.methodInput.setTooltip('Numerical method for minimizing objective function');
+    this.methodInput.setTooltip('Numerical method for minimizing loss function');
   }
 
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -710,6 +712,7 @@ export class FittingView {
 
       let extremums: Extremum[];
 
+      // Perform optimization
       if (this.method === METHOD.NELDER_MEAD)
         extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings);
       else
@@ -720,17 +723,41 @@ export class FittingView {
       const extr = extremums[0];
       const rowCount = extr.iterCount;
 
+      // Add fitting results to the table: iteration & loss
       const reportTable = DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, 'iteration', [...Array(rowCount).keys()].map((i) => i + 1)),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'cost', extr.iterCosts.slice(0, rowCount)),
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(rowCount).keys()].map((i) => i + 1)),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, rowCount)),
       ]);
       this.comparisonView.dataFrame = reportTable;
       const reportColumns = reportTable.columns;
 
+      // Add fitting results to the table: fitted parameters
       extr.iterPoints.forEach((vals, idx) => {
         variedInputsCaptions[idx] = reportColumns.getUnusedName(variedInputsCaptions[idx]);
-        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], vals.slice(0, rowCount)));
+        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], new Float32Array(vals.buffer, 0, rowCount)));
       });
+
+      // Add PC plot
+      const pcPlot = DG.Viewer.pcPlot(reportTable, {columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITER)});
+      const pcPlotDockNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
+      if (pcPlotDockNode.container.dart.elementTitle)
+        pcPlotDockNode.container.dart.elementTitle.hidden = true;
+      this.openedViewers.push(pcPlot);
+
+      // Add loss function linechart
+      const lossLinechart = DG.Viewer.lineChart(reportTable, {
+        xColumnName: TITLE.ITER,
+        yColumnNames: [TITLE.LOSS],
+        showXSelector: true,
+        showYSelectors: false,
+        showXAxis: true,
+        showYAxis: true,
+        description: `${TITLE.LOSS}: sum of squared errors`,
+      });
+      const lossLinechartDockNode = this.comparisonView.dockManager.dock(lossLinechart, DG.DOCK_TYPE.DOWN, pcPlotDockNode, '', DOCK_RATIO.LOSS_PLOT);
+      if (lossLinechartDockNode.container.dart.elementTitle)
+        lossLinechartDockNode.container.dart.elementTitle.hidden = true;
+      this.openedViewers.push(lossLinechart);
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
@@ -751,9 +778,6 @@ export class FittingView {
 
   private closeOpenedViewers() {
     if (this.helpMdNode) {
-      /*this.helpMdNode.detachFromParent();
-      this.helpMdNode.container.destroy();
-      this.helpMdNode = undefined;*/
       this.comparisonView.dockManager.close(this.helpMdNode);
       this.helpMdNode = undefined;
     }
@@ -762,5 +786,9 @@ export class FittingView {
       this.gridSubscription.unsubscribe();
       this.gridSubscription = null;
     }
+
+    this.openedViewers.forEach((v) => v.close());
+
+    this.openedViewers.splice(0);
   }
 }
