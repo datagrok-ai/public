@@ -10,15 +10,17 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
-
-let monomerLib: IMonomerLib | null = null;
+import {_getHelmService} from './package-utils';
 
 import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+
+let monomerLib: IMonomerLib | null = null;
 
 export const _package = new DG.Package();
 
@@ -147,13 +149,20 @@ function rewriteLibraries() {
   if (grid) grid.invalidate();
 }
 
+//name: getHelmService
+//output: object result
+export function getHelmService(): HelmServiceBase {
+  return _getHelmService();
+}
+
 //name: helmCellRenderer
 //tags: cellRenderer
 //meta.cellType: helm
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
-  return new HelmCellRenderer();
+  return new HelmCellRenderer(); // old
+  // return new HelmGridCellRenderer(); // new
 }
 
 function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
@@ -186,7 +195,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
-  const col = df.columns.bySemType('Macromolecule')!;
+  const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
   const colSh = SeqHandler.forColumn(col);
   const colUnits = col.getTag(DG.TAGS.UNITS);
   if (colUnits === NOTATION.HELM)
@@ -208,7 +217,7 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!;
-  const col = cell.column;
+  const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
   // @ts-ignore

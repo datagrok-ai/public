@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 
 import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {NglGlServiceBase, NglGlTask, getNglGlService} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {NglGlServiceBase, getNglGlService, NglGlProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 
 import {_package} from '../package-test';
 
@@ -32,11 +33,11 @@ category('NglGlService', () => {
         _package.logger.debug('tests NglGlService/pdb, event handler');
       },
       () => {
-        const task: NglGlTask = {
+        const task: RenderTask<NglGlProps> = {
           name: 'test1',
-          backColor: DG.Color.fromHtml('#FFFFFF'),
           props: {
             pdb: pdbStr,
+            backColor: DG.Color.fromHtml('#FFFFFF'),
             width: 300, height: 300,
           },
           onAfterRender: (canvas: HTMLCanvasElement) => {
