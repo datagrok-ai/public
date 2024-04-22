@@ -79,8 +79,6 @@ export interface IDartApi {
   grok_Dapi_Admin(): any;
   grok_Dapi_Admin_GetServiceInfos(adminClient: any): Promise<any>;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
-  grok_Dapi_Admin_Get_User_Report(adminClient: any, reportId: String): Promise<any>;
-  grok_Dapi_Admin_Post_Event_Report(adminClient: any, eventId: String): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
@@ -1428,6 +1426,8 @@ export interface IDartApi {
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
+  grok_Dapi_Reports_Resolve(id: String): Promise<any>;
+  grok_Dapi_Reports_Reopen(id: String, description: String, notifyAssignee: Bool): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
