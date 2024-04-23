@@ -575,3 +575,13 @@
 .d4-filter-disabled > .chem-filter-search-options{
   pointer-events: none;
 }
+
+.chem-mmpa-transformation-tab-header {
+  padding: 4px;
+  margin: 0px,
+}
+
+.chem-mmpa-add-to-workspace-button {
+  padding-top: 6px;
+  padding-left: 3px;
+}

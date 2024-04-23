@@ -182,20 +182,30 @@ export class MmpAnalysis {
     const tabs = ui.tabControl(null, false);
 
     tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
-      const fragmentsHeader = ui.h1('Fragments');
-      $(fragmentsHeader).css('padding', '4px');
-      $(fragmentsHeader).css('margin', '0px');
-      this.allPairsGrid.root.prepend(fragmentsHeader);
-      const fragments = ui.splitV([ui.box(fragmentsHeader, {style: {maxHeight: '30px'}}), this.allPairsGrid.root]);
 
-      const casesHeader = ui.h1('Pairs');
-      $(casesHeader).css('padding', '4px');
-      $(casesHeader).css('margin', '0px');
+      const addToWorkspaceButton = (table: DG.DataFrame, name: string) => {
+        const button = ui.iconFA('arrow-square-down', () => {
+          const clonedTable = table.clone();
+          clonedTable.name = name;
+          grok.shell.addTableView(clonedTable);
+        }, 'Add table to workspace');
+        button.classList.add('chem-mmpa-add-to-workspace-button');
+        return button;
+      }
 
-      this.casesGrid.root.prepend(casesHeader);
-      const cases = ui.splitV([ui.box(casesHeader, {style: {maxHeight: '30px'}}), ui.box(this.casesGrid.root)]);
+      const createGridDiv = (name: string, grid: DG.Grid) => {
+        const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
+        grid.root.prepend(header);
+        return ui.splitV([
+          ui.box(ui.divH([header, addToWorkspaceButton(grid.dataFrame, name)]), { style: { maxHeight: '30px' } }),
+          grid.root
+        ]);
+      }
 
-      return ui.splitV([fragments, cases], {}, true);
+      return ui.splitV([
+        createGridDiv('Fragments', this.allPairsGrid),
+        createGridDiv('Pairs', this.casesGrid),
+      ], {}, true);
     });
     tabs.addPane(MMP_TAB_FRAGMENTS, () => {
       return tp.root;
