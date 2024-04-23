@@ -183,7 +183,7 @@ export class MCLSparseReducer {
       if (!sparseObject[i])
         continue;
       // const row = sparseObject[i];
-      expandedObject[i] = {};
+      expandedObject[i] ??= {};
       for (let j = i; j < nRows; j++) {
         if (!sparseObject[i]?.[j])
           continue;
