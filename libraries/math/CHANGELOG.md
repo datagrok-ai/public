@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.3 (2024-04-23)
+
+Introduce rules for GPU usage
+
 ## 1.1.2 (2024-04-15)
 
 Fix webGPU numeric distance with 0 range
