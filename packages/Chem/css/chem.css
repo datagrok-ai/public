@@ -585,3 +585,13 @@
   padding-top: 6px;
   padding-left: 3px;
 }
+
+.chem-mmpa-add-generation-to-workspace-button {
+  position: absolute;
+  padding-left: 3px;
+  visibility: hidden;
+}
+
+.selected > .chem-mmpa-add-generation-to-workspace-button{
+  visibility: visible;
+}

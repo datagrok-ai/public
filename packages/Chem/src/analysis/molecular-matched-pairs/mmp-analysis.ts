@@ -181,23 +181,26 @@ export class MmpAnalysis {
     //tabs
     const tabs = ui.tabControl(null, false);
 
-    tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
+    const addToWorkspaceButton = (table: DG.DataFrame, name: string, className: string) => {
+      const button = ui.iconFA('arrow-square-down', () => {
+        const clonedTable = table.clone();
+        clonedTable.name = name;
+        grok.shell.addTableView(clonedTable);
+      }, 'Add table to workspace');
+      button.classList.add(className);
+      return button;
+    }
 
-      const addToWorkspaceButton = (table: DG.DataFrame, name: string) => {
-        const button = ui.iconFA('arrow-square-down', () => {
-          const clonedTable = table.clone();
-          clonedTable.name = name;
-          grok.shell.addTableView(clonedTable);
-        }, 'Add table to workspace');
-        button.classList.add('chem-mmpa-add-to-workspace-button');
-        return button;
-      }
+    tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
 
       const createGridDiv = (name: string, grid: DG.Grid) => {
         const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
         grid.root.prepend(header);
         return ui.splitV([
-          ui.box(ui.divH([header, addToWorkspaceButton(grid.dataFrame, name)]), { style: { maxHeight: '30px' } }),
+          ui.box(
+            ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
+            { style: { maxHeight: '30px' } }
+          ),
           grid.root
         ]);
       }
@@ -213,9 +216,11 @@ export class MmpAnalysis {
     tabs.addPane(MMP_TAB_CLIFFS, () => {
       return cliffs;
     });
-    tabs.addPane(MMP_TAB_GENERATION, () => {
+    const genTab = tabs.addPane(MMP_TAB_GENERATION, () => {
       return this.generationsGrid.root;
     });
+    genTab.header.append(addToWorkspaceButton(this.generationsGrid.dataFrame, 
+      'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
 
     tabs.onTabChanged.subscribe(() => {
       this.currentTab = tabs.currentPane.name;
