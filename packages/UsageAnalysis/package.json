@@ -57,5 +57,8 @@
   "canView": [
     "All users"
   ],
-  "category": "General"
+  "category": "General",
+  "meta": {
+    "dartium": false
+  }
 }
