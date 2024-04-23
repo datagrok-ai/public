@@ -2993,6 +2993,29 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
+  DatagrokSpawnerTagsPolicy:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Policy for tagging resources
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ecs:TagResource
+          Condition:
+            StringEquals:
+              ecs:CreateAction:
+              - CreateService
+              - RegisterTaskDefinition
+              - UpdateService
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*
+            - cluster_name:
+                Ref: DatagrokCluster
+        Version: '2012-10-17'
+    Type: AWS::IAM::ManagedPolicy
   DatagrokTCP443Listener:
     Properties:
       Certificates:
@@ -4109,6 +4132,7 @@ Resources:
       - Ref: GrokSpawnerECRPolicy
       - Ref: GrokSpawnerKanikoPolicy
       - Ref: DatagrokECSPolicy
+      - Ref: DatagrokSpawnerTagsPolicy
       Tags:
       - Key: datagrok.component
         Value: datagrok
