@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.4 (2024-04-23)
+
+Improvements to dimensionality reduction.
+
 ## 6.6.3 (2024-04-16)
 
 Dimensionality reduction: Better dialog.

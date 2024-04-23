@@ -12,6 +12,7 @@ import {DistanceAggregationMethods} from '../distance-matrix/types';
 import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
 import {Subject} from 'rxjs';
 import '../../css/styles.css';
+import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
@@ -34,8 +35,17 @@ export class UMAPOptions {
   used with spread to control the clumped/dispersed nature of the embedding`};
   randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
-    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations (EXPERIMENTAL)', type: 'boolean'};
-  constructor() {};
+    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations', type: 'boolean'};
+  constructor() {
+    getGPUAdapterDescription().then((desc) => {
+      if (desc) {
+        this.useWebGPU.tooltip += ` (${desc})`;
+      } else {
+        this.useWebGPU.value = false;
+        this.useWebGPU.forceRemove = true;
+      }
+    });
+  };
 }
 
 export class TSNEOptions {
@@ -101,6 +111,7 @@ export class MultiColumnDimReductionEditor {
       this.aggregationMethodInput.setTooltip('Aggregation method for combining distances between columns');
       this.onColumnsChanged = new Subject();
       this.editorSettings = editorSettings;
+      this.columnParamsEditorAccordion = ui.accordion();
       const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
       preporcessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
@@ -156,7 +167,6 @@ export class MultiColumnDimReductionEditor {
       this.clusterEmbeddingsInput.root.prepend(this.dbScanSettingsIcon);
       this.methodInput.root.classList.add('ml-dim-reduction-settings-input');
       this.methodInput.root.prepend(this.methodSettingsIcon);
-      this.columnParamsEditorAccordion = ui.accordion();
       this.columnParamsEditorAccordion.addPane('Column options', () => this.columnOptEditorsRoot, true, null, false);
       this.columnParamsEditorAccordion.root.style.display = 'none';
       this.columnParamsEditorRoot.appendChild(this.columnParamsEditorAccordion.root);
@@ -242,18 +252,20 @@ export class MultiColumnDimReductionEditor {
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam | IDimReductionParam<string> | IDimReductionParam<boolean> =
           (params as any)[it];
-        const input = param.type === 'string' ?
-          ui.stringInput(param.uiName, param.value ?? '', () => {
-            param.value = (input as DG.InputBase<string>).value;
-          }) : param.type === 'boolean' ?
-            ui.boolInput(param.uiName, param.value ?? false, () => {
-              param.value = (input as DG.InputBase<boolean>).value;
-            }) :
-            ui.floatInput(param.uiName, param.value as any, () => {
-              param.value = input.value;
-            });
-        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
-        paramsForm.append(input.root);
+        if (!param.forceRemove) {
+          const input = param.type === 'string' ?
+            ui.stringInput(param.uiName, param.value ?? '', () => {
+              param.value = (input as DG.InputBase<string>).value;
+            }) : param.type === 'boolean' ?
+              ui.boolInput(param.uiName, param.value ?? false, () => {
+                param.value = (input as DG.InputBase<boolean>).value;
+              }) :
+              ui.floatInput(param.uiName, param.value as any, () => {
+                param.value = input.value;
+              });
+          ui.tooltip.bind(input.input ?? input.root, param.tooltip);
+          paramsForm.append(input.root);
+        }
       });
       return paramsForm;
     }
