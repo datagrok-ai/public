@@ -474,7 +474,7 @@ export class PipelineRuntime {
     return val;
   }
 
-  updateState<T>(path: ItemPath, value: T, inputState: InputState = 'user input'): void {
+  updateState<T>(path: ItemPath, value: T, inputState?: InputState): void {
     const {state, node} = this.getNodeState(path)!;
     if (state && !this.isSetterDisabled(path, node.type))
       state.setValue(value, inputState);
@@ -877,11 +877,13 @@ export interface ICompositionView {
   setExternalValidationResults(viewId: PathKey, stateId: string, results: ValidationResult): void;
   isUpdating: BehaviorSubject<boolean>;
   getRunningUpdates(): string[];
+  addMenuItem(name: string, action: () => void): void;
 }
 
 export class CompositionPipelineView extends PipelineView implements ICompositionView {
   private hooks: HookSpec[] = [];
   private rt?: PipelineRuntime;
+  private actionsMenu?: DG.Menu;
   public customViews = new Map<string, RFVPopup>();
 
   constructor(funcName: string) {
@@ -911,8 +913,17 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
       view.setExternalValidationResults(inputName, results);
   }
 
+  addMenuItem(name: string, action: () => void) {
+    this.actionsMenu?.item(name, action);
+  }
+
   override getRunningUpdates() {
     return this.rt!.getRunningUpdates();
+  }
+
+  override buildRibbonMenu() {
+    super.buildRibbonMenu();
+    this.actionsMenu = this.ribbonMenu.group('Actions');
   }
 
   override getStepView<T = RichFunctionView>(viewId: PathKey) {
@@ -1000,6 +1011,7 @@ export class CompositionPipeline {
   private ioInfo = new Map<NqName, StateItemConfiguration[]>();
   private nodes = new Map<PathKey, NodeState>();
   private links = new Map<PathKey, LinkState>();
+  private nestedPipelineConfig = new Map<string, NestedPipelineConfig>();
   private hooks: HookSpec[] = [];
   private steps: { id: string, funcName: string, friendlyName?: string, helpUrl?: string | HTMLElement }[] = [];
   private rt?: PipelineRuntime;
@@ -1082,6 +1094,7 @@ export class CompositionPipeline {
     const stepIdsToBtnNodes = new Map<PathKey, NodeState[]>();
     const additionalViewNames = new Map<PathKey, NqName>();
     const additionalViews = this.viewInst!.customViews;
+    const menuItems = new Map<string, NodeState>();
 
     for (const node of this.nodes.values()) {
       if (node.type === 'popup' || node.type === 'action') {
@@ -1097,11 +1110,17 @@ export class CompositionPipeline {
 
         const parentPathKey = getParentKey(node.conf.id);
 
-        // TODO: menu handling
         if (conf.position === 'buttons') {
           const nodes = stepIdsToBtnNodes.get(parentPathKey) ?? [];
           nodes.push(node);
           stepIdsToBtnNodes.set(parentPathKey, nodes);
+        }
+        if (conf.position === 'menu') {
+          const nestedConfig = this.nestedPipelineConfig.get(pathToKey(node.pipelinePath))!;
+          const prefix = nestedConfig?.friendlyPrefix ?? '';
+          const name = conf.friendlyName
+          const fullName = prefix ? `${prefix}: ${name}` : name;
+          menuItems.set(fullName, node);
         }
       }
     }
@@ -1120,20 +1139,32 @@ export class CompositionPipeline {
       },
     }];
 
-    const onViewReady = [{
-      id: '_SystemButtonsAdd_',
-      handler: async ({controller}: { controller: RuntimeController }) => {
-        for (const [viewKey, nodes] of stepIdsToBtnNodes.entries()) {
-          const btns = nodes.map((node) => {
+    const onViewReady = [
+      {
+        id: '_SystemButtonsAdd_',
+        handler: async ({controller}: { controller: RuntimeController }) => {
+          for (const [viewKey, nodes] of stepIdsToBtnNodes.entries()) {
+            const btns = nodes.map((node) => {
+              const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
+              const action = this.rt!.getAction(keyToPath(conf.id));
+              return ui.button(action.actionName, action.action);
+            });
+            const view = controller.getView(keyToPath(viewKey))!;
+            view.setAdditionalButtons(btns);
+          }
+        },
+      },
+      {
+        id: '_SystemMenuAdd_',
+        handler: async () => {
+          for (const [name, node] of menuItems) {
             const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
             const action = this.rt!.getAction(keyToPath(conf.id));
-            return ui.button(action.actionName, action.action);
-          });
-          const view = controller.getView(keyToPath(viewKey))!;
-          view.setAdditionalButtons(btns);
+            this.viewInst!.addMenuItem(name, action.action as () => void);
+          }
         }
-      },
-    }];
+      }
+    ];
 
     const hooks = {
       beforeInit,
@@ -1150,19 +1181,20 @@ export class CompositionPipeline {
       throw new Error('No pipeline config');
 
     // process merge config
-    const {toRemove, toAdd, stepConfig} = traverseConfigPipelines(
+    const {toRemove, toAdd, nestedPipelineConfig} = traverseConfigPipelines(
       this.config,
       (acc, node, path) => {
         if (isCompositionConfig(node))
-          this.processMergeConfig(node, path, acc.toRemove, acc.toAdd, acc.stepConfig);
+          this.processMergeConfig(node, path, acc.toRemove, acc.toAdd, acc.nestedPipelineConfig);
         return acc;
       },
       {
         toRemove: new Set<string>(),
         toAdd: new Map<string, ItemsToMerge>(),
-        stepConfig: new Map<string, NestedPipelineConfig>(),
+        nestedPipelineConfig: new Map<string, NestedPipelineConfig>(),
       },
     );
+    this.nestedPipelineConfig = nestedPipelineConfig;
 
     // process hoooks
     this.hooks = traverseConfigPipelines(
@@ -1203,8 +1235,8 @@ export class CompositionPipeline {
 
     this.steps = pipelineSeq.reduce((acc, id) => {
       const steps = pipelineSteps.get(id)!;
-      const pos = stepConfig.get(id)?.insertBeforeStep;
-      const prefix = stepConfig.get(id)?.friendlyPrefix;
+      const pos = nestedPipelineConfig.get(id)?.insertBeforeStep;
+      const prefix = nestedPipelineConfig.get(id)?.friendlyPrefix;
       if (pos) {
         const idx = acc.findIndex((spec) => spec.id === pos);
         if (idx > 0) {
