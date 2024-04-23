@@ -9,7 +9,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {STARTING_HELP, TITLE, DOCK_RATIO} from './fitting/constants';
+import {STARTING_HELP, TITLE, DOCK_RATIO, REPORT_DF_TOOLTIP, COL_WIDTH} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
@@ -205,6 +205,7 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
+            input.value = 0;
             input.setTooltip(this.toSetSwitched ?
               'Target value' :
               (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
@@ -259,7 +260,7 @@ export class FittingView {
             return input;
           })(),
           isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
-          target: null,
+          target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
           colName: '',
         };
 
@@ -290,11 +291,21 @@ export class FittingView {
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
   private toSetSwitched = true;
+  private samplesCount = 10;
+  private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
+    name: TITLE.SAMPLES,
+    inputType: 'Int',
+    defaultValue: this.samplesCount,
+    min: 1,
+    max: 1000,
+  }));
 
   private goodnessOfFitNode: DG.DockNode | undefined = undefined;
+  private pcPlotNode: DG.DockNode | undefined;
+  private lossFuncLineChartsNode: DG.DockNode | undefined;
 
   private method = METHOD.NELDER_MEAD;
-  private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD, METHOD.GRAD_DESC], () => {
+  private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD], () => {
     this.method = this.methodInput.value!;
     this.showHideSettingInputs();
   });
@@ -406,6 +417,13 @@ export class FittingView {
     helpMD.style.overflow = 'auto';
     this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
     this.methodInput.setTooltip('Numerical method for minimizing loss function');
+
+    this.samplesCountInput.addCaption(TITLE.SAMPLES);
+    this.samplesCountInput.onChanged(() => {
+      this.samplesCount = this.samplesCountInput.value;
+      this.updateRunWidgetsState();
+    });
+    this.samplesCountInput.setTooltip('Number fitted inputs sets');
   }
 
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -598,6 +616,9 @@ export class FittingView {
       this.fittingSettingsDiv.append(input.root);
     }));
 
+    this.samplesCountInput.root.insertBefore(getSwitchMock(), this.samplesCountInput.captionLabel);
+    form.appendChild(this.samplesCountInput.root);
+
     $(form).addClass('ui-form');
 
     this.updateRunWidgetsState();
@@ -633,7 +654,7 @@ export class FittingView {
   }
 
   private canEvaluationBeRun(): boolean {
-    return this.isAnyInputSelected() && this.isAnyOutputSelected();
+    return this.isAnyInputSelected() && this.isAnyOutputSelected() && (this.samplesCount > 0);
   }
 
   private getFixedInputs() {
@@ -647,6 +668,232 @@ export class FittingView {
 
   /** Perform the Nelder-Mead method */
   private async runOptimization(): Promise<void> {
+    try {
+    // check applicability
+      if (!this.canEvaluationBeRun())
+        return;
+
+      if (this.samplesCount < 1)
+        return;
+
+      // inputs of the source function
+      const inputs: any = {};
+
+      // add fixed inputs
+      this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+      //console.log(inputs);
+
+      // get varied inputs, optimization is performed with respect to them
+      const variedInputs = this.getVariedInputs();
+      const dim = variedInputs.length;
+
+      // varied inputs specification
+      const variedInputNames: string[] = [];
+      const minVals = new Float32Array(dim);
+      const maxVals = new Float32Array(dim);
+
+      const variedInputsCaptions = new Array<string>(dim);
+
+      // set varied inputs specification
+      variedInputs.forEach((name, idx) => {
+        const propConfig = this.store.inputs[name] as SensitivityNumericStore;
+        minVals[idx] = propConfig.min.value;
+        maxVals[idx] = propConfig.max.value;
+        variedInputNames.push(name);
+        variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
+      });
+
+      // get selected output
+      const outputsOfInterest = this.getOutputsOfInterest();
+      const outputsCount = outputsOfInterest.length;
+      if (outputsCount < 1) {
+        grok.shell.error('No output is selected for optimization.');
+        return;
+      }
+
+      /** Get call funcCall with the specified inputs */
+      const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        return await funcCall.call();
+      };
+
+      /** Cost function to be optimized */
+      const costFunc = async (x: Float32Array): Promise<number> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
+
+        //console.log(x);
+
+        let cost = 0;
+
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+            cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
+          //console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
+          else {
+          //const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
+          //console.log(errs);
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
+          }
+        //console.log(output.target);
+        //console.log('---------------------------------------------------------------');
+        //console.log(calledFuncCall.getParamValue(output.prop.name));
+        });
+
+        //console.log(cost);
+
+        return cost;
+      };
+
+      //console.log(await costFunc(new Float32Array([1, 5])));
+
+      let extremums: Extremum[];
+
+      // Perform optimization
+      if (this.method === METHOD.NELDER_MEAD)
+        extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+      else
+        throw new Error(`The '${this.method}' method has not been implemented.`);
+
+      this.closeOpenedViewers();
+
+      const rowCount = this.samplesCount;
+      const iterCounts = new Int32Array(rowCount);
+      const lossVals = new Float32Array(rowCount);
+      const grid = this.comparisonView.grid;
+
+      const lossFuncLineChartsRoots = new Map<number, HTMLElement>();
+      const goodnessOfFitDivs = new Map<number, HTMLDivElement>();
+
+      extremums.forEach((extr, idx) => {
+        iterCounts[idx] = extr.iterCount;
+        lossVals[idx] = extr.cost;
+        lossFuncLineChartsRoots.set(idx, DG.Viewer.lineChart(
+          DG.DataFrame.fromColumns([
+            DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
+            DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
+          {
+            description: 'Loss: sum of squared errors',
+            showYAxis: true,
+            showXAxis: true,
+          }).root);
+
+        goodnessOfFitDivs.set(idx, ui.divV([ui.label(`Goodness of fit: ${idx}`)]));
+      });
+
+      // Add fitting results to the table: iteration & loss
+      const reportTable = DG.DataFrame.fromColumns([
+        DG.Column.fromInt32Array(TITLE.ITERATIONS, iterCounts),
+        DG.Column.fromFloat32Array(TITLE.LOSS, lossVals),
+      ]);
+      this.comparisonView.dataFrame = reportTable;
+      const reportColumns = reportTable.columns;
+
+      // Add fitting results to the table: fitted parameters
+      variedInputsCaptions.forEach((cap, idx, arr) => {
+        arr[idx] = reportColumns.getUnusedName(cap);
+        const raw = new Float32Array(rowCount);
+
+        for (let j = 0; j < rowCount; ++j)
+          raw[j] = extremums[j].point[idx];
+
+        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], raw));
+      });
+
+      // Add id's of obtained points
+      const idName = reportColumns.getUnusedName(TITLE.ID);
+      const idVals = new Int32Array(rowCount);
+      idVals.forEach((_, idx, arr) => arr[idx] = idx);
+      reportColumns.add(DG.Column.fromInt32Array(idName, idVals));
+
+      // Hide id-column
+      grid.columns.setVisible([idName]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
+      grid.columns.setVisible(reportColumns.names().filter((name) => name !== idName));
+
+      // Set loss-column format & sort by loss-vals
+      grid.columns.byName(TITLE.LOSS)!.format = 'scientific';
+      grid.sort([TITLE.LOSS]);
+      grid.columns.byName(TITLE.LOSS)!.width = COL_WIDTH;
+
+      // Add tooltips
+      grid.onCellTooltip(function(cell, x, y) {
+        if (cell.isColHeader) {
+          const cellCol = cell.tableColumn;
+          if (cellCol) {
+            const name = cell.tableColumn.name;
+            const msg = REPORT_DF_TOOLTIP.get(name);
+            if (msg)
+              ui.tooltip.show(msg, x, y);
+            else
+              ui.tooltip.show(`Obtained values of '${name}'`, x, y);
+            return true;
+          }
+        }
+      });
+
+      // Add PC plot
+      const pcPlot = DG.Viewer.pcPlot(reportTable, {
+        columnNames: variedInputsCaptions.concat([TITLE.LOSS]),
+        description: 'Variation',
+      });
+      this.pcPlotNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
+      if (this.pcPlotNode.container.dart.elementTitle)
+        this.pcPlotNode.container.dart.elementTitle.hidden = true;
+
+      // Add loss linecharts
+      const lossFuncLineChartsDiv = ui.divV([]);
+      lossFuncLineChartsRoots.forEach((r) => lossFuncLineChartsDiv.appendChild(r));
+      this.lossFuncLineChartsNode = this.comparisonView.dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, this.pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
+      if (this.lossFuncLineChartsNode.container.dart.elementTitle)
+        this.lossFuncLineChartsNode.container.dart.elementTitle.hidden = true;
+
+      // Add goodness of fit divs
+      const gofDiv = ui.divV([]);
+      goodnessOfFitDivs.forEach((d) => gofDiv.appendChild(d));
+      this.goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
+      if (this.goodnessOfFitNode.container.dart.elementTitle)
+        this.goodnessOfFitNode.container.dart.elementTitle.hidden = true;
+
+      // Find item with min loss
+      let minLossExtrIdx = 0;
+      let minLoss = extremums[0].cost;
+      for (let i = 1; i < rowCount; ++i) {
+        if (extremums[i].cost < minLoss) {
+          minLoss = extremums[i].cost;
+          minLossExtrIdx = i;
+        }
+      }
+      // Set current row with min loss
+      reportTable.currentCell = reportTable.cell(minLossExtrIdx, TITLE.LOSS);
+
+      // Set visibilities
+      lossFuncLineChartsRoots.forEach((r, i) => {
+        r.hidden = i !== minLossExtrIdx;
+        r.style.width = '100%';
+        r.style.height = '100%';
+        goodnessOfFitDivs.get(i)!.hidden = i !== minLossExtrIdx;
+      });
+
+      // Add grid cell effects
+      const cellEffect = async (cell: DG.GridCell) => {
+        const row = cell.tableRowIndex ?? 0;
+        lossFuncLineChartsRoots.forEach((r, i) => {
+          r.hidden = i !== row;
+          goodnessOfFitDivs.get(i)!.hidden = i !== row;
+        });
+      };
+
+      this.gridClickSubscription = grid.onCellClick.subscribe(cellEffect);
+      this.gridCellChangeSubscription = grid.onCurrentCellChanged.subscribe(cellEffect);
+    } catch (error) {
+      grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
+    }
+  } // runOptimization
+
+  /** Perform the Nelder-Mead method */
+  private async runOptimizationOld(): Promise<void> {
     try {
     // check applicability
       if (!this.canEvaluationBeRun())
@@ -700,7 +947,7 @@ export class FittingView {
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
 
-        console.log(x);
+        //console.log(x);
 
         let cost = 0;
 
@@ -718,7 +965,7 @@ export class FittingView {
         //console.log(calledFuncCall.getParamValue(output.prop.name));
         });
 
-        console.log(cost);
+        //console.log(cost);
 
         return cost;
       };
@@ -740,7 +987,7 @@ export class FittingView {
 
       // Add fitting results to the table: iteration & loss
       const reportTable = DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(rowCount).keys()].map((i) => i + 1)),
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITERATIONS, [...Array(rowCount).keys()].map((i) => i + 1)),
         DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, rowCount)),
       ]);
       this.comparisonView.dataFrame = reportTable;
@@ -757,7 +1004,7 @@ export class FittingView {
 
       // Add PC plot
       const pcPlot = DG.Viewer.pcPlot(reportTable, {
-        columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITER),
+        columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITERATIONS),
         description: 'Variation',
       });
       const pcPlotDockNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
@@ -767,7 +1014,7 @@ export class FittingView {
 
       // Add loss function linechart
       const lossLinechart = DG.Viewer.lineChart(reportTable, {
-        xColumnName: TITLE.ITER,
+        xColumnName: TITLE.ITERATIONS,
         yColumnNames: [TITLE.LOSS],
         showXSelector: true,
         showYSelectors: false,
@@ -868,7 +1115,7 @@ export class FittingView {
     } catch (error) {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
-  } // runNelderMeadMethod
+  } // runOptimizationOld
 
   private getOutputsOfInterest() {
     const outputsOfInterest = [];
@@ -894,6 +1141,16 @@ export class FittingView {
       this.goodnessOfFitNode = undefined;
     }
 
+    if (this.pcPlotNode) {
+      this.comparisonView.dockManager.close(this.pcPlotNode);
+      this.pcPlotNode = undefined;
+    }
+
+    if (this.lossFuncLineChartsNode) {
+      this.comparisonView.dockManager.close(this.lossFuncLineChartsNode);
+      this.lossFuncLineChartsNode = undefined;
+    }
+
     if (this.gridClickSubscription) {
       this.gridClickSubscription.unsubscribe();
       this.gridClickSubscription = null;
@@ -904,8 +1161,8 @@ export class FittingView {
       this.gridCellChangeSubscription = null;
     }
 
-    this.openedViewers.forEach((v) => v.close());
+    //this.openedViewers.forEach((v) => v.close());
 
-    this.openedViewers.splice(0);
+    //this.openedViewers.splice(0);
   }
 }

@@ -1,7 +1,7 @@
 // Fitting utilities
 
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 
 // Returns indeces corresponding to the closest items
 function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -79,11 +79,11 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
     }
   }
 
-  grok.shell.addTableView(expDf);
+  /*grok.shell.addTableView(expDf);
   grok.shell.addTableView(simDf);
   console.log(errors);
 
-  throw new Error();
+  throw new Error();*/
 
   return errors;
 } // getErrors

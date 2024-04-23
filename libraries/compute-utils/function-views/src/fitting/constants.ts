@@ -9,9 +9,11 @@ export enum DOCK_RATIO {
 
 /** Size constants */
 export const ROW_HEIGHT = 25;
+export const COL_WIDTH = 70;
 
 /** UI titles */
 export enum TITLE {
+   ITERATIONS = 'Iterations',
    ITER = 'Iteration',
    LOSS = 'Loss',
    TARGET = 'Target',
@@ -19,6 +21,8 @@ export enum TITLE {
    METHOD = 'method',
    VALUE = 'Value',
    OBJECTIVE = 'Objective',
+   SAMPLES = 'samples',
+   ID = 'id',
  };
 
 /** Items for the fitting help */
@@ -73,3 +77,8 @@ the loss function for each iteration
 * [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 * [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent)`;
+
+export const REPORT_DF_TOOLTIP = new Map<string, string>([
+  [TITLE.ITERATIONS, 'Number of iterations spent'],
+  [TITLE.LOSS, 'Obtained loss: sum of squared errors'],
+]);
