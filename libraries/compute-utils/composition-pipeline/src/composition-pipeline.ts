@@ -116,12 +116,10 @@ export type PipelineHooks = {
 export type PipelineConfiguration = {
   id: ItemName;
   nqName: NqName;
-  // composable
   steps: PipelineStepConfiguration[];
   hooks?: PipelineHooks;
   links?: PipelineLinkConfiguration[];
   actions?: PipelineActionConfiguraion[];
-  // non-composable
   states?: StateItemConfiguration[];
   exportConfig?: ExportConfig;
   helpUrl?: string;
@@ -141,7 +139,7 @@ export type ItemsToRemove = {
 
 export type NestedPipelineConfig = {
   insertBeforeStep?: ItemName,
-  namePrefix?: string;
+  friendlyPrefix?: string,
 }
 
 export type ComposedPipelinesConfig = {
@@ -1206,10 +1204,15 @@ export class CompositionPipeline {
     this.steps = pipelineSeq.reduce((acc, id) => {
       const steps = pipelineSteps.get(id)!;
       const pos = stepConfig.get(id)?.insertBeforeStep;
+      const prefix = stepConfig.get(id)?.friendlyPrefix;
       if (pos) {
         const idx = acc.findIndex((spec) => spec.id === pos);
-        if (idx > 0)
-          acc.splice(idx, 0, ...steps);
+        if (idx > 0) {
+          const stepsConfig = prefix ?
+            steps.map(step => ({...step, friendlyName: `${prefix}: ${step.friendlyName}`})) :
+            steps;
+          acc.splice(idx, 0, ...stepsConfig);
+        }
 
         return acc;
       } else
@@ -1372,7 +1375,7 @@ export class CompositionPipeline {
   // merge config processing
 
   private processMergeConfig(mergeConf: PipelineCompositionConfiguration,
-    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>, stepConfig: Map<string, NestedPipelineConfig>,
+    path: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>, nestedPipelineConfig: Map<string, NestedPipelineConfig>,
   ) {
     const subPath = pathJoin(path, [mergeConf.id]);
     for (const item of mergeConf.itemsToRemove ?? []) {
@@ -1385,9 +1388,9 @@ export class CompositionPipeline {
       const pipelineIdFull = pathToKey(pathJoin(subPath, [pipelineId]));
       if (conf.insertBeforeStep) {
         const insertBeforeStep = pathToKey(pathJoin(subPath, [conf.insertBeforeStep]));
-        stepConfig.set(pipelineIdFull, { ...conf, insertBeforeStep });
+        nestedPipelineConfig.set(pipelineIdFull, { ...conf, insertBeforeStep });
       } else {
-        stepConfig.set(pipelineIdFull, { ...conf });
+        nestedPipelineConfig.set(pipelineIdFull, { ...conf });
       }
     }
     delete mergeConf.nestedPipelinesConfig;
