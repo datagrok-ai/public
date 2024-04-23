@@ -3088,10 +3088,7 @@ Resources:
             - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
             - cluster_name:
                 Ref: DatagrokCluster
-          - Fn::Sub:
-            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*
-            - cluster_name:
-                Ref: DatagrokCluster
+          - Fn::Sub: arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
   DatagrokTCP443Listener:
