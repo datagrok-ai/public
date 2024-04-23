@@ -19,7 +19,7 @@ jobs:
   #    if: needs.common-check.outputs.continue == 'true'
   #    steps:
   #      - name: Checkout Code
-  #        uses: actions/checkout@v3
+  #        uses: actions/checkout@v4
   #        with:
   #          # Full git history is needed to get a proper list of changed files within `super-linter`
   #          fetch-depth: 0
@@ -84,7 +84,7 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
       - name: Get changed files
@@ -108,7 +108,7 @@ jobs:
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Setup node
@@ -130,7 +130,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Setup node
@@ -151,7 +151,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Check links in packages

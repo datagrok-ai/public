@@ -53,7 +53,7 @@ jobs:
               echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
       - name: Get changed files
@@ -87,7 +87,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           token: ${{ secrets.WRITE_TOKEN }}
@@ -154,7 +154,7 @@ jobs:
               echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
       - name: Get changed files
@@ -188,13 +188,13 @@ jobs:
   #    if: needs.common-check.outputs.continue == 'true'
   #    name: Checkov
   #    steps:
-  #      - uses: actions/checkout@v3
+  #      - uses: actions/checkout@v4
   #        if: ${{ github.event_name == 'pull_request' }}
   #        name: Checkout PR branch
   #        with:
   #          ref: ${{ github.head_ref }}
   #
-  #      - uses: actions/checkout@v3
+  #      - uses: actions/checkout@v4
   #        if: ${{ github.event_name != 'pull_request' }}
   #        name: Checkout
   #        with:
@@ -227,7 +227,7 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
 
@@ -254,7 +254,7 @@ jobs:
         provider: [ aws ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 

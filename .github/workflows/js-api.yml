@@ -31,7 +31,7 @@ jobs:
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           sparse-checkout: |
             js-api
@@ -153,7 +153,7 @@ jobs:
       HOST: GitHubAction
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
@@ -435,7 +435,7 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
@@ -528,7 +528,7 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |

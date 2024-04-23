@@ -37,7 +37,7 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
@@ -50,6 +50,7 @@ jobs:
           separator: "\n"
           dir_names: true
           dir_names_max_depth: 2
+          safe_output: false
       - name: Generate matrix
         id: generate-matrix
         run: |
@@ -143,7 +144,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
