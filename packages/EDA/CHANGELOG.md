@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.21 (2024-04-23)
+
+Add GPU information to clustering algorithms.
+
 ## 1.1.20 (2024-04-16)
 
 Improve dimensionality reduction dialog.
