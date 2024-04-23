@@ -3146,20 +3146,20 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-        Condition:
-          StringEquals:
-            "ecs:CreateAction":
-              - "CreateService"
-              - "RegisterTaskDefinition"
-              - "UpdateService"
-        - Action:
-            - ecs:TagResource 
-          Effect: Allow
-          Resource:
-            Fn::Sub:
-              - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-              - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
-              - cluster_name:
+          - Action:
+              - ecs:TagResource
+            Effect: Allow
+            Condition:
+              StringEquals:
+                "ecs:CreateAction":
+                  - "CreateService"
+                  - "RegisterTaskDefinition"
+                  - "UpdateService"
+            Resource:
+              Fn::Sub:
+                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
+                - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+                - cluster_name:
                     Ref: DatagrokCluster
 
   DatagrokKanikoPolicy:
