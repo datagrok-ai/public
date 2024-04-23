@@ -56,6 +56,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Get changed files
         uses: tj-actions/changed-files@v37
         id: changed-files
@@ -91,6 +94,9 @@ jobs:
         with:
           fetch-depth: 1
           token: ${{ secrets.WRITE_TOKEN }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Set up Python
         uses: actions/setup-python@v4
       - name: Run merge script
@@ -157,6 +163,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Get changed files
         uses: tj-actions/changed-files@v37
         id: changed-files
@@ -230,6 +239,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
 
       - name: Testing with CFN Lint Command
         uses: scottbrenner/cfn-lint-action@v2
@@ -257,6 +269,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          sparse-checkout: |
+            help/deploy
+            .github
 
       - uses: hashicorp/setup-terraform@v2
         with:
