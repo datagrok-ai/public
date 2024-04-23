@@ -19,10 +19,10 @@
       "error",
       2
     ],
-    "max-len": [
-      "error",
-      120
-    ],
+    "max-len": ["error", 120],
+    "max-params": ["warn", 5],
+    "max-lines-per-function": ["warn", 25],
+    "max-lines": ["warn", 200],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "require-jsdoc": "off",

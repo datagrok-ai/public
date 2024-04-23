@@ -70,7 +70,6 @@ export class DataManager {
     if (patternHash === undefined)
       throw new Error(`Pattern with name ${patternName} not found`);
 
-
     return patternHash;
   }
 
@@ -223,7 +222,8 @@ export class DataManager {
   }
 
   fetchAvailableNucleotideBases(): string[] {
-    const nucleotideBases: string[] = Object.keys(PATTERN_APP_DATA);
+    const format = Object.keys(PATTERN_APP_DATA)[0];
+    const nucleotideBases: string[] = Object.keys(PATTERN_APP_DATA[format]);
     return nucleotideBases;
   }
 

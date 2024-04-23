@@ -1,5 +1,5 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
-import {PATTERN_APP_DATA as styleMap} from '../../../common/model/data-loader/json-loader';
+import {PATTERN_APP_DATA} from '../../../common/model/data-loader/json-loader';
 import {LUMINANCE_COEFFICIENTS, TEXT_COLOR, SVG_CIRCLE_SIZES} from './const';
 import {isOverhangNucleotide} from '../../model/utils';
 
@@ -14,7 +14,7 @@ export function getNucleobaseLabelForCircle(nucleobase: string): string {
 }
 
 export function computeTextColorForNucleobaseLabel(nucleobase: string): string {
-  const nucleobaseColor = styleMap[nucleobase]?.color || '';
+  const nucleobaseColor = getNucleobaseColorFromStyleMap(nucleobase);
 
   const rgbValues = nucleobaseColor.match(/\d+/g)?.map(Number);
   if (!rgbValues || rgbValues.length < 3)
@@ -27,5 +27,11 @@ export function computeTextColorForNucleobaseLabel(nucleobase: string): string {
 }
 
 export function getNucleobaseColorFromStyleMap(nucleobase: string): string {
-  return styleMap[nucleobase].color;
+  // todo: optimize
+  const format = Object.keys(PATTERN_APP_DATA)[0];
+  if (!format)
+    throw new Error('No format found in PATTERN_APP_DATA');
+
+  const styleMap = PATTERN_APP_DATA[format];
+  return styleMap[nucleobase].color || '';
 }

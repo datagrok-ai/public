@@ -32,7 +32,6 @@ export class TableInputManager {
     if (this.availableTables.some((availableTable: DG.DataFrame) => availableTable.name === table.name))
       return;
 
-
     this.availableTables.push(table);
 
     this.refreshTableInput();
@@ -52,13 +51,20 @@ export class TableInputManager {
   }
 
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
-    const currentSelection = this.eventBus.getTableSelection();
+    const currentSelection = this.eventBus.getTableSelection() ?
+      this.eventBus.getTableSelection() : this.availableTables[0];
 
     const tableInput = ui.tableInput(
       'Tables',
       currentSelection,
-      this.availableTables,
-      (table: DG.DataFrame) => this.eventBus.selectTable(table));
+      this.availableTables
+    );
+    tableInput.onChanged(
+      () => this.eventBus.selectTable(tableInput.value)
+    );
+
+    this.eventBus.selectTable(currentSelection);
+
     return tableInput;
   }
 

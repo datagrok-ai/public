@@ -15,15 +15,9 @@ export class PatternAppLeftSection {
   ) { };
 
   getLayout(): HTMLDivElement {
-    const loadControlsManager = new PatternLoadControlsManager(
-      this.eventBus,
-      this.dataManager
-    );
+    const loadControlsManager = new PatternLoadControlsManager(this.eventBus, this.dataManager);
 
-    const editControlsManager = new PatternEditControlsManager(
-      this.eventBus,
-      this.dataManager
-    );
+    const editControlsManager = new PatternEditControlsManager(this.eventBus, this.dataManager);
     const tableControlsManager = new TableControlsManager(this.eventBus);
 
     const loadControls = loadControlsManager.createControls();
