@@ -7,10 +7,9 @@ import wu from 'wu';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
-import {IEditorMol, ISeqMonomer, Temps} from '../helm-monomer-placer';
+import {IEditorMol, ISeqMonomer} from '../helm-monomer-placer';
 import {getHoveredMonomerFromEditorMol} from './get-hovered';
 import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -87,7 +86,6 @@ class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
     let seqMonomer: ISeqMonomer | null;
     seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
 
-
     if (seqMonomer) {
       ui.tooltip.show(ui.divV([
         ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
@@ -109,8 +107,7 @@ class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
       getGridCellRendererBack<string, HelmGridCellRendererBack>(gridCell);
 
     let res: HelmGridCellRendererBack = temp['rendererBack'];
-    if (!res) res = temp['rendererBack'] =
-      new HelmGridCellRendererBack(gridCol, tableCol);
+    if (!res) res = temp['rendererBack'] = new HelmGridCellRendererBack(gridCol, tableCol);
     return res;
   }
 

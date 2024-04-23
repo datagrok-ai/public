@@ -246,9 +246,8 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
     }
 
     this._sweepToggle(this._busy = this._queue.length > 0);
-    if (!this._busy && swept) {
+    if (!this._busy && swept)
       this.logger.warning(`${logPrefix}, ${swept} task(s) had been swept`);
-    }
   }
 
   private _sweepToggle(busy: boolean): boolean {

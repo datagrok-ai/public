@@ -83,9 +83,8 @@ export class HelmService extends HelmServiceBase {
     try {
       const g = canvas.getContext('2d');
       if (!this.image || !g) return false;
-      g.fillStyle = '#C0C0FF';
-      g.fillRect(0, 0, canvas.width, canvas.height);
-      //g.transform(dpr, 0, 0, dpr, 0, 0);
+      // g.fillStyle = '#C0C0FF';
+      // g.fillRect(0, 0, canvas.width, canvas.height);
       g.drawImage(this.image, 0, 0);
       task.onAfterRender(canvas);
     } finally {

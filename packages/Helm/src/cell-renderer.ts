@@ -8,7 +8,7 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {IEditor, HelmMonomerPlacer, ISeqMonomer, Temps, IEditorMol} from './helm-monomer-placer';
+import {IEditor, HelmMonomerPlacer, ISeqMonomer, IEditorMol} from './helm-monomer-placer';
 import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 

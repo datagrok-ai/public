@@ -10,7 +10,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
@@ -321,4 +321,41 @@ export function getMolfiles(col: DG.Column): DG.Column {
 //output: object result
 export async function getHelmHelper(): Promise<IHelmHelper> {
   return HelmHelper.getInstance();
+}
+
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+
+//name: measureCellRenderer
+export async function measureCellRenderer(): Promise<void> {
+  const grid = grok.shell.tv.grid;
+  const gridCol = grid.columns.byName('sequence')!;
+  const back = gridCol.temp['rendererBack'] as CellRendererBackAsyncBase<HelmProps>;
+
+  let etSum: number = 0;
+  let etCount: number = 0;
+  for (let i = 0; i < 20; ++i) {
+    const t1 = window.performance.now();
+    let t2: number;
+    // @ts-ignore
+    if (!back.cacheEnabled) {
+      await testEvent(back.onRendered, () => {
+        t2 = window.performance.now();
+        _package.logger.info(`measureCellRenderer() cache disabled , ET: ${t2 - t1} ms`);
+      }, () => {
+        back.invalidate(); // grid.invalidate();
+      }, 5000);
+    } else {
+      await testEvent(grid.onAfterDrawContent, () => {
+        t2 = window.performance.now();
+        _package.logger.info(`measureCellRenderer() cache enabled, ET: ${t2! - t1} ms`);
+      }, () => {
+        grid.invalidate();
+      }, 5000);
+    }
+
+    etSum += (t2! - t1);
+    etCount++;
+  }
+  _package.logger.info(`measureCellRenderer(), avg ET: ${etSum / etCount} ms`);
 }
