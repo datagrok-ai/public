@@ -1,8 +1,8 @@
 {
   "name": "@datagrok-libraries/bio",
   "author": {
-    "name": "Sofia Podolskaia",
-    "email": "spodolskaya@datagrok.ai"
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
   },
   "publishConfig": {
     "access": "public"

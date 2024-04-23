@@ -1,6 +1,6 @@
 # grok_connect
 
-Java-based data connectors fkvmfll
+Java-based data connectors
 
 ## Dependencies
 
