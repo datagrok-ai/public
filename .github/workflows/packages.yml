@@ -228,6 +228,7 @@ jobs:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
+          cache: 'npm'
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
