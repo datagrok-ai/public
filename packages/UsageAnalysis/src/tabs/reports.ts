@@ -8,7 +8,7 @@ import * as ui from 'datagrok-api/ui';
 import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time', 'report_number', 'is_resolved'],
+  columnNames: ['error', 'reporter', 'report_time', 'report_number', 'is_resolved', 'label'],
 };
 
 export class ReportsView extends UaView {
@@ -46,11 +46,10 @@ export class ReportsView extends UaView {
         });
         this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['is_resolved', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'requests_count', 'error', 'error_stack_trace', 'report_time', 'report_id']);
+          viewer.columns.setOrder(['is_resolved', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
           viewer.col('assignee')!.cellType = 'html';
           viewer.col('is_resolved')!.editable = false;
-          viewer.col('requests_count')!.editable = false;
           viewer.col('same_errors_count')!.editable = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
         });

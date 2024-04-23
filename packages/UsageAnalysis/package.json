@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/usage-analysis",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
   "version": "2.0.0",
