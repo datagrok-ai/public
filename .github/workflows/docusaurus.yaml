@@ -53,6 +53,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            help
+            .markdownlint.yaml
+            .markdownlint-cli2.jsonc
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -126,6 +131,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            docusaurus
+            help
+            packages
+            js-api
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -353,6 +364,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            docusaurus
       - name: Update the DocSearch index
         uses: celsiusnarhwal/typesense-scraper@v2
         continue-on-error: true
