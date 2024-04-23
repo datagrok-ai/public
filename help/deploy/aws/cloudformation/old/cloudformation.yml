@@ -1,5 +1,5 @@
 ---
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: '2010-09-09djkcnkd'
 Mappings: 
   RegionMap: 
     us-east-1:

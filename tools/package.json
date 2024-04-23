@@ -1,7 +1,7 @@
 {
   "name": "datagrok-tools",
   "version": "4.12.26",
-  "description": "Utility to upload and publish packages to Datagrok",
+  "description": "Utility to upload and publish packages to Datagrok fjfjf",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
     "@babel/parser": "^7.23.6",
