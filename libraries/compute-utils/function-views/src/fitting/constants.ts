@@ -20,7 +20,7 @@ export enum TITLE {
    FIT = 'Fit',
    METHOD = 'method',
    VALUE = 'Value',
-   OBJECTIVE = 'Objective',
+   OBJECTIVE = TARGET,
    SAMPLES = 'samples',
    ID = 'id',
  };

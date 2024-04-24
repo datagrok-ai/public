@@ -18,6 +18,7 @@ import {Extremum} from './fitting/optimizer-misc';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
+type OutputTarget = number | DG.DataFrame | null;
 
 enum METHOD {
   NELDER_MEAD = 'Nelder-Mead',
@@ -271,15 +272,13 @@ export class FittingView {
       prop: DG.Property,
       input: DG.InputBase,
       isInterest: BehaviorSubject<boolean>,
-      target: number | DG.DataFrame | null,
+      target: OutputTarget,
       colName: string,
       colNameInput: DG.InputBase,
     }>);
 
     return {inputs, outputs};
   };
-
-  private openedViewers: DG.Viewer[] = [];
 
   private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run fitting');
   private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
@@ -300,10 +299,6 @@ export class FittingView {
 
   // Dock Nodes with results
   private tableDockNode: DG.DockNode | undefined = undefined;
-  private helpMdNode: DG.DockNode | undefined = undefined;
-  private goodnessOfFitNode: DG.DockNode | undefined = undefined;
-  private pcPlotNode: DG.DockNode | undefined = undefined;
-  private lossFuncLineChartsNode: DG.DockNode | undefined = undefined;
   private tempDockNodes: DG.DockNode[] = [];
 
   private method = METHOD.NELDER_MEAD;
@@ -712,6 +707,7 @@ export class FittingView {
         grok.shell.error('No output is selected for optimization.');
         return;
       }
+      const outputCaptions = outputsOfInterest.map((item) => item.prop.caption ?? item.prop.name);
 
       /** Get call funcCall with the specified inputs */
       const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
@@ -749,8 +745,6 @@ export class FittingView {
         return cost;
       };
 
-      //console.log(await costFunc(new Float32Array([1, 5])));
-
       let extremums: Extremum[];
 
       // Perform optimization
@@ -765,24 +759,25 @@ export class FittingView {
       const iterCounts = new Int32Array(rowCount);
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
+      const dockManager = this.comparisonView.dockManager;
 
       const lossFuncLineChartsRoots = new Map<number, HTMLElement>();
-      const goodnessOfFitDivs = new Map<number, HTMLDivElement>();
+      const gofDivs = new Map<number, HTMLDivElement>();
+      const gofViewersRoots = new Map<number, Map<string, HTMLElement>>();
 
-      extremums.forEach((extr, idx) => {
+      extremums.forEach(async (extr, idx) => {
         iterCounts[idx] = extr.iterCount;
         lossVals[idx] = extr.cost;
-        lossFuncLineChartsRoots.set(idx, DG.Viewer.lineChart(
-          DG.DataFrame.fromColumns([
-            DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
-            DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
-          {
-            description: 'Loss: sum of squared errors',
-            showYAxis: true,
-            showXAxis: true,
-          }).root);
-
-        goodnessOfFitDivs.set(idx, ui.divV([ui.label(`Goodness of fit: ${idx}`)]));
+        lossFuncLineChartsRoots.set(idx, this.getLossGraph(extr));
+        const gofDiv = ui.divV([]);
+        gofDivs.set(idx, gofDiv);
+        const gofElems = new Map<string, HTMLElement>();
+        const calledFuncCall = await getCalledFuncCall(extr.point);
+        outputsOfInterest.forEach((output, idx) => {
+          gofElems.set(outputCaptions[idx], this.getOutputGof(output.prop, outputsCount < 2, output.target, calledFuncCall));
+        });
+        gofElems.forEach((r) => gofDiv.appendChild(r));
+        gofViewersRoots.set(idx, gofElems);
       });
 
       // Add fitting results to the table: iteration & loss
@@ -840,17 +835,26 @@ export class FittingView {
         columnNames: variedInputsCaptions.concat([TITLE.LOSS]),
         description: 'Variation',
       });
-      const pcPlotNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
+      const pcPlotNode = dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
 
       // Add loss linecharts
       const lossFuncLineChartsDiv = ui.divV([]);
       lossFuncLineChartsRoots.forEach((r) => lossFuncLineChartsDiv.appendChild(r));
-      const lossFuncLineChartsNode = this.comparisonView.dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
+      const lossFuncLineChartsNode = dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
 
-      // Add goodness of fit divs
-      const gofDiv = ui.divV([]);
-      goodnessOfFitDivs.forEach((d) => gofDiv.appendChild(d));
-      const goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
+      // Add goodness of fit UI
+      const outputInput = ui.choiceInput(TITLE.OBJECTIVE, outputCaptions[0], outputCaptions, () => {
+        gofViewersRoots.forEach((roots) => roots.forEach((root, name) => root.hidden = name !== outputInput.value));
+      }, {nullable: false});
+      outputInput.setTooltip('Name of target output');
+      outputInput.root.hidden = outputsCount < 2;
+      const gofDiv = ui.divV([outputInput.root]);
+      gofDivs.forEach((d) => {
+        gofDiv.appendChild(d);
+        d.style.height = '100%';
+        d.style.width = '100%';
+      });
+      const goodnessOfFitNode = dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
 
       // Update nodes store & hide titles
       this.tempDockNodes.push(pcPlotNode, lossFuncLineChartsNode, goodnessOfFitNode);
@@ -877,7 +881,7 @@ export class FittingView {
         r.hidden = i !== minLossExtrIdx;
         r.style.width = '100%';
         r.style.height = '100%';
-        goodnessOfFitDivs.get(i)!.hidden = i !== minLossExtrIdx;
+        gofDivs.get(i)!.hidden = i !== minLossExtrIdx;
       });
 
       // Add grid cell effects
@@ -885,7 +889,7 @@ export class FittingView {
         const row = cell.tableRowIndex ?? 0;
         lossFuncLineChartsRoots.forEach((r, i) => {
           r.hidden = i !== row;
-          goodnessOfFitDivs.get(i)!.hidden = i !== row;
+          gofDivs.get(i)!.hidden = i !== row;
         });
       };
 
@@ -895,231 +899,6 @@ export class FittingView {
       grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
     }
   } // runOptimization
-
-  /** Perform the Nelder-Mead method */
-  private async runOptimizationOld(): Promise<void> {
-    try {
-    // check applicability
-      if (!this.canEvaluationBeRun())
-        return;
-
-      // inputs of the source function
-      const inputs: any = {};
-
-      // add fixed inputs
-      this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
-      //console.log(inputs);
-
-      // get varied inputs, optimization is performed with respect to them
-      const variedInputs = this.getVariedInputs();
-      const dim = variedInputs.length;
-
-      // varied inputs specification
-      const variedInputNames: string[] = [];
-      const minVals = new Float32Array(dim);
-      const maxVals = new Float32Array(dim);
-
-      const variedInputsCaptions = new Array<string>(dim);
-
-      // set varied inputs specification
-      variedInputs.forEach((name, idx) => {
-        const propConfig = this.store.inputs[name] as SensitivityNumericStore;
-        minVals[idx] = propConfig.min.value;
-        maxVals[idx] = propConfig.max.value;
-        variedInputNames.push(name);
-        variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
-      });
-
-      // get selected output
-      const outputsOfInterest = this.getOutputsOfInterest();
-      const outputsCount = outputsOfInterest.length;
-      if (outputsCount < 1) {
-        grok.shell.error('No output is selected for optimization.');
-        return;
-      }
-
-      /** Get call funcCall with the specified inputs */
-      const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
-        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-        const funcCall = this.func.prepare(inputs);
-        return await funcCall.call();
-      };
-
-      /** Cost function to be optimized */
-      const costFunc = async (x: Float32Array): Promise<number> => {
-        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-        const funcCall = this.func.prepare(inputs);
-        const calledFuncCall = await funcCall.call();
-
-        //console.log(x);
-
-        let cost = 0;
-
-        outputsOfInterest.forEach((output) => {
-          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-            cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
-          //console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
-          else {
-          //const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
-          //console.log(errs);
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
-          }
-        //console.log(output.target);
-        //console.log('---------------------------------------------------------------');
-        //console.log(calledFuncCall.getParamValue(output.prop.name));
-        });
-
-        //console.log(cost);
-
-        return cost;
-      };
-
-      //console.log(await costFunc(new Float32Array([1, 5])));
-
-      let extremums: Extremum[];
-
-      // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD)
-        extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings);
-      else
-        throw new Error(`The '${this.method}' method has not been implemented.`);
-
-      this.closeDockNodes();
-
-      const extr = extremums[0];
-      const rowCount = extr.iterCount;
-
-      // Add fitting results to the table: iteration & loss
-      const reportTable = DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITERATIONS, [...Array(rowCount).keys()].map((i) => i + 1)),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, rowCount)),
-      ]);
-      this.comparisonView.dataFrame = reportTable;
-      const reportColumns = reportTable.columns;
-      const fittedRaw: (Float32Array | Int32Array | Float64Array | Uint32Array)[] = [];
-
-      // Add fitting results to the table: fitted parameters
-      extr.iterPoints.forEach((vals, idx) => {
-        variedInputsCaptions[idx] = reportColumns.getUnusedName(variedInputsCaptions[idx]);
-        const col = DG.Column.fromFloat32Array(variedInputsCaptions[idx], new Float32Array(vals.buffer, 0, rowCount));
-        fittedRaw.push(col.getRawData());
-        reportColumns.add(col);
-      });
-
-      // Add PC plot
-      const pcPlot = DG.Viewer.pcPlot(reportTable, {
-        columnNames: reportTable.columns.names().filter((name) => name !== TITLE.ITERATIONS),
-        description: 'Variation',
-      });
-      const pcPlotDockNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
-      if (pcPlotDockNode.container.dart.elementTitle)
-        pcPlotDockNode.container.dart.elementTitle.hidden = true;
-      this.openedViewers.push(pcPlot);
-
-      // Add loss function linechart
-      const lossLinechart = DG.Viewer.lineChart(reportTable, {
-        xColumnName: TITLE.ITERATIONS,
-        yColumnNames: [TITLE.LOSS],
-        showXSelector: true,
-        showYSelectors: false,
-        showXAxis: true,
-        showYAxis: true,
-        description: `${TITLE.LOSS}: sum of squared errors`,
-      });
-      const lossLinechartDockNode = this.comparisonView.dockManager.dock(lossLinechart, DG.DOCK_TYPE.TOP, pcPlotDockNode, '', DOCK_RATIO.LOSS_PLOT);
-      if (lossLinechartDockNode.container.dart.elementTitle)
-        lossLinechartDockNode.container.dart.elementTitle.hidden = true;
-      this.openedViewers.push(lossLinechart);
-
-      // Goodness of fit (GOF)
-      const outputCaptions: string[] = [];
-      const outputDf = new Map<string, DG.DataFrame>();
-      const outputViewer = new Map<string, DG.Viewer>();
-
-      // Initialize output dataframes & viewers
-      outputsOfInterest.forEach((item, idx) => {
-        const name = item.prop.name;
-        const caption = item.prop.caption ?? name;
-        outputCaptions.push(caption);
-        const type = item.prop.propertyType;
-
-        switch (type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          const df = DG.DataFrame.fromColumns([
-            DG.Column.fromStrings(caption, ['obtained', 'target']),
-            DG.Column.fromList(type, TITLE.VALUE, [idx + 1, item.target]),
-          ]);
-          df.name = caption;
-          outputDf.set(name, df);
-          outputViewer.set(name, DG.Viewer.barChart(df, {
-            valueColumnName: TITLE.VALUE,
-            splitColumnName: caption,
-            valueAggrType: DG.AGG.AVG,
-            showValueSelector: false,
-            showCategorySelector: false,
-            showStackSelector: false,
-          }));
-          break;
-
-        case DG.TYPE.DATA_FRAME:
-          break;
-
-        default:
-          throw new Error(`Unsupported output type: ${item.prop.propertyType}`);
-        }
-      });
-
-      const x = new Float32Array(dim);
-
-      /** Fit output dataframes with respect to the row of the report table */
-      const fillOutputDFs = async (rowIdx: number) => {
-        fittedRaw.forEach((arr, idx) => x[idx] = arr[rowIdx]);
-        const calledFuncCall = await getCalledFuncCall(x);
-
-        outputsOfInterest.forEach((output) => {
-          const name = output.prop.name;
-          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-            outputDf.get(name)!.set(TITLE.VALUE, 0, calledFuncCall.getParamValue(output.prop.name));
-          else {}
-        });
-      };
-
-      // Fill using data from the last raw
-      fillOutputDFs(rowCount - 1);
-
-      // Build UI
-      let currentOutput = outputCaptions[0];
-      const outputInput = ui.choiceInput(TITLE.OBJECTIVE, currentOutput, outputCaptions, () => {
-        currentOutput = outputInput.value!;
-        outputViewer.forEach((v, caption) => v.root.hidden = caption !== currentOutput);
-      }, {nullable: false});
-      outputInput.setTooltip('Output name');
-      outputInput.root.hidden = outputsCount < 2;
-      const header = ui.h2(currentOutput);
-      ui.tooltip.bind(header, 'Output of the function');
-      header.style.marginRight = '6px';
-      header.hidden = outputsCount > 1;
-      const gofItems = [outputInput.root, header];
-      outputViewer.forEach((v) => gofItems.push(v.root));
-      const gofDiv = ui.divV(gofItems);
-      this.goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.TOP, this.tableDockNode, undefined, DOCK_RATIO.FIT_DIV);
-      if (this.goodnessOfFitNode.container.dart.elementTitle)
-        this.goodnessOfFitNode.container.dart.elementTitle.hidden = true;
-
-      // Add grid cell effects
-      const cellEffect = async (cell: DG.GridCell) => {
-        const selectedRow = cell.tableRowIndex ?? 0;
-        await fillOutputDFs(selectedRow);
-      };
-
-      this.gridClickSubscription = this.comparisonView.grid.onCellClick.subscribe(cellEffect);
-      this.gridCellChangeSubscription = this.comparisonView.grid.onCurrentCellChanged.subscribe(cellEffect);
-    } catch (error) {
-      grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
-    }
-  } // runOptimizationOld
 
   /** Get outputs selected as target */
   private getOutputsOfInterest() {
@@ -1138,38 +917,61 @@ export class FittingView {
   /** Close dock nodes with viewers (visulalizing prev results) */
   private closeDockNodes() {
     this.tempDockNodes.forEach((node) => this.comparisonView.dockManager.close(node));
-    this.tempDockNodes.slice(0);
-    console.log(this.tempDockNodes);
+    this.tempDockNodes = [];
+  }
 
-    /*
-    if (this.helpMdNode) {
-      this.comparisonView.dockManager.close(this.helpMdNode);
-      this.helpMdNode = undefined;
+  /** Return loss function line chart root  */
+  private getLossGraph(extr: Extremum): HTMLElement {
+    return DG.Viewer.lineChart(
+      DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
+      {
+        description: 'Loss: sum of squared errors',
+        showYAxis: true,
+        showXAxis: true,
+      }).root;
+  }
+
+  /** Return output goodness of fit (GOF) viewer root */
+  private getOutputGof(prop: DG.Property, toShowCaption: boolean, target: OutputTarget, call: DG.FuncCall): HTMLElement {
+    let root: HTMLElement;
+    const type = prop.propertyType;
+    const name = prop.name;
+    const caption = prop.caption ?? name;
+
+    switch (type) {
+    case DG.TYPE.FLOAT:
+    case DG.TYPE.INT:
+    case DG.TYPE.BIG_INT:
+      root = DG.Viewer.barChart(
+        DG.DataFrame.fromColumns([
+          DG.Column.fromStrings(caption, ['obtained', 'target']),
+          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
+        ]),
+        {
+          description: toShowCaption ? `Goodness of fit: ${caption}` : 'Goodness of fit',
+          valueColumnName: TITLE.VALUE,
+          splitColumnName: caption,
+          valueAggrType: DG.AGG.AVG,
+          showValueSelector: false,
+          showCategorySelector: false,
+          showStackSelector: false,
+        },
+      ).root;
+      break;
+
+    case DG.TYPE.DATA_FRAME:
+      root = ui.label('Dataframe!!!');
+      break;
+
+    default:
+      throw new Error('Unsupported output type');
     }
 
-    if (this.goodnessOfFitNode) {
-      this.comparisonView.dockManager.close(this.goodnessOfFitNode);
-      this.goodnessOfFitNode = undefined;
-    }
+    root.style.height = '100%';
+    root.style.width = '100%';
 
-    if (this.pcPlotNode) {
-      this.comparisonView.dockManager.close(this.pcPlotNode);
-      this.pcPlotNode = undefined;
-    }
-
-    if (this.lossFuncLineChartsNode) {
-      this.comparisonView.dockManager.close(this.lossFuncLineChartsNode);
-      this.lossFuncLineChartsNode = undefined;
-    }
-
-    if (this.gridClickSubscription) {
-      this.gridClickSubscription.unsubscribe();
-      this.gridClickSubscription = null;
-    }
-
-    if (this.gridCellChangeSubscription) {
-      this.gridCellChangeSubscription.unsubscribe();
-      this.gridCellChangeSubscription = null;
-    }*/
+    return root;
   }
 }
