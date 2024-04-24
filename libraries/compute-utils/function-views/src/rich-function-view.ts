@@ -257,7 +257,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -1531,6 +1531,11 @@ export class RichFunctionView extends FunctionView {
       if (!isValidationPassed(v))
         return false;
     }
+    for (const [_, v] of Object.entries(this.externalValidatorsState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+
     return true;
   }
 

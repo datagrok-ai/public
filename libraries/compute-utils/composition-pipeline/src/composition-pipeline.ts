@@ -38,7 +38,7 @@ export interface RuntimeController {
   getState<T = any>(path: ItemPath): T | void;
   setState<T>(path: ItemPath, state: T, inputState?: 'disabled' | 'restricted' | 'user input'): void;
   getValidationAction(path: ItemPath, name?: string): ActionItem
-  setValidation(path: ItemPath, validation: ValidationResult | undefined): void
+  setValidation(path: ItemPath, validation?: ValidationResult | undefined): void
   getView(path: ItemPath): RichFunctionView | void;
   goToStep(path: ItemPath): void;
 }
@@ -819,7 +819,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.goToStep(fullPath);
   }
 
-  setValidation(path: ItemPath, validation: ValidationResult | undefined): void {
+  setValidation(path: ItemPath, validation?: ValidationResult): void {
     this.checkAborted();
     const fullPathTarget = pathJoin(this.config.pipelinePath, path);
     const fullPathLinkPath = keyToPath(this.handlerId);
