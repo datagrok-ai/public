@@ -1,3 +1,4 @@
+import DG from 'datagrok-api/dg';
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -18,37 +19,45 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 //meta.icon: img/icons/toolkit.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoToolkitApp(): Promise<void> {
+//output: view v
+export async function oligoToolkitApp(): Promise<DG.ViewBase> {
   await initSequenceTranslatorLibData();
   const externalViewFactories = await getExternalAppViewFactories();
   if (!externalViewFactories)
     throw new Error('External app view factories not loaded');
   const appUI = new CombinedAppUI(externalViewFactories!);
-  await appUI.initializeAppLayout();
+  const view = await appUI.getAppView();
+  return view;
 }
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoTranslatorApp(): Promise<void> {
-  await buildLayout(APP_NAME.TRANSLATOR);
+//output: view v
+export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.TRANSLATOR);
+  return view;
 }
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoPatternApp(): Promise<void> {
-  await buildLayout(APP_NAME.PATTERN);
+//output: view v
+export async function oligoPatternApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.PATTERN);
+  return view;
 }
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoStructureApp(): Promise<void> {
-  await buildLayout(APP_NAME.STRUCTURE);
+//output: view v
+export async function oligoStructureApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+  return view;
 }
 
 //name: initSequenceTranslatorLibData
@@ -124,8 +133,9 @@ export async function translateOligonucleotideSequence(
   return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
 }
 
-async function buildLayout(appName: string): Promise<void> {
+async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   await initSequenceTranslatorLibData();
   const appUI = getSpecifiedAppUI(appName);
-  await appUI.initializeAppLayout();
+  const view = await appUI.getAppView();
+  return view;
 }

@@ -3,13 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {tryCatch} from '../model/helpers';
-
 export abstract class AppUIBase {
   constructor(protected appName: string, protected parentAppName?: string) { }
-  abstract addView(): Promise<void>;
+  protected abstract constructView(): Promise<DG.ViewBase>;
 
-  async initializeAppLayout(): Promise<void> {
+  async getAppView(): Promise<DG.ViewBase> {
     const progressIndicator: DG.TaskBarProgressIndicator =
       DG.TaskBarProgressIndicator.create(`Loading ${this.appName}...`);
 
@@ -17,12 +15,14 @@ export abstract class AppUIBase {
     if (currentView)
       ui.setUpdateIndicator(currentView, true);
 
-    await tryCatch(async () => {
-      await this.addView();
-    }, () => progressIndicator.close());
-
-    if (currentView)
-      ui.setUpdateIndicator(currentView, false);
+    try {
+      const view = await this.constructView();
+      return view;
+    } finally {
+      progressIndicator.close();
+      if (currentView)
+        ui.setUpdateIndicator(currentView, false);
+    }
   }
 }
 
