@@ -110,6 +110,8 @@ export type PipelineHooks = {
   afterFuncCallReady?: PipelineHookConfiguration[];
   beforeLoadRun?: PipelineHookConfiguration[];
   afterLoadRun?: PipelineHookConfiguration[];
+  beforeSaveRun?: PipelineHookConfiguration[];
+  afterSaveRun?: PipelineHookConfiguration[];
   onViewReady?: PipelineHookConfiguration[];
 }
 
@@ -265,7 +267,7 @@ export type NodeConf = SubNodeConf | PipelineConfiguration;
 export type InputState = 'disabled' | 'restricted' | 'user input';
 
 export class NodeItemState<T = any> {
-  public currentSource = new BehaviorSubject<Observable<T>>(of());
+  private currentSource = new BehaviorSubject<Observable<T>>(of());
   private valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
   );
@@ -279,12 +281,13 @@ export class NodeItemState<T = any> {
   constructor(
     public conf: StateItemConfiguration,
     public pipelineState: PipelineGlobalState,
+    public parentId: ItemName,
     public notifier?: Observable<true>,
   ) {
     this.valueChanges.pipe(
       takeUntil(this.pipelineState.closed),
     ).subscribe((x) => {
-      // console.log('state', this.conf.id, x);
+      console.log(`state update: ${this.parentId}/${this.conf.id}`, x);
       this.value.next(x);
     });
   }
@@ -318,19 +321,19 @@ export class NodeState {
     if (type === 'pipeline') {
       const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id));
     }
 
     if (type === 'step') {
       const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id));
     }
 
     if (type === 'popup') {
       const states = (conf as PipelinePopupConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState, this.notifier));
+        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id, this.notifier));
     }
 
     if (type === 'action') {
@@ -375,7 +378,6 @@ export class LinkState {
 
         return true;
       }),
-      // tap(() => console.log('link', this.conf.id)),
       mapTo(true),
     );
   }
@@ -428,7 +430,7 @@ export class PipelineRuntime {
     public pipelineState: PipelineGlobalState,
   ) {
     this.pipelineLoads.pipe(
-      concatMap(({path, runId}) => from(this.loadNestedPipeline(path, runId))),
+      concatMap(({path, runId}) => from(this.pipelineLoader(path, runId))),
       takeUntil(this.pipelineState.closed),
     ).subscribe();
   }
@@ -449,16 +451,8 @@ export class PipelineRuntime {
       this.view.hideSteps(k);
   }
 
-  async loadNestedPipeline(path: ItemPath, runId: string) {
-    this.disableSubStepsIOSetters(path);
-    try {
-      const calls = await this.loadPipelineFuncCalls(runId);
-      const nestedSteps = this.getNestedSteps(path);
-      this.insertLoadedPipelineSteps(calls, nestedSteps);
-      await this.awaitForAllUpdatesDone();
-    } finally {
-      this.enableSubStepsIOSetters(path);
-    }
+  loadNestedPipeline(path: ItemPath, runId: string) {
+    this.pipelineLoads.next({path, runId});
   }
 
   triggerLink(path: ItemPath): void {
@@ -493,7 +487,6 @@ export class PipelineRuntime {
     this.validationState.set(targetId, targetState);
     this.updateViewValidation(targetPath);
   }
-
 
   getAction(path: ItemPath, name?: string): ActionItem {
     const k = pathToKey(path);
@@ -578,7 +571,6 @@ export class PipelineRuntime {
         return value.pipe(sample(notifier));
       });
       const handler = link.conf.handler ?? (async () => {
-        // console.log('default handler', link.conf.id);
         const nLinks = Math.min(link.controllerConfig.from.length, link.controllerConfig.to.length);
         for (let idx = 0; idx < nLinks; idx++) {
           let state = this.getState(link.controllerConfig.from[idx]);
@@ -633,12 +625,34 @@ export class PipelineRuntime {
 
   disableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
+    console.log(`disableSubStepsIOSetters ${k}`);
     this.disabledStepsPaths.add(k);
   }
 
   enableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
+    console.log(`enableSubStepsIOSetters ${k}`);
     this.disabledStepsPaths.delete(k);
+  }
+
+  public async awaitForAllUpdatesDone() {
+    await this.isUpdating.pipe(
+      debounceTime(1), // wait more than state debounce time
+      filter((x) => !x),
+      take(1),
+    ).toPromise();
+  }
+
+  private async pipelineLoader(path: ItemPath, runId: string) {
+    this.disableSubStepsIOSetters(path);
+    try {
+      const calls = await this.loadPipelineFuncCalls(runId);
+      const nestedSteps = this.getNestedSteps(path);
+      this.insertLoadedPipelineSteps(calls, nestedSteps);
+      await this.awaitForAllUpdatesDone();
+    } finally {
+      this.enableSubStepsIOSetters(path);
+    }
   }
 
   private insertLoadedPipelineSteps(calls: DG.FuncCall[], stepsData: StepData[]) {
@@ -657,13 +671,6 @@ export class PipelineRuntime {
     }
   }
 
-  private async awaitForAllUpdatesDone() {
-    await this.isUpdating.pipe(
-      debounceTime(0),
-      filter((x) => !x),
-      take(1),
-    ).toPromise();
-  }
 
   private getNestedSteps(pipelinePath: ItemPath) {
     const k = pathToKey(pipelinePath);
@@ -762,6 +769,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     this.disabledSteps.delete(pathToKey(fullPath));
+    console.log(`${this.handlerId}: enableStep ${pathToKey(fullPath)}`);
     return this.rt.setStepState(fullPath, true);
   }
 
@@ -769,12 +777,14 @@ export class RuntimeControllerImpl implements RuntimeController {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     this.disabledSteps.add(pathToKey(fullPath));
+    console.log(`${this.handlerId}: disableStep ${pathToKey(fullPath)}`);
     return this.rt.setStepState(fullPath, false);
   }
 
   triggerLink(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
+    console.log(`${this.handlerId}: triggerLink ${pathToKey(fullPath)}`);
     return this.rt.triggerLink(fullPath);
   }
 
@@ -793,6 +803,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     if (!this.checkOutput(fullPath))
       return;
 
+    console.log(`${this.handlerId}: set state ${pathToKey(fullPath)} ${value}`);
     return this.rt.updateState(fullPath, value, inputState);
   }
 
@@ -814,6 +825,8 @@ export class RuntimeControllerImpl implements RuntimeController {
     const fullPathLinkPath = keyToPath(this.handlerId);
     if (!this.checkValidation(fullPathTarget))
       return;
+
+    console.log(`${this.handlerId}: setValidation ${fullPathTarget} ${validation}`);
     this.rt.setValidation(fullPathTarget, fullPathLinkPath, validation);
   }
 
@@ -823,10 +836,9 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.getAction(fullPath, name);
   }
 
-  async loadNestedPipeline(path: ItemPath, runId: string) {
+  loadNestedPipeline(path: ItemPath, runId: string) {
     this.checkAborted();
-    await this.rt.loadNestedPipeline(path, runId);
-    this.checkAborted();
+    this.rt.loadNestedPipeline(path, runId);
   }
 
   private checkAborted() {
@@ -903,7 +915,10 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   public getStateBindings(viewId: PathKey, stateId: string) {
     const stepView = this.getStepView<RichFunctionView>(viewId);
     const changes = stepView.getParamChanges(stateId);
-    const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => stepView.setInput(stateId, x, inputState);
+    const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => {
+      console.log(`setter: ${viewId}/${stateId}`, x);
+      stepView.setInput(stateId, x, inputState);
+    };
     return {changes, setter};
   }
 
@@ -913,7 +928,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
       view.setExternalValidationResults(inputName, results);
   }
 
-  addMenuItem(name: string, action: () => void) {
+  public addMenuItem(name: string, action: () => void) {
     this.actionsMenu?.item(name, action);
   }
 
@@ -957,8 +972,22 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
 
   override async onAfterLoadRun(run: DG.FuncCall) {
     await super.onAfterLoadRun(run);
+    await this.rt!.awaitForAllUpdatesDone();
     this.rt!.enableSubStepsIOSetters([]);
     await this.execHooks('afterLoadRun', {run});
+  }
+
+  override async onBeforeSaveRun() {
+    this.rt!.disableSubStepsIOSetters([]);
+    await super.onBeforeLoadRun();
+    await this.execHooks('beforeSaveRun');
+  }
+
+  override async onAfterSaveRun(run: DG.FuncCall) {
+    await super.onAfterLoadRun(run);
+    await this.rt!.awaitForAllUpdatesDone();
+    this.rt!.enableSubStepsIOSetters([]);
+    await this.execHooks('afterSaveRun', {run});
   }
 
   override build() {
@@ -1118,7 +1147,7 @@ export class CompositionPipeline {
         if (conf.position === 'menu') {
           const nestedConfig = this.nestedPipelineConfig.get(pathToKey(node.pipelinePath))!;
           const prefix = nestedConfig?.friendlyPrefix ?? '';
-          const name = conf.friendlyName
+          const name = conf.friendlyName;
           const fullName = prefix ? `${prefix}: ${name}` : name;
           menuItems.set(fullName, node);
         }
@@ -1162,8 +1191,8 @@ export class CompositionPipeline {
             const action = this.rt!.getAction(keyToPath(conf.id));
             this.viewInst!.addMenuItem(name, action.action as () => void);
           }
-        }
-      }
+        },
+      },
     ];
 
     const hooks = {
@@ -1241,7 +1270,7 @@ export class CompositionPipeline {
         const idx = acc.findIndex((spec) => spec.id === pos);
         if (idx > 0) {
           const stepsConfig = prefix ?
-            steps.map(step => ({...step, friendlyName: `${prefix}: ${step.friendlyName}`})) :
+            steps.map((step) => ({...step, friendlyName: `${prefix}: ${step.friendlyName}`})) :
             steps;
           acc.splice(idx, 0, ...stepsConfig);
         }
@@ -1420,10 +1449,9 @@ export class CompositionPipeline {
       const pipelineIdFull = pathToKey(pathJoin(subPath, [pipelineId]));
       if (conf.insertBeforeStep) {
         const insertBeforeStep = pathToKey(pathJoin(subPath, [conf.insertBeforeStep]));
-        nestedPipelineConfig.set(pipelineIdFull, { ...conf, insertBeforeStep });
-      } else {
-        nestedPipelineConfig.set(pipelineIdFull, { ...conf });
-      }
+        nestedPipelineConfig.set(pipelineIdFull, {...conf, insertBeforeStep});
+      } else
+        nestedPipelineConfig.set(pipelineIdFull, {...conf});
     }
     delete mergeConf.nestedPipelinesConfig;
     const {popupsToAdd, actionsToAdd} = mergeConf;
