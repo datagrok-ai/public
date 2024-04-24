@@ -286,8 +286,6 @@ export class FittingView {
   private helpIcon = ui.iconFA('question', () => {
     window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
   }, 'Open help in a new tab');
-  private tableDockNode: DG.DockNode | undefined;
-  private helpMdNode: DG.DockNode | undefined;
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
   private toSetSwitched = true;
@@ -300,9 +298,13 @@ export class FittingView {
     max: 1000,
   }));
 
+  // Dock Nodes with results
+  private tableDockNode: DG.DockNode | undefined = undefined;
+  private helpMdNode: DG.DockNode | undefined = undefined;
   private goodnessOfFitNode: DG.DockNode | undefined = undefined;
-  private pcPlotNode: DG.DockNode | undefined;
-  private lossFuncLineChartsNode: DG.DockNode | undefined;
+  private pcPlotNode: DG.DockNode | undefined = undefined;
+  private lossFuncLineChartsNode: DG.DockNode | undefined = undefined;
+  private tempDockNodes: DG.DockNode[] = [];
 
   private method = METHOD.NELDER_MEAD;
   private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD], () => {
@@ -415,7 +417,7 @@ export class FittingView {
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
-    this.helpMdNode = this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About');
+    this.tempDockNodes.push(this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About'));
     this.methodInput.setTooltip('Numerical method for minimizing loss function');
 
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
@@ -757,7 +759,7 @@ export class FittingView {
       else
         throw new Error(`The '${this.method}' method has not been implemented.`);
 
-      this.closeOpenedViewers();
+      this.closeDockNodes();
 
       const rowCount = this.samplesCount;
       const iterCounts = new Int32Array(rowCount);
@@ -838,23 +840,25 @@ export class FittingView {
         columnNames: variedInputsCaptions.concat([TITLE.LOSS]),
         description: 'Variation',
       });
-      this.pcPlotNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
-      if (this.pcPlotNode.container.dart.elementTitle)
-        this.pcPlotNode.container.dart.elementTitle.hidden = true;
+      const pcPlotNode = this.comparisonView.dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
 
       // Add loss linecharts
       const lossFuncLineChartsDiv = ui.divV([]);
       lossFuncLineChartsRoots.forEach((r) => lossFuncLineChartsDiv.appendChild(r));
-      this.lossFuncLineChartsNode = this.comparisonView.dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, this.pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
-      if (this.lossFuncLineChartsNode.container.dart.elementTitle)
-        this.lossFuncLineChartsNode.container.dart.elementTitle.hidden = true;
+      const lossFuncLineChartsNode = this.comparisonView.dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
 
       // Add goodness of fit divs
       const gofDiv = ui.divV([]);
       goodnessOfFitDivs.forEach((d) => gofDiv.appendChild(d));
-      this.goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
-      if (this.goodnessOfFitNode.container.dart.elementTitle)
-        this.goodnessOfFitNode.container.dart.elementTitle.hidden = true;
+      const goodnessOfFitNode = this.comparisonView.dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
+
+      // Update nodes store & hide titles
+      this.tempDockNodes.push(pcPlotNode, lossFuncLineChartsNode, goodnessOfFitNode);
+      this.tempDockNodes.forEach((node) => {
+        const title = node.container.dart.elementTitle;
+        if (title)
+          title.hidden = true;
+      });
 
       // Find item with min loss
       let minLossExtrIdx = 0;
@@ -980,7 +984,7 @@ export class FittingView {
       else
         throw new Error(`The '${this.method}' method has not been implemented.`);
 
-      this.closeOpenedViewers();
+      this.closeDockNodes();
 
       const extr = extremums[0];
       const rowCount = extr.iterCount;
@@ -1117,6 +1121,7 @@ export class FittingView {
     }
   } // runOptimizationOld
 
+  /** Get outputs selected as target */
   private getOutputsOfInterest() {
     const outputsOfInterest = [];
 
@@ -1130,7 +1135,13 @@ export class FittingView {
     return outputsOfInterest;
   }
 
-  private closeOpenedViewers() {
+  /** Close dock nodes with viewers (visulalizing prev results) */
+  private closeDockNodes() {
+    this.tempDockNodes.forEach((node) => this.comparisonView.dockManager.close(node));
+    this.tempDockNodes.slice(0);
+    console.log(this.tempDockNodes);
+
+    /*
     if (this.helpMdNode) {
       this.comparisonView.dockManager.close(this.helpMdNode);
       this.helpMdNode = undefined;
@@ -1159,10 +1170,6 @@ export class FittingView {
     if (this.gridCellChangeSubscription) {
       this.gridCellChangeSubscription.unsubscribe();
       this.gridCellChangeSubscription = null;
-    }
-
-    //this.openedViewers.forEach((v) => v.close());
-
-    //this.openedViewers.splice(0);
+    }*/
   }
 }
