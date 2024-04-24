@@ -84,3 +84,5 @@ help/deploy/releases/plugins/plugins.json
 !help/deploy/releases/plugins/TableFromJson.js
 
 tools/.cache/
+
+.history

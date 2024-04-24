@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.4 (2024-04-25)
+
+Add webGPU MCL implementation.
+
 ## 1.1.3 (2024-04-23)
 
 Introduce rules for GPU usage
