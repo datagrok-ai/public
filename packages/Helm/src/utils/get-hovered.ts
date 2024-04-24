@@ -6,6 +6,7 @@ import * as org from 'org';
 import * as JSDraw2 from 'JSDraw2';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IEditorMol, IEditorMolAtom} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 

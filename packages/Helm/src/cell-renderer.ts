@@ -7,6 +7,7 @@ import wu from 'wu';
 
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {IEditor, IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';

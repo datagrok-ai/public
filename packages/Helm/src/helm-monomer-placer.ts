@@ -8,6 +8,7 @@ import wu from 'wu';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {getParts, parseHelm} from './utils';
 
