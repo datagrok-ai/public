@@ -6,35 +6,11 @@ import wu from 'wu';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {getParts, parseHelm} from './utils';
 
 import {_package, getMonomerLib} from './package';
-
-export interface IEditor {
-  get m(): IEditorMol;
-
-  resize(width: number, height: number): void;
-  setData(data: string, format: string): void;
-}
-
-export interface IEditorMol {
-  get atoms(): IEditorMolAtom[];
-
-  clone(selectedOnly: boolean): IEditorMol;
-}
-
-export interface IEditorMolAtom {
-  get p(): IEditorPoint;
-
-  get elem(): string;
-}
-
-export interface IEditorPoint {
-  get x(): number;
-
-  get y(): number;
-}
 
 export interface ISeqMonomer {
   polymerType: string

@@ -7,9 +7,10 @@ import wu from 'wu';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
+import {HelmAux, HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
-import {IEditorMol, ISeqMonomer} from '../helm-monomer-placer';
+import {ISeqMonomer} from '../helm-monomer-placer';
 import {getHoveredMonomerFromEditorMol} from './get-hovered';
 import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -41,7 +42,7 @@ class WrapLogger implements ILogger {
   }
 }
 
-class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
+export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
   private readonly monomerLib: IMonomerLib;
 
   constructor(
@@ -59,7 +60,7 @@ class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
     if (this.gridCol && this.gridCol.dart) this.gridCol.grid?.invalidate();
   }
 
-  protected override getRenderService(): RenderServiceBase<HelmProps> {
+  protected override getRenderService(): RenderServiceBase<HelmProps, HelmAux> {
     return _getHelmService();
   }
 
@@ -67,32 +68,37 @@ class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps> {
     return new HelmProps(
       gridCell,
       gridCell.grid.props.backColor,
-      gridCell.gridColumn.width * dpr,
-      gridCell.grid.props.rowHeight * dpr);
+      gridCell.gridColumn.width * dpr - 2,
+      gridCell.grid.props.rowHeight * dpr - 2);
+  }
+
+  protected override storeAux(gridCell: DG.GridCell, aux: HelmAux): void {
+    if (gridCell.tableRowIndex !== null)
+      this.setEditorMol(gridCell.tableRowIndex, aux.mol);
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    /* Can not do anything without tableColumn containing temp */
-    let tableCol: DG.Column | null = null;
-    try { tableCol = gridCell.tableColumn; } catch { }
-    if (!tableCol) return;
+    const logPrefix = `${this.toLog()}.onMouseMove()`;
+    const dpr = window.devicePixelRatio;
 
     /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
-    const argsX = e.offsetX - gcb.x;
-    const argsY = e.offsetY - gcb.y;
+    const argsX = (e.offsetX - gcb.x) * dpr;
+    const argsY = (e.offsetY - gcb.y) * dpr;
 
     const editorMol: IEditorMol | null = this.getEditorMol(gridCell.tableRowIndex!);
-    if (!editorMol) return; // The gridCell is not rendered yet
-    let seqMonomer: ISeqMonomer | null;
-    seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
+    if (!editorMol) {
+      this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
+      return; // The gridCell is not rendered yet
+    }
+    const seqMonomer: ISeqMonomer | null = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
 
     if (seqMonomer) {
-      ui.tooltip.show(ui.divV([
-        ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
-        ui.divText('Open the Context Panel, then expand Manage Libraries'),
-      ]), e.x + 16, e.y + 16);
-    } else
+      const tooltipEl = this.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+      ui.tooltip.show(tooltipEl, e.x + 16, e.y + 16);
+    } else {
+      // Tooltip for missing monomers
       ui.tooltip.hide();
+    }
   }
 
   // -- Handle events --

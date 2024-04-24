@@ -1,5 +1,10 @@
 # Helm changelog
 
+## 2.2.0 (WIP)
+
+Fix Helm cell renderer to clear editor on empty cell value
+Add interactivity on monomers into HelmGridCellRenderer
+
 ## 2.1.34 (2024-04-22)
 
 Fix Helm grid cell renderer

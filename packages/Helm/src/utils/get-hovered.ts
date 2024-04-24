@@ -3,8 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IEditorMol, IEditorMolAtom} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
-import {HelmMonomerPlacer, IEditorMol, IEditorMolAtom, ISeqMonomer} from '../helm-monomer-placer';
+import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
   argsX: number, argsY: number, gridCell: DG.GridCell, mol: IEditorMol

@@ -163,8 +163,12 @@ export class MonomerLib implements IMonomerLib {
         label('Source'),
         ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
       ], {classes: 'ui-input-root'}));
-    } else
-      res.append(ui.divText('Monomer not found'));
+    } else {
+      res.append(ui.divV([
+        ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
+        ui.divText('Open the Context Panel, then expand Manage Libraries'),
+      ]));
+    }
     return res;
   }
 }

@@ -13,7 +13,9 @@ export class NglGlProps extends PropsBase {
   }
 }
 
-export abstract class NglGlServiceBase extends RenderServiceBase<NglGlProps> {}
+export type NglGlAux = void;
+
+export abstract class NglGlServiceBase extends RenderServiceBase<NglGlProps, void> {}
 
 
 export async function getNglGlService(): Promise<NglGlServiceBase> {

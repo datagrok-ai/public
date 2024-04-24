@@ -7,7 +7,7 @@ import * as ngl from 'NGL';
 import {Unsubscribable} from 'rxjs';
 import {SignalBinding} from 'signals';
 
-import {NglGlProps, NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {NglGlAux, NglGlProps, NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 
 import {awaitNgl} from '../viewers/ngl-viewer-utils';
@@ -50,7 +50,7 @@ export class NglGlDocService extends NglGlServiceBase {
   }
 
   protected override async requestRender(
-    key: any, task: RenderTask<NglGlProps>, renderHandler: () => void,
+    key: any, task: RenderTask<NglGlProps, NglGlAux>, renderHandler: () => void,
   ): Promise<[Unsubscribable, number, () => void]> {
     const logPrefix = `${this.toLog()}.requestRender()`;
     this.logger.debug(`${logPrefix}, ` + `key: ${key?.toString()}`);
@@ -125,7 +125,7 @@ export class NglGlDocService extends NglGlServiceBase {
   }
 
   protected override onRendered(
-    key: keyof any | undefined, task: RenderTask<NglGlProps>, emptyCanvasHash: number
+    key: keyof any | undefined, task: RenderTask<NglGlProps, NglGlAux>, emptyCanvasHash: number
   ): boolean {
     const logPrefix = `${this.toLog()}.onRendered( key = ${key?.toString()} )`;
     if (emptyCanvasHash === undefined)

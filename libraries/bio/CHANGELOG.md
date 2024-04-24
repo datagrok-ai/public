@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.41.0 (WIP)
+
+Use ImageData for cell image cache instead of toDataURL string
+Add Helm Web Editor types
+Add aux to RenderTask.onAfterRender callback (for interactivity)
+
 ## 5.40.8 (2024-04-16)
 
 Fix monomer placer destroying

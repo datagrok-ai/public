@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
+import {IEditorMol} from '../types/helm-web-editor';
 
 export class HelmProps extends PropsBase {
   public constructor(
@@ -13,7 +14,9 @@ export class HelmProps extends PropsBase {
   }
 }
 
-export abstract class HelmServiceBase extends RenderServiceBase<HelmProps> {}
+export type HelmAux = { mol: IEditorMol }
+
+export abstract class HelmServiceBase extends RenderServiceBase<HelmProps, HelmAux> {}
 
 export async function getHelmService(): Promise<HelmServiceBase> {
   const funcList = DG.Func.find({package: 'Helm', name: 'getHelmService'});

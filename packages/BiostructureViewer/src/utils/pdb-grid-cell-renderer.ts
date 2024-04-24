@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {NglGlProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {NglGlAux, NglGlProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
@@ -21,7 +21,7 @@ export const enum Temps {
   renderer = '.renderer.pdb',
 }
 
-export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProps>
+export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProps, NglGlAux>
   implements IPdbGridCellRenderer {
   constructor(
     gridCol: DG.GridColumn | null,
@@ -30,7 +30,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     super(gridCol, tableCol, _package.logger, true);
   }
 
-  protected getRenderService(): RenderServiceBase<NglGlProps> {
+  protected getRenderService(): RenderServiceBase<NglGlProps, NglGlAux> {
     return _getNglGlService();
   }
 
@@ -38,9 +38,11 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     return new NglGlProps(
       gridCell.cell.value,
       gridCell.grid.props.backColor,
-      gridCell.gridColumn.width * dpr,
-      gridCell.grid.props.rowHeight * dpr);
+      gridCell.gridColumn.width * dpr - 2,
+      gridCell.grid.props.rowHeight * dpr - 2);
   }
+
+  protected override storeAux(_gridCell: DG.GridCell, _aux: NglGlAux): void {}
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const callLog = 'onClick()';

@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {ILogger} from './logger';
 import {Unsubscribable} from 'rxjs';
+import {CellRendererBackAsyncBase} from './cell-renderer-async-base';
 
 type GridCellRendererTemp<TBack> = {
   rendererBack: TBack;
@@ -68,6 +69,13 @@ export abstract class CellRendererBackBase<TValue> {
         } catch (err: any) { this.logger.error(err); }
       }));
     }
+  }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
+
+  protected toLog(): string {
+    return `${this.constructor.name}<${this.viewerId}>`;
   }
 
   protected destroy(): void {

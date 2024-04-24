@@ -5,11 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 
-import {HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {IEditor} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
-
-import {IEditor} from '../helm-monomer-placer';
 
 import {_package} from '../package';
 
@@ -34,7 +33,7 @@ export class HelmService extends HelmServiceBase {
   }
 
   protected override async requestRender(
-    key: keyof any | undefined, task: RenderTask<HelmProps>, renderHandler: () => void
+    key: keyof any | undefined, task: RenderTask<HelmProps, HelmAux>, renderHandler: (aux: HelmAux) => void
   ): Promise<[Unsubscribable, number, () => void]> {
     const logPrefix = `${this.toLog()}.requestRender()`;
     this.logger.debug(`${logPrefix}, ` + `key: ${key?.toString()}`);
@@ -45,7 +44,12 @@ export class HelmService extends HelmServiceBase {
     }
     const lST = window.performance.now();
     this.editor.resize(task.props.width, task.props.height);
-    this.editor.setData(task.props.gridCell.cell.valueString, 'helm');
+    const helmStr = task.props.gridCell.cell.valueString;
+    if (helmStr)
+      this.editor.setData(task.props.gridCell.cell.valueString, 'helm');
+    else
+      this.editor.reset();
+    const aux: HelmAux = {mol: this.editor.m.clone(false)};
     const lET = window.performance.now();
 
     const svgEl = $(this.hostDiv).find('svg').get(0) as unknown as SVGSVGElement;
@@ -58,7 +62,7 @@ export class HelmService extends HelmServiceBase {
         `key: ${key?.toString()}, ` +
         `load: ${lET - lST} ms,\n    ` + `renderET: ${rET - rST} ms, ` +
         `emptyCanvasHash: ${emptyCanvasHash}`);
-      renderHandler();
+      renderHandler(aux);
     };
 
     const renderEvent = new Subject();
@@ -69,14 +73,14 @@ export class HelmService extends HelmServiceBase {
     const trigger = (): void => {
       svgToImage(svgEl, dpr).then((imageEl) => {
         this.image = imageEl;
-        renderHandlerInt();
+        renderHandlerInt(); // calls onRendered()
       });
     };
     return [renderSub, -1, trigger];
   }
 
   protected onRendered(
-    key: keyof any | undefined, task: RenderTask<HelmProps>, emptyCanvasHash: number
+    key: keyof any | undefined, task: RenderTask<HelmProps, HelmAux>, emptyCanvasHash: number, aux: HelmAux
   ): boolean {
     const dpr = window.devicePixelRatio;
     const canvas = ui.canvas(task.props.width, task.props.height);
@@ -86,7 +90,7 @@ export class HelmService extends HelmServiceBase {
       // g.fillStyle = '#C0C0FF';
       // g.fillRect(0, 0, canvas.width, canvas.height);
       g.drawImage(this.image, 0, 0);
-      task.onAfterRender(canvas);
+      task.onAfterRender(canvas, aux);
     } finally {
       canvas.remove();
     }

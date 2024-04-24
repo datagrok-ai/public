@@ -10,13 +10,13 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
-import {HelmGridCellRenderer} from './utils/helm-grid-cell-renderer';
+import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {_getHelmService} from './package-utils';
 
 import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
@@ -330,7 +330,7 @@ import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-
 export async function measureCellRenderer(): Promise<void> {
   const grid = grok.shell.tv.grid;
   const gridCol = grid.columns.byName('sequence')!;
-  const back = gridCol.temp['rendererBack'] as CellRendererBackAsyncBase<HelmProps>;
+  const back = gridCol.temp['rendererBack'] as HelmGridCellRendererBack;
 
   let etSum: number = 0;
   let etCount: number = 0;

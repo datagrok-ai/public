@@ -19,15 +19,23 @@ export class PropsBase {
   ) {}
 }
 
-export abstract class RenderServiceBase<TProps extends PropsBase> {
+export class RenderTask<TProps extends PropsBase, TAux> {
+  public constructor(
+    public readonly name: string,
+    public readonly props: TProps,
+    public readonly onAfterRender: (canvas: HTMLCanvasElement, aux: TAux) => void
+  ) {}
+}
+
+export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
   protected readonly _queue: {
     key?: keyof any,
-    task: RenderTask<TProps>,
+    task: RenderTask<TProps, TAux>,
     tryCount: number,
     dt: number
   }[];
   protected readonly _queueDict: {
-    [key: keyof any]: RenderTask<TProps>
+    [key: keyof any]: RenderTask<TProps, TAux>
   };
   /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
   private _busy: boolean = false;
@@ -62,7 +70,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
    * @param task Task to render
    * @param key  Specify to skip previously queued tasks with the same key
    */
-  render(task: RenderTask<TProps>, key?: keyof any, tryCount: number = 0): void {
+  render(task: RenderTask<TProps, TAux>, key?: keyof any, tryCount: number = 0): void {
     const logPrefix = `${this.toLog()}.render()`;
     this.logger.debug(`${logPrefix}, start ` + `key: ${key?.toString()}`);
 
@@ -89,13 +97,13 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
   }
 
   /** Default implementation of rendering tree on grid cell
-   * @param gCtx    Context to draw on grid
-   * @param bd      Bound rect to clip drawing on task moment
-   * @param gCell   Grid cell to draw
-   * @param canvas  Image of the tree rendered
+   * @param gCtx            Context to draw on grid
+   * @param bd             Bound rect to clip drawing on task moment
+   * @param gCell       Grid cell to draw
+   * @param cellImageData  Image data of the cell to be drawn
    */
   public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, cellImageData: ImageData
   ): void {
     const callLog = `renderOnGridCell( gRow = ${gCell.gridRow} )`;
     const logPrefix = `${this.toLog()}.${callLog}`;
@@ -122,23 +130,20 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
       gCtx.rect(bd.x + 1, bd.y + 1, bd.width * dpr - 2, bd.height * dpr - 2);
       gCtx.clip();
 
-      // gCtx.fillStyle = '#E0E0FF';
-      // gCtx.fillRect(bd.x + 1, bd.y + 1, bd.width - 2, bd.height - 2);
-
-      const cw = 'width' in canvas && (
-        canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
-      const ch = 'height' in canvas && (
-        canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
+      const cw: number = cellImageData.width;
+      const ch: number = cellImageData.height;
       if (!cw || !ch) throw new Error(`${logPrefix}, canvas size is not available`);
-      gCtx.transform(1 /* bd.width / cw */, 0, 0, 1 /* bd.height / ch */, bd.x, bd.y);
 
+      //gCtx.transform(1 /* bd.width / cw */, 0, 0, 1 /* bd.height / ch */, bd.x, bd.y);
       // gCtx.fillStyle = '#FFF0F020';
-      // gCtx.fillRect(0 + 1, 0 + 1, cw - 2, ch - 2);
+      // gCtx.fillRect(bd.x + 1, bd.y + 1, cw, ch);
       // gCtx.textBaseline = 'top';
       // gCtx.fillStyle = 'green';
       // gCtx.font = 'bold 48px monospace';
       // gCtx.fillText(`t# ${gCell.gridRow}, g# ${gCell.tableRowIndex}\n${tag}`, 3, 3);
-      gCtx.drawImage(canvas, 0 + 1, 0 + 1);
+
+      // gCtx.drawImage(canvas, 0 + 1, 0 + 1);
+      gCtx.putImageData(cellImageData, bd.x + 1, bd.y + 1);
     } finally {
       gCtx.restore();
     }
@@ -198,9 +203,9 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
       }
     }, 1000);
 
-    const renderHandler = () => {
+    const renderHandler = (aux: TAux) => {
       this.logger.debug(`${logPrefix}.renderHandler(), ` + `key: ${key?.toString()}`);
-      if (this.onRendered(key, task, emptyCanvasHash)) {
+      if (this.onRendered(key, task, emptyCanvasHash, aux)) {
         handled = true;
         window.clearTimeout(timeoutHandle);
         finallyProcessQueue('render');
@@ -267,25 +272,18 @@ export abstract class RenderServiceBase<TProps extends PropsBase> {
   // -- Actual implementations --
 
   protected abstract requestRender(
-    key: keyof any | undefined, task: RenderTask<TProps>, renderHandler: () => void
+    key: keyof any | undefined, task: RenderTask<TProps, TAux>, renderHandler: (aux: TAux) => void
   ): Promise<[Unsubscribable, number, () => void]>;
 
   protected abstract onRendered(
-    key: keyof any | undefined, task: RenderTask<TProps>, emptyCanvasHash: number
+    key: keyof any | undefined, task: RenderTask<TProps, TAux>, emptyCanvasHash: number, aux: TAux
   ): boolean;
 }
 
-export class RenderTask<TProps extends PropsBase> {
-  public constructor(
-    public readonly name: string,
-    public readonly props: TProps,
-    public readonly onAfterRender: (canvas: HTMLCanvasElement) => void
-  ) {}
-}
-
-export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extends CellRendererBackBase<string> {
-  protected readonly taskQueueMap = new Map<number, RenderTask<TProps>>;
-  protected imageCache = new Map<number, HTMLCanvasElement>();
+export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
+  extends CellRendererBackBase<string> {
+  protected readonly taskQueueMap = new Map<number, RenderTask<TProps, TAux>>;
+  protected imageCache = new Map<number, ImageData>();
 
   protected constructor(
     gridCol: DG.GridColumn | null,
@@ -298,13 +296,13 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extend
 
   protected override reset(): void {
     if (this.imageCache) {
-      for (const image of this.imageCache.values())
-        image.remove();
+      // for (const cellImageData of this.imageCache.values())
+      //   cellImageData.remove();
     }
-    this.imageCache = new Map<number, HTMLCanvasElement>();
+    this.imageCache = new Map<number, ImageData>();
   }
 
-  protected abstract getRenderService(): RenderServiceBase<TProps>;
+  protected abstract getRenderService(): RenderServiceBase<TProps, TAux>;
 
   protected abstract getRenderTaskProps(gridCell: DG.GridCell, dpr: number): TProps;
 
@@ -321,11 +319,11 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extend
 
     g.save();
     try {
-      const image = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
+      const cellImageData = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
 
-      if (!this.cacheEnabled || !image ||
-        Math.abs(image.width / r - gridCell.gridColumn.width) > 0.5 ||
-        Math.abs(image.height / r - gridCell.grid.props.rowHeight) > 0.5
+      if (!this.cacheEnabled || !cellImageData ||
+        Math.abs(cellImageData.width / r - gridCell.gridColumn.width) > 0.5 ||
+        Math.abs(cellImageData.height / r - gridCell.grid.props.rowHeight) > 0.5
       ) {
         // draw image
 
@@ -333,23 +331,29 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extend
         //imageCache[rowIdx] = null;
         //gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
 
-        const task: RenderTask<TProps> = new RenderTask<TProps>(
+        const task = new RenderTask<TProps, TAux>(
           gridCell.cell.rowIndex.toString(),
           this.getRenderTaskProps(gridCell, r),
-          (canvas: CanvasImageSource) => {
+          (cellCanvas: HTMLCanvasElement, aux: TAux) => {
             g.save();
             try {
               this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
-              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, canvas);
+              let cellCanvasCtx = cellCanvas.getContext('2d')!;
+              if (!cellCanvasCtx) {
+                // Fallback for canvas with WebGL context
+                const tempCanvas = ui.canvas(cellCanvas.width, cellCanvas.height);
+                cellCanvasCtx = tempCanvas.getContext('2d')!;
+                cellCanvasCtx.drawImage(cellCanvas, 0, 0);
+              }
+              const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
+              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
+              this.storeAux(gridCell, aux);
 
               // const imageStr: string = canvas.toDataURL();
               // base64ToImg(imageStr).then((image) => {
               //   this.imageCache.set(rowIdx, image);
               // });
-              const image = ui.canvas(task.props.width, task.props.height);
-              const imageCtx = image.getContext('2d')!;
-              imageCtx.drawImage(canvas, 0, 0);
-              this.imageCache.set(rowIdx, image);
+              this.imageCache.set(rowIdx, cellCanvasData);
             } finally {
               g.restore();
               this.taskQueueMap.delete(rowIdx);
@@ -362,7 +366,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extend
         service.render(task, rowIdx);
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
-        service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
+        service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, cellImageData);
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
@@ -373,6 +377,8 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase> extend
       g.restore();
     }
   }
+
+  protected abstract storeAux(gridCell: DG.GridCell, aux: TAux): void;
 
   // -- IRenderer --
 
