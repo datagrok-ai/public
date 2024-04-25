@@ -3,12 +3,13 @@ import {UaToolbox} from '../ua-toolbox';
 import * as grok from 'datagrok-api/grok';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
-import {DetailedLog} from 'datagrok-api/dg';
+import {DetailedLog, Grid} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ViewHandler} from "../view-handler";
+import {delay} from "rxjs/operators";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time', 'report_number', 'is_resolved', 'label'],
+  columnNames: ['error', 'reporter', 'assignee', 'report_time', 'report_number', 'is_acknowledged', 'label'],
 };
 
 export class ReportsView extends UaView {
@@ -20,10 +21,6 @@ export class ReportsView extends UaView {
     this.name = 'Reports';
     this.currentFilterGroup = null;
     this.filters.style.maxWidth = '250px';
-    this.ribbonMenu = DG.Menu.create();
-    this.ribbonMenu.item('Text', () => {
-      console.log('From ribbon');
-    });
   }
 
   async initViewers(): Promise<void> {
@@ -41,22 +38,21 @@ export class ReportsView extends UaView {
       name: 'User reports',
       queryName: 'UserReports',
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.grid(t, {
-          'defaultCellFont': '13px monospace'
-        });
+        const viewer = DG.Viewer.grid(t);
         this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['is_resolved', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
+          viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'jira_ticket', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
           viewer.col('assignee')!.cellType = 'html';
-          viewer.col('is_resolved')!.editable = false;
+          viewer.col('jira_ticket')!.cellType = 'html';
+          viewer.col('is_acknowledged')!.editable = false;
           viewer.col('same_errors_count')!.editable = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
         });
-        const isResolvedCol = t.getCol('is_resolved');
+
         viewer.onCellPrepare(async function(gc) {
-          if (isResolvedCol.get(gc.gridRow))
-            gc.style.textColor = 0xFFB8BAC0;
+          // if (gc.gridColumn.name === 'error_stack_trace' || gc.gridColumn.name === 'error')
+          //   gc.style.font = '13px monospace';
           if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
             const user = users[gc.cell.value];
             const img = ui.div();
@@ -77,17 +73,30 @@ export class ReportsView extends UaView {
               return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
             });
           }
+          if (gc.gridColumn.name === 'jira_ticket' && gc.cell.value) {
+            const link = ui.link(gc.cell.value, () => {});
+            link.href = `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`;
+            gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+          }
+        });
+        const isAcknowledged = t.getCol('is_acknowledged');
+        viewer.onCellRender.subscribe((gc) => {
+          if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
+            gc.cell.style.textColor = 0xFFB8BAC0;
         });
 
         return viewer;
       },
       processDataFrame: (t: DG.DataFrame) => {
-        t.onSelectionChanged.subscribe(async () => {
-          await this.showReportContextPanel(t);
+        t.onCurrentRowChanged.subscribe(async (_) => {
+          const reportId = t.getCol('report_id').get(t.currentRowIdx);
+          if (!reportId) return;
+          DetailedLog.showReportProperties(reportId, t, t.currentRowIdx);
         });
-        t.onCurrentRowChanged.subscribe(async () => {
-          t.selection.setAll(false);
-          t.selection.set(t.currentRowIdx, true);
+        t.onValuesChanged.subscribe(async () => {
+          await delay(500);
+          (this.viewers[0].viewer as Grid)
+            .sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
         });
         return t;
       },
@@ -134,46 +143,5 @@ export class ReportsView extends UaView {
         );
       }
     }
-  }
-
-  async showReportContextPanel(table: DG.DataFrame): Promise<void> {
-    if (!table.selection.anyTrue) return;
-    const index = table.selection.getSelectedIndexes()[0];
-    let df = table.clone(table.selection);
-    const reportId = df.getCol('report_id').get(0);
-    if (!reportId) return;
-    grok.shell.o = ui.wait(async () => {
-      const accordion = await DetailedLog.getAccordion(reportId);
-      const pane = accordion.root.querySelectorAll('[d4-title="ACTIONS"]')[0];
-      let reopen: HTMLLabelElement;
-      let close: HTMLLabelElement;
-      let isActive: boolean = false;
-
-      async function resolve(e: MouseEvent, value: boolean, replacement: HTMLElement, action: Function) {
-        if (isActive) return;
-        isActive = true;
-        (e.target as HTMLElement).replaceWith(ui.wait(async () => {
-          (e.target as HTMLElement).style.color = '#286344';
-          await action();
-          table.getCol('is_resolved').set(index, value);
-          isActive = false;
-          return replacement;
-        }));
-      }
-      reopen = ui.actionLink('Reopen issue...', async (e: MouseEvent) => {
-        const dialog = DG.Dialog.create('Specify the reason');
-        const description = ui.input.textArea('Description', {'size': {height: 150, width: 250}, 'nullable': false, 'tooltipText': 'Provide reason of reopening'});
-        const notify = ui.input.bool('Notify assignee', {'tooltipText': 'Email with notification will be sent to the assignee'});
-        dialog.add(description);
-        dialog.add(notify);
-        dialog.onOK(async () => await resolve(e, false, close, async () => await grok.dapi.reports.reopen(reportId, description.value, notify.value)));
-        dialog.show();
-      });
-      close = ui.actionLink('Mark as resolved...', async (e: MouseEvent) => {
-        await resolve(e, true, reopen, async () => await grok.dapi.reports.resolve(reportId));
-      });
-      pane.children[1].children[0].append(df.getCol('is_resolved').get(0) ? reopen : close);
-      return ui.div([accordion.root]);
-    });
   }
 }
