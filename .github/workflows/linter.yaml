@@ -112,7 +112,7 @@ jobs:
         with:
           fetch-depth: 2
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       - name: Install commitlint dependencies
@@ -134,7 +134,7 @@ jobs:
         with:
           fetch-depth: 2
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       # https://github.com/JulienKode/pull-request-name-linter-action/issues/236

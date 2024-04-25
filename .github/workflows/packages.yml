@@ -231,6 +231,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
           cache: 'npm'
+          cache-dependency-path: |
+            packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version

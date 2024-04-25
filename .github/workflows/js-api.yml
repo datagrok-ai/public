@@ -162,11 +162,13 @@ jobs:
             docker
             packages/ApiTests
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -443,11 +445,14 @@ jobs:
             .github
             libraries/${{ matrix.library }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            libraries/${{ matrix.library }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -537,11 +542,14 @@ jobs:
             libraries
             packages/${{ matrix.package }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
