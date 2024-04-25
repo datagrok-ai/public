@@ -69,44 +69,6 @@ jobs:
           markdownlint-cli2 --fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
-#      - name: Commit package-lock.json
-#        id: git
-#        continue-on-error: true
-#        if: steps.check.outcome == 'success'
-#        run: |
-#          git config --global user.name 'github-actions[bot]'
-#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-#          git pull
-#          continue=false
-#          if [ -n "$(git status -s help/)" ]; then
-#            git add help/
-#            skip_ci=""
-#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-#              skip_ci="[skip ci]"
-#            fi
-#            git commit -m "GitHub Actions: Fix markdownlint findings $skip_ci
-#
-#            Workflow ${{ github.workflow }} ${{ github.run_number }}
-#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-#            continue=true
-#          fi
-#          if [[ "${continue}" == "true" ]]; then
-#            count=0
-#            retries=10
-#            until git push; do
-#              exit=$?
-#              wait=$((2 ** count))
-#              count=$((count + 1))
-#              if [ $count -lt "$retries" ]; then
-#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-#                sleep $wait
-#                git pull --rebase
-#              else
-#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-#                exit $exit
-#              fi
-#            done
-#          fi
       - name: Set summary
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
