@@ -1441,8 +1441,9 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //input: column molecules {semType: Molecule}
 //input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
+//input: bool join = true
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
-  targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {
+  targetNotation: DG.chem.Notation, overwrite = false, join = true ): Promise<void | DG.Column<string>> {
   const res = await convertNotationForColumn(molecules, targetNotation);
   if (overwrite) {
     for (let i = 0; i < molecules.length; i++)
@@ -1451,6 +1452,8 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
     const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
+    if (!join)
+      return col;
     data.columns.add(col);
   }
 }
