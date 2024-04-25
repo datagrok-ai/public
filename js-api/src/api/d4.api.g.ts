@@ -105,12 +105,25 @@ export class GridCellStyleEx {
   static create(): GridCellStyleEx {
     return new GridCellStyleEx(api.grok_GridCellStyleEx_Create());
   }
+  static VERT_ALIGN_TOP = 'top';
+
+  static VERT_ALIGN_CENTER = 'center';
+
+  static VERT_ALIGN_BOTTOM = 'bottom';
+
+  static HORZ_ALIGN_LEFT = 'left';
+
+  static HORZ_ALIGN_CENTER = 'center';
+
+  static HORZ_ALIGN_RIGHT = 'right';
+
   get font(): string { return api.grok_GridCellStyle_Get_font(this.dart); };
   set font(x: string) {api.grok_GridCellStyle_Set_font(this.dart, toDart(x)); }
   get horzAlign(): string { return api.grok_GridCellStyle_Get_horzAlign(this.dart); };
   set horzAlign(x: string) {api.grok_GridCellStyle_Set_horzAlign(this.dart, toDart(x)); }
   get vertAlign(): string { return api.grok_GridCellStyle_Get_vertAlign(this.dart); };
   set vertAlign(x: string) {api.grok_GridCellStyle_Set_vertAlign(this.dart, toDart(x)); }
+  /// When defined, overrides the default cell tooltip
   get tooltip(): string { return api.grok_GridCellStyle_Get_tooltip(this.dart); };
   set tooltip(x: string) {api.grok_GridCellStyle_Set_tooltip(this.dart, toDart(x)); }
   get cursor(): string { return api.grok_GridCellStyle_Get_cursor(this.dart); };
@@ -143,6 +156,7 @@ export class GridCellStyleEx {
   /// For 'html' cell types only
   get element(): any { return api.grok_GridCellStyle_Get_element(this.dart); };
   set element(x: any) {api.grok_GridCellStyle_Set_element(this.dart, toDart(x)); }
+  /// When defined,
   get choices(): Array<string> { return api.grok_GridCellStyle_Get_choices(this.dart); };
   set choices(x: Array<string>) {api.grok_GridCellStyle_Set_choices(this.dart, toDart(x)); }
 }

@@ -1583,6 +1583,49 @@ export interface IGridLookSettings {
 
 }
 
+export interface IGridCellStyleSettings {
+  font: string;
+
+  horzAlign: string;
+
+  vertAlign: string;
+
+  /// When defined, overrides the default cell tooltip
+  tooltip: string;
+
+  cursor: string;
+
+  textWrap: string;
+
+  /// Marker to be shown when the value does not fit in the cell
+  marker: string;
+
+  textColor: number;
+
+  backColor: number;
+
+  marginLeft: number;
+
+  marginRight: number;
+
+  marginTop: number;
+
+  marginBottom: number;
+
+  textVertical: boolean;
+
+  imageScale: number;
+
+  opacity: number;
+
+  clip: boolean;
+
+  /// For 'html' cell types only
+  /// When defined,
+  choices: Array<string>;
+
+}
+
 export interface ICalendarLookSettings {
   dateColumnName: string;
 
