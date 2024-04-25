@@ -43,7 +43,7 @@ jobs:
           sparse-checkout: |
             libraries
       - name: Get changed files
-        uses: tj-actions/changed-files@v37
+        uses: tj-actions/changed-files@v42
         id: changed-files
         with:
           files: 'libraries/**'
@@ -157,8 +157,7 @@ jobs:
             echo "::error title=${{ matrix.project }}: failed properties check::Library should be in '@datagrok-libraries' scope. Change library name to '@datagrok-libraries/<name>' in ${{ matrix.project }}/package.json"
             exit 1
           fi
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
