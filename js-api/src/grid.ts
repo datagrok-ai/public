@@ -926,6 +926,11 @@ export class Grid extends Viewer<IGridLookSettings> {
     return this;
   }
 
+  /** Returns the order of rows in the table. */
+  getRowOrder(): Int32Array {
+    return api.grok_Grid_GetRowOrder(this.dart);
+  }
+
   /** Sets the order or rows in the table.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
    * Also, @see sortIndexes */

@@ -453,7 +453,7 @@ export interface IDartApi {
   grok_DataFrame_Rows(t: any): any;
   grok_DataFrame_Cell(t: any, idx: Num, name: String): any;
   grok_DataFrame_ColumnByName(t: any, colName: String): any;
-  grok_DataFrame_ToCsv(t: any, options: any): any;
+  grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
   grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
@@ -738,6 +738,7 @@ export interface IDartApi {
   grok_Grid_OnCellTooltip(grid: any, f: any): any;
   grok_Grid_HitTest(grid: any, x: Num, y: Num): any;
   grok_Grid_GetCell(grid: any, columnName: String, gridRow: Num): any;
+  grok_Grid_GetRowOrder(grid: any): any;
   grok_Grid_SetRowOrder(grid: any, order: any): any;
   grok_Grid_ScrollToCell(grid: any, columnId: any, gridRow: Num): any;
   grok_Grid_ScrollToPixels(grid: any, x: Num, y: Num): any;
