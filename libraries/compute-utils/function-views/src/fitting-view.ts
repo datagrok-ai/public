@@ -10,6 +10,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {STARTING_HELP, TITLE, DOCK_RATIO, REPORT_DF_TOOLTIP, COL_WIDTH} from './fitting/constants';
+import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
@@ -774,7 +775,7 @@ export class FittingView {
         const gofElems = new Map<string, HTMLElement>();
         const calledFuncCall = await getCalledFuncCall(extr.point);
         outputsOfInterest.forEach((output, idx) => {
-          gofElems.set(outputCaptions[idx], this.getOutputGof(output.prop, outputsCount < 2, output.target, calledFuncCall));
+          gofElems.set(outputCaptions[idx], this.getOutputGof(output.prop, outputsCount < 2, output.target, calledFuncCall, output.colName));
         });
         gofElems.forEach((r) => gofDiv.appendChild(r));
         gofViewersRoots.set(idx, gofElems);
@@ -858,11 +859,11 @@ export class FittingView {
 
       // Update nodes store & hide titles
       this.tempDockNodes.push(pcPlotNode, lossFuncLineChartsNode, goodnessOfFitNode);
-      this.tempDockNodes.forEach((node) => {
+      /*this.tempDockNodes.forEach((node) => {
         const title = node.container.dart.elementTitle;
         if (title)
           title.hidden = true;
-      });
+      });*/
 
       // Find item with min loss
       let minLossExtrIdx = 0;
@@ -934,7 +935,7 @@ export class FittingView {
   }
 
   /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, toShowCaption: boolean, target: OutputTarget, call: DG.FuncCall): HTMLElement {
+  private getOutputGof(prop: DG.Property, toShowCaption: boolean, target: OutputTarget, call: DG.FuncCall, argColName: string): HTMLElement {
     let root: HTMLElement;
     const type = prop.propertyType;
     const name = prop.name;
@@ -962,7 +963,70 @@ export class FittingView {
       break;
 
     case DG.TYPE.DATA_FRAME:
-      root = ui.label('Dataframe!!!');
+      const simDf = call.getParamValue(name) as DG.DataFrame;
+      const expDf = target as DG.DataFrame;
+      const simArgCol = simDf.col(argColName);
+      const expArgCol = expDf.col(argColName);
+
+      if ((simArgCol === null) || (expArgCol === null))
+        throw new Error('Creating viewer fails: incorrect argument column name');
+
+      const simArgRaw = simArgCol.getRawData();
+      const indeces = getIndeces(expArgCol, simArgCol);
+      console.log(indeces);
+      const rowCount = indeces.length;
+      const argVals = Array<number>(rowCount);
+      console.log(argVals);
+      indeces.forEach((val, idx) => argVals[idx] = simArgRaw[val]);
+      const comparisonDf = DG.DataFrame.fromColumns([DG.Column.fromList(simArgCol.type, argColName, argVals)]);
+      const columns = comparisonDf.columns;
+
+      let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
+      let col: DG.Column | null;
+      let nonArgColsCount = 0;
+
+      expDf.columns.names().forEach((name) => {
+        if (name !== argColName) {
+          col = simDf.col(name);
+
+          if (col === null)
+            throw new Error(`Creating viewer fails: no '${name}' column in the output dataframe`);
+
+          rawBuf = col.getRawData();
+          const simVals = Array<number>(rowCount);
+          indeces.forEach((val, idx) => simVals[idx] = rawBuf[val]);
+
+          columns.add(DG.Column.fromList(
+            col.type,
+            columns.getUnusedName(`${name} (obtained)`),
+            simVals,
+          ));
+
+          col = expDf.col(name);
+
+          if (col === null)
+            throw new Error(`Creating viewer fails: no '${name}' column in the target dataframe`);
+
+          rawBuf = col.getRawData();
+          const expVals = Array<number>(rowCount);
+          indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
+
+          columns.add(DG.Column.fromList(
+            col.type,
+            columns.getUnusedName(`${name} (target)`),
+            expVals,
+          ));
+
+          ++nonArgColsCount;
+        }
+      });
+
+      root = DG.Viewer.lineChart(comparisonDf, {
+        multiAxis: true,
+        xColumnName: argColName,
+        description: toShowCaption ? `Goodness of fit: ${caption}` : 'Goodness of fit',
+        yGlobalScale: nonArgColsCount < 2,
+      }).root;
       break;
 
     default:

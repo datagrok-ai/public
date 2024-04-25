@@ -1,10 +1,10 @@
+/* eslint-disable valid-jsdoc */
 // Fitting utilities
 
 import * as DG from 'datagrok-api/dg';
-//import * as grok from 'datagrok-api/grok';
 
-// Returns indeces corresponding to the closest items
-function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
+/** Returns indeces corresponding to the closest items */
+export function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   const expArgRaw = expArg.getRawData();
   const simArgRaw = simArg.getRawData();
   const simCount = simArg.length;
@@ -39,10 +39,6 @@ function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   return indeces;
 };
 
-//name: fitting tool
-//input: string arg
-//input: dataframe expDf
-//input: dataframe simDf
 export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame): Float32Array {
   const expArg = expDf.col(arg);
   const simArg = simDf.col(arg);
@@ -78,12 +74,6 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
       });
     }
   }
-
-  /*grok.shell.addTableView(expDf);
-  grok.shell.addTableView(simDf);
-  console.log(errors);
-
-  throw new Error();*/
 
   return errors;
 } // getErrors
