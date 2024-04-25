@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.5 (2024-04-25)
+
+Use npm for gpu rules storage.
+
 ## 1.1.4 (2024-04-25)
 
 Add webGPU MCL implementation.
