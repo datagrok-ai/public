@@ -56,7 +56,7 @@ export class MmpAnalysis {
     rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer,
-    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
+    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule) {
     this.rdkitModule = rdkitModule;
@@ -108,9 +108,6 @@ export class MmpAnalysis {
         this.refilterCliffs(sliderInputs.map((si) => si.value), true);
       });
 
-      ui.tooltip.bind(sliderInputs[i].captionLabel, 'Select the cutoff by activity difference');
-      ui.tooltip.bind(sliderInputs[i].input, 'Activity value cutoff');
-
       colorInputs[i].value = this.colorPalette.hex[i];
       colorInputs[i].onChanged(() => {
         const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
@@ -148,15 +145,14 @@ export class MmpAnalysis {
         // tp. ;
         progressRendering.close();
       });
-
-      roots[i] = ui.divV([sliderInputs[i].root, colorInputs[i]]);
+      roots[i] = ui.divH([activeInputs[i].root, colorInputs[i].root, sliderInputs[i].root],
+        {style: {paddingRight: '20px', height: '20px'}});
     }
-
-    const sliders = ui.divH(roots, 'css-flex-wrap');
+    const sliders = ui.divV(roots, 'css-flex-wrap mmpa-slider-roots');
     sp.root.style.width = '100%';
 
-    const cliffs1 = ui.divV([sliders, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})],
-      'css-flex-wrap');
+    const cliffs1 = ui.divV([sliders, ui.box(sp.root, 
+      {style: {maxHeight: '100px', paddingRight: '6px'}})], 'css-flex-wrap');
 
     const cliffs = ui.box(cliffs1);
 
@@ -287,7 +283,7 @@ export class MmpAnalysis {
 
     const embedColsNames = getEmbeddingColsNames(table).map((it) => `~${it}`);
     //Cliffs tab
-    const [sp, sliderInputs, sliderInputValueDivs, colorInputs] = getMmpScatterPlot(table, activities, maxActs, embedColsNames);
+    const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] = getMmpScatterPlot(table, activities, maxActs, embedColsNames);
     drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
@@ -299,7 +295,7 @@ export class MmpAnalysis {
 
     return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid,
-      tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, linesEditor, lines, linesActivityCorrespondance, module);
+      tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
