@@ -2,7 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export interface IEditorOptions {
+  width: number;
+  height: number;
+}
+
 export interface IEditor {
+  get options(): IEditorOptions;
+
+  get div(): HTMLDivElement;
   get m(): IEditorMol;
 
   resize(width: number, height: number): void;

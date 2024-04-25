@@ -40,16 +40,25 @@ export class HelmService extends HelmServiceBase {
     const emptyCanvasHash: number = 0;
 
     if (!this.editor) {
-      this.editor = new JSDraw2.Editor(this.hostDiv, {width: 300, height: 300, skin: 'w8', viewonly: true}) as IEditor;
+      this.editor = new JSDraw2.Editor(this.hostDiv,
+        {width: task.props.width, height: task.props.height, skin: 'w8', viewonly: true}) as IEditor;
     }
     const lST = window.performance.now();
+    this.editor.options.width = task.props.width;
+    this.editor.options.height = task.props.height;
     this.editor.resize(task.props.width, task.props.height);
     const helmStr = task.props.gridCell.cell.valueString;
     if (helmStr)
       this.editor.setData(task.props.gridCell.cell.valueString, 'helm');
     else
       this.editor.reset();
-    const aux: HelmAux = {mol: this.editor.m.clone(false)};
+
+    const bBox = (this.editor.div.children[0] as SVGSVGElement).getBBox();
+    const aux: HelmAux = {
+      mol: this.editor.m.clone(false),
+      bBox: new DG.Rect(bBox.x, bBox.y, bBox.width + 2, bBox.height + 2) /* adjust for clipping right/bottom */,
+      cBox: new DG.Rect(0, 0, task.props.width, task.props.height),
+    };
     const lET = window.performance.now();
 
     const svgEl = $(this.hostDiv).find('svg').get(0) as unknown as SVGSVGElement;

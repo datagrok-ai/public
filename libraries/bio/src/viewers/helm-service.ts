@@ -14,7 +14,11 @@ export class HelmProps extends PropsBase {
   }
 }
 
-export type HelmAux = { mol: IEditorMol }
+export type HelmAux = {
+  /** The molecule made of atoms (monomers) and bonds */ mol: IEditorMol,
+  /** SVG bounding box */ bBox: DG.Rect,
+  /** Cell box {0, 0, w, h} */ cBox: DG.Rect,
+}
 
 export abstract class HelmServiceBase extends RenderServiceBase<HelmProps, HelmAux> {}
 

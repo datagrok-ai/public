@@ -4,6 +4,7 @@
 
 Fix Helm cell renderer to clear editor on empty cell value
 Add interactivity on monomers into HelmGridCellRenderer
+Add sync render cell from cache (Helm editor specific)
 
 ## 2.1.34 (2024-04-22)
 

@@ -5,6 +5,7 @@
 Use ImageData for cell image cache instead of toDataURL string
 Add Helm Web Editor types
 Add aux to RenderTask.onAfterRender callback (for interactivity)
+Add cell sync render cell from cache while resizing
 
 ## 5.40.8 (2024-04-16)
 

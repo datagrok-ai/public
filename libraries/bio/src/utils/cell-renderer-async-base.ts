@@ -96,59 +96,6 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
     }
   }
 
-  /** Default implementation of rendering tree on grid cell
-   * @param gCtx            Context to draw on grid
-   * @param bd             Bound rect to clip drawing on task moment
-   * @param gCell       Grid cell to draw
-   * @param cellImageData  Image data of the cell to be drawn
-   */
-  public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, cellImageData: ImageData
-  ): void {
-    const callLog = `renderOnGridCell( gRow = ${gCell.gridRow} )`;
-    const logPrefix = `${this.toLog()}.${callLog}`;
-    const dpr = window.devicePixelRatio;
-    gCtx.save();
-    gCtx.resetTransform();
-    try {
-      this.logger.debug(`${logPrefix}, start`);
-
-      const vertScrollMin: number = Math.floor(gCell.grid.vertScroll.min);
-      // Correction for vert scrolling happened between task and render, calculate bd.y directly
-      bd.y = ((gCell.gridRow - vertScrollMin) * gCell.grid.props.rowHeight +
-        gCell.grid.colHeaderHeight) * dpr;
-
-      // Correction for horz scrolling happened between task and render, calculate bd.x directly
-      let left: number = 0;
-      for (let colI = 0; colI < gCell.gridColumn.idx; colI++) {
-        const col: DG.GridColumn = gCell.grid.columns.byIndex(colI)!;
-        left += col.visible ? col.width : 0;
-      }
-      bd.x = (left - gCell.grid.horzScroll.min) * dpr;
-
-      gCtx.beginPath();
-      gCtx.rect(bd.x + 1, bd.y + 1, bd.width * dpr - 2, bd.height * dpr - 2);
-      gCtx.clip();
-
-      const cw: number = cellImageData.width;
-      const ch: number = cellImageData.height;
-      if (!cw || !ch) throw new Error(`${logPrefix}, canvas size is not available`);
-
-      //gCtx.transform(1 /* bd.width / cw */, 0, 0, 1 /* bd.height / ch */, bd.x, bd.y);
-      // gCtx.fillStyle = '#FFF0F020';
-      // gCtx.fillRect(bd.x + 1, bd.y + 1, cw, ch);
-      // gCtx.textBaseline = 'top';
-      // gCtx.fillStyle = 'green';
-      // gCtx.font = 'bold 48px monospace';
-      // gCtx.fillText(`t# ${gCell.gridRow}, g# ${gCell.tableRowIndex}\n${tag}`, 3, 3);
-
-      // gCtx.drawImage(canvas, 0 + 1, 0 + 1);
-      gCtx.putImageData(cellImageData, bd.x + 1, bd.y + 1);
-    } finally {
-      gCtx.restore();
-    }
-  }
-
   private _processQueue(): void {
     const logPrefix = `${this.toLog()}._processQueue()`;
     if (this._queue.length === 0) return;
@@ -309,7 +256,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   public render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
-    const r = window.devicePixelRatio;
+    const dpr = window.devicePixelRatio;
     const service = this.getRenderService();
 
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
@@ -320,21 +267,24 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     g.save();
     try {
       const cellImageData = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
+      const gridCellWidth = gridCell.gridColumn.width;
+      const gridCellHeight = gridCell.grid.props.rowHeight;
+      const bd = new DG.Rect(x, y, w, h);
 
       if (!this.cacheEnabled || !cellImageData ||
-        Math.abs(cellImageData.width / r - gridCell.gridColumn.width) > 0.5 ||
-        Math.abs(cellImageData.height / r - gridCell.grid.props.rowHeight) > 0.5
+        Math.abs(cellImageData.width / dpr - gridCellWidth) > 0.5 ||
+        Math.abs(cellImageData.height / dpr - gridCellHeight) > 0.5
       ) {
-        // draw image
-
-        // mark rowIdx as in drawing state
-        //imageCache[rowIdx] = null;
-        //gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
+        let toUpdate: boolean = true;
+        if (cellImageData)
+          toUpdate = this.renderCellImageData(g, bd, gridCell, cellImageData);
+        if (!toUpdate) return;
 
         const task = new RenderTask<TProps, TAux>(
           gridCell.cell.rowIndex.toString(),
-          this.getRenderTaskProps(gridCell, r),
+          this.getRenderTaskProps(gridCell, dpr),
           (cellCanvas: HTMLCanvasElement, aux: TAux) => {
+            this.storeAux(gridCell, aux);
             g.save();
             try {
               this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
@@ -345,14 +295,10 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
                 cellCanvasCtx = tempCanvas.getContext('2d')!;
                 cellCanvasCtx.drawImage(cellCanvas, 0, 0);
               }
-              const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
-              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
-              this.storeAux(gridCell, aux);
 
-              // const imageStr: string = canvas.toDataURL();
-              // base64ToImg(imageStr).then((image) => {
-              //   this.imageCache.set(rowIdx, image);
-              // });
+              const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
+              this.renderOnGrid(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
+
               this.imageCache.set(rowIdx, cellCanvasData);
             } finally {
               g.restore();
@@ -366,7 +312,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
         service.render(task, rowIdx);
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
-        service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, cellImageData);
+        this.renderOnGrid(g, bd, gridCell, cellImageData);
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
@@ -378,7 +324,91 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     }
   }
 
+  /** Renders cell from image data (cache)
+   * @param {CanvasRenderingContext2D} gCtx Grid canvas context
+   * @param {DG.Rect} bd                    Bound rect to clip drawing
+   * @param {DG.GridCell} gridCell          Grid cell to draw
+   * @param {ImageData} cellImageData       Cell image data from cache
+   * @return {boolean}                      true - cell is requiring update by render service
+   */
+  protected renderCellImageData(
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, cellImageData: ImageData
+  ): boolean {
+    const dpr = window.devicePixelRatio;
+
+    // Draw cell image data to scale it with drawImage() while transform()
+    const cellCanvas = ui.canvas(cellImageData.width, cellImageData.height);
+    const cellCtx = cellCanvas.getContext('2d')!;
+    cellCtx.putImageData(cellImageData, 0, 0);
+
+
+    const fitCanvasWidth = (bd.width - 1) * dpr;
+    const fitCanvasHeight = (bd.height - 1) * dpr;
+    const fitCanvas = ui.canvas(fitCanvasWidth, fitCanvasHeight);
+
+    const fitScale = Math.min(fitCanvasWidth / cellImageData.width, fitCanvasHeight / cellImageData.height);
+    const fitWidth = cellImageData.width * fitScale;
+    const fitHeight = cellImageData.height * fitScale;
+    const fitLeft = (fitCanvasWidth - fitWidth) / 2;
+    const fitTop = (fitCanvasHeight - fitHeight) / 2;
+
+    const fitCtx = fitCanvas.getContext('2d')!;
+    fitCtx.transform(fitScale, 0, 0, fitScale, fitLeft, fitTop);
+    fitCtx.drawImage(cellCanvas, 0, 0);
+    const fitImageData = fitCtx.getImageData(0, 0, fitCanvasWidth, fitCanvasHeight);
+
+    this.renderOnGrid(gCtx, bd, gCell, fitImageData);
+    return true;
+  }
+
   protected abstract storeAux(gridCell: DG.GridCell, aux: TAux): void;
+
+  /** Default implementation of rendering tree on grid cell
+   * @param gCtx           Context to draw on grid
+   * @param bd             Bound rect to clip drawing on task moment
+   * @param gCell          Grid cell to draw
+   * @param cellImageData  Image data of the cell to be drawn
+   */
+  protected renderOnGrid(
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, cellImageData: ImageData
+  ): void {
+    const callLog = `renderOnGridCell( gRow = ${gCell.gridRow} )`;
+    const logPrefix = `${this.toLog()}.${callLog}`;
+    const dpr = window.devicePixelRatio;
+
+    this.logger.debug(`${logPrefix}, start`);
+    gCtx.save();
+    try {
+      gCtx.resetTransform();
+
+      const vertScrollMin: number = Math.floor(gCell.grid.vertScroll.min);
+      // Correction for vert scrolling happened between task and render, calculate bd.y directly
+      bd.y = ((gCell.gridRow - vertScrollMin) * gCell.grid.props.rowHeight +
+        gCell.grid.colHeaderHeight) * dpr;
+
+      // Correction for horz scrolling happened between task and render, calculate bd.x directly
+      let left: number = 0;
+      for (let colI = 0; colI < gCell.gridColumn.idx; colI++) {
+        const col: DG.GridColumn = gCell.grid.columns.byIndex(colI)!;
+        left += col.visible ? col.width : 0;
+      }
+      bd.x = (left - gCell.grid.horzScroll.min) * dpr;
+
+      /** Clip rect*/ const cr = new DG.Rect(bd.x + dpr, bd.y + dpr, (bd.width - 1) * dpr, (bd.height - 1) * dpr);
+      // gCtx.beginPath();
+      // gCtx.strokeStyle = '#408000';
+      // gCtx.rect(cr.x, cr.y, cr.width, cr.height);
+      // gCtx.stroke();
+      gCtx.beginPath();
+      gCtx.rect(cr.x, cr.y, cr.width, cr.height);
+      gCtx.clip();
+
+      //gCtx.drawImage(cellImageData, cr.x, cr.y, cr.width, cr.height);
+      gCtx.putImageData(cellImageData, bd.x + dpr, bd.y + dpr); // does not respect clip
+    } finally {
+      gCtx.restore();
+    }
+  }
 
   // -- IRenderer --
 

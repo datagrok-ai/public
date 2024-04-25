@@ -43,6 +43,7 @@ class WrapLogger implements ILogger {
 }
 
 export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
+  private _auxList: (HelmAux | null)[];
   private readonly monomerLib: IMonomerLib;
 
   constructor(
@@ -56,7 +57,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
   protected override reset(): void {
     super.reset();
-    this._editorMolList = new Array<IEditorMol | null>(this.tableCol.length).fill(null);
+    this._auxList = new Array<HelmAux | null>(this.tableCol.length).fill(null);
     if (this.gridCol && this.gridCol.dart) this.gridCol.grid?.invalidate();
   }
 
@@ -74,10 +75,64 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
   protected override storeAux(gridCell: DG.GridCell, aux: HelmAux): void {
     if (gridCell.tableRowIndex !== null)
-      this.setEditorMol(gridCell.tableRowIndex, aux.mol);
+      this._auxList[gridCell.tableRowIndex] = aux;
+  }
+
+  /** Renders cell from image data (cache), returns true to update the cell by service.
+   * @param gridCellBounds {DG.Rect} Grid cell bounds
+   */
+  protected override renderCellImageData(
+    gridCtx: CanvasRenderingContext2D, gridCellBounds: DG.Rect, gridCell: DG.GridCell, cellImageData: ImageData,
+  ): boolean {
+    const dpr = window.devicePixelRatio;
+    if (gridCell.tableRowIndex === null) return false;
+    const aux = this._auxList[gridCell.tableRowIndex];
+    if (!aux) return true;
+
+    // Draw cell image data to scale it with drawImage() while transform()
+    const cellCanvas = ui.canvas(cellImageData.width, cellImageData.height);
+    const cellCtx = cellCanvas.getContext('2d')!;
+    cellCtx.putImageData(cellImageData, 0, 0);
+
+    // Get bbox canvas
+    const bBoxImageData = cellCtx.getImageData(aux.bBox.x, aux.bBox.y, aux.bBox.width, aux.bBox.height);
+    const bBoxCanvas = ui.canvas(aux.bBox.width, aux.bBox.height);
+    const bBoxCtx = bBoxCanvas.getContext('2d')!;
+    bBoxCtx.putImageData(bBoxImageData, 0, 0);
+
+    const fitCanvasWidth = gridCellBounds.width * dpr - 2;
+    const fitCanvasHeight = gridCellBounds.height * dpr - 2;
+
+    const bBoxRatio = Math.max(aux.bBox.width / aux.cBox.width, aux.bBox.height / aux.cBox.height);
+    const bBoxFullWidth = aux.bBox.width / bBoxRatio;
+    const bBoxFullHeight = aux.bBox.height / bBoxRatio;
+
+    const fitScale = Math.min(fitCanvasWidth / bBoxFullWidth, fitCanvasHeight / bBoxFullHeight);
+
+    // Relative shift of bbox center to cbox center
+    const bBoxShiftHR = (aux.bBox.left + aux.bBox.width / 2 - aux.cBox.width / 2) / aux.cBox.width;
+    const bBoxShiftVR = (aux.bBox.top + aux.bBox.height / 2 - aux.cBox.height / 2) / aux.cBox.height;
+
+    const bBoxFitLeft = fitCanvasWidth / 2 - bBoxCanvas.width * fitScale * (1 - 2 * bBoxShiftHR) / 2;
+    const bBoxFitTop = fitCanvasHeight / 2 - bBoxCanvas.height * fitScale * (1 - 2 * bBoxShiftVR) / 2;
+
+    const fitCanvas = ui.canvas(fitCanvasWidth, fitCanvasHeight);
+    const fitCtx = fitCanvas.getContext('2d')!;
+    // fitCtx.fillStyle = '#FFFFA0';
+    // fitCtx.fillRect(0, 0, fitCanvasWidth, fitCanvasHeight);
+    fitCtx.transform(fitScale, 0, 0, fitScale, bBoxFitLeft, bBoxFitTop);
+    fitCtx.drawImage(bBoxCanvas, 0, 0); // draw with scale transform
+
+    const fitCanvasData = fitCtx.getImageData(0, 0, fitCanvasWidth, fitCanvasHeight);
+    this.renderOnGrid(gridCtx, gridCellBounds, gridCell, fitCanvasData);
+    return true; // request rendering
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (gridCell.tableRowIndex === null) return;
+    const aux = this._auxList[gridCell.tableRowIndex];
+    if (!aux) return;
+
     const logPrefix = `${this.toLog()}.onMouseMove()`;
     const dpr = window.devicePixelRatio;
 
@@ -85,7 +140,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const argsX = (e.offsetX - gcb.x) * dpr;
     const argsY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: IEditorMol | null = this.getEditorMol(gridCell.tableRowIndex!);
+    const editorMol: IEditorMol | null = aux.mol;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
@@ -107,7 +162,6 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     this.invalidateGrid();
   }
 
-
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
     const [gridCol, tableCol, temp] =
       getGridCellRendererBack<string, HelmGridCellRendererBack>(gridCell);
@@ -115,18 +169,6 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     let res: HelmGridCellRendererBack = temp['rendererBack'];
     if (!res) res = temp['rendererBack'] = new HelmGridCellRendererBack(gridCol, tableCol);
     return res;
-  }
-
-  // -- Mol --
-
-  private _editorMolList: (IEditorMol | null)[];
-
-  private setEditorMol(tableRowIndex: number, editorMol: IEditorMol): void {
-    this._editorMolList[tableRowIndex] = editorMol;
-  }
-
-  private getEditorMol(tableRowIndex: number): IEditorMol | null {
-    return this._editorMolList[tableRowIndex];
   }
 }
 
