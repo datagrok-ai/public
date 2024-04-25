@@ -73,18 +73,12 @@ export const optimizeNM:IOptimizer = async function(
   const contractionPoint = new Float32Array(dimParams);
   const costs = new Array<number>(maxIter);
 
-  const points = new Array<Float32Array>(dimParams);
-  for (let i = 0; i < dimParams; ++i) {
-    points[i] = new Float32Array(maxIter);
-    points[i][0] = optParams[indexes[0]][i];
-  }
-
   if (dim > 1) {
     while (true) {
       indexes.sort((a:number, b:number) => {
         return pointObjectives[a] - pointObjectives[b];
       });
-      if (iteration >= maxIter)
+      if (iteration > maxIter)
         break;
 
       if (iteration == 0) {
@@ -94,9 +88,6 @@ export const optimizeNM:IOptimizer = async function(
       costs[iteration] = best;
 
       ++iteration;
-
-      for (let i = 0; i < dimParams; ++i)
-        points[i][iteration] = optParams[indexes[0]][i];
 
       best = pointObjectives[indexes[0]];
       if (previousBest - best > tolerance)
@@ -185,7 +176,6 @@ export const optimizeNM:IOptimizer = async function(
     point: optParams[indexes[0]],
     cost: pointObjectives[indexes[0]],
     iterCosts: costs,
-    iterPoints: points,
     iterCount: iteration - 1,
   };
 };

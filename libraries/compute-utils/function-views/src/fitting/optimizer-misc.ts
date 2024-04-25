@@ -2,7 +2,6 @@ export type Extremum = {
   point: Float32Array,
   cost: number,
   iterCosts: number[],
-  iterPoints: Float32Array[],
   iterCount: number,
 }
 

@@ -723,27 +723,23 @@ export class FittingView {
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
 
-        //console.log(x);
-
-        let cost = 0;
+        let sumOfSquaredErrors = 0;
+        let outputsCount = 0;
 
         outputsOfInterest.forEach((output) => {
-          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-            cost += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
-          //console.log(output.target as number - calledFuncCall.getParamValue(output.prop.name));
-          else {
-          //const errs = getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name));
-          //console.log(errs);
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name)).forEach((err) => cost += err ** 2);
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
+            sumOfSquaredErrors += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
+            ++outputsCount;
+          } else {
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name))
+              .forEach((err) => {
+                sumOfSquaredErrors += err ** 2;
+                ++outputsCount;
+              });
           }
-        //console.log(output.target);
-        //console.log('---------------------------------------------------------------');
-        //console.log(calledFuncCall.getParamValue(output.prop.name));
         });
 
-        //console.log(cost);
-
-        return cost;
+        return Math.sqrt(sumOfSquaredErrors / outputsCount);
       };
 
       let extremums: Extremum[];
@@ -859,11 +855,6 @@ export class FittingView {
 
       // Update nodes store & hide titles
       this.tempDockNodes.push(pcPlotNode, lossFuncLineChartsNode, goodnessOfFitNode);
-      /*this.tempDockNodes.forEach((node) => {
-        const title = node.container.dart.elementTitle;
-        if (title)
-          title.hidden = true;
-      });*/
 
       // Find item with min loss
       let minLossExtrIdx = 0;
@@ -928,7 +919,7 @@ export class FittingView {
         DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
         DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
       {
-        description: 'Loss: sum of squared errors',
+        description: 'Loss: root mean square deviation',
         showYAxis: true,
         showXAxis: true,
       }).root;
