@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 import _ from 'lodash';
@@ -210,6 +210,9 @@ export class RadarViewer extends EChartViewer {
       option.radar.indicator.push(this.createRadarIndicator(c));
     
     option.series[2].data = this.createSeriesData(colors, indexes);
+
+    if (this.filter.trueCount > MAXIMUM_ROW_NUMBER)
+      this._showMessage('Only first 1000 shown', WARNING_CLASS);
   
     if (this.showMin)
       this.updateMin();
@@ -227,7 +230,7 @@ export class RadarViewer extends EChartViewer {
     const seriesData = [];
     const currentRowIdx = this.getCurrentRowIdx();
   
-    for (let i = 0; i < this.filter.length; i++) {
+    for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
       if (i === currentRowIdx && this.filter.get(currentRowIdx)) continue;
 

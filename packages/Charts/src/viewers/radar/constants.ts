@@ -33,6 +33,7 @@ export const option: { [key: string]: any } = {
   }],
 };
 
+export const MAXIMUM_ROW_NUMBER = 1000;
 export const MAXIMUM_SERIES_NUMBER = 25;
 export const MAXIMUM_COLUMN_NUMBER = 10;
 export interface RadarIndicator {
