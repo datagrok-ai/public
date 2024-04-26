@@ -24,7 +24,7 @@ export class ReportsView extends UaView {
     this.filters.style.maxWidth = '250px';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const users: {[_: string]: any} = {};
     (await grok.dapi.users.list()).forEach((user) => {
       users[user.friendlyName] = {
@@ -42,6 +42,11 @@ export class ReportsView extends UaView {
         const viewer = DG.Viewer.grid(t);
         viewer.sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
         this.reloadFilter(t);
+        if (path != undefined) {
+          const segments = path.split('/').filter((s) => s != '');
+          if (segments.length > 1)
+            this.setReportFilter(segments[1]);
+        }
         viewer.onBeforeDrawContent.subscribe(() => {
           viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'jira_ticket', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
@@ -118,7 +123,7 @@ export class ReportsView extends UaView {
                 } finally {
                   progress.close();
                 }
-              })
+              }),
             ]);
           }
         });
@@ -152,20 +157,18 @@ export class ReportsView extends UaView {
       const filters_ = DG.Viewer.filters(table, filtersStyle);
       this.currentFilterGroup = new DG.FilterGroup(filters_.dart);
       this.filters.append(filters_.root);
-      this.updateFilter();
+      //this.updateFilter();
     }
   }
 
-  updateFilter(): void {
-    if (ViewHandler.getCurrentView().name === 'Reports' && ViewHandler.getInstance().getSearchParameters().has('report-number')) {
-      let reportNumber = ViewHandler.getInstance().getSearchParameters().get('report-number');
-      if (reportNumber) {
-        this.currentFilterGroup?.updateOrAdd({
-          type: DG.FILTER_TYPE.MULTI_VALUE,
-          column: 'report_number',
-          selected: [reportNumber]}
-        );
-      }
+  setReportFilter(reportNumber: string): void {
+    console.log(reportNumber);
+    if (reportNumber != undefined && reportNumber != '') {
+      this.currentFilterGroup?.updateOrAdd({
+        type: DG.FILTER_TYPE.MULTI_VALUE,
+        column: 'report_number',
+        selected: [reportNumber],
+      });
     }
   }
 }

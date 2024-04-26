@@ -15,19 +15,12 @@ export const _package = new DG.Package();
 
 //name: Usage Analysis
 //tags: app
+//meta.url: /usage_analysis
+//input: string path {isOptional: true}
+//input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(): Promise<DG.ViewBase | null> {
-  if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
-    if (window.location.search?.includes('report-number')) {
-      const ev = ViewHandler.getView('Reports');
-      ev.viewers[0].reloadViewer();
-      await (ev as ReportsView).reloadFilter();
-      ViewHandler.changeTab('Reports');
-    }
-    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
-    return null;
-  }
-  await ViewHandler.getInstance().init();
+export async function usageAnalysisApp(path?: string, params?: {}): Promise<DG.ViewBase | null> {
+  await ViewHandler.getInstance().init(params ?? {}, path);
   return ViewHandler.UA;
 }
 
