@@ -9,6 +9,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {getPropViewers} from './shared/utils';
 import {STARTING_HELP, TITLE, DOCK_RATIO, REPORT_DF_TOOLTIP, COL_WIDTH} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
@@ -761,6 +762,7 @@ export class FittingView {
       const lossFuncLineChartsRoots = new Map<number, HTMLElement>();
       const gofDivs = new Map<number, HTMLDivElement>();
       const gofViewersRoots = new Map<number, Map<string, HTMLElement>>();
+      const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
 
       extremums.forEach(async (extr, idx) => {
         iterCounts[idx] = extr.iterCount;
@@ -770,6 +772,7 @@ export class FittingView {
         gofDivs.set(idx, gofDiv);
         const gofElems = new Map<string, HTMLElement>();
         const calledFuncCall = await getCalledFuncCall(extr.point);
+        calledFuncCalls[idx] = calledFuncCall;
         outputsOfInterest.forEach((output, idx) => {
           gofElems.set(outputCaptions[idx], this.getOutputGof(output.prop, outputsCount < 2, output.target, calledFuncCall, output.colName));
         });
@@ -883,6 +886,62 @@ export class FittingView {
           r.hidden = i !== row;
           gofDivs.get(i)!.hidden = i !== row;
         });
+
+        const selectedRun = calledFuncCalls[row];
+
+        const scalarParams = ([...selectedRun.outputParams.values()])
+          .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
+        const scalarTable = DG.HtmlTable.create(
+          scalarParams,
+          (scalarVal: DG.FuncCallParam) =>
+            [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
+        ).root;
+
+        const dfParams = ([...selectedRun.outputParams.values()])
+          .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+        const dfPanes = dfParams.reduce((acc, param) => {
+          const configs = getPropViewers(param.property).config;
+
+          const dfValue = selectedRun.outputs[param.name];
+          const paneName = param.property.caption ?? param.property.name;
+          configs.map((config) => {
+            const viewerType = config['type'] as string;
+            const viewer = DG.Viewer.fromType(viewerType, dfValue);
+            viewer.setOptions(config);
+            $(viewer.root).css({'width': '100%'});
+            if (acc[paneName])
+              acc[paneName].push(viewer.root);
+            else acc[paneName] = [viewer.root];
+          });
+
+          return acc;
+        }, {} as {[name: string]: HTMLElement[]});
+
+        let overviewPanelConfig: Object;
+        let paneToExpandIdx: number;
+
+        if (scalarParams.length > 0) {
+          paneToExpandIdx = 1;
+          overviewPanelConfig = {
+            'Output scalars': [scalarTable],
+            ...dfPanes,
+          };
+        } else {
+          paneToExpandIdx = 0;
+          overviewPanelConfig = {
+            ...dfPanes,
+          };
+        }
+
+        const overviewPanel = ui.accordion();
+        $(overviewPanel.root).css({'width': '100%'});
+        Object.entries(overviewPanelConfig).map((e) => {
+          overviewPanel.addPane(e[0], () => ui.divV(e[1]));
+        });
+
+        overviewPanel.panes[paneToExpandIdx].expanded = true;
+
+        grok.shell.o = overviewPanel.root;
       };
 
       this.gridClickSubscription = grid.onCellClick.subscribe(cellEffect);
