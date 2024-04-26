@@ -25,9 +25,10 @@ If you start typing text in the field, the filter will show all values that part
 typing words, separating them with a comma, then the filter will show only those values that exactly match each other.
 
 It is also allowed to paste multi-line text from the clipboard into the search field. In this case, the filter will also
-display those values that exactly match each word. To select or deselect only the found values of the category - click
-the checkbox to the left of the search field. Note that other (not displayed) values of the categories do not change
-their choice.
+display those values that exactly match each word. The checkbox on the left of the search field controls weather to select
+filtered out values only. If this checkbox is enabled, upon searching for value(or values), filter will automatically select
+only those values that match the search criteria. In contrary case if the checkbox is disabled, search will only filter out values
+and not select them.
 
 ![Filter](../../uploads/gifs/filter-search.gif "Filter")
 
