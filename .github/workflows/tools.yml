@@ -51,12 +51,13 @@ jobs:
                 echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
             fi
           fi
+          echo "job_name=${job_name}" >> $GITHUB_OUTPUT
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
           echo "version=${current_version}" >> $GITHUB_OUTPUT
 
   build:
     name: ${{ needs.version.outputs.job_name || 'Deploy' }}
-    needs: [check, common-check]
+    needs: [ check, common-check ]
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
