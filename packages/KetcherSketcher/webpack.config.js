@@ -4,6 +4,9 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 const mode = 'development';
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: mode,
   entry: {
     package: './src/package.ts',
