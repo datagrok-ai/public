@@ -42,6 +42,8 @@ export interface RuntimeController {
   triggerLink(path: ItemPath): void;
   enableStep(path: ItemPath): void;
   disableStep(path: ItemPath): void;
+  enablePipeline(path: ItemPath): void;
+  disablePipeline(path: ItemPath): void;
   loadNestedPipeline(path: ItemPath, runId: string): void;
   getState<T = any>(path: ItemPath): T | void;
   setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
@@ -163,6 +165,11 @@ export type ComposedPipelinesConfig = {
 }
 
 export type PipelineCompositionConfiguration = ItemsToAdd & PipelineConfiguration & ComposedPipelinesConfig & ItemsToRemove;
+
+export function path(strings: TemplateStringsArray): string[] {
+  const str = strings[0];
+  return keyToPath(str);
+}
 
 //
 // Internal config processing
@@ -465,6 +472,13 @@ class PipelineRuntime {
       this.view.showSteps(k);
     else
       this.view.hideSteps(k);
+  }
+
+  public setPipelineState(path: ItemPath, enabled: boolean): void {
+    const steps = this.getNestedSteps(path);
+    for (const data of steps) {
+      this.setStepState(keyToPath(data.path), enabled);
+    }
   }
 
   public loadNestedPipeline(path: ItemPath, runId: string) {
@@ -813,6 +827,18 @@ class RuntimeControllerImpl implements RuntimeController {
     this.disabledSteps.add(pathToKey(fullPath));
     console.log(`${this.handlerId}: disableStep ${pathToKey(fullPath)}`);
     return this.rt.setStepState(fullPath, false);
+  }
+
+  public enablePipeline(path: ItemPath) {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.setPipelineState(fullPath, true);
+  }
+
+  public disablePipeline(path: ItemPath) {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.setPipelineState(fullPath, false);
   }
 
   public triggerLink(path: ItemPath): void {
