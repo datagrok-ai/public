@@ -23,3 +23,16 @@ group by c.report_id, c.report_number, c.report_time, c.description, c.error,
          c.error_stack_trace, c.error_stack_trace_hash, c.is_acknowledged, c.reporter, c.assignee, c.jira_ticket, c.label
 order by (is_acknowledged is false) desc, same_errors_count desc, report_time asc
 --end
+
+--name: ReportSameErrors
+--input: string stackTraceHash
+--input: string errorMessage
+--connection: System:Datagrok
+select e.event_time, e.source, e.description, e.error_stack_trace, u.id as user_id, u.friendly_name as user_name, e.id as event_id
+FROM events e
+JOIN users_sessions s on e.session_id = s.id
+JOIN users u on u.id = s.user_id
+JOIN event_types t ON e.event_type_id = t.id
+WHERE t.error_stack_trace_hash = @stackTraceHash or t.friendly_name = @errorMessage;
+--end
+

@@ -7,6 +7,7 @@ import {DetailedLog, Grid} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ViewHandler} from "../view-handler";
 import {delay} from "rxjs/operators";
+import {div} from "datagrok-api/ui";
 
 const filtersStyle = {
   columnNames: ['error', 'reporter', 'assignee', 'report_time', 'report_number', 'is_acknowledged', 'label'],
@@ -39,6 +40,7 @@ export class ReportsView extends UaView {
       queryName: 'UserReports',
       createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.grid(t);
+        viewer.sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
         this.reloadFilter(t);
         viewer.onBeforeDrawContent.subscribe(() => {
           viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'jira_ticket', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
@@ -78,6 +80,8 @@ export class ReportsView extends UaView {
             link.href = `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`;
             gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
           }
+          if (gc.cellType === 'html')
+            gc.style.horzAlign = 'center';
         });
         const isAcknowledged = t.getCol('is_acknowledged');
         viewer.onCellRender.subscribe((gc) => {
@@ -97,6 +101,26 @@ export class ReportsView extends UaView {
           await delay(500);
           (this.viewers[0].viewer as Grid)
             .sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
+        });
+        t.onCurrentCellChanged.subscribe(() => {
+          if (t.currentCol.name === 'same_errors_count') {
+            const errorHash = t.getCol('error_stack_trace_hash').get(t.currentRowIdx);
+            const error = t.getCol('error').get(t.currentRowIdx);
+            grok.shell.o = div([
+              ui.actionLink('Get all errors...', async () => {
+                const progress = DG.TaskBarProgressIndicator.create('Receiving errors...');
+                try {
+                  const result = await grok.functions
+                    .call('UsageAnalysis:ReportSameErrors', {'stackTraceHash': errorHash, 'errorMessage': error});
+                  grok.shell.addTableView(result);
+                } catch (e: any) {
+                  grok.shell.error(e.toString());
+                } finally {
+                  progress.close();
+                }
+              })
+            ]);
+          }
         });
         return t;
       },
