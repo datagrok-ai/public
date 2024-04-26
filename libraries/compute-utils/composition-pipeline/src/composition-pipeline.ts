@@ -7,6 +7,8 @@ import {PipelineView, RichFunctionView} from '../../function-views';
 import {withLatestFrom, filter, switchMap, debounceTime, takeUntil, take, sample, finalize, mapTo, concatMap, startWith} from 'rxjs/operators';
 import {ActionItem, ValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {historyUtils} from '../../history-utils';
+import {ABILITY_STATE} from '../../shared-utils/consts';
+import {isIncomplete} from '../../shared-utils/utils';
 
 //
 // State optional spec
@@ -202,7 +204,7 @@ function pathToKey(path: ItemPath): PathKey {
 }
 
 function keyToPath(key: PathKey) {
-  return key.split('/');
+  return key.split('/').filter((x) => x);
 }
 
 function getParentKey(key: PathKey): PathKey {
@@ -675,36 +677,42 @@ class PipelineRuntime {
     try {
       const calls = await this.loadPipelineFuncCalls(runId);
       const nestedSteps = this.getNestedSteps(path);
-      this.insertLoadedPipelineSteps(calls, nestedSteps);
+      await this.loadNestedSteps(calls, nestedSteps);
       await this.awaitForAllUpdatesDone();
     } finally {
       this.enableSubStepsIOSetters(path);
     }
   }
 
-  private insertLoadedPipelineSteps(calls: DG.FuncCall[], stepsData: StepData[]) {
+  private async loadNestedSteps(calls: DG.FuncCall[], stepsData: StepData[]) {
     const stepsMappings = new Map<string, StepData>();
     for (const data of stepsData)
       stepsMappings.set(data.subPath, data);
 
     for (const call of calls) {
-      const id = call.options['customId'];
-      const data = stepsMappings.get(id);
+      const customId = call.options['customId'];
+      const data = stepsMappings.get(customId);
       if (data) {
-        const rfv = this.view.getStepView(id);
-        if (rfv)
-          rfv.linkFunccall(call);
+        const rfv = this.view.getStepView(data.path);
+        if (rfv) {
+          console.log(`loading step ${data.path}, nqName: ${data.nqName}, id: ${call.id}`);
+          const ncall = await rfv.loadRun(call.id);
+          if (!isIncomplete(ncall))
+            this.view.enableLoadedStep(data.path);
+        }
       }
     }
   }
 
   private getNestedSteps(pipelinePath: ItemPath) {
-    const k = pathToKey(pipelinePath);
+    const pipelineKey = pathToKey(pipelinePath);
+    const pipelineName = pipelinePath[pipelinePath.length - 1];
     const nestedSteps = ([...this.nodes.entries()])
-      .filter(([key, node]) => node.type === 'step' && getSuffix(k, key))
+      .filter(([key, node]) => node.type === 'step' && getSuffix(key, pipelineKey))
       .map(([key, node]) => {
         const path = key;
-        const subPath = getSuffix(k, key)!;
+        const suffix = getSuffix(key, pipelineKey)!;
+        const subPath = pathToKey(pathJoin([pipelineName], keyToPath(suffix)));
         const nqName = (node.conf as PipelineStepConfiguration).nqName;
         return {path, subPath, nqName};
       });
@@ -864,7 +872,8 @@ class RuntimeControllerImpl implements RuntimeController {
 
   public loadNestedPipeline(path: ItemPath, runId: string) {
     this.checkAborted();
-    this.rt.loadNestedPipeline(path, runId);
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    this.rt.loadNestedPipeline(fullPath, runId);
   }
 
   private checkAborted() {
@@ -910,6 +919,7 @@ class RuntimeControllerImpl implements RuntimeController {
 interface ICompositionView {
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
   getStateBindings<T = any>(viewId: PathKey, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
+  enableLoadedStep(stepId: PathKey): void;
   showSteps(...id: NqName[]): void;
   hideSteps(...id: NqName[]): void;
   getStepView<T = RichFunctionView>(viewId?: PathKey): T;
@@ -957,6 +967,10 @@ class CompositionPipelineView extends PipelineView implements ICompositionView {
 
   public addMenuItem(name: string, action: () => void) {
     this.actionsMenu?.item(name, action);
+  }
+
+  public enableLoadedStep(stepId: PathKey) {
+    this.steps[stepId].ability.next(ABILITY_STATE.ENABLED);
   }
 
   override getRunningUpdates() {
