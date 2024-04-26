@@ -228,11 +228,9 @@ export class RadarViewer extends EChartViewer {
 
   createSeriesData(filter?: number[]): any[] {
     const seriesData = [];
-    const currentRowIdx = this.getCurrentRowIdx();
   
     for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
-      if (i === currentRowIdx && this.filter.get(currentRowIdx)) continue;
 
       const value = this.columns.map((c) => {
         if (c.type === 'datetime')
@@ -254,7 +252,7 @@ export class RadarViewer extends EChartViewer {
           opacity: 0.8,
         },
         itemStyle: {
-          color: filter && filter.includes(i) ? MOUSE_OVER_GROUP_COLOR : color,
+          color: filter && filter.includes(i) ? MOUSE_OVER_GROUP_COLOR : DG.Color.toHtml(color),
         },
         label: {
           show: this.showValues,
@@ -267,10 +265,12 @@ export class RadarViewer extends EChartViewer {
   }
 
   updateCurrentRow(): void {
-    const currentIn = this.filter.get(this.getCurrentRowIdx());
+    const currentRowIdx = this.dataFrame.currentRowIdx;
+    if (currentRowIdx < 0) return;
+    const currentIn = this.filter.get(currentRowIdx);
     if (currentIn) {
       const color = DG.Color.toHtml(this.showCurrentRow ? this.currentRowColor : this.lineColor);
-      this.updateRow(color, this.getCurrentRowIdx());
+      this.updateRow(color, currentRowIdx);
     }
   }
   
@@ -282,12 +282,6 @@ export class RadarViewer extends EChartViewer {
       if (currentRow !== -1)
         this.updateRow(color, currentRow);
     }
-  }
-
-  getCurrentRowIdx(): number {
-    let currentRowIdx = this.dataFrame.currentRowIdx || 0;
-    currentRowIdx = Math.max(currentRowIdx, 0);
-    return currentRowIdx;
   }
 
   createRadarIndicator(c: DG.Column): RadarIndicator {
