@@ -146,8 +146,7 @@ export class MmpAnalysis {
         for (let i = 0; i < colorInputs.length; i++)
           schemes[i] = [this.colorPalette.numerical[i]];
 
-        tp.setOptions({'colorShemes': schemes});
-        // tp. ;
+        tp.setOptions({'innerViewerLook': {'colorSchemes': schemes}})
         progressRendering.close();
       });
       roots[i] = ui.divH([activeInputs[i].root, colorInputs[i].root, sliderInputs[i].root],
