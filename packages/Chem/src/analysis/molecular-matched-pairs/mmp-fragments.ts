@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 
-const CUTOFF_MOL_SIZE = 0.4;
-
 export type MmpRules = {
   rules: {
     smilesRule1: number,
@@ -22,7 +20,7 @@ export async function getMmpFrags(molecules: DG.Column): Promise<[string, string
   return res;
 }
 
-export function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
+export function getMmpRules(frags: [string, string][][], fragmentCutoff: number): [MmpRules, number] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = frags.length;
   let ruleCounter = 0;
@@ -50,7 +48,7 @@ export function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
         }
       }
 
-      if (core === '' || r1.length / core.length > CUTOFF_MOL_SIZE || r2.length / core.length > CUTOFF_MOL_SIZE)
+      if (core === '' || r1.length / core.length > fragmentCutoff || r2.length / core.length > fragmentCutoff)
         continue;
 
       let ruleSmiles1 = mmpRules.smilesFrags.indexOf(r1);

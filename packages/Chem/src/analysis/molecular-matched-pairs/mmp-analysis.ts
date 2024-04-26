@@ -269,13 +269,13 @@ export class MmpAnalysis {
     this.propPanelViewer.columns = propertiesColumnsNames;
   }
 
-  static async init(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList) {
+  static async init(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList, fragmentCutoff: number) {
     //rdkit module
     const module = getRdKitModule();
 
     //initial calculations
     const frags = await getMmpFrags(molecules);
-    const [mmpRules, allCasesNumber] = getMmpRules(frags);
+    const [mmpRules, allCasesNumber] = getMmpRules(frags, fragmentCutoff);
     const palette = getPalette(activities.length);
 
     //Transformations tab
@@ -298,8 +298,8 @@ export class MmpAnalysis {
       getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
 
     return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs,
-      allPairsGrid, casesGrid, generationsGrid,
-      tp, sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
+      allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
+      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
