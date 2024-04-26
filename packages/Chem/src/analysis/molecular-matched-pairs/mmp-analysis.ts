@@ -102,10 +102,15 @@ export class MmpAnalysis {
     //Cliffs tab
     const roots: any[] = new Array<any>(sliderInputs.length);
     for (let i = 0; i < sliderInputs.length; i ++) {
+      
+      activeInputs[i].onChanged(() => {
+        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
+      })
+
       sliderInputs[i].onChanged(() => {
         sliderInputValueDivs[i].innerText = sliderInputs[i].value === 0 ? '0' :
           getSigFigs(sliderInputs[i].value, 4).toString();
-        this.refilterCliffs(sliderInputs.map((si) => si.value), true);
+        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
       });
 
       colorInputs[i].value = this.colorPalette.hex[i];
@@ -169,7 +174,7 @@ export class MmpAnalysis {
 
     this.linesRenderer = linesEditor;
 
-    this.refilterCliffs(sliderInputs.map((si) => si.value), false);
+    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
 
     //generated tab
 
@@ -227,7 +232,7 @@ export class MmpAnalysis {
         this.refreshFilterAllPairs();
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_TAB_CLIFFS) {
-        this.refilterCliffs(sliderInputs.map((si) => si.value), false);
+        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs,
             this.linesActivityCorrespondance[this.lastSelectedPair],
@@ -418,11 +423,11 @@ export class MmpAnalysis {
   }
 
   /**
-  * Makes the dataset filtering according to user specified cutoofs for each activity.
+  * Makes the dataset filtering according to user specified cutoffs and 'isActive' checkbox for each activity.
   * @param {number[]} cutoffs for each activity the corresponding cuttof is specified by user
   * @param {boolean} refilter flag if calculation is required before filtering
   */
-  refilterCliffs(cutoffs: number[], refilter: boolean) {
+  refilterCliffs(cutoffs: number[], isActiveVar: boolean[], refilter: boolean) {
     if (refilter) {
       for (let i = 0; i < this.cutoffMasks.length; i ++)
         this.cutoffMasks[i].setAll(false);
@@ -434,6 +439,11 @@ export class MmpAnalysis {
       for (let i = 0; i < this.lines.from.length; i++) {
         const activityNumber = this.linesActivityCorrespondance[i];
         const line = this.linesIdxs[i];
+        //if 'isActive' checkbox for variable is unset - setting line to invisible and continue, otherwise look at cutoff
+        if (!isActiveVar[activityNumber]) {
+          this.linesMask.setBit(i, false, false);
+          continue;
+        }
         if (this.diffs[activityNumber][line] >= cutoffs[activityNumber]) {
           this.cutoffMasks[activityNumber].set(this.lines.from[i], true, false);
           this.cutoffMasks[activityNumber].set(this.lines.to[i], true, false);
