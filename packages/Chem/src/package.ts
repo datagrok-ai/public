@@ -1444,6 +1444,7 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
 //input: bool join = true
+//output: column result
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
   targetNotation: DG.chem.Notation, overwrite = false, join = true ): Promise<void | DG.Column<string>> {
   const res = await convertNotationForColumn(molecules, targetNotation);
