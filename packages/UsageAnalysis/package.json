@@ -59,6 +59,7 @@
   ],
   "category": "General",
   "meta": {
+    "url": "/usage",
     "dartium": false
   }
 }

@@ -15,7 +15,7 @@ export const _package = new DG.Package();
 
 //name: Usage Analysis
 //tags: app
-//meta.url: /usage_analysis
+//meta.url: /
 //input: string path {isOptional: true}
 //input: map params {isOptional: true}
 //output: view v
@@ -26,6 +26,9 @@ export async function usageAnalysisApp(path?: string, params?: {}): Promise<DG.V
 
 //name: Test Track
 //tags: app
+//meta.url: /tests/manager
+//input: string path {isOptional: true}
+//input: map params {isOptional: true}
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
