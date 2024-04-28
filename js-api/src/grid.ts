@@ -626,6 +626,12 @@ export class GridColumn {
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
 
+  /** Cell style used for rendering data cells */
+  get contentCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_ContentCellStyle(this.dart); }
+
+  /** Cell style used for rendering header cells */
+  get headerCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_HeaderCellStyle(this.dart); }
+
   /** Column width in pixels.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
   get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
