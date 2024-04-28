@@ -1614,14 +1614,16 @@ export interface IGridCellStyleSettings {
 
   textVertical: boolean;
 
+  /// Applies to image columns only
   imageScale: number;
 
+  /// Applies to image columns only
   opacity: number;
 
   clip: boolean;
 
   /// For 'html' cell types only
-  /// When defined,
+  /// When defined, the cell editor becomes a combo box with the specified values
   choices: Array<string>;
 
 }
