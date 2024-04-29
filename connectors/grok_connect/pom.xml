@@ -653,7 +653,7 @@
         <dependency> <!-- remediating vulnerability -->
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.21.1</version>
+            <version>9.37.2</version>
         </dependency>
         <!--Hive1-->
         <dependency>
