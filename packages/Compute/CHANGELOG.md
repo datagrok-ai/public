@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.32.2 (2024-04-29)
+
+### Misc
+
+- Dependencies update
+
 ## 1.32.1 (2024-04-29)
 
 ### Bug fixes
