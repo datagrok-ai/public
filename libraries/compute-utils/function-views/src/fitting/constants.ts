@@ -3,15 +3,16 @@
 /** Dock ratios */
 export enum GRID_SIZE {
   LOSS_COL_WIDTH = 60,
-  ROW_HEIGHT = 240,
+  ROW_HEIGHT = 180,
   LOSS_GRAPH_WIDTH = 360,
+  GOF_VIEWER_WIDTH = 240,
 }
 
 /** UI titles */
 export enum TITLE {
    ITER = 'Iteration',
    LOSS = 'Loss',
-   LOSS_GRAPH = 'Optimization profile',
+   LOSS_GRAPH = 'Fitting profile',
    TARGET = 'Target',
    FIT = 'Fit',
    METHOD = 'method',

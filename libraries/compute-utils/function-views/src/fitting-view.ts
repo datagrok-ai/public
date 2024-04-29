@@ -53,6 +53,12 @@ type SensitivityConstStore = {
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
 } & InputValues;
 
+/** Goodness of fit (GoF) viewer */
+type GoFViewerRoot = {
+  caption: string,
+  root: HTMLElement,
+};
+
 type FittingInputsStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
@@ -712,7 +718,6 @@ export class FittingView {
         grok.shell.error('No output is selected for optimization.');
         return;
       }
-      const outputCaptions = outputsOfInterest.map((item) => item.prop.caption ?? item.prop.name);
 
       /** Get call funcCall with the specified inputs */
       const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
@@ -759,29 +764,38 @@ export class FittingView {
       const rowCount = this.samplesCount;
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
-
-      const gofDivs = new Map<number, HTMLDivElement>();
-      const gofViewersRoots = new Map<number, Map<string, HTMLElement>>();
+      const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
       const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
       const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
-
       const tooltips = new Map([[TITLE.LOSS as string, 'The final loss obtained: root mean square deviation']]);
+      let toAddGofCols = true;
+      const outputColNames: string[] = [];
 
       extremums.forEach(async (extr, idx) => {
         lossVals[idx] = extr.cost;
         const lossRoot = this.getLossGraph(extr);
         lossFuncGraphRoots[idx] = lossRoot;
 
-        const gofDiv = ui.divV([]);
-        gofDivs.set(idx, gofDiv);
         const gofElems = new Map<string, HTMLElement>();
         const calledFuncCall = await getCalledFuncCall(extr.point);
         calledFuncCalls[idx] = calledFuncCall;
-        outputsOfInterest.forEach((output, idx) => {
-          gofElems.set(outputCaptions[idx], this.getOutputGof(output.prop, outputsCount < 2, output.target, calledFuncCall, output.colName));
+        outputsOfInterest.forEach((output) => {
+          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.colName);
+          gofs.forEach((item) => gofElems.set(item.caption, item.root));
         });
-        gofElems.forEach((r) => gofDiv.appendChild(r));
-        gofViewersRoots.set(idx, gofElems);
+        gofViewers[idx] = gofElems;
+
+        if (toAddGofCols) {
+          gofElems.forEach((_, name) => {
+            tooltips.set(name, `${name}: goodness of fit`);
+            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.INT).init((i: number) => i + 1);
+            const gridCol = this.comparisonView.grid.columns.byName(name);
+            gridCol!.cellType = 'html';
+            gridCol!.width = GRID_SIZE.GOF_VIEWER_WIDTH;
+            outputColNames.push(name);
+          });
+          toAddGofCols = false;
+        }
       });
 
       // Add fitting results to the table: iteration & loss
@@ -812,11 +826,17 @@ export class FittingView {
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
+      // Add viewers to the grid
       grid.onCellPrepare(async (gc: DG.GridCell) => {
         if (gc.isColHeader || gc.isRowHeader) return;
 
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
           gc.style.element = lossFuncGraphRoots[gc.gridRow];
+
+        outputColNames.forEach((name) => {
+          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null)
+            gc.style.element = gofViewers[gc.gridRow].get(name) ?? ui.label('');
+        });
       });
 
       // Set loss-column format & sort by loss-vals
@@ -945,8 +965,7 @@ export class FittingView {
   } // getLossGraph
 
   /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, toShowCaption: boolean, target: OutputTarget, call: DG.FuncCall, argColName: string): HTMLElement {
-    let root: HTMLElement;
+  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string): GoFViewerRoot[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
@@ -955,22 +974,23 @@ export class FittingView {
     case DG.TYPE.FLOAT:
     case DG.TYPE.INT:
     case DG.TYPE.BIG_INT:
-      root = DG.Viewer.barChart(
-        DG.DataFrame.fromColumns([
-          DG.Column.fromStrings(caption, ['obtained', 'target']),
-          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
-        ]),
-        {
-          description: toShowCaption ? `Goodness of fit: ${caption}` : 'Goodness of fit',
-          valueColumnName: TITLE.VALUE,
-          splitColumnName: caption,
-          valueAggrType: DG.AGG.AVG,
-          showValueSelector: false,
-          showCategorySelector: false,
-          showStackSelector: false,
-        },
-      ).root;
-      break;
+      return [{
+        caption: caption,
+        root: DG.Viewer.barChart(
+          DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(caption, ['obtained', 'target']),
+            DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
+          ]),
+          {
+            valueColumnName: TITLE.VALUE,
+            splitColumnName: caption,
+            valueAggrType: DG.AGG.AVG,
+            showValueSelector: false,
+            showCategorySelector: false,
+            showStackSelector: false,
+          },
+        ).root,
+      }];/*
 
     case DG.TYPE.DATA_FRAME:
       const simDf = call.getParamValue(name) as DG.DataFrame;
@@ -1034,19 +1054,19 @@ export class FittingView {
       root = DG.Viewer.lineChart(comparisonDf, {
         multiAxis: true,
         xColumnName: argColName,
-        description: toShowCaption ? `Goodness of fit: ${caption}` : 'Goodness of fit',
+        description: 'Goodness of fit',
         yGlobalScale: nonArgColsCount < 2,
       }).root;
-      break;
+      break;*/
 
     default:
       throw new Error('Unsupported output type');
     }
 
-    root.style.height = '100%';
+  /*    root.style.height = '100%';
     root.style.width = '100%';
 
-    return root;
+    return root;*/
   } // getOutputGof
 
   /** Clear previous results */
