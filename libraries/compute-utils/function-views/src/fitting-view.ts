@@ -92,6 +92,8 @@ export class FittingView {
     };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
+      const defaultValue = getInputValue(inputProp, 'default');
+
       if (inputProp.propertyType === DG.TYPE.FLOAT) {
         const isChangingInputMin = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
@@ -111,13 +113,13 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(caption, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(caption, defaultValue, (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Value of the '${caption}' input`);
               return inp;
             })(),
-            value: inputProp.defaultValue,
+            value: defaultValue,
           },
           min: {
             input:
@@ -189,9 +191,9 @@ export class FittingView {
 
             return temp;
           })(),
-          value: inputProp.defaultValue,
+          value: defaultValue,
         };
-        tempDefault.input.value = null;
+        tempDefault.input.value = defaultValue;
         acc[inputProp.name] = {
           const: tempDefault,
           constForm: [tempDefault.input],
@@ -715,7 +717,6 @@ export class FittingView {
       const variedInputNames: string[] = [];
       const minVals = new Float32Array(dim);
       const maxVals = new Float32Array(dim);
-
       const variedInputsCaptions = new Array<string>(dim);
 
       // set varied inputs specification
@@ -889,6 +890,9 @@ export class FittingView {
 
       // Add grid cell effects
       const cellEffect = async (cell: DG.GridCell) => {
+        if (!cell)
+          return;
+
         const row = cell.tableRowIndex ?? 0;
         const selectedRun = calledFuncCalls[row];
 
