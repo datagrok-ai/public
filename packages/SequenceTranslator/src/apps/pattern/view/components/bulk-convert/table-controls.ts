@@ -33,6 +33,5 @@ export class TableControlsManager {
   }
 
   private processConvertButtonClick(): void {
-    // grok.shell.info(`Selected table: ${this.eventBus.getTableSelection()?.name}, selected AS strand column: ${this.eventBus.getSelectedColumn(STRAND.ANTISENSE)}`);
   }
 }
