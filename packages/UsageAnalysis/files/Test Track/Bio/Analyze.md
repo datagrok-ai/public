@@ -6,7 +6,7 @@ All fucntions should be tested on sample_FASTA.csv, sample_HELM.csv, and sample_
    * **Composition** 
 1. A dialog opens. 
 2. Click OK to run a function with default parameters. A viewer opens.
-2. On the viewer, click the **Gear** icon and check all settings on the Context Panel.
+2. For the composition analysis, on the viewer, click the **Gear** icon and check all settings on the Context Panel.
 3. Run the function once more with arbitrary changed parameters.
 
 ***

@@ -1,6 +1,6 @@
 1. Open SPGI.csv.
 1. Click the `core` column header
-1. Go to Property Pane > Chem
+1. Go to Context Pane > Chem
 1. Set Filter Type to `categorical`
 1. Go to Tables and click the Filter icon. A Filter Panel opens.
 1. Check the Filter Panel:
@@ -18,9 +18,15 @@
 * [#2344](https://github.com/datagrok-ai/public/issues/2344)
 * [#2358](https://github.com/datagrok-ai/public/issues/2358)
 * [#1460](https://github.com/datagrok-ai/public/issues/1460)
-[#2185](https://github.com/datagrok-ai/public/issues/2185) Fuzzy filter enhancements
+* [#2185](https://github.com/datagrok-ai/public/issues/2185) Fuzzy filter enhancements
    
-   ***
+***
+
+1. Add filtering by molecules, scaffold tree, scaffold tree viewer, categorical, numerical, scatterplot (filter by zoom), Bar chart and Pie chart (on click = filter), Pivot table (Row source = All)
+2. Check the question mark - all the filtering should be listed
+2. Click Reset Filter icon and check the question mark again - it should be empty, all the filtering should be reset
+
+***
 
 Reorder filter
 1. Open SPGI.csv
