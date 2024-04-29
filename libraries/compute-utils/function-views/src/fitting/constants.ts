@@ -20,6 +20,7 @@ export enum TITLE {
    OBJECTIVE = TARGET,
    SAMPLES = 'samples',
    ID = 'id',
+   OBTAINED = 'Obtained',
  };
 
 /** Items for the fitting help */

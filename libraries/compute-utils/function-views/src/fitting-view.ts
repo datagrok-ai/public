@@ -54,7 +54,7 @@ type SensitivityConstStore = {
 } & InputValues;
 
 /** Goodness of fit (GoF) viewer */
-type GoFViewerRoot = {
+type GoFViewer = {
   caption: string,
   root: HTMLElement,
 };
@@ -787,7 +787,7 @@ export class FittingView {
 
         if (toAddGofCols) {
           gofElems.forEach((_, name) => {
-            tooltips.set(name, `${name}: goodness of fit`);
+            tooltips.set(name, 'Goodness of fit');
             this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.INT).init((i: number) => i + 1);
             const gridCol = this.comparisonView.grid.columns.byName(name);
             gridCol!.cellType = 'html';
@@ -965,7 +965,7 @@ export class FittingView {
   } // getLossGraph
 
   /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string): GoFViewerRoot[] {
+  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string): GoFViewer[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
@@ -990,9 +990,10 @@ export class FittingView {
             showStackSelector: false,
           },
         ).root,
-      }];/*
+      }];
 
     case DG.TYPE.DATA_FRAME:
+      const result: GoFViewer[] = [];
       const simDf = call.getParamValue(name) as DG.DataFrame;
       const expDf = target as DG.DataFrame;
       const simArgCol = simDf.col(argColName);
@@ -1003,17 +1004,12 @@ export class FittingView {
 
       const simArgRaw = simArgCol.getRawData();
       const indeces = getIndeces(expArgCol, simArgCol);
-      console.log(indeces);
       const rowCount = indeces.length;
       const argVals = Array<number>(rowCount);
-      console.log(argVals);
       indeces.forEach((val, idx) => argVals[idx] = simArgRaw[val]);
-      const comparisonDf = DG.DataFrame.fromColumns([DG.Column.fromList(simArgCol.type, argColName, argVals)]);
-      const columns = comparisonDf.columns;
 
       let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
       let col: DG.Column | null;
-      let nonArgColsCount = 0;
 
       expDf.columns.names().forEach((name) => {
         if (name !== argColName) {
@@ -1026,12 +1022,6 @@ export class FittingView {
           const simVals = Array<number>(rowCount);
           indeces.forEach((val, idx) => simVals[idx] = rawBuf[val]);
 
-          columns.add(DG.Column.fromList(
-            col.type,
-            columns.getUnusedName(`${name} (obtained)`),
-            simVals,
-          ));
-
           col = expDf.col(name);
 
           if (col === null)
@@ -1041,23 +1031,21 @@ export class FittingView {
           const expVals = Array<number>(rowCount);
           indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
 
-          columns.add(DG.Column.fromList(
-            col.type,
-            columns.getUnusedName(`${name} (target)`),
-            expVals,
-          ));
-
-          ++nonArgColsCount;
+          result.push({
+            caption: `${caption}: the '${name}' column`,
+            root: DG.Viewer.lineChart(DG.DataFrame.fromColumns([
+              expArgCol,
+              DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
+              DG.Column.fromList(col.type, TITLE.TARGET, expVals),
+            ]), {
+              multiAxis: true,
+              yGlobalScale: true,
+            }).root,
+          });
         }
       });
 
-      root = DG.Viewer.lineChart(comparisonDf, {
-        multiAxis: true,
-        xColumnName: argColName,
-        description: 'Goodness of fit',
-        yGlobalScale: nonArgColsCount < 2,
-      }).root;
-      break;*/
+      return result;
 
     default:
       throw new Error('Unsupported output type');
