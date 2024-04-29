@@ -8,7 +8,6 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
-import {ReportsView} from "./tabs/reports";
 
 export const _package = new DG.Package();
 
@@ -16,18 +15,21 @@ export const _package = new DG.Package();
 //name: Usage Analysis
 //tags: app
 //meta.url: /
-//input: string path {isOptional: true}
+//input: string path {isOptional: true; meta.url: true}
+//input: string date {isOptional: true}
+//input: string groups {isOptional: true}
+//input: string packages {isOptional: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(path?: string, params?: {}): Promise<DG.ViewBase | null> {
-  await ViewHandler.getInstance().init(params ?? {}, path);
+export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string): Promise<DG.ViewBase | null> {
+  await ViewHandler.getInstance().init(date, groups, packages, path);
   return ViewHandler.UA;
 }
 
 //name: Test Track
 //tags: app
 //meta.url: /tests/manager
-//input: string path {isOptional: true}
+//input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))

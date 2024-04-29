@@ -11,7 +11,7 @@ category('App', () => {
 
   before(async () => {
     if (grok.shell.sidebar.panes.every((p) => p.name != ViewHandler.UAname)) {
-      await ViewHandler.getInstance().init({});
+      await ViewHandler.getInstance().init();
       grok.shell.addView(ViewHandler.UA);
       grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
     }

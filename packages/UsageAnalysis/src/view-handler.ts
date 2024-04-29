@@ -25,7 +25,7 @@ export class ViewHandler {
     return ViewHandler.instance;
   }
 
-  async init(params: {date?: string, groups?: string, packages?: string}, path?: string): Promise<void> {
+  async init(date?: string, groups?: string, packages?: string, path?: string): Promise<void> {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
@@ -39,16 +39,16 @@ export class ViewHandler {
       ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
     await Promise.all(inits);
-    const paramsHaveDate = params.date != undefined;
-    const paramsHaveUsers = params.groups != undefined;
-    const paramsHavePackages = params.packages != undefined;
+    const paramsHaveDate = date != undefined;
+    const paramsHaveUsers = groups != undefined;
+    const paramsHavePackages = packages != undefined;
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
-        toolbox.setDate(params.date!);
+        toolbox.setDate(date!);
       if (paramsHaveUsers)
-        toolbox.setGroups(params.groups!);
+        toolbox.setGroups(groups!);
       if (paramsHavePackages)
-        toolbox.setPackages(params.packages!);
+        toolbox.setPackages(packages!);
       toolbox.applyFilter();
     }
     let helpShown = false;
