@@ -3,8 +3,8 @@
   "friendlyName": "CVM Tests",
   "version": "1.0.9",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated CVM tests",
@@ -53,5 +53,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CVMTests"
-  }
+  },
+  "skipCI": true
 }
