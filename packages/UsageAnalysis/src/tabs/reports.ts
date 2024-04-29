@@ -7,9 +7,10 @@ import {DetailedLog, Grid} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {delay} from "rxjs/operators";
 import {div} from "datagrok-api/ui";
+import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'assignee', 'report_time', 'report_number', 'is_acknowledged', 'label'],
+  columnNames: ['error', 'reporter', 'assignee', 'time', 'report_number', 'is_acknowledged', 'label'],
 };
 
 export class ReportsView extends UaView {
@@ -39,7 +40,8 @@ export class ReportsView extends UaView {
       queryName: 'UserReports',
       createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.grid(t);
-        viewer.sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
+        viewer.getInfo()
+        viewer.sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
         this.reloadFilter(t);
         if (path != undefined) {
           const segments = path.split('/').filter((s) => s != '');
@@ -49,14 +51,29 @@ export class ReportsView extends UaView {
           }
         }
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'jira_ticket', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
+          viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'errors', 'jira', 'label', 'error', 'error_stack_trace', 'time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
+          viewer.col('reporter')!.width = 20;
+
           viewer.col('assignee')!.cellType = 'html';
-          viewer.col('jira_ticket')!.cellType = 'html';
-          viewer.col('is_acknowledged')!.visible = false;
-          viewer.col('same_errors_count')!.editable = false;
+          viewer.col('assignee')!.width = 20;
+          viewer.col('errors')!.width = 35;
+          viewer.col('errors')!.editable = false;
+
+          viewer.col('jira')!.cellType = 'html';
+          viewer.col('is_acknowledged')!.width = 30;
+
+          viewer.col('report_id')!.visible = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
-          viewer.col('report_number')!.width = 30;
+
+          viewer.col('time')!.format = 'yyyy-MM-dd';
+          viewer.col('time')!.width = 80;
+
+          viewer.col('report_number')!.width = 35;
+
+          viewer.col('description')!.width = 150;
+          viewer.col('error')!.width = 200;
+          viewer.col('error_stack_trace')!.width = 200;
         });
 
         viewer.onCellPrepare(async function(gc) {
@@ -80,7 +97,7 @@ export class ReportsView extends UaView {
               return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
             });
           }
-          if (gc.gridColumn.name === 'jira_ticket' && gc.cell.value) {
+          if (gc.gridColumn.name === 'jira' && gc.cell.value) {
             const link = ui.link(gc.cell.value, `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
             link.addEventListener('click', (e) => {
               e.preventDefault();
@@ -112,10 +129,10 @@ export class ReportsView extends UaView {
         t.onValuesChanged.subscribe(async () => {
           await delay(500);
           (this.viewers[0].viewer as Grid)
-            .sort(['is_acknowledged', 'same_errors_count', 'report_time'], [true, false, true]);
+            .sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
         });
         t.onCurrentCellChanged.subscribe(() => {
-          if (t.currentCol.name === 'same_errors_count') {
+          if (t.currentCol.name === 'errors') {
             const errorHash = t.getCol('error_stack_trace_hash').get(t.currentRowIdx);
             const error = t.getCol('error').get(t.currentRowIdx);
             grok.shell.o = div([
@@ -171,7 +188,6 @@ export class ReportsView extends UaView {
   updatePath(reportNumber: string): void {
     const segments = window.location.href.split('/');
     const last = segments[segments.length - 1];
-    let url;
     if (last === 'reports')
       segments.push(reportNumber);
     else {
