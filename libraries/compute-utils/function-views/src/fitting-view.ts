@@ -288,11 +288,21 @@ export class FittingView {
     return {inputs, outputs};
   };
 
-  private runButton = ui.bigButton('Run', async () => await this.runOptimization(), 'Run fitting');
-  private runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
+  private readyToRun = false;
+  private runButton = ui.bigButton('Run', async () => {
+    if (this.readyToRun)
+      await this.runOptimization();
+  }, 'Run fitting');
+
+  private runIcon = ui.iconFA('play', async () => {
+    if (this.readyToRun)
+      await this.runOptimization();
+  });
+
   private helpIcon = ui.iconFA('question', () => {
     window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
   }, 'Open help in a new tab');
+
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
   private toSetSwitched = true;
@@ -389,14 +399,10 @@ export class FittingView {
     }
 
     this.runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
-    this.runIcon.style.color = 'var(--green-2)';
-    this.runIcon.classList.add('fas');
-
     this.fittingSettingsDiv.hidden = true;
 
     const form = this.buildFormWithBtn();
-    this.runButton.disabled = !this.canEvaluationBeRun();
-    this.runIcon.hidden = this.runButton.disabled;
+    this.updateRunWidgetsState();
     this.comparisonView = baseView;
 
     this.comparisonView.dockManager.dock(
@@ -444,8 +450,18 @@ export class FittingView {
   }
 
   private updateRunWidgetsState(): void {
-    this.runButton.disabled = !this.canEvaluationBeRun();
-    this.runIcon.hidden = this.runButton.disabled;
+    this.readyToRun = this.canEvaluationBeRun();
+    this.runButton.disabled = !this.readyToRun;
+
+    if (this.readyToRun) {
+      this.runIcon.style.color = 'var(--green-2)';
+      this.runIcon.classList.add('fas');
+      ui.tooltip.bind(this.runIcon, 'Run fitting');
+    } else {
+      this.runIcon.style.color = 'var(--grey-3)';
+      this.runIcon.classList.remove('fas');
+      ui.tooltip.bind(this.runIcon, '');
+    }
   }
 
   private generateNelderMeadSettingsInputs(): void {
@@ -761,6 +777,8 @@ export class FittingView {
 
       this.clearPrev();
 
+      extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+
       const rowCount = this.samplesCount;
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
@@ -788,7 +806,7 @@ export class FittingView {
         if (toAddGofCols) {
           gofElems.forEach((_, name) => {
             tooltips.set(name, 'Goodness of fit');
-            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.INT).init((i: number) => i + 1);
+            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.STRING);
             const gridCol = this.comparisonView.grid.columns.byName(name);
             gridCol!.cellType = 'html';
             gridCol!.width = GRID_SIZE.GOF_VIEWER_WIDTH;
@@ -816,18 +834,28 @@ export class FittingView {
         tooltips.set(cap, `Obtained values of '${cap}'`);
       });
 
+      // Set properties of the grid
+      grid.props.rowHeight = GRID_SIZE.ROW_HEIGHT;
+      grid.props.showAddNewRowIcon = false;
+      grid.props.allowEdit = false;
+
       // Add linecharts of loss function
       const lossGraphColName = reportColumns.getUnusedName(TITLE.LOSS_GRAPH);
       tooltips.set(lossGraphColName, 'Minimizing root mean square deviation');
-      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.INT).init((i: number) => i + 1);
-      grid.props.rowHeight = GRID_SIZE.ROW_HEIGHT;
-      grid.props.showAddNewRowIcon = false;
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
       // Add viewers to the grid
+      let toReorderCols = true;
+
       grid.onCellPrepare(async (gc: DG.GridCell) => {
+        if (toReorderCols) {
+          grid.columns.setOrder(reportColumns.names().filter((name) => name !== lossGraphColName).concat([lossGraphColName]));
+          toReorderCols = false;
+        }
+
         if (gc.isColHeader || gc.isRowHeader) return;
 
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
@@ -841,7 +869,6 @@ export class FittingView {
 
       // Set loss-column format & sort by loss-vals
       grid.columns.byName(TITLE.LOSS)!.format = 'scientific';
-      grid.sort([TITLE.LOSS]);
       grid.columns.byName(TITLE.LOSS)!.width = GRID_SIZE.LOSS_COL_WIDTH;
 
       // Add tooltips
@@ -857,17 +884,8 @@ export class FittingView {
         }
       });
 
-      // Find item with min loss
-      let minLossExtrIdx = 0;
-      let minLoss = extremums[0].cost;
-      for (let i = 1; i < rowCount; ++i) {
-        if (extremums[i].cost < minLoss) {
-          minLoss = extremums[i].cost;
-          minLossExtrIdx = i;
-        }
-      }
       // Set current row with min loss
-      reportTable.currentCell = reportTable.cell(minLossExtrIdx, TITLE.LOSS);
+      reportTable.currentCell = reportTable.cell(0, TITLE.LOSS);
 
       // Add grid cell effects
       const cellEffect = async (cell: DG.GridCell) => {
@@ -1050,11 +1068,6 @@ export class FittingView {
     default:
       throw new Error('Unsupported output type');
     }
-
-  /*    root.style.height = '100%';
-    root.style.width = '100%';
-
-    return root;*/
   } // getOutputGof
 
   /** Clear previous results */
