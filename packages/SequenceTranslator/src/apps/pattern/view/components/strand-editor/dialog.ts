@@ -10,6 +10,7 @@ import {PatternConfiguration} from '../../../model/types';
 import {HeaderControls} from './header-controls';
 import {StrandControls} from './strand-controls';
 import {SubscriptionManager} from '../../../model/subscription-manager';
+import {DataManager} from '../../../model/data-manager';
 
 export class StrandEditorDialog {
   private static isDialogOpen = false;
@@ -19,15 +20,16 @@ export class StrandEditorDialog {
   private subscriptions = new SubscriptionManager();
 
   private constructor(
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private dataManager: DataManager
   ) { }
 
-  static open(eventBus: EventBus): void {
+  static open(eventBus: EventBus, dataManager: DataManager): void {
     if (StrandEditorDialog.isDialogOpen)
       return;
 
     if (!StrandEditorDialog.instance)
-      StrandEditorDialog.instance = new StrandEditorDialog(eventBus);
+      StrandEditorDialog.instance = new StrandEditorDialog(eventBus, dataManager);
 
     StrandEditorDialog.instance.openDialog();
   }
@@ -63,7 +65,7 @@ export class StrandEditorDialog {
     const headerControls = new HeaderControls(
       this.eventBus, this.initialPatternConfig, this.subscriptions
     ).create();
-    const strandControls = new StrandControls(this.eventBus, this.subscriptions).create();
+    const strandControls = new StrandControls(this.eventBus, this.dataManager, this.subscriptions).create();
 
     $(editorBody).empty();
     $(editorBody).append(headerControls, strandControls);
