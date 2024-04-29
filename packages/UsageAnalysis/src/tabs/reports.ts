@@ -5,7 +5,6 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
 import {DetailedLog, Grid} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ViewHandler} from "../view-handler";
 import {delay} from "rxjs/operators";
 import {div} from "datagrok-api/ui";
 
@@ -44,22 +43,23 @@ export class ReportsView extends UaView {
         this.reloadFilter(t);
         if (path != undefined) {
           const segments = path.split('/').filter((s) => s != '');
-          if (segments.length > 1)
+          if (segments.length > 1) {
             this.setReportFilter(segments[1]);
+            this.updatePath(segments[1]);
+          }
         }
         viewer.onBeforeDrawContent.subscribe(() => {
           viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'jira_ticket', 'label', 'error', 'error_stack_trace', 'report_time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
           viewer.col('assignee')!.cellType = 'html';
           viewer.col('jira_ticket')!.cellType = 'html';
-          viewer.col('is_acknowledged')!.editable = false;
+          viewer.col('is_acknowledged')!.visible = false;
           viewer.col('same_errors_count')!.editable = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
+          viewer.col('report_number')!.width = 30;
         });
 
         viewer.onCellPrepare(async function(gc) {
-          // if (gc.gridColumn.name === 'error_stack_trace' || gc.gridColumn.name === 'error')
-          //   gc.style.font = '13px monospace';
           if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
             const user = users[gc.cell.value];
             const img = ui.div();
@@ -81,8 +81,11 @@ export class ReportsView extends UaView {
             });
           }
           if (gc.gridColumn.name === 'jira_ticket' && gc.cell.value) {
-            const link = ui.link(gc.cell.value, () => {});
-            link.href = `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`;
+            const link = ui.link(gc.cell.value, `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              window.open(link.href, '_blank');
+            });
             gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
           }
           if (gc.cellType === 'html')
@@ -97,10 +100,14 @@ export class ReportsView extends UaView {
         return viewer;
       },
       processDataFrame: (t: DG.DataFrame) => {
+        t.getCol('label').setTag(DG.Tags.MultiValueSeparator, ',');
         t.onCurrentRowChanged.subscribe(async (_) => {
-          const reportId = t.getCol('report_id').get(t.currentRowIdx);
+          const currentRow = t.currentRowIdx;
+          if (currentRow === null || currentRow === undefined || currentRow === -1) return;
+          const reportId = t.getCol('report_id').get(currentRow);
           if (!reportId) return;
-          DetailedLog.showReportProperties(reportId, t, t.currentRowIdx);
+          this.updatePath(t.getCol('report_number').get(currentRow));
+          DetailedLog.showReportProperties(reportId, t, currentRow);
         });
         t.onValuesChanged.subscribe(async () => {
           await delay(500);
@@ -159,6 +166,23 @@ export class ReportsView extends UaView {
       this.filters.append(filters_.root);
       //this.updateFilter();
     }
+  }
+
+  updatePath(reportNumber: string): void {
+    const segments = window.location.href.split('/');
+    const last = segments[segments.length - 1];
+    let url;
+    if (last === 'reports')
+      segments.push(reportNumber);
+    else {
+        if (/^-?\d+$/.test(last))
+          segments[segments.length - 1] = reportNumber;
+        else
+          return;
+      }
+
+    window.history.pushState(
+      null, 'Report ${detailedLog.reportNumber}', segments.join('/'));
   }
 
   setReportFilter(reportNumber: string): void {

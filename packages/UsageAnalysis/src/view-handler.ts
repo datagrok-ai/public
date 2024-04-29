@@ -13,9 +13,6 @@ import {TestsView, filters} from './tabs/tests';
 import {ReportsView} from "./tabs/reports";
 import {ErrorsView} from "./tabs/errors"
 
-const APP_PREFIX: string = `/apps/UsageAnalysis/`;
-
-
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
@@ -190,7 +187,7 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    ViewHandler.UA.path = `${APP_PREFIX}${ViewHandler.getCurrentView().name}?${params.join('&')}`;
+    ViewHandler.UA.path = `/${ViewHandler.getCurrentView().name}?${params.join('&')}`.toLowerCase();
   }
 
   static updatePath(): void {
