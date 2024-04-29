@@ -70,8 +70,8 @@ import {getEmbeddingColsNames}
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { drawMoleculeLabels } from './rendering/molecule-label';
-import { getMCS } from './utils/most-common-subs';
+import {drawMoleculeLabels} from './rendering/molecule-label';
+import {getMCS} from './utils/most-common-subs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {

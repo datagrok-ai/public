@@ -1,16 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {getRdKitModule}
-  from '../../utils/chem-common-rdkit';
+import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+
+import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
+
+
 import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {debounceTime} from 'rxjs/operators';
 import {getSigFigs} from '../../utils/chem-common';
-import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
+
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 import {fillPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
@@ -21,7 +23,8 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
 import {drawMoleculeLabels} from '../../rendering/molecule-label';
 import {getGenerations} from './mmp-generations';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
-import { getEmbeddingColsNames } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {getEmbeddingColsNames} from
+  '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -56,7 +59,8 @@ export class MmpAnalysis {
     rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer,
-    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
+    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
+    colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule) {
     this.rdkitModule = rdkitModule;
@@ -102,10 +106,9 @@ export class MmpAnalysis {
     //Cliffs tab
     const roots: any[] = new Array<any>(sliderInputs.length);
     for (let i = 0; i < sliderInputs.length; i ++) {
-      
       activeInputs[i].onChanged(() => {
         this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
-      })
+      });
 
       sliderInputs[i].onChanged(() => {
         sliderInputValueDivs[i].innerText = sliderInputs[i].value === 0 ? '0' :
@@ -146,7 +149,7 @@ export class MmpAnalysis {
         for (let i = 0; i < colorInputs.length; i++)
           schemes[i] = [this.colorPalette.numerical[i]];
 
-        tp.setOptions({'innerViewerLook': {'colorSchemes': schemes}})
+        tp.setOptions({'innerViewerLook': {'colorSchemes': schemes}});
         progressRendering.close();
       });
       roots[i] = ui.divH([activeInputs[i].root, colorInputs[i].root, sliderInputs[i].root],
@@ -155,7 +158,7 @@ export class MmpAnalysis {
     const sliders = ui.divV(roots, 'css-flex-wrap mmpa-slider-roots');
     sp.root.style.width = '100%';
 
-    const cliffs1 = ui.divV([sliders, ui.box(sp.root, 
+    const cliffs1 = ui.divV([sliders, ui.box(sp.root,
       {style: {maxHeight: '100px', paddingRight: '6px'}})], 'css-flex-wrap');
 
     const cliffs = ui.box(cliffs1);
@@ -189,21 +192,20 @@ export class MmpAnalysis {
       }, 'Add table to workspace');
       button.classList.add(className);
       return button;
-    }
+    };
 
     tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
-
       const createGridDiv = (name: string, grid: DG.Grid) => {
         const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
         grid.root.prepend(header);
         return ui.splitV([
           ui.box(
             ui.divH([header, addToWorkspaceButton(grid.dataFrame, name, 'chem-mmpa-add-to-workspace-button')]),
-            { style: { maxHeight: '30px' } }
+            {style: {maxHeight: '30px'}},
           ),
-          grid.root
+          grid.root,
         ]);
-      }
+      };
 
       return ui.splitV([
         createGridDiv('Fragments', this.allPairsGrid),
@@ -219,7 +221,7 @@ export class MmpAnalysis {
     const genTab = tabs.addPane(MMP_TAB_GENERATION, () => {
       return this.generationsGrid.root;
     });
-    genTab.header.append(addToWorkspaceButton(this.generationsGrid.dataFrame, 
+    genTab.header.append(addToWorkspaceButton(this.generationsGrid.dataFrame,
       'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
 
     tabs.onTabChanged.subscribe(() => {
@@ -287,7 +289,8 @@ export class MmpAnalysis {
 
     const embedColsNames = getEmbeddingColsNames(table).map((it) => `~${it}`);
     //Cliffs tab
-    const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] = getMmpScatterPlot(table, activities, maxActs, embedColsNames);
+    const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] =
+      getMmpScatterPlot(table, activities, maxActs, embedColsNames);
     drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
@@ -438,7 +441,8 @@ export class MmpAnalysis {
       for (let i = 0; i < this.lines.from.length; i++) {
         const activityNumber = this.linesActivityCorrespondance[i];
         const line = this.linesIdxs[i];
-        //if 'isActive' checkbox for variable is unset - setting line to invisible and continue, otherwise look at cutoff
+        //if 'isActive' checkbox for variable is unset
+        //setting line to invisible and continue, otherwise look at cutoff
         if (!isActiveVar[activityNumber]) {
           this.linesMask.setBit(i, false, false);
           continue;

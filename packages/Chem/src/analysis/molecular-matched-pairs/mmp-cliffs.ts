@@ -17,9 +17,10 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_
   MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
 import $ from 'cash-dom';
 
-export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[], axesColsNames: string[]) :
+export function getMmpScatterPlot(
+  table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[], axesColsNames: string[]) :
 [sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
-  activeInputs:  DG.InputBase[]] {
+  activeInputs: DG.InputBase[]] {
   table.columns.addNewFloat(axesColsNames[0]);
   table.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(table, {
