@@ -1299,7 +1299,7 @@ export function addScaffoldTree(): void {
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<void> {
-  const view = grok.shell.tv;  
+  const view = grok.shell.tv;
   const mmp = await MmpAnalysis.init(table, molecules, activities, fragmentCutoff);
 
   //need this workaround with closing dock node since element cannot be docked repeatedly
@@ -1307,12 +1307,11 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   const mmpaElement = view.dockManager.element.getElementsByClassName('mmpa')[0];
   if (mmpaElement) {
     const node = view.dockManager.findNode(mmpaElement as HTMLElement);
-    if(node)
+    if (node)
       view.dockManager.close(node);
   }
 
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
-  
 }
 
 //name: Scaffold Tree Filter
@@ -1474,9 +1473,9 @@ export function canonicalize(molecule: string): string {
 //output: object result
 export function validateMolecule(s: string): string | null {
   let logHandle: RDLog | null = null;
-  let mol: RDMol | null = null;;
+  let mol: RDMol | null = null;
   try {
-    logHandle = _rdKitModule.set_log_capture("rdApp.error");
+    logHandle = _rdKitModule.set_log_capture('rdApp.error');
     mol = getMolSafe(s, {}, _rdKitModule, true).mol;
     let logBuffer = logHandle?.get_buffer();
     logHandle?.clear_buffer();
