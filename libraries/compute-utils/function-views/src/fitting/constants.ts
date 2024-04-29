@@ -1,21 +1,17 @@
 // Specific optimization constants
 
 /** Dock ratios */
-export enum DOCK_RATIO {
-  PC_PLOT = 0.5,
-  LOSS_PLOT = 0.5,
-  FIT_DIV = LOSS_PLOT,
+export enum GRID_SIZE {
+  LOSS_COL_WIDTH = 60,
+  ROW_HEIGHT = 240,
+  LOSS_GRAPH_WIDTH = 360,
 }
-
-/** Size constants */
-export const ROW_HEIGHT = 25;
-export const COL_WIDTH = 70;
 
 /** UI titles */
 export enum TITLE {
-   ITERATIONS = 'Iterations',
    ITER = 'Iteration',
    LOSS = 'Loss',
+   LOSS_GRAPH = 'Optimization profile',
    TARGET = 'Target',
    FIT = 'Fit',
    METHOD = 'method',
@@ -83,8 +79,3 @@ and obtained loss
 
 * [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;
-
-export const REPORT_DF_TOOLTIP = new Map<string, string>([
-  [TITLE.ITERATIONS, 'Number of iterations spent'],
-  [TITLE.LOSS, 'Obtained loss: root mean square deviation'],
-]);

@@ -10,7 +10,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, DOCK_RATIO, REPORT_DF_TOOLTIP, COL_WIDTH} from './fitting/constants';
+import {STARTING_HELP, TITLE, GRID_SIZE} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
@@ -300,8 +300,7 @@ export class FittingView {
   }));
 
   // Dock Nodes with results
-  private tableDockNode: DG.DockNode | undefined = undefined;
-  private tempDockNodes: DG.DockNode[] = [];
+  private helpMdDockNode: DG.DockNode | undefined = undefined;
 
   private method = METHOD.NELDER_MEAD;
   private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD], () => {
@@ -410,11 +409,15 @@ export class FittingView {
 
     this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
     this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute/#input-parameter-optimization';
-    this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
-    this.tempDockNodes.push(this.comparisonView.dockManager.dock(helpMD, DG.DOCK_TYPE.FILL, this.tableDockNode, 'About'));
+    this.helpMdDockNode = this.comparisonView.dockManager.dock(
+      helpMD,
+      DG.DOCK_TYPE.FILL,
+      this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
+      'About',
+    );
     this.methodInput.setTooltip('Numerical method for minimizing loss function');
 
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
@@ -751,23 +754,24 @@ export class FittingView {
       else
         throw new Error(`The '${this.method}' method has not been implemented.`);
 
-      this.closeDockNodes();
+      this.clearPrev();
 
       const rowCount = this.samplesCount;
-      const iterCounts = new Int32Array(rowCount);
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
-      const dockManager = this.comparisonView.dockManager;
 
-      const lossFuncLineChartsRoots = new Map<number, HTMLElement>();
       const gofDivs = new Map<number, HTMLDivElement>();
       const gofViewersRoots = new Map<number, Map<string, HTMLElement>>();
       const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
+      const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
+
+      const tooltips = new Map([[TITLE.LOSS as string, 'The final loss obtained: root mean square deviation']]);
 
       extremums.forEach(async (extr, idx) => {
-        iterCounts[idx] = extr.iterCount;
         lossVals[idx] = extr.cost;
-        lossFuncLineChartsRoots.set(idx, this.getLossGraph(extr));
+        const lossRoot = this.getLossGraph(extr);
+        lossFuncGraphRoots[idx] = lossRoot;
+
         const gofDiv = ui.divV([]);
         gofDivs.set(idx, gofDiv);
         const gofElems = new Map<string, HTMLElement>();
@@ -781,38 +785,44 @@ export class FittingView {
       });
 
       // Add fitting results to the table: iteration & loss
-      const reportTable = DG.DataFrame.fromColumns([
-        DG.Column.fromInt32Array(TITLE.ITERATIONS, iterCounts),
-        DG.Column.fromFloat32Array(TITLE.LOSS, lossVals),
-      ]);
+      const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
       this.comparisonView.dataFrame = reportTable;
       const reportColumns = reportTable.columns;
 
       // Add fitting results to the table: fitted parameters
       variedInputsCaptions.forEach((cap, idx, arr) => {
-        arr[idx] = reportColumns.getUnusedName(cap);
+        cap = reportColumns.getUnusedName(cap);
+        arr[idx] = cap;
         const raw = new Float32Array(rowCount);
 
         for (let j = 0; j < rowCount; ++j)
           raw[j] = extremums[j].point[idx];
 
-        reportColumns.add(DG.Column.fromFloat32Array(variedInputsCaptions[idx], raw));
+        reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
+        tooltips.set(cap, `Obtained values of '${cap}'`);
       });
 
-      // Add id's of obtained points
-      const idName = reportColumns.getUnusedName(TITLE.ID);
-      const idVals = new Int32Array(rowCount);
-      idVals.forEach((_, idx, arr) => arr[idx] = idx);
-      reportColumns.add(DG.Column.fromInt32Array(idName, idVals));
+      // Add linecharts of loss function
+      const lossGraphColName = reportColumns.getUnusedName(TITLE.LOSS_GRAPH);
+      tooltips.set(lossGraphColName, 'Minimizing root mean square deviation');
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.INT).init((i: number) => i + 1);
+      grid.props.rowHeight = GRID_SIZE.ROW_HEIGHT;
+      grid.props.showAddNewRowIcon = false;
+      const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
+      lossFuncGraphGridCol!.cellType = 'html';
+      lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
-      // Hide id-column
-      grid.columns.setVisible([idName]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
-      grid.columns.setVisible(reportColumns.names().filter((name) => name !== idName));
+      grid.onCellPrepare(async (gc: DG.GridCell) => {
+        if (gc.isColHeader || gc.isRowHeader) return;
+
+        if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
+          gc.style.element = lossFuncGraphRoots[gc.gridRow];
+      });
 
       // Set loss-column format & sort by loss-vals
       grid.columns.byName(TITLE.LOSS)!.format = 'scientific';
       grid.sort([TITLE.LOSS]);
-      grid.columns.byName(TITLE.LOSS)!.width = COL_WIDTH;
+      grid.columns.byName(TITLE.LOSS)!.width = GRID_SIZE.LOSS_COL_WIDTH;
 
       // Add tooltips
       grid.onCellTooltip(function(cell, x, y) {
@@ -820,44 +830,12 @@ export class FittingView {
           const cellCol = cell.tableColumn;
           if (cellCol) {
             const name = cell.tableColumn.name;
-            const msg = REPORT_DF_TOOLTIP.get(name);
-            if (msg)
-              ui.tooltip.show(msg, x, y);
-            else
-              ui.tooltip.show(`Obtained values of '${name}'`, x, y);
+            const msg = tooltips.get(name);
+            ui.tooltip.show(msg ?? '', x, y);
             return true;
           }
         }
       });
-
-      // Add PC plot
-      const pcPlot = DG.Viewer.pcPlot(reportTable, {
-        columnNames: variedInputsCaptions.concat([TITLE.LOSS]),
-        description: 'Variation',
-      });
-      const pcPlotNode = dockManager.dock(pcPlot, DG.DOCK_TYPE.LEFT, this.tableDockNode, '', DOCK_RATIO.PC_PLOT);
-
-      // Add loss linecharts
-      const lossFuncLineChartsDiv = ui.divV([]);
-      lossFuncLineChartsRoots.forEach((r) => lossFuncLineChartsDiv.appendChild(r));
-      const lossFuncLineChartsNode = dockManager.dock(lossFuncLineChartsDiv, DG.DOCK_TYPE.DOWN, pcPlotNode, '', DOCK_RATIO.LOSS_PLOT);
-
-      // Add goodness of fit UI
-      const outputInput = ui.choiceInput(TITLE.OBJECTIVE, outputCaptions[0], outputCaptions, () => {
-        gofViewersRoots.forEach((roots) => roots.forEach((root, name) => root.hidden = name !== outputInput.value));
-      }, {nullable: false});
-      outputInput.setTooltip('Name of target output');
-      outputInput.root.hidden = outputsCount < 2;
-      const gofDiv = ui.divV([outputInput.root]);
-      gofDivs.forEach((d) => {
-        gofDiv.appendChild(d);
-        d.style.height = '100%';
-        d.style.width = '100%';
-      });
-      const goodnessOfFitNode = dockManager.dock(gofDiv, DG.DOCK_TYPE.DOWN, this.tableDockNode, '', DOCK_RATIO.FIT_DIV);
-
-      // Update nodes store & hide titles
-      this.tempDockNodes.push(pcPlotNode, lossFuncLineChartsNode, goodnessOfFitNode);
 
       // Find item with min loss
       let minLossExtrIdx = 0;
@@ -871,22 +849,9 @@ export class FittingView {
       // Set current row with min loss
       reportTable.currentCell = reportTable.cell(minLossExtrIdx, TITLE.LOSS);
 
-      // Set visibilities
-      lossFuncLineChartsRoots.forEach((r, i) => {
-        r.hidden = i !== minLossExtrIdx;
-        r.style.width = '100%';
-        r.style.height = '100%';
-        gofDivs.get(i)!.hidden = i !== minLossExtrIdx;
-      });
-
       // Add grid cell effects
       const cellEffect = async (cell: DG.GridCell) => {
         const row = cell.tableRowIndex ?? 0;
-        lossFuncLineChartsRoots.forEach((r, i) => {
-          r.hidden = i !== row;
-          gofDivs.get(i)!.hidden = i !== row;
-        });
-
         const selectedRun = calledFuncCalls[row];
 
         const scalarParams = ([...selectedRun.outputParams.values()])
@@ -963,13 +928,7 @@ export class FittingView {
     }
 
     return outputsOfInterest;
-  }
-
-  /** Close dock nodes with viewers (visulalizing prev results) */
-  private closeDockNodes() {
-    this.tempDockNodes.forEach((node) => this.comparisonView.dockManager.close(node));
-    this.tempDockNodes = [];
-  }
+  } // getOutputsOfInterest
 
   /** Return loss function line chart root  */
   private getLossGraph(extr: Extremum): HTMLElement {
@@ -978,11 +937,12 @@ export class FittingView {
         DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
         DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
       {
-        description: 'Loss: root mean square deviation',
         showYAxis: true,
         showXAxis: true,
+        showXSelector: true,
+        showYSelector: true,
       }).root;
-  }
+  } // getLossGraph
 
   /** Return output goodness of fit (GOF) viewer root */
   private getOutputGof(prop: DG.Property, toShowCaption: boolean, target: OutputTarget, call: DG.FuncCall, argColName: string): HTMLElement {
@@ -1087,5 +1047,23 @@ export class FittingView {
     root.style.width = '100%';
 
     return root;
-  }
+  } // getOutputGof
+
+  /** Clear previous results */
+  private clearPrev(): void {
+    if (this.helpMdDockNode !== undefined) {
+      this.comparisonView.dockManager.close(this.helpMdDockNode);
+      this.helpMdDockNode = undefined;
+    }
+
+    if (this.gridClickSubscription) {
+      this.gridClickSubscription.unsubscribe();
+      this.gridClickSubscription = null;
+    }
+
+    if (this.gridCellChangeSubscription) {
+      this.gridCellChangeSubscription.unsubscribe();
+      this.gridCellChangeSubscription = null;
+    }
+  } // clearPrev
 }
