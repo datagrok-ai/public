@@ -383,11 +383,17 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
   return acc;
 }
 
-function createInputForProperty(property: any) {
+export function createInputForProperty(property: any) {
+  if (property.property.skip) {
+   return; 
+  }
   const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
   const prop = DG.Property.fromOptions(property.property);
   const input = DG.InputBase.forProperty(prop, object);
-  input.enabled = property.property.enable;
+  //input.enabled = property.property.enable;
+  if (!property.property.enable) {
+    input.root.style.pointerEvents = 'none';
+  }
   const key = property.property.name as keyof typeof property.object;
   input.value = property.object[key];
   input.addCaption('');
@@ -397,18 +403,31 @@ function createInputForProperty(property: any) {
   return input.root;
 }
 
-function createConditionalInput(coloring: ModelColoring) {
+export function createConditionalInput(coloring: ModelColoring, model: Model) {
   const conditionalColors = Object.entries(coloring).slice(1);
   const conditionalColoring = `{${conditionalColors.map(([range, color]) => `"${range}":"${color}"`).join(",")}}`;
-  return ui.patternsInput(JSON.parse(conditionalColoring));
+  const patternsInp = ui.patternsInput(JSON.parse(conditionalColoring));
+  const inputs = patternsInp.querySelectorAll('.ui-input-editor');
+  const rangesProperty = model.properties.find((prop: any) => prop.property.name === 'ranges');
+  inputs.forEach((input, index) => input.addEventListener('mousemove', function(event) {
+    const mouseEvent = event as MouseEvent;
+    const key = conditionalColors[index][0];
+    let value = '';
+    if (rangesProperty)
+      value = rangesProperty.object.ranges[key];
+    ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
+  }));
+  //patternsInp.style.pointerEvents = 'none';
+  return patternsInp;
 }
 
-function createLinearInput(coloring: ModelColoring) {
+export function createLinearInput(coloring: ModelColoring) {
   const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
-  const minInput = ui.intInput('min', coloring.min!);
-  const maxInput = ui.intInput('max', coloring.max!);
+  //const minInput = ui.intInput('min', coloring.min!);
+  //const maxInput = ui.intInput('max', coloring.max!);
   linearInput.removeChild(linearInput.firstChild!);
-  const div = ui.divV([linearInput, minInput, maxInput]);
+  const div = ui.divV([linearInput]);
+  linearInput.style.pointerEvents = 'none';
   return div;
 }
 
@@ -424,11 +443,12 @@ export function createTabControl(template: Template, selected: string[]) {
 
       properties.forEach((p: any) => {
         const input = createInputForProperty(p);
-        inputs.appendChild(input);
+        if (input)
+          inputs.appendChild(input);
       });
 
       if (coloring.type === 'Conditional') {
-        const conditionalInput = createConditionalInput(coloring);
+        const conditionalInput = createConditionalInput(coloring, subgroup);
         inputs.appendChild(conditionalInput);
       } else if (coloring.type === 'Linear') {
         const linearInput = createLinearInput(coloring);

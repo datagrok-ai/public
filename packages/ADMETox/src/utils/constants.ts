@@ -9,6 +9,9 @@ export interface ModelProperty {
   direction?: 'Lower is better' | 'Higher is better';
   ranges?: { [key: string]: string };
   weight: number;
+  object: { [key: string]: {
+    [key: string]: string
+  }};
 }
 
 export interface ModelColoring {
@@ -20,6 +23,7 @@ export interface ModelColoring {
 
 export interface Model {
   name: string;
+  units: string;
   min: number | string;
   max: number | string;
   properties: ModelProperty[];

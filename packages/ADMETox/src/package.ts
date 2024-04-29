@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { getModelsSingle, addAllModelPredictions, addCalculationsToTable, addColorCoding, performChemicalPropertyPredictions } from './utils/admetox-utils';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import { properties } from './utils/admetox-utils';
+import { AdmeticaBaseEditor } from './utils/admetox-editor';
 
 export const _package = new DG.Package();
 
@@ -92,4 +93,31 @@ export async function admetox(
   ): Promise<void> {
     const resultString: string = [...absorption, ...distribution, ...metabolism, ...excretion].join(',');
     await performChemicalPropertyPredictions(molecules, table, resultString);
+}
+
+//name: AdmeticaEditor
+//tags: editor
+//input: funccall call
+export function AdmeticaEditor(call: DG.FuncCall): void {
+  const funcEditor = new AdmeticaBaseEditor();
+  ui.dialog({title: 'ADMETICA'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        table: params.table,
+        molecules: params.col,
+        templates: params.templatesName
+      }).call(true);
+    }).show();
+}
+
+//top-menu: Chem | Analyze | Admetica
+//name: Admetica
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: string templates
+//editor: Admetox: AdmeticaEditor
+export async function admetica(table: DG.DataFrame, molecules: DG.Column, templates: string): Promise<void> {
+  //TODO
 }
