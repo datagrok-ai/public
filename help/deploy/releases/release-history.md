@@ -50,6 +50,7 @@ See also:
 * [#2509](https://github.com/datagrok-ai/public/issues/2509): Pinned columns in multiple views for the same table cause performance issues in some cases.
 * [#2782](https://github.com/datagrok-ai/public/issues/2782): Line chart: incorrect color-coding while setting filters.
 * [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: contrast color for blue instead of black works when there is no Stack set to the bar chart inner viewer.
+* [#2793](https://github.com/datagrok-ai/public/issues/2793): Scatter plot with 'filter by zoom': filtering by scatter plot is shown in filter panel's '?' after resetting in some cases.
 
 
 ## 2024-04-05 1.18.4
