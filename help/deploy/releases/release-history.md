@@ -20,6 +20,38 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2024-04-30 1.18.5
+
+### Improvemets:
+
+* Error handling: "Report an error" dialog when you click on exclamation point.
+* Sticky meta: improve visibility for users:
+   * Show preview for entity types
+   * Support multi-values edit 
+   * Entity type settings with TabControl 
+   * Better type selector for schema editor.
+* JS API for entity properties/types/schemas.
+* [#2733](https://github.com/datagrok-ai/public/issues/2733): Viewers | Legend: provide diverse palette and markers' shape.
+* [#2742](https://github.com/datagrok-ai/public/issues/2742): Viewers: Indicate the selected column in the column selector.
+* [#2772](https://github.com/datagrok-ai/public/issues/2772): Pivot table: add a property to hide sparklines.
+* GROK-14412: Trellis plot | Column selectors: ESC should close the popup.
+
+### Fixes:
+
+* Azure blob: directory shown as a file.
+* GROK-15190: Scatterplot, line chart: updating formula lines does not work for those specified via a dataframe.
+* GROK-15249: Error when pressing Column Properties on a programmatically created Grid.
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases.
+* [#2644](https://github.com/datagrok-ai/public/issues/2644): Forms | Next row button: incorrect behavior after sorting the grid.
+* [#2749](https://github.com/datagrok-ai/public/issues/2749): Line chart and Trellis plot: '+' icon is missing.
+* [#1092](https://github.com/datagrok-ai/public/issues/1092): Multiple issues with Conditional Color Dialog.
+* [#2764](https://github.com/datagrok-ai/public/issues/2764): Box plot: wrong area is selected with shift-drag when categories at the left are filtered out.
+* [#2509](https://github.com/datagrok-ai/public/issues/2509): Pinned columns in multiple views for the same table cause performance issues in some cases.
+* [#2782](https://github.com/datagrok-ai/public/issues/2782): Line chart: incorrect color-coding while setting filters.
+* [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: contrast color for blue instead of black works when there is no Stack set to the bar chart inner viewer.
+
+
 ## 2024-04-05 1.18.4
 
 ### Addressed Issues
