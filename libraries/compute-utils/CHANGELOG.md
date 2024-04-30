@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.32.3 (2024-04-30)
+
+### Bug fixes
+
+- HistoryPanel: Fixed case of duplicated captions
+
 ## 1.32.1 (2024-04-29)
 
 ### Bug fixes
