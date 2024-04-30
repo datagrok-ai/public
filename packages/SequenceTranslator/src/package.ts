@@ -1,4 +1,5 @@
 import DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
