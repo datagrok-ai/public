@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.32.3 (2024-04-30)
+
+### Bug fixes
+
+- HistoryPanel: Fixed case of duplicated captions
+
 ## 1.32.2 (2024-04-29)
 
 ### Misc
