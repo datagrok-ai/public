@@ -52,7 +52,7 @@ order by e.event_time desc
 --input: datetime date
 --connection: System:Datagrok
 --meta.cache1: all
---meta.invalidateOn1: 0 0 0 * *
+--meta.cache.invalidateOn1: 0 0 0 * *
 select
 distinct on (e.description)
 t.id::text as id,
@@ -83,7 +83,7 @@ order by e.description, e.event_time desc
 --name: TestsMonth
 --connection: System:Datagrok
 --meta.cache1: all
---meta.invalidateOn1: 0 0 0 * *
+--meta.cache.invalidateOn1: 0 0 0 * *
 with ress as (select
 e.description, e.event_time,
 e.event_time::date as date,
