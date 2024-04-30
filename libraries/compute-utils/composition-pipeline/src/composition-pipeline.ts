@@ -7,8 +7,9 @@ import {PipelineView, RichFunctionView} from '../../function-views';
 import {withLatestFrom, filter, switchMap, debounceTime, takeUntil, take, sample, finalize, mapTo, concatMap, startWith} from 'rxjs/operators';
 import {ActionItem, ValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {historyUtils} from '../../history-utils';
-import {ABILITY_STATE} from '../../shared-utils/consts';
+import {ABILITY_STATE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {isIncomplete} from '../../shared-utils/utils';
+import {StepState} from '../../function-views/src/pipeline-view';
 
 //
 // State optional spec
@@ -40,13 +41,16 @@ export interface RuntimeController {
   enableLink(path: ItemPath): void;
   disableLink(path: ItemPath): void;
   triggerLink(path: ItemPath): void;
+  isLinkEnabled(path: ItemPath): void;
   enableStep(path: ItemPath): void;
   disableStep(path: ItemPath): void;
+  isStepEnabled(path: ItemPath): boolean;
   enablePipeline(path: ItemPath): void;
   disablePipeline(path: ItemPath): void;
   loadNestedPipeline(path: ItemPath, runId: string): void;
   getState<T = any>(path: ItemPath): T | void;
   setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
+  updateStateState(path: ItemPath, inputState?: InputState): void;
   getValidationAction(path: ItemPath, name?: string): ActionItem
   setValidation(path: ItemPath, validation?: ValidationResult | undefined): void
   getView(path: ItemPath): RichFunctionView | void;
@@ -433,15 +437,15 @@ class PipelineGlobalState {
   closed = new Subject<true>();
 }
 
-interface StepData {
-  path: string;
-  subPath: string;
+interface NestedStepData {
+  pathKey: string;
+  nestedStepId: string;
   nqName: string;
 }
 
 class PipelineRuntime {
   private runningLinks = new Set<string>();
-  private disabledStepsPaths = new Set<string>();
+  private disabledStepsIOPaths = new Set<string>();
   private validationState = new Map<string, Map<string, ValidationResult | undefined>>();
   private pipelineLoads = new Subject<{path: ItemPath, runId: string}>();
   public isUpdating = new BehaviorSubject<boolean>(false);
@@ -465,6 +469,12 @@ class PipelineRuntime {
       link.enabled.next(enabled);
   }
 
+  public getLinkState(path: ItemPath): boolean {
+    const k = pathToKey(path);
+    const link = this.links.get(k);
+    return !!link?.enabled.value;
+  }
+
   public setStepState(path: ItemPath, enabled: boolean): void {
     const k = pathToKey(path);
 
@@ -474,11 +484,16 @@ class PipelineRuntime {
       this.view.hideSteps(k);
   }
 
+  public getStepState(path: ItemPath): boolean {
+    const k = pathToKey(path);
+    const value = this.view.getStepState(k);
+    return value === VISIBILITY_STATE.VISIBLE;
+  }
+
   public setPipelineState(path: ItemPath, enabled: boolean): void {
     const steps = this.getNestedSteps(path);
-    for (const data of steps) {
-      this.setStepState(keyToPath(data.path), enabled);
-    }
+    for (const data of steps)
+      this.setStepState(keyToPath(data.pathKey), enabled);
   }
 
   public loadNestedPipeline(path: ItemPath, runId: string) {
@@ -669,13 +684,13 @@ class PipelineRuntime {
   public disableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
     console.log(`disableSubStepsIOSetters ${k}`);
-    this.disabledStepsPaths.add(k);
+    this.disabledStepsIOPaths.add(k);
   }
 
   public enableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
     console.log(`enableSubStepsIOSetters ${k}`);
-    this.disabledStepsPaths.delete(k);
+    this.disabledStepsIOPaths.delete(k);
   }
 
   public async awaitForAllUpdatesDone() {
@@ -698,24 +713,30 @@ class PipelineRuntime {
     }
   }
 
-  private async loadNestedSteps(calls: DG.FuncCall[], stepsData: StepData[]) {
-    const stepsMappings = new Map<string, StepData>();
+  private async loadNestedSteps(calls: DG.FuncCall[], stepsData: NestedStepData[]) {
+    const stepsMappings = new Map<string, NestedStepData>();
     for (const data of stepsData)
-      stepsMappings.set(data.subPath, data);
+      stepsMappings.set(data.nestedStepId, data);
 
     for (const call of calls) {
       const customId = call.options['customId'];
       const data = stepsMappings.get(customId);
       if (data) {
-        const rfv = this.view.getStepView(data.path);
+        const rfv = this.view.getStepView(data.pathKey);
         if (rfv) {
-          console.log(`loading step ${data.path}, nqName: ${data.nqName}, id: ${call.id}`);
+          console.log(`loading step ${data.pathKey}, nqName: ${data.nqName}, id: ${call.id}`);
           const ncall = await rfv.loadRun(call.id);
           if (!isIncomplete(ncall))
-            this.view.enableLoadedStep(data.path);
+            this.view.enableStep(data.pathKey);
+	  else
+	    break;
         }
       }
     }
+
+    const nextStep = this.view.getFollowingStep();
+    if (nextStep)
+      nextStep.ability.next(ABILITY_STATE.ENABLED);
   }
 
   private getNestedSteps(pipelinePath: ItemPath) {
@@ -724,11 +745,11 @@ class PipelineRuntime {
     const nestedSteps = ([...this.nodes.entries()])
       .filter(([key, node]) => node.type === 'step' && getSuffix(key, pipelineKey))
       .map(([key, node]) => {
-        const path = key;
+        const pathKey = key;
         const suffix = getSuffix(key, pipelineKey)!;
-        const subPath = pathToKey(pathJoin([pipelineName], keyToPath(suffix)));
+        const nestedStepId = pathToKey(pathJoin([pipelineName], keyToPath(suffix)));
         const nqName = (node.conf as PipelineStepConfiguration).nqName;
-        return {path, subPath, nqName};
+        return {pathKey, nestedStepId, nqName};
       });
     return nestedSteps;
   }
@@ -751,7 +772,7 @@ class PipelineRuntime {
   private isSetterDisabled(path: ItemPath, type: NodeConfTypes) {
     if (type === 'step') {
       const k = pathToKey(path);
-      for (const prefix of this.disabledStepsPaths) {
+      for (const prefix of this.disabledStepsIOPaths) {
         const suffix = getSuffix(k, prefix);
         if (suffix)
           return true;
@@ -813,6 +834,12 @@ class RuntimeControllerImpl implements RuntimeController {
     return this.rt.setLinkState(fullPath, false);
   }
 
+  public isLinkEnabled(path: ItemPath): void {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.setLinkState(fullPath, false);
+  }
+
   public enableStep(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
@@ -827,6 +854,12 @@ class RuntimeControllerImpl implements RuntimeController {
     this.disabledSteps.add(pathToKey(fullPath));
     console.log(`${this.handlerId}: disableStep ${pathToKey(fullPath)}`);
     return this.rt.setStepState(fullPath, false);
+  }
+
+  public isStepEnabled(path: ItemPath): boolean {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    return this.rt.getStepState(fullPath);
   }
 
   public enablePipeline(path: ItemPath) {
@@ -865,6 +898,15 @@ class RuntimeControllerImpl implements RuntimeController {
 
     console.log(`${this.handlerId}: set state ${pathToKey(fullPath)} ${value}`);
     return this.rt.setState(fullPath, value, inputState);
+  }
+
+  public updateStateState(path: ItemPath, inputState: 'disabled' | 'restricted' | 'user input'): void {
+    this.checkAborted();
+    const fullPath = pathJoin(this.config.pipelinePath, path);
+    if (!this.checkOutput(fullPath))
+      return;
+
+    this.rt.setState(fullPath, this.rt.getState(fullPath), inputState);
   }
 
   public getView(path: ItemPath): RichFunctionView | void {
@@ -945,7 +987,9 @@ class RuntimeControllerImpl implements RuntimeController {
 interface ICompositionView {
   injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
   getStateBindings<T = any>(viewId: PathKey, stateId: string): {changes: Observable<T>, setter: (x: any) => void};
-  enableLoadedStep(stepId: PathKey): void;
+  enableStep(stepId: PathKey): void;
+  getStepState(stepId: PathKey): VISIBILITY_STATE;
+  getFollowingStep(): StepState | undefined;
   showSteps(...id: NqName[]): void;
   hideSteps(...id: NqName[]): void;
   getStepView<T = RichFunctionView>(viewId?: PathKey): T;
@@ -995,8 +1039,18 @@ class CompositionPipelineView extends PipelineView implements ICompositionView {
     this.actionsMenu?.item(name, action);
   }
 
-  public enableLoadedStep(stepId: PathKey) {
+  public enableStep(stepId: PathKey) {
     this.steps[stepId].ability.next(ABILITY_STATE.ENABLED);
+  }
+
+  public getStepState(stepId: PathKey): VISIBILITY_STATE {
+    return this.steps[stepId].visibility.value;
+  }
+
+  public getFollowingStep() {
+    const disabledSteps = Object.values(this.steps)
+      .filter((stepData) => stepData.visibility.value === VISIBILITY_STATE.VISIBLE && stepData.ability.value === ABILITY_STATE.DISABLED);
+    return disabledSteps[0];
   }
 
   override getRunningUpdates() {

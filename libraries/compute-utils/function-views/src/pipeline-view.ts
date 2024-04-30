@@ -19,7 +19,7 @@ import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
 import dayjs from 'dayjs';
 
-type StepState = {
+export type StepState = {
   func: DG.Func,
   editor: string,
   view: FunctionView,
