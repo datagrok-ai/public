@@ -86,7 +86,7 @@ export interface CsvExportOptions {
   /** Column order */
   columns?: string[];
 
-  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  /** Expands qualified numbers into two columns: `qualifier(column)` and `column` */
   qualifierAsColumn?: boolean;
 
   /// Saves MOLBLOCKS as SMILES.
