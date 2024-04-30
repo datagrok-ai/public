@@ -37,7 +37,7 @@ export class UsageWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Usage');
-    this.order = super.addProperty('order', DG.TYPE.STRING, '2');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '3');
   }
 }
 

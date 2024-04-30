@@ -8,6 +8,7 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
+import {ReportsWidget} from "./widgets/reports-widget";
 
 export const _package = new DG.Package();
 
@@ -41,6 +42,16 @@ export function testTrackApp(): void {
 //test: usageWidget()
 export function usageWidget(): DG.Widget {
   return new UsageWidget();
+}
+
+//output: widget result
+//tags: dashboard
+//test: reportsWidget()
+export async function reportsWidget(): Promise<DG.Widget | null> {
+  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  if (userGroup.memberships.some((g) => g.friendlyName = 'Developers'))
+    return new ReportsWidget();
+  return null;
 }
 
 //name: packageUsageWidget
