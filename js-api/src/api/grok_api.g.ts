@@ -454,6 +454,7 @@ export interface IDartApi {
   grok_DataFrame_Cell(t: any, idx: Num, name: String): any;
   grok_DataFrame_ColumnByName(t: any, colName: String): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
+  grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
   grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
