@@ -38,13 +38,13 @@ export class ReportsWidget extends DG.Widget {
         // if (currentRow.get('package_owner') === currentUserId)
         //   text.style.fontWeight = 'bold';
         const content = ui.divH([clock, portrait, text]);
-        content.style.alignItems = 'center';
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';
         item.style.marginBottom = 'unset';
         item.style.border = 'none';
         item.style.marginLeft = 'auto';
+        item.style.padding = '5px';
         item.addEventListener('click', (e) => {
           e.preventDefault();
           DetailedLog.showReportProperties(currentRow.get('report_id'), result, i);
