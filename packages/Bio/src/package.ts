@@ -55,13 +55,9 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-// import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/ui';
-import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
-import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
@@ -77,7 +73,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
-import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
+import {CyclizedNotationProvider} from './utils/cyclized';
+import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 
 export const _package = new BioPackage();
 
@@ -685,19 +682,6 @@ export function convertDialog() {
   convert(col);
 }
 
-//top-menu: Bio | Convert | PolyTool
-//name: polyTool
-//description: Perform cyclization of polymers
-export async function polyTool(): Promise<void> {
-  let dialog: DG.Dialog;
-  try {
-    dialog = await getPolyToolDialog();
-    dialog.show();
-  } catch (err: any) {
-    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
-  }
-}
-
 //name: monomerCellRenderer
 //tags: cellRenderer
 //meta.cellType: Monomer
@@ -1010,25 +994,6 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }
 
-//name: polyToolColumnChoice
-//input: dataframe df [Input data table]
-//input: column macroMolecule
-export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
-  _setPeptideColumn(macroMolecule);
-  await grok.data.detectSemanticTypes(df);
-}
-
-//name: createMonomerLibraryForPolyTool
-//input: file file
-export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
-  const fileContent = await file.readAsString();
-  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
-  const libObject = await libHandler.getJson();
-  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
-  const jsonFileContent = JSON.stringify(libObject, null, 2);
-  DG.Utils.download(jsonFileName, jsonFileContent);
-}
-
 //name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
@@ -1046,6 +1011,17 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+//name: getMolFromHelm
+//input: dataframe df
+//input: column helmCol
+//input: bool chiralityEngine
+//output: column result
+export async function getMolFromHelm(
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
+): Promise<DG.Column<string>> {
+  return getMolColumnFromHelm(df, helmCol, chiralityEngine);
 }
 
 // -- Custom notation providers --
