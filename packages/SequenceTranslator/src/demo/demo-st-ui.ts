@@ -8,37 +8,16 @@ import {_package, oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '
 import {tryCatch} from '../apps/common/model/helpers';
 
 export async function demoOligoTranslatorUI() {
-  await tryCatch(async () => oligoTranslatorApp());
+  await tryCatch(async () => {
+    const view = await oligoTranslatorApp();
+    grok.shell.addView(view);
+  });
 }
 
 export async function demoOligoPatternUI() {
   await tryCatch(async () => {
-    async function emulateUserInput(value: string, idx: number, idxUpdate: (idx: number) => number): Promise<void> {
-      await delay(3000);
-
-      // warning: this redefinition is necessary because
-      // the ids of the elements can dynamically change
-      const choiceInputs: NodeListOf<HTMLSelectElement> = document.querySelectorAll('.st-pattern-choice-input > select');
-      len = choiceInputs.length;
-      const selectElement = choiceInputs[idxUpdate(idx)];
-      selectElement.value = value;
-      const event = new Event('input');
-      selectElement.dispatchEvent(event);
-    }
-
-    await oligoPatternApp();
-
-    let len: number;
-
-    const ssNewValues = ['DNA', 'invAb', 'Z-New'];
-    ssNewValues.forEach(async (value, idx) => {
-      emulateUserInput(value, idx, (i) => 2 * i);
-    });
-
-    const asNewValues = ['2\'-O-Methyl', '2\'-Fluoro', '2\'-O-MOE'];
-    asNewValues.forEach(async (value, idx) => {
-      emulateUserInput(value, idx, (i) => (len - 2 - 2 * i));
-    });
+    const view = await oligoPatternApp();
+    grok.shell.addView(view);
   });
 }
 
@@ -52,7 +31,8 @@ export async function demoOligoStructureUI() {
       const event = new Event('input');
       textarea.dispatchEvent(event);
     }
-    await oligoStructureApp();
+    const view = await oligoStructureApp();
+    grok.shell.addView(view);
     const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
     inputSequences.forEach(async (sequence, idx) => {
       await setInputValue(idx, sequence);
