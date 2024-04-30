@@ -19,6 +19,12 @@ const enum ITEM_CAPTION {
   VERT_BAND = 'Band - Vertical',
 }
 
+const enum ITEM_ORIENTATION {
+    VERTICAL = 'Vertical',
+    HORIZONTAL = 'Horizontal',
+    NONE = '',
+};
+
 /** Formula Line sources */
 const enum ITEM_SOURCE {
   VIEWER = 'Viewer',
@@ -292,7 +298,8 @@ class Preview {
    */
   _getItemAxes(item: DG.FormulaLine): AxisNames {
     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    let [previewY, previewX] = [itemMeta.funcName, itemMeta.argName];
+    let [previewY, previewX] = item.orientation === ITEM_ORIENTATION.VERTICAL ?
+      [itemMeta.argName, itemMeta.funcName] : [itemMeta.funcName, itemMeta.argName];
 
     /** If the source axes exist, then we try to set similar axes */
     if (this._scrAxes) {
@@ -789,11 +796,13 @@ class CreationControl {
 
           case ITEM_CAPTION.VERT_LINE:
             const vertVal = (valX ?? colX.stats.q2).toFixed(1);
+            item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.formula = '${' + colX.name + '} = ' + vertVal;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
             const horzVal = (valY ?? colY.stats.q2).toFixed(1);
+            item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.formula = '${' + colY.name + '} = ' + horzVal;
             break;
 
@@ -801,6 +810,7 @@ class CreationControl {
             const left = colX.stats.q1.toFixed(1);
             const right = colX.stats.q3.toFixed(1);
             item.formula = '${' + colX.name + '} in(' + left + ', ' + right + ')';
+            item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.column2 = colY.name;
             break;
 
@@ -808,6 +818,7 @@ class CreationControl {
             const bottom = colY.stats.q1.toFixed(1);
             const top = colY.stats.q3.toFixed(1);
             item.formula = '${' + colY.name + '} in(' + bottom + ', ' + top + ')';
+            item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.column2 = colX.name;
             break;
 
