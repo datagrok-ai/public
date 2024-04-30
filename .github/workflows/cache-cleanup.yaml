@@ -24,6 +24,6 @@ jobs:
           done
           echo "Done"
         env:
-          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.WRITE_TOKEN || github.token }}
           REPO: ${{ github.repository }}
           BRANCH: refs/pull/${{ github.event.pull_request.number }}/merge

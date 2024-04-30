@@ -1071,8 +1071,8 @@ export class GridCellStyle {
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
-  get hozrAlign(): string { return api.grok_GridCellStyle_Get_HorzAlign(this.dart) ?? ''; }
-  set horzAlign(x: string) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+  get horzAlign(): HorzAlign | null { return api.grok_GridCellStyle_Get_HorzAlign(this.dart); }
+  set horzAlign(x: HorzAlign | null) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
 
   get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
   set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
