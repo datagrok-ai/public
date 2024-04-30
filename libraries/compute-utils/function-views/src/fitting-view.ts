@@ -10,7 +10,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, GRID_SIZE} from './fitting/constants';
+import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
@@ -21,11 +21,6 @@ import {Extremum} from './fitting/optimizer-misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
-
-enum METHOD {
-  NELDER_MEAD = 'Nelder-Mead',
-  GRAD_DESC = 'Gradient descent',
-};
 
 type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
@@ -63,7 +58,7 @@ type FittingInputsStore = SensitivityNumericStore | SensitivityBoolStore | Sensi
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
-const isNumericProp = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT) || (prop.propertyType === DG.TYPE.FLOAT));
+const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT) || (prop.propertyType === DG.TYPE.FLOAT) || (prop.propertyType === DG.TYPE.DATA_FRAME));
 
 export class FittingView {
   generateInputFields = (func: DG.Func) => {
@@ -316,6 +311,11 @@ export class FittingView {
     min: 1,
     max: 1000,
   }));
+  private loss = LOSS.MAD;
+  private lossInput = ui.choiceInput(TITLE.LOSS_LOW, this.loss, [LOSS.MAD, LOSS.RMSE], () => {
+    this.loss = this.lossInput.value!;
+    this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
+  });
 
   // Dock Nodes with results
   private helpMdDockNode: DG.DockNode | undefined = undefined;
@@ -324,6 +324,7 @@ export class FittingView {
   private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD], () => {
     this.method = this.methodInput.value!;
     this.showHideSettingInputs();
+    this.methodInput.setTooltip(methodTooltip.get(this.method)!);
   });
 
   // The Nelder-Mead method settings
@@ -432,7 +433,10 @@ export class FittingView {
       this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
       'About',
     );
-    this.methodInput.setTooltip('Numerical method for minimizing loss function');
+    this.methodInput.setTooltip(methodTooltip.get(this.method)!);
+    ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
+    this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
+    ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
 
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
     this.samplesCountInput.onChanged(() => {
@@ -444,7 +448,7 @@ export class FittingView {
 
   private isOptimizationApplicable(func: DG.Func): boolean {
     for (const output of func.outputs) {
-      if (isNumericProp(output))
+      if (isValidForFitting(output))
         return true;
     }
 
@@ -568,14 +572,14 @@ export class FittingView {
 
   private buildFormWithBtn() {
     let prevCategory = 'Misc';
-    const fitHeader = ui.h2(TITLE.FIT);
+    const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
 
     const form = Object.values(this.store.inputs)
       .reduce((container, inputConfig) => {
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
-          container.append(ui.p(prop.category));
+          container.append(ui.h3(prop.category));
           prevCategory = prop.category;
         }
 
@@ -589,7 +593,7 @@ export class FittingView {
         fitHeader,
       ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
 
-    const toGetHeader = ui.h2(TITLE.TARGET);
+    const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
     prevCategory = 'Misc';
@@ -598,7 +602,7 @@ export class FittingView {
       .reduce((container, outputConfig) => {
         const prop = outputConfig.prop;
         if (prop.category !== prevCategory) {
-          container.append(ui.p(prop.category));
+          container.append(ui.h3(prop.category));
           prevCategory = prop.category;
         }
 
@@ -624,14 +628,14 @@ export class FittingView {
       // firstOutput.isInterest.input.value = true;
     }
 
-    const usingHeader = ui.h2('Using');
+    const usingHeader = ui.h1('Using');
     ui.tooltip.bind(usingHeader, 'Specify fitting method');
     form.appendChild(usingHeader);
     this.methodInput.root.insertBefore(this.fittingSettingsIcon, this.methodInput.captionLabel);
     this.fittingSettingsIcon.style.minWidth = '50px';
     form.appendChild(this.methodInput.root);
 
-    const settingsHeader = ui.h3('with settings');
+    const settingsHeader = ui.h2('with settings');
     ui.tooltip.bind(settingsHeader, () => `Settings of the ${this.method} method`);
     this.fittingSettingsDiv.appendChild(settingsHeader);
     this.generateSettingInputs();
@@ -644,6 +648,9 @@ export class FittingView {
 
     this.samplesCountInput.root.insertBefore(getSwitchMock(), this.samplesCountInput.captionLabel);
     form.appendChild(this.samplesCountInput.root);
+
+    this.lossInput.root.insertBefore(getSwitchMock(), this.lossInput.captionLabel);
+    form.appendChild(this.lossInput.root);
 
     $(form).addClass('ui-form');
 
@@ -743,8 +750,8 @@ export class FittingView {
         return await funcCall.call();
       };
 
-      /** Cost function to be optimized */
-      const costFunc = async (x: Float32Array): Promise<number> => {
+      /** Root mean sqaure error (RMSE) cost function */
+      const rmseCostFunc = async (x: Float32Array): Promise<number> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
@@ -768,6 +775,37 @@ export class FittingView {
         return Math.sqrt(sumOfSquaredErrors / outputsCount);
       };
 
+      /** Maximum absolute deviation (MAD) cost function */
+      const madCostFunc = async (x: Float32Array): Promise<number> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
+
+        let mad = 0;
+
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+            mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
+          else {
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name))
+              .forEach((err) => mad = Math.max(mad, Math.abs(err)));
+          }
+        });
+
+        return mad;
+      };
+
+      let costFunc;
+      let costTooltip;
+
+      if (this.loss === LOSS.MAD) {
+        costFunc = madCostFunc;
+        costTooltip = 'maximum absolute devation';
+      } else {
+        costFunc = rmseCostFunc;
+        costTooltip = 'root mean sqaure deviation';
+      }
+
       let extremums: Extremum[];
 
       // Perform optimization
@@ -786,7 +824,7 @@ export class FittingView {
       const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
       const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
       const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
-      const tooltips = new Map([[TITLE.LOSS as string, 'The final loss obtained: root mean square deviation']]);
+      const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
       let toAddGofCols = true;
       const outputColNames: string[] = [];
 
@@ -842,7 +880,7 @@ export class FittingView {
 
       // Add linecharts of loss function
       const lossGraphColName = reportColumns.getUnusedName(TITLE.LOSS_GRAPH);
-      tooltips.set(lossGraphColName, 'Minimizing root mean square deviation');
+      tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
       reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
