@@ -166,9 +166,9 @@ function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: st
     grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapOriginals[NOTATION.HELM]}'.`);
   else {
     grok.shell.warning(
-      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +
-      `Please, upload the monomer library! <br/>` +
-      `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
+      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are not found. <br/>` +
+      `Please specify the monomer library to use. <br/>` +
+      `<a href="https://datagrok.ai/help/datagrok/solutions/domains/bio/#manage-monomer-libraries" target="_blank">Learn more</a>`);
   }
 }
 

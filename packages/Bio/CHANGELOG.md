@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.12.16 (2024-04-25)
+
+Bio: Fix crushing substructure filter.
+
 ## 2.12.15 (2024-04-19)
 
 Bio: Some optimization in Polytool

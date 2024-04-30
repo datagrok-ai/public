@@ -13,9 +13,6 @@ import {TestsView, filters} from './tabs/tests';
 import {ReportsView} from "./tabs/reports";
 import {ErrorsView} from "./tabs/errors"
 
-const APP_PREFIX: string = `/apps/UsageAnalysis/`;
-
-
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
@@ -28,31 +25,30 @@ export class ViewHandler {
     return ViewHandler.instance;
   }
 
-  async init(): Promise<void> {
+  async init(date?: string, groups?: string, packages?: string, path?: string): Promise<void> {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
     toolbox.filters.root.after(filters);
-    const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView, ReportsView];
     const inits: Promise<void>[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      inits.push(currentView.tryToinitViewers());
+      inits.push(currentView.tryToinitViewers(path));
       ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
     await Promise.all(inits);
-    const paramsHaveDate = params.has('date');
-    const paramsHaveUsers = params.has('groups');
-    const paramsHavePackages = params.has('packages');
+    const paramsHaveDate = date != undefined;
+    const paramsHaveUsers = groups != undefined;
+    const paramsHavePackages = packages != undefined;
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
-        toolbox.setDate(params.get('date')!);
+        toolbox.setDate(date!);
       if (paramsHaveUsers)
-        toolbox.setGroups(params.get('groups')!);
+        toolbox.setGroups(groups!);
       if (paramsHavePackages)
-        toolbox.setPackages(params.get('packages')!);
+        toolbox.setPackages(packages!);
       toolbox.applyFilter();
     }
     let helpShown = false;
@@ -144,9 +140,17 @@ export class ViewHandler {
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
-    const urlTab = window.location.pathname.match(/UsageAnalysis\/UsageAnalysis\/([a-zA-Z]+)/)?.[1] ?? 'Overview';
-    ViewHandler.UA.path = `/${urlTab}`;
-    if (viewClasses.some((v) => v.name === `${urlTab}View`)) ViewHandler.changeTab(urlTab);
+    let urlTab = 'Overview';
+
+    if (path != undefined && path.length > 1) {
+      const segments = path.split('/').filter((s) => s != '');
+      if (segments.length > 0) {
+        urlTab = segments[0];
+        urlTab = urlTab[0].toUpperCase() + urlTab.slice(1);
+      }
+    }
+    if (viewClasses.some((v) => v.name === `${urlTab}View`))
+      ViewHandler.changeTab(urlTab);
   }
 
   public static getView(name: string) {
@@ -159,11 +163,6 @@ export class ViewHandler {
 
   public static changeTab(name: string) {
     ViewHandler.UA.tabs.currentPane = ViewHandler.UA.tabs.getPane(name);
-  }
-
-  getSearchParameters() : Map<string, string> {
-    const prmstr = window.location.search.substring(1);
-    return new Map<string, string>(Object.entries(prmstr ? this.transformToAssocArray(prmstr) : {}));
   }
 
   transformToAssocArray(prmstr: string) {
@@ -188,13 +187,13 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    ViewHandler.UA.path = `${APP_PREFIX}${ViewHandler.getCurrentView().name}?${params.join('&')}`;
+    ViewHandler.UA.path = `/${ViewHandler.getCurrentView().name}?${params.join('&')}`.toLowerCase();
   }
 
   static updatePath(): void {
     const v = ViewHandler.getCurrentView();
     const s = ViewHandler.UA.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-    ViewHandler.UA.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`;
+    ViewHandler.UA.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
   }
 }

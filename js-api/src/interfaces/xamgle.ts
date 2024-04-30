@@ -4,6 +4,10 @@
 export interface IDetailedLogSettings {
   type: string;
 
+  jiraTicketNumber: string;
+
+  assigneeId: string;
+
   id: string;
 
   isAuto: boolean;
@@ -14,20 +18,12 @@ export interface IDetailedLogSettings {
 
   description: string;
 
-  assigneeGroupId: string;
-
   reporterId: string;
-
-  jiraTicketNumber: string;
-
-  createJiraTicket: boolean;
 
   /// details
   details: Map<string, any>;
 
   sendEmail: boolean;
-
-  isResolved: boolean;
 
   /// reports email
   reportEmail: string;

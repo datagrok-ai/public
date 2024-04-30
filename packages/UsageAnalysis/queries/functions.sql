@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 0 * *
 --connection: System:Datagrok
 --test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (

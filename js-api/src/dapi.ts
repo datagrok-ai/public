@@ -179,10 +179,6 @@ export class Dapi {
     return new FileSource();
   }
 
-  get reports(): ReportsDataSource {
-    return new ReportsDataSource();
-  }
-
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @deprecated
    * @param {string} method
@@ -1079,14 +1075,5 @@ export class FileSource {
     file = this.setRoot(file);
 
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
-  }
-}
-class ReportsDataSource {
-  resolve(reportId: string): Promise<void> {
-    return api.grok_Dapi_Reports_Resolve(reportId);
-  }
-
-  reopen(reportId: string, description: string, notifyAssignee: boolean = true): Promise<void> {
-    return api.grok_Dapi_Reports_Reopen(reportId, description, notifyAssignee);
   }
 }

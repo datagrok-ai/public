@@ -71,11 +71,17 @@ export interface CsvExportOptions {
   /** Whether only selected columns are included. False if not specified. */
   selectedColumnsOnly?: boolean;
 
+  /** Whether only visible columns are included. False if not specified. */
+  visibleColumnsOnly?: boolean;
+
   /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
   filteredRowsOnly?: boolean;
 
   /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
   selectedRowsOnly?: boolean;
+
+  /** Explicitly defined order of rows. Mutually exclusive with [selectedRowsOnly] or [filteredRowsOnly]. */
+  rowIndexes?: number[];
 
   /** Column order */
   columns?: string[];
@@ -285,9 +291,12 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format. */
-  toCsv(options?: CsvExportOptions): string {
-    return api.grok_DataFrame_ToCsv(this.dart, options);
+  /** Exports the content to comma-separated-values format.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  toCsv(options?: CsvExportOptions, grid?: Grid): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options, grid?.dart);
   }
 
   /** Exports the content to JSON format */

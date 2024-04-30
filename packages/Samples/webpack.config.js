@@ -2,6 +2,9 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'production',
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`samples_test`}, import: './src/package-test.ts'},

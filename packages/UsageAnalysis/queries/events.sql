@@ -2,7 +2,7 @@
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 --meta.cache: all
---meta.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 0 * *
 with res as (
 select et.source, e.event_time as time_old
 from events e
@@ -36,7 +36,7 @@ GROUP BY res.source, time_start, time_end
 --input: list groups
 --connection: System:Datagrok
 --meta.cache: all
---meta.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 0 * *
 with recursive selected_groups as (
   select id from groups
   where id = any(@groups)

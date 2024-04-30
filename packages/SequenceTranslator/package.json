@@ -19,12 +19,14 @@
     "@datagrok-libraries/utils": "^4.1.45",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.18.1",
+    "datagrok-api": "1.18.2",
+    "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "^9.3.1",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "typeahead-standalone": "4.14.1"
   },
   "devDependencies": {
     "@datagrok/bio": "^2.12.0",

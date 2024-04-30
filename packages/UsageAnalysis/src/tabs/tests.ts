@@ -31,7 +31,7 @@ export class TestsView extends UaView {
     this.rightDate.style.marginRight = '12px';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     // Stacked Bar Chart
     const chart = ui.wait(async () => {
       const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');

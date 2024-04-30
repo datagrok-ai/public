@@ -31,7 +31,7 @@ export class PackagesView extends UaView {
     this.rout = '/Usage';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const packagesViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Packages',

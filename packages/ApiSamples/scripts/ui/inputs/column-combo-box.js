@@ -1,4 +1,4 @@
-// Adds a view with a column combo box with int columns
+// Adds a view with a column combo box with int and float columns
 
-let ccb = DG.ColumnComboBox.create(grok.data.demo.demog(), (c) => c.type === 'int');
-let v = grok.shell.newView('demo: column combo box', [ccb]);
+const ccb = DG.ColumnComboBox.create(grok.data.demo.demog(), (c) => ['int', 'double'].includes(c.type));
+grok.shell.newView('demo: column combo box', [ccb]);

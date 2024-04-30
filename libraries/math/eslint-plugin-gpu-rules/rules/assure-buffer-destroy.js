@@ -13,11 +13,6 @@ module.exports = {
 
     return {
       CallExpression(node) {
-        // console.log(node.parent.id.name); //bufferName
-        // console.log(node.callee.object.name) //bufferName in case of destroy;
-        // console.log(node.callee.object.name); //device
-        // console.log(node.callee.property && node.callee.property.name); //createBuffer/destroy()
-        // Check for buffer creation
         if (node.parent && node.parent.id && node.parent.id.name && node.callee &&
           node.callee.property && node.callee.property.name === 'createBuffer' &&
           node.callee.object && node.callee.object.name === 'device'

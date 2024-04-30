@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.22 (2024-04-25)
+
+Add support for webGPU MCL in full (sparse matrix and expansion/normalization operators)
+
 ## 1.1.21 (2024-04-23)
 
 Add GPU information to clustering algorithms.
