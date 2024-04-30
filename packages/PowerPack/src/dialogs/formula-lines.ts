@@ -375,6 +375,8 @@ class Preview {
      */
     this.viewer.root.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
+      if (this.viewer.type === DG.VIEWER.LINE_CHART)
+        return;
       const worldPoint = (this.viewer as DG.ScatterPlotViewer).screenToWorld(event.offsetX, event.offsetY);
       onContextMenu(worldPoint.y, worldPoint.x);
     });
@@ -918,7 +920,7 @@ export class FormulaLinesDialog {
     this.dialog
       .add(layout)
       .onOK(this._onOKAction.bind(this))
-      .show({resizable: true, width: 850, height: 650});
+      .show({resizable: true, width: 850, height: 660});
   }
 
   _initHost(src: DG.DataFrame | DG.Viewer): Host {
@@ -927,7 +929,7 @@ export class FormulaLinesDialog {
 
   _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
     const preview = new Preview(this.host.viewerItems! ?? this.host.dframeItems!, src, this.creationControl.popupMenu);
-    preview.height = 300;
+    preview.height = 310;
     return preview;
   }
 
