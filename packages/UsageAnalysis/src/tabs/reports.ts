@@ -53,10 +53,10 @@ export class ReportsView extends UaView {
         viewer.onBeforeDrawContent.subscribe(() => {
           viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'errors', 'jira', 'label', 'error', 'error_stack_trace', 'time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
-          viewer.col('reporter')!.width = 20;
+          viewer.col('reporter')!.width = 25;
 
           viewer.col('assignee')!.cellType = 'html';
-          viewer.col('assignee')!.width = 20;
+          viewer.col('assignee')!.width = 25;
           viewer.col('errors')!.width = 35;
           viewer.col('errors')!.editable = false;
 
@@ -79,21 +79,10 @@ export class ReportsView extends UaView {
         viewer.onCellPrepare(async function(gc) {
           if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
             const user = users[gc.cell.value];
-            const img = ui.div();
-            img.style.width = '20px';
-            img.style.height = '20px';
-            img.style.backgroundSize = 'contain';
-            img.style.margin = '5px 0 0 5px';
-            img.style.borderRadius = '100%';
-            if (gc.cell.value != 'Test')
-              img.style.backgroundImage = user.avatar.style.backgroundImage;
-            else
-              img.style.backgroundImage = 'url(/images/entities/grok.png);';
-            const span = ui.span([ui.span([img, ui.label(user.name)], 'grok-markup-user')], 'd4-link-label');
-            span.addEventListener('click', () => {
-              grok.shell.o = user.data;
-            });
-            gc.style.element = ui.tooltip.bind(span, () => {
+            const icon = DG.ObjectHandler.forEntity(user.data)?.renderIcon(user.data.dart)!;
+            icon.style.top = 'calc(50% - 8px)';
+            icon.style.left = 'calc(50% - 8px)';
+            gc.style.element = ui.tooltip.bind(icon, () => {
               return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
             });
           }
@@ -105,8 +94,6 @@ export class ReportsView extends UaView {
             });
             gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
           }
-          if (gc.cellType === 'html')
-            gc.style.horzAlign = 'center';
         });
         const isAcknowledged = t.getCol('is_acknowledged');
         viewer.onCellRender.subscribe((gc) => {
