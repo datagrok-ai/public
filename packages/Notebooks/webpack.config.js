@@ -2,6 +2,9 @@ const path = require('path');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'production',
   entry: {
     package: './src/package.js'

@@ -235,6 +235,7 @@ export interface IDartApi {
   grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
   grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
   grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_Get_Table(info: any): any;
   grok_ViewInfo_FromJson(json: String): any;
   grok_ViewInfo_FromViewState(state: String): any;
   grok_ViewInfo_ToJson(info: any): any;
@@ -453,7 +454,8 @@ export interface IDartApi {
   grok_DataFrame_Rows(t: any): any;
   grok_DataFrame_Cell(t: any, idx: Num, name: String): any;
   grok_DataFrame_ColumnByName(t: any, colName: String): any;
-  grok_DataFrame_ToCsv(t: any, options: any): any;
+  grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
+  grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
   grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
@@ -682,6 +684,8 @@ export interface IDartApi {
   grok_GridCellRenderArgs_Get_Bounds(args: any): any;
   grok_GridColumn_Get_Grid(gc: any): any;
   grok_GridColumn_Get_Column(gc: any): any;
+  grok_GridColumn_Get_ContentCellStyle(gc: any): any;
+  grok_GridColumn_Get_HeaderCellStyle(gc: any): any;
   grok_GridColumn_Get_Idx(gc: any): any;
   grok_GridColumn_Get_Name(gc: any): any;
   grok_GridColumn_Set_Name(gc: any, x: any): any;
@@ -738,6 +742,7 @@ export interface IDartApi {
   grok_Grid_OnCellTooltip(grid: any, f: any): any;
   grok_Grid_HitTest(grid: any, x: Num, y: Num): any;
   grok_Grid_GetCell(grid: any, columnName: String, gridRow: Num): any;
+  grok_Grid_GetRowOrder(grid: any): any;
   grok_Grid_SetRowOrder(grid: any, order: any): any;
   grok_Grid_ScrollToCell(grid: any, columnId: any, gridRow: Num): any;
   grok_Grid_ScrollToPixels(grid: any, x: Num, y: Num): any;
@@ -1189,6 +1194,7 @@ export interface IDartApi {
   grok_Meta_RenderCard(meta: any, x: any): any;
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
+  grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;
   grok_Route(url: String): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
@@ -1260,6 +1266,7 @@ export interface IDartApi {
   grok_Color_ScaleColor(x: Num, min: Num, max: Num, alpha: Num, colorScheme: any): any;
   grok_Color_Highlight(color: Num): any;
   grok_Color_Darken(color: Num, diff: Num): any;
+  grok_Color_GetRowColor(column: any, row: Num): any;
   grok_UI_Span(x: any): any;
   grok_UI_Loader(): any;
   grok_UI_SetUpdateIndicator(e: any, u: any): any;
@@ -1425,9 +1432,7 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String): Promise<any>;
-  grok_Dapi_Reports_Resolve(id: String): Promise<any>;
-  grok_Dapi_Reports_Reopen(id: String, description: String, notifyAssignee: Bool): Promise<any>;
+  grok_DetailedLog_Get_Accordion(reportId: String, df: any, index: Num): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1483,6 +1488,14 @@ export interface IDartApi {
   grok_ViewerEvent_Get_bitset(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
+  grok_GridCellStyle_Get_defaultStyle(): any;
+  grok_GridCellStyle_Set_defaultStyle(v: any): any;
+  grok_GridCellStyle_Get_textStyle(): any;
+  grok_GridCellStyle_Set_textStyle(v: any): any;
+  grok_GridCellStyle_Get_numberStyle(): any;
+  grok_GridCellStyle_Set_numberStyle(v: any): any;
+  grok_GridCellStyle_Get_styles(): any;
+  grok_GridCellStyle_Set_styles(v: any): any;
   grok_GridCellStyle_Get_font(x: any): any;
   grok_GridCellStyle_Set_font(x: any, v: String): any;
   grok_GridCellStyle_Get_horzAlign(x: any): any;

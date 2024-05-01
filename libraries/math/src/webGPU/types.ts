@@ -1,6 +1,6 @@
 export type SparseMatrix = {
-    i: Uint32Array;
-    j: Uint32Array;
+    i: Uint32Array | Int32Array;
+    j: Uint32Array | Int32Array;
     distance: Float32Array;
 }
 

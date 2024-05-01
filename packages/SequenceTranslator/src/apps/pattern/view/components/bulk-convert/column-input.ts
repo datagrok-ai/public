@@ -1,6 +1,5 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
@@ -28,7 +27,7 @@ export class ColumnInputManager {
 
   private handleTableChoice(): void {
     this.refreshColumnControls();
-    grok.shell.info(`Table ${this.selectedTable?.name} selection from column input manager`);
+    // grok.shell.info(`Table ${this.selectedTable?.name} selection from column input manager`);
   }
 
   private refreshColumnControls(): void {

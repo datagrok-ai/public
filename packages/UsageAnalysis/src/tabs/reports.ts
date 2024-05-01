@@ -3,12 +3,14 @@ import {UaToolbox} from '../ua-toolbox';
 import * as grok from 'datagrok-api/grok';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import * as DG from 'datagrok-api/dg';
-import {DetailedLog} from 'datagrok-api/dg';
+import {DetailedLog, Grid} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {delay} from "rxjs/operators";
+import {div} from "datagrok-api/ui";
 import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time', 'report_number', 'is_resolved'],
+  columnNames: ['error', 'reporter', 'assignee', 'time', 'report_number', 'is_acknowledged', 'label'],
 };
 
 export class ReportsView extends UaView {
@@ -20,13 +22,9 @@ export class ReportsView extends UaView {
     this.name = 'Reports';
     this.currentFilterGroup = null;
     this.filters.style.maxWidth = '250px';
-    this.ribbonMenu = DG.Menu.create();
-    this.ribbonMenu.item('Text', () => {
-      console.log('From ribbon');
-    });
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const users: {[_: string]: any} = {};
     (await grok.dapi.users.list()).forEach((user) => {
       users[user.friendlyName] = {
@@ -41,54 +39,104 @@ export class ReportsView extends UaView {
       name: 'User reports',
       queryName: 'UserReports',
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.grid(t, {
-          'defaultCellFont': '13px monospace'
-        });
+        const viewer = DG.Viewer.grid(t);
+        viewer.getInfo()
+        viewer.sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
         this.reloadFilter(t);
+        if (path != undefined) {
+          const segments = path.split('/').filter((s) => s != '');
+          if (segments.length > 1) {
+            this.setReportFilter(segments[1]);
+            this.updatePath(segments[1]);
+          }
+        }
         viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['is_resolved', 'report_number', 'reporter', 'assignee', 'description', 'same_errors_count', 'requests_count', 'error', 'error_stack_trace', 'report_time', 'report_id']);
+          viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'errors', 'jira', 'label', 'error', 'error_stack_trace', 'time', 'report_id']);
           viewer.col('reporter')!.cellType = 'html';
+          viewer.col('reporter')!.width = 25;
+
           viewer.col('assignee')!.cellType = 'html';
-          viewer.col('is_resolved')!.editable = false;
-          viewer.col('requests_count')!.editable = false;
-          viewer.col('same_errors_count')!.editable = false;
+          viewer.col('assignee')!.width = 25;
+          viewer.col('errors')!.width = 35;
+          viewer.col('errors')!.editable = false;
+
+          viewer.col('jira')!.cellType = 'html';
+          viewer.col('is_acknowledged')!.width = 30;
+
+          viewer.col('report_id')!.visible = false;
           viewer.col('error_stack_trace_hash')!.visible = false;
+
+          viewer.col('time')!.format = 'yyyy-MM-dd';
+          viewer.col('time')!.width = 80;
+
+          viewer.col('report_number')!.width = 35;
+
+          viewer.col('description')!.width = 150;
+          viewer.col('error')!.width = 200;
+          viewer.col('error_stack_trace')!.width = 200;
         });
-        const isResolvedCol = t.getCol('is_resolved');
+
         viewer.onCellPrepare(async function(gc) {
-          if (isResolvedCol.get(gc.gridRow))
-            gc.style.textColor = 0xFFB8BAC0;
           if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
             const user = users[gc.cell.value];
-            const img = ui.div();
-            img.style.width = '20px';
-            img.style.height = '20px';
-            img.style.backgroundSize = 'contain';
-            img.style.margin = '5px 0 0 5px';
-            img.style.borderRadius = '100%';
-            if (gc.cell.value != 'Test')
-              img.style.backgroundImage = user.avatar.style.backgroundImage;
-            else
-              img.style.backgroundImage = 'url(/images/entities/grok.png);';
-            const span = ui.span([ui.span([img, ui.label(user.name)], 'grok-markup-user')], 'd4-link-label');
-            span.addEventListener('click', () => {
-              grok.shell.o = user.data;
-            });
-            gc.style.element = ui.tooltip.bind(span, () => {
+            const icon = DG.ObjectHandler.forEntity(user.data)?.renderIcon(user.data.dart)!;
+            icon.style.top = 'calc(50% - 8px)';
+            icon.style.left = 'calc(50% - 8px)';
+            gc.style.element = ui.tooltip.bind(icon, () => {
               return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
             });
           }
+          if (gc.gridColumn.name === 'jira' && gc.cell.value) {
+            const link = ui.link(gc.cell.value, `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              window.open(link.href, '_blank');
+            });
+            gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+          }
+        });
+        const isAcknowledged = t.getCol('is_acknowledged');
+        viewer.onCellRender.subscribe((gc) => {
+          if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
+            gc.cell.style.textColor = 0xFFB8BAC0;
         });
 
         return viewer;
       },
       processDataFrame: (t: DG.DataFrame) => {
-        t.onSelectionChanged.subscribe(async () => {
-          await this.showReportContextPanel(t);
+        t.getCol('label').setTag(DG.Tags.MultiValueSeparator, ',');
+        t.onCurrentRowChanged.subscribe(async (_) => {
+          const currentRow = t.currentRowIdx;
+          if (currentRow === null || currentRow === undefined || currentRow === -1) return;
+          const reportId = t.getCol('report_id').get(currentRow);
+          if (!reportId) return;
+          this.updatePath(t.getCol('report_number').get(currentRow));
+          DetailedLog.showReportProperties(reportId, t, currentRow);
         });
-        t.onCurrentRowChanged.subscribe(async () => {
-          t.selection.setAll(false);
-          t.selection.set(t.currentRowIdx, true);
+        t.onValuesChanged.subscribe(async () => {
+          await delay(500);
+          (this.viewers[0].viewer as Grid)
+            .sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
+        });
+        t.onCurrentCellChanged.subscribe(() => {
+          if (t.currentCol.name === 'errors') {
+            const errorHash = t.getCol('error_stack_trace_hash').get(t.currentRowIdx);
+            const error = t.getCol('error').get(t.currentRowIdx);
+            grok.shell.o = div([
+              ui.actionLink('Get all errors...', async () => {
+                const progress = DG.TaskBarProgressIndicator.create('Receiving errors...');
+                try {
+                  const result = await grok.functions
+                    .call('UsageAnalysis:ReportSameErrors', {'stackTraceHash': errorHash, 'errorMessage': error});
+                  grok.shell.addTableView(result);
+                } catch (e: any) {
+                  grok.shell.error(e.toString());
+                } finally {
+                  progress.close();
+                }
+              }),
+            ]);
+          }
         });
         return t;
       },
@@ -120,61 +168,34 @@ export class ReportsView extends UaView {
       const filters_ = DG.Viewer.filters(table, filtersStyle);
       this.currentFilterGroup = new DG.FilterGroup(filters_.dart);
       this.filters.append(filters_.root);
-      this.updateFilter();
+      //this.updateFilter();
     }
   }
 
-  updateFilter(): void {
-    if (ViewHandler.getCurrentView().name === 'Reports' && ViewHandler.getInstance().getSearchParameters().has('report-number')) {
-      let reportNumber = ViewHandler.getInstance().getSearchParameters().get('report-number');
-      if (reportNumber) {
-        this.currentFilterGroup?.updateOrAdd({
-          type: DG.FILTER_TYPE.MULTI_VALUE,
-          column: 'report_number',
-          selected: [reportNumber]}
-        );
+  updatePath(reportNumber: string): void {
+    const segments = window.location.href.split('/');
+    const last = segments[segments.length - 1];
+    if (last === 'reports')
+      segments.push(reportNumber);
+    else {
+        if (/^-?\d+$/.test(last))
+          segments[segments.length - 1] = reportNumber;
+        else
+          return;
       }
-    }
+
+    window.history.pushState(
+      null, 'Report ${detailedLog.reportNumber}', segments.join('/'));
   }
 
-  async showReportContextPanel(table: DG.DataFrame): Promise<void> {
-    if (!table.selection.anyTrue) return;
-    const index = table.selection.getSelectedIndexes()[0];
-    let df = table.clone(table.selection);
-    const reportId = df.getCol('report_id').get(0);
-    if (!reportId) return;
-    grok.shell.o = ui.wait(async () => {
-      const accordion = await DetailedLog.getAccordion(reportId);
-      const pane = accordion.root.querySelectorAll('[d4-title="ACTIONS"]')[0];
-      let reopen: HTMLLabelElement;
-      let close: HTMLLabelElement;
-      let isActive: boolean = false;
-
-      async function resolve(e: MouseEvent, value: boolean, replacement: HTMLElement, action: Function) {
-        if (isActive) return;
-        isActive = true;
-        (e.target as HTMLElement).replaceWith(ui.wait(async () => {
-          (e.target as HTMLElement).style.color = '#286344';
-          await action();
-          table.getCol('is_resolved').set(index, value);
-          isActive = false;
-          return replacement;
-        }));
-      }
-      reopen = ui.actionLink('Reopen issue...', async (e: MouseEvent) => {
-        const dialog = DG.Dialog.create('Specify the reason');
-        const description = ui.input.textArea('Description', {'size': {height: 150, width: 250}, 'nullable': false, 'tooltipText': 'Provide reason of reopening'});
-        const notify = ui.input.bool('Notify assignee', {'tooltipText': 'Email with notification will be sent to the assignee'});
-        dialog.add(description);
-        dialog.add(notify);
-        dialog.onOK(async () => await resolve(e, false, close, async () => await grok.dapi.reports.reopen(reportId, description.value, notify.value)));
-        dialog.show();
+  setReportFilter(reportNumber: string): void {
+    console.log(reportNumber);
+    if (reportNumber != undefined && reportNumber != '') {
+      this.currentFilterGroup?.updateOrAdd({
+        type: DG.FILTER_TYPE.MULTI_VALUE,
+        column: 'report_number',
+        selected: [reportNumber],
       });
-      close = ui.actionLink('Mark as resolved...', async (e: MouseEvent) => {
-        await resolve(e, true, reopen, async () => await grok.dapi.reports.resolve(reportId));
-      });
-      pane.children[1].children[0].append(df.getCol('is_resolved').get(0) ? reopen : close);
-      return ui.div([accordion.root]);
-    });
+    }
   }
 }

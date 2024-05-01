@@ -1,4 +1,4 @@
-1. Go to **Data** >**Databases**
+1. Go to **Browse** >**Databases**
 2. Expand the **Postgres** > **northwindTest**
 3. Right-click the **Products** query and select **Edit…** from the context menu. A **Query View** opens.
 4. Click **Transformation** tab in Query View.

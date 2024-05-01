@@ -813,6 +813,7 @@ export class RichFunctionView extends FunctionView {
                 viewerWithStub.loadedViewer.root,
                 viewerWithStub.stub,
               ],
+              {style: {width: '100%'}},
             );
           });
           $(viewerWithStubRoot).css({

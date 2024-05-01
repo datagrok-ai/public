@@ -21,6 +21,7 @@ export interface FormulaLine {
   showOnPlot?:boolean;
   showOnTooltip?:boolean;
   // Specific to lines:
+  orientation?: string;
   width?: number;
   spline?: number;
   style?: string;

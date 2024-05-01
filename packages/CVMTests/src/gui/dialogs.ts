@@ -32,7 +32,7 @@ category('GUI: Dialogs', () => {
     let okButtonInSelectColumn = returnDialog('Select columns...')?.root
       .getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButtonInSelectColumn.click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1), 'error while selectiong impute columns', 1000;
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'error while selectiong impute columns', 1000);
     const dataField: DG.Column[] = [];
     dataField.push(demog.col('SEX') as DG.Column);
     dataField.push(demog.col('RACE') as DG.Column);

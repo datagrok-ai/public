@@ -1,12 +1,11 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-import {getMolColumnFromHelm} from '../helm-to-molfile/utils';
+//import {getMolColumnFromHelm} from '../helm-to-molfile/utils';
 
 export const RULES_PATH = 'System:AppData/Bio/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -68,9 +67,9 @@ class TransformationCommon {
               secondFound = true;
               secondEntryIndex = j;
               break;
-            } else
+            } else {
               continue;
-
+            }
             //result[i][1] = j;
             // secondFound = true;
             // break;
@@ -83,9 +82,9 @@ class TransformationCommon {
               firstFound = true;
               firstIsFirst = false;
               firstEntryIndex = j;
-            } else
+            } else {
               continue;
-
+            }
             //result[i] = [j, 0];
           }
         }
@@ -306,7 +305,14 @@ export async function addTransformedColumn(
   addCommonTags(targetHelmCol);
   targetHelmCol.setTag('units', NOTATION.HELM);
 
-  const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
+  //const molCol = await getMolColumnFromHelm(df, targetHelmCol, chiralityEngine);
+  const molCol = await grok.functions.call('Bio:getMolFromHelm', {
+    'df': df,
+    'helmCol': targetHelmCol,
+    'chiralityEngine': chiralityEngine
+  });
+
+
   molCol.name = df.columns.getUnusedName('molfile(' + molColumn.name + ')');
   molCol.semType = DG.SEMTYPE.MOLECULE;
 

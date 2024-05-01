@@ -57,10 +57,10 @@ export class CombinedAppUI extends AppUIBase {
     this.multiView.path = this.getCurrentPanePath();
   }
 
-  async addView(): Promise<void> {
+  protected async constructView(): Promise<DG.ViewBase> {
     this.multiView.tabs.onTabChanged.subscribe(() => this.setUrl());
     this.setUrl();
-    grok.shell.addView(this.multiView);
+    return this.multiView;
   }
 }
 

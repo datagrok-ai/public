@@ -9,12 +9,14 @@ import {StrandType} from '../../../model/types';
 import {isOverhangNucleotide} from '../../../model/utils';
 import {BooleanInput, StringInput} from '../../types';
 import {SubscriptionManager} from '../../../model/subscription-manager';
+import {DataManager} from '../../../model/data-manager';
 
 export class StrandControls {
   private displayedInputLabels: Map<StrandType, string[]>;
 
   constructor(
     private eventBus: EventBus,
+    private dataManager: DataManager,
     private subscriptions: SubscriptionManager
   ) {
     const subscription = this.eventBus.nucleotideSequencesChanged$.subscribe(() => {
@@ -71,7 +73,7 @@ export class StrandControls {
   }
 
   private createNucleobaseInputs(strand: StrandType): StringInput[] {
-    const nucleotideBaseChoices: string[] = Object.keys(PATTERN_APP_DATA)
+    const nucleotideBaseChoices: string[] = this.dataManager.fetchAvailableNucleotideBases()
       .sort(
         (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
       );

@@ -8,31 +8,30 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
-import {ReportsView} from "./tabs/reports";
+import {ReportsWidget} from "./widgets/reports-widget";
 
 export const _package = new DG.Package();
 
 
 //name: Usage Analysis
 //tags: app
+//meta.url: /
+//input: string path {isOptional: true; meta.url: true}
+//input: string date {isOptional: true}
+//input: string groups {isOptional: true}
+//input: string packages {isOptional: true}
+//input: map params {isOptional: true}
 //output: view v
-export async function usageAnalysisApp(): Promise<DG.ViewBase | null> {
-  if (grok.shell.sidebar.panes.some((p) => p.name === ViewHandler.UAname)) {
-    if (window.location.search?.includes('report-number')) {
-      const ev = ViewHandler.getView('Reports');
-      ev.viewers[0].reloadViewer();
-      await (ev as ReportsView).reloadFilter();
-      ViewHandler.changeTab('Reports');
-    }
-    grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
-    return null;
-  }
-  await ViewHandler.getInstance().init();
+export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string): Promise<DG.ViewBase | null> {
+  await ViewHandler.getInstance().init(date, groups, packages, path);
   return ViewHandler.UA;
 }
 
 //name: Test Track
 //tags: app
+//meta.url: /tests/manager
+//input: string path {isOptional: true; meta.url: true}
+//input: map params {isOptional: true}
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
@@ -43,6 +42,16 @@ export function testTrackApp(): void {
 //test: usageWidget()
 export function usageWidget(): DG.Widget {
   return new UsageWidget();
+}
+
+//output: widget result
+//tags: dashboard
+//test: reportsWidget()
+export async function reportsWidget(): Promise<DG.Widget | null> {
+  const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
+  if (userGroup.memberships.some((g) => g.friendlyName = 'Developers'))
+    return new ReportsWidget();
+  return null;
 }
 
 //name: packageUsageWidget

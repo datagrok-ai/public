@@ -1758,6 +1758,21 @@ export class ObjectHandler {
     return this.renderProperties(x);
   }
 
+  /** Converts object to its markup description */
+  toMarkup(x: any): string | null {
+    return null;
+  }
+
+  /** Extract object from parsed markup description */
+  fromMarkup(matches: string[]): any {
+    return null;
+  }
+
+  /** Creates a regexp for detecting markup descriptions of an object */
+  get markupRegexp(): string | null {
+    return null;
+  }
+
   /** Gets called once upon the registration of meta export class. */
   init(): void { }
 
@@ -1767,6 +1782,10 @@ export class ObjectHandler {
     let cellRenderer = meta.getGridCellRenderer();
     if (cellRenderer != null)
       GridCellRenderer.register(cellRenderer);
+    if (meta.markupRegexp != null)
+      api.grok_MarkupHandler_Register(`${meta.markupRegexp}`, `JS object ${meta.type}`, (matches: string[]) => {
+        return meta.renderMarkup(meta.fromMarkup(matches));
+      });
   }
 
   static list(): ObjectHandler[] {

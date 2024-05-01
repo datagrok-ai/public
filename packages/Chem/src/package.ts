@@ -70,8 +70,8 @@ import {getEmbeddingColsNames}
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { drawMoleculeLabels } from './rendering/molecule-label';
-import { getMCS } from './utils/most-common-subs';
+import {drawMoleculeLabels} from './rendering/molecule-label';
+import {getMCS} from './utils/most-common-subs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1296,21 +1296,22 @@ export function addScaffoldTree(): void {
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type:numerical}
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList): Promise<void> {
-  const view = grok.shell.tv;  
-  const mmp = await MmpAnalysis.init(table, molecules, activities);
+//input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<void> {
+  const view = grok.shell.tv;
+  const mmp = await MmpAnalysis.init(table, molecules, activities, fragmentCutoff);
 
   //need this workaround with closing dock node since element cannot be docked repeatedly
   mmp.mmpView.root.classList.add('mmpa');
   const mmpaElement = view.dockManager.element.getElementsByClassName('mmpa')[0];
   if (mmpaElement) {
     const node = view.dockManager.findNode(mmpaElement as HTMLElement);
-    if(node)
+    if (node)
       view.dockManager.close(node);
   }
 
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
-  
 }
 
 //name: Scaffold Tree Filter
@@ -1441,8 +1442,10 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //input: column molecules {semType: Molecule}
 //input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
+//input: bool join = true
+//output: column result
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
-  targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {
+  targetNotation: DG.chem.Notation, overwrite = false, join = true ): Promise<void | DG.Column<string>> {
   const res = await convertNotationForColumn(molecules, targetNotation);
   if (overwrite) {
     for (let i = 0; i < molecules.length; i++)
@@ -1451,6 +1454,8 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
     const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
+    if (!join)
+      return col;
     data.columns.add(col);
   }
 }
@@ -1468,9 +1473,9 @@ export function canonicalize(molecule: string): string {
 //output: object result
 export function validateMolecule(s: string): string | null {
   let logHandle: RDLog | null = null;
-  let mol: RDMol | null = null;;
+  let mol: RDMol | null = null;
   try {
-    logHandle = _rdKitModule.set_log_capture("rdApp.error");
+    logHandle = _rdKitModule.set_log_capture('rdApp.error');
     mol = getMolSafe(s, {}, _rdKitModule, true).mol;
     let logBuffer = logHandle?.get_buffer();
     logHandle?.clear_buffer();

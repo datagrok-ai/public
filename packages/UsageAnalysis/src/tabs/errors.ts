@@ -18,7 +18,7 @@ export class ErrorsView extends UaView {
     this.name = 'Errors';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     (await grok.dapi.users.list()).forEach((user) => {
       users[user.friendlyName] = {
         'avatar': user.picture,

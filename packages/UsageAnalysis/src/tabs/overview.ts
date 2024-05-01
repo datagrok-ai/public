@@ -17,7 +17,7 @@ export class OverviewView extends UaView {
     this.name = 'Overview';
   }
 
-  async initViewers() : Promise<void> {
+  async initViewers(path?: string) : Promise<void> {
     this.root.className = 'grok-view ui-box';
     const uniqueUsersViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,

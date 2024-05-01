@@ -196,7 +196,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 
     this.filterSyncer.sync(logPrefix, async () => {
       if (state.props && this.bioFilter)
-        this.bioFilter.props = state.props;
+        this.bioFilter.props = DG.toJs(state.props ?? {});
     });
   }
 

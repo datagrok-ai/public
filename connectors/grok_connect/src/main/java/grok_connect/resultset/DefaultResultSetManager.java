@@ -1,5 +1,6 @@
 package grok_connect.resultset;
 
+import grok_connect.log.EventType;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.DefaultBigIntColumnManager;
 import grok_connect.managers.bool_column.DefaultBoolColumnManager;
@@ -11,6 +12,7 @@ import grok_connect.managers.string_column.DefaultStringColumnManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
+import serialization.StringColumn;
 import serialization.Types;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -70,18 +72,35 @@ public class DefaultResultSetManager implements ResultSetManager {
                     column = applicableColumnManager.getColumn(initColumnSize);
                 column.name = columnMeta.getColumnLabel();
                 columns[i] = column;
-                isInit = true;
             }
+            isInit = true;
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when init ResultSetManager", e);
         }
     }
 
     @Override
-    public void processValue(Object o, int index) {
-        if (isInit)
-            columns[index - 1].add(currentManagers[index - 1]
-                    .convert(o, columnsMeta[index - 1]));
+    public void processValue(Object o, int index, Logger queryLogger) {
+        if (isInit) {
+            Column current = columns[index - 1];
+            try {
+                setValue(o, index);
+            } catch (RuntimeException e) {
+                queryLogger.error(EventType.ERROR.getMarker(),
+                        "Couldn't convert object to be applicable for column {} of type {}. StringColumn fallback will be used",
+                        columnsMeta[index - 1].getColumnLabel(), columns[index - 1].getType(), e);
+                Column stringColumn = new StringColumn(columnsMeta[index - 1].getColumnSize());
+                stringColumn.name = current.name;
+                ColumnManager<String> newManager = new DefaultStringColumnManager();
+                for (int i = 0; i < current.length; i++) {
+                    Object value = current.get(i);
+                    stringColumn.add(newManager.convert(value, columnsMeta[index - 1]));
+                }
+                stringColumn.add(newManager.convert(o, columnsMeta[index - 1]));
+                columns[index - 1] = stringColumn;
+                currentManagers[index - 1] = newManager;
+            }
+        }
         else
             throw new RuntimeException("ResultSetManager should be init");
     }
@@ -104,6 +123,10 @@ public class DefaultResultSetManager implements ResultSetManager {
             }
         }
         return new DefaultStringColumnManager();
+    }
+
+    protected void setValue(Object o, int index) {
+        columns[index - 1].add(currentManagers[index - 1].convert(o, columnsMeta[index - 1]));
     }
 
     protected ColumnMeta getColumnMeta(int index, ResultSetMetaData meta, int initColumnSize) {
