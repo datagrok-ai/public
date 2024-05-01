@@ -108,7 +108,7 @@ export class ViewBase {
   get entity(): object | null { return null; }
   set entity(e: object | null) { }
 
-  /** View type URI. Note that {@link path} is specific to the instance of the view. */
+  /** @deprecated use path instead */
   get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
   set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
 
@@ -158,7 +158,7 @@ export class ViewBase {
   }
 
   /** 
-   * View URI, relative to the platform root. See also {@link basePath}
+   * View URI, relative to the view root
    * @type {string} */
   get path(): string {
     return api.grok_View_Get_Path(this.dart);
