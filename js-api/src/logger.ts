@@ -84,9 +84,7 @@ export class Logger {
   }
 
   static getConsoleOutput(): string {
-    const logs = this.consoleLogs;
-    this.consoleLogs = [];
-    return JSON.stringify(logs, null, 2);
+    return JSON.stringify(this.consoleLogs, null, 2);
   }
 
   static interceptConsoleOutput(): void {
