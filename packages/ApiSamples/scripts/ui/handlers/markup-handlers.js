@@ -23,19 +23,19 @@ class FruitHandler extends DG.ObjectHandler {
   renderIcon(x) { return ui.iconFA(`apple-alt`); }
   renderMarkup(x) { let m = ui.span([this.renderIcon(x), ui.label(x.name)]); $(m).css('color', x.color); return m; }
   
-	// Is used by platform to detect markup description of Fruit
+  // Is used by platform to detect markup description of Fruit
   get markupRegexp() {
-  	return "fruit\\.([a-zA-Z]+)\\.([a-zA-Z]+)";
+    return "fruit\\.([a-zA-Z]+)\\.([a-zA-Z]+)";
   }
 
-	// Converts fruit to markup description
+  // Converts fruit to markup description
   toMarkup(x) {
-   	return `fruit.${x.name}.${x.color}`;
+     return `fruit.${x.name}.${x.color}`;
   }
-	
-	// Deserialize object from parsed markup
-	// Accepts list of strings, that comes from regexp group matches
-	// In our case, matches = ["fruit.apple.red", "apple", "red"]
+  
+  // Deserialize object from parsed markup
+  // Accepts list of strings, that comes from regexp group matches
+  // In our case, matches = ["fruit.apple.red", "apple", "red"]
   fromMarkup(matches) {
     var name = matches[1];
     var color = matches[2];
