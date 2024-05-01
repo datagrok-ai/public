@@ -24,7 +24,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   constructor() {
     super(new FitChartCellRenderer());
 
-    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST);
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FIT_SEM_TYPE});
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
