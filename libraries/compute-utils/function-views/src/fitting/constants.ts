@@ -20,7 +20,7 @@ export const lossTooltip = new Map([
   [LOSS.RMSE, 'Root mean sqaure error'],
 ]);
 
-/** Dock ratios */
+/** Grid elements sizes */
 export enum GRID_SIZE {
   LOSS_COL_WIDTH = 60,
   ROW_HEIGHT = 180,

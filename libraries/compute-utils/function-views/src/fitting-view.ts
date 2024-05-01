@@ -317,8 +317,8 @@ export class FittingView {
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
   });
 
-  // Dock Nodes with results
-  private helpMdDockNode: DG.DockNode | undefined = undefined;
+  // Auxiliary dock nodes with results
+  private helpDN: DG.DockNode | undefined = undefined;
 
   private method = METHOD.NELDER_MEAD;
   private methodInput = ui.choiceInput(TITLE.METHOD, this.method, [METHOD.NELDER_MEAD], () => {
@@ -338,7 +338,7 @@ export class FittingView {
     scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
   };
 
-  // Foo settings
+  // Gradient descent settings
   private gradDescentSettings = {
     iterCount: 10,
     learningRate: 0.0001,
@@ -401,9 +401,6 @@ export class FittingView {
       return;
     }
 
-    this.runIcon = ui.iconFA('play', async () => await this.runOptimization(), 'Run fitting');
-    this.fittingSettingsDiv.hidden = true;
-
     const form = this.buildFormWithBtn();
     this.updateRunWidgetsState();
     this.comparisonView = baseView;
@@ -421,13 +418,14 @@ export class FittingView {
     const rbnPanels = this.comparisonView.getRibbonPanels();
     rbnPanels.push([this.helpIcon, this.runIcon]);
     this.comparisonView.setRibbonPanels(rbnPanels);
+    this.fittingSettingsDiv.hidden = true;
 
     this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
     this.comparisonView.helpUrl = 'https://datagrok.ai/help/compute/#input-parameter-optimization';
     const helpMD = ui.markdown(STARTING_HELP);
     helpMD.style.padding = '10px';
     helpMD.style.overflow = 'auto';
-    this.helpMdDockNode = this.comparisonView.dockManager.dock(
+    this.helpDN = this.comparisonView.dockManager.dock(
       helpMD,
       DG.DOCK_TYPE.FILL,
       this.comparisonView.dockManager.findNode(this.comparisonView.grid.root),
@@ -466,7 +464,11 @@ export class FittingView {
     } else {
       this.runIcon.style.color = 'var(--grey-3)';
       this.runIcon.classList.remove('fas');
-      ui.tooltip.bind(this.runIcon, '');
+      ui.tooltip.bind(this.runIcon, () => {
+        const label = ui.label('Cannot run fitting: incomplete inputs');
+        label.style.color = '#FF0000';
+        return label;
+      });
     }
   }
 
@@ -926,7 +928,7 @@ export class FittingView {
       // Set current row with min loss
       reportTable.currentCell = reportTable.cell(0, TITLE.LOSS);
 
-      // Add grid cell effects
+      // Add grid cell effects: show funccall outputs in the context panel
       const cellEffect = async (cell: DG.GridCell) => {
         if (!cell)
           return;
@@ -963,16 +965,13 @@ export class FittingView {
         }, {} as {[name: string]: HTMLElement[]});
 
         let overviewPanelConfig: Object;
-        let paneToExpandIdx: number;
 
         if (scalarParams.length > 0) {
-          paneToExpandIdx = 1;
           overviewPanelConfig = {
             'Output scalars': [scalarTable],
             ...dfPanes,
           };
         } else {
-          paneToExpandIdx = 0;
           overviewPanelConfig = {
             ...dfPanes,
           };
@@ -984,7 +983,12 @@ export class FittingView {
           overviewPanel.addPane(e[0], () => ui.divV(e[1]));
         });
 
-        overviewPanel.panes[paneToExpandIdx].expanded = true;
+        const paneToExpandIdx = overviewPanel.panes.length - 1;
+
+        if (paneToExpandIdx < 0)
+          throw new Error('Function has no outputs');
+
+        overviewPanel.panes[overviewPanel.panes.length - 1].expanded = true;
 
         grok.shell.o = overviewPanel.root;
       };
@@ -1030,7 +1034,9 @@ export class FittingView {
     const name = prop.name;
     const caption = prop.caption ?? name;
 
+    // Provide an approprate viewer for each output
     switch (type) {
+    // bar chart for each scalar
     case DG.TYPE.FLOAT:
     case DG.TYPE.INT:
     case DG.TYPE.BIG_INT:
@@ -1048,10 +1054,12 @@ export class FittingView {
             showValueSelector: false,
             showCategorySelector: false,
             showStackSelector: false,
+            showEmptyBars: true,
           },
         ).root,
       }];
 
+    // a set of linecharts comparing columns of output dataframe to their targets
     case DG.TYPE.DATA_FRAME:
       const result: GoFViewer[] = [];
       const simDf = call.getParamValue(name) as DG.DataFrame;
@@ -1071,6 +1079,7 @@ export class FittingView {
       let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
       let col: DG.Column | null;
 
+      // add viewers for each non-argument column of the target dataframe
       expDf.columns.names().forEach((name) => {
         if (name !== argColName) {
           col = simDf.col(name);
@@ -1112,11 +1121,11 @@ export class FittingView {
     }
   } // getOutputGof
 
-  /** Clear previous results */
+  /** Clear previous results: close dock nodes and unsubscribe from events */
   private clearPrev(): void {
-    if (this.helpMdDockNode !== undefined) {
-      this.comparisonView.dockManager.close(this.helpMdDockNode);
-      this.helpMdDockNode = undefined;
+    if (this.helpDN !== undefined) {
+      this.comparisonView.dockManager.close(this.helpDN);
+      this.helpDN = undefined;
     }
 
     if (this.gridClickSubscription) {
