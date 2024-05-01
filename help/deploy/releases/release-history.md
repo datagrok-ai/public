@@ -20,6 +20,54 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-05-01 1.18.5
+
+### Addressed Issues
+
+* (Improvement) GROK-14971: Sticky meta: improve visibility for users 
+* (Bug) GROK-14943: Api Tests: update properties test to match type safe api of sticky meta 
+* (Improvement) GROK-14965: Sticky meta: show preview for entity types 
+* (Improvement) GROK-14973: Sticky meta: support multi-values edit 
+* (Improvement) GROK-14987: Sticky meta: Entity type settings with TabControl 
+* (Improvement) GROK-14988: Sticky meta: better type selector for schema editor 
+* GROK-14293: Core: Inputs harmonization (WIP)
+* (Improvement) GROK-14512: JS API for entity properties/types/schemas 
+* GROK-14473: Improve properties functionality (WIP)
+* (Improvement) GROK-10979: Error handling: "Report an error" dialog when you click on exclamation point (WIP)
+* (Bug) GROK-15264: Default value deprecation (WIP)
+* (Improvement) [#2733](https://github.com/datagrok-ai/public/issues/2733): #2733: Viewers | Legend: provide diverse palette and markers' shape 
+* (Bug) GROK-14953: Azure blob: directory shown as a file 
+* (Bug) GROK-15190: Scatterplot, line chart: updating formula lines does not work for those specified via a dataframe 
+* (Bug) GROK-15195: Core | Inputs: FileInput: Onchange event is not triggered properly 
+* (Bug) GROK-15304: Trellis : Selecting categories in the legend works incorrectly 
+* (Bug) GROK-15241: Trellis plot on R-Group analysis throws the error when saving/opening a project (WIP)
+* (Bug) [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases 
+* (Bug) GROK-15206: Filters: categorical filter is broken for hidden ~name columns 
+* (Bug) GROK-15205: Inputs: default bool input value is null, but it shows like false 
+* (Bug) GROK-15209: Form viewer: error after renaming a column name (WIP)
+* (Improvement) [#2742](https://github.com/datagrok-ai/public/issues/2742): #2742: Viewers: Indicate the selected column in the column selector 
+* (Bug) GROK-15259: Calendar: error when adding a viewer 
+* (Bug) GROK-15249: Error when pressing Column Properties on a programmatically created Grid 
+* (Bug) GROK-15237: Demo | Tooltips in Demo applications are "breaking" 
+* (Improvement) GROK-14412: Column selectors: ESC should close the popup 
+* (Bug) [#2644](https://github.com/datagrok-ai/public/issues/2644): #2644: Forms | Next row button: incorrect behavior after sorting the grid 
+* (Bug) [#2749](https://github.com/datagrok-ai/public/issues/2749): #2749: Line chart and Trellis plot: '+' icon is missing 
+* (Bug) GROK-15231: No timeout errors for subbmitting report on dev, so the process doesn't stop 
+* GROK-15266: User report system improvements 
+* (Bug) [#1092](https://github.com/datagrok-ai/public/issues/1092): #1092: Multiple Issues with Conditional Color Dialog 
+* (Bug) GROK-15173: Chem | MMP : runs with errors 
+* (Bug) GROK-15149: Browse | File preview: nothing is displayed in the preview until the window is resized 
+* (Bug) GROK-15156: Bar Chart: Values are not shown for just negative numbers 
+* (Bug) [#2764](https://github.com/datagrok-ai/public/issues/2764): #2764: Box plot: wrong area is selected with shift-drag when categories at the left are filtered out 
+* (Bug) GROK-15365: Box plot: error when switching Value axis to the log scale in some cases 
+* (Improvement) [#2772](https://github.com/datagrok-ai/public/issues/2772): #2772: Pivot table: add a property to hide sparklines 
+* (Improvement) GROK-14203: Core | Calculated columns: Update values if the base column values changed 
+* (Bug) [#2509](https://github.com/datagrok-ai/public/issues/2509): #2509: Pinned columns in multiple views for the same table cause performance issues in some cases 
+* (Bug) [#2782](https://github.com/datagrok-ai/public/issues/2782): #2782: Line chart : incorrect color-coding while setting filters 
+* (Improvement) [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: improvements 
+* GROK-15306: Expression filter  (WIP)
+
+
 ## 2024-04-05 1.18.4
 
 ### Addressed Issues
