@@ -5,7 +5,7 @@ import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {Menu, ToolboxPage, TreeViewGroup, TreeViewNode, Widget} from '../widgets';
-import {ColumnInfo, Entity, Script} from '../entities';
+import {ColumnInfo, Entity, Script, TableInfo} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable, MapProxy} from '../utils';
 import {StreamSubscription} from '../events';
@@ -795,6 +795,10 @@ export class ViewInfo extends Entity {
 
   static fromViewState(state: string): ViewInfo {
     return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
+  }
+
+  get table() : TableInfo {
+    return toJs(api.grok_ViewInfo_Get_Table(this.dart));
   }
 
   /** Only defined within the context of the OnViewLayoutXXX events */

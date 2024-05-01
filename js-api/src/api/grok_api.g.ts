@@ -235,6 +235,7 @@ export interface IDartApi {
   grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
   grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
   grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_Get_Table(info: any): any;
   grok_ViewInfo_FromJson(json: String): any;
   grok_ViewInfo_FromViewState(state: String): any;
   grok_ViewInfo_ToJson(info: any): any;
