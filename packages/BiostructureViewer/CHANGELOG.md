@@ -1,8 +1,8 @@
 # BiostructureViewer changelog
 
-## 1.1.0 (WIP)
+## 1.1.0 (2024-05-01)
 
-Prioritize render queue by task consumer id and callback
+Use generalized cell renderer on async renderer base
 
 ## 1.0.27 (2024-04-15)
 
