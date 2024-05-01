@@ -13,7 +13,7 @@ import {
   IFitSeries,
   FitStatistics,
   fitChartDataProperties,
-  fitSeriesProperties,
+  fitSeriesProperties, IFitChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -95,6 +95,58 @@ export function mergeProperties(properties: DG.Property[], source: any, target: 
     if (!(p.name in target) && p.name in source)
       target[p.name] = source[p.name];
   }
+}
+
+export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
+  if (chartOptions.length === 0)
+    return {};
+
+  let minX = Number.MAX_VALUE;
+  let minY = Number.MAX_VALUE;
+  let maxX = Number.MIN_VALUE;
+  let maxY = Number.MIN_VALUE;
+  let xAxisName: string | undefined;
+  let yAxisName: string | undefined;
+  let title: string | undefined;
+  let logX: boolean = false;
+  let logY: boolean = false;
+  let allowXZeroes: boolean = false;
+
+  for (const options of chartOptions) {
+    if (options.minX !== null && options.minX !== undefined)
+      minX = Math.min(minX, options.minX);
+    if (options.minY !== null && options.minY !== undefined)
+      minY = Math.min(minY, options.minY);
+    if (options.maxX !== null && options.maxX !== undefined)
+      maxX = Math.max(maxX, options.maxX);
+    if (options.maxY !== null && options.maxY !== undefined)
+      maxY = Math.max(maxY, options.maxY);
+    if (options.title !== null && options.title !== undefined)
+      title ??= options.title;
+    if (options.xAxisName !== null && options.xAxisName !== undefined)
+      xAxisName ??= options.xAxisName;
+    if (options.yAxisName !== null && options.yAxisName !== undefined)
+      yAxisName ??= options.yAxisName;
+    if (options.logX !== null && options.logX !== undefined && options.logX)
+      logX = true;
+    if (options.logY !== null && options.logY !== undefined && options.logY)
+      logY = true;
+    if (options.allowXZeroes !== null && options.allowXZeroes !== undefined && options.allowXZeroes)
+      allowXZeroes = true;
+  }
+
+  return {
+    minX: minX === Number.MAX_VALUE ? undefined : minX,
+    minY: minY === Number.MAX_VALUE ? undefined : minY,
+    maxX: maxX === Number.MIN_VALUE ? undefined : maxX,
+    maxY: maxY === Number.MIN_VALUE ? undefined : maxY,
+    title: title,
+    xAxisName: xAxisName,
+    yAxisName: yAxisName,
+    logX: logX,
+    logY: logY,
+    allowXZeroes: allowXZeroes,
+  };
 }
 
 export function mergeSeries(series: IFitSeries[]): IFitSeries | null {

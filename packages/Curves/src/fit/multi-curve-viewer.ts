@@ -2,9 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
-import {FitChartCellRenderer, mergeSeries} from './fit-renderer';
+import {FitChartCellRenderer, INFLATE_SIZE, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
-import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
@@ -13,6 +13,7 @@ import {interval, merge} from 'rxjs';
 const ERROR_CLASS = 'd4-viewer-error';
 
 export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
+  [index: string]: any;
   curvesColumnNames?: string[] = [];
   showSelectedRowsCurves: boolean = false;
   showCurrentRowCurve: boolean = true;
@@ -20,6 +21,11 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   mergeColumnSeries: boolean = false;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
+  logX?: boolean;
+  logY?: boolean;
+  allowXZeroes?: boolean;
+  mergeCellSeries?: boolean;
+  showColumnLabel?: boolean;
 
   constructor() {
     super(new FitChartCellRenderer());
@@ -46,6 +52,22 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     mergeProperties(fitChartDataProperties, this, this.data.chartOptions);
   }
 
+  mergeViewerChartOptions(): void {
+    for (const p of fitChartDataProperties) {
+      const isDefaultValueChanged = ['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ?
+        'mergeCellSeries' : p.name) ? this[p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name] !== undefined :
+        this.props.get(p.name) !== undefined && this.props.get(p.name) !== p.defaultValue;
+      if (isDefaultValueChanged) {
+        if (['title', 'xAxisName', 'yAxisName'].includes(p.name) && this.props.get(p.name) as unknown as string === '')
+          continue;
+        else if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name))
+          this.data.chartOptions![p.name as keyof IFitChartOptions] = this[p.name];
+        else
+          this.data.chartOptions![p.name as keyof IFitChartOptions] = this.props.get(p.name) as unknown as any;
+      }
+    }
+  }
+
   createChartData(): void {
     if (this.curvesColumnNames?.length === 0)
       return;
@@ -59,14 +81,18 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
-    this.data.chartOptions!.showColumnLabel = this.props.get('showColumnLabel') as unknown as boolean;
     const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
+    const chartOptions: IFitChartOptions[] = [];
     for (const colName of this.curvesColumnNames!) {
       const series = [];
       for (const i of new Set(this.rows)) {
         const gridCell = grid.cell(colName, grid.tableRowToGrid(i));
+        if (gridCell.cell.value === '')
+          continue;
         const cellCurves = getChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+        if (cellCurves.chartOptions !== undefined && cellCurves.chartOptions !== null)
+          chartOptions[chartOptions.length] = cellCurves.chartOptions;
         if (mergeCellSeries)
           cellCurves.series = [mergeSeries(cellCurves.series!)!];
         series.push(...cellCurves.series!);
@@ -76,6 +102,8 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       else
         this.data.series?.push(...series);
     }
+    this.data.chartOptions = mergeChartOptions(chartOptions);
+    this.mergeViewerChartOptions();
     this.data.series?.forEach((series, i) => {
       series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
       series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
@@ -89,8 +117,12 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   }
 
   onPropertyChanged(property: DG.Property | null): void {
-    if (property?.name === 'curvesColumnNames')
+    if (property?.name === 'curvesColumnNames') {
       this.props.set('showColumnLabel', this.curvesColumnNames?.length! > 1 as unknown as object);
+      this.showColumnLabel = this.curvesColumnNames?.length! > 1;
+    }
+    if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(property?.name === 'mergeSeries' ? 'mergeCellSeries' : property?.name ?? ''))
+      this[property?.name === 'mergeSeries' ? 'mergeCellSeries' : property?.name ?? ''] = this[property?.name ?? ''];
     this.applyViewerProperties();
     this.createChartData();
     this.render();
