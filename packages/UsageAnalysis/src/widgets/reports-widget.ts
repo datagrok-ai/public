@@ -33,11 +33,9 @@ export class ReportsWidget extends DG.Widget {
           return DG.ObjectHandler.forEntity(reporter.data)?.renderTooltip(reporter.data.dart)!;
         });
         portrait.style.marginRight = '10px';
-        const desc = currentRow.get('description');
-        const text = ui.divText(desc === 'Auto report' ? currentRow.get('error') : desc);
         // if (currentRow.get('package_owner') === currentUserId)
         //   text.style.fontWeight = 'bold';
-        const content = ui.divH([clock, portrait, text]);
+        const content = ui.divH([clock, portrait, ui.divText(currentRow.get('description'))]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';

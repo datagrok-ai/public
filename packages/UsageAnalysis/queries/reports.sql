@@ -1,7 +1,8 @@
 --name: UserReports
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
-with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time as time, e.description,
+with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time as time,
+    case when e.description = 'Auto report' then e.options ->> 'error_message' else e.description end as description,
     e.options ->> 'error_message' as error, e.options ->> 'error_stack_trace' error_stack_trace,
     e.options ->> 'error_stack_trace_hash' error_stack_trace_hash, (e.options ->> 'is_acknowledged')::boolean as is_acknowledged,
     u2.friendly_name as assignee,
@@ -40,7 +41,8 @@ WHERE t.error_stack_trace_hash = @stackTraceHash or t.friendly_name = @errorMess
 --name: ReportsTop20
 --input: string packageOwnerId
 --connection: System:Datagrok
-with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time as time, e.description,
+with cte as (select e.id report_id, e.options ->> 'sequence_id' report_number, e.event_time as time,
+    case when e.description = 'Auto report' then e.options ->> 'error_message' else e.description end as description,
     e.options ->> 'error_message' as error, e.options ->> 'error_stack_trace' error_stack_trace,
     e.options ->> 'error_stack_trace_hash' error_stack_trace_hash, (e.options ->> 'is_acknowledged')::boolean as is_acknowledged,
     u2.friendly_name as assignee,
