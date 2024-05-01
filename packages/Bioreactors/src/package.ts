@@ -33,8 +33,8 @@ export async function init() {
 //input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
 //input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
 //input: double _FKoxInitial = 0.0 {units: mmol/L; caption: FK oxidized (FKox); category: Initial values}
-//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values}
-//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values}
+//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values; min: 10; max: 16}
+//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values; min: 0.09; max: 0.15}
 //input: double _yO2PInitial = 0.209 {units: atm; caption: Atm headspace (yO2P); category: Initial values}
 //input: double _CYSTInitial = 0.0 {units: mmol/L; caption: Cystamine (CYST); category: Initial values}
 //input: double _VLInitial = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
@@ -48,7 +48,7 @@ export async function init() {
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
-//meta.features: {"sens-analysis": true}
+//meta.features: {"sens-analysis": true, "fitting": true}
 export async function Bioreactor(initial: number, final: number, step: number, _TimeToSwitchVal: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
@@ -77,8 +77,8 @@ export async function Bioreactor(initial: number, final: number, step: number, _
 //input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
 //input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
 //input: double _FKoxInitial = 0.0 {units: mmol/L; caption: FK oxidized (FKox); category: Initial values}
-//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values}
-//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values}
+//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values; min: 10; max: 16}
+//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values; min: 0.09; max: 0.15}
 //input: double _yO2PInitial = 0.209 {units: atm; caption: Atm headspace (yO2P); category: Initial values}
 //input: double _CYSTInitial = 0.0 {units: mmol/L; caption: Cystamine (CYST); category: Initial values}
 //input: double _VLInitial = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
