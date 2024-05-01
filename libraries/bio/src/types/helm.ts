@@ -13,8 +13,16 @@ declare module 'scil' {
 
 declare module 'org' {
   namespace helm {
-    export interface IAtom {
+    export interface IPistoiaBase {
+      get T(): string;
+    }
 
+    export interface IAtom extends IPistoiaBase {
+      get T(): 'ATOM';
+
+      get elem(): string;
+
+      biotype(): string;
     }
 
     export interface IMonomer {
@@ -76,15 +84,20 @@ declare module 'org' {
 
     export interface IMonomers {
       addOneMonomer(monomer: IMonomer): void;
-      getMonomer(biotype: string, elem: string): IAtom;
+      getMonomer(a: IAtom | string, elem: string): IAtom | null;
       getMonomerSet(biotype: string): any;
       clear(): void;
+    }
+
+    export interface IWebEditorIO {
+      trimBracket(s: string): string;
     }
 
     export interface IOrgHelmWebEditor {
       App: IApp;
       Monomers: IMonomers;
       MolViewer: IMolViewer;
+      IO: IWebEditorIO;
       kCaseSensitive: boolean;
 
       monomerTypeList(): string[];

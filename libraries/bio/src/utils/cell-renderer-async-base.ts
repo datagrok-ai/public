@@ -311,11 +311,22 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     try {
       const cellImageData = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
       const bd = new DG.Rect(x, y, w, h);
-      const gridCellWidth = gridCell.gridColumn.width * dpr - 2;
-      const gridCellHeight = gridCell.grid.props.rowHeight * dpr - 2;
-      let backColor: number | null = cellStyle ? cellStyle.backColor : null;
-      backColor = backColor ?? (this.gridCol ? this.gridCol.grid.props.backColor : null);
-      backColor = backColor ?? DG.Color.argb(0, 0, 0, 0);
+      let gridCellWidth: number;
+      let gridCellHeight: number;
+      let backColor: number | null;
+      if (this.gridCol) {
+        // Rendering for a grid
+        gridCellWidth = gridCell.gridColumn.width * dpr - 2;
+        gridCellHeight = gridCell.grid.props.rowHeight * dpr - 2;
+        backColor = cellStyle ? cellStyle.backColor : null;
+        backColor = backColor ?? (this.gridCol ? this.gridCol.grid.props.backColor : null);
+        backColor = backColor ?? DG.Color.argb(0, 0, 0, 0);
+      } else {
+        // Rendering probably for row tooltip (scatter plot)
+        gridCellWidth = w * dpr - 2;
+        gridCellHeight = h * dpr - 2;
+        backColor = DG.Color.argb(0, 0, 0, 0);
+      }
 
       if (!this.cacheEnabled || !cellImageData ||
         Math.abs(cellImageData.width / dpr - gridCellWidth) > 0.5 ||

@@ -9,6 +9,7 @@ Add cell sync render cell from cache while resizing
 Prioritize render queue by task consumer id and callback
 Fix cell renderer for scatter plot
 Add types for Pistoia Helm
+Fix rendering on grid and without
 
 ## 5.40.8 (2024-04-16)
 

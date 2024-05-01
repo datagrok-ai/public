@@ -10,6 +10,7 @@ Add HelmService test
 Add Helm cell renderer test for scatter plot
 Use types of Pistoia Helm, get rid of ts-ignore
 Add handling missing monomers with Helm cell renderer
+Fix alert message box with compressed Scilligence.JSDraw2.Lite.js
 
 ## 2.1.34 (2024-04-22)
 

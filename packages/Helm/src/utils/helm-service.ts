@@ -15,6 +15,7 @@ import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
 import {_package} from '../package';
+import {DummyWebEditorMonomer} from './dummy-monomer';
 
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
@@ -62,10 +63,26 @@ export class HelmService extends HelmServiceBase {
       const originalGetMonomer = monomers.getMonomer;
       const originalAlert = scil.Utils.alert;
       try {
-        org.helm.webeditor.Monomers.getMonomer = (biotype: string, elem: string): org.helm.IAtom => {
-          const resAtom = originalGetMonomer.bind(monomers)(biotype, elem);
-          if (!resAtom)
-            hasMissing = true;
+        org.helm.webeditor.Monomers.getMonomer = (a: org.helm.IAtom | string, name: string): org.helm.IAtom | null => {
+          let resAtom: any = originalGetMonomer.bind(monomers)(a, name);
+
+          if (!resAtom) {
+            // Input logic
+            if (a == null && name == null)
+              return null;
+
+            let s: string;
+            let biotype: string;
+            if (name == null) {
+              biotype = (a as org.helm.IAtom).biotype();
+              s = (a as org.helm.IAtom).elem;
+            } else {
+              biotype = a as string;
+              s = org.helm.webeditor.IO.trimBracket(name);
+            }
+            resAtom = new DummyWebEditorMonomer(biotype, s);
+            //hasMissing = true;
+          }
           return resAtom;
         };
         // Preventing alert message box for missing monomers with compressed Scilligence.JSDraw2.Lite.js
