@@ -41,6 +41,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   mmpGetFragments = async (molecules: string[]) =>
     this.call(WORKER_CALL.MMP_GET_FRAGMENTS, [molecules]);
 
+  mmpGetPairs = async (molecules: [number, number][], frags: [string, string][][], fragmentCutoff: number) =>
+    this.call(WORKER_CALL.MMP_GET_PAIRS, [molecules, frags, fragmentCutoff]);
+
   mmpGetMcs = async (molecules: [string, string][]) =>
     this.call(WORKER_CALL.MMP_GET_MCS, [molecules]);
 
