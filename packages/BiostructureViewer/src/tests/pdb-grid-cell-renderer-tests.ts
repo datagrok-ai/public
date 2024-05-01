@@ -7,6 +7,7 @@ import {NglGlServiceBase, getNglGlService} from '@datagrok-libraries/bio/src/vie
 
 import {awaitGrid} from './utils';
 import {IPdbGridCellRenderer} from '../utils/types';
+import {PdbGridCellRendererBack} from '../utils/pdb-grid-cell-renderer';
 
 import {_package} from '../package-test';
 
@@ -33,8 +34,10 @@ category('pdbGridCellRenderer', () => {
     if (!molGridCol)
       throw new Error(`Column 'pdb' not found.`);
 
-    const back: IPdbGridCellRenderer = await grok.functions.call(`${_package.name}:getPdbGridCellRenderer`,
-      {gridCol: molGridCol});
+    // const back: IPdbGridCellRenderer = await grok.functions.call(`${_package.name}:getPdbGridCellRenderer`,
+    //   {gridCol: molGridCol});
+    const gridCell = grid.cell('pdb', 0);
+    const back = PdbGridCellRendererBack.getOrCreate(gridCell);
 
     await delay(0);
     await testEvent(back.onRendered, () => {}, () => {

@@ -5,7 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 
 import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
-import {NglGlServiceBase, NglGlTask, getNglGlService} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {
+  NglGlServiceBase, getNglGlService, NglGlProps, NglGlAux
+} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 
 import {_package} from '../package-test';
 
@@ -23,20 +26,21 @@ category('NglGlService', () => {
 
   test('pdb', async () => {
     /** Tests rendering errors after NglGlService.reset() */
-    _package.logger.debug('tests NglGlService/pdb, end');
+    _package.logger.debug('tests NglGlService/pdb, start');
     const pdbStr = await _package.files.readAsText('samples/1bdq.pdb');
     expect(pdbStr.length > 0, true, 'Empty test file.');
+    let consumerId: number | null = null;
     const event = new Subject<void>();
     await testEvent(event,
       () => {
         _package.logger.debug('tests NglGlService/pdb, event handler');
       },
       () => {
-        const task: NglGlTask = {
+        const task: RenderTask<NglGlProps, NglGlAux> = {
           name: 'test1',
-          backColor: DG.Color.fromHtml('#FFFFFF'),
           props: {
             pdb: pdbStr,
+            backColor: DG.Color.fromHtml('#FFFFFF'),
             width: 300, height: 300,
           },
           onAfterRender: (canvas: HTMLCanvasElement) => {
@@ -44,10 +48,11 @@ category('NglGlService', () => {
           },
         };
         nglSvc.reset();
-        nglSvc.render(task, 0);
+        consumerId = nglSvc.render(consumerId, task, 0);
       }, 15000);
 
     expect(nglSvc.errorCount, 0, 'There was errors in NglGlService.');
+    expect(consumerId !== null, true, 'consumerId not assigned');
     _package.logger.debug('tests NglGlService/pdb, end');
   }, {timeout: 25000});
 });

@@ -377,13 +377,6 @@ export async function getPdbHelper(): Promise<IPdbHelper> {
   return PdbHelper.getInstance();
 }
 
-//name: getPdbGridCellRenderer
-//input: object gridCol
-//output: object result
-export function getPdbGridCellRenderer(gridCol: DG.GridColumn): IPdbGridCellRenderer {
-  return PdbGridCellRendererBack.getOrCreate(gridCol);
-}
-
 //name: dockingDemo
 //description:
 export async function dockingDemo() {

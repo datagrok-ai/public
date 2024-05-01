@@ -1,5 +1,16 @@
 # Bio changelog
 
+## 2.12.17 (2024-05-01)
+
+### Features
+
+* Add MonomerLib.getSummary
+* Use Pistoia typization
+
+### Bug fixes
+
+* Fix rendering on grid and without (row tooltip, scatter plot)
+
 ## 2.12.16 (2024-04-25)
 
 Bio: Fix crushing substructure filter.

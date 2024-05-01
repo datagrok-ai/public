@@ -95,7 +95,7 @@ id3,QHIRE--LT
       const monLength: number = 3;
       const charWidth: number = 7;
       const sepWidth: number = 12;
-      const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, () => {
+      const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, () => {
         const sh = SeqHandler.forColumn(seqCol);
         return {
           seqHandler: sh,
