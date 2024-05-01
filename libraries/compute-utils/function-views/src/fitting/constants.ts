@@ -40,7 +40,7 @@ export enum TITLE {
    OBJECTIVE = TARGET,
    SAMPLES = 'samples',
    ID = 'id',
-   OBTAINED = 'Obtained',
+   OBTAINED = 'Simulation',
    LOSS_LOW = 'loss',
  };
 

@@ -302,6 +302,7 @@ export class FittingView {
 
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
+
   private toSetSwitched = true;
   private samplesCount = 10;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -745,6 +746,8 @@ export class FittingView {
         return;
       }
 
+      const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
+
       /** Get call funcCall with the specified inputs */
       const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
@@ -839,7 +842,7 @@ export class FittingView {
         const calledFuncCall = await getCalledFuncCall(extr.point);
         calledFuncCalls[idx] = calledFuncCall;
         outputsOfInterest.forEach((output) => {
-          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.colName);
+          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.colName, toShowTableName);
           gofs.forEach((item) => gofElems.set(item.caption, item.root));
         });
         gofViewers[idx] = gofElems;
@@ -881,7 +884,7 @@ export class FittingView {
       grid.props.allowEdit = false;
 
       // Add linecharts of loss function
-      const lossGraphColName = reportColumns.getUnusedName(TITLE.LOSS_GRAPH);
+      const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
       tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
       reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
@@ -1025,11 +1028,14 @@ export class FittingView {
         showXAxis: true,
         showXSelector: true,
         showYSelector: true,
+        lineColoringType: 'custom',
+        lineColor: 15274000,
+        markerColor: 15274000,
       }).root;
   } // getLossGraph
 
   /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string): GoFViewer[] {
+  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFViewer[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
@@ -1101,7 +1107,7 @@ export class FittingView {
           indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
 
           result.push({
-            caption: `${caption}: the '${name}' column`,
+            caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
             root: DG.Viewer.lineChart(DG.DataFrame.fromColumns([
               expArgCol,
               DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
