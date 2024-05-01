@@ -3,6 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+// import '@datagrok-libraries/bio/src/types/dojo';
+// import * as dojo from 'DOJO';
+import '@datagrok-libraries/bio/src/types/helm';
+import * as scil from 'scil';
+import * as org from 'org';
+import '@datagrok-libraries/bio/src/types/jsdraw2';
+import * as JSDraw2 from 'JSDraw2';
+
 import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -59,7 +67,8 @@ function initHelmPatchDojo(): void {
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  //@ts-ignore
+  const logPrefix: string = 'Helm: initHelm()';
+  _package.logger.debug(`${logPrefix}, start`);
   org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
   return Promise.all([
@@ -72,19 +81,22 @@ export async function initHelm(): Promise<void> {
     grok.functions.call('Bio:getBioLib'),
   ])
     .then(([_, lib]: [unknown, IMonomerLib]) => {
+      _package.logger.debug(`${logPrefix}, then(), lib loaded`);
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
       monomerLib.onChanged.subscribe((_) => {
         try {
+          const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
+          _package.logger.debug(`${logPrefixInt}, start, org,helm.webeditor.Monomers updating`);
           rewriteLibraries(); // initHelm()
 
-          const monTypeList: string[] = monomerLib!.getPolymerTypes();
-          const msgStr: string = 'Monomer lib updated:<br />' + (
-            monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
-              return `${monType} ${monomerLib!.getMonomerSymbolsByType(monType).length}`;
-            }).join('<br />'));
+          const libSummary: string = monomerLib!.getSummary()
+            .replaceAll('\n', '<br />\n')
+            .replaceAll(',', ' ');
+          const libMsg: string = `Monomer lib updated:<br /> ${libSummary}'`;
+          grok.shell.info(libMsg);
 
-          grok.shell.info(msgStr);
+          _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
         } catch (err: any) {
           const errMsg = errorToConsole(err);
           console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
@@ -107,7 +119,6 @@ export function getMonomerLib(): IMonomerLib {
 
 /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
 function rewriteLibraries() {
-  // @ts-ignore
   org.helm.webeditor.Monomers.clear();
   monomerLib!.getPolymerTypes().forEach((polymerType) => {
     const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
@@ -139,7 +150,6 @@ function rewriteLibraries() {
         isBroken = true;
 
       if (!isBroken) {
-        // @ts-ignore
         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
       }
     });
@@ -221,10 +231,8 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  // @ts-ignore
-  const app = new scil.helm.App(view, {
+  const app = new org.helm.webeditor.App(view, {
     showabout: false,
     mexfontsize: '90%',
     mexrnapinontab: true,
@@ -237,12 +245,9 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
   let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-  //@ts-ignore
   scil.apply(app.sequence.style, s);
-  //@ts-ignore
   scil.apply(app.notation.style, s);
   s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  //@ts-ignore
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
@@ -250,9 +255,8 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
     if (!!cell && units === undefined)
       app.canvas.helm.setSequence(cell.value, 'HELM');
     else
-      app.canvas.helm.setSequence(value, 'HELM');
+      app.canvas.helm.setSequence(value!, 'HELM');
   }, 200);
-  //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
@@ -337,7 +341,6 @@ export async function measureCellRenderer(): Promise<void> {
   for (let i = 0; i < 20; ++i) {
     const t1 = window.performance.now();
     let t2: number;
-    // @ts-ignore
     if (!back.cacheEnabled) {
       await testEvent(back.onRendered, () => {
         t2 = window.performance.now();

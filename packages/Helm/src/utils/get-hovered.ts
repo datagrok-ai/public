@@ -2,13 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import * as org from 'org';
+import * as JSDraw2 from 'JSDraw2';
+
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {IEditorMol, IEditorMolAtom} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
-  argsX: number, argsY: number, gridCell: DG.GridCell, mol: IEditorMol
+  argsX: number, argsY: number, gridCell: DG.GridCell, mol: JSDraw2.IEditorMol
 ): ISeqMonomer | null {
   let hoveredSeqMonomer: ISeqMonomer | null = null;
 
@@ -82,9 +84,8 @@ export function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
-function getSeqMonomerFromHelmAtom(atom: IEditorMolAtom): ISeqMonomer {
+function getSeqMonomerFromHelmAtom(atom: JSDraw2.IEditorMolAtom): ISeqMonomer {
   let polymerType: string | undefined = undefined;
-  // @ts-ignore
   switch (atom.bio.type) {
   case 'HELM_BASE':
   case 'HELM_SUGAR': // r - ribose, d - deoxyribose

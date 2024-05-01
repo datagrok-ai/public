@@ -14,20 +14,17 @@ export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBa
   gridCell: DG.GridCell
 ): [DG.GridColumn | null, DG.Column<TValue>, GridCellRendererTemp<TBack>] {
   let temp: GridCellRendererTemp<TBack> | null = null;
-
   let gridCol: DG.GridColumn | null = null;
-  try { gridCol = gridCell.gridColumn;} catch { gridCol = null;}
-  if (gridCol) temp = gridCol.temp as GridCellRendererTemp<TBack>;
+  try {
+    gridCol = gridCell.dart ? gridCell.gridColumn : null;
+    temp = gridCol ? gridCol.temp as GridCellRendererTemp<TBack> : null;
+  } catch { [gridCol, temp] = [null, null]; }
 
-  // let tableCol: DG.Column<TValue> | null = null;
-  // try { tableCol = gridCell.cell.column; } catch { tableCol = null;}
-  // if (tableCol) temp = tableCol.temp as GridCellRendererTemp<TBack>;
   const tableCol: DG.Column<TValue> = gridCell.cell.column;
   temp = temp ?? tableCol.temp;
 
   if (!temp)
     throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
-
   return [gridCol, tableCol, temp];
 }
 
@@ -36,6 +33,7 @@ export abstract class CellRendererBackBase<TValue> {
   protected destroyed: boolean = false;
 
   protected constructor(
+    /** Not null if rendered on a grid */
     protected readonly gridCol: DG.GridColumn | null,
     protected readonly tableCol: DG.Column<TValue>,
     protected readonly logger: ILogger,

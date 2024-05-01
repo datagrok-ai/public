@@ -6,6 +6,9 @@ Use ImageData for cell image cache instead of toDataURL string
 Add Helm Web Editor types
 Add aux to RenderTask.onAfterRender callback (for interactivity)
 Add cell sync render cell from cache while resizing
+Prioritize render queue by task consumer id and callback
+Fix cell renderer for scatter plot
+Add types for Pistoia Helm
 
 ## 5.40.8 (2024-04-16)
 

@@ -26,9 +26,10 @@ category('NglGlService', () => {
 
   test('pdb', async () => {
     /** Tests rendering errors after NglGlService.reset() */
-    _package.logger.debug('tests NglGlService/pdb, end');
+    _package.logger.debug('tests NglGlService/pdb, start');
     const pdbStr = await _package.files.readAsText('samples/1bdq.pdb');
     expect(pdbStr.length > 0, true, 'Empty test file.');
+    let consumerId: number | null = null;
     const event = new Subject<void>();
     await testEvent(event,
       () => {
@@ -47,10 +48,11 @@ category('NglGlService', () => {
           },
         };
         nglSvc.reset();
-        nglSvc.render(task, 0);
+        consumerId = nglSvc.render(consumerId, task, 0);
       }, 15000);
 
     expect(nglSvc.errorCount, 0, 'There was errors in NglGlService.');
+    expect(consumerId !== null, true, 'consumerId not assigned');
     _package.logger.debug('tests NglGlService/pdb, end');
   }, {timeout: 25000});
 });

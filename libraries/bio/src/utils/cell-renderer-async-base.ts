@@ -23,17 +23,22 @@ export class RenderTask<TProps extends PropsBase, TAux> {
   public constructor(
     public readonly name: string,
     public readonly props: TProps,
-    public readonly onAfterRender: (canvas: HTMLCanvasElement, aux: TAux) => void
+    public readonly onAfterRender: (canvas: HTMLCanvasElement, aux: TAux) => void,
+    public readonly isPriority?: () => boolean,
   ) {}
 }
 
+type RenderQueueItem<TProps extends PropsBase, TAux> = {
+  consumerId: number,
+  key?: keyof any,
+  task: RenderTask<TProps, TAux>,
+  tryCount: number,
+  dt: number
+}
+
 export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
-  protected readonly _queue: {
-    key?: keyof any,
-    task: RenderTask<TProps, TAux>,
-    tryCount: number,
-    dt: number
-  }[];
+  private consumerCounter: number = 0;
+  protected readonly _queue: RenderQueueItem<TProps, TAux>[];
   protected readonly _queueDict: {
     [key: keyof any]: RenderTask<TProps, TAux>
   };
@@ -67,10 +72,12 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
   abstract reset(): Promise<void>;
 
   /** Queues render tasks
-   * @param task Task to render
-   * @param key  Specify to skip previously queued tasks with the same key
+   * @param consumerId   Identifier of the consumer of this render service
+   * @param task         Task to render
+   * @param key          Specify to skip previously queued tasks with the same key
+   * @return             {@link consumerId} or assigned new if null
    */
-  render(task: RenderTask<TProps, TAux>, key?: keyof any, tryCount: number = 0): void {
+  render(consumerId: number | null, task: RenderTask<TProps, TAux>, key?: keyof any, tryCount: number = 0): number {
     const logPrefix = `${this.toLog()}.render()`;
     this.logger.debug(`${logPrefix}, start ` + `key: ${key?.toString()}`);
 
@@ -85,7 +92,9 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
     }
 
     this.logger.debug(`${logPrefix}, _queue.push(), ` + `key: ${key?.toString()}`);
-    this._queue.push({key, task, tryCount, dt: window.performance.now()});
+    if (consumerId === null)
+      consumerId = ++this.consumerCounter;
+    this._queue.push({consumerId, key, task, tryCount, dt: window.performance.now()});
 
     if (!this._busy) {
       this._sweepToggle(this._busy = true);
@@ -94,6 +103,35 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       this.logger.debug(`${logPrefix}, window.setTimeout() -> this._processQueue() `);
       window.setTimeout(() => { this._processQueue(); }, 0 /* next event cycle */);
     }
+
+    return consumerId;
+  }
+
+  protected getTask(): RenderQueueItem<TProps, TAux> | undefined {
+    if (this._queue.length == 0) return undefined;
+    let resItem: RenderQueueItem<TProps, TAux> | undefined = undefined;
+    const head = this._queue[0];
+    if (head.task.isPriority && !head.task.isPriority()) {
+      let priorityItemIdx: number | null = null;
+      for (let i = 0; i < this._queue.length; ++i) {
+        const item = this._queue[i];
+        if (item.consumerId === head.consumerId && item.task.isPriority) {
+          if (item.task.isPriority()) {
+            priorityItemIdx = i;
+            break;
+          } else {
+            // Push back not-priority items to the end of the queue
+            const deferredItemList = this._queue.splice(i);
+            this._queue.push(...deferredItemList);
+          }
+        }
+      }
+      if (priorityItemIdx !== null) {
+        resItem = this._queue.splice(priorityItemIdx, 1)[0];
+      }
+    }
+    if (!resItem) resItem = this._queue.shift();
+    return resItem;
   }
 
   private _processQueue(): void {
@@ -117,14 +155,14 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       }
     };
 
-    const queueItem = this._queue.shift();
+    const queueItem = this.getTask();
     if (!queueItem) {
       this.logger.error(`${logPrefix}, queueItem = undefined `);
       finallyProcessQueue('no queue item');
       return;
     } // in case of empty queue
 
-    const {key, task, tryCount, dt} = queueItem;
+    const {consumerId, key, task, tryCount, dt} = queueItem;
     if (key !== undefined) {
       this.logger.debug(`${logPrefix}, ` + `key: ${key.toString()}`);
       delete this._queueDict[key];
@@ -145,7 +183,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
           `key: ${key?.toString()}.` + `\n` +
           `  The .requestRender() overridden method must call renderHandler callback from args.`);
         this._errorCount += 1;
-        this.render(task, key, tryCount + 1); // return task to the queue
+        this.render(consumerId, task, key, tryCount + 1); // return task to the queue
         finallyProcessQueue('timeout');
       }
     }, 1000);
@@ -175,7 +213,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
         this.logger.error(errMsg, undefined, errStack);
         window.clearTimeout(timeoutHandle);
         this._errorCount += 1;
-        this.render(task, key, tryCount + 1); // return task to the queue
+        this.render(consumerId, task, key, tryCount + 1); // return task to the queue
         finallyProcessQueue(`${logPrefixInt}`);
       });
   }
@@ -232,11 +270,14 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   protected readonly taskQueueMap = new Map<number, RenderTask<TProps, TAux>>;
   protected imageCache = new Map<number, ImageData>();
 
+  /** Consumer identifier of the render service */
+  protected consumerId: number | null = null;
+
   protected constructor(
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column,
     logger: ILogger,
-    protected readonly cacheEnabled: boolean = true,
+    public readonly cacheEnabled: boolean = true,
   ) {
     super(gridCol, tableCol, logger);
   }
@@ -251,7 +292,9 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
 
   protected abstract getRenderService(): RenderServiceBase<TProps, TAux>;
 
-  protected abstract getRenderTaskProps(gridCell: DG.GridCell, dpr: number): TProps;
+  protected abstract getRenderTaskProps(
+    gridCell: DG.GridCell, backColor: number, width: number, height: number
+  ): TProps;
 
   public render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
@@ -259,7 +302,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     const dpr = window.devicePixelRatio;
     const service = this.getRenderService();
 
-    if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
+    if (gridCell.tableRowIndex == null) return;
 
     const rowIdx: number = gridCell.tableRowIndex;
     this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
@@ -267,9 +310,12 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     g.save();
     try {
       const cellImageData = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
-      const gridCellWidth = gridCell.gridColumn.width;
-      const gridCellHeight = gridCell.grid.props.rowHeight;
       const bd = new DG.Rect(x, y, w, h);
+      const gridCellWidth = gridCell.gridColumn.width * dpr - 2;
+      const gridCellHeight = gridCell.grid.props.rowHeight * dpr - 2;
+      let backColor: number | null = cellStyle ? cellStyle.backColor : null;
+      backColor = backColor ?? (this.gridCol ? this.gridCol.grid.props.backColor : null);
+      backColor = backColor ?? DG.Color.argb(0, 0, 0, 0);
 
       if (!this.cacheEnabled || !cellImageData ||
         Math.abs(cellImageData.width / dpr - gridCellWidth) > 0.5 ||
@@ -282,8 +328,8 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
 
         const task = new RenderTask<TProps, TAux>(
           gridCell.cell.rowIndex.toString(),
-          this.getRenderTaskProps(gridCell, dpr),
-          (cellCanvas: HTMLCanvasElement, aux: TAux) => {
+          this.getRenderTaskProps(gridCell, backColor, gridCellWidth, gridCellHeight),
+          /* onAfterRender */(cellCanvas: HTMLCanvasElement, aux: TAux) => {
             this.storeAux(gridCell, aux);
             g.save();
             try {
@@ -306,10 +352,14 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
               if (this.taskQueueMap.size === 0)
                 this._onRendered.next();
             }
+          },
+          /* isPriority */!this.gridCol ? undefined : () => {
+            const grid = gridCell.grid;
+            return (grid.vertScroll.min - 1) <= gridCell.gridRow && gridCell.gridRow <= grid.vertScroll.max;
           });
 
         this.taskQueueMap.set(rowIdx, task);
-        service.render(task, rowIdx);
+        this.consumerId = service.render(this.consumerId, task, rowIdx);
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
         this.renderOnGrid(g, bd, gridCell, cellImageData);
@@ -381,18 +431,21 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     try {
       gCtx.resetTransform();
 
-      const vertScrollMin: number = Math.floor(gCell.grid.vertScroll.min);
-      // Correction for vert scrolling happened between task and render, calculate bd.y directly
-      bd.y = ((gCell.gridRow - vertScrollMin) * gCell.grid.props.rowHeight +
-        gCell.grid.colHeaderHeight) * dpr;
+      if (this.gridCol) {
+        const grid = this.gridCol.grid;
+        const vertScrollMin: number = Math.floor(grid.vertScroll.min);
+        // Correction for vert scrolling happened between task and render, calculate bd.y directly
+        bd.y = ((gCell.gridRow - vertScrollMin) * grid.props.rowHeight +
+          grid.colHeaderHeight) * dpr;
 
-      // Correction for horz scrolling happened between task and render, calculate bd.x directly
-      let left: number = 0;
-      for (let colI = 0; colI < gCell.gridColumn.idx; colI++) {
-        const col: DG.GridColumn = gCell.grid.columns.byIndex(colI)!;
-        left += col.visible ? col.width : 0;
+        // Correction for horz scrolling happened between task and render, calculate bd.x directly
+        let left: number = 0;
+        for (let colI = 0; colI < this.gridCol.idx; colI++) {
+          const col: DG.GridColumn = grid.columns.byIndex(colI)!;
+          left += col.visible ? col.width : 0;
+        }
+        bd.x = (left - grid.horzScroll.min) * dpr;
       }
-      bd.x = (left - gCell.grid.horzScroll.min) * dpr;
 
       /** Clip rect*/ const cr = new DG.Rect(bd.x + dpr, bd.y + dpr, (bd.width - 1) * dpr, (bd.height - 1) * dpr);
       // gCtx.beginPath();

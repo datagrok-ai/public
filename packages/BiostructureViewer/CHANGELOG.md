@@ -1,8 +1,12 @@
 # BiostructureViewer changelog
 
+## 1.1.0 (WIP)
+
+Prioritize render queue by task consumer id and callback
+
 ## 1.0.27 (2024-04-15)
 
-Fix description for Docking Conformations demo 
+Fix description for Docking Conformations demo
 
 ## 1.0.26 (2024-03-30)
 

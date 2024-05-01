@@ -2,11 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as org from 'org';
+import * as scil from 'scil';
+import * as JSDraw2 from 'JSDraw2';
+
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {IEditor} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
@@ -15,7 +19,7 @@ import {_package} from '../package';
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private editor: IEditor | null = null;
+  private editor: JSDraw2.Editor | null = null;
   private image: HTMLImageElement | null = null;
 
   constructor() {
@@ -32,25 +36,50 @@ export class HelmService extends HelmServiceBase {
     document.body.appendChild(this.hostDiv);
   }
 
+  protected override toLog(): string {
+    return `Helm: ${super.toLog()}`;
+  }
+
   protected override async requestRender(
     key: keyof any | undefined, task: RenderTask<HelmProps, HelmAux>, renderHandler: (aux: HelmAux) => void
   ): Promise<[Unsubscribable, number, () => void]> {
     const logPrefix = `${this.toLog()}.requestRender()`;
-    this.logger.debug(`${logPrefix}, ` + `key: ${key?.toString()}`);
+    this.logger.debug(`${logPrefix}, start, ` + `key: ${key?.toString()}`);
     const emptyCanvasHash: number = 0;
 
     if (!this.editor) {
       this.editor = new JSDraw2.Editor(this.hostDiv,
-        {width: task.props.width, height: task.props.height, skin: 'w8', viewonly: true}) as IEditor;
+        {width: task.props.width, height: task.props.height, skin: 'w8', viewonly: true});
     }
     const lST = window.performance.now();
     this.editor.options.width = task.props.width;
     this.editor.options.height = task.props.height;
     this.editor.resize(task.props.width, task.props.height);
-    const helmStr = task.props.gridCell.cell.valueString;
-    if (helmStr)
-      this.editor.setData(task.props.gridCell.cell.valueString, 'helm');
-    else
+    const helmStr = task.props.helm;
+    let hasMissing: boolean = false;
+    if (helmStr) {
+      const monomers = org.helm.webeditor.Monomers;
+      const originalGetMonomer = monomers.getMonomer;
+      const originalAlert = scil.Utils.alert;
+      try {
+        org.helm.webeditor.Monomers.getMonomer = (biotype: string, elem: string): org.helm.IAtom => {
+          const resAtom = originalGetMonomer.bind(monomers)(biotype, elem);
+          if (!resAtom)
+            hasMissing = true;
+          return resAtom;
+        };
+        // Preventing alert message box for missing monomers with compressed Scilligence.JSDraw2.Lite.js
+        scil.Utils.alert = (s: string): void => {
+          this.logger.warning(`${logPrefix}, scil.Utils.alert() s = 's'.`);
+        };
+        this.logger.debug(`${logPrefix}, editor.setData( '${helmStr}' )`);
+        this.editor.setData(helmStr, 'helm');
+      } finally {
+        monomers.getMonomer = originalGetMonomer;
+        scil.Utils.alert = originalAlert;
+      }
+    }
+    if (!helmStr || hasMissing)
       this.editor.reset();
 
     const bBox = (this.editor.div.children[0] as SVGSVGElement).getBBox();
@@ -85,6 +114,7 @@ export class HelmService extends HelmServiceBase {
         renderHandlerInt(); // calls onRendered()
       });
     };
+    this.logger.debug(`${logPrefix}, end, ` + `key: ${key?.toString()}`);
     return [renderSub, -1, trigger];
   }
 

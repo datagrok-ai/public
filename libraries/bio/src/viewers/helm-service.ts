@@ -2,12 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import '../types/jsdraw2';
+import * as JSDraw2 from 'JSDraw2';
+
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
-import {IEditorMol} from '../types/helm-web-editor';
 
 export class HelmProps extends PropsBase {
   public constructor(
-    public readonly gridCell: DG.GridCell,
+    public readonly helm: string,
     backColor: number, width: number, height: number
   ) {
     super(backColor, width, height);
@@ -15,7 +17,7 @@ export class HelmProps extends PropsBase {
 }
 
 export type HelmAux = {
-  /** The molecule made of atoms (monomers) and bonds */ mol: IEditorMol,
+  /** The molecule made of atoms (monomers) and bonds */ mol: JSDraw2.IEditorMol,
   /** SVG bounding box */ bBox: DG.Rect,
   /** Cell box {0, 0, w, h} */ cBox: DG.Rect,
 }

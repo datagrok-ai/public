@@ -190,7 +190,7 @@ export function previewNglDensity(file: any) {
 
 // eslint-disable-next-line max-len
 //tags: fileViewer
-//meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,ent,sd,xyz
+//meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz
 //input: file file
 //output: view v
 export function previewBiostructureStructure(file: DG.FileInfo): DG.View {

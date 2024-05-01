@@ -34,12 +34,10 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     return _getNglGlService();
   }
 
-  protected getRenderTaskProps(gridCell: DG.GridCell, dpr: number): NglGlProps {
-    return new NglGlProps(
-      gridCell.cell.value,
-      gridCell.grid.props.backColor,
-      gridCell.gridColumn.width * dpr - 2,
-      gridCell.grid.props.rowHeight * dpr - 2);
+  protected override getRenderTaskProps(
+    gridCell: DG.GridCell, backColor: number, width: number, height: number
+  ): NglGlProps {
+    return new NglGlProps(gridCell.cell.value, backColor, width, height);
   }
 
   protected override storeAux(_gridCell: DG.GridCell, _aux: NglGlAux): void {}

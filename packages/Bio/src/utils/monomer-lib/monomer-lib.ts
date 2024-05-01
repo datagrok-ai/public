@@ -116,6 +116,14 @@ export class MonomerLib implements IMonomerLib {
     this._onChanged.next();
   }
 
+  getSummary(): string {
+    const monTypeList: string[] = this.getPolymerTypes();
+    const resStr: string = monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
+      return `${monType} ${this.getMonomerSymbolsByType(monType).length}`;
+    }).join('\n');
+    return resStr;
+  }
+
   getTooltip(polymerType: string, monomerSymbol: string): HTMLElement {
     // getTooltip(monomer: Monomer): HTMLElement;
     // getTooltip(monomerOrPolymerType: string | Monomer, symbol?: string): HTMLElement {

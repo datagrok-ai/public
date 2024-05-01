@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {IEditor, IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
@@ -46,7 +46,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const editorMol: IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      const editorMol: JSDraw2.IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
       if (editorMol)
@@ -138,7 +138,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         }
 
         // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
-        const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
+        const editor = new JSDraw2.Editor(host,
+          {width: w, height: h, skin: 'w8', viewonly: true});
         helmPlacer.setEditorMol(gridCell.tableRowIndex!, editor.m);
 
         helmPlacer.skipCell(gridCell.tableRowIndex!);

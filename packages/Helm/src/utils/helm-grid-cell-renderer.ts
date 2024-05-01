@@ -2,12 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 import {HelmAux, HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
 import {ISeqMonomer} from '../helm-monomer-placer';
@@ -65,12 +65,10 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     return _getHelmService();
   }
 
-  protected override getRenderTaskProps(gridCell: DG.GridCell, dpr: number): HelmProps {
-    return new HelmProps(
-      gridCell,
-      gridCell.grid.props.backColor,
-      gridCell.gridColumn.width * dpr - 2,
-      gridCell.grid.props.rowHeight * dpr - 2);
+  protected override getRenderTaskProps(
+    gridCell: DG.GridCell, backColor: number, width: number, height: number,
+  ): HelmProps {
+    return new HelmProps(gridCell.cell.value, backColor, width, height);
   }
 
   protected override storeAux(gridCell: DG.GridCell, aux: HelmAux): void {
@@ -140,7 +138,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const argsX = (e.offsetX - gcb.x) * dpr;
     const argsY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: IEditorMol | null = aux.mol;
+    const editorMol: JSDraw2.IEditorMol | null = aux.mol;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
