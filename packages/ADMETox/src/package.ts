@@ -61,7 +61,6 @@ export async function addFormViewer(molecules: DG.Column) {
   const finalNames = df.columns.names();
   const difference = finalNames.filter(element => !initialNames.includes(element));
   addColorCoding(df, difference);
-  //addSparklines(df, difference);
   view.grid.invalidate();
 }
 
