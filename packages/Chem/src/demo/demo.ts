@@ -740,5 +740,5 @@ export async function _demoScaffoldTree(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem/#scaffold-tree-analysis');
+  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
 }

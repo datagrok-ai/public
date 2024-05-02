@@ -2,13 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions } from './mmp-constants';
 
 export function getGenerations(molecules: DG.Column, frags: [string, string][][],
   allPairsGrid: DG.Grid, activityMeanNames: Array<string>, activities: DG.ColumnList, module:RDModule):
   DG.Grid {
   const rulesColumns = allPairsGrid.dataFrame.columns;
-  const rulesFrom = rulesColumns.byName('From');
-  const rulesTo = rulesColumns.byName('To');
+  const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM);
+  const rulesTo = rulesColumns.byName(MMP_COLNAME_TO);
   const activityN = activityMeanNames.length;
 
   const structures = molecules.toList();
@@ -29,7 +30,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   for (let i = 0; i < structures.length; i ++) {
     const singleActivities = new Array<number>(activityN);
     for (let j = 0; j < activityN; j++)
-      singleActivities[j] = activities.byName(activityMeanNames[j].replace('Mean Difference ', '')).get(i);
+      singleActivities[j] =   activities.byName(activityMeanNames[j].replace('Mean Difference ', '')).get(i);
 
     for (let j = 0; j < frags[i].length; j++) {
       const core = frags[i][j][0];
@@ -54,7 +55,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
 
   const allStructures = Array(structures.length * activityN).fill(0).map((_, i) => structures[i % structures.length]);
 
-  const colStructure = DG.Column.fromList('string', 'structure', allStructures);
+  const colStructure = createColumnWithDescription('string', 'Structure', allStructures);
   colStructure.semType = DG.SEMTYPE.MOLECULE;
   const cols = [colStructure];
   let allCores: Array<string> = [];
@@ -92,22 +93,29 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
     }
   }
 
-  cols.push(DG.Column.fromList('double', `Initial value`, allInits));
-  cols.push(DG.Column.fromList('string', `Activity`, activityName));
-  const coreCol = DG.Column.fromList('string', `Core`, allCores);
+  cols.push(createColumnWithDescription('double', `Initial value`, allInits));
+  cols.push(createColumnWithDescription('string', `Activity`, activityName));
+  const coreCol = createColumnWithDescription('string', `Core`, allCores);
   coreCol.semType = DG.SEMTYPE.MOLECULE;
   cols.push(coreCol);
-  const fromCol = DG.Column.fromList('string', `From`, allFrom);
+  const fromCol = createColumnWithDescription('string', `From`, allFrom);
   fromCol.semType = DG.SEMTYPE.MOLECULE;
   cols.push(fromCol);
-  const toCol = DG.Column.fromList('string', `To`, allTo);
+  const toCol = createColumnWithDescription('string', `To`, allTo);
   toCol.semType = DG.SEMTYPE.MOLECULE;
   cols.push(toCol);
-  cols.push(DG.Column.fromList('double', `Prediction`, allPreds));
-  const generationCol = DG.Column.fromList('string', `Generation`, generation);
+  cols.push(createColumnWithDescription('double', `Prediction`, allPreds));
+  const generationCol = createColumnWithDescription('string', `Generation`, generation);
   generationCol.semType = DG.SEMTYPE.MOLECULE;
   cols.push(generationCol);
 
   const generations = DG.DataFrame.fromColumns(cols);
   return generations.plot.grid();
+}
+
+export function createColumnWithDescription(colType: any, colName: string, list: any[]): DG.Column {
+  const col = DG.Column.fromList(colType, colName, list);
+  if (columnsDescriptions[colName])
+    col.setTag('description', columnsDescriptions[colName]);
+  return col;
 }
