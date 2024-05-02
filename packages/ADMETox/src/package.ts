@@ -107,7 +107,7 @@ export function AdmeticaEditor(call: DG.FuncCall): void {
     }).show();
 }
 
-//top-menu: Chem | ADME/Tox | Сalculate
+//top-menu: Chem | ADME/Tox | Сalculate...
 //name: Admetica
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
