@@ -11,6 +11,8 @@ import {ABILITY_STATE, VISIBILITY_STATE} from '../../shared-utils/consts';
 import {isIncomplete} from '../../shared-utils/utils';
 import {StepState} from '../../function-views/src/pipeline-view';
 
+const PIPELINE_DEBUG = true;
+
 //
 // State optional spec
 //
@@ -311,7 +313,7 @@ class NodeItemState<T = any> {
     this.valueChanges.pipe(
       takeUntil(this.pipelineState.closed),
     ).subscribe((x) => {
-      console.log(`state update: ${this.parentId}/${this.conf.id}`, x);
+      debuglog(`state updated: ${this.parentId}/${this.conf.id}, new value ${x}`);
       this.value.next(x);
     });
   }
@@ -372,7 +374,7 @@ class LinkState {
   public enabled = new BehaviorSubject(true);
   private currentSource = new BehaviorSubject<Observable<any>>(of());
   private externalTrigger = new Subject<true>();
-  public valueChanges = this.currentSource.pipe(
+  private valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
   );
 
@@ -445,7 +447,7 @@ interface NestedStepData {
 
 class PipelineRuntime {
   private runningLinks = new Set<string>();
-  private disabledStepsIOPaths = new Set<string>();
+  private disabledSettersPrefixes = new Set<string>();
   private validationState = new Map<string, Map<string, ValidationResult | undefined>>();
   private pipelineLoads = new Subject<{path: ItemPath, runId: string}>();
   public isUpdating = new BehaviorSubject<boolean>(false);
@@ -477,6 +479,11 @@ class PipelineRuntime {
 
   public setStepState(path: ItemPath, enabled: boolean): void {
     const k = pathToKey(path);
+
+    if (this.isSetterDisabled(path, 'step'))
+      return;
+
+    debuglog(`step visibility updated: ${k}, new value: ${enabled}`);
 
     if (enabled)
       this.view.showSteps(k);
@@ -678,19 +685,18 @@ class PipelineRuntime {
   }
 
   public goToStep(_path: ItemPath): void {
-    console.log('TODO: goToStep not implemented');
   }
 
   public disableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
-    console.log(`disableSubStepsIOSetters ${k}`);
-    this.disabledStepsIOPaths.add(k);
+    debuglog(`disable substeps setters: ${k}`);
+    this.disabledSettersPrefixes.add(k);
   }
 
   public enableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
-    console.log(`enableSubStepsIOSetters ${k}`);
-    this.disabledStepsIOPaths.delete(k);
+    debuglog(`enable substeps setters: ${k}`);
+    this.disabledSettersPrefixes.delete(k);
   }
 
   public async awaitForAllUpdatesDone() {
@@ -702,6 +708,7 @@ class PipelineRuntime {
   }
 
   private async pipelineLoader(path: ItemPath, runId: string) {
+    this.setPipelineState(path, false);
     this.disableSubStepsIOSetters(path);
     try {
       const calls = await this.loadPipelineFuncCalls(runId);
@@ -724,12 +731,11 @@ class PipelineRuntime {
       if (data) {
         const rfv = this.view.getStepView(data.pathKey);
         if (rfv) {
-          console.log(`loading step ${data.pathKey}, nqName: ${data.nqName}, id: ${call.id}`);
+          debuglog(`loaded step: ${data.pathKey}, nqName: ${data.nqName}, id: ${call.id}`);
           const ncall = await rfv.loadRun(call.id);
+	  this.view.showSteps(data.pathKey);
           if (!isIncomplete(ncall))
             this.view.enableStep(data.pathKey);
-	  else
-	    break;
         }
       }
     }
@@ -772,7 +778,7 @@ class PipelineRuntime {
   private isSetterDisabled(path: ItemPath, type: NodeConfTypes) {
     if (type === 'step') {
       const k = pathToKey(path);
-      for (const prefix of this.disabledStepsIOPaths) {
+      for (const prefix of this.disabledSettersPrefixes) {
         const suffix = getSuffix(k, prefix);
         if (suffix)
           return true;
@@ -817,8 +823,6 @@ interface HookSpec {
 
 
 class RuntimeControllerImpl implements RuntimeController {
-  public disabledSteps = new Set<string>();
-
   constructor(private handlerId: string, private config: ControllerConfig, private rt: PipelineRuntime, private signal?: AbortSignal) {
   }
 
@@ -843,16 +847,22 @@ class RuntimeControllerImpl implements RuntimeController {
   public enableStep(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    this.disabledSteps.delete(pathToKey(fullPath));
-    console.log(`${this.handlerId}: enableStep ${pathToKey(fullPath)}`);
+    if (!this.checkOutput(fullPath))
+      return;
+
+    debuglog(`handler: ${this.handlerId}, try enable step: ${pathToKey(fullPath)}`);
+
     return this.rt.setStepState(fullPath, true);
   }
 
   public disableStep(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    this.disabledSteps.add(pathToKey(fullPath));
-    console.log(`${this.handlerId}: disableStep ${pathToKey(fullPath)}`);
+    if (!this.checkOutput(fullPath))
+      return;
+
+    debuglog(`handler: ${this.handlerId}, try enable step: ${pathToKey(fullPath)}`);
+
     return this.rt.setStepState(fullPath, false);
   }
 
@@ -865,19 +875,32 @@ class RuntimeControllerImpl implements RuntimeController {
   public enablePipeline(path: ItemPath) {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
+    if (!this.checkOutput(fullPath))
+      return;
+
+    debuglog(`handler: ${this.handlerId}, try enable pipeline: ${pathToKey(fullPath)}`);
+
     return this.rt.setPipelineState(fullPath, true);
   }
 
   public disablePipeline(path: ItemPath) {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
+    if (!this.checkOutput(fullPath))
+      return;
+
+    debuglog(`handler: ${this.handlerId}, try disable pipeline: ${pathToKey(fullPath)}`);
+
     return this.rt.setPipelineState(fullPath, false);
   }
 
   public triggerLink(path: ItemPath): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
-    console.log(`${this.handlerId}: triggerLink ${pathToKey(fullPath)}`);
+    if (!this.checkOutput(fullPath))
+      return;
+
+
     return this.rt.triggerLink(fullPath);
   }
 
@@ -896,7 +919,7 @@ class RuntimeControllerImpl implements RuntimeController {
     if (!this.checkOutput(fullPath))
       return;
 
-    console.log(`${this.handlerId}: set state ${pathToKey(fullPath)} ${value}`);
+    debuglog(`handler: ${this.handlerId}, try update state: ${pathToKey(fullPath)}, value: ${value}`);
     return this.rt.setState(fullPath, value, inputState);
   }
 
@@ -928,7 +951,7 @@ class RuntimeControllerImpl implements RuntimeController {
     if (!this.checkValidation(fullPathTarget))
       return;
 
-    console.log(`${this.handlerId}: setValidation ${fullPathTarget} ${validation}`);
+    debuglog(`handler: ${this.handlerId}: update validation: ${fullPathTarget}, value: ${validation}`);
     this.rt.setValidation(fullPathTarget, fullPathLinkPath, validation);
   }
 
@@ -1023,7 +1046,6 @@ class CompositionPipelineView extends PipelineView implements ICompositionView {
     const stepView = this.getStepView<RichFunctionView>(viewId);
     const changes = stepView.getParamChanges(stateId);
     const setter = (x: any, inputState?: 'disabled' | 'restricted' | 'user input') => {
-      console.log(`setter: ${viewId}/${stateId}`, x);
       stepView.setInput(stateId, x, inputState);
     };
     return {changes, setter};
@@ -1671,4 +1693,9 @@ async function callHandler(fn: string | Function, params: Record<string, any>) {
     const res = await fn(params);
     return res;
   }
+}
+
+function debuglog(...args: any[]) {
+  if (PIPELINE_DEBUG)
+    console.log(...args);
 }
