@@ -3,9 +3,11 @@
   "subgroup": [
     {
       "name": "Absorption",
+      "description": "Absorption is the process by which drugs enter the bloodstream after administration. It is pivotal in pharmaceutical research, enabling enhanced bioavailability, precise dosing, formulation optimization, reduced variability among patient populations, and minimized side effects. In this part, we studied 3 absorption-related endpoints.",
       "models": [
         {
           "name": "Pgp-Substrate",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -13,20 +15,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being a substrate of P-glycoprotein which is responsible for cell membrane permeability. Compounds with high molecular mass and a large number of polar atoms are the most probable substrates. Binding the substrate leads to low cell permeability of substance."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
               }
             },
             {
@@ -42,29 +34,19 @@
               "object": {
                 "direction": "Lower is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.8
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
             "min": "0",
             "max": "1",
+            "enable": false,
             "colors": "[4294901760, 4278255360]"
           }
         },
         {
           "name": "Caco2",
+          "units": "cm/s",
           "min": -6,
           "max": -5.5,
           "properties": [
@@ -72,20 +54,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "It is a rate of compound flux across polarized human colon carcinoma Caco-2 cells layers, cm/s. High values indicate good permeability characteristics."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "cm/s"
               }
             },
             {
@@ -101,22 +73,11 @@
                   "> -5.5": "good"
                 }
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.3
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "-6",
             "max": "-5.5",
             "colors": "[4294901760, 4278255360]"
@@ -124,6 +85,7 @@
         },
         {
           "name": "Lipophilicity",
+          "units": "log-ratio",
           "min": 0,
           "max": 5,
           "properties": [
@@ -131,20 +93,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "This is a charachteristic of compound quatifying the distribution between lipophilic and hydrophiliv environments. High lipophilicity values  are good for the most of memranes permeability, though low values are related to achievment of therapeutical plasma concentrations. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "log-ratio"
               }
             },
             {
@@ -156,28 +108,17 @@
               "object": {
                 "ranges": {
                   "2 - 3": "ideal",
-                  "0 - 2": "intermediate",
+                  "0 - 5": "intermediate",
                   "3 - 5": "intermediate",
                   "< 0": "bad",
                   "> 5": "bad"
                 }
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.4
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "5",
             "colors": "[4294901760, 4278255360]"
@@ -185,6 +126,7 @@
         },
         {
           "name": "Solubility",
+          "units": "log mol/L",
           "min": -4.5,
           "max": -1,
           "properties": [
@@ -192,20 +134,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "log mol/L"
               }
             },
             {
@@ -221,22 +153,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.4
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "-4.5",
             "max": "-1",
             "colors": "[4294901760, 4278255360]"
@@ -246,9 +167,11 @@
     },
     {
       "name": "Distribution",
+      "description": "Distribution refers to the process of transporting a drug from its point of entry into the bloodstream to its target organs, tissues, or specific sites where it exerts its therapeutic effects, with factors such as drug properties and physiological characteristics influencing this process.",
       "models": [
         {
           "name": "PPBR",
+          "units": "%",
           "min": 40,
           "max": 90,
           "properties": [
@@ -256,20 +179,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "%"
               }
             },
             {
@@ -290,7 +203,8 @@
               "property": {
                 "name": "ranges",
                 "inputType": "Map",
-                "enable": false
+                "enable": false,
+                "skip": true
               },
               "object": {
                 "ranges": {
@@ -298,18 +212,6 @@
                   "40 - 90": "moderate",
                   "< 40": "low"
                 }
-              }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.7
               }
             }
           ],
@@ -322,6 +224,7 @@
         },
         {
           "name": "VDss",
+          "units": "L/kg",
           "min": 1,
           "max": 2,
           "properties": [
@@ -329,20 +232,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. Hih VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "L/kg"
               }
             },
             {
@@ -363,7 +256,8 @@
               "property": {
                 "name": "ranges",
                 "inputType": "Map",
-                "enable": false
+                "enable": false,
+                "skip": true
               },
               "object": {
                 "ranges": {
@@ -372,24 +266,12 @@
                   "< 1": "low"
                 }
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.3
-              }
             }
           ],
           "coloring": {
             "type": "Conditional",
             "> 2": "#00ffff",
-            "1-2": "#800000",
+            "1 - 2": "#800000",
             "< 1": "#ffff00"
           }
         }
@@ -397,9 +279,11 @@
     },
     {
       "name": "Metabolism",
+      "description": "Metabolism is the intricate biochemical system responsible for managing energy and molecular processes within living organisms. It consists of two essential components: anabolism, where complex molecules are built, requiring energy like an investment, and catabolism, which breaks down substances to release energy, akin to a controlled chemical breakdown.",
       "models": [
         {
           "name": "CYP1A2-Inhibitor",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -407,7 +291,7 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
@@ -415,16 +299,6 @@
             },
             {
               "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
-              }
-            },
-            {
-              "property": {
                 "name": "direction",
                 "inputType": "Radio",
                 "choices": [
@@ -436,22 +310,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.2
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -459,6 +322,7 @@
         },
         {
           "name": "CYP2C19-Inhibitor",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -466,7 +330,7 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
@@ -474,16 +338,6 @@
             },
             {
               "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
-              }
-            },
-            {
-              "property": {
                 "name": "direction",
                 "inputType": "Radio",
                 "choices": [
@@ -495,22 +349,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.3
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -518,6 +361,7 @@
         },
         {
           "name": "CYP2C9-Inhibitor",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -525,7 +369,7 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
@@ -533,16 +377,6 @@
             },
             {
               "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
-              }
-            },
-            {
-              "property": {
                 "name": "direction",
                 "inputType": "Radio",
                 "choices": [
@@ -554,22 +388,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.5
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -577,6 +400,7 @@
         },
         {
           "name": "CYP2C9-Substrate",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -584,7 +408,7 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
@@ -592,16 +416,6 @@
             },
             {
               "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
-              }
-            },
-            {
-              "property": {
                 "name": "direction",
                 "inputType": "Radio",
                 "choices": [
@@ -613,22 +427,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.4
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -636,6 +439,7 @@
         },
         {
           "name": "CYP2D6-Inhibitor",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -643,7 +447,7 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
@@ -651,16 +455,6 @@
             },
             {
               "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
-              }
-            },
-            {
-              "property": {
                 "name": "direction",
                 "inputType": "Radio",
                 "choices": [
@@ -672,22 +466,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.7
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -695,6 +478,7 @@
         },
         {
           "name": "CYP2D6-Substrate",
+          "units": "-",
           "min": 0,
           "max": 1,
           "properties": [
@@ -702,20 +486,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "-"
               }
             },
             {
@@ -731,22 +505,11 @@
               "object": {
                 "direction": "Higher is better"
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.8
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "0",
             "max": "1",
             "colors": "[4294901760, 4278255360]"
@@ -756,9 +519,11 @@
     },
     {
       "name": "Excretion",
+      "description": "Drug excretion is the removal of drugs from the body using various different routes of excretion, including urine, bile, sweat, saliva, tears, milk, and stool.",
       "models": [
         {
           "name": "CL-Hepa",
+          "units": "mL/min",
           "min": 10,
           "max": 100,
           "properties": [
@@ -766,20 +531,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "mL/min"
               }
             },
             {
@@ -809,22 +564,11 @@
                   "< 10": "low"
                 }
               }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.4
-              }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "10",
             "max": "100",
             "colors": "[4278255360, 4294901760]"
@@ -832,6 +576,7 @@
         },
         {
           "name": "CL-Micro",
+          "units": "μL/min/million",
           "min": 10,
           "max": 100,
           "properties": [
@@ -839,20 +584,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "μL/min/million"
               }
             },
             {
@@ -871,19 +606,22 @@
             },
             {
               "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
+                "name": "ranges",
+                "inputType": "Map",
+                "enable": false
               },
               "object": {
-                "weight": 0.3
+                "ranges": {
+                  "> 100": "bad",
+                  "10 - 100": "moderate",
+                  "< 10": "low"
+                }
               }
             }
           ],
           "coloring": {
             "type": "Linear",
+            "enable": false,
             "min": "10",
             "max": "100",
             "colors": "[4278255360, 4294901760]"
@@ -891,6 +629,7 @@
         },
         {
           "name": "Half-Life",
+          "units": "hours",
           "min": 2,
           "max": 24,
           "properties": [
@@ -898,20 +637,10 @@
               "property": {
                 "name": "description",
                 "inputType": "TextArea",
-                "enable": true
+                "enable": false
               },
               "object": {
                 "description": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "units",
-                "inputType": "Text",
-                "enable": true
-              },
-              "object": {
-                "units": "hours"
               }
             },
             {
@@ -926,18 +655,6 @@
               },
               "object": {
                 "direction": "Lower is better"
-              }
-            },
-            {
-              "property": {
-                "name": "weight",
-                "inputType": "Slider",
-                "min": 0,
-                "max": 1,
-                "enable": true
-              },
-              "object": {
-                "weight": 0.6
               }
             }
           ],

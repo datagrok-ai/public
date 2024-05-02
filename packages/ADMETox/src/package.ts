@@ -2,9 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getModelsSingle, addAllModelPredictions, addCalculationsToTable, addColorCoding, performChemicalPropertyPredictions } from './utils/admetox-utils';
+import { getModelsSingle, addAllModelPredictions, addColorCoding, performChemicalPropertyPredictions, addSparklines } from './utils/admetox-utils';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import { properties } from './utils/admetox-utils';
+import { AdmeticaBaseEditor } from './utils/admetox-editor';
 
 export const _package = new DG.Package();
 
@@ -22,13 +23,6 @@ export async function admetWidget(semValue: DG.SemanticValue): Promise<DG.Widget
     {molecule: semValue.value, sourceNotation: DG.chem.Notation.Unknown, targetNotation: DG.chem.Notation.Smiles});
 
   return await getModelsSingle(smiles, semValue);
-}
-
-//top-menu: Chem | ADME/Tox | Calculate...
-//name: ADME/Tox...
-export async function admetoxCalculators() {
-  const table = grok.shell.tv.dataFrame;
-  addCalculationsToTable(table);
 }
 
 //name: admeFormEditor
@@ -92,4 +86,35 @@ export async function admetox(
   ): Promise<void> {
     const resultString: string = [...absorption, ...distribution, ...metabolism, ...excretion].join(',');
     await performChemicalPropertyPredictions(molecules, table, resultString);
+}
+
+//name: AdmeticaEditor
+//tags: editor
+//input: funccall call
+export function AdmeticaEditor(call: DG.FuncCall): void {
+  const funcEditor = new AdmeticaBaseEditor();
+  ui.dialog({title: 'ADME/Tox'})
+    .add(funcEditor.getEditor())
+    .onOK(async () => {
+      const params = funcEditor.getParams();
+      call.func.prepare({
+        table: params.table,
+        molecules: params.col,
+        templates: params.templatesName,
+        models: params.models,
+        addPiechart: params.addPiechart
+      }).call(true);
+    }).show();
+}
+
+//top-menu: Chem | ADME/Tox | Сalculate...
+//name: Admetica
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: string templates
+//input: list<string> models
+//input: bool addPiechart
+//editor: Admetox: AdmeticaEditor
+export async function admetica(table: DG.DataFrame, molecules: DG.Column, templates: string, models: string[], addPiechart: boolean): Promise<void> {
+  await performChemicalPropertyPredictions(molecules, table, models.join(','), templates, addPiechart);
 }
