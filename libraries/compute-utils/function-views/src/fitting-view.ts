@@ -112,6 +112,7 @@ export class FittingView {
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Value of the '${caption}' input`);
+              inp.nullable = false;
               return inp;
             })(),
             value: defaultValue,
@@ -123,6 +124,7 @@ export class FittingView {
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
                 inp.setTooltip(`Min value of the '${caption}' input`);
+                inp.nullable = false;
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
@@ -132,6 +134,7 @@ export class FittingView {
               const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (max)`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Max value of the '${caption}' input`);
+              inp.nullable = false;
               return inp;
             })(),
             value: getInputValue(inputProp, 'max'),
@@ -183,6 +186,7 @@ export class FittingView {
             temp.onChanged(() => tempDefault.value = temp.value);
             temp.root.insertBefore(switchMock, temp.captionLabel);
             temp.addPostfix(inputProp.options['units']);
+            temp.nullable = false;
 
             return temp;
           })(),
@@ -216,21 +220,27 @@ export class FittingView {
               'Target value' :
               (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
             input.input.hidden = !this.toSetSwitched;
-            input.nullable = true;
+            input.nullable = false;
+            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
 
             input.onChanged(() => {
               temp.target = input.value;
 
               if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-                const colNames: string[] = [];
+                if (temp.target) {
+                  const colNames: string[] = [];
 
-                for (const col of (input.value as DG.DataFrame).columns) {
-                  if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)
-                    colNames.push(col.name);
+                  for (const col of (input.value as DG.DataFrame).columns) {
+                    if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)
+                      colNames.push(col.name);
+                  }
+
+                  temp.colNameInput.items = colNames;
+                  temp.colNameInput.value = colNames[0];
+                } else {
+                  temp.colNameInput.items = [null];
+                  temp.colNameInput.value = null;
                 }
-
-                temp.colNameInput.items = colNames;
-                temp.colNameInput.value = colNames[0];
               }
             });
 
@@ -257,11 +267,12 @@ export class FittingView {
             return input;
           })(),
           colNameInput: (() => {
-            const input = ui.choiceInput('argument', '', [''], (v: string) => temp.colName = v);
+            const input = ui.choiceInput<string|null>('argument', null, [null], (v: string) => temp.colName = v);
             input.setTooltip('Column with argument values');
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             this.toSetSwitched = false;
+            input.nullable = false;
 
             return input;
           })(),
