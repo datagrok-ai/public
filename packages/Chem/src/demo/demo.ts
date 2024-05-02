@@ -7,7 +7,7 @@ import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeData
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_importSdf} from '../open-chem/sdf-importer';
-import {_package} from '../package';
+import {_package, mmpAnalysis} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
@@ -183,6 +183,16 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   grok.shell.windows.showHelp = true;
   //@ts-ignore
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+}
+
+
+export async function _demoMMPA(): Promise<void> {
+  const tv = await openMoleculeDataset('demo_files/matched_molecular_pairs.csv');
+  await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+    tv.dataFrame.clone().columns.remove('smiles'));
+  grok.shell.windows.showHelp = true;
+  //@ts-ignore
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
 }
 
 
