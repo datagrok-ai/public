@@ -403,52 +403,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return frags;
   }
 
-  mmpGetPairs(
-    molecules: [number, number][],
-    frags: [string, string][][],
-    fragmentCutoff: number): [number, number, string, string, string][] {
-    const pairs: [number, number, string, string, string][] = [];
-    for (let i = 0; i < molecules.length; i++) {
-      try {
-        const dimFirstMolecule = frags[molecules[i][0]].length;
-        const dimSecondMolecule = frags[molecules[i][1]].length;
-        // const [core, firstR, secondR] =
-        //   getBestFragmentPair(dimFirstMolecule, molecules[i][0], dimSecondMolecule, molecules[i][1], frags);
-
-        let core = '';
-        let r1 = ''; // molecule minus core for first molecule in pair
-        let r2 = ''; // molecule minus core for second molecule in pair
-
-        //here we get the best possible fragment pair
-        for (let p1 = 0; p1 < dimFirstMolecule; p1++) {
-          for (let p2 = 0; p2 < dimSecondMolecule; p2++) {
-            if (frags[molecules[i][0]][p1][0] === frags[molecules[i][1]][p2][0]) {
-              const newCore = frags[molecules[i][0]][p1][0];
-              if (newCore.length > core.length) {
-                core = newCore;
-                r1 = frags[molecules[i][0]][p1][1];
-                r2 = frags[molecules[i][1]][p2][1];
-              }
-            }
-          }
-        }
-
-        if (core === '' ||
-        r1.length / core.length > fragmentCutoff ||
-        r2.length / core.length > fragmentCutoff)
-          continue;
-
-        pairs.push([molecules[i][0], molecules[i][1], core, r1, r2]);
-      } catch (e: any) {
-
-      } finally {
-
-      }
-    }
-
-    return pairs;
-  }
-
   mmpGetMcs(molecules: [string, string][]): string[] {
     const res: string[] = new Array<string>(molecules.length);
     for (let i = 0; i < molecules.length; i++) {

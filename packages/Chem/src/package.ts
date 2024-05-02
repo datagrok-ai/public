@@ -511,8 +511,7 @@ export async function getFingerprints(
 
   const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return { entries: fpColumn, options: {} };
-
+  return {entries: fpColumn, options: {}};
 }
 
 

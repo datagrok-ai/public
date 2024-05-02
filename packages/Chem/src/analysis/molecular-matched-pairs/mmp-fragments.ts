@@ -31,6 +31,13 @@ export async function getMmpFrags(molecules: DG.Column): Promise<Fragments> {
   return res;
 }
 
+export async function getMmpRules(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
+  if (frags.length < 10)
+    return getMmpRulesTrivial(frags, fragmentCutoff);
+  else
+    return await getMmpRulesGPU(frags, fragmentCutoff);
+}
+
 function getBestFragmentPair(
   dimFirst: number, idxFirst: number,
   dimSecond: number, idxSecond: number,
@@ -112,123 +119,7 @@ function fillRules(
   return [ruleCounter, allCasesCounter];
 }
 
-export function getMmpRules(frags: Fragments, fragmentCutoff: number): [MmpRules, number] {
-  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
-  const dim = frags.length;
-
-  //const nelements = dim*(dim - 1) / 2; //number of elements in upper triangle
-
-  const pairs: MolecularPair[] = [];
-
-  for (let i = 0; i < dim; i++) {
-    const dimFirstMolecule = frags[i].length;
-    //const rowPart = i*dim- i*(i + 1) / 2 - i - 1; //number of elements passed in upper triangle
-    for (let j = i + 1; j < dim; j++) {
-      //const idx = rowPart + j;
-      const dimSecondMolecule = frags[j].length;
-      //[cores[idx], firstRs[idx], secondRs[idx]] =
-      //getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
-      const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
-      if (core === '' ||
-      firstR.length / core.length > fragmentCutoff ||
-      secondR.length / core.length > fragmentCutoff) {/*idx++;*/ continue;}
-
-      pairs.push({first: i, second: j, core, firstR, secondR});
-    }
-  }
-
-  let ruleCounter = 0;
-  let allCasesCounter = 0;
-
-  for (let i = 0; i < pairs.length; i++) {
-    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
-      pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second,
-      ruleCounter, allCasesCounter);
-  }
-
-  return [mmpRules, allCasesCounter];
-}
-
-//From full matrix i and j adresses to k in linear upper triangle k = i*dim + j - i*(i + 1) / 2 - i - 1;
-
-
-export async function getMmpRulesP(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
-  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
-  const dim = frags.length;
-
-  const nelements = dim*(dim - 1) / 2; //number of elements in upper triangle
-  const pairIndexes = new Array<[number, number]>(nelements);
-
-  let k = 0;
-  for (let i = 0; i < dim; i++) {
-    for (let j = i + 1; j < dim; j++) {
-      pairIndexes[k] = [i, j]; k++;
-    }
-  }
-
-  const service = await getRdKitService();
-  //const pairs: [number, number, string, string, string][] = [];
-  const pairs = await service.mmpGetPairs(pairIndexes, frags, fragmentCutoff);
-
-  // for (let i = 0; i < nelements; i++) {
-  //   const dimFirstMolecule = frags[pairIndexes[i][0]].length;
-  //   const dimSecondMolecule = frags[pairIndexes[i][1]].length;
-  //   const [core, firstR, secondR] =
-  //     getBestFragmentPair(dimFirstMolecule, pairIndexes[i][0], dimSecondMolecule, pairIndexes[i][1], frags);
-  //   if (core === '' ||
-  //   firstR.length / core.length > fragmentCutoff ||
-  //   secondR.length / core.length > fragmentCutoff)
-  //     continue;
-
-  //   pairs.push([pairIndexes[i][0], pairIndexes[i][1], core, firstR, secondR]);
-  // }
-
-  let ruleCounter = 0;
-  let allCasesCounter = 0;
-
-  for (let i = 0; i < pairs.length; i++) {
-    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
-      pairs[i][3], pairs[i][0], pairs[i][4], pairs[i][1],
-      ruleCounter, allCasesCounter);
-  }
-
-  return [mmpRules, allCasesCounter];
-}
-
-export async function getMmpRulesPP(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
-  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
-
-  const dim = frags.length;
-
-  //const nelements = dim*(dim - 1) / 2; //number of elements in upper triangle
-
-  const pairs: MolecularPair[] = [];
-
-  // for (let i = 0; i < dim; i++) {
-  //   const dimFirstMolecule = frags[i].length;
-  //   //const rowPart = i*dim- i*(i + 1) / 2 - i - 1; //number of elements passed in upper triangle
-  //   for (let j = i + 1; j < dim; j++) {
-  //     //const idx = rowPart + j;
-  //     const dimSecondMolecule = frags[j].length;
-  //     //[cores[idx], firstRs[idx], secondRs[idx]] =
-  //     //getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
-  //     const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
-  //     if (core === '' ||
-  //     firstR.length / core.length > fragmentCutoff ||
-  //     secondR.length / core.length > fragmentCutoff) {/*idx++;*/ continue;}
-
-  //     pairs.push({first: i, second: j, core, firstR, secondR});
-  //   }
-  // }
-
-
-  const {res: encodedFrags, fragmentMap, fragIdToFragName, fragSizes} = encodeFragments(frags);
-  const out = await webGPUMMP(encodedFrags, fragSizes, fragmentCutoff);
-  return [mmpRules, 100];
-}
-
-
-function encodeFragments(frags: Fragments) {
+function encodeFragments(frags: Fragments): [[number, number][][], string[], Uint32Array] {
   const res: [number, number][][] = new Array(frags.length)
     .fill(null).map((_, i) => new Array(frags[i].length).fill(null).map((_) => [0, 0]));
 
@@ -258,5 +149,54 @@ function encodeFragments(frags: Fragments) {
   const fragSizes = new Uint32Array(maxFragmentIndex).map((_, i) => fragIdToFragName[i].length);
 
 
-  return {res, fragmentMap, fragIdToFragName, fragSizes};
+  return [res, fragIdToFragName, fragSizes];
+}
+
+function getMmpRulesTrivial(frags: Fragments, fragmentCutoff: number): [MmpRules, number] {
+  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
+  const dim = frags.length;
+
+  const pairs: MolecularPair[] = [];
+
+  for (let i = 0; i < dim; i++) {
+    const dimFirstMolecule = frags[i].length;
+    for (let j = i + 1; j < dim; j++) {
+      const dimSecondMolecule = frags[j].length;
+      const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
+      if (core === '' ||
+      firstR.length / core.length > fragmentCutoff ||
+      secondR.length / core.length > fragmentCutoff) {/*idx++;*/ continue;}
+
+      pairs.push({first: i, second: j, core, firstR, secondR});
+    }
+  }
+
+  let ruleCounter = 0;
+  let allCasesCounter = 0;
+
+  for (let i = 0; i < pairs.length; i++) {
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
+      pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second,
+      ruleCounter, allCasesCounter);
+  }
+
+  return [mmpRules, allCasesCounter];
+}
+
+async function getMmpRulesGPU(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
+  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
+
+  const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(frags);
+  const pairs = await webGPUMMP(encodedFrags, fragSizes, fragmentCutoff);
+
+  let ruleCounter = 0;
+  let allCasesCounter = 0;
+
+  for (let i = 0; i < pairs!.coreIdx.length; i++) {
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
+      fragIdToFragName[pairs!.frag1Idx[i]], pairs!.mol1Idx[i], fragIdToFragName[pairs!.frag2Idx[i]], pairs!.mol2Idx[i],
+      ruleCounter, allCasesCounter);
+  }
+
+  return [mmpRules, allCasesCounter];
 }

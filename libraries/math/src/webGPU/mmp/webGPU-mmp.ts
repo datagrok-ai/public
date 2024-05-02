@@ -2,7 +2,8 @@
 import {getGPUDevice} from '../getGPUDevice';
 import {toOffsetForm} from '../umap/utils';
 
-export async function webGPUMMP(frags: [number, number][][], fragSizes: Uint32Array, threshold: number = 0.4) {
+export async function webGPUMMP(frags: [number, number][][], fragSizes: Uint32Array, threshold: number = 0.4):
+Promise<{mol1Idx: Uint32Array, mol2Idx: Uint32Array, frag1Idx: Uint32Array, frag2Idx: Uint32Array, coreIdx: Uint32Array} | null> {
   const device = await getGPUDevice();
   if (!device)
     return null; // if no device, return null, as we cannot do anything without it.
@@ -347,7 +348,7 @@ export async function webGPUMMP(frags: [number, number][][], fragSizes: Uint32Ar
   resultBuffer.destroy();
   mmpDataBuffer.destroy();
 
-  return {finalMols1, finalMols2, finalFrags1, finalFrags2, finalCores};
+  return {mol1Idx: finalMols1, mol2Idx: finalMols2, frag1Idx: finalFrags1, frag2Idx: finalFrags2, coreIdx: finalCores};
 }
 
 

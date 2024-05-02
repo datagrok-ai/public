@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getMmpFrags, getMmpRules, getMmpRulesPP, MmpRules} from './mmp-fragments';
+import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
 
@@ -296,7 +296,7 @@ export class MmpAnalysis {
     const t1 = performance.now();
     const frags = await getMmpFrags(molecules);
     const t2 = performance.now();
-    const [mmpRules, allCasesNumber] = await getMmpRulesPP(frags, fragmentCutoff);
+    const [mmpRules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff);
     const t3 = performance.now();
     console.log(`Call to fragments took ${t2 - t1} milliseconds`);
     console.log(`Call to rules took ${t3 - t2} milliseconds`);

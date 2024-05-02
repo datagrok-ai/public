@@ -498,17 +498,6 @@ export class RdKitService {
     return res;
   }
 
-  async mmpGetPairs(molecules: [number, number][], frags: [string, string][][], fragmentCutoff: number):
-    Promise<[number, number, string, string, string][]> {
-    const t = this;
-    const res = await this._initParallelWorkers(molecules, (i: number, segment: [number, number][]) =>
-      t.parallelWorkers[i].mmpGetPairs(segment, frags, fragmentCutoff),
-    (data: [number, number, string, string, string][][]): [number, number, string, string, string][] => {
-      return ([] as [number, number, string, string, string][]).concat(...data);
-    });
-    return res;
-  }
-
   async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
     const t = this;
 
