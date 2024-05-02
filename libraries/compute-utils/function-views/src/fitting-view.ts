@@ -16,7 +16,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
-import {Extremum} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -822,19 +822,38 @@ export class FittingView {
         costTooltip = 'root mean square deviation';
       }
 
-      let extremums: Extremum[];
+      let optResult: OptimizationResult;
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD)
-        extremums = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+        optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
       else
         throw new Error(`The '${this.method}' method has not been implemented.`);
 
+      const extremums = optResult.extremums;
+      const warnings = new Set(optResult.warnings);
+      const rowCount = extremums.length;
+
+      if (rowCount < 1) {
+        let mes: string;
+        let bul: string;
+
+        if (warnings.size > 1) {
+          mes = `No extremums have been found. Issues:`;
+          bul = '-';
+        } else {
+          mes = `No extremums have been found:`;
+          bul = '';
+        }
+
+        const div = ui.divV([ui.divText(mes)]);
+        warnings.forEach((w) => div.appendChild(ui.divText(`${bul} ${w}`)));
+        grok.shell.warning(div);
+        return;
+      }
+
       this.clearPrev();
-
       extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
-
-      const rowCount = this.samplesCount;
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
       const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);

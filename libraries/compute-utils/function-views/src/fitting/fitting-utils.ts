@@ -44,10 +44,10 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
   const simArg = simDf.col(arg);
 
   if (expArg === null)
-    throw new Error(`No "${arg}" column in the "${expDf.name} table"`);
+    throw new Error(`No "${arg}" column in the "${expDf.name}" table`);
 
   if (simArg === null)
-    throw new Error(`No "${arg}" column in the "${simDf.name} table"`);
+    throw new Error(`No "${arg}" column in the "${simDf.name}" table"`);
 
   const indeces = getIndeces(expArg, simArg);
 

@@ -1,6 +1,6 @@
 /** Monte Carlo optimizer */
 
-import {Extremum} from './optimizer-misc';
+import {Extremum, OptimizationResult} from './optimizer-misc';
 import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
 
@@ -10,7 +10,7 @@ export async function performNelderMeadOptimization(
   paramsTop: Float32Array,
   settings: NelderMeadSettings,
   samplesCount: number = 1,
-): Promise<Extremum[]> {
+): Promise<OptimizationResult> {
   const params = sampleParams(samplesCount, paramsTop, paramsBottom);
 
   // const threadCount = Math.max(navigator.hardwareConcurrency - 2, 1);
@@ -46,9 +46,19 @@ export async function performNelderMeadOptimization(
   //   });
   // }, 0);
 
-  const extremums = new Array<Extremum>(samplesCount);
-  for (let i = 0; i < samplesCount; i++)
-    extremums[i] = await optimizeNM(objectiveFunc, params[i], settings);
+  const extremums: Extremum[] = [];
+  const warnings: string[] = [];
 
-  return extremums;
+  for (let i = 0; i < samplesCount; ++i) {
+    try {
+      extremums.push(await optimizeNM(objectiveFunc, params[i], settings));
+    } catch (e) {
+      warnings.push((e instanceof Error) ? e.message : 'Platform issue');
+    }
+  }
+
+  return {
+    extremums: extremums,
+    warnings: warnings,
+  };
 }
