@@ -808,7 +808,7 @@ export class FittingView {
         costTooltip = 'maximum absolute devation';
       } else {
         costFunc = rmseCostFunc;
-        costTooltip = 'root mean sqaure deviation';
+        costTooltip = 'root mean square deviation';
       }
 
       let extremums: Extremum[];

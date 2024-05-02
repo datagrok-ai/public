@@ -121,6 +121,8 @@ export class SensitivityAnalysisView {
     };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
+      const defaultValue = getInputValue(inputProp, 'default');
+
       switch (inputProp.propertyType) {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
@@ -141,12 +143,12 @@ export class SensitivityAnalysisView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(inputProp.caption ?? inputProp.name, defaultValue, (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
-            value: inputProp.defaultValue,
+            value: defaultValue,
           },
           min: {
             input:
@@ -227,12 +229,12 @@ export class SensitivityAnalysisView {
           prop: inputProp,
           const: {
             input: (() => {
-              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v);
+              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, defaultValue, (v: boolean) => boolRef.const.value = v);
               temp.root.insertBefore(isChangingInputBoolConst.root, temp.captionLabel);
 
               return temp;
             })(),
-            value: false,
+            value: defaultValue,
           } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
           lvl: 1,
@@ -260,7 +262,7 @@ export class SensitivityAnalysisView {
 
             return temp;
           })(),
-          value: inputProp.defaultValue,
+          value: defaultValue,
         };
         acc[inputProp.name] = {
           const: tempDefault,
