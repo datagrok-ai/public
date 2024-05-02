@@ -49,7 +49,9 @@ export class EventBus {
   private _patternHasUnsavedChanges$ = new rxjs.BehaviorSubject<boolean>(false);
   private _lastLoadedPatternConfig: rxjs.BehaviorSubject<PatternConfiguration >;
 
-  private _selectedColumn = new rxjs.BehaviorSubject<{strand: string, colName: string} | null>(null);
+  private _selectedStrandColumn = new rxjs.BehaviorSubject<{[strand: string]: string | null} | null>(null);
+  private _selectedIdColumn = new rxjs.BehaviorSubject<string | null>(null);
+
 
   constructor(
     private dataManager: DataManager,
@@ -459,12 +461,21 @@ export class EventBus {
     return this._patternHasUnsavedChanges$.asObservable();
   }
 
-  selectColumn(strand: StrandType, colName: string) {
-    this._selectedColumn.next({strand, colName});
+  selectStrandColumn(strand: StrandType, colName: string | null) {
+    this._selectedStrandColumn.next({...this._selectedStrandColumn.getValue(), [strand]: colName});
   }
 
-  getSelectedColumn(strand: StrandType): string | null {
-    return this._selectedColumn.getValue()?.colName ?? null;
+  getSelectedStrandColumn(strand: StrandType): string | null {
+    const value = this._selectedStrandColumn.getValue();
+    return value ? value[strand] : null;
+  }
+
+  selectIdColumn(colName: string) {
+    this._selectedIdColumn.next(colName);
+  }
+
+  getSelectedIdColumn(): string | null {
+    return this._selectedIdColumn.getValue();
   }
 }
 

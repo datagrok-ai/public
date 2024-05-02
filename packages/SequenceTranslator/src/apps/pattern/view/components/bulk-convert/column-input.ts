@@ -27,7 +27,6 @@ export class ColumnInputManager {
 
   private handleTableChoice(): void {
     this.refreshColumnControls();
-    // grok.shell.info(`Table ${this.selectedTable?.name} selection from column input manager`);
   }
 
   private refreshColumnControls(): void {
@@ -39,6 +38,10 @@ export class ColumnInputManager {
     const strandColumnInput = this.createStrandColumnInput();
     const senseStrandColumnInput = strandColumnInput[STRAND.SENSE];
     const antisenseStrandColumnInput = strandColumnInput[STRAND.ANTISENSE];
+
+    this.eventBus.antisenseStrandToggled$.subscribe((isAntisenseActive) => {
+      $(antisenseStrandColumnInput).toggle(isAntisenseActive);
+    });
 
     const idColumnInput = this.createIdColumnInput();
 
@@ -54,8 +57,9 @@ export class ColumnInputManager {
         `${STRAND_LABEL[strand]} column`,
         columns[0],
         columns,
-        (colName: string) => this.eventBus.selectColumn(strand, colName)
+        (colName: string) => this.eventBus.selectStrandColumn(strand, colName)
       );
+      this.eventBus.selectStrandColumn(strand, columns[0]);
       return [strand, input.root];
     })) as Record<StrandType, HTMLElement>;
     return strandColumnInput;
@@ -63,7 +67,13 @@ export class ColumnInputManager {
 
   private createIdColumnInput(): HTMLElement {
     const columns = this.selectedTable ? this.selectedTable.columns.names() : [];
-    const idColumnInput = ui.choiceInput('ID column', columns[0], columns, () => { });
+    const idColumnInput = ui.choiceInput(
+      'ID column',
+      columns[0],
+      columns,
+      (colName: string) => this.eventBus.selectIdColumn(colName)
+    );
+    this.eventBus.selectIdColumn(columns[0]);
     return idColumnInput.root;
   }
 }
