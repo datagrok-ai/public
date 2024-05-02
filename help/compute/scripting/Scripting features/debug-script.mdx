@@ -1,31 +1,10 @@
 ---
-title: "Find and edit a script"
+title: "Debug a script"
 ---
-
-```mdx-code-block
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import BrowserWindow from '@site/src/components/browser-window';
-```
-
-To edit an existing script:
-
-* Find it in the [Scripts section](https://public.datagrok.ai/scripts).
-* Right-click on the script card. The context menu appears.
-* Choose the **Edit** action. Built-in editor with script code opens.
-
-You can use [smart search](/help/explore/search-filter-select/smart-search.md) to filter scripts.
-
-### How to debug a script
 
 <div style = {{ display: 'flex', gap: '20px' }}>
 
 <div style = {{ width: '50%' }}>
-
-Datagrok has limited debugging capabilities.
-All scripts except Javascript are executed in isolated environments,
-and the only ways of communication between the script and Datagrok are
-console log and the script output parameters.
 
 When you run a script, Datagrok catches all log messages
 and displays it in the log panel below the script.
@@ -34,6 +13,7 @@ Datagrok catches it and displays an error popup (shown on the right).
 
 To include additional debug information in the log,
 run the script using **Debug script** button in the ribbon menu.
+
 Alternatively, run the script normally and press the
 **Debug** button on the bottom part of the input parameter window.
 

@@ -1,5 +1,5 @@
 ---
-title: "Upload file"
+title: "Re-running script on opening & on input change"
 ---
 
 ```mdx-code-block
@@ -8,30 +8,12 @@ import TabItem from '@theme/TabItem';
 import BrowserWindow from '@site/src/components/browser-window';
 ```
 
-
-## File upload
-
-You can use a file as a function input via RichFunctionView,
-similar to the default [FileIO UI](getting-started#file-input).
-Generated UI allows you to choose any local file or drag'n'drop it directly.
-The chosen file will be available in the
-code as JS [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
-
-:::caution Restriction
-
-Currently, RichFunctionView supports the `file` input
-only for JavaScript functions.
-
-:::
-
-## Re-running script on opening & on input change
-
 You can run scripts automatically on UI opening and/or on any input change.
 This feature is useful for fast prototyping. We recommend using it only
 on fast `Javascript` scripts only to avoid repeatable runs of computational-heavy code.
 
 The automatic function calls are not saved,
-so to save results to the [run history](#history) you should press **Save** button manually.
+so to save results to the [run history](./history.mdx) you should press **Save** button manually.
 
 ```mdx-code-block
 <Tabs>

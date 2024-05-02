@@ -8,11 +8,11 @@ import TabItem from '@theme/TabItem';
 import BrowserWindow from '@site/src/components/browser-window';
 ```
 
-
-You can add an arbitrary caption for an input parameter.
+You can add a custom caption for an input parameter.
 Proper caption helps the user to understand the meaning of the parameter.
+Caption will be rendered in the script input form.
 
-To add a hint to the input parameter, place the hint text in the square brackets
+Additinally, you can add a hint. To do that, place the hint text in the square brackets
 after the parameter annotation.
 
 ```mdx-code-block
@@ -24,7 +24,7 @@ after the parameter annotation.
 <BrowserWindow bodyStyle={{'padding': '0px'}} url=''>
 ```
 
-<img src={require('../_pics/caption-example.png').default} style={{'border-radius': '5px'}}/>
+<img src={require('../_pics/captions-hints.png').default} style={{'border-radius': '5px'}}/>
 
 ```mdx-code-block
 </BrowserWindow>
@@ -32,11 +32,11 @@ after the parameter annotation.
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="input" label="Input">
+<TabItem value="code" label="Code">
 ```
 
-```python
-#input: double V1 { caption: Initial volume of liquid } [Used to calculate the initial concentration and the volume change]
+```javascript
+//input: double V1 { caption: Initial volume of liquid } [Used to calculate the initial concentration and the volume change]
 ```
 
 ```mdx-code-block

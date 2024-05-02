@@ -1,12 +1,11 @@
 ---
-title: "Graphics output"
+title: "Generate graphics"
 ---
 
-The script in the [previous section](#semantic-types)
-returns the `graphics` object.
-This is a special data type to transfer graphs from scripts to Datagrok.
-For `Python`, this variable can contain any graph created by the
-`Matplotlib` library (the `matplotlib.figure.Fugure` class).
+Datagrok supports the special data type to transfer graphical data.
+
+For Python, this variable can contain any graph created by the
+`matplotlib` library (the `matplotlib.figure.Fugure` class).
 When you run the script manually, Datagrok captures the graphics object
 and creates a separate tab to view the results.
 Datagrok can also save the `graphics` output in a dataframe,
