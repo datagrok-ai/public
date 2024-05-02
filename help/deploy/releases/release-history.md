@@ -21,7 +21,7 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
-## 2024-04-30 1.18.5
+## 2024-05-01 1.18.5
 
 ### Improvemets:
 
