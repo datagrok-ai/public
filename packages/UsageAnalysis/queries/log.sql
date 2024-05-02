@@ -4,7 +4,7 @@
 --input: list packages
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 with recursive selected_groups as (
   select id from groups
   where id = any(@groups)

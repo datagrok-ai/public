@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: FunctionsUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -63,8 +63,8 @@ res.uid, res.ugid, res.pid
 --input: list users
 --input: list packages
 --input: list functions
---meta1.cache: all
---meta1.invalidate: 0 0 0 * *
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: FunctionsContextPane(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'], ['OpenServerFile'])
 with res AS (

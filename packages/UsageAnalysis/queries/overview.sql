@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -56,7 +56,7 @@ group by date
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups

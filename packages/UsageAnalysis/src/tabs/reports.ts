@@ -47,7 +47,12 @@ export class ReportsView extends UaView {
           const segments = path.split('/').filter((s) => s != '');
           if (segments.length > 1) {
             this.setReportFilter(segments[1]);
-            this.updatePath(segments[1]);
+            const column = t.getCol('report_number');
+            const columnLength = column.length;
+            for (let i = 0; i < columnLength; i++)
+              if (column.get(i) === segments[1])
+                t.currentRowIdx = i;
+            this.showPropertyPanel(t);
           }
         }
         viewer.onBeforeDrawContent.subscribe(() => {
@@ -105,21 +110,14 @@ export class ReportsView extends UaView {
       },
       processDataFrame: (t: DG.DataFrame) => {
         t.getCol('label').setTag(DG.Tags.MultiValueSeparator, ',');
-        t.onCurrentRowChanged.subscribe(async (_) => {
-          const currentRow = t.currentRowIdx;
-          if (currentRow === null || currentRow === undefined || currentRow === -1) return;
-          const reportId = t.getCol('report_id').get(currentRow);
-          if (!reportId) return;
-          this.updatePath(t.getCol('report_number').get(currentRow));
-          DetailedLog.showReportProperties(reportId, t, currentRow);
-        });
+        t.onCurrentRowChanged.subscribe(async (_) => this.showPropertyPanel(t));
         t.onValuesChanged.subscribe(async () => {
           await delay(500);
           (this.viewers[0].viewer as Grid)
             .sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
         });
         t.onCurrentCellChanged.subscribe(() => {
-          if (t.currentCol.name === 'errors') {
+          if (t.currentCol?.name === 'errors') {
             const errorHash = t.getCol('error_stack_trace_hash').get(t.currentRowIdx);
             const error = t.getCol('error').get(t.currentRowIdx);
             grok.shell.o = div([
@@ -137,6 +135,7 @@ export class ReportsView extends UaView {
               }),
             ]);
           }
+          else this.showPropertyPanel(t);
         });
         return t;
       },
@@ -148,6 +147,15 @@ export class ReportsView extends UaView {
       this.filters,
       reportsViewer.root,
     ]));
+  }
+
+  showPropertyPanel(t: DG.DataFrame) {
+    const currentRow = t.currentRowIdx;
+    if (currentRow === null || currentRow === undefined || currentRow === -1) return;
+    const reportId = t.getCol('report_id').get(currentRow);
+    if (!reportId) return;
+    this.updatePath(t.getCol('report_number').get(currentRow));
+    DetailedLog.showReportProperties(reportId, t, currentRow);
   }
 
   async reloadViewers(): Promise<void> {
