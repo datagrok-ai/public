@@ -103,7 +103,7 @@ export class AdmeticaBaseEditor {
   private getModel(template: Template, nodeName: string): Model | null {
     const model = template.subgroup
       .flatMap(subgroup => subgroup.models)
-			.find(model => nodeName === model.name);
+      .find(model => nodeName === model.name);
     if (model) return model;
     return null;
   }

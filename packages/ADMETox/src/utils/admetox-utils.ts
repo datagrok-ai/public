@@ -385,7 +385,6 @@ export function createInputForProperty(property: any) {
   const object = property.property.inputType === DG.InputType.Map ? {} : property.object;
   const prop = DG.Property.fromOptions(property.property);
   const input = DG.InputBase.forProperty(prop, object);
-  //input.enabled = property.property.enable;
   if (!property.property.enable) {
     input.root.style.pointerEvents = 'none';
   }
@@ -412,14 +411,11 @@ export function createConditionalInput(coloring: ModelColoring, model: Model) {
       value = rangesProperty.object.ranges[key];
     ui.tooltip.show(value, mouseEvent.x, mouseEvent.y);
   }));
-  //patternsInp.style.pointerEvents = 'none';
   return patternsInp;
 }
 
 export function createLinearInput(coloring: ModelColoring) {
   const linearInput = ui.schemeInput(JSON.parse(coloring.colors!) as number[]);
-  //const minInput = ui.intInput('min', coloring.min!);
-  //const maxInput = ui.intInput('max', coloring.max!);
   linearInput.removeChild(linearInput.firstChild!);
   const div = ui.divV([linearInput]);
   linearInput.style.pointerEvents = 'none';
