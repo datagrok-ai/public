@@ -52,23 +52,16 @@ export async function runAdmetox(csvString: string, queryParams: string, addProb
   return await sendRequestToContainer(admetoxContainer.id, path, params);
 }
 
-async function setProperties() {
+async function setProperties(template?: string) {
   if (properties) return;
   const items = await grok.dapi.files.list(TEMPLATES_FOLDER);
-  const fileName = items[0].fileName;
+  const fileName = template ? `${template}.json` : items[0].fileName;
   const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
   properties = JSON.parse(propertiesJson);
 }
 
-export async function addCalculationsToTable(viewTable: DG.DataFrame) {
-  openModelsDialog(await getSelected(), viewTable, async (selected: any, smilesCol: DG.Column) => {
-    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, JSON.stringify(selected));
-    selected = await getSelected();
-    await performChemicalPropertyPredictions(smilesCol, viewTable, selected.join(','));
-  });
-}
-
-export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string) {
+export async function performChemicalPropertyPredictions(molColumn: DG.Column, viewTable: DG.DataFrame, properties: string, template?: string, addPiechart?: boolean) {
+  await setProperties(template);
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running ADMETox...');
   const smilesColumn = await extractSmilesColumn(molColumn);
   const csvString = DG.DataFrame.fromColumns([smilesColumn]).toCsv();
@@ -78,7 +71,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
     const admetoxResults = await runAdmetox(csvString, properties, 'true');
     progressIndicator.update(80, 'Results are ready');
     const table = admetoxResults ? DG.DataFrame.fromCsv(admetoxResults) : null;
-    table ? addResultColumns(table, viewTable) : grok.log.warning('');
+    table ? addResultColumns(table, viewTable, addPiechart) : grok.log.warning('');
   } catch (e) {
     //grok.log.error(e);
   } finally {
@@ -265,10 +258,10 @@ function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.Dat
   column.name = newColumnName;
   column.setTag(DG.TAGS.FORMAT, '0.00');
   column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
-  column.setTag(DG.TAGS.UNITS, model.properties.find((prop: any) => prop.property.name === 'units').object.units);
+  column.setTag(DG.TAGS.UNITS, model.units);
 }
 
-export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
+export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true): void {
   if (table.columns.length === 0) return;
 
   if (table.rowCount > viewTable.rowCount)
@@ -295,8 +288,10 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): 
     viewTable.columns.add(column);
   }
 
+  if (addPiechart)
+    addSparklines(viewTable, updatedModelNames, probabilities);
+
   addColorCoding(viewTable, updatedModelNames);
-  addSparklines(viewTable, updatedModelNames, probabilities);
   addCustomTooltip(viewTable.name);
 }
 
@@ -429,87 +424,4 @@ export function createLinearInput(coloring: ModelColoring) {
   const div = ui.divV([linearInput]);
   linearInput.style.pointerEvents = 'none';
   return div;
-}
-
-export function createTabControl(template: Template, selected: string[]) {
-  const tabsV = ui.tabControl(null, true);
-
-  template.subgroup.forEach((subgroup: any) => {
-    subgroup.models.forEach((model: any) => {
-      const inputs = ui.divV([]);
-      inputs.classList.add('admetox-input-form');
-      const properties = model.properties;
-      const coloring = model.coloring;
-
-      properties.forEach((p: any) => {
-        const input = createInputForProperty(p);
-        if (input)
-          inputs.appendChild(input);
-      });
-
-      if (coloring.type === 'Conditional') {
-        const conditionalInput = createConditionalInput(coloring, subgroup);
-        inputs.appendChild(conditionalInput);
-      } else if (coloring.type === 'Linear') {
-        const linearInput = createLinearInput(coloring);
-        inputs.appendChild(linearInput);
-      }
-      tabsV.addPane(model.name, () => inputs);
-    });
-  });
-
-  tabsV.panes.forEach((pane) => {
-    const functionCheck = ui.boolInput('', false, (v: boolean) => {
-    if (v)
-      selected.push(pane.name);
-    else
-      selected.splice(selected.indexOf(pane.name), 1);
-    });
-    pane.header.insertBefore(functionCheck.root, pane.header.firstChild);
-    pane.header.classList.add('admetox-pane-header');
-  });
-
-  return { tabsV, selected };
-}
-
-async function openModelsDialog(selected: any, viewTable: DG.DataFrame, onOK: any): Promise<void> {
-  let selectedItems: string[] = [];
-  await setProperties();
-  const items = (await grok.dapi.files.list(TEMPLATES_FOLDER)).map((file) => file.fileName.split('.')[0]);
-  const result = createTabControl(properties, selectedItems);
-  const tabsV = result.tabsV;
-  selectedItems = result.selected;
-  const templates = ui.choiceInput('Template', items[0], items);
-  const lowerBound = ui.floatInput('Lower bound', DEFAULT_LOWER_VALUE, (value: number) => DEFAULT_LOWER_VALUE = value);
-  const upperBound = ui.floatInput('Upper bound', DEFAULT_UPPER_VALUE, (value: number) => DEFAULT_UPPER_VALUE = value);
-  const applicability = ui.floatInput('Applicability range', DEFAULT_APPLICABILITY_VALUE, (value: number) => DEFAULT_APPLICABILITY_VALUE = value);
-  let templateCopy = properties;
-  const host = ui.div([]);
-  
-  host.appendChild(tabsV.root);
-
-  let smilesCol = viewTable.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const molInput = ui.columnInput('Molecules', viewTable, smilesCol, async (col: DG.Column) => {
-    smilesCol = col;
-  }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
-
-  const dlg = ui.dialog('ADME/Tox');
-  dlg
-    .add(molInput)
-    .add(templates)
-    .add(lowerBound)
-    .add(upperBound)
-    .add(applicability)
-    .add(host)
-    .onOK(() => {
-      properties = templateCopy;
-      onOK(selectedItems, smilesCol);
-    })
-    .show()
-}
-
-async function getSelected() : Promise<any> {
-  const str = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, KEY);
-  let selected = (str != null && str !== '') ? JSON.parse(str) : [];
-  return selected;
 }

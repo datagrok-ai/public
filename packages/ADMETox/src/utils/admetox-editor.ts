@@ -1,26 +1,30 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Template, TEMPLATES_FOLDER } from './constants';
+import { Model, Subgroup, Template, TEMPLATES_FOLDER } from './constants';
 import { createConditionalInput, createInputForProperty, createLinearInput } from './admetox-utils';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export class AdmeticaBaseEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   colInput!: DG.InputBase<DG.Column | null>;
-	templatesInput: DG.InputBase; 
+  colInputRoot: HTMLElement;
+	templatesInput: DG.ChoiceInput<string>; 
   addPiechartInput = ui.boolInput('Add piechart', true);
   modelsSettingsDiv = ui.inputs([]);
   modelsSettingsIcon: HTMLElement;
+  expanded: boolean = false;
+  tree: DG.TreeViewGroup = ui.tree();
 
   constructor() {
-    this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
-      // TODO: add onTableAttached
-    });
-		this.colInput = ui.columnInput('Column', grok.shell.tv.dataFrame, grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE));
-		this.templatesInput = ui.choiceInput('Templates', 'template', ['template'], async () =>  {
+    this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => this.onTableInputChanged());
+		this.colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, grok.shell.tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE), null, 
+    {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
+    this.colInputRoot = this.colInput.root;
+		this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
 			if(settingsOpened)
 				await this.createModelsSettingsDiv(this.modelsSettingsDiv);
-		});
+		}});
     this.modelsSettingsIcon = ui.icons.settings(async () => {
 			settingsOpened = !settingsOpened;
       if (settingsOpened)
@@ -30,95 +34,111 @@ export class AdmeticaBaseEditor {
     }, 'Modify template parameters');
 		this.templatesInput.root.prepend(this.modelsSettingsIcon);
 		let settingsOpened = false;
+    this.initTemplates();
   }
+
+  private async initTemplates() {
+    const templates = await this.getTemplates();
+    this.templatesInput.items = templates;
+    this.templatesInput.value = templates[0];
+}
 
 	private async getTemplates(): Promise<string[]> {
     const files = await grok.dapi.files.list(TEMPLATES_FOLDER);
     return files.map((file) => file.fileName.split('.')[0]);
 	}
 
+  private async getPropertiesFromTemplate() {
+    const fileName = `${this.templatesInput.value}.json`;
+    const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
+    return JSON.parse(propertiesJson);
+  }
+
+
   private async createModelsSettingsDiv(paramsForm: HTMLElement): Promise<HTMLElement> {
-		const items = await grok.dapi.files.list(TEMPLATES_FOLDER);
-		const fileName = items[0].fileName;
-		const propertiesJson = await grok.dapi.files.readAsText(`${TEMPLATES_FOLDER}/${fileName}`);
-		const properties = JSON.parse(propertiesJson);
+		const properties = await this.getPropertiesFromTemplate();
 		ui.empty(paramsForm);
 		const treeControl = this.createTreeControl(properties);
 		paramsForm.appendChild(treeControl);
 		return paramsForm;
 	}
-	
 
-	private createTreeControl(template: Template) {
-		const treeView = ui.tree();
-		treeView.root.style.overflow = 'hidden';
-		const inputs = ui.divV([]);
+  private createInputsForCategories(group: Subgroup, inputs: HTMLElement): void{
+    ui.empty(inputs);
+    inputs.classList.add('admetox-input-form');
+    inputs.appendChild(ui.divText(group.name, 'admetox-descriptor-name'));
+    inputs.appendChild(ui.textInput('', group.description).root);
+  }
+  private createInputsForModels(model: Model, inputs: HTMLElement): void {
+    ui.empty(inputs);
+    inputs.classList.add('admetox-input-form');
+    inputs.appendChild(ui.divText(model.name, 'admetox-descriptor-name'));
+    model.properties.forEach(p => {
+        const input = createInputForProperty(p);
+        if (input) inputs.appendChild(input);
+    });
 
-		const createInputs = (model: any) => {
-			if (!model) {
-				ui.empty(inputs);
-				return;
-			}
+    const coloring = model.coloring;
+    if (coloring.type === 'Conditional')
+        inputs.appendChild(createConditionalInput(coloring, model));
+    else if (coloring.type === 'Linear')
+        inputs.appendChild(createLinearInput(coloring));
+  }
 
-			ui.empty(inputs);
-			inputs.classList.add('admetox-input-form');
-			const properties = model.properties;
-			const coloring = model.coloring;
-	
-			properties.forEach((p: any) => {
-				const input = createInputForProperty(p);
-				if (input)
-					inputs.appendChild(input);
-			});
-	
-			if (coloring.type === 'Conditional') {
-				const conditionalInput = createConditionalInput(coloring, model);
-				inputs.appendChild(conditionalInput);
-			} else if (coloring.type === 'Linear') {
-				const linearInput = createLinearInput(coloring);
-				inputs.appendChild(linearInput);
-			}
-		}
-		template.subgroup.forEach((subgroup: any) => {
-			const groupNode = treeView.group(subgroup.name);
-			groupNode.expanded = false;
+  private createTreeGroup(template: Template): void {
+    template.subgroup.forEach((subgroup: Subgroup) => {
+			const groupNode = this.tree.group(subgroup.name);
+			groupNode.expanded = !this.expanded;
+      this.expanded = true;
 			groupNode.enableCheckBox(false);
 	
-			subgroup.models.forEach((model: any) => {
+			subgroup.models.forEach((model: Model) => {
 				const modelNode = groupNode.item(model.name);
 				modelNode.checked = false;
 				modelNode.enableCheckBox(false);
 			});
 		});
+  }
 
-		treeView.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
-			const nodeName = node.text;
-			const model = template.subgroup
-			  .flatMap(subgroup => subgroup.models)
-				.find(model => nodeName.includes(model.name));
-			createInputs(model);
-		})
+  private getModel(template: Template, nodeName: string): Model | null {
+    const model = template.subgroup
+			.flatMap(subgroup => subgroup.models)
+			.find(model => nodeName === model.name);
+    if (model) return model;
+    return null;
+  }
+	
+	private createTreeControl(template: Template): HTMLDivElement {
+    this.createTreeGroup(template);
+		this.tree.root.classList.add('admetox-tree');
+		const inputs = ui.divV([]);
 
-		treeView.onNodeMouseEnter.subscribe((node: DG.TreeViewNode) => {
-			const nodeName = node.text;
-			const model = template.subgroup
-			  .flatMap(subgroup => subgroup.models)
-				.find(model => nodeName.includes(model.name));
+		this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+			const subgroup = template.subgroup.find(subgroup => subgroup.name === node.text);
+      const model = this.getModel(template, node.text)
+			if (subgroup)
+				this.createInputsForCategories(subgroup, inputs);
+			else if (model)
+        this.createInputsForModels(model, inputs);
+		});
+
+		this.tree.onNodeMouseEnter.subscribe((node: DG.TreeViewNode) => {
+			const model = this.getModel(template, node.text);
 			if (!model) return;
 			node.root.onmouseenter = (e) => ui.tooltip.show(model.units, e.x, e.y);
 			node.root.onmouseleave = (e) => ui.tooltip.hide();
 		});
 
-		const tabContent = ui.divH([treeView.root, inputs]);
-		tabContent.style.gap = '10px';
+		const tabContent = ui.divH([this.tree.root, inputs]);
+		tabContent.classList.add('admetox-tab-content');
 		return tabContent;
 	}
 	
 
   public getEditor(): HTMLElement {
     return ui.div([
-      this.tableInput.root,
-      this.colInput ? this.colInput.root : null,
+      this.tableInput,
+      this.colInputRoot,
 			this.templatesInput,
 			this.modelsSettingsDiv,
       this.addPiechartInput.root,
@@ -130,6 +150,16 @@ export class AdmeticaBaseEditor {
       table: this.tableInput.value!,
       col: this.colInput ? this.colInput.value! : null,
 			templatesName: this.templatesInput.value,
+      models: this.tree?.items.filter((item) => item.checked).map((item) => item.text),
+      addPiechart: this.addPiechartInput.value
     };
+  }
+
+  onTableInputChanged(): void {
+    this.colInput = ui.columnInput(
+      'Molecules', this.tableInput.value!, this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MOLECULE), null, 
+      {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
+    ui.empty(this.colInputRoot);
+    Array.from(this.colInput.root.children).forEach((it) => this.colInputRoot.append(it));
   }
 }

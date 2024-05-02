@@ -37,5 +37,6 @@ export interface Template {
 
 export interface Subgroup {
   name: string;
+  description: string;
   models: Model[];
 }

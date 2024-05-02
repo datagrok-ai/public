@@ -167,6 +167,7 @@
     },
     {
       "name": "Distribution",
+      "description": "Distribution refers to the process of transporting a drug from its point of entry into the bloodstream to its target organs, tissues, or specific sites where it exerts its therapeutic effects, with factors such as drug properties and physiological characteristics influencing this process.",
       "models": [
         {
           "name": "PPBR",
@@ -278,6 +279,7 @@
     },
     {
       "name": "Metabolism",
+      "description": "Metabolism is the intricate biochemical system responsible for managing energy and molecular processes within living organisms. It consists of two essential components: anabolism, where complex molecules are built, requiring energy like an investment, and catabolism, which breaks down substances to release energy, akin to a controlled chemical breakdown.",
       "models": [
         {
           "name": "CYP1A2-Inhibitor",
@@ -517,6 +519,7 @@
     },
     {
       "name": "Excretion",
+      "description": "Drug excretion is the removal of drugs from the body using various different routes of excretion, including urine, bile, sweat, saliva, tears, milk, and stool.",
       "models": [
         {
           "name": "CL-Hepa",
