@@ -6,6 +6,7 @@
     1. On the top of the Form viewer, click **List** icon. A dialog opens.
     2. In the dialog, toggle some checkboxes. Check the columns in the form viewer
     3. Save to Layout. Check
+3. Check the ability to drag column labels (in the in-form design mode)
 ---
 {
   "order": 9
