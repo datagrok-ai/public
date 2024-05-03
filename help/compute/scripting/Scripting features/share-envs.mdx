@@ -1,0 +1,83 @@
+---
+title: "Share environments"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+### Python (using Conda)
+
+You may share environments by referencing them in your scripts.
+Conda environment will be re-used by many users, which is more space- and time-efficient.
+
+To achieve it, do the following steps:
+
+1. Create one package to contain global environments (say, `GlobalEnvs`).
+2. Create an environment to share inside of this package (let it be `GlobalEnvDataAnalysis`).
+3. Publish `GlobalEnvs` package with `--release` option to the platform.
+4. Share it with the specific group of users you want to have access to these environments.
+5. Environment will be available as `GlobalEnvs:GlobalEnvDataAnalysis`
+
+#### Conda and Pip custom repositories
+
+By default, Conda uses [Conda-forge](https://Conda-forge.org/) and [PyPI](https://pypi.org/) repositories to install packages.
+You may specify your own package repositories in the environment specification.
+
+For example, to use `http://my-repo/custom/` as Conda repository
+and `https://mirrors.sustech.edu.cn/pypi/simple` as PIP repository use the following code:
+
+```python
+#environment: channels: [http://my-repo/custom/], dependencies: [python=3.8, glom, {pip: [--index-url https://mirrors.sustech.edu.cn/pypi/simple, requests]}]
+```
+
+#### Common issues with Conda environments
+
+There is a [known](https://github.com/Conda/Conda/issues/8051#issuecomment-464199791)
+[issue](https://github.com/Conda/Conda/issues/8051#issuecomment-631862928)
+[of Conda](https://github.com/Conda/Conda/issues/8051#issuecomment-808789923)
+that sometimes it takes a long time to resolve dependencies.
+Datagrok will interrupt Conda environment creation if it takes more than 5 minutes.
+
+If you encounter a timing problem, try to find an equivalent set of packages from PIP repositories.
+
+### R (using Renv)
+
+Datagrok supports [Renv](https://rstudio.github.io/renv/articles/renv.html) environments. Each R
+script has a temporary folder with a unique name. This folder becomes an
+Renv project folder for the current run of the script.
+
+Start using Renv by initializing it and installing packages (see a
+[full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/r/renv_spelling.R)):
+
+```R
+#language: r
+
+renv::init()
+renv::install("hunspell@3.0.1")
+```
+
+Renv session only impacts the R environment for this one single run.
+No other R scripts are aware of this local script environment.
+
+Renv uses a global package cache.
+It caches a package requested once with `renv::install` and re-uses it whenever it is
+requested.
+
+In case the latest package version is requested,
+such as in `renv::install("hunspell")`,
+Renv connects to remote R package repositories
+assuring if the cached package needs to be updated to the newer version.
+This may introduce a significant delay in the script run, several seconds in practice.
+To avoid this, we recommend
+installing a specific version of the package, such as in `renv::install("hunspell@3.0.1")`.
+
+:::note Automatic deactivation
+
+At the R script's start and finish,
+Datagrok calls `renv::deactivate()` to assure the script's body isolation.
+You don't have to call `renv::deactivate()` manually.
+
+:::
