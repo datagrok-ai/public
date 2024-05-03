@@ -13,6 +13,18 @@ declare module 'scil' {
 
 declare module 'org' {
   namespace helm {
+    export type WebEditorMonomer = {
+      /** symbol */ id: string,
+      /** name */ n?: string,
+      /** natural analog */ na?: string,
+      /* Pistoia.HELM deletes .type and .mt in Monomers.addOneMonomer() */
+      /** polymer type */type?: PolymerType,
+      /** monomer type */ mt?: MonomerType,
+      /** molfile */ m?: string,
+      /** substituents */ at: { [group: string]: string },
+      /** number of substituents */ rs?: number
+    };
+
     export interface IPistoiaBase {
       get T(): string;
     }
@@ -22,7 +34,7 @@ declare module 'org' {
 
       get elem(): string;
 
-      biotype(): string;
+      biotype(): HelmType;
     }
 
     export interface IMonomer {
@@ -83,8 +95,10 @@ declare module 'org' {
     }
 
     export interface IMonomers {
+      helm2type(m: WebEditorMonomer): HelmType | null;
+
       addOneMonomer(monomer: IMonomer): void;
-      getMonomer(a: IAtom | string, elem: string): IAtom | null;
+      getMonomer(a: IAtom | HelmType, elem: string): WebEditorMonomer | null;
       getMonomerSet(biotype: string): any;
       clear(): void;
     }
@@ -93,16 +107,36 @@ declare module 'org' {
       trimBracket(s: string): string;
     }
 
+    export type MonomerType = 'Backbone' | 'Branch' | 'Terminal';
+
+    export type PolymerType = 'RNA' | 'PEPTIDE' | 'CHEM' | 'BLOB' | 'G';
+
+    export type HelmType = 'HELM_BASE' | 'HELM_SUGAR' | 'HELM_LINKER' | 'HELM_AA' | 'HELM_CHEM' | 'HELM_BLOB' |
+      'HELM_NUCLETIDE';
+
+    export type HelmTypeNames = 'BASE' | 'SUGAR' | 'LINKER' | 'AA' | 'CHEM' | 'BLOB' | 'NUCLEOTIDE';
+
+    export interface IHelmTypes {
+      /** HELM_BASE */ BASE: HelmType;
+      /** HELM_SUGAR */ SUGAR: HelmType;
+      /** HELM_LINKER */ LINKER: HelmType;
+      /** HELM_AA */ AA: HelmType;
+      /** HELM_CHEM */ CHEM: HelmType;
+      /** HELM_BLOB */ BLOB: HelmType;
+      /** HELM_NUCLETIDE */ NUCLEOTIDE: HelmType;
+    }
+
     export interface IOrgHelmWebEditor {
       App: IApp;
       Monomers: IMonomers;
       MolViewer: IMolViewer;
       IO: IWebEditorIO;
       kCaseSensitive: boolean;
+      HELM: IHelmTypes;
 
       monomerTypeList(): string[];
     }
 
-    export const webeditor: IOrgHelmWebEditor;
+    export let webeditor: IOrgHelmWebEditor;
   }
 }

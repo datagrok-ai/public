@@ -15,8 +15,8 @@ import {getParts, parseHelm} from './utils';
 import {_package, getMonomerLib} from './package';
 
 export interface ISeqMonomer {
-  polymerType: string
-  symbol: string,
+  polymerType: org.helm.PolymerType;
+  symbol: string;
 }
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {

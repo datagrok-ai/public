@@ -10,9 +10,9 @@
   "sources": [
     "css/helm.css",
     "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
-    "helm/JSDraw/Scilligence.JSDraw2.Lite.js",
+    "helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed.js",
     "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
-    "helm/JSDraw/Pistoia.HELM.js"
+    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^5.41.0",

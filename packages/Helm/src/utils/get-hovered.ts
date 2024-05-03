@@ -7,6 +7,7 @@ import * as JSDraw2 from 'JSDraw2';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {IEditorMol, IEditorMolAtom} from '@datagrok-libraries/bio/src/types/helm-web-editor';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 
@@ -86,19 +87,7 @@ export function getHoveredMonomerFallback(
 }
 
 function getSeqMonomerFromHelmAtom(atom: JSDraw2.IEditorMolAtom): ISeqMonomer {
-  let polymerType: string | undefined = undefined;
-  switch (atom.bio.type) {
-  case 'HELM_BASE':
-  case 'HELM_SUGAR': // r - ribose, d - deoxyribose
-  case 'HELM_LINKER': // p - phosphate
-    polymerType = 'RNA';
-    break;
-  case 'HELM_AA':
-    polymerType = 'PEPTIDE';
-    break;
-  default:
-    polymerType = 'PEPTIDE';
-  }
+  const polymerType = helmTypeToPolymerType(atom.bio.type);
   return {symbol: atom.elem, polymerType: polymerType};
 }
 

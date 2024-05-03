@@ -91,11 +91,13 @@ export class MonomerLibFileManager {
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
     const polymerTypes: string[] = [];
     rawLibData.forEach((monomer) => {
-      if (!polymerTypes.includes(monomer[REQ.POLYMER_TYPE])) {
-        monomers[monomer[REQ.POLYMER_TYPE]] = {};
-        polymerTypes.push(monomer[REQ.POLYMER_TYPE]);
+      const polymerType = monomer[REQ.POLYMER_TYPE];
+      const monomerSymbol = monomer[REQ.SYMBOL];
+      if (!polymerTypes.includes(polymerType)) {
+        monomers[polymerType] = {};
+        polymerTypes.push(polymerType);
       }
-      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
+      monomers[polymerType][monomerSymbol] = monomer as Monomer;
     });
 
     return new MonomerLib(monomers, fileName);

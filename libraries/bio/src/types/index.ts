@@ -2,6 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import './helm';
+import * as org from 'org';
+import PolymerType = org.helm.PolymerType;
+import WebEditorMonomer = org.helm.WebEditorMonomer;
+
 import {Observable} from 'rxjs';
 import {
   HELM_REQUIRED_FIELD as REQ,
@@ -15,6 +20,8 @@ export type RGroup = {
   [RGP.CAP_GROUP_NAME]: string,
   [RGP.LABEL]: string,
 }
+
+/** https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export type Monomer = {
   [REQ.SYMBOL]: string,
   [REQ.NAME]: string,
@@ -23,23 +30,26 @@ export type Monomer = {
   [REQ.ID]: number,
   [REQ.RGROUPS]: RGroup[],
   [REQ.SMILES]: string,
-  [REQ.POLYMER_TYPE]: string,
-  [REQ.MONOMER_TYPE]: string,
+  [REQ.POLYMER_TYPE]: org.helm.PolymerType,
+  [REQ.MONOMER_TYPE]: org.helm.MonomerType,
   [REQ.CREATE_DATE]: string | null,
   [OPT.NATURAL_ANALOG]?: string,
   [OPT.META]?: { [property: string]: any },
+
   lib?: IMonomerLib,
+  wem?: WebEditorMonomer,
 };
 
 export interface IMonomerLib {
   get source(): string | undefined;
   get error(): string | undefined;
 
-  getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
+  getMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer | null;
+  getWebEditorMonomer(a: org.helm.IAtom | org.helm.HelmType, name: string): WebEditorMonomer;
   getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } | null;
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[];
   getMonomerSymbolsByType(polymerType: string): string[];
-  getPolymerTypes(): string[];
+  getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 

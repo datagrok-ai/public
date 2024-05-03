@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import * as org from 'org';
+
 import {ALPHABET, getPaletteByType, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
@@ -32,10 +34,10 @@ export class MonomerTooltipHandler {
     const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet);
     const monomerName = gridCell.cell.value;
     const mw = new MonomerWorks(getMonomerLibHelper().getBioLib());
-    const monomerType: string = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
+    const polymerType: org.helm.PolymerType = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
       alphabet === ALPHABET.PT ? 'PEPTIDE' : 'PEPTIDE';
 
-    const monomerMol: string | null = mw.getCappedRotatedMonomer(monomerType, monomerName);
+    const monomerMol: string | null = mw.getCappedRotatedMonomer(polymerType, monomerName);
     const nameDiv = ui.div(monomerName);
     const molDiv = !monomerMol ? null :
       grok.chem.svgMol(monomerMol, undefined, undefined, svgMolOptions);

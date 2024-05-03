@@ -19,51 +19,18 @@ import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-ha
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {getRS} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService} from './package-utils';
-
-import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+import {_getHelmService, initHelmPatchDojo, initHelmPatchPistoia} from './package-utils';
 
 let monomerLib: IMonomerLib | null = null;
 
 export const _package = new DG.Package();
-
-function initHelmPatchDojo(): void {
-  // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
-  /** get the text width in pixels */
-  // @ts-ignore
-  window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
-    const rawNode = this.rawNode;
-    const oldParent = rawNode.parentNode;
-    const _measurementNode = rawNode.cloneNode(true);
-    _measurementNode.style.visibility = 'hidden';
-
-    // solution to the "orphan issue" in FF
-    let _width = 0;
-    const _text = _measurementNode.firstChild.nodeValue;
-    oldParent.appendChild(_measurementNode);
-
-    // solution to the "orphan issue" in Opera
-    // (nodeValue == "" hangs firefox)
-    if (_text != '') {
-      let watchdogCounter = 100;
-      while (!_width && --watchdogCounter > 0) { // <-- hangs
-        //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
-        if (_measurementNode.getBBox)
-          _width = parseInt(_measurementNode.getBBox().width);
-        else
-          _width = 68;
-      }
-    }
-    oldParent.removeChild(_measurementNode);
-    return _width;
-  };
-}
 
 //tags: init
 export async function initHelm(): Promise<void> {
@@ -84,6 +51,7 @@ export async function initHelm(): Promise<void> {
       _package.logger.debug(`${logPrefix}, then(), lib loaded`);
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
+      initHelmPatchPistoia(monomerLib, _package.logger);
       monomerLib.onChanged.subscribe((_) => {
         try {
           const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
@@ -125,7 +93,7 @@ function rewriteLibraries() {
     monomerSymbols.forEach((monomerSymbol) => {
       let isBroken = false;
       const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: WebEditorMonomer = {
+      const webEditorMonomer: org.helm.WebEditorMonomer = {
         id: monomerSymbol,
         m: monomer.molfile,
         n: monomer.name,
@@ -273,30 +241,6 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
     }).show({modal: true, fullScreen: true});
 }
 
-function getRS(smiles: string) {
-  const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
-  const res: { [name: string]: string } = {};
-  let el = '';
-  let digit;
-  if (!!newS) {
-    for (let i = 0; i < newS.length; i++) {
-      if (newS[i] != null) {
-        if (/\d/.test(newS[i])) {
-          digit = newS[i][newS[i].length - 1];
-          newS[i] = newS[i].replace(/[0-9]/g, '');
-          for (let j = 0; j < newS[i].length; j++) {
-            if (newS[i][j] != ':')
-              el += newS[i][j];
-          }
-          res['R' + digit] = el;
-          el = '';
-        }
-      }
-    }
-  }
-  return res;
-}
-
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res
@@ -329,6 +273,7 @@ export async function getHelmHelper(): Promise<IHelmHelper> {
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 
 //name: measureCellRenderer
 export async function measureCellRenderer(): Promise<void> {
