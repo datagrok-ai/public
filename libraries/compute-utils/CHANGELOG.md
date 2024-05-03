@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.32.4 (2024-05-03)
+
+### Bug fixes
+
+- RFV: Removed workarounds
+
 ## 1.32.3 (2024-04-30)
 
 ### Bug fixes
