@@ -32,13 +32,13 @@ export class ViewHandler {
     toolbox.filters.root.after(filters);
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView, ReportsView];
-    const inits: Promise<void>[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      inits.push(currentView.tryToinitViewers(path));
-      ViewHandler.UA.addView(currentView.name, () => currentView, false);
+      ViewHandler.UA.addView(currentView.name, () => {
+        currentView.tryToinitViewers(path);
+        return currentView;
+      }, false);
     }
-    await Promise.all(inits);
     const paramsHaveDate = date != undefined;
     const paramsHaveUsers = groups != undefined;
     const paramsHavePackages = packages != undefined;
