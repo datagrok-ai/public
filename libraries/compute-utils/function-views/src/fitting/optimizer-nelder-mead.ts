@@ -22,21 +22,16 @@ export enum NELDER_MEAD_DEFAULTS {
   SCALE_CONTRACTION = -0.5,
 };
 
-export const optimizeNM:IOptimizer = async function(
+async function getInitialParams(
   objectiveFunc: (x: Float32Array) => Promise<number>,
+  settings: NelderMeadSettings,
   paramsInitial: Float32Array,
-  settings: NelderMeadSettings) : Promise<Extremum> {
-  // Settings initialization
-  const tolerance = settings.tolerance;
-  const maxIter = settings.maxIter;
-  const nonZeroParam = settings.nonZeroParam;
-  const initScale = settings.initialScale;
-  const scaleReflection = settings.scaleReflaction;
-  const scaleExpansion = settings.scaleExpansion;
-  const scaleContraction = settings.scaleContraction;
-
+  restrictionsBottom: Float32Array,
+  restrictionsTop: Float32Array): Promise<[Float32Array[], number[]]> {
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
+  const nonZeroParam = settings.nonZeroParam;
+  const initScale = settings.initialScale;
 
   const optParams = new Array<Float32Array>(dim);
   const pointObjectives = new Array<number>(dim);
@@ -50,11 +45,68 @@ export const optimizeNM:IOptimizer = async function(
           optParams[i][j] = nonZeroParam;
         else
           optParams[i][j] += initScale * paramsInitial[i - 1];
+
+        if (optParams[i][j] < restrictionsBottom[j])
+          optParams[i][j] = restrictionsBottom[j];
+        else if (optParams[i][j] > restrictionsTop[j])
+          optParams[i][j] = restrictionsTop[j];
       }
     }
 
     pointObjectives[i] = await objectiveFunc(optParams[i]);
   }
+
+  return [optParams, pointObjectives];
+}
+
+function fillCentroid(centroid: Float32Array, dimParams: number, lastIndex: number, optParams: Float32Array[]) {
+  for (let i = 0; i < dimParams; i++) {
+    let val = 0;
+    for (let j = 0; j < dimParams + 1; j++) {
+      if (j != lastIndex)
+        val += optParams[j][i];
+    }
+
+    centroid[i] = val / dimParams;
+  }
+}
+
+function fillPoint(
+  centroid: Float32Array, point: Float32Array,
+  lastIndex: number, optParams: Float32Array[],
+  scale: number, dimParams: number,
+  restrictionsBottom: Float32Array,
+  restrictionsTop: Float32Array) {
+  for (let i = 0; i < dimParams; i++) {
+    point[i] = centroid[i];
+    point[i] += scale * (centroid[i] - optParams[lastIndex][i]);
+
+    if (point[i] < restrictionsBottom[i])
+      point[i] = restrictionsBottom[i];
+    else if (point[i] > restrictionsTop[i])
+      point[i] = restrictionsTop[i];
+  }
+}
+
+
+export const optimizeNM:IOptimizer = async function(
+  objectiveFunc: (x: Float32Array) => Promise<number>,
+  paramsInitial: Float32Array,
+  settings: NelderMeadSettings,
+  restrictionsBottom: Float32Array,
+  restrictionsTop: Float32Array) : Promise<Extremum> {
+  // Settings initialization
+  const tolerance = settings.tolerance;
+  const maxIter = settings.maxIter;
+
+  const scaleReflection = settings.scaleReflaction;
+  const scaleExpansion = settings.scaleExpansion;
+  const scaleContraction = settings.scaleContraction;
+  const dim = paramsInitial.length + 1;
+  const dimParams = paramsInitial.length;
+
+  const [optParams, pointObjectives] =
+    await getInitialParams(objectiveFunc, settings, paramsInitial, restrictionsBottom, restrictionsTop);
 
   const indexes = new Array<number>(dim);
   for (let i = 0; i < dim; i++)
@@ -101,35 +153,19 @@ export const optimizeNM:IOptimizer = async function(
       previousBest = best;
 
       //centroid
-      for (let i = 0; i < dimParams; i++)
-        centroid[i] = paramsInitial[i];
-      for (let i = 0; i < dimParams; i++) {
-        let val = 0;
-        for (let j = 0; j < dim; j++) {
-          if (j != indexes[lastIndex])
-            val += optParams[j][i];
-        }
-
-        centroid[i] = val / (dim - 1);
-      }
+      fillCentroid(centroid, dimParams, indexes[lastIndex], optParams);
 
       // reflection
-      for (let i = 0; i < dimParams; i++)
-        reflectionPoint[i] = centroid[i];
-      for (let i = 0; i < dimParams; i++)
-        reflectionPoint[i] += scaleReflection * (centroid[i] - optParams[indexes[lastIndex]][i]);
-
+      fillPoint(centroid, reflectionPoint, indexes[lastIndex],
+        optParams, scaleReflection, dimParams, restrictionsBottom, restrictionsTop);
       const reflectionScore = await objectiveFunc(reflectionPoint);
 
       // expansion
       if (reflectionScore < pointObjectives[indexes[lastIndex]]) {
-        for (let i = 0; i < dimParams; i++)
-          expansionPoint[i] = centroid[i];
-        for (let i = 0; i < dimParams; i++)
-          expansionPoint[i] += scaleExpansion * (centroid[i] - optParams[indexes[lastIndex]][i]);
+        fillPoint(centroid, expansionPoint, indexes[lastIndex],
+          optParams, scaleExpansion, dimParams, restrictionsBottom, restrictionsTop);
 
         const expansionScore = await objectiveFunc(expansionPoint);
-
 
         if (expansionScore < reflectionScore) {
           pointObjectives[indexes[lastIndex]] = expansionScore;
@@ -149,10 +185,8 @@ export const optimizeNM:IOptimizer = async function(
       }
 
       // Contraction
-      for (let i = 0; i < dimParams; i++)
-        contractionPoint[i] = centroid[i];
-      for (let i = 0; i < dimParams; i++)
-        contractionPoint[i] += scaleContraction * (centroid[i] - optParams[indexes[lastIndex]][i]);
+      fillPoint(centroid, contractionPoint, indexes[lastIndex],
+        optParams, scaleContraction, dimParams, restrictionsBottom, restrictionsTop);
 
       const contractionScore = await objectiveFunc(contractionPoint);
 
