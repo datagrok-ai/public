@@ -11,9 +11,10 @@ import {
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties, substituteZeroes} from './fit-renderer';
+import {getChartData, isColorValid, mergeProperties, substituteZeroes} from './fit-renderer';
 import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
+import {FitConstants} from './const';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -106,7 +107,7 @@ function convertJnJColumnToJSON(column: DG.Column): void {
     const chartData: IFitChartData = convertXMLToIFitChartData(value);
     column.set(i, JSON.stringify(chartData));
   }
-  column.setTag(TAG_FIT_CHART_FORMAT, '');
+  column.setTag(FitConstants.TAG_FIT_CHART_FORMAT, '');
 }
 
 function detectSettings(df: DG.DataFrame): void {
@@ -118,7 +119,7 @@ function detectSettings(df: DG.DataFrame): void {
     fitSeriesProperties.map((prop) => {
       fitColumns[i].temp[`${SERIES_OPTIONS}-custom-${prop.name}`] = false;
     });
-    if (fitColumns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX)
+    if (fitColumns[i].getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX)
       convertJnJColumnToJSON(fitColumns[i]);
 
     for (let j = 0; j < fitColumns[i].length; j++) {

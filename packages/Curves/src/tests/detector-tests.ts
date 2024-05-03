@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from '../fit/fit-renderer';
 import {FIT_SEM_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {FitConstants} from '../fit/const';
 
 
 category('detectors', () => {
@@ -30,6 +30,6 @@ category('detectors', () => {
     await grok.data.detectSemanticTypes(df);
     
     expect(col.semType, FIT_SEM_TYPE);
-    expect(col.tags[TAG_FIT_CHART_FORMAT], TAG_FIT_CHART_FORMAT_3DX);
+    expect(col.tags[FitConstants.TAG_FIT_CHART_FORMAT], FitConstants.TAG_FIT_CHART_FORMAT_3DX);
   });
 });
