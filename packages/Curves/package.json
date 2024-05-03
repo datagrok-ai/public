@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/curves",
   "friendlyName": "Curves",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
   "author": {
     "name": "Dmytro Kovalyov",
