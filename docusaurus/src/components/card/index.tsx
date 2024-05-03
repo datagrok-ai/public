@@ -19,13 +19,13 @@ interface Props {
 
 export default function Card({name, description, url, button_text}: Props) {
   return (
-    <div className="col col--6 margin-bottom--lg" style={{'max-width': '350px'}}>
+    <div className="col col--6 margin-bottom--lg" style={{'maxWidth': '350px'}}>
       <div className={clsx('card')}>
         <div className="card__body">
           <h3 style={{'marginTop': '0px'}}>{name}</h3>
           <ul style={{'paddingLeft': '15px'}}>
           {
-            description.map((point) => (<li> {point} </li>))
+            description.map((point) => (<li key={point}> {point} </li>))
           }
           </ul>
         </div>
