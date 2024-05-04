@@ -65,7 +65,8 @@
         ]
       }
     ],
-    "hooks": {}
+    "hooks": {},
+    "actions": []
   },
   "ioInfo": {
     "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
@@ -116,6 +117,90 @@
     "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
     "value": [
       [
+        "testPipeline",
+        {
+          "conf": {
+            "id": "testPipeline",
+            "nqName": "LibTests:MockWrapper",
+            "steps": [
+              {
+                "id": "testPipeline/step1",
+                "nqName": "LibTests:AddMock",
+                "states": [
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "popups": [],
+                "actions": []
+              },
+              {
+                "id": "testPipeline/step2",
+                "nqName": "LibTests:MulMock",
+                "states": [
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "popups": [],
+                "actions": []
+              }
+            ],
+            "links": [
+              {
+                "id": "testPipeline/link1",
+                "from": [
+                  "testPipeline",
+                  "step1",
+                  "a"
+                ],
+                "to": [
+                  "testPipeline",
+                  "step2",
+                  "a"
+                ]
+              }
+            ],
+            "hooks": {},
+            "actions": []
+          },
+          "type": "pipeline",
+          "pipelinePath": [],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": []
+          },
+          "notifier": "$observable"
+        }
+      ],
+      [
         "testPipeline/step1",
         {
           "conf": {
@@ -146,9 +231,6 @@
             "testPipeline"
           ],
           "pipelineState": {
-            "disableSetters": "$observable",
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -163,11 +245,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -183,11 +263,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -203,11 +281,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -250,9 +326,6 @@
             "testPipeline"
           ],
           "pipelineState": {
-            "disableSetters": "$observable",
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -267,11 +340,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step2",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -287,11 +358,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step2",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -307,11 +376,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "disableSetters": "$observable",
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline/step2",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -348,13 +415,11 @@
             "testPipeline"
           ],
           "pipelineState": {
-            "disableSetters": "$observable",
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "enabled": "$observable",
           "currentSource": "$observable",
+          "externalTrigger": "$observable",
           "valueChanges": "$observable",
           "controllerConfig": {
             "pipelinePath": [
@@ -391,6 +456,10 @@
       ]
     ]
   },
+  "nestedPipelineConfig": {
+    "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+    "value": []
+  },
   "hooks": [
     {
       "pipelinePath": [],
@@ -404,6 +473,10 @@
         "onViewReady": [
           {
             "id": "_SystemButtonsAdd_",
+            "handler": "function"
+          },
+          {
+            "id": "_SystemMenuAdd_",
             "handler": "function"
           }
         ]

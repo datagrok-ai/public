@@ -604,8 +604,7 @@ class PipelineRuntime {
         if ((node.type === 'popup' || node.type === 'step') && (state.conf.stateType === 'input' || state.conf.stateType === 'output')) {
           const stateId = state.conf.id;
           const {changes, setter} = this.view.getStateBindings(node.conf.id, stateId);
-          if (node.type === 'step')
-            state.linkState(changes, setter);
+          state.linkState(changes, setter);
         }
       }
     }

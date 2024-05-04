@@ -18,9 +18,6 @@ import threeConfsRemove from './snapshots/3-confs-remove-items.json';
 import threeConfsRemoveNested from './snapshots/3-confs-remove-nested-items.json';
 import threeConfsAdd from './snapshots/3-confs-add-items.json';
 import threeConfsAddNested from './snapshots/3-confs-add-nested-items.json';
-import twoConfsAddSteps from './snapshots/2-confs-add-steps.json';
-import twoConfsAddRemoveSteps from './snapshots/2-confs-add-remove-steps.json';
-import threeConfsAddNestedSteps from './snapshots/3-confs-nested-add-steps.json';
 import twoConfsSteps from './snapshots/2-confs-steps.json';
 
 export function removeObservables<T>(config: T): T {
@@ -41,7 +38,7 @@ const ADD_VIEW = false;
 
 function pickPipelineConfData(obj: any): any {
   const res = {};
-  Object.assign(res, ...['config', 'ioInfo', 'nodes', 'links', 'hooks', 'steps'].map((key) => ({[key]: obj[key]})));
+  Object.assign(res, ...['config', 'ioInfo', 'nodes', 'links', 'nestedPipelineConfig', 'hooks', 'steps'].map((key) => ({[key]: obj[key]})));
   return IS_UPDATE ? new Blob([serialize(removeObservables(res))], {type: 'application/json'}) : removeObservables(res);
 }
 
@@ -597,99 +594,13 @@ category('CompositionPipeline composition config', async () => {
 
   });
 
-  test('2 configs add steps', async () => {
-    const cconf: PipelineCompositionConfiguration = {
-      ...sconfig2,
-      stepsToAdd: [[
-        {
-          id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2',
-        },
-        ['testPipeline1', 'step1'],
-      ]],
-    };
-    const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
-    const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
-    if (ADD_VIEW)
-      grok.shell.addView(_view);
-    await pipeline.init();
-    const actual = pickPipelineConfData(pipeline);
-    if (IS_UPDATE)
-      DG.Utils.download('2-confs-add-steps.json', actual);
-    else
-      expectDeepEqual(actual, applyTransformations(twoConfsAddSteps));
-
-  });
-
-  test('2 configs add/remove steps', async () => {
-    const cconf: PipelineCompositionConfiguration = {
-      ...sconfig2,
-      stepsToAdd: [[
-        {
-          id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2',
-        },
-        ['testPipeline1', 'step2'],
-      ]],
-      itemsToRemove: [[
-        'testPipeline1', 'step2',
-      ]],
-    };
-    const composedConfig = CompositionPipeline.compose(cconf, [sconfig1]);
-    const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
-    if (ADD_VIEW)
-      grok.shell.addView(_view);
-    await pipeline.init();
-    const actual = pickPipelineConfData(pipeline);
-    if (IS_UPDATE)
-      DG.Utils.download('2-confs-add-remove-steps.json', actual);
-    else
-      expectDeepEqual(actual, applyTransformations(twoConfsAddRemoveSteps));
-
-  });
-
-  test('3 configs nested add steps', async () => {
-    const cconf3: PipelineCompositionConfiguration = {
-      ...conf3,
-      stepsToAdd: [[
-        {
-          id: 'addedStep1',
-          nqName: 'LibTests:MockPopup2',
-        },
-        ['testPipeline2', 'step2'],
-      ]],
-    };
-    const cconf2: PipelineCompositionConfiguration = {
-      ...conf2,
-      stepsToAdd: [[
-        {
-          id: 'addedStep2',
-          nqName: 'LibTests:MockPopup2',
-        },
-        ['testPipeline1', 'step2'],
-      ]],
-    };
-    const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
-    const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
-    if (ADD_VIEW)
-      grok.shell.addView(_view);
-    await pipeline.init();
-    const actual = pickPipelineConfData(pipeline);
-    if (IS_UPDATE)
-      DG.Utils.download('3-confs-nested-add-steps.json', actual);
-    else
-      expectDeepEqual(actual, applyTransformations(threeConfsAddNestedSteps));
-
-  });
-
   test('2 configs step config', async () => {
     const pconf: PipelineCompositionConfiguration = {
       ...sconfig2,
-      pipelinePositionConfig: {
-        'testPipeline1': 'step2',
+      nestedPipelinesConfig: {
+        'testPipeline1': {
+	  insertBeforeStep: 'step2'
+	},
       },
     };
     const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
@@ -713,7 +624,7 @@ category('CompositionPipeline reactivity', async () => {
   test('simple link', async () => {
     const pipeline = new CompositionPipeline({
       id: 'testPipeline',
-      nqName: 'LibTests:MockWrapper1',
+      nqName: 'LibTests:TestWrapper1',
       steps: [
         {
           id: 'step1',
@@ -749,36 +660,33 @@ category('CompositionPipeline reactivity', async () => {
     expectDeepEqual(res, 20);
   });
 
-  test('composition links', async () => {
+  test('links to composed', async () => {
     const conf1: PipelineCompositionConfiguration = {
       id: 'testPipeline1',
-      nqName: 'LibTests:MockWrapper7',
+      nqName: 'LibTests:TestWrapper2',
       steps: [
         {
           id: 'step1',
           nqName: 'LibTests:AddMock',
         },
-      ],
-      stepsToAdd: [[
-        {
+	{
           id: 'step2',
           nqName: 'LibTests:MulMock',
-        },
-        ['testPipeline2', 'step1'],
-      ]],
+        }
+      ],
       links: [{
         id: 'link1',
         from: ['step1', 'res'],
-        to: ['testPipeline2', 'step1', 'a'],
+        to: ['step2', 'a'],
       }, {
         id: 'link2',
-        from: ['testPipeline2', 'step1', 'res'],
-        to: ['testPipeline2', 'step2', 'a'],
+        from: ['step2', 'res'],
+        to: ['testPipeline2', 'step1', 'a'],
       }],
     };
     const conf2 = {
       id: 'testPipeline2',
-      nqName: 'LibTests:MockWrapper7',
+      nqName: 'LibTests:TestWrapper3',
       steps: [
         {
           id: 'step1',
@@ -789,27 +697,96 @@ category('CompositionPipeline reactivity', async () => {
     const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
     const view = pipeline.makePipelineView();
     await pipeline.init();
+
     const rfv1 = view.getStepView('testPipeline1/step1');
     rfv1.setInput('a', 1);
     rfv1.setInput('b', 2);
     await delay(300);
     await rfv1.run();
     await delay(300);
-    const rfv2 = view.getStepView('testPipeline1/testPipeline2/step1');
+
+    const rfv2 = view.getStepView('testPipeline1/step2');
     rfv2.setInput('b', 4);
-    rfv2.setInput('c', 5);
     await delay(300);
     await rfv2.run();
     await delay(300);
-    const rfv3 = view.getStepView('testPipeline1/testPipeline2/step2');
-    rfv3.setInput('b', 10);
+    const a = rfv2.getParamValue('a');
+    expectDeepEqual(a, 3);
+
+    const rfv3 = view.getStepView('testPipeline1/testPipeline2/step1');
+    rfv3.setInput('b', 1);
+    rfv3.setInput('c', 2);
     await delay(300);
     await rfv3.run();
     await delay(300);
-    const a = rfv3.getParamValue('a');
+
     const res = rfv3.getParamValue('res');
-    expectDeepEqual(a, 12);
-    expectDeepEqual(res, 120);
+    expectDeepEqual(res, 15);
+  });
+
+  test('links between composed', async () => {
+    const conf1: PipelineCompositionConfiguration = {
+      id: 'testPipeline1',
+      nqName: 'LibTests:TestWrapper4',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:AddMock',
+        },
+	{
+          id: 'step2',
+          nqName: 'LibTests:MulMock',
+        }
+      ],
+      links: [{
+        id: 'link1',
+        from: ['step1', 'res'],
+        to: ['step2', 'a'],
+      }],
+    };
+    const conf2 = {
+      id: 'testPipeline2',
+      nqName: 'LibTests:TestWrapper5',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestFn1',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: ['step1', 'res'],
+        to: ['testPipeline1', 'step1', 'a'],
+      }],
+    };
+    const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf2, [conf1]));
+    const view = pipeline.makePipelineView();
+    await pipeline.init();
+
+    const rfv1 = view.getStepView('testPipeline2/step1');
+    rfv1.setInput('a', 1);
+    rfv1.setInput('b', 2);
+    rfv1.setInput('c', 3);
+    await delay(300);
+    await rfv1.run();
+    await delay(300);
+
+    const rfv2 = view.getStepView('testPipeline2/testPipeline1/step1');
+    rfv2.setInput('b', 4);
+    await delay(300);
+    await rfv2.run();
+    await delay(300);
+    const a = rfv2.getParamValue('a');
+    expectDeepEqual(a, 6);
+
+    const rfv3 = view.getStepView('testPipeline2/testPipeline1/step2');
+    rfv3.setInput('b', 5);
+    await delay(300);
+    await rfv3.run();
+    await delay(300);
+    const res = rfv3.getParamValue('res');
+    expectDeepEqual(res, 50);
+
   });
 
 });

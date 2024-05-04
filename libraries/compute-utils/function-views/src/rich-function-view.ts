@@ -201,7 +201,7 @@ export class RichFunctionView extends FunctionView {
         ]),
       ]));
     } else {
-      // always run validations on start
+      // run validations on start
       const controller = new AbortController();
       const results = await this.runValidation({isRevalidation: false}, controller.signal);
       this.setValidationResults(results);

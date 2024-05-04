@@ -642,11 +642,14 @@
                   ]
                 }
               ]
-            }
+            },
+            "actions": []
           }
-        }
+        },
+        "actions": []
       }
-    }
+    },
+    "actions": []
   },
   "ioInfo": {
     "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
@@ -862,6 +865,273 @@
     "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
     "value": [
       [
+        "testPipeline3/testPipeline2/testPipeline1",
+        {
+          "conf": {
+            "id": "testPipeline3/testPipeline2/testPipeline1",
+            "nqName": "LibTests:MockWrapper",
+            "steps": [
+              {
+                "id": "testPipeline3/testPipeline2/testPipeline1/step1",
+                "nqName": "LibTests:TestFn1",
+                "states": [
+                  {
+                    "id": "state11"
+                  },
+                  {
+                    "id": "state12"
+                  },
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "actions": [
+                  {
+                    "id": "testPipeline3/testPipeline2/testPipeline1/step1/action1",
+                    "friendlyName": "action1",
+                    "from": [
+                      [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "testPipeline1",
+                        "step1",
+                        "a"
+                      ],
+                      [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "testPipeline1",
+                        "step1",
+                        "b"
+                      ]
+                    ],
+                    "to": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "testPipeline1",
+                      "step2",
+                      "b"
+                    ],
+                    "handler": "LibTests:MockHandler1",
+                    "position": "buttons"
+                  }
+                ],
+                "popups": [
+                  {
+                    "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
+                    "friendlyName": "popup1",
+                    "nqName": "LibTests:MockPopup1",
+                    "position": "buttons",
+                    "states": [
+                      {
+                        "id": "state111"
+                      },
+                      {
+                        "id": "state112"
+                      },
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1/action11",
+                        "friendlyName": "action11",
+                        "from": [
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step1",
+                            "popup1",
+                            "a"
+                          ],
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step1",
+                            "popup1",
+                            "b"
+                          ]
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "testPipeline1",
+                          "step2",
+                          "b"
+                        ],
+                        "handler": "LibTests:MockHandler1",
+                        "position": "buttons"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "testPipeline3/testPipeline2/testPipeline1/step2",
+                "nqName": "LibTests:TestFn2",
+                "states": [
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "popups": [],
+                "actions": []
+              }
+            ],
+            "states": [
+              {
+                "id": "state1"
+              },
+              {
+                "id": "state2"
+              }
+            ],
+            "links": [
+              {
+                "id": "testPipeline3/testPipeline2/testPipeline1/link1",
+                "from": [
+                  "testPipeline3",
+                  "testPipeline2",
+                  "testPipeline1",
+                  "step1",
+                  "a"
+                ],
+                "to": [
+                  "testPipeline3",
+                  "testPipeline2",
+                  "testPipeline1",
+                  "step2",
+                  "a"
+                ]
+              }
+            ],
+            "hooks": {
+              "beforeFuncCallReady": [
+                {
+                  "id": "testPipeline3/testPipeline2/testPipeline1/hook1",
+                  "handler": "LibTests:MockHook1",
+                  "from": [
+                    "testPipeline3",
+                    "testPipeline2",
+                    "testPipeline1",
+                    "step2",
+                    "a"
+                  ],
+                  "to": [
+                    "testPipeline3",
+                    "testPipeline2",
+                    "testPipeline1",
+                    "step2",
+                    "b"
+                  ]
+                }
+              ]
+            },
+            "actions": []
+          },
+          "type": "pipeline",
+          "pipelinePath": [
+            "testPipeline3",
+            "testPipeline2"
+          ],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "state1",
+                {
+                  "conf": {
+                    "id": "state1"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "state2",
+                {
+                  "conf": {
+                    "id": "state2"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
+      ],
+      [
         "testPipeline3/testPipeline2/testPipeline1/step1",
         {
           "conf": {
@@ -1003,8 +1273,6 @@
             "testPipeline1"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -1017,10 +1285,9 @@
                     "id": "state11"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1034,10 +1301,9 @@
                     "id": "state12"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1053,10 +1319,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1072,10 +1337,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1091,10 +1355,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1110,136 +1373,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ]
-            ]
-          },
-          "notifier": "$observable"
-        }
-      ],
-      [
-        "testPipeline3/testPipeline2/testPipeline1/step2",
-        {
-          "conf": {
-            "id": "testPipeline3/testPipeline2/testPipeline1/step2",
-            "nqName": "LibTests:TestFn2",
-            "states": [
-              {
-                "id": "a",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "b",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "c",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "res",
-                "type": "double",
-                "stateType": "output"
-              }
-            ],
-            "popups": [],
-            "actions": []
-          },
-          "type": "step",
-          "pipelinePath": [
-            "testPipeline3",
-            "testPipeline2",
-            "testPipeline1"
-          ],
-          "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
-            "closed": "$observable"
-          },
-          "states": {
-            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
-            "value": [
-              [
-                "a",
-                {
-                  "conf": {
-                    "id": "a",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "b",
-                {
-                  "conf": {
-                    "id": "b",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "c",
-                {
-                  "conf": {
-                    "id": "c",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "res",
-                {
-                  "conf": {
-                    "id": "res",
-                    "type": "double",
-                    "stateType": "output"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1328,8 +1464,6 @@
             "testPipeline1"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -1342,10 +1476,9 @@
                     "id": "state111"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1360,10 +1493,9 @@
                     "id": "state112"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1380,10 +1512,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1400,10 +1531,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1420,10 +1550,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1440,10 +1569,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -1497,8 +1625,6 @@
             "testPipeline1"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -1594,8 +1720,6 @@
             "testPipeline1"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -1648,6 +1772,610 @@
               ]
             }
           }
+        }
+      ],
+      [
+        "testPipeline3/testPipeline2/testPipeline1/step2",
+        {
+          "conf": {
+            "id": "testPipeline3/testPipeline2/testPipeline1/step2",
+            "nqName": "LibTests:TestFn2",
+            "states": [
+              {
+                "id": "a",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "b",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "c",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "res",
+                "type": "double",
+                "stateType": "output"
+              }
+            ],
+            "popups": [],
+            "actions": []
+          },
+          "type": "step",
+          "pipelinePath": [
+            "testPipeline3",
+            "testPipeline2",
+            "testPipeline1"
+          ],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "a",
+                {
+                  "conf": {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "b",
+                {
+                  "conf": {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "c",
+                {
+                  "conf": {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "res",
+                {
+                  "conf": {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/testPipeline1/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
+      ],
+      [
+        "testPipeline3/testPipeline2",
+        {
+          "conf": {
+            "id": "testPipeline3/testPipeline2",
+            "nqName": "LibTests:MockWrapper",
+            "steps": [
+              {
+                "id": "testPipeline3/testPipeline2/step1",
+                "nqName": "LibTests:TestFn3",
+                "states": [
+                  {
+                    "id": "state11"
+                  },
+                  {
+                    "id": "state12"
+                  },
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "actions": [
+                  {
+                    "id": "testPipeline3/testPipeline2/step1/action1",
+                    "friendlyName": "action1",
+                    "from": [
+                      [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "step1",
+                        "a"
+                      ],
+                      [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "step1",
+                        "b"
+                      ]
+                    ],
+                    "to": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "step2",
+                      "b"
+                    ],
+                    "handler": "LibTests:MockHandler1",
+                    "position": "buttons"
+                  }
+                ],
+                "popups": [
+                  {
+                    "id": "testPipeline3/testPipeline2/step1/popup1",
+                    "friendlyName": "popup1",
+                    "nqName": "LibTests:MockPopup1",
+                    "position": "buttons",
+                    "states": [
+                      {
+                        "id": "state111"
+                      },
+                      {
+                        "id": "state112"
+                      },
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "id": "testPipeline3/testPipeline2/step1/popup1/action11",
+                        "friendlyName": "action11",
+                        "from": [
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "step1",
+                            "popup1",
+                            "a"
+                          ],
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "step1",
+                            "popup1",
+                            "b"
+                          ]
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "step2",
+                          "b"
+                        ],
+                        "handler": "LibTests:MockHandler1",
+                        "position": "buttons"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "testPipeline3/testPipeline2/step2",
+                "nqName": "LibTests:TestFn4",
+                "states": [
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "popups": [],
+                "actions": []
+              }
+            ],
+            "states": [
+              {
+                "id": "state1"
+              },
+              {
+                "id": "state2"
+              }
+            ],
+            "links": [
+              {
+                "id": "testPipeline3/testPipeline2/link1",
+                "from": [
+                  "testPipeline3",
+                  "testPipeline2",
+                  "step1",
+                  "a"
+                ],
+                "to": [
+                  "testPipeline3",
+                  "testPipeline2",
+                  "step2",
+                  "a"
+                ]
+              }
+            ],
+            "hooks": {
+              "beforeFuncCallReady": [
+                {
+                  "id": "testPipeline3/testPipeline2/hook1",
+                  "handler": "LibTests:MockHook1",
+                  "from": [
+                    "testPipeline3",
+                    "testPipeline2",
+                    "step2",
+                    "a"
+                  ],
+                  "to": [
+                    "testPipeline3",
+                    "testPipeline2",
+                    "step2",
+                    "b"
+                  ]
+                }
+              ]
+            },
+            "nestedPipelines": {
+              "testPipeline1": {
+                "id": "testPipeline3/testPipeline2/testPipeline1",
+                "nqName": "LibTests:MockWrapper",
+                "steps": [
+                  {
+                    "id": "testPipeline3/testPipeline2/testPipeline1/step1",
+                    "nqName": "LibTests:TestFn1",
+                    "states": [
+                      {
+                        "id": "state11"
+                      },
+                      {
+                        "id": "state12"
+                      },
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/step1/action1",
+                        "friendlyName": "action1",
+                        "from": [
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step1",
+                            "a"
+                          ],
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step1",
+                            "b"
+                          ]
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "testPipeline1",
+                          "step2",
+                          "b"
+                        ],
+                        "handler": "LibTests:MockHandler1",
+                        "position": "buttons"
+                      }
+                    ],
+                    "popups": [
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
+                        "friendlyName": "popup1",
+                        "nqName": "LibTests:MockPopup1",
+                        "position": "buttons",
+                        "states": [
+                          {
+                            "id": "state111"
+                          },
+                          {
+                            "id": "state112"
+                          },
+                          {
+                            "id": "a",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "b",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "c",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "res",
+                            "type": "double",
+                            "stateType": "output"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1/action11",
+                            "friendlyName": "action11",
+                            "from": [
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "testPipeline1",
+                                "step1",
+                                "popup1",
+                                "a"
+                              ],
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "testPipeline1",
+                                "step1",
+                                "popup1",
+                                "b"
+                              ]
+                            ],
+                            "to": [
+                              "testPipeline3",
+                              "testPipeline2",
+                              "testPipeline1",
+                              "step2",
+                              "b"
+                            ],
+                            "handler": "LibTests:MockHandler1",
+                            "position": "buttons"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "testPipeline3/testPipeline2/testPipeline1/step2",
+                    "nqName": "LibTests:TestFn2",
+                    "states": [
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "popups": [],
+                    "actions": []
+                  }
+                ],
+                "states": [
+                  {
+                    "id": "state1"
+                  },
+                  {
+                    "id": "state2"
+                  }
+                ],
+                "links": [
+                  {
+                    "id": "testPipeline3/testPipeline2/testPipeline1/link1",
+                    "from": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "testPipeline1",
+                      "step1",
+                      "a"
+                    ],
+                    "to": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "testPipeline1",
+                      "step2",
+                      "a"
+                    ]
+                  }
+                ],
+                "hooks": {
+                  "beforeFuncCallReady": [
+                    {
+                      "id": "testPipeline3/testPipeline2/testPipeline1/hook1",
+                      "handler": "LibTests:MockHook1",
+                      "from": [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "testPipeline1",
+                        "step2",
+                        "a"
+                      ],
+                      "to": [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "testPipeline1",
+                        "step2",
+                        "b"
+                      ]
+                    }
+                  ]
+                },
+                "actions": []
+              }
+            },
+            "actions": []
+          },
+          "type": "pipeline",
+          "pipelinePath": [
+            "testPipeline3"
+          ],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "state1",
+                {
+                  "conf": {
+                    "id": "state1"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "state2",
+                {
+                  "conf": {
+                    "id": "state2"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
         }
       ],
       [
@@ -1790,8 +2518,6 @@
             "testPipeline2"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -1804,10 +2530,9 @@
                     "id": "state11"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1821,10 +2546,9 @@
                     "id": "state12"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1840,10 +2564,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1859,10 +2582,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1878,10 +2600,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1897,10 +2618,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -1916,159 +2636,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ]
-            ]
-          },
-          "notifier": "$observable"
-        }
-      ],
-      [
-        "testPipeline3/testPipeline2/step2",
-        {
-          "conf": {
-            "id": "testPipeline3/testPipeline2/step2",
-            "nqName": "LibTests:TestFn4",
-            "states": [
-              {
-                "id": "a",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "b",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "c",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "d",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "res",
-                "type": "double",
-                "stateType": "output"
-              }
-            ],
-            "popups": [],
-            "actions": []
-          },
-          "type": "step",
-          "pipelinePath": [
-            "testPipeline3",
-            "testPipeline2"
-          ],
-          "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
-            "closed": "$observable"
-          },
-          "states": {
-            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
-            "value": [
-              [
-                "a",
-                {
-                  "conf": {
-                    "id": "a",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "b",
-                {
-                  "conf": {
-                    "id": "b",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "c",
-                {
-                  "conf": {
-                    "id": "c",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "d",
-                {
-                  "conf": {
-                    "id": "d",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "res",
-                {
-                  "conf": {
-                    "id": "res",
-                    "type": "double",
-                    "stateType": "output"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
+                  "parentId": "testPipeline3/testPipeline2/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2153,8 +2723,6 @@
             "testPipeline2"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -2167,10 +2735,9 @@
                     "id": "state111"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2185,10 +2752,9 @@
                     "id": "state112"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2205,10 +2771,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2225,10 +2790,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2245,10 +2809,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2265,10 +2828,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/testPipeline2/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -2318,8 +2880,6 @@
             "testPipeline2"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -2407,8 +2967,6 @@
             "testPipeline2"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -2457,6 +3015,848 @@
               ]
             }
           }
+        }
+      ],
+      [
+        "testPipeline3/testPipeline2/step2",
+        {
+          "conf": {
+            "id": "testPipeline3/testPipeline2/step2",
+            "nqName": "LibTests:TestFn4",
+            "states": [
+              {
+                "id": "a",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "b",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "c",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "d",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "res",
+                "type": "double",
+                "stateType": "output"
+              }
+            ],
+            "popups": [],
+            "actions": []
+          },
+          "type": "step",
+          "pipelinePath": [
+            "testPipeline3",
+            "testPipeline2"
+          ],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "a",
+                {
+                  "conf": {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "b",
+                {
+                  "conf": {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "c",
+                {
+                  "conf": {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "d",
+                {
+                  "conf": {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "res",
+                {
+                  "conf": {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/testPipeline2/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
+      ],
+      [
+        "testPipeline3",
+        {
+          "conf": {
+            "id": "testPipeline3",
+            "nqName": "LibTests:MockWrapper",
+            "steps": [
+              {
+                "id": "testPipeline3/step1",
+                "nqName": "LibTests:TestFn5",
+                "states": [
+                  {
+                    "id": "state11"
+                  },
+                  {
+                    "id": "state12"
+                  },
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "e",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "actions": [
+                  {
+                    "id": "testPipeline3/step1/action1",
+                    "friendlyName": "action1",
+                    "from": [
+                      [
+                        "testPipeline3",
+                        "step1",
+                        "a"
+                      ],
+                      [
+                        "testPipeline3",
+                        "step1",
+                        "b"
+                      ]
+                    ],
+                    "to": [
+                      "testPipeline3",
+                      "step2",
+                      "b"
+                    ],
+                    "handler": "LibTests:MockHandler1",
+                    "position": "buttons"
+                  }
+                ],
+                "popups": [
+                  {
+                    "id": "testPipeline3/step1/popup1",
+                    "friendlyName": "popup1",
+                    "nqName": "LibTests:MockPopup1",
+                    "position": "buttons",
+                    "states": [
+                      {
+                        "id": "state111"
+                      },
+                      {
+                        "id": "state112"
+                      },
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "id": "testPipeline3/step1/popup1/action11",
+                        "friendlyName": "action11",
+                        "from": [
+                          [
+                            "testPipeline3",
+                            "step1",
+                            "popup1",
+                            "a"
+                          ],
+                          [
+                            "testPipeline3",
+                            "step1",
+                            "popup1",
+                            "b"
+                          ]
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "step2",
+                          "b"
+                        ],
+                        "handler": "LibTests:MockHandler1",
+                        "position": "buttons"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "testPipeline3/step2",
+                "nqName": "LibTests:TestFn6",
+                "states": [
+                  {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "e",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  }
+                ],
+                "popups": [],
+                "actions": []
+              }
+            ],
+            "states": [
+              {
+                "id": "state1"
+              },
+              {
+                "id": "state2"
+              }
+            ],
+            "links": [
+              {
+                "id": "testPipeline3/link1",
+                "from": [
+                  "testPipeline3",
+                  "step1",
+                  "a"
+                ],
+                "to": [
+                  "testPipeline3",
+                  "step2",
+                  "a"
+                ]
+              }
+            ],
+            "hooks": {
+              "beforeFuncCallReady": [
+                {
+                  "id": "testPipeline3/hook1",
+                  "handler": "LibTests:MockHook1",
+                  "from": [
+                    "testPipeline3",
+                    "step2",
+                    "a"
+                  ],
+                  "to": [
+                    "testPipeline3",
+                    "step2",
+                    "b"
+                  ]
+                }
+              ]
+            },
+            "nestedPipelines": {
+              "testPipeline2": {
+                "id": "testPipeline3/testPipeline2",
+                "nqName": "LibTests:MockWrapper",
+                "steps": [
+                  {
+                    "id": "testPipeline3/testPipeline2/step1",
+                    "nqName": "LibTests:TestFn3",
+                    "states": [
+                      {
+                        "id": "state11"
+                      },
+                      {
+                        "id": "state12"
+                      },
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "d",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "id": "testPipeline3/testPipeline2/step1/action1",
+                        "friendlyName": "action1",
+                        "from": [
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "step1",
+                            "a"
+                          ],
+                          [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "step1",
+                            "b"
+                          ]
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "step2",
+                          "b"
+                        ],
+                        "handler": "LibTests:MockHandler1",
+                        "position": "buttons"
+                      }
+                    ],
+                    "popups": [
+                      {
+                        "id": "testPipeline3/testPipeline2/step1/popup1",
+                        "friendlyName": "popup1",
+                        "nqName": "LibTests:MockPopup1",
+                        "position": "buttons",
+                        "states": [
+                          {
+                            "id": "state111"
+                          },
+                          {
+                            "id": "state112"
+                          },
+                          {
+                            "id": "a",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "b",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "c",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "res",
+                            "type": "double",
+                            "stateType": "output"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "id": "testPipeline3/testPipeline2/step1/popup1/action11",
+                            "friendlyName": "action11",
+                            "from": [
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "step1",
+                                "popup1",
+                                "a"
+                              ],
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "step1",
+                                "popup1",
+                                "b"
+                              ]
+                            ],
+                            "to": [
+                              "testPipeline3",
+                              "testPipeline2",
+                              "step2",
+                              "b"
+                            ],
+                            "handler": "LibTests:MockHandler1",
+                            "position": "buttons"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "testPipeline3/testPipeline2/step2",
+                    "nqName": "LibTests:TestFn4",
+                    "states": [
+                      {
+                        "id": "a",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "b",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "c",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "d",
+                        "type": "double",
+                        "stateType": "input"
+                      },
+                      {
+                        "id": "res",
+                        "type": "double",
+                        "stateType": "output"
+                      }
+                    ],
+                    "popups": [],
+                    "actions": []
+                  }
+                ],
+                "states": [
+                  {
+                    "id": "state1"
+                  },
+                  {
+                    "id": "state2"
+                  }
+                ],
+                "links": [
+                  {
+                    "id": "testPipeline3/testPipeline2/link1",
+                    "from": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "step1",
+                      "a"
+                    ],
+                    "to": [
+                      "testPipeline3",
+                      "testPipeline2",
+                      "step2",
+                      "a"
+                    ]
+                  }
+                ],
+                "hooks": {
+                  "beforeFuncCallReady": [
+                    {
+                      "id": "testPipeline3/testPipeline2/hook1",
+                      "handler": "LibTests:MockHook1",
+                      "from": [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "step2",
+                        "a"
+                      ],
+                      "to": [
+                        "testPipeline3",
+                        "testPipeline2",
+                        "step2",
+                        "b"
+                      ]
+                    }
+                  ]
+                },
+                "nestedPipelines": {
+                  "testPipeline1": {
+                    "id": "testPipeline3/testPipeline2/testPipeline1",
+                    "nqName": "LibTests:MockWrapper",
+                    "steps": [
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/step1",
+                        "nqName": "LibTests:TestFn1",
+                        "states": [
+                          {
+                            "id": "state11"
+                          },
+                          {
+                            "id": "state12"
+                          },
+                          {
+                            "id": "a",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "b",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "c",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "res",
+                            "type": "double",
+                            "stateType": "output"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "id": "testPipeline3/testPipeline2/testPipeline1/step1/action1",
+                            "friendlyName": "action1",
+                            "from": [
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "testPipeline1",
+                                "step1",
+                                "a"
+                              ],
+                              [
+                                "testPipeline3",
+                                "testPipeline2",
+                                "testPipeline1",
+                                "step1",
+                                "b"
+                              ]
+                            ],
+                            "to": [
+                              "testPipeline3",
+                              "testPipeline2",
+                              "testPipeline1",
+                              "step2",
+                              "b"
+                            ],
+                            "handler": "LibTests:MockHandler1",
+                            "position": "buttons"
+                          }
+                        ],
+                        "popups": [
+                          {
+                            "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1",
+                            "friendlyName": "popup1",
+                            "nqName": "LibTests:MockPopup1",
+                            "position": "buttons",
+                            "states": [
+                              {
+                                "id": "state111"
+                              },
+                              {
+                                "id": "state112"
+                              },
+                              {
+                                "id": "a",
+                                "type": "double",
+                                "stateType": "input"
+                              },
+                              {
+                                "id": "b",
+                                "type": "double",
+                                "stateType": "input"
+                              },
+                              {
+                                "id": "c",
+                                "type": "double",
+                                "stateType": "input"
+                              },
+                              {
+                                "id": "res",
+                                "type": "double",
+                                "stateType": "output"
+                              }
+                            ],
+                            "actions": [
+                              {
+                                "id": "testPipeline3/testPipeline2/testPipeline1/step1/popup1/action11",
+                                "friendlyName": "action11",
+                                "from": [
+                                  [
+                                    "testPipeline3",
+                                    "testPipeline2",
+                                    "testPipeline1",
+                                    "step1",
+                                    "popup1",
+                                    "a"
+                                  ],
+                                  [
+                                    "testPipeline3",
+                                    "testPipeline2",
+                                    "testPipeline1",
+                                    "step1",
+                                    "popup1",
+                                    "b"
+                                  ]
+                                ],
+                                "to": [
+                                  "testPipeline3",
+                                  "testPipeline2",
+                                  "testPipeline1",
+                                  "step2",
+                                  "b"
+                                ],
+                                "handler": "LibTests:MockHandler1",
+                                "position": "buttons"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/step2",
+                        "nqName": "LibTests:TestFn2",
+                        "states": [
+                          {
+                            "id": "a",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "b",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "c",
+                            "type": "double",
+                            "stateType": "input"
+                          },
+                          {
+                            "id": "res",
+                            "type": "double",
+                            "stateType": "output"
+                          }
+                        ],
+                        "popups": [],
+                        "actions": []
+                      }
+                    ],
+                    "states": [
+                      {
+                        "id": "state1"
+                      },
+                      {
+                        "id": "state2"
+                      }
+                    ],
+                    "links": [
+                      {
+                        "id": "testPipeline3/testPipeline2/testPipeline1/link1",
+                        "from": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "testPipeline1",
+                          "step1",
+                          "a"
+                        ],
+                        "to": [
+                          "testPipeline3",
+                          "testPipeline2",
+                          "testPipeline1",
+                          "step2",
+                          "a"
+                        ]
+                      }
+                    ],
+                    "hooks": {
+                      "beforeFuncCallReady": [
+                        {
+                          "id": "testPipeline3/testPipeline2/testPipeline1/hook1",
+                          "handler": "LibTests:MockHook1",
+                          "from": [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step2",
+                            "a"
+                          ],
+                          "to": [
+                            "testPipeline3",
+                            "testPipeline2",
+                            "testPipeline1",
+                            "step2",
+                            "b"
+                          ]
+                        }
+                      ]
+                    },
+                    "actions": []
+                  }
+                },
+                "actions": []
+              }
+            },
+            "actions": []
+          },
+          "type": "pipeline",
+          "pipelinePath": [],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "state1",
+                {
+                  "conf": {
+                    "id": "state1"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "state2",
+                {
+                  "conf": {
+                    "id": "state2"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
         }
       ],
       [
@@ -2597,8 +3997,6 @@
             "testPipeline3"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -2611,10 +4009,9 @@
                     "id": "state11"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2628,10 +4025,9 @@
                     "id": "state12"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2647,10 +4043,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2666,10 +4061,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2685,10 +4079,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2704,10 +4097,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2723,10 +4115,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2742,182 +4133,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ]
-            ]
-          },
-          "notifier": "$observable"
-        }
-      ],
-      [
-        "testPipeline3/step2",
-        {
-          "conf": {
-            "id": "testPipeline3/step2",
-            "nqName": "LibTests:TestFn6",
-            "states": [
-              {
-                "id": "a",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "b",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "c",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "d",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "e",
-                "type": "double",
-                "stateType": "input"
-              },
-              {
-                "id": "res",
-                "type": "double",
-                "stateType": "output"
-              }
-            ],
-            "popups": [],
-            "actions": []
-          },
-          "type": "step",
-          "pipelinePath": [
-            "testPipeline3"
-          ],
-          "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
-            "closed": "$observable"
-          },
-          "states": {
-            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
-            "value": [
-              [
-                "a",
-                {
-                  "conf": {
-                    "id": "a",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "b",
-                {
-                  "conf": {
-                    "id": "b",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "c",
-                {
-                  "conf": {
-                    "id": "c",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "d",
-                {
-                  "conf": {
-                    "id": "d",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "e",
-                {
-                  "conf": {
-                    "id": "e",
-                    "type": "double",
-                    "stateType": "input"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
-                  "currentSource": "$observable",
-                  "valueChanges": "$observable",
-                  "value": "$observable",
-                  "setter": "function"
-                }
-              ],
-              [
-                "res",
-                {
-                  "conf": {
-                    "id": "res",
-                    "type": "double",
-                    "stateType": "output"
-                  },
-                  "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
-                    "closed": "$observable"
-                  },
+                  "parentId": "testPipeline3/step1",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
                   "value": "$observable",
@@ -2998,8 +4216,6 @@
             "testPipeline3"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -3012,10 +4228,9 @@
                     "id": "state111"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3030,10 +4245,9 @@
                     "id": "state112"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3050,10 +4264,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3070,10 +4283,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3090,10 +4302,9 @@
                     "stateType": "input"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3110,10 +4321,9 @@
                     "stateType": "output"
                   },
                   "pipelineState": {
-                    "initialLoading": "$observable",
-                    "runChanging": "$observable",
                     "closed": "$observable"
                   },
+                  "parentId": "testPipeline3/step1/popup1",
                   "notifier": "$observable",
                   "currentSource": "$observable",
                   "valueChanges": "$observable",
@@ -3159,8 +4369,6 @@
             "testPipeline3"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -3240,8 +4448,6 @@
             "testPipeline3"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "states": {
@@ -3287,6 +4493,170 @@
             }
           }
         }
+      ],
+      [
+        "testPipeline3/step2",
+        {
+          "conf": {
+            "id": "testPipeline3/step2",
+            "nqName": "LibTests:TestFn6",
+            "states": [
+              {
+                "id": "a",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "b",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "c",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "d",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "e",
+                "type": "double",
+                "stateType": "input"
+              },
+              {
+                "id": "res",
+                "type": "double",
+                "stateType": "output"
+              }
+            ],
+            "popups": [],
+            "actions": []
+          },
+          "type": "step",
+          "pipelinePath": [
+            "testPipeline3"
+          ],
+          "pipelineState": {
+            "closed": "$observable"
+          },
+          "states": {
+            "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+            "value": [
+              [
+                "a",
+                {
+                  "conf": {
+                    "id": "a",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "b",
+                {
+                  "conf": {
+                    "id": "b",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "c",
+                {
+                  "conf": {
+                    "id": "c",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "d",
+                {
+                  "conf": {
+                    "id": "d",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "e",
+                {
+                  "conf": {
+                    "id": "e",
+                    "type": "double",
+                    "stateType": "input"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ],
+              [
+                "res",
+                {
+                  "conf": {
+                    "id": "res",
+                    "type": "double",
+                    "stateType": "output"
+                  },
+                  "pipelineState": {
+                    "closed": "$observable"
+                  },
+                  "parentId": "testPipeline3/step2",
+                  "currentSource": "$observable",
+                  "valueChanges": "$observable",
+                  "value": "$observable",
+                  "setter": "function"
+                }
+              ]
+            ]
+          },
+          "notifier": "$observable"
+        }
       ]
     ]
   },
@@ -3319,12 +4689,11 @@
             "testPipeline1"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "enabled": "$observable",
           "currentSource": "$observable",
+          "externalTrigger": "$observable",
           "valueChanges": "$observable",
           "controllerConfig": {
             "pipelinePath": [
@@ -3388,12 +4757,11 @@
             "testPipeline2"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "enabled": "$observable",
           "currentSource": "$observable",
+          "externalTrigger": "$observable",
           "valueChanges": "$observable",
           "controllerConfig": {
             "pipelinePath": [
@@ -3451,12 +4819,11 @@
             "testPipeline3"
           ],
           "pipelineState": {
-            "initialLoading": "$observable",
-            "runChanging": "$observable",
             "closed": "$observable"
           },
           "enabled": "$observable",
           "currentSource": "$observable",
+          "externalTrigger": "$observable",
           "valueChanges": "$observable",
           "controllerConfig": {
             "pipelinePath": [
@@ -3493,6 +4860,10 @@
       ]
     ]
   },
+  "nestedPipelineConfig": {
+    "_DG_CUSTOM_SERIALIZED_TOKEN_": "Map",
+    "value": []
+  },
   "hooks": [
     {
       "pipelinePath": [],
@@ -3506,6 +4877,10 @@
         "onViewReady": [
           {
             "id": "_SystemButtonsAdd_",
+            "handler": "function"
+          },
+          {
+            "id": "_SystemMenuAdd_",
             "handler": "function"
           }
         ]
@@ -3592,21 +4967,27 @@
   ],
   "steps": [
     {
+      "id": "testPipeline3/step1",
       "funcName": "LibTests:TestFn5"
     },
     {
+      "id": "testPipeline3/step2",
       "funcName": "LibTests:TestFn6"
     },
     {
+      "id": "testPipeline3/testPipeline2/step1",
       "funcName": "LibTests:TestFn3"
     },
     {
+      "id": "testPipeline3/testPipeline2/step2",
       "funcName": "LibTests:TestFn4"
     },
     {
+      "id": "testPipeline3/testPipeline2/testPipeline1/step1",
       "funcName": "LibTests:TestFn1"
     },
     {
+      "id": "testPipeline3/testPipeline2/testPipeline1/step2",
       "funcName": "LibTests:TestFn2"
     }
   ]
