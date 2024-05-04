@@ -15,11 +15,11 @@ Info panes provide contextual information about current objects, such as tables,
 queries, or molecules. The concept is similar to an email client, where clicking
 a subject reveals the content of an email in another pane. However, in Datagrok,
 info panes serve a wider range of functions, making use of all Datagrok's
-capabilities, including [scripting](../../compute/scripting.md),
-[queries](../../access/access.md#data-query),
-[functions](../../datagrok/concepts/functions/functions.md),
-[viewers](../../visualize/viewers/viewers.md), [predictive
-models](../../learn/learn.md), and so on.
+capabilities, including [scripting](../../../compute/scripting.md),
+[queries](../../../access/access.md#data-query),
+[functions](../../concepts/functions/functions.md),
+[viewers](../../../visualize/viewers/viewers.md), [predictive
+models](../../../learn/learn.md), and so on.
 
 Examples:
 
@@ -32,7 +32,7 @@ dynamically preview the table's contents, or run queries.
 
 <br/>
 
-![](../../access/databases/img/db-hierarchy-browser.gif)
+![](../../../access/databases/img/db-hierarchy-browser.gif)
 
 </TabItem>
 
@@ -41,11 +41,11 @@ dynamically preview the table's contents, or run queries.
 In this example, a number of scripts execute when you click a molecule,
 including calculation and visualization of the molecule's Gasteiger partial charges,
 solubility prediction, toxicity and so on. 
-[Learn more about the cheminformatics info panes](../../datagrok/solutions/domains/chem/chem.md#exploring-chemical-data).
+[Learn more about the cheminformatics info panes](../../solutions/domains/chem/chem.md#exploring-chemical-data).
 
 <br/>
 
-![](../../uploads/gifs/chem-model-augment.gif)
+![](../../../uploads/gifs/chem-model-augment.gif)
 
 </TabItem>
 <TabItem value="image-augmentation" label="Image augmentation">
@@ -58,20 +58,20 @@ segments.
 
 <br/>
 
-![](../../access/files/img/Cell-image-segmentation.gif)
+![](../../../access/files/img/Cell-image-segmentation.gif)
 
 </TabItem>
 <TabItem value="dialogs-apps" label="Dialogs and mini apps">
 
 In this example, a query executes a similarity search on the ChEMBL database.
-When you click the query, it displays relevant info panes. You can then run the
-query by drawing a chemical structure. As you draw, the info panes update
-dynamically to provide details about your substructure. Once the query runs, it
+When you click the query, it shows the **Run** info pane with a
+sketcher for drawing query molecules. As you sketch, the info panes update
+dynamically to show details about your substructure. Once the query runs, it
 opens a table with matching structures.
 
 <br/>
 
-![](info-panes-mini-app.gif)
+![](img/info-panes-mini-app.gif)
 
 </TabItem>
 </Tabs>
@@ -80,7 +80,7 @@ opens a table with matching structures.
 
 :::note developers
 
-[Create custom info panes](../../develop/how-to/add-info-panel.md).
+[Create custom info panes](../../../develop/how-to/add-info-panel.md).
 
 :::
 
@@ -102,7 +102,7 @@ info panes are displayed accordingly.
 
 You can control access to specific types of info panes based on user attributes
 such as roles, groups, etc. This condition can be set directly within the script
-or externally through [global permissions](../../govern/global-permissions.md).
+or externally through [global permissions](../../../govern/global-permissions.md).
 
 <details>
 <summary>Code snippet</summary>
@@ -137,7 +137,7 @@ To set the dataset condition in a script, use the `table` variable like this:
 ### Context condition
 
 Info panes accept only one input parameter, which can be a column, a table, a table
-cell, or any other [object](../../datagrok/concepts/objects.md). A condition
+cell, or any other [object](../../concepts/objects.md). A condition
 may check against that object using the parameter name ("x" in a
 sample code snippet below).
 
@@ -160,7 +160,7 @@ click **Settings** > **Panels**, and add or remove hidden columns from there.
 
 ## Default info panes for tabular data
 
-When working with the [grid](../../visualize/viewers/grid.md), the default info panes are:
+When working with the [grid](../../../visualize/viewers/grid.md), the default info panes are:
 
 | <div style={{ width:100 }}></div>||
 |---|---|
@@ -168,16 +168,16 @@ When working with the [grid](../../visualize/viewers/grid.md), the default info 
 |Table, Column|<h5>**Dev**</h5>Provides access to documentation, class references, and code snippets for the current object. It also has an editor with template scripts for common actions related to the object <br/><br/> [Learn more](https://github.com/datagrok-ai/public/tree/master/packages/DevTools#components)| 
 |Table|<h5>**General**</h5>Shows basic metadata, such as number of rows, columns, source, etc.|
 |Table|<h5>**Columns**</h5> Shows all table columns as clickable links, enabling navigation to individual column info panes|
-|Table|<h5>**Models**</h5>Shows relevant models for your dataset (created by you or shared by others). From here, you can manage or train models <br/><br/> ![](info-pane-models-0.png)|
+|Table|<h5>**Models**</h5>Shows relevant models for your dataset (created by you or shared by others). From here, you can manage or train models <br/><br/> ![](img/info-pane-models-0.png)|
 |Table|<h5>**History**</h5>Shows the history of actions performed on the table|
 |Column|<h5>**Details**</h5>Shows column properties and summary statistics or distributions for the column's data |
 |Column|<h5>**Filter**</h5>Quick access to a column's filter|
-|Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](info-panes-colors.gif)|
-|Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](<context panel -stats.gif>)|
+|Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](img/info-panes-colors.gif)|
+|Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](img/context panel -stats.gif)|
 |Column|<h5>**Permissions**</h5> Specify who can edit a column |
-|Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../deploy/releases/platform/img/plots-info-pane.gif)|
-|Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](info-pane-distributions-0.png)|
-|Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../deploy/releases/platform/img/content-info-pane.gif)|
+|Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../../deploy/releases/platform/img/plots-info-pane.gif)|
+|Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](img/info-pane-distributions-0.png)|
+|Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../../deploy/releases/platform/img/content-info-pane.gif)|
 
 <!--
 |Table|<h5>**Properties**</h5>|
@@ -195,7 +195,7 @@ Certain grid info panes are provided with the
 which is recommended for installation.
 
 In addition, domain-specific info panes are available in specialized packages,
-such as the [cheminformatics info panes](../../datagrok/solutions/domains/chem/chem.md#exploring-chemical-data)
+such as the [cheminformatics info panes](../../solutions/domains/chem/chem.md#exploring-chemical-data)
 from the 
 [Chem package](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md).
 
@@ -330,6 +330,6 @@ predictedSales = PredictSalesByStatistics(statistics)
 
 ## See also
 
-* [Data augmentation](data-augmentation.md)
-* [Scripting](../../compute/scripting.md)
-* [Semantic types](../../catalog/semantic-types.md)
+* [Data augmentation](../../../explore/data-augmentation/data-augmentation.md)
+* [Scripting](../../../compute/scripting.md)
+* [Semantic types](../../../govern/catalog/semantic-types.md)
