@@ -53,11 +53,11 @@ Play with `Arival` (mean arival time) and `Service` (mean service time). Check t
 
 ![mm210](pics/mm210.gif)
 
-Depending on servers count & their performance and the intensity of incoming jobs, the system may or may not handle the workload. And еhe queue may or may not be huge.
+Depending on servers count & their performance and the intensity of incoming jobs, the system may or may not handle the workload. And the queue may or may not be huge.
 
 ## In addition
 
-Modeling queueing systems provides their performance forecast. It ensures their better design & management. The [1-1](#1-1-example), [2-2](#2-2-example) and [2-10](#2-2-example) examples belongs to [M | M](https://en.wikipedia.org/wiki/M/M/c_queue)-models. They can be described by systems of ordinary differential equations, and Datagrok [Diff Studio](https://datagrok.ai/help/compute/diff-studio) solves them.
+Modeling queueing systems provides their performance forecast. It ensures their better design & management. The [1-1](#1-1-example), [2-2](#2-2-example) and [2-10](#2-2-example) examples belong to [M | M](https://en.wikipedia.org/wiki/M/M/c_queue)-models. They can be described by systems of ordinary differential equations, and Datagrok [Diff Studio](https://datagrok.ai/help/compute/diff-studio) solves them.
 
 Learn more:
 
