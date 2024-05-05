@@ -59,11 +59,11 @@ When entered manually, Datagrok stores secrets in a
 To specify who can change the connection credentials, click the **Gear** icon 
 and select from the **Credential owner** dropdown.
 
-  :::caution
+:::caution
 
-  When connecting to _public buckets_ in AWS S3, always check the **Anonymous** checkbox.
+When connecting to _public buckets_ in AWS S3, always check the **Anonymous** checkbox.
 
-  :::
+:::
 
 Once you have established a connection to a folder in your file system, the
 folder appears in the **File Manager** under the corresponding data source. This
@@ -84,6 +84,7 @@ options. To quickly create a connection similar to an existing one, right-click
 it and select **Clone...**
 
 <!--
+
 ### File indexing
 For file shares, Datagrok supports indexing of folders and 
 [supported file formats](supported-formats.md), including archives such as .tar or .zip.
@@ -129,13 +130,14 @@ To learn how searching works in Datagrok, see [Smart search](../../explore/searc
 
 Datagrok supports text-to-tabular-data conversion for delimiter-separated files
 with an option to manually edit or customize data during import. To use this
-feature, open the [**Text Manager**](https://public.datagrok.ai/text) (**Data**
-> **Text**) and load a file or paste text into the **Text Editor** area. Here
-you can change the data as needed. Adjust default import parameters like
-delimiters, decimal separators, and header settings in the **Toolbox** on the
-left. By default, changes are automatically applied and displayed in the
-**Preview**, which updates as you modify the data. To manually sync edits,
-disable the **Auto Sync** checkbox and use the **Sync** button.
+feature, open the [Text Import Manager](https://public.datagrok.ai/text). To do
+this, open **Browse** and click the **Open text** icon on its **Top Menu**. Load your file or paste
+text directly into the editor area. Here you can change the data as needed.
+Adjust default import parameters like delimiters, decimal separators, and header
+settings in the **Toolbox** on the left. By default, changes are automatically
+applied and displayed in the **Preview**, which updates as you modify the data.
+To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync**
+button.
 
 When satisfied with the data, click **Done** to open the dataframe in Datagrok.
 From there, you can export it, make further edits, save it as a project, or
