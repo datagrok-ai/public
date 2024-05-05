@@ -4,13 +4,20 @@ import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
 import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, RuntimeController, ExportConfig, NqName, NestedPipelineConfig, StateType} from './PipelineConfiguration';
 import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isCompositionConfig} from './config-processing-utils';
-import {NodeConf, NodeConfTypes, ItemsToMerge, SubNodeConf, SubNodeConfTypes} from './runtime/NodeConf';
+import {NodeConf, NodeConfTypes, SubNodeConf, SubNodeConfTypes} from './runtime/NodeConf';
 import {NodeState} from './runtime/NodeState';
 import {LinkState} from './runtime/LinkState';
 import {PipelineRuntime} from './runtime/PipelineRuntime';
 import {PipelineGlobalState} from './runtime/PipelineGlobalState';
 import {HookSpec, CompositionPipelineView, StepSpec} from './view/CompositionPipelineView';
 import {RFVPopup} from './view/RFVPopup';
+
+
+type ItemsToMerge = {
+  step?: PipelineStepConfiguration[];
+  popup?: PipelinePopupConfiguration[];
+  action?: PipelineActionConfiguraion[];
+};
 
 export class CompositionPipeline {
   private id?: ItemName;

@@ -37,6 +37,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "build": "tsc",
+    "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"
