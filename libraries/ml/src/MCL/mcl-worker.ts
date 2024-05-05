@@ -29,6 +29,21 @@ onmessage = async (event) => {
   }
   console.timeEnd('sparse matrix');
 
-  const res = await new MCLSparseReducer({maxIterations: maxIterations ?? 5}).transform(sparse, data[0].length);
+  //const res = await new MCLSparseReducer({maxIterations: maxIterations ?? 5}).transform(sparse, data[0].length);
+  const reducer = new MCLSparseReducer({maxIterations: maxIterations ?? 5});
+  console.time('MCL');
+  let res: any = null;
+  if (useWebGPU) {
+    try {
+      res = await reducer.transformWebGPU(sparse, data[0].length);
+    } catch (e) {
+      console.error('webGPU MCL failed, falling back to CPU implementation');
+      console.error(e);
+    }
+  }
+  if (!res)
+    res = await reducer.transform(sparse, data[0].length);
+  console.timeEnd('MCL');
+
   postMessage({res});
 };

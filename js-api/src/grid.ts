@@ -626,6 +626,12 @@ export class GridColumn {
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
 
+  /** Cell style used for rendering data cells */
+  get contentCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_ContentCellStyle(this.dart); }
+
+  /** Cell style used for rendering header cells */
+  get headerCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_HeaderCellStyle(this.dart); }
+
   /** Column width in pixels.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
   get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
@@ -926,6 +932,11 @@ export class Grid extends Viewer<IGridLookSettings> {
     return this;
   }
 
+  /** Returns the order of rows in the table. */
+  getRowOrder(): Int32Array {
+    return api.grok_Grid_GetRowOrder(this.dart);
+  }
+
   /** Sets the order or rows in the table.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
    * Also, @see sortIndexes */
@@ -1060,8 +1071,8 @@ export class GridCellStyle {
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
-  get hozrAlign(): string { return api.grok_GridCellStyle_Get_HorzAlign(this.dart) ?? ''; }
-  set horzAlign(x: string) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+  get horzAlign(): HorzAlign | null { return api.grok_GridCellStyle_Get_HorzAlign(this.dart); }
+  set horzAlign(x: HorzAlign | null) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
 
   get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
   set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }

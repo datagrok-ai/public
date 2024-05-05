@@ -198,7 +198,7 @@ category('MolstarViewer', () => {
     const pdbGCol = view.grid.col('pdb')!;
     expect(!!pdbGCol, true, `'pdb' column not found`);
 
-    const back = PdbGridCellRendererBack.getOrCreate(pdbGCol);
+    const back = PdbGridCellRendererBack.getOrCreate(view.grid.cell('pdb', 0));
     await delay(500); // To let sending all (visible) rows grid cells to renderer
     await back.awaitRendered(20000);
 

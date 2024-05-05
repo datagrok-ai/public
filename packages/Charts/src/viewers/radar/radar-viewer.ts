@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 import _ from 'lodash';
@@ -201,7 +201,7 @@ export class RadarViewer extends EChartViewer {
     this.render();
   }
 
-  getSeriesData(colors?: DG.ColumnColorHelper, indexes?: number[]): void {
+  getSeriesData(indexes?: number[]): void {
     option.radar.indicator = [];
     this.clearData([0, 1, 2]);
     this.columns = this.getColumns();
@@ -209,7 +209,10 @@ export class RadarViewer extends EChartViewer {
     for (const c of this.columns)
       option.radar.indicator.push(this.createRadarIndicator(c));
     
-    option.series[2].data = this.createSeriesData(colors, indexes);
+    option.series[2].data = this.createSeriesData(indexes);
+
+    if (this.filter.trueCount > MAXIMUM_ROW_NUMBER)
+      this._showMessage('Only first 1000 shown', WARNING_CLASS);
   
     if (this.showMin)
       this.updateMin();
@@ -223,13 +226,11 @@ export class RadarViewer extends EChartViewer {
     option.silent = !this.showTooltip;
   }
 
-  createSeriesData(colors?: DG.ColumnColorHelper, filter?: number[]): any[] {
+  createSeriesData(filter?: number[]): any[] {
     const seriesData = [];
-    const currentRowIdx = this.getCurrentRowIdx();
   
-    for (let i = 0; i < this.filter.length; i++) {
+    for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
-      if (i === currentRowIdx && this.filter.get(currentRowIdx)) continue;
 
       const value = this.columns.map((c) => {
         if (c.type === 'datetime')
@@ -238,7 +239,9 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = DG.Color.toHtml(colors ? colors.getColor(i) : this.lineColor);
+      const color = this.colorColumnName
+        ? DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i)
+        : this.lineColor;
 
       seriesData.push({
         value: value,
@@ -249,7 +252,7 @@ export class RadarViewer extends EChartViewer {
           opacity: 0.8,
         },
         itemStyle: {
-          color: filter && filter.includes(i) ? MOUSE_OVER_GROUP_COLOR : color,
+          color: filter && filter.includes(i) ? MOUSE_OVER_GROUP_COLOR : DG.Color.toHtml(color),
         },
         label: {
           show: this.showValues,
@@ -262,10 +265,12 @@ export class RadarViewer extends EChartViewer {
   }
 
   updateCurrentRow(): void {
-    const currentIn = this.filter.get(this.getCurrentRowIdx());
+    const currentRowIdx = this.dataFrame.currentRowIdx;
+    if (currentRowIdx < 0) return;
+    const currentIn = this.filter.get(currentRowIdx);
     if (currentIn) {
       const color = DG.Color.toHtml(this.showCurrentRow ? this.currentRowColor : this.lineColor);
-      this.updateRow(color, this.getCurrentRowIdx());
+      this.updateRow(color, currentRowIdx);
     }
   }
   
@@ -277,12 +282,6 @@ export class RadarViewer extends EChartViewer {
       if (currentRow !== -1)
         this.updateRow(color, currentRow);
     }
-  }
-
-  getCurrentRowIdx(): number {
-    let currentRowIdx = this.dataFrame.currentRowIdx || 0;
-    currentRowIdx = Math.max(currentRowIdx, 0);
-    return currentRowIdx;
   }
 
   createRadarIndicator(c: DG.Column): RadarIndicator {
@@ -411,11 +410,9 @@ export class RadarViewer extends EChartViewer {
       return;
     }
     let colors;
-    if (this.colorColumnName) 
-      colors = this.dataFrame.getCol(this.colorColumnName).meta.colors;
     this._removeMessage(WARNING_CLASS);
     this._removeMessage(ERROR_CLASS);
-    this.getSeriesData(colors, indexes!);
+    this.getSeriesData(indexes!);
     this.chart.setOption(option);
   }
 

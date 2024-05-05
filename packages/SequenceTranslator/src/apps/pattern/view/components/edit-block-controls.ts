@@ -52,7 +52,7 @@ export class PatternEditControlsManager {
   private createEditPatternButton(): HTMLButtonElement {
     const editPatternButton = ui.button(
       'Edit strands',
-      () => StrandEditorDialog.open(this.eventBus)
+      () => StrandEditorDialog.open(this.eventBus, this.dataManager)
     );
 
     ui.tooltip.bind(editPatternButton, 'Edit strand modifications and PTOs');

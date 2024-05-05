@@ -182,3 +182,24 @@
 #ua-tests-filters .d4-filter-categorical, #ua-tests-filters .d4-filter-group-wrapper > .d4-flex-col.d4-filter {
   min-width: 190px !important;
 }
+
+.ui-service-info:hover {
+  -webkit-filter: contrast(80%) brightness(120%);
+}
+
+.ui-service-info[data="Running"] {
+  color: var(--green-2);
+}
+
+.ui-service-info[data="Failed"] {
+  color: var(--red-3);
+}
+
+.ui-service-info[data="Stopped"] {
+  color: var(--grey-6);
+}
+
+.ui-service-info-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}

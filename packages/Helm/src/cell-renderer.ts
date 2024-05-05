@@ -2,14 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {IEditor, HelmMonomerPlacer, IEditorMolAtom, ISeqMonomer} from './helm-monomer-placer';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
+import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 // import {_package} from './package'; // NullError: method not found: '_package' on null
 
@@ -18,125 +20,6 @@ const enum tempTAGS {
   helmMaxLengthWords = 'helm-maxLengthWords',
 
   helmPlacer = 'bio-helmPlacer',
-}
-
-function getSeqMonomerFromHelm(
-  helmPrefix: string, symbol: string, monomerLib: IMonomerLib
-): ISeqMonomer {
-  let resSeqMonomer: ISeqMonomer | undefined = undefined;
-  for (const polymerType of monomerLib.getPolymerTypes()) {
-    if (helmPrefix.startsWith(polymerType))
-      resSeqMonomer = {symbol: symbol, polymerType: polymerType};
-  }
-  if (!resSeqMonomer)
-    throw new Error(`Monomer not found for symbol = '${symbol}' and helmPrefix = '${helmPrefix}'.`);
-  return resSeqMonomer;
-}
-
-function getSeqMonomerFromHelmAtom(atom: IEditorMolAtom): ISeqMonomer {
-  let polymerType: string | undefined = undefined;
-  // @ts-ignore
-  switch (atom.bio.type) {
-  case 'HELM_BASE':
-  case 'HELM_SUGAR': // r - ribose, d - deoxyribose
-  case 'HELM_LINKER': // p - phosphate
-    polymerType = 'RNA';
-    break;
-  case 'HELM_AA':
-    polymerType = 'PEPTIDE';
-    break;
-  default:
-    polymerType = 'PEPTIDE';
-  }
-  return {symbol: atom.elem, polymerType: polymerType};
-}
-
-function getHoveredMonomerFromEditor(
-  argsX: number, argsY: number, gridCell: DG.GridCell, editor: IEditor
-): ISeqMonomer | null {
-  let hoveredSeqMonomer: ISeqMonomer | null = null;
-
-  /** @return {[number, number]} [atom, distance] */
-  function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
-    let atom: number | undefined = undefined;
-    let distance: number | undefined = undefined;
-    for (let atomI = 0; atomI < editor.m.atoms.length; ++atomI) {
-      if (!excluded.includes(atomI)) {
-        const aX: number = editor.m.atoms[atomI].p.x;
-        const aY: number = editor.m.atoms[atomI].p.y;
-        const distanceToAtomI: number = Math.sqrt((argsX - aX) ** 2 + (argsY - aY) ** 2);
-        if (distance === undefined || distance > distanceToAtomI) {
-          atom = atomI;
-          distance = distanceToAtomI;
-        }
-      }
-    }
-    return [atom, distance];
-  }
-
-  const [firstAtomI, firstDistance] = getNearest([]);
-  const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
-
-  // for (let atomI = 0; atomI < editor.m.atoms.length; ++atomI) {
-  //   const aX: number = editor.m.atoms[atomI].p.x;
-  //   const aY: number = editor.m.atoms[atomI].p.y;
-  //   const distanceToAtomI: number = Math.sqrt((argsX - aX) ** 2 + (argsY - aY) ** 2);
-  //   if (firstDistance === undefined || firstDistance > distanceToAtomI) {
-  //     secondAtomI = firstAtomI;
-  //     firstAtomI = atomI;
-  //
-  //     secondDistance = firstDistance;
-  //     firstDistance = distanceToAtomI;
-  //   }
-  // }
-
-  if (firstAtomI !== undefined && firstDistance !== undefined) {
-    const firstAtom = editor.m.atoms[firstAtomI];
-    const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
-    if (secondAtomI !== undefined && secondDistance !== undefined) {
-      if (firstDistance < secondDistance * 0.45)
-        hoveredSeqMonomer = firstSeqMonomer;
-    } else {
-      if (firstDistance < 0.35 * gridCell.bounds.height)
-        hoveredSeqMonomer = firstSeqMonomer;
-    }
-  }
-  return hoveredSeqMonomer;
-}
-
-function getHoveredMonomerFallback(
-  argsX: number, _argsY: number, gridCell: DG.GridCell, helmPlacer: HelmMonomerPlacer
-): ISeqMonomer | null {
-  let hoveredSeqMonomer: ISeqMonomer | null = null;
-  const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
-  const maxIndex = Object.values(lengths).length - 1;
-  let left = 0;
-  let right = maxIndex;
-  let found = false;
-  let iterCount: number = 0;
-
-  let mid = 0;
-  if (argsX > sumLengths[0]) {
-    while (!found && iterCount < sumLengths.length) {
-      mid = Math.floor((right + left) / 2);
-      if (argsX >= sumLengths[mid] && argsX <= sumLengths[mid + 1]) {
-        left = mid;
-        found = true;
-      } else if (argsX < sumLengths[mid])
-        right = mid - 1;
-      else if (argsX > sumLengths[mid + 1])
-        left = mid + 1;
-
-      if (left == right)
-        found = true;
-
-      iterCount++;
-    }
-  }
-  left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
-  if (left >= 0)
-    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left], helmPlacer.monomerLib);
-  return hoveredSeqMonomer;
 }
 
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
@@ -153,21 +36,21 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     try {
-      /* Can not do anything without tableColumn containing temp */
-      let tableCol: DG.Column | null = null;
-      try { tableCol = gridCell.tableColumn; } catch { }
+      const [_gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
+      const helmPlacer = temp['rendererBack'];
+      /* Can not do anything without tableColumn */
       if (!tableCol) return;
 
       /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(gridCell.gridColumn, tableCol);
-      const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
+      const editorMol: JSDraw2.IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
-      if (editor)
-        seqMonomer = getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor);
+      if (editorMol)
+        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
       else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);
@@ -225,10 +108,12 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
   ) {
     g.save();
     try {
+      const [gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
       /* Can not do anything without tableColumn containing temp */
-      let tableCol: DG.Column | null = null;
-      try { tableCol = gridCell.tableColumn; } catch { }
       if (!tableCol) return;
+      let helmPlacer = temp['rendererBack'];
+      if (!helmPlacer) helmPlacer = temp['rendererBack'] = new HelmMonomerPlacer(gridCol, tableCol);
 
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
       const missedColor = 'red';
@@ -239,7 +124,6 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(gridCell.gridColumn, tableCol);
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
@@ -254,8 +138,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         }
 
         // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
-        const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
-        helmPlacer.setEditor(gridCell.tableRowIndex!, editor);
+        const editor = new JSDraw2.Editor(host,
+          {width: w, height: h, skin: 'w8', viewonly: true});
+        helmPlacer.setEditorMol(gridCell.tableRowIndex!, editor.m);
 
         helmPlacer.skipCell(gridCell.tableRowIndex!);
         return;

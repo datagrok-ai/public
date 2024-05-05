@@ -2,7 +2,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-// import {usageAnalysisApp} from './package';
 
 export class UsageWidget extends DG.Widget {
   caption: string;
@@ -10,12 +9,12 @@ export class UsageWidget extends DG.Widget {
 
   constructor() {
     const uniqueUsersDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
-    const userEventsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userErrorsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
+    const services = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const link = ui.link('Open Usage Analysis', () => grok.functions.eval('UsageAnalysis:usageAnalysisApp()'));
     const linkDiv = ui.box( ui.div([link],
       {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', paddingRight: '8px'}}), {style: {maxHeight: '40px'}});
-    super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userEventsDiv, userErrorsDiv], {classes: 'ua-widget'})));
+    super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userErrorsDiv, services], {classes: 'ua-widget'})));
 
     uniqueUsersDiv.appendChild(ui.waitBox(async () => {
       return ui.splitH([ui.box(ui.divText('Users'),
@@ -23,10 +22,16 @@ export class UsageWidget extends DG.Widget {
         await grok.functions.call('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
     }));
 
-    userEventsDiv.appendChild(ui.waitBox(async () => {
-      return ui.splitH([ui.box(ui.divText('Events'),
-        {style: {maxWidth: '70px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.functions.call('UsageAnalysis:UsersEventsSummary'), userEventsChartStyle).root, {style: {paddingRight: '12px'}})]);
+    services.appendChild(ui.waitBox(async () => {
+      const infos = (await grok.dapi.admin.getServiceInfos()).map((info) => {
+        const d = ui.span([info.name]);
+        d.setAttribute('data', info.status);
+        d.classList.add('ui-service-info');
+        return ui.div([ui.tooltip.bind(d, () => info.status)]);
+      });
+      const d = ui.div(infos, 'ui-service-info-wrapper');
+      return ui.splitH([ui.box(ui.divText('System'),
+        {style: {maxWidth: '70px'}}), d]);
     }));
 
     userErrorsDiv.appendChild(ui.waitBox(async () => {
@@ -37,7 +42,7 @@ export class UsageWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Usage');
-    this.order = super.addProperty('order', DG.TYPE.STRING, '2');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '3');
   }
 }
 

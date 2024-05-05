@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.32",
+  "version": "2.2.0",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -12,12 +12,12 @@
     "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
     "helm/JSDraw/Scilligence.JSDraw2.Lite.js",
     "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
-    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
+    "helm/JSDraw/Pistoia.HELM.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.40.7",
-    "@datagrok-libraries/chem-meta": "^1.2.3",
-    "@datagrok-libraries/utils": "^4.1.45",
+    "@datagrok-libraries/bio": "^5.41.0",
+    "@datagrok-libraries/chem-meta": "^1.2.5",
+    "@datagrok-libraries/utils": "^4.2.2",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.17.0",
     "dayjs": "^1.10.6",
@@ -37,8 +37,8 @@
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
-    "@datagrok/bio": "^2.12.11",
-    "@datagrok/chem": "^1.9.0"
+    "@datagrok/bio": "^2.12.17",
+    "@datagrok/chem": "^1.9.2"
   },
   "scripts": {
     "link-all": "npm link @datagrok-libraries/chem-meta datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",

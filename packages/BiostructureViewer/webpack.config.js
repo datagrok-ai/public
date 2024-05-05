@@ -3,6 +3,9 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     package: ['./src/package.ts'],

@@ -289,9 +289,14 @@ export class HistoricalRunsList extends DG.Widget {
           ),
           DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
           DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
-          ...this.visibleProps(func).map((key) => getColumn(key)),
-          DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)),
         ]);
+
+        this.visibleProps(func).map((key) => getColumn(key)).forEach((col) => {
+          col.name = newRunsGridDf.columns.getUnusedName(col.name);
+          newRunsGridDf.columns.add(col, false);
+        });
+
+        newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
 
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], false);
         ui.setDisplayAll([

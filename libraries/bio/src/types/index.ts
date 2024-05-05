@@ -43,6 +43,8 @@ export interface IMonomerLib {
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 
+  /** Summary with lib monomer count by type, csv */
+  getSummary(): string;
   getTooltip(polymerType: string, monomerSymbol: string): HTMLElement;
 }
 

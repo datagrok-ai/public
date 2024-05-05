@@ -3,6 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+// import '@datagrok-libraries/bio/src/types/dojo';
+// import * as dojo from 'DOJO';
+import '@datagrok-libraries/bio/src/types/helm';
+import * as scil from 'scil';
+import * as org from 'org';
+import '@datagrok-libraries/bio/src/types/jsdraw2';
+import * as JSDraw2 from 'JSDraw2';
+
 import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -10,15 +18,18 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
-
-let monomerLib: IMonomerLib | null = null;
+import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
+import {_getHelmService} from './package-utils';
 
 import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+
+let monomerLib: IMonomerLib | null = null;
 
 export const _package = new DG.Package();
 
@@ -56,7 +67,8 @@ function initHelmPatchDojo(): void {
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  //@ts-ignore
+  const logPrefix: string = 'Helm: initHelm()';
+  _package.logger.debug(`${logPrefix}, start`);
   org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
   return Promise.all([
@@ -69,19 +81,22 @@ export async function initHelm(): Promise<void> {
     grok.functions.call('Bio:getBioLib'),
   ])
     .then(([_, lib]: [unknown, IMonomerLib]) => {
+      _package.logger.debug(`${logPrefix}, then(), lib loaded`);
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
       monomerLib.onChanged.subscribe((_) => {
         try {
+          const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
+          _package.logger.debug(`${logPrefixInt}, start, org,helm.webeditor.Monomers updating`);
           rewriteLibraries(); // initHelm()
 
-          const monTypeList: string[] = monomerLib!.getPolymerTypes();
-          const msgStr: string = 'Monomer lib updated:<br />' + (
-            monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
-              return `${monType} ${monomerLib!.getMonomerSymbolsByType(monType).length}`;
-            }).join('<br />'));
+          const libSummary: string = monomerLib!.getSummary()
+            .replaceAll('\n', '<br />\n')
+            .replaceAll(',', ' ');
+          const libMsg: string = `Monomer lib updated:<br /> ${libSummary}'`;
+          grok.shell.info(libMsg);
 
-          grok.shell.info(msgStr);
+          _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
         } catch (err: any) {
           const errMsg = errorToConsole(err);
           console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
@@ -104,7 +119,6 @@ export function getMonomerLib(): IMonomerLib {
 
 /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
 function rewriteLibraries() {
-  // @ts-ignore
   org.helm.webeditor.Monomers.clear();
   monomerLib!.getPolymerTypes().forEach((polymerType) => {
     const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
@@ -136,7 +150,6 @@ function rewriteLibraries() {
         isBroken = true;
 
       if (!isBroken) {
-        // @ts-ignore
         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
       }
     });
@@ -147,13 +160,20 @@ function rewriteLibraries() {
   if (grid) grid.invalidate();
 }
 
+//name: getHelmService
+//output: object result
+export function getHelmService(): HelmServiceBase {
+  return _getHelmService();
+}
+
 //name: helmCellRenderer
 //tags: cellRenderer
 //meta.cellType: helm
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
-  return new HelmCellRenderer();
+  // return new HelmCellRenderer(); // old
+  return new HelmGridCellRenderer(); // new
 }
 
 function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
@@ -166,9 +186,9 @@ function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: st
     grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapOriginals[NOTATION.HELM]}'.`);
   else {
     grok.shell.warning(
-      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +
-      `Please, upload the monomer library! <br/>` +
-      `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
+      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are not found. <br/>` +
+      `Please specify the monomer library to use. <br/>` +
+      `<a href="https://datagrok.ai/help/datagrok/solutions/domains/bio/#manage-monomer-libraries" target="_blank">Learn more</a>`);
   }
 }
 
@@ -186,7 +206,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
-  const col = df.columns.bySemType('Macromolecule')!;
+  const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
   const colSh = SeqHandler.forColumn(col);
   const colUnits = col.getTag(DG.TAGS.UNITS);
   if (colUnits === NOTATION.HELM)
@@ -208,13 +228,11 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!;
-  const col = cell.column;
+  const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  // @ts-ignore
-  const app = new scil.helm.App(view, {
+  const app = new org.helm.webeditor.App(view, {
     showabout: false,
     mexfontsize: '90%',
     mexrnapinontab: true,
@@ -227,12 +245,9 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
   const sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
   let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-  //@ts-ignore
   scil.apply(app.sequence.style, s);
-  //@ts-ignore
   scil.apply(app.notation.style, s);
   s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  //@ts-ignore
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
@@ -240,9 +255,8 @@ function webEditor(cell: DG.Cell, value?: string, units?: string) {
     if (!!cell && units === undefined)
       app.canvas.helm.setSequence(cell.value, 'HELM');
     else
-      app.canvas.helm.setSequence(value, 'HELM');
+      app.canvas.helm.setSequence(value!, 'HELM');
   }, 200);
-  //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
@@ -311,4 +325,40 @@ export function getMolfiles(col: DG.Column): DG.Column {
 //output: object result
 export async function getHelmHelper(): Promise<IHelmHelper> {
   return HelmHelper.getInstance();
+}
+
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+
+//name: measureCellRenderer
+export async function measureCellRenderer(): Promise<void> {
+  const grid = grok.shell.tv.grid;
+  const gridCol = grid.columns.byName('sequence')!;
+  const back = gridCol.temp['rendererBack'] as HelmGridCellRendererBack;
+
+  let etSum: number = 0;
+  let etCount: number = 0;
+  for (let i = 0; i < 20; ++i) {
+    const t1 = window.performance.now();
+    let t2: number;
+    if (!back.cacheEnabled) {
+      await testEvent(back.onRendered, () => {
+        t2 = window.performance.now();
+        _package.logger.info(`measureCellRenderer() cache disabled , ET: ${t2 - t1} ms`);
+      }, () => {
+        back.invalidate(); // grid.invalidate();
+      }, 5000);
+    } else {
+      await testEvent(grid.onAfterDrawContent, () => {
+        t2 = window.performance.now();
+        _package.logger.info(`measureCellRenderer() cache enabled, ET: ${t2! - t1} ms`);
+      }, () => {
+        grid.invalidate();
+      }, 5000);
+    }
+
+    etSum += (t2! - t1);
+    etCount++;
+  }
+  _package.logger.info(`measureCellRenderer(), avg ET: ${etSum / etCount} ms`);
 }

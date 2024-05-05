@@ -221,8 +221,8 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onBeforeRun(): Promise<void> {
-    if (this.outputsTabsElem.currentPane)
-      this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
+    if (this.tabsElem.currentPane)
+      this.prevOpenedTab = this.inputTabsLabels.includes(this.tabsElem.currentPane.name) ? null: this.tabsElem.currentPane;
 
     return Promise.resolve();
   }
@@ -233,18 +233,18 @@ export class RichFunctionView extends FunctionView {
    */
   public override onAfterRun(): Promise<void> {
     this.showOutputTabsElem();
-    this.outputsTabsElem.panes.forEach((tab) => {
+    this.tabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
 
     if (this.prevOpenedTab) {
-      this.outputsTabsElem.currentPane = this.prevOpenedTab;
+      this.tabsElem.currentPane = this.prevOpenedTab;
       return Promise.resolve();
     }
 
-    const firstOutputTab = this.outputsTabsElem.panes
-      .find((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name));
-    if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
+    const firstOutputTab = this.tabsElem.panes
+      .find((tab) => this.outputTabsLabels.includes(tab.name));
+    if (firstOutputTab) this.tabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
   }
@@ -401,13 +401,8 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    $(this.outputsTabsElem.root).hide();
-
-    if (Object.keys(this.categoryToDfParamMap.inputs).length > 0) {
-      this.outputsTabsElem.panes.forEach((tab) => {
-        $(tab.header).hide();
-      });
-    }
+    if (this.inputTabsLabels.length === 0)
+      $(this.tabsElem.root).hide();
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
@@ -715,15 +710,15 @@ export class RichFunctionView extends FunctionView {
   }
 
   // Main element of the output block. Stores all the tabs for the output and input
-  private outputsTabsElem = ui.tabControl();
+  private tabsElem = ui.tabControl();
 
   private showOutputTabsElem() {
-    $(this.outputsTabsElem.root).show();
-    $(this.outputsTabsElem.root).css('display', 'flex');
+    $(this.tabsElem.root).show();
+    $(this.tabsElem.root).css('display', 'flex');
   }
 
   public buildOutputBlock(): HTMLElement {
-    this.outputsTabsElem.root.style.width = '100%';
+    this.tabsElem.root.style.width = '100%';
 
     this.tabsLabels.forEach((tabLabel) => {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
@@ -741,7 +736,7 @@ export class RichFunctionView extends FunctionView {
           const initialValue: DG.DataFrame =
             this.funcCall.outputs[dfProp.name]?.value ??
             this.funcCall.inputParams[dfProp.name]?.value ??
-            grok.data.demo.demog(1);
+            grok.data.demo.demog(0);
 
           const viewerType = viewerDesc['type'] as string;
           const viewer = Object.values(viewerTypesMapping).includes(viewerType) ? DG.Viewer.fromType(viewerType, initialValue): await initialValue.plot.fromType(viewerType) as DG.Viewer;
@@ -750,7 +745,14 @@ export class RichFunctionView extends FunctionView {
           this.dfToViewerMapping[dfProp.name].push(viewer);
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
-          return {viewer, stub: getNoDataStub()};
+          const stub = getNoDataStub();
+          // Workaround since viewers cannot work with null values instead of DF
+          if (initialValue.rowCount === 0 && initialValue.name === 'demog 0') {
+            ui.setDisplay(viewer.root, false);
+            ui.setDisplay(stub, true);
+          }
+
+          return {viewer, stub};
         });
 
         const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then(({viewer: loadedViewer, stub}) => {
@@ -758,8 +760,6 @@ export class RichFunctionView extends FunctionView {
             const currentParam =
               this.funcCall.outputParams[dfProp.name] ??
               this.funcCall.inputParams[dfProp.name];
-
-            this.showOutputTabsElem();
 
             if (currentParam.value) {
               ui.setDisplay(loadedViewer.root, true);
@@ -805,8 +805,8 @@ export class RichFunctionView extends FunctionView {
             }),
           ).subscribe(() => {
             this.showOutputTabsElem();
-            Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
-              $(this.outputsTabsElem.getPane(inputTabName).header).show();
+            this.inputTabsLabels.forEach((inputTabName) => {
+              $(this.tabsElem.getPane(inputTabName).header).show();
             });
           });
           this.subs.push(inputTabSub);
@@ -825,6 +825,7 @@ export class RichFunctionView extends FunctionView {
                 viewerWithStub.loadedViewer.root,
                 viewerWithStub.stub,
               ],
+              {style: {width: '100%'}},
             );
           });
           $(viewerWithStubRoot).css({
@@ -917,11 +918,11 @@ export class RichFunctionView extends FunctionView {
         const newScalarsTable = generateScalarsTable();
         scalarsTable.replaceWith(newScalarsTable);
         scalarsTable = newScalarsTable;
-        $(this.outputsTabsElem.getPane(tabLabel).header).show();
+        $(this.tabsElem.getPane(tabLabel).header).show();
       });
       this.subs.push(tableSub);
 
-      this.outputsTabsElem.addPane(tabLabel, () => {
+      this.tabsElem.addPane(tabLabel, () => {
         return ui.divV([
           ...tabDfProps.length ? [dfBlocks]: [],
           ...tabScalarProps.length ? [scalarsTable]: [],
@@ -930,14 +931,14 @@ export class RichFunctionView extends FunctionView {
     });
 
     const outputBlock = ui.box();
-    outputBlock.append(this.outputsTabsElem.root);
+    outputBlock.append(this.tabsElem.root);
 
     return outputBlock;
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
     this.showOutputTabsElem();
-    this.outputsTabsElem.panes.forEach((tab) => {
+    this.tabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
   }
@@ -947,9 +948,17 @@ export class RichFunctionView extends FunctionView {
 
   protected get tabsLabels() {
     return [
-      ...Object.keys(this.categoryToDfParamMap.inputs),
-      ...Object.keys(this.categoryToDfParamMap.outputs),
+      ...this.inputTabsLabels,
+      ...this.outputTabsLabels,
     ];
+  }
+
+  protected get outputTabsLabels() {
+    return Object.keys(this.categoryToDfParamMap.outputs);
+  }
+
+  protected get inputTabsLabels() {
+    return Object.keys(this.categoryToDfParamMap.inputs);
   }
 
   protected get categoryToDfParamMap() {
@@ -1654,16 +1663,15 @@ export class RichFunctionView extends FunctionView {
   private hideOutdatedOutput() {
     if (this.keepOutput())
       return;
-    this.outputsTabsElem.panes
-      .filter((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name))
-      .forEach((tab) => $(tab.header).hide());
 
-    const firstInputTab = this.outputsTabsElem.panes
-      .find((tab) => Object.keys(this.categoryToDfParamMap.inputs).includes(tab.name));
+    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label).header).hide());
+
+    const firstInputTab = this.tabsElem.panes
+      .find((tab) => this.inputTabsLabels.includes(tab.name));
     if (firstInputTab)
-      this.outputsTabsElem.currentPane = firstInputTab;
+      this.tabsElem.currentPane = firstInputTab;
     else
-      $(this.outputsTabsElem.root).hide();
+      $(this.tabsElem.root).hide();
   }
 
   private sheetNamesCache = {} as Record<string, string>;
@@ -1757,9 +1765,9 @@ export class RichFunctionView extends FunctionView {
           })));
         }
 
-        const tabControl = this.outputsTabsElem;
+        const tabControl = this.tabsElem;
 
-        for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
+        for (const tabLabel of this.inputTabsLabels) {
           for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
             const nonGridViewers = this.dfToViewerMapping[inputProp.name]
               .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
@@ -1785,7 +1793,7 @@ export class RichFunctionView extends FunctionView {
           }
         }
 
-        for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.outputs).includes(label))) {
+        for (const tabLabel of this.outputTabsLabels) {
           for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
             const nonGridViewers = this.dfToViewerMapping[outputProp.name]
               .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
@@ -1843,11 +1851,11 @@ export class RichFunctionView extends FunctionView {
 
       const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
-      const tabControl = this.outputsTabsElem;
+      const tabControl = this.tabsElem;
 
       DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
 
-      for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
+      for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
           const nonGridViewers = this.dfToViewerMapping[inputProp.name]
             .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
@@ -1868,7 +1876,7 @@ export class RichFunctionView extends FunctionView {
         }
       }
 
-      for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.outputs).includes(label))) {
+      for (const tabLabel of this.tabsLabels.filter((label) => this.outputTabsLabels.includes(label))) {
         for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
           const nonGridViewers = this.dfToViewerMapping[outputProp.name]
             .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)

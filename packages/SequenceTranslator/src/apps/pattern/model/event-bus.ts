@@ -49,6 +49,10 @@ export class EventBus {
   private _patternHasUnsavedChanges$ = new rxjs.BehaviorSubject<boolean>(false);
   private _lastLoadedPatternConfig: rxjs.BehaviorSubject<PatternConfiguration >;
 
+  private _selectedStrandColumn = new rxjs.BehaviorSubject<{[strand: string]: string | null} | null>(null);
+  private _selectedIdColumn = new rxjs.BehaviorSubject<string | null>(null);
+
+
   constructor(
     private dataManager: DataManager,
     initialPaternConfigRecord: PatternConfigRecord
@@ -455,6 +459,23 @@ export class EventBus {
 
   get patternHasUnsavedChanges$(): rxjs.Observable<boolean> {
     return this._patternHasUnsavedChanges$.asObservable();
+  }
+
+  selectStrandColumn(strand: StrandType, colName: string | null) {
+    this._selectedStrandColumn.next({...this._selectedStrandColumn.getValue(), [strand]: colName});
+  }
+
+  getSelectedStrandColumn(strand: StrandType): string | null {
+    const value = this._selectedStrandColumn.getValue();
+    return value ? value[strand] : null;
+  }
+
+  selectIdColumn(colName: string) {
+    this._selectedIdColumn.next(colName);
+  }
+
+  getSelectedIdColumn(): string | null {
+    return this._selectedIdColumn.getValue();
   }
 }
 

@@ -116,6 +116,14 @@ export class MonomerLib implements IMonomerLib {
     this._onChanged.next();
   }
 
+  getSummary(): string {
+    const monTypeList: string[] = this.getPolymerTypes();
+    const resStr: string = monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
+      return `${monType} ${this.getMonomerSymbolsByType(monType).length}`;
+    }).join('\n');
+    return resStr;
+  }
+
   getTooltip(polymerType: string, monomerSymbol: string): HTMLElement {
     // getTooltip(monomer: Monomer): HTMLElement;
     // getTooltip(monomerOrPolymerType: string | Monomer, symbol?: string): HTMLElement {
@@ -163,8 +171,12 @@ export class MonomerLib implements IMonomerLib {
         label('Source'),
         ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
       ], {classes: 'ui-input-root'}));
-    } else
-      res.append(ui.divText('Monomer not found'));
+    } else {
+      res.append(ui.divV([
+        ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
+        ui.divText('Open the Context Panel, then expand Manage Libraries'),
+      ]));
+    }
     return res;
   }
 }

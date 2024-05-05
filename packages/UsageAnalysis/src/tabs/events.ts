@@ -13,7 +13,7 @@ export class EventsView extends UaView {
     this.name = 'Events';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const packagesViewer1 = new UaFilterableQueryViewer( {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Sources',

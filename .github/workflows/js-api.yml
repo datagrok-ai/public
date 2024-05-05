@@ -31,7 +31,12 @@ jobs:
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            js-api
+            packages
+            libraries
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -148,14 +153,22 @@ jobs:
       HOST: GitHubAction
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            js-api
+            .github
+            docker
+            packages/ApiTests
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -424,14 +437,22 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            js-api
+            .github
+            libraries/${{ matrix.library }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            libraries/${{ matrix.library }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -512,14 +533,23 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            js-api
+            .github
+            libraries
+            packages/${{ matrix.package }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version

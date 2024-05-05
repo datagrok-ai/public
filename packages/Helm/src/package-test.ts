@@ -5,6 +5,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './tests/helm-tests.ts';
 import './tests/findMonomers-tests';
+import './tests/helm-service-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles';
 import './tests/properties-widget-tests';

@@ -37,7 +37,7 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
     let diff = 0;
     const s1l = seq1.length;
     const s2l = seq2.length;
-    const thresholdLimit = Math.max(s1l, s2l) * (1 - threshold);
+    const thresholdLimit = Math.ceil(Math.max(s1l, s2l) * (1 - threshold));
     if (s1l !== s2l)
       diff = Math.abs(s1l - s2l);
 

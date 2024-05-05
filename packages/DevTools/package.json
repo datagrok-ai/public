@@ -63,5 +63,8 @@
   "canView": [
     "Developers"
   ],
-  "category": "Development"
+  "category": "Development",
+  "meta": {
+    "dartium": false
+  }
 }

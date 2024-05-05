@@ -190,7 +190,7 @@ export function previewNglDensity(file: any) {
 
 // eslint-disable-next-line max-len
 //tags: fileViewer
-//meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,ent,sd,xyz
+//meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz
 //input: file file
 //output: view v
 export function previewBiostructureStructure(file: DG.FileInfo): DG.View {
@@ -375,13 +375,6 @@ export function saguaroViewer(): DG.JsViewer & IBiotrackViewer {
 //output: object result
 export async function getPdbHelper(): Promise<IPdbHelper> {
   return PdbHelper.getInstance();
-}
-
-//name: getPdbGridCellRenderer
-//input: object gridCol
-//output: object result
-export function getPdbGridCellRenderer(gridCol: DG.GridColumn): IPdbGridCellRenderer {
-  return PdbGridCellRendererBack.getOrCreate(gridCol);
 }
 
 //name: dockingDemo

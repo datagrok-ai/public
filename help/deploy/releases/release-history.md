@@ -6,20 +6,74 @@ position: 6 # float position is supported
 
 ## Latest version
 
-| Service                                                   | Docker Image                                                                                     |
-|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.1](https://hub.docker.com/r/datagrok/datagrok)                           |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                   |
-| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                    |
-| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                    |
+| Service                                                   | Docker Image                                                                                      |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.2](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)            |
-| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                      |
-| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                         |
+| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
+| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
+| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2024-05-01 1.18.5
+
+### Improvemets:
+
+* Error handling: "Report an error" dialog when you click on exclamation point.
+* Sticky meta: improve visibility for users:
+   * Show preview for entity types
+   * Support multi-values edit 
+   * Entity type settings with TabControl 
+   * Better type selector for schema editor.
+* JS API for entity properties/types/schemas.
+* [#2733](https://github.com/datagrok-ai/public/issues/2733): Viewers | Legend: provide diverse palette and markers' shape.
+* [#2742](https://github.com/datagrok-ai/public/issues/2742): Viewers: Indicate the selected column in the column selector.
+* [#2772](https://github.com/datagrok-ai/public/issues/2772): Pivot table: add a property to hide sparklines.
+* GROK-14412: Trellis plot | Column selectors: ESC should close the popup.
+
+### Fixes:
+
+* Azure blob: directory shown as a file.
+* GROK-15190: Scatterplot, line chart: updating formula lines does not work for those specified via a dataframe.
+* GROK-15249: Error when pressing Column Properties on a programmatically created Grid.
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases.
+* [#2644](https://github.com/datagrok-ai/public/issues/2644): Forms | Next row button: incorrect behavior after sorting the grid.
+* [#2749](https://github.com/datagrok-ai/public/issues/2749): Line chart and Trellis plot: '+' icon is missing.
+* [#1092](https://github.com/datagrok-ai/public/issues/1092): Multiple issues with Conditional Color Dialog.
+* [#2764](https://github.com/datagrok-ai/public/issues/2764): Box plot: wrong area is selected with shift-drag when categories at the left are filtered out.
+* [#2509](https://github.com/datagrok-ai/public/issues/2509): Pinned columns in multiple views for the same table cause performance issues in some cases.
+* [#2782](https://github.com/datagrok-ai/public/issues/2782): Line chart: incorrect color-coding while setting filters.
+* [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: contrast color for blue instead of black works when there is no Stack set to the bar chart inner viewer.
+* [#2793](https://github.com/datagrok-ai/public/issues/2793): Scatter plot with 'filter by zoom': filtering by scatter plot is shown in filter panel's '?' after resetting in some cases.
+
+
+## 2024-04-05 1.18.4
+
+### Addressed Issues
+
+* (Bug) GROK-15334: Large file open fails (WIP)
+
+
+## 2024-03-28 1.18.3
+
+### Addressed Issues
+
+* (Bug) GROK-15300: Table duplicates after changing ID 
+
+
+## 2024-03-19 1.18.2
+
+### Addressed Issues
+
+* (Bug) GROK-15215: Async package functions don't work in Add new column 
+* (Bug) GROK-15216: Views migration didn't run 
+* (Bug) GROK-15166: Sunburst: error when trying to switch the Table property 
 
 
 ## 2024-03-14 1.18.1

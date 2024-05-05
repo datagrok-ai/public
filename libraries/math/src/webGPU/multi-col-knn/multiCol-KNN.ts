@@ -54,6 +54,12 @@ export async function multiColWebGPUKNN(
   if (!device)
     return null;
 
+  // device may be lost
+  let deviceLost = false;
+  device.lost.then(() => {
+    deviceLost = true;
+  });
+
   const listSize = entryList[0].length; // size of each list (or column)
   const processInfo = entryList.map((entry, i) => {
     return webGPUProcessInfo(entry, distanceMetrics[i], i, options[i]);
@@ -146,8 +152,7 @@ export async function multiColWebGPUKNN(
           @group(0) @binding(3) var<storage, read_write> suppInfo: SuppInfo;
           
           @compute @workgroup_size(${workGroupDivision}, ${workGroupDivision}) fn calcKNN(
-            @builtin(global_invocation_id) id: vec3<u32>,
-            @builtin(local_invocation_id) localId: vec3<u32>
+            @builtin(global_invocation_id) id: vec3<u32>
           ) {
             ${needsDummy ? `let otherDummy = suppInfo.dummy * 2;` : ''} // just to make sure that the suppInfo is not optimized out
             let col = id.x; //* ${workGroupDivision} + localId.x;
@@ -335,6 +340,18 @@ export async function multiColWebGPUKNN(
     ],
   });
 
+  //create a buffer on the GPU to get a copy of the results
+  const resultBufferDistances = device.createBuffer({
+    label: 'result buffer distances',
+    size: bufferDistances.size,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+  });
+
+  const resultBufferIndexes = device.createBuffer({
+    label: 'result buffer indexes',
+    size: bufferIndexes.size,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+  });
 
   for (let iter = 0; iter < Math.ceil(listSize / computationsPerPass); iter++) {
     startAt = iter * computationsPerPass;
@@ -376,12 +393,6 @@ export async function multiColWebGPUKNN(
 
       // if we are at the last pair comparison pass, we need to read the results
       if (pairIter === pairComparisonPasses - 1) {
-        //create a buffer on the GPU to get a copy of the results
-        const resultBufferDistances = device.createBuffer({
-          label: 'result buffer distances',
-          size: bufferDistances.size,
-          usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-        });
         // Encode a command to copy the results to a mappable buffer.
         encoder.copyBufferToBuffer(
           bufferDistances,
@@ -390,11 +401,7 @@ export async function multiColWebGPUKNN(
           0,
           resultBufferDistances.size
         );
-        const resultBufferIndexes = device.createBuffer({
-          label: 'result buffer indexes',
-          size: bufferIndexes.size,
-          usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-        });
+
         encoder.copyBufferToBuffer(
           bufferIndexes,
           0,
@@ -449,11 +456,21 @@ export async function multiColWebGPUKNN(
         await device.queue.onSubmittedWorkDone();
         // console.timeEnd('pass between');
       }
-      // console.timeEnd("decode");
+      // device may get lost during opperation, so in this case, we need to return null
+      if (deviceLost)
+        return null;
     }
   }
-  device.destroy();
 
+  bufferDistances.destroy();
+  bufferIndexes.destroy();
+  computeInfoBuffer.destroy();
+  suppInfoBuffer.destroy();
+  resultBufferDistances.destroy();
+  resultBufferIndexes.destroy();
+
+  if (deviceLost)
+    return null;
   return {knnIndexes: resultIndexes, knnDistances: resultDistances};
 }
 

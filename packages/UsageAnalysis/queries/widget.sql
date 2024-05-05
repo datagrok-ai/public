@@ -1,6 +1,6 @@
 --name:UniqueUsersSummary
 --meta.cache: all
---meta.invalidateOn: 0 0 * * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 select date(e.event_time) as date, count(distinct u.id)
 	from events e
@@ -12,7 +12,7 @@ group by date(e.event_time)
 
 --name:UsersEventsSummary
 --meta.cache: all
---meta.invalidateOn: 0 0 * * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 select date(e.event_time) as date,  count(e.id)
 	from events e
@@ -24,7 +24,7 @@ group by date(e.event_time)
 
 --name:UsersErrorsSummary
 --meta.cache: all
---meta.invalidateOn: 0 0 * * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 select date(e.event_time) as date,  count(e.id)
 	from events e

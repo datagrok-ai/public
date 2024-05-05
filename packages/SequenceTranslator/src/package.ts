@@ -1,3 +1,5 @@
+import DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -12,43 +14,55 @@ import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
+import {getPolyToolDialog} from './polytool/ui';
+import {_setPeptideColumn} from './polytool/utils';
+import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
+
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoToolkitApp(): Promise<void> {
+//output: view v
+export async function oligoToolkitApp(): Promise<DG.ViewBase> {
   await initSequenceTranslatorLibData();
   const externalViewFactories = await getExternalAppViewFactories();
   if (!externalViewFactories)
     throw new Error('External app view factories not loaded');
   const appUI = new CombinedAppUI(externalViewFactories!);
-  await appUI.initializeAppLayout();
+  const view = await appUI.getAppView();
+  return view;
 }
 
 //name: Oligo Translator
 //meta.icon: img/icons/translator.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoTranslatorApp(): Promise<void> {
-  await buildLayout(APP_NAME.TRANSLATOR);
+//output: view v
+export async function oligoTranslatorApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.TRANSLATOR);
+  return view;
 }
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoPatternApp(): Promise<void> {
-  await buildLayout(APP_NAME.PATTERN);
+//output: view v
+export async function oligoPatternApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.PATTERN);
+  return view;
 }
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Oligo
 //tags: app
-export async function oligoStructureApp(): Promise<void> {
-  await buildLayout(APP_NAME.STRUCTURE);
+//output: view v
+export async function oligoStructureApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+  return view;
 }
 
 //name: initSequenceTranslatorLibData
@@ -124,8 +138,41 @@ export async function translateOligonucleotideSequence(
   return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
 }
 
-async function buildLayout(appName: string): Promise<void> {
+async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   await initSequenceTranslatorLibData();
   const appUI = getSpecifiedAppUI(appName);
-  await appUI.initializeAppLayout();
+  const view = await appUI.getAppView();
+  return view;
+}
+
+//top-menu: Bio | Convert | PolyTool
+//name: polyTool
+//description: Perform cyclization of polymers
+export async function polyTool(): Promise<void> {
+  let dialog: DG.Dialog;
+  try {
+    dialog = await getPolyToolDialog();
+    dialog.show();
+  } catch (err: any) {
+    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
+  }
+}
+
+//name: polyToolColumnChoice
+//input: dataframe df [Input data table]
+//input: column macroMolecule
+export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+  _setPeptideColumn(macroMolecule);
+  await grok.data.detectSemanticTypes(df);
+}
+
+//name: createMonomerLibraryForPolyTool
+//input: file file
+export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
+  const fileContent = await file.readAsString();
+  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
+  const libObject = await libHandler.getJson();
+  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
+  const jsonFileContent = JSON.stringify(libObject, null, 2);
+  DG.Utils.download(jsonFileName, jsonFileContent);
 }

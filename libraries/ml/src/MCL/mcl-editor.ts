@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {DimReductionEditorOptions} from '../functionEditors/dimensionality-reduction-editor';
 import {MultiColumnDimReductionEditor}
   from '../multi-column-dimensionality-reduction/multi-column-dim-reduction-editor';
+import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 
 export class MCLEditor extends MultiColumnDimReductionEditor {
@@ -14,6 +15,14 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
       this.similarityThresholdInput = ui.intInput('Similarity threshold', 80);
       this.maxIterationsInput = ui.intInput('Max iterations', 5);
       this.useWebGPUInput = ui.boolInput('Use WebGPU', false);
+      getGPUAdapterDescription().then((desc) => {
+        if (desc) {
+          this.useWebGPUInput.setTooltip(`Use webGPU for MCL calculation (${desc})`);
+        } else {
+          this.useWebGPUInput.value = false;
+          this.useWebGPUInput.root.style.display = 'none';
+        }
+      });
     }
 
     public getEditor(): HTMLElement {

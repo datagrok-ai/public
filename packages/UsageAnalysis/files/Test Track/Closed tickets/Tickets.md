@@ -15,8 +15,8 @@
    * [#2571](https://github.com/datagrok-ai/public/issues/2571)
    * [#2479](https://github.com/datagrok-ai/public/issues/2479)
    * [#2455](https://github.com/datagrok-ai/public/issues/2455) Viewers: Add the ability to choose several categories with ctrl click
-   * [#2456](https://github.com/datagrok-ai/public/issues/2455) Scatterplot: ignore negatives and zero values when switching to log scale
-   [#2467](https://github.com/datagrok-ai/public/issues/2455) Allow to set tab label for stacked viewers programmatically
+   * [#2456](https://github.com/datagrok-ai/public/issues/2456) Scatterplot: ignore negatives and zero values when switching to log scale
+   [#2467](https://github.com/datagrok-ai/public/issues/2467) Allow to set tab label for stacked viewers programmatically
    * Line chart: unaggregated tooltip and hovered row do not match in some cases [#2395](https://github.com/datagrok-ai/public/issues/2395)
    * [#2562](https://github.com/datagrok-ai/public/issues/2562) Bar chart: error when date column is used as category and split function is non-default
    * #2639: Structure in filter is unexpectedly changed when there are two views in some cases
@@ -25,5 +25,6 @@
    
 
 1. Use https://ops.datagrok.ai/job/Tools/job/Generate-Release-notes/ to get the list of closed tickets, included in the release.Test them.
-Note: here is the [list for 1.18 tickets to test](https://docs.google.com/document/d/1ogmf06Ep8mCb1KEO_JvCXWn9AAqQcKj7E7dnRt97e_Q/edit?usp=sharing)
+
 2. Test bug fixes from Jira.
+3. Add important tickets from the current version to the list in the first item. 

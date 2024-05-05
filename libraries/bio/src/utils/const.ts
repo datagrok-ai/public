@@ -73,7 +73,7 @@ export const SDF_MONOMER_NAME = 'MonomerName';
 
 // todo: ideally, keys should be expressed via constants
 export const jsonSdfMonomerLibDict = {
-  'monomerType': null,
+  'monomerType': null, // -> Backbone
   'smiles': null,
   'name': 'Name',
   'author': null,

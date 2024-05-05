@@ -241,14 +241,15 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 R-group analysis runs directly in browser using RDKit JS library.
 
 To run R-Group analysis:
+
 1. Go to **Chem** > **Analyze** > **R-Groups Analysis...**. A sketcher opens.
-1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
-   * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups. 
+2. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
+   * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups.
    * Click **MCS** to automatically identify the most common substructure.
    * Click the **Gear** icon to adjust R group analysis parameters.
-2. Click **OK** to execute. The R-group columns are added to the dataframe, along with a trellis plot for visual exploration. 
+3. Click **OK** to execute. The R-group columns are added to the dataframe, along with a trellis plot for visual exploration.
 
-R-groups are highlighted with different colorsin the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isHeat** column.
+R-groups are highlighted with different colors in the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules which have R groups in each enumerated position use **isMatch** column.
 
 The trellis plot initially displays pie charts. To change the chart type, use the **Viewer** control in the top-left corner to select a different viewer.
 

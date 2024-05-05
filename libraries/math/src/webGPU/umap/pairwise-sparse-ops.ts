@@ -280,7 +280,12 @@ export async function pairwiseOpSparse(
   resultKnnIndexes.set(new Int32Array(resultArrayBuffer, 0, unionMatrixSize));
   resultKnnDistances.set(new Float32Array(resultArrayBuffer, unionMatrixSize * 4, unionMatrixSize));
   resultBuffer.unmap();
-  device.destroy();
+
+  resultBuffer.destroy();
+  source1Buffer.destroy();
+  source2Buffer.destroy();
+  resBuffer.destroy();
+  unionMatrixOffsetsBuffer.destroy();
 
   return {resultKnnIndexes, resultKnnDistances};
 }

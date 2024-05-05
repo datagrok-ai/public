@@ -1465,6 +1465,10 @@ export class Color {
     return api.grok_Color_Darken(color, diff);
   }
 
+  static  getRowColor(column: Column, row: number): number {
+    return api.grok_Color_GetRowColor(column.dart, row);
+  }
+
   static scale(x: number, min: number, max: number): number {
     return min === max ? min : (x - min) / (max - min);
   }

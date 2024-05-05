@@ -3,6 +3,7 @@
 ## 1.3.71 (2024-03-06)
 
 Fix GridNeighbour resize observer
+Bump datagrok-api dependency to 1.18.0
 
 ## 1.3.70 (2024-02-20)
 

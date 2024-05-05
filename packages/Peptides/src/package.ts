@@ -130,7 +130,7 @@ export function logoSummaryTable(): LogoSummaryTable {
   return new LogoSummaryTable();
 }
 
-//name: Cluster Max Activity
+//name: Active peptide selection
 //tags: viewer
 //output: viewer result
 export function clusterMaxActivity(): ClusterMaxActivityViewer {

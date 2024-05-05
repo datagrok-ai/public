@@ -13,11 +13,11 @@ export abstract class IsolatedAppUIBase extends AppUIBase {
   }
 
   protected view: DG.View;
-  async addView(): Promise<void> {
+  async constructView(): Promise<DG.ViewBase> {
     await this.initView();
     const name = this.parentAppName ? this.parentAppName + '/' + this.appName : this.appName;
     this.view.path = `/apps/${_package.name}/${name.replace(/\s/g, '')}/`;
-    grok.shell.addView(this.view);
+    return this.view;
   }
 
   protected abstract getContent(): Promise<HTMLDivElement>;

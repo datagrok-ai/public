@@ -139,6 +139,25 @@ category('DataFrame: Methods', () => {
     expect(csv, '');
   });
 
+  test('toCsv with grid settings', async () => {
+    const t = DG.DataFrame.fromCsv(`x, y, z, a
+      1, 6, 3, 4
+      5, 2, 7, 8
+      9, 10, 11, 12`);
+    const grid = DG.Grid.create(t);
+    grid.columns.byName('a')!.visible = false;
+    grid.columns.setOrder(['x', 'z', 'y', 'a']);
+    grid.sort(['x'], [false]);
+
+    const t2 = DG.DataFrame.fromCsv(t.toCsv({visibleColumnsOnly: true}, grid));
+    expect(t2.columns.length === 3);
+    expect(t2.columns.names()[1] === 'z');
+    expect(t2.columns.names()[2] === 'y');
+    expect(t2.columns.byName('x').getNumber(0) === 9);
+    expect(t2.columns.byName('z').getNumber(1) === 7);
+    expect(t2.columns.byName('y').getNumber(2) === 6);
+  });
+
   test('toJson | fromJson', async () => {
     const t = createDf();
     //@ts-ignore

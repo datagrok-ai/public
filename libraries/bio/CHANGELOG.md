@@ -1,5 +1,21 @@
 # bio changelog
 
+## 5.41.0 (2024-05-01)
+
+Optimize cell renderer on async renderer base
+
+### Features
+
+* Use ImageData for cell image cache instead of toDataURL string
+* Add aux to RenderTask.onAfterRender callback (for interactivity)
+* Add cell sync render cell from cache while resizing
+* Prioritize render queue by task consumer id and callback
+* Add types for Pistoia Helm Web Editor
+
+### Bug fixes
+
+* Fix rendering on grid and without (row tooltip, scatter plot)
+
 ## 5.40.8 (2024-04-16)
 
 Fix monomer placer destroying
