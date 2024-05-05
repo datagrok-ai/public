@@ -552,7 +552,7 @@ export async function TestCompositionPipeline7() {
       },
     ],
     nestedPipelinesConfig: {
-      'testPipeline1': { insertBeforeStep: 'step2' },
+      'testPipeline1': {insertBeforeStep: 'step2'},
     },
   };
   const conf = CompositionPipeline.compose(conf2, [conf1]);

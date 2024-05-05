@@ -599,8 +599,8 @@ category('CompositionPipeline composition config', async () => {
       ...sconfig2,
       nestedPipelinesConfig: {
         'testPipeline1': {
-	  insertBeforeStep: 'step2'
-	},
+	  insertBeforeStep: 'step2',
+        },
       },
     };
     const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
@@ -669,10 +669,10 @@ category('CompositionPipeline reactivity', async () => {
           id: 'step1',
           nqName: 'LibTests:AddMock',
         },
-	{
+        {
           id: 'step2',
           nqName: 'LibTests:MulMock',
-        }
+        },
       ],
       links: [{
         id: 'link1',
@@ -733,10 +733,10 @@ category('CompositionPipeline reactivity', async () => {
           id: 'step1',
           nqName: 'LibTests:AddMock',
         },
-	{
+        {
           id: 'step2',
           nqName: 'LibTests:MulMock',
-        }
+        },
       ],
       links: [{
         id: 'link1',
