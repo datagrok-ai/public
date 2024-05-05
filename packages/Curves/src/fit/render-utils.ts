@@ -75,9 +75,15 @@ interface FitAxesLabelsRenderOptions extends FitTitleRenderOptions {
 }
 
 interface FitLegendRenderOptions {
-    showLegend: boolean;
+    showLegend?: boolean;
     dataBox: DG.Rect;
-    ratio: number;
+    ratio?: number;
+}
+
+interface FitLegendColumnlabelSeriesRenderOptions extends FitLegendRenderOptions {
+    columnIdx: number;
+    drawnCurvesInLegend: number;
+    showColumnLabel?: boolean;
 }
 
 
@@ -375,102 +381,53 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, r
         let drawnCurvesInLegend = 0;
         for (let i = 0; i < columnNames.length; i++) {
             const colName = columnNames[i];
-
-            if (data.chartOptions?.showColumnLabel) {
-                g.beginPath();
-                g.fillStyle = 'black';
-                const colNameWidth = g.measureText(colName!).width;
-                g.fillText(colName!, renderOptions.dataBox.maxX - colNameWidth, renderOptions.dataBox.y +
-                  FitConstants.LEGEND_TOP_PX_MARGIN + (i * FitConstants.LEGEND_RECORD_PX_HEIGHT + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend));
-            }
+            if (data.chartOptions?.showColumnLabel)
+              renderColumnLabel(g, colName!, {dataBox: renderOptions.dataBox, columnIdx: i, drawnCurvesInLegend});
 
             const series = data.series?.filter((series) => series.columnName === colName);
             for (let j = 0; j < series?.length!; j++) {
                 const currentSeries = series![j];
                 if (currentSeries.name === '' || currentSeries.name === null || currentSeries.name === undefined)
                     continue;
-
-                g.beginPath();
-                g.strokeStyle = currentSeries.fitLineColor!;
-                g.lineWidth = 2 * renderOptions.ratio;
-                const textWidth = g.measureText(currentSeries.name).width;
-                g.moveTo(renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
-                  renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
-                  (data.chartOptions?.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (i + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-                g.lineTo(renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
-                  renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
-                  (data.chartOptions?.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (i + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-                const marker = currentSeries.markerType ? currentSeries.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
-                DG.Paint.marker(g, marker, renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH / 2,
-                  renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
-                  (data.chartOptions?.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (i + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend,
-                  currentSeries.pointColor!, FitConstants.POINT_PX_SIZE * renderOptions.ratio);
-                g.fillStyle = currentSeries.fitLineColor!;
-                g.fillText(currentSeries.name, renderOptions.dataBox.maxX - textWidth,
-                  renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN +
-                  (data.chartOptions?.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (i + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-                g.stroke();
+                renderLegendSeries(g, currentSeries, {dataBox: renderOptions.dataBox, ratio: renderOptions.ratio,
+                  columnIdx: i, drawnCurvesInLegend, showColumnLabel: data.chartOptions?.showColumnLabel});
                 drawnCurvesInLegend++;
             }
         }
         g.restore();
-
-
-
-
-        // let drawnCurvesInLegend = 0;
-        // const columnNames = new Set(data.series?.map((series) => series.columnName));
-        // [...columnNames].forEach((columnName, columnNameIndex) => {
-        //     const series = data.series?.filter((series) => series.columnName === columnName);
-        //     const getOffset = () => data.chartOptions?.showColumnLabel ? 20 : 0;
-        //     if (data.chartOptions?.showColumnLabel) {
-        //         g.beginPath();
-        //         g.fillStyle = 'black';
-        //         const colNameWidth = g.measureText(columnName ?? '').width;
-        //         g.fillText(columnName ?? '', renderOptions.dataBox.maxX - colNameWidth,
-        //           renderOptions.dataBox.y + 20 + (20 * columnNameIndex + 20 * drawnCurvesInLegend));
-        //     }
-        //     for (let i = 0; i < series?.length!; i++) {
-        //         g.beginPath();
-        //         const currentSeries = series![i];
-        //         g.strokeStyle = currentSeries.fitLineColor!;
-        //         g.lineWidth = 2 * renderOptions.ratio;
-        //         const text = `${currentSeries.name ?? ''}`;
-        //         const textWidth = g.measureText(text).width;
-        //         g.moveTo(renderOptions.dataBox.maxX - textWidth - 25,
-        //           renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-        //         g.lineTo(renderOptions.dataBox.maxX - textWidth - 5,
-        //           renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-        //         const marker = currentSeries.markerType ? currentSeries.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
-        //         DG.Paint.marker(g, marker, renderOptions.dataBox.maxX - textWidth - 25 + (20 / 2),
-        //           renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend),
-        //           currentSeries.pointColor!, FitConstants.POINT_PX_SIZE * renderOptions.ratio);
-        //         g.fillStyle = currentSeries.fitLineColor!;
-        //         g.fillText(text, renderOptions.dataBox.maxX - textWidth,
-        //           renderOptions.dataBox.y + 20 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-        //         g.stroke();
-        //         drawnCurvesInLegend++;
-        //     }
-        // });
-
     }
 }
 
-// function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries): void {
-//     g.beginPath();
-//     g.strokeStyle = series.fitLineColor!;
-//     g.lineWidth = 2 * renderOptions.ratio;
-//     const textWidth = g.measureText(series.name!).width;
-//     g.moveTo(renderOptions.dataBox.maxX - textWidth - 25,
-//       renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-//     g.lineTo(renderOptions.dataBox.maxX - textWidth - 5,
-//       renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-//     const marker = series.markerType ? currentSeries.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
-//     DG.Paint.marker(g, marker, renderOptions.dataBox.maxX - textWidth - 25 + (20 / 2),
-//       renderOptions.dataBox.y + 20 - 4 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend),
-//       series.pointColor!, FitConstants.POINT_PX_SIZE * renderOptions.ratio);
-//     g.fillStyle = series.fitLineColor!;
-//     g.fillText(text, renderOptions.dataBox.maxX - textWidth,
-//       renderOptions.dataBox.y + 20 + (20 * columnNameIndex + getOffset() + 20 * drawnCurvesInLegend));
-//     g.stroke();
-// }
+function renderColumnLabel(g: CanvasRenderingContext2D, colName: string, renderOptions: FitLegendColumnlabelSeriesRenderOptions): void {
+    g.beginPath();
+    g.fillStyle = 'black';
+    const colNameWidth = g.measureText(colName!).width;
+    g.fillText(colName!, renderOptions.dataBox.maxX - colNameWidth, renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN +
+      (renderOptions.columnIdx * FitConstants.LEGEND_RECORD_PX_HEIGHT + FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend));
+}
+
+function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitLegendColumnlabelSeriesRenderOptions): void {
+    g.beginPath();
+    g.strokeStyle = series.fitLineColor!;
+    g.lineWidth = 2 * renderOptions.ratio!;
+    const textWidth = g.measureText(series.name!).width;
+    g.moveTo(renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
+      renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
+      (renderOptions.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (renderOptions.columnIdx + 1) : 0) +
+      FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend);
+    g.lineTo(renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
+      renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
+      (renderOptions.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (renderOptions.columnIdx + 1) : 0) +
+      FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend);
+    const marker = series.markerType ? series.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
+    DG.Paint.marker(g, marker, renderOptions.dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN
+      - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH / 2, renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN -
+      FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN + (renderOptions.showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT
+      * (renderOptions.columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend,
+      series.pointColor!, FitConstants.POINT_PX_SIZE * renderOptions.ratio!);
+    g.fillStyle = series.fitLineColor!;
+    g.fillText(series.name!, renderOptions.dataBox.maxX - textWidth,
+      renderOptions.dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN + (renderOptions.showColumnLabel ?
+      FitConstants.LEGEND_RECORD_PX_HEIGHT * (renderOptions.columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend);
+    g.stroke();
+}
