@@ -1,12 +1,13 @@
 ---
 title: "Column Manager"
+sidebar_position: 5
 ---
 
 Column Manager, available via **View | Columns** or **Add | Column Viewer**, contains a list of columns in the currently
 open tables. Use it to navigate between columns, select them, or perform batch actions. It also allows to view metadata
 on multiple columns in a tabular format, as well as other column properties, such as statistics.
 
-The implementation is based on the [grid](../../visualize/viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](../../../visualize/viewers/grid.md), so many of the grid's features apply.
 
 Usage:
 
@@ -24,4 +25,4 @@ either current table, or all selected tables.
 
 See also:
 
-* [Grid](../../visualize/viewers/grid.md)
+* [Grid](../../../visualize/viewers/grid.md)

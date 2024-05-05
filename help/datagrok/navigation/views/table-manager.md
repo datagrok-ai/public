@@ -1,12 +1,12 @@
 ---
 title: "Table Manager"
-sidebar_position: 7
+sidebar_position: 4
 ---
 
 Table Manager, available via **View | Tables**, contains a list of currently open tables. Use it to navigate between
 tables, select them, or perform batch actions. It also allows to view metadata on multiple tables in a tabular format.
 
-The implementation is based on the [grid](../../visualize/viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](../../../visualize/viewers/grid.md), so many of the grid's features apply.
 
 Usage:
 
@@ -26,4 +26,4 @@ either current table, or all selected tables.
 See also:
 
 * [Column Manager](column-manager.md)
-* [Grid](../../visualize/viewers/grid.md)
+* [Grid](../../../visualize/viewers/grid.md)

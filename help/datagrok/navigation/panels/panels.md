@@ -13,7 +13,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Panels serve as supplementary windows alongside your main _view_ and include:
+Panels are supplementary windows alongside your main _view_ such as:
 
 * [Context Panel](#context-panel)
 * [Context Help](#context-help) 
@@ -148,15 +148,7 @@ visibility by pressing <kbd>F1</kbd> or by clicking the **Context Help
 
 To make an object current, click it. 
 
-The **Context Help** stores a history of viewed objects, allowing you to quickly
-revisit pages for past items without needing to navigate or click through them
-again. To do so, use the navigation icons on the panel's header.
-
-You can create a static copy of the **Context Help** for the current object by
-clicking the **Clone and detach** icon on the panel's header. This
-action opens a copy in a separate panel. The content of the cloned panel remains
-static, while the main **Context Help** continues to update with the current
-object.
+To open the help page in a new browser window, click the **Open in new tab** icon on the panel's header.
 
 ![](img/context-help.gif)
 

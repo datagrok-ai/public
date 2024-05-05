@@ -10,8 +10,8 @@ import TabItem from '@theme/TabItem';
 
 ## Domains
 
-Datagrok is data-agnostic. However, using [plugins](../../develop/how-to/create-package.md), you can 
-customize the platform for any domain of knowledge, including:
+Datagrok core is data-agnostic. Using [plugins](../../develop/how-to/create-package.md), you can 
+customize the platform for any domain of knowledge. For example:
 
 * Automatic recognition of domain-specific data types, e.g., molecules
 * Highly customized data rendering

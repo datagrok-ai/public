@@ -4,7 +4,7 @@ keywords:
  - shortcuts
  - controls
  - hot keys
-sidebar position: 2
+sidebar position: 5
 format: mdx
 ---
 
@@ -55,8 +55,9 @@ different actions. For details, see the documentation for such tool or viewer.
 * <kbd>Ctrl + Z</kbd>: <b>Viewers | Grid</b> | Undo. You can reverse only one action. Supported actions:
 
    * Manually changing a cell value via a double-click
-   * Deleting rows
-   * Closing a viewer
+   * Clearing the [layout](../../visualize/view-layout.md)
+   * Deleting rows or columns
+   * Closing a viewer by clicking on the **x** icon
  
 <!--
 * <kbd>Ctrl + J</kbd>: Viewers | Grid | Undo. You can reverse only one action.

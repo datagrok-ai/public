@@ -1,5 +1,6 @@
 ---
 title: "Dashboard"
+sidebar_position: 3
 ---
 
 Use dashboard to visually present data in a pre-specified way. In contrast to

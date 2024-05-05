@@ -1,6 +1,6 @@
 ---
 title: FAQ
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 ## Is my data private?

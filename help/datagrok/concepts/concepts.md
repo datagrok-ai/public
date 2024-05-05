@@ -8,8 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-These core concepts represent the foundational elements of the Datagrok
-platform:
+These concepts are foundational in Datagrok:
 
 ### Platform
 
@@ -74,7 +73,7 @@ or query in multiple views and work on them independently.
 
 In Datagrok, visual representation of tabular data (a
 _[layout](../../visualize/view-layout.md)_) is separated from the data itself
-(the _dataframe_), each representing its own class of _entities_. This
+(the _dataframe_). This
 separation lets you do the following:
 
 * Apply multiple layouts to the same table. This means you can customize views

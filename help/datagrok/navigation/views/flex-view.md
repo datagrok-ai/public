@@ -1,17 +1,18 @@
 ---
 title: "Flex View"
+sidebar_position: 6
 ---
 
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. This view is a
-good way to provide [project](../../collaborate/project.md) summary. The content is stored in the [markup](markup.md) format (
+good way to provide [project](../../../collaborate/project.md) summary. The content is stored in the [markup](markup.md) format (
 directly editable in the
-[context panel](navigation.md#context-panel) on the right). That allows to reference pretty much anything in
-the platform, including tables, [viewers](../../visualize/viewers/viewers.md), columns, statistics, metadata, references to
+[context panel](link) on the right). That allows to reference pretty much anything in
+the platform, including tables, [viewers](../../../visualize/viewers/viewers.md), columns, statistics, metadata, references to
 users,
-and invoking [functions](../concepts/functions/functions.md).
+and invoking [functions](../../concepts/functions/functions.md).
 
 It's always possible to edit the markup directly, but we have made it even easier to reference relevant content.
-[Drag-and-drop](drag-and-drop.md) any entity into the view to reference it. The toolbox on the left provides
+Drag-and-drop any entity into the view to reference it. The toolbox on the left provides
 quick links to add the following:
 
 * Common
@@ -33,4 +34,3 @@ quick links to add the following:
 See also:
 
 * [Markup](markup.md)
-* [Drag-and-drop](drag-and-drop.md)

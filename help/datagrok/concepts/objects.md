@@ -1,5 +1,6 @@
 ---
 title: "Entities"
+sidebar_position: 3
 ---
 
 Certain classes of objects in Datagrok have a common set of operations and features applicable to them. We call these
@@ -19,7 +20,7 @@ objects _entities_. Here they are:
 * [Notebook](../../compute/jupyter-notebook.md)
 * [Package](../../develop/develop.md#packages)
 * [Project](../../collaborate/project.md)
-* [Repository](../../access/databases/connectors/git.md)
+* Repository
 * [Script](../../compute/scripting.md)
 * [Table (dataframe)](table.md)
 * [View Layout](../../visualize/view-layout.md)

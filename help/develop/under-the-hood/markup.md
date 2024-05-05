@@ -1,11 +1,24 @@
 ---
 title: "Markup"
+sidebar_position: 4
 ---
 
-A powerful mechanism that allows to embed platform-specific visual elements right into the HTML document. Simply embed
-the expression like that: `#{expression}`
+Datagrok Markup is a lightweight scripting language used in both the [Flex
+View](views/views.md#flex-view) and [Markup
+viewer](../visualize/supported-viewers.md). Using Markup, you can combine text
+narrative, calculations, and Datagrok UI elements like
+[viewers](../../visualize/supported-viewers.md) or
+[widgets](../../visualize/widgets.md) within a single view.
+
+Unlike traditional programming languages, Markup is intuitive and does not
+require extensive coding knowledge.
 
 ## Expressions
+
+To embed an expression, use: `#{expression}`
+
+<details>
+<summary>Supported expressions</summary>
 
 | Description         | Expression                                                 | Output                     |
 |---------------------|------------------------------------------------------------|----------------------------|
@@ -28,6 +41,8 @@ the expression like that: `#{expression}`
 | Value editor        | t.editor\[USUBJID\]                                        |                            |
 | Statistics          | t.stats.avg(AGE)                                           | 45.69                      |
 | Chart               | chart{"type":"Histogram","look":{"valueColumnName":"AGE"}} |                            |
+
+</details>
 
 ### Any entity
 
@@ -296,4 +311,4 @@ Chart types:
 
 See also:
 
-* [Markup viewer](../../visualize/viewers/markup.md)
+* [Markup viewer](../../../visualize/viewers/markup.md)

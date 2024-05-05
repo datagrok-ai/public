@@ -1,5 +1,6 @@
 ---
 title: "View layout"
+sidebar_position: 2
 ---
 
 View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
