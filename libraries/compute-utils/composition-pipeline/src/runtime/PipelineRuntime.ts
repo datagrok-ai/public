@@ -264,6 +264,7 @@ export class PipelineRuntime {
   }
 
   public goToStep(_path: ItemPath): void {
+    console.log('TODO: not implemented');
   }
 
   public disableSubStepsIOSetters(prefixPath: ItemPath) {

@@ -109,7 +109,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.setState(fullPath, value, inputState);
   }
 
-  public updateStateState(path: ItemPath, inputState: 'disabled' | 'restricted' | 'user input'): void {
+  public updateStateInputState(path: ItemPath, inputState: 'disabled' | 'restricted' | 'user input'): void {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkOutput(fullPath))
@@ -151,6 +151,10 @@ export class RuntimeControllerImpl implements RuntimeController {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     this.rt.loadNestedPipeline(fullPath, runId);
+  }
+
+  public getCloseNotifier() {
+    return this.rt.pipelineState.closed;
   }
 
   private checkAborted() {

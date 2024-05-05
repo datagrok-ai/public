@@ -1,3 +1,4 @@
+import {Observable} from 'rxjs';
 import {RichFunctionView} from '../../function-views';
 import {ActionItem, ValidationResult} from '../../shared-utils/validation';
 
@@ -38,11 +39,12 @@ export interface RuntimeController {
   loadNestedPipeline(path: ItemPath, runId: string): void;
   getState<T = any>(path: ItemPath): T | void;
   setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
-  updateStateState(path: ItemPath, inputState?: InputState): void;
+  updateStateInputState(path: ItemPath, inputState?: InputState): void;
   getValidationAction(path: ItemPath, name?: string): ActionItem;
   setValidation(path: ItemPath, validation?: ValidationResult | undefined): void;
   getView(path: ItemPath): RichFunctionView | void;
   goToStep(path: ItemPath): void;
+  getCloseNotifier(): Observable<boolean>;
 }
 
 //
