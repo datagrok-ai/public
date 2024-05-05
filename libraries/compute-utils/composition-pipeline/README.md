@@ -1,13 +1,18 @@
 # Composition Pipeline
 
+A declarative way to wire multiple script views in a pipeline, as well
+as wiring multiple pipelines into a single one.
+
 ## Related abstractions overview
 
-- [Function call](https://datagrok.ai/help/datagrok/concepts/functions/function-call)
-  is constructed by the platform core via [Function
+- [Function
+  call](https://datagrok.ai/help/datagrok/concepts/functions/function-call)
+  is constructed from a script or a package function by the platform
+  core via [Function
   annotations](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation). It
   provides a runnable object which stores inputs and outputs.
 
-- [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview)
+- [RichFunctionView](https://datagrok.ai/help/compute/scripting/Advanced%20scripting/)
   is an abstraction on top of a Function call and is a part of Compute
   package. RichFunctionView is responsible for building UI with inputs
   and outputs widgets and linking them to a function call instance,
@@ -28,28 +33,28 @@
 ## Composition pipeline goal
 
 A subclassing based customization is not very flexible and practically
-cannot be reused directly over several pipelines. Composition
-pipeline goal is to provide a way of easily building new pipelines from
-existing ones. To achieve this goal, composition pipeline configuration
-contains both steps and input/output links specifications. This allows
-to compose multiple pipeline configurations in a single pipeline
-configuration, which in turn can be composed with additional pipeline
-configurations.
+cannot be reused directly over several pipelines. Composition pipeline
+goal is to provide a way of easily building new pipelines from
+existing ones. To achieve this goal, composition pipeline
+configuration contains both steps and input/output links
+specifications. This allows to compose multiple pipeline
+configurations into a single pipeline configuration, which in turn can
+be composed with additional pipeline configurations.
 
-## Composition pipeline main concepts
+## Composition pipeline configuration concepts
 
 - **id** - is an unique name inside a pipeline config.
 
 - **step** - is a description of an individual RichFunctionView
   configuration with some additional customization opportunities.
 
-- **item path** - is a path composed of **ids**, for example if we
+- **item path** - is a path composed of **ids**. For example, if we
   have a pipeline with id *piplineInner* and a step with id
   *step1*. Inside *piplineInner* **item path** for *step1* is
-  `['step1']`. However if *piplineInner* is used as a nested config to
-  build another pipeline *piplineOuter*, inside this new
-  *piplineOuter* the **item path** for *step1* is
-  `['piplineInner', 'step1']`.
+  `['step1']`. However, if *piplineInner* is used as a nested Pipeline
+  to build another pipeline *piplineOuter*, inside this new
+  *piplineOuter* the **item path** for *step1* is `['piplineInner',
+  'step1']`.
 
 - **link** - is a description of a connection between inputs and
   outputs. It is defined by an array of input **item paths** with the
@@ -60,37 +65,38 @@ configurations.
   once if multiple inputs are changed synchronously.
 
 - **handler** - is an asynchronous function, if defined it can
-  override the default link behavior when a link is triggered. It
-  will receive an instance of `RuntimeController` as an argument for
+  override the default link behavior when a link is triggered. It will
+  receive an instance of `RuntimeController` as an argument for
   fetching and setting values. Only a single instance of a link
-  handler is active at one time, other async handlers running will be
-  terminated when using any of RuntimeController methods.
+  handler is active at any point in time, other async handlers running
+  will be terminated when using any of RuntimeController methods.
 
 - **validator** - is a link that targets some values as both input and
   output, those inputs are validated. **handler** for such link can
   use `RuntimeController` method `setValidation` and
-  `getValidationAction`. Validation data format is the same as for [RFV
-  validation](https://datagrok.ai/help/compute/scripting-advanced#validating-inputs).
+  `getValidationAction`. Validation data format is the same as for
+  [RFV
+  validation](https://datagrok.ai/help/compute/scripting/Advanced%20scripting/validating-inputs).
 
-- **popup** - a button in RichFunctionView controls area that
-  launches a new arbitrary RichFunctionView. This view is neither a
-  part of step sequence nor a part of history, but it can reuse
-  links. Note that links from popup will be triggers only when popup
-  is confirmed. A path to a popup is prefixed by a step.
+- **popup** - a button in RichFunctionView controls area that launches
+  a new arbitrary RichFunctionView. This view is neither a part of
+  step sequence nor a part of history, but it can reuse links. Note
+  that links from popup will be triggers only when popup is
+  confirmed. A path to a popup is prefixed by a step id.
 
 - **action** - a button in RichFunctionView controls area that will
   trigger it's own **handler**, also can be used in **popup** and in
-  **validator**.
+  **validator** actions.
 
 - **hook** - a **handler** that is triggered at a specific pipeline
   livecycle event, like run loading or initialization.
 
 - **compose** is composition pipeline static method, it takes a
-  composition configuration and an array of nested pipeline
+  composition configuration and an array of nested pipelines
   configurations. Composition configuration object has additional
-  fields to add or remove steps, popups and actions for nested
-  pipelines. The resulting pipeline steps are composition
-  configuration steps first then nested pipelines steps.
+  fields to add or remove links, popups and actions for nested
+  pipelines, as well as controlling where to put nested pipilines in
+  the final pipeline sequence.
 
 ## Examples
 
@@ -176,8 +182,8 @@ look like:
     await pipeline.init();
 
 
-Now we want to prefix this pipeline with a new step and pass its
-result to input `a` of `AddMock`:
+Now if we want to prefix this pipeline with an another pipeline and
+pass its result to input `a` of `AddMock`:
 
 
     //name: MockTripple
@@ -186,8 +192,6 @@ result to input `a` of `AddMock`:
     export function MockTripple(a: number) {
       return 3 * a;
     }
-
-
 
     const conf1: PipelineConfiguration = {
       id: 'testPipeline1',
@@ -208,6 +212,7 @@ result to input `a` of `AddMock`:
         to: ['step2', 'a'],
       }]
     }
+
     const conf2: PipelineCompositionConfiguration = {
       id: 'testPipeline2',
       nqName: 'MyPackage:MockWrapper10',
@@ -224,63 +229,18 @@ result to input `a` of `AddMock`:
       }]
 
     }
+
     const conf = CompositionPipeline.compose(conf2, [conf1]);
     const pipeline = new CompositionPipeline(conf);
     grok.shell.addView(pipeline.makePipelineView());
     await pipeline.init();
-
-
-Now we want to replace `step1` with a new `step1` and pass its result
-to `MulMock` input `a`:
-
-
-    const conf1: PipelineConfiguration = {
-      id: 'testPipeline1',
-      nqName: 'MyPackage:MockWrapper1',
-      steps: [
-        {
-          id: 'step1',
-          nqName: 'MyPackage:AddMock',
-        },
-        {
-          id: 'step2',
-          nqName: 'MyPackage:MulMock',
-        },
-      ],
-      links: [{
-        id: 'link1',
-        from: ['step1', 'res'],
-        to: ['step2', 'a'],
-      }]
-    }
-    const conf2: PipelineCompositionConfiguration = {
-      id: 'testPipeline2',
-      nqName: 'MyPackage:MockWrapper11',
-      steps: [
-        {
-          id: 'step1',
-          nqName: 'MyPackage:MockTripple',
-        },
-      ],
-      links: [{
-        id: 'link1',
-        from: ['step1', 'res'],
-        to: ['testPipeline1', 'step2', 'a'],
-      }],
-      itemsToRemove: [['testPipeline1', 'step1'], ['testPipeline1', 'link1']],
-    }
-    const conf = CompositionPipeline.compose(conf2, [conf1]);
-    const pipeline = new CompositionPipeline(conf);
-    grok.shell.addView(pipeline.makePipelineView());
-    await pipeline.init();
-
 
 
 A more complicated example will be passing a suggestion for a user to
 consider, rather than setting a value directly. In the example below
 we suggest to set input `a` of `step2` to the same value as `step1`
-`a`. This is is achieved using a validator mechanism on `link1`, which
-will show a suggestion with an user executable action `action1` which
+`a`. This is is achieved using validators mechanism on `link1`, which
+will show a suggestion with a user executable action `action1` which
 will set the value.
 
 
