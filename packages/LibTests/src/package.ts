@@ -7,8 +7,8 @@ import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/inpu
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
-import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
+import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils/composition-pipeline/src/composition-pipeline';
+import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import simpleConfData from './snapshots/simple-conf-data.json';
