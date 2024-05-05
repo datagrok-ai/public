@@ -102,6 +102,8 @@ export class RichFunctionView extends FunctionView {
     map(() => this.validationState),
   );
 
+  public blockRuns = new BehaviorSubject(false);
+
   static fromFuncCall(
     funcCall: DG.FuncCall,
     options: {historyEnabled: boolean, isTabbed: boolean} =
@@ -257,7 +259,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning).subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -1520,7 +1522,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public isRunnable() {
-    if (this.isRunning.value)
+    if (this.isRunning.value || this.blockRuns.value)
       return false;
 
     return this.isValid();

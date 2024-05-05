@@ -341,6 +341,18 @@ export class PipelineView extends FunctionView {
       });
     this.subs.push(plvHistorySub);
 
+    const blockedSub = this.isUpdating.subscribe((updating) => {
+      for (const step of Object.values(this.steps)) {
+	// cannot use instanceof
+	const view = step.view as RichFunctionView | undefined;
+	if (view?.blockRuns) {
+	  view.blockRuns.next(updating);
+	}
+      }
+    });
+    this.subs.push(blockedSub);
+
+
     await this.onFuncCallReady();
 
     this.isReady.next(true);
