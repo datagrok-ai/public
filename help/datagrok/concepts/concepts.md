@@ -58,7 +58,7 @@ assigning privileges, and retrieving their URL.
 <Tabs>
 <TabItem value="views" label="Views">
 
-A [View](../navigation/views/views.md) is a workspace designed for specific
+A [view](../navigation/views/views.md) is designed for specific
 tasks. For example, when you open a dataframe, it opens a [Table
 View](../navigation/views/table-view.md) resembling Excel, while the
 [Browse](../navigation/views/browse.md) view, used for navigation and data
