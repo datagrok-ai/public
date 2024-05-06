@@ -1,14 +1,14 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.32.4",
+  "version": "1.33.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.19",
+    "@datagrok-libraries/utils": "^4.2.3",
     "fflate": "^0.7.4",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0",
@@ -16,7 +16,6 @@
     "datagrok-api": "^1.17.0",
     "dayjs": "=1.11.10",
     "exceljs": "^4.3.0",
-    "fflate": "^0.7.4",
     "html2canvas": "^1.4.1",
     "lodash.clonedeepwith": "^4.5.0"
   },

@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.33.0 (2024-05-06)
+
+- Added CompositionPipeline
+
 ## 1.32.4 (2024-05-03)
 
 ### Bug fixes
