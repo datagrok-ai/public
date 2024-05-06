@@ -14,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
+  const commandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
     'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
@@ -24,11 +24,6 @@ export function test(args: TestArgs): boolean {
   if (nArgs > 1 || options.length > commandOptions.length || (options.length > 0 &&
     !options.every((op) => commandOptions.includes(op))))
     return false;
-
-  if (!utils.isPackageDir(curDir)) {
-    color.error('File `package.json` not found. Run the command from the package directory');
-    return false;
-  }
 
   if (!fs.existsSync(confPath)) {
     color.error(`File \`${confPath}\` not found. Run \`grok config\` to set up the config file`);
@@ -50,14 +45,24 @@ export function test(args: TestArgs): boolean {
     console.log('Environment variable `HOST` is set to', config.default);
   }
 
-  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
-  if (packageData.name) {
-    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
-    console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
-  } else {
-    color.error('Invalid package name. Set the `name` field in `package.json`');
+  if (args.package) {
+    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(args.package);
+  } else
+  if (!utils.isPackageDir(curDir)) {
+    color.error('File `package.json` not found. Run the command from the package directory or specify plugin using \'--package\' option');
     return false;
+  } else {
+    const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+    if (packageData.name) {
+      process.env.TARGET_PACKAGE = utils.kebabToCamelCase(packageData.name);
+    } else {
+      color.error('Invalid package name. Set the `name` field in `package.json`');
+      return false;
+    }
   }
+
+  console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
+
 
   if (args.platform && process.env.TARGET_PACKAGE !== 'ApiTests') {
     color.error('--platform flag can only be used in the ApiTests package');
@@ -138,7 +143,7 @@ export function test(args: TestArgs): boolean {
     } = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         const consoleLogOutputDir = './test-console-output.log';
-        function addLogsToFile(msg: any) { 
+        function addLogsToFile(msg: any) {
           fs.appendFileSync(consoleLogOutputDir, `${msg}`);
         }
         await page.exposeFunction("addLogsToFile", addLogsToFile);
@@ -285,6 +290,7 @@ interface TestArgs {
   // category?: string,
   path?: string,
   host?: string,
+  package?: string,
   csv?: boolean,
   gui?: boolean,
   catchUnhandled?: boolean,
