@@ -16,9 +16,12 @@
     "datagrok-api": "^1.17.0",
     "dayjs": "=1.11.10",
     "exceljs": "^4.3.0",
-    "html2canvas": "^1.4.1"
+    "fflate": "^0.7.4",
+    "html2canvas": "^1.4.1",
+    "lodash.clonedeepwith": "^4.5.0"
   },
   "devDependencies": {
+    "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
@@ -34,6 +37,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "build": "tsc",
+    "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

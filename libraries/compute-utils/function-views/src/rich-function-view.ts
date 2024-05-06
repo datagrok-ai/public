@@ -94,10 +94,15 @@ export class RichFunctionView extends FunctionView {
   private validators: Record<string, Validator> = {};
   private validationState: Record<string, ValidationResult | undefined> = {};
 
+  private externalValidatorsUpdates = new Subject<string>();
+  private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
+
   public pendingValidations = this.validationUpdates.pipe(
     startWith(null),
     map(() => this.validationState),
   );
+
+  public blockRuns = new BehaviorSubject(false);
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -157,7 +162,14 @@ export class RichFunctionView extends FunctionView {
       if (payload.field && this.runningOnInput && this.isRunnable())
         this.doRun();
     });
+
     this.subs.push(validationSub);
+
+    const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
+      this.updateInputValidationReuslts(name);
+    });
+
+    this.subs.push(externalValidationSub);
 
     // waiting for debounce and validation after enter is pressed
     const runSub = combineLatest([
@@ -191,7 +203,7 @@ export class RichFunctionView extends FunctionView {
         ]),
       ]));
     } else {
-      // always run validations on start
+      // run validations on start
       const controller = new AbortController();
       const results = await this.runValidation({isRevalidation: false}, controller.signal);
       this.setValidationResults(results);
@@ -247,7 +259,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -1054,6 +1066,11 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  public setExternalValidationResults(inputName: string, results: ValidationResult) {
+    this.externalValidatorsState[inputName] = results;
+    this.externalValidatorsUpdates.next(inputName);
+  }
+
   private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
     if (state === 'restricted') {
       this.funcCall.options[RESTRICTED_PATH] = {
@@ -1514,7 +1531,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public isRunnable() {
-    if (this.isRunning.value)
+    if (this.isRunning.value || this.blockRuns.value)
       return false;
 
     return this.isValid();
@@ -1525,6 +1542,11 @@ export class RichFunctionView extends FunctionView {
       if (!isValidationPassed(v))
         return false;
     }
+    for (const [_, v] of Object.entries(this.externalValidatorsState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+
     return true;
   }
 
@@ -1593,10 +1615,15 @@ export class RichFunctionView extends FunctionView {
   private setValidationResults(results: Record<string, ValidationResult | undefined>) {
     for (const [inputName, validationMessages] of Object.entries(results)) {
       this.validationState[inputName] = validationMessages;
-      const input = this.inputsMap[inputName];
-      if (isFuncCallInputValidated(input))
-        input.setValidation(validationMessages);
+      this.updateInputValidationReuslts(inputName);
     }
+  }
+
+  private updateInputValidationReuslts(inputName: string) {
+    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName]);
+    const input = this.inputsMap[inputName];
+    if (isFuncCallInputValidated(input))
+      input.setValidation(results);
   }
 
   private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {

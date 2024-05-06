@@ -19,7 +19,7 @@ import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
 import dayjs from 'dayjs';
 
-type StepState = {
+export type StepState = {
   func: DG.Func,
   editor: string,
   view: FunctionView,
@@ -46,6 +46,7 @@ const getStepId = (stepConfig: StepConfig) => stepConfig.customId ?? stepConfig.
 export class PipelineView extends FunctionView {
   public steps = {} as {[stepId: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
+  public isUpdating = new BehaviorSubject(false);
 
   private stepTabs!: DG.TabControl;
 
@@ -62,6 +63,12 @@ export class PipelineView extends FunctionView {
   public getStepView<T extends FunctionView = RichFunctionView>(id: string) {
     return this.steps[id]?.view as T;
   }
+
+  public getRunningUpdates(): string[] {
+    return [];
+  }
+
+  public disableSetters(_state: boolean) {}
 
   // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
@@ -157,11 +164,12 @@ export class PipelineView extends FunctionView {
 
   constructor(
     funcName: string,
-    private initialConfig: StepConfig[],
+    protected initialConfig: StepConfig[],
     options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean,
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super(
       funcName,
@@ -332,6 +340,17 @@ export class PipelineView extends FunctionView {
           this.isHistorical.next(false);
       });
     this.subs.push(plvHistorySub);
+
+    const blockedSub = this.isUpdating.subscribe((updating) => {
+      for (const step of Object.values(this.steps)) {
+        // cannot use instanceof
+        const view = step.view as RichFunctionView | undefined;
+        if (view?.blockRuns)
+	  view.blockRuns.next(updating);
+      }
+    });
+    this.subs.push(blockedSub);
+
 
     await this.onFuncCallReady();
 
@@ -805,7 +824,7 @@ export class PipelineView extends FunctionView {
   }
 
   public override async executeTest(spec: any, updateMode = false) {
-    await testPipeline(spec, this, {updateMode});
+    await testPipeline(spec, this, {updateMode, interactive: true});
   }
 
   public getStepViewRuns<T extends FunctionView>(name: string): Observable<T> {
