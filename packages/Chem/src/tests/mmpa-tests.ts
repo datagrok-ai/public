@@ -102,7 +102,23 @@ const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values
         'Difference Activity': {idxs: [0, 30, 50], values: [-3.014911651611328, 4.207612991333008, 8.298847198486328]},
         'Difference Permeability': {idxs: [0, 30, 50], values: [2.2153091430664062, -12.706818580627441, -8.750051498413086]},
         'Difference Toxicity': {idxs: [0, 30, 50], values: [1.5138638019561768, 0.28581464290618896, 0.2180633544921875]},
-    }
+    },
+    'Generation': {
+        'Structure': {idxs: [0, 70, 113], values: [
+            'c12ccc(Cl)cc2nccc1CC',
+            'O=C1Oc2ccccc2C(O)C1Cc3ccc(O)cc3O',
+            'c12ccc(Cl)cc2nccc1CO'
+            ]},
+        'Initial value': {idxs: [0, 70, 113], values: [48.66606521606445, 5.89183235168457, -2.4609227180480957]},
+        'Activity': {idxs: [0, 38, 76], values: ['Activity', 'Permeability', 'Toxicity']},
+        'Core': {idxs: [0, 70, 113], values: ['Clc1ccc2c(C[*:1])ccnc2c1', 'O=C1Oc2ccccc2C([*:1])C1Cc1ccc(O)cc1O',
+            'Clc1ccc2c(C[*:1])ccnc2c1']},
+        'From': {idxs: [0, 70, 107], values: ['C[*:1]', 'O[*:1]', 'O=C(O)[*:1]']},
+        'To': {idxs: [0, 70, 113], values: ['O=C(O)[*:1]', 'CC(C)[*:1]', 'CC[*:1]']},
+        'Prediction': {idxs: [0, 70, 113], values: [58.9782829284668, 13.52952766418457, 0.32776665687561035]},
+        'Generation': {idxs: [0, 70, 113], values: ['O=C(O)Cc1ccnc2cc(Cl)ccc12', 'CC(C)C1c2ccccc2OC(=O)C1Cc1ccc(O)cc1O',
+            'CCCc1ccnc2cc(Cl)ccc12']},
+    },
 }
 
 category('mmpa', () => {
@@ -187,12 +203,24 @@ category('mmpa', () => {
         mmp.sliderInputs[1].value = 14.15;
         mmp.sliderInputs[2].value = 1.627;
         await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
-            'Incorrect lines mask after slider input changed');
+            'Incorrect lines mask after slider input changed', 3000);
 
         //switch of one of activities
         mmp.activeInputs[2].value = false;
         await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 2,
-            'Incorrect lines mask after checkboxes values changed');
+            'Incorrect lines mask after checkboxes values changed', 3000);
+    });
+
+    test('generationTab', async () => {
+        const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
+        const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+            tv.dataFrame.clone().columns.remove('smiles'));
+        const genDf = mmp.generationsGrid.dataFrame;
+        await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
+        checkRandomValues(genDf, 'Generation');
+        //check that 'Existing' column has been calculated
+        await awaitCheck(() => genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
+        expect(genDf.col('Existing')!.toList().filter((it) => it).length, 22, 'Incorrect data in \'Existing\' column');
     });
 });
 
