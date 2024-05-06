@@ -1298,8 +1298,9 @@ export function addScaffoldTree(): void {
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//output: object result
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<void> {
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<MmpAnalysis> {
   const view = grok.shell.tv;
   const mmp = await MmpAnalysis.init(table, molecules, activities, fragmentCutoff);
 
@@ -1313,6 +1314,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+  return mmp;
 }
 
 //name: Scaffold Tree Filter
