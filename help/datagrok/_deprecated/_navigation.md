@@ -173,7 +173,7 @@ them. It is also possible to enable the variables view from the toolbox
 There are several ways for an object to appear as a variable:
 
 * Direct assignment like `x = 5` in the [console](#console)
-* [Drag-and-drop](drag-and-drop.md) an object to the variables view
+* Drag-and-drop an object to the variables view
 
 ![Variables](../../uploads/navigation/variables.png "Variables View")
 

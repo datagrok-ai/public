@@ -9,7 +9,7 @@ Workspace is a collection of currently opened projects.
 Workspace Tree is a hierarchical viewer that is used for navigating and managing [projects](../../collaborate/project.md),
 [tables](../concepts/table.md), [connections](../../access/access.md#data-connection), and other entities.
 
-Use [drag-and-drop](drag-and-drop.md) to move entities between projects. When you open a project, you can
+Use drag-and-drop to move entities between projects. When you open a project, you can
 find it added to workspace tree. Close project using context menu to remove it. When you open data or run query, or job,
 or script, that produces table - it will be added to scratchpad too. You can remove it using "Remove from project"
 context menu. Tables and views must be placed in scratchpad or in another project, so, when you remove table or view
@@ -25,4 +25,4 @@ See also:
 
 * [Project](../../collaborate//project.md)
 * [Scratchpad](scratchpad.md)
-* [Drag-and-drop](drag-and-drop.md)
+
