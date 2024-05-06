@@ -19,6 +19,8 @@ Panels are supplementary windows alongside your main _view_ such as:
 * [Context Help](#context-help) 
 * [Console](#console)
 * [Variables](#variables)
+* [Table Manger](table-manager.md)
+* [Column Manager](column-manager.md)
 
 Depending on your needs, you can toggle visibility of any panel from the
 **Status Bar**. To save your panel display preferences, go to **Sidebar** >
