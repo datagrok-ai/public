@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.17 (2024-05-06)
+
+Add both annotations to the active peptide selection viewer.
+
 ## 1.17.16 (2024-04-29)
 
 Add thresholds to active peptide selection viewer.
