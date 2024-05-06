@@ -11,7 +11,16 @@ export class UsageWidget extends DG.Widget {
     const uniqueUsersDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userErrorsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const services = ui.box(null, {style: {margin: '0 12px 0 12px'}});
-    const link = ui.link('Open Usage Analysis', () => grok.functions.eval('UsageAnalysis:usageAnalysisApp()'));
+    const link = ui.link('Open Usage Analysis', async () => {
+      const progress = DG.TaskBarProgressIndicator.create('Opening Usage Analysis...');
+      try {
+        grok.shell.addView(await grok.functions.eval('UsageAnalysis:usageAnalysisApp()'));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        progress.close();
+      }
+    });
     const linkDiv = ui.box( ui.div([link],
       {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', paddingRight: '8px'}}), {style: {maxHeight: '40px'}});
     super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userErrorsDiv, services], {classes: 'ua-widget'})));
