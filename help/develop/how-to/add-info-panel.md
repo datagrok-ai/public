@@ -2,7 +2,7 @@
 title: "Add an info panel"
 ---
 
-[Info panels](../../explore/data-augmentation/info-panels.md) are a powerful tool for bringing
+[Info panels](../../datagrok/navigation/panels/info-panels.md) are a powerful tool for bringing
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
 typically appear along with the rest of the information in the [context
@@ -128,7 +128,7 @@ export function valueWidget(value) {
 
 See also:
 
-* [Info panels](../../explore/data-augmentation/info-panels.md)
+* [Info panels](../../datagrok/navigation/panels/info-panels.md)
 * [Datagrok JavaScript API](../packages/js-api.md)
 * [JavaScript API
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)

@@ -1,5 +1,15 @@
 [
   {
+    "name": "Compute",
+    "date": "2024-05-06T15:43:10.172Z",
+    "version": "1.33.0",
+    "summary": "- Added CompositionPipeline",
+    "dir": "packages/Compute",
+    "changelog": true,
+    "changelogDate": "2024-05-06",
+    "readme": true
+  },
+  {
     "name": "Peptides",
     "date": "2024-05-06T12:24:37.752Z",
     "version": "1.17.17",

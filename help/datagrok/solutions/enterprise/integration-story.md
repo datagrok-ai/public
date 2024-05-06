@@ -53,7 +53,7 @@ Grok's [functions](../../concepts/functions/functions.md). This has many benefit
 * Ability to easily call that web method from:
   * [Console](../../navigation/panels/panels.md#console)
   * Event handler
-  * [Info pane](../../../explore/data-augmentation/info-panels.md)
+  * [Info pane](../../../datagrok/navigation/panels/info-panels.md)
 * Audit
 * Data lineage
 

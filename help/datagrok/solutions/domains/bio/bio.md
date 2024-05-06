@@ -46,7 +46,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
-  * Customizable [info panes](../../../../explore/data-augmentation/info-panels.md) with information about macromolecules and context actions.
+  * Customizable [info panes](../../../../datagrok/navigation/panels/info-panels.md) with information about macromolecules and context actions.
   * [Sequence editing](#sketching-and-editing), [search, and filtering](#searching-and-filtering).
   * Sequence analysis
     * [Sequence composition](#sequence-composition)

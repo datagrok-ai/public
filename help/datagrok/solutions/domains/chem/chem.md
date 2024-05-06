@@ -127,7 +127,7 @@ When you open a dataset, Datagrok automatically detects molecules and makes avai
 * Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
-* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../explore/data-augmentation/info-panels.md), such as **Toxicity** or **Drug Likeness**.
+* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness**.
 
 ![Chem dataset exploration](img/chem-exploration.png)
 
@@ -645,7 +645,7 @@ and walk through an illustrative example of virtual screening exercise.
 <details>
 <summary>Augment</summary>
 
-A simple yet efficient way to deploy models is through the use of [info panes](../../../../explore/data-augmentation/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
+A simple yet efficient way to deploy models is through the use of [info panes](../../../../datagrok/navigation/panels/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
 
 ![Augmenting](../../../../uploads/gifs/chem-model-augment.gif "Augmenting")
 

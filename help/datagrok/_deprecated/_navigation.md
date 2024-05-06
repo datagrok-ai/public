@@ -153,7 +153,7 @@ Some visual components, such as viewers, activate the context panel in a special
 viewer, you would click on a gear icon `⚙` in the top right corner of the viewer's header.
 
 What is more, the information provided for a current object can be expanded by means of
-[info panes](../../explore/data-augmentation/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
+[info panes](../../datagrok/navigation/panels/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
 
 ### Toolbox
 
@@ -299,5 +299,5 @@ is provided in the toolbox of the help icon.
 See also:
 
 * [Functions](../concepts/functions/functions.md)
-* [Info panes](../../explore/data-augmentation/info-panels.md)
+* [Info panes](../../datagrok/navigation/panels/info-panels.md)
 * [Entities](../concepts/objects.md)
