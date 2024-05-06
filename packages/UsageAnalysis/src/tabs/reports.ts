@@ -32,7 +32,6 @@ export class ReportsView extends UaView {
       };
     });
 
-    // let loader: any;
     const segments = path?.split('/')?.filter((s) => s != '') ?? [];
     const grid = ui.wait(async () => {
       let t: DG.DataFrame;
@@ -43,8 +42,6 @@ export class ReportsView extends UaView {
           if (t && t.rowCount > 0) {
             t.currentRowIdx = 0;
             this.showPropertyPanel(t);
-            // loader = ui.loader();
-            // (loader as HTMLElement).style.marginLeft = '50%';
             grok.functions
               .call('UsageAnalysis:UserReports')
               .then(async (r: DG.DataFrame) => {
@@ -59,15 +56,6 @@ export class ReportsView extends UaView {
                   column: 'report_number',
                   selected: [segments[1]],
                 });
-                // setTimeout(() => {
-                //   const numbers = df.getCol('report_number');
-                //   for (let i = 0; i < numbers.length; i++)
-                //     if (numbers.get(i) == segments[1]) {
-                //       df.currentRowIdx = i;
-                //       break;
-                //     }
-                //   newViewer.vertScroll.scrollBy(df.currentRowIdx);
-                // }, 1000);
               });
           }
         }
@@ -78,11 +66,6 @@ export class ReportsView extends UaView {
         t = await grok.functions.call('UsageAnalysis:UserReports');
       viewer = DG.Viewer.grid(t);
       this.updateDf(t, viewer, this.users);
-      // if (loader) {
-      //   viewer.root.append(loader);
-      //   viewer.root.style.display = 'flex';
-      //   viewer.root.style.alignItems = 'center';
-      // }
       return viewer.root;
     });
 
@@ -92,33 +75,35 @@ export class ReportsView extends UaView {
     ]));
   }
 
+  applyStyle(viewer: DG.Grid) {
+    viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'errors', 'jira', 'label', 'error', 'error_stack_trace', 'time', 'report_id']);
+    viewer.col('reporter')!.cellType = 'html';
+    viewer.col('reporter')!.width = 25;
+
+    viewer.col('assignee')!.cellType = 'html';
+    viewer.col('assignee')!.width = 25;
+    viewer.col('errors')!.width = 35;
+    viewer.col('errors')!.editable = false;
+
+    viewer.col('jira')!.cellType = 'html';
+    viewer.col('is_acknowledged')!.width = 30;
+
+    viewer.col('report_id')!.visible = false;
+    viewer.col('error_stack_trace_hash')!.visible = false;
+
+    viewer.col('time')!.format = 'yyyy-MM-dd';
+    viewer.col('time')!.width = 80;
+
+    viewer.col('report_number')!.width = 35;
+
+    viewer.col('description')!.width = 150;
+    viewer.col('error')!.width = 200;
+    viewer.col('error_stack_trace')!.width = 200;
+  }
+
   updateDf(t: DG.DataFrame, viewer: DG.Grid, users: { [_: string]: any; }) {
     viewer.sort(['is_acknowledged', 'errors', 'time'], [true, false, true]);
-    viewer.onBeforeDrawContent.subscribe(() => {
-      viewer.columns.setOrder(['is_acknowledged', 'report_number', 'reporter', 'assignee', 'description', 'errors', 'jira', 'label', 'error', 'error_stack_trace', 'time', 'report_id']);
-      viewer.col('reporter')!.cellType = 'html';
-      viewer.col('reporter')!.width = 25;
-
-      viewer.col('assignee')!.cellType = 'html';
-      viewer.col('assignee')!.width = 25;
-      viewer.col('errors')!.width = 35;
-      viewer.col('errors')!.editable = false;
-
-      viewer.col('jira')!.cellType = 'html';
-      viewer.col('is_acknowledged')!.width = 30;
-
-      viewer.col('report_id')!.visible = false;
-      viewer.col('error_stack_trace_hash')!.visible = false;
-
-      viewer.col('time')!.format = 'yyyy-MM-dd';
-      viewer.col('time')!.width = 80;
-
-      viewer.col('report_number')!.width = 35;
-
-      viewer.col('description')!.width = 150;
-      viewer.col('error')!.width = 200;
-      viewer.col('error_stack_trace')!.width = 200;
-    });
+    this.applyStyle(viewer);
     viewer.onCellPrepare(async function(gc) {
       if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
         const user = users[gc.cell.value];
@@ -148,6 +133,7 @@ export class ReportsView extends UaView {
     t.onCurrentRowChanged.subscribe(async (_: any) => this.showPropertyPanel(t));
     t.onValuesChanged.subscribe(async () => viewer.sort(['is_acknowledged', 'errors', 'time'], [true, false, true]));
     t.onCurrentCellChanged.subscribe(() => {
+      if (!t.currentRowIdx || t.currentRowIdx === -1) return;
       if (t.currentCol?.name === 'errors') {
         const errorHash = t.getCol('error_stack_trace_hash').get(t.currentRowIdx);
         const error = t.getCol('error').get(t.currentRowIdx);
