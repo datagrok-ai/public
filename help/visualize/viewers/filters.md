@@ -30,7 +30,7 @@ filtered out values only. If this checkbox is enabled, upon searching for value(
 only those values that match the search criteria. In contrary case if the checkbox is disabled, search will only filter out values
 and not select them.
 
-![Filter](../../uploads/gifs/filter-search.gif "Filter")
+![Filter](../../uploads/gifs/filter-checkbox.gif "Filter")
 
 ## Text filter
 
@@ -38,14 +38,14 @@ This filter is used for fuzzy searching for the specified search terms, and appl
 have the "Text" semantic type.
 
 To add a search term, enter it in the search box, and press Enter. Use the checkboxes and the "and/or"
-switch to control search results.
+switch to control search results. And/Or switch is used to control the logical operation between the search terms.
+You can controll the fuzzynes of the search by using the slider at the bottom of the search box. By default, the fuzzynes value is set to 0, which corresponds to the exact match. The higher the fuzzynes value, the more fuzzy the search will be. All the exact matches from the filter will be highilghted in the column values.
 
-![](../../uploads/viewers/text-filter.gif)
+![](../../uploads/gifs/text-filter.gif)
 
-## Free-text filter
+## Expression filter
 
-Free-text filter lets you enter custom search terms. Typically, search terms
-have a form of `column name` `operation` `value`. The following operations are supported:
+Expression filter lets you create custom search terms for any column. These terms are in the form of `column name` `operation` `value`. The following operations are supported:
 
 * numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `-`, `is null`, `is not null`
   * `age > 40`
@@ -60,16 +60,29 @@ have a form of `column name` `operation` `value`. The following operations are s
   * `started `
 * bool columns: `true`, `false`
 
-### Logical conditions
+In the filter, you can choose the column, choose available operation and value. You can add expressions by clicking the `+` button, or pressing enter.
+Similarly to the text filter, you can control the logical operation between the expressions by using the `and/or` switch. In case of string columns, exact matches to the query will be highlighted in the column values.
 
-Free-text filter also understands (very basic) logical conditions. Here are some examples:
+![](../../uploads/gifs/expression-filter.gif)
+
+### Free-text filter mode
+
+You can switch expression filter to free-text mode by clicking the `Free text` button. In this mode, you can enter custom search terms in a text box. The filter will parse the text and create expressions based on the entered search terms. In this mode, you can also use logical conditions to combine simple expressions, for example:
+
 * `age > 30 and height > 190`
 * `age > 30 and sex = F`
 
-Unfortunately, at the moment free-text filter does not work with columns that have space in the name. 
-We are working on developing another filter that would let you specify column/operation/value in a more structured form.
+In case if column name contains spaces, you can put the column name inside of escape sequence:
 
-![](img/filters-free-text.gif)
+* `${column name with spaces} contains someString`
+
+![](../../uploads/gifs/free-text-filter.gif)
+
+## Hierarchical filter
+
+Hierarchical filter can be used to organize column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, Sex and name, the hierarchical filter will show the values of the Name column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off. Upon adding of the filter, it will try to daetect natural hierarchy (for example Country -> city -> street), but you can always change the hierarchy order from the 'tree' icon in the filter by enabling needed columns and rearanging them in desired order. You can move around the categories/subcategories using your mouse or up/down arrows. You can expand/collapse the categories by clicking on the `>` icon on the left of the category name or using the right/left arrow buttons. you can toggle the category by clicking on the checkbox on the left of the category name or using the space bar. You can enable only one subcategory by double-click or pressing enter. you can select the corresponding category/subcategory by clicking the corresponding count number (same as in categorical filter). The green and gray indicator circles to the left of category name show the current and mouse over row of the dataframe respectively. 
+
+![](../../uploads/gifs/hierarchical-filter.gif)
 
 ## Column tags
 
