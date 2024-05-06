@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "Lib Tests",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "servicePackage": true,
   "description": "Automated tests for libraries",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.17.2",
-    "@datagrok-libraries/utils": "^4.0.8",
+    "@datagrok-libraries/compute-utils": "^1.33.0",
+    "@datagrok-libraries/utils": "^4.2.3",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.3",
     "dayjs": "^1.11.7",
@@ -41,7 +41,8 @@
     "debug-lib-tests-dev": "webpack && grok publish dev",
     "release-lib-tests-dev": "webpack && grok publish dev --release",
     "debug-lib-tests-local": "webpack && grok publish local",
-    "release-lib-tests-local": "webpack && grok publish local --release"
+    "release-lib-tests-local": "webpack && grok publish local --release",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"
