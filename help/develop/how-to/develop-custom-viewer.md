@@ -7,7 +7,7 @@ Developers can extend Datagrok with special visual components bound to data, whi
 one is JavaScript-based development, which lets you create interactive viewers
 via [Datagrok JavaScript API](../packages/js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
-[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
+[scripting](../../compute/scripting/scripting.mdx) internally, so the code runs on the server, which makes it less
 interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../develop.md#packages) creation. Packages are convenient units for
@@ -432,7 +432,7 @@ plt.xlabel(valueColumnName)
 plt.show()
 ```
 
-This is how a scripting viewer might look in Python. As with regular [scripts](../../compute/scripting.md), we start by
+This is how a scripting viewer might look in Python. As with regular [scripts](../../compute/scripting/scripting.mdx), we start by
 annotating parameters in the header. The `viewers` tag implies that this script generates a visualization and can be
 used for search in [Script Browser](https://public.datagrok.ai/scripts?q=%23viewers). Then come the input parameters
 similar to the ones we provided in the JavaScript viewer's [properties](#properties). Notice that the names follow the
@@ -454,7 +454,7 @@ In terms of annotation, there are certain syntax constructs worthy of note:
   *numerical, categorical, dateTime*
 * for string properties, `{choices: ["mean", "count", "sum"]}` lists possible options
 
-This kind of annotation is typical for scripts, so refer to the [dedicated article](../../compute/scripting.md)
+This kind of annotation is typical for scripts, so refer to the [dedicated article](../../compute/scripting/scripting.mdx)
 for further explanation. The last parameter to mention is the output: scripting viewers must return
 `graphics` object. To see the produced bar chart, modify the `showChart` function, publish your package and
 run `AwesomePackage:showChart()` from the console:

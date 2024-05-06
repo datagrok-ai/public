@@ -4,7 +4,7 @@ title: "Function annotations"
 
 # Function annotations
 
-There are various types of [functions](functions.md), such as [scripts](../../../compute/scripting.md) or
+There are various types of [functions](functions.md), such as [scripts](../../../compute/scripting/scripting.mdx) or
 [queries](../../../access/access.md#data-query). All of them are annotated in a similar way, and that 
 enables universal support for functions in the platform.
 
@@ -51,7 +51,7 @@ Some parameters are specific to script language and/or technology:
 
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
-  * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
+  * `environment`: [script environment](../../../compute/scripting/scripting.mdx#environments) (Conda environment for python, etc)
   * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
 * Script-based info panels
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
@@ -75,7 +75,7 @@ by type, name, optional default value, options, and optional description, just l
 
 :::warning Parameters mapping for functions
 There is a crucial difference between annotation of 
-[scrips](../../../compute/scripting.md) 
+[scrips](../../../compute/scripting/scripting.mdx) 
 and Javascript functions in 
 [packages](../../../develop/develop.md#packages).
 When you annotate a script in any supported language, parameters are mapped by the parameter name.

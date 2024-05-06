@@ -10,7 +10,7 @@ already; if not, let us know and we'll come up with a solution!
 
 ## Custom scripts
 
-[Scripting](../../../compute/scripting.md) is an integration mechanism with different languages, mostly used for statistical
+[Scripting](../../../compute/scripting/scripting.mdx) is an integration mechanism with different languages, mostly used for statistical
 computing and machine learning. Scripting combines fast interactive visualizations and other features of the Datagrok
 platform with thousands of statistical packages and visualizations available in
 [R](https://www.r-project.org/about.html), [Python](https://www.python.org)

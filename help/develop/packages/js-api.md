@@ -4,7 +4,7 @@ title: "JavaScript API"
 ---
 
 [Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
-used either from ad-hoc [scripts](../../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
+used either from ad-hoc [scripts](../../compute/scripting/scripting.mdx) (`Functions | Scripts | New JavaScript Script`)
 or from [packages](../develop.md#packages).
 
 This document covers the following areas:
@@ -128,7 +128,7 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ## Registering functions
 
 Pretty much anything in Datagrok is a [function](../../datagrok/concepts/functions/functions.md), it is a concept that connects
-together [scripts](../../compute/scripting.md) written in different languages, predictive models, statistical functions,
+together [scripts](../../compute/scripting/scripting.mdx) written in different languages, predictive models, statistical functions,
 query transformations, data flows, and many other features.
 
 The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be

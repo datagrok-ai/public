@@ -3,7 +3,7 @@
 
 # Tests: Script Browser
 
-The script browser allows you to view previously created [scripts](compute/scripting.md), view their properties and
+The script browser allows you to view previously created [scripts](compute/scripting/scripting.mdx), view their properties and
 manage them.
 
 ## Testing scenarios
@@ -13,15 +13,15 @@ manage them.
 * Script browser is open
 * You can change the view, use sort and search
 
-1. Run "ACF" [R Script](compute/scripting.md) from its context menu (input table "TSLA.csv" must be opened)
+1. Run "ACF" [R Script](compute/scripting/scripting.mdx) from its context menu (input table "TSLA.csv" must be opened)
 
 * Script runs successfully after selecting the required input parameters
 
-1. Choose "Edit" item from context menu for "ACF" [R Script](compute/scripting.md)
+1. Choose "Edit" item from context menu for "ACF" [R Script](compute/scripting/scripting.mdx)
 
 * Script edit tab has been opened
 
-1. Share "ACF" [R Script](compute/scripting.md) from its context menu to another user or user group
+1. Share "ACF" [R Script](compute/scripting/scripting.mdx) from its context menu to another user or user group
 
 * Access to the script is enabled for the selected user or group of users
 * Appropriate users received a notification and a letter to the mail
@@ -64,6 +64,6 @@ manage them.
 
 See also:
 
-* [Scripting](compute/scripting.md)
-* [Scripting tutorial](../_internal/tutorials/scripting.md)
+* [Scripting](compute/scripting/scripting.mdx)
+* [Scripting tutorial](../_internal/tutorials/scripting/scripting.mdx)
 * [Scripting test](compute/scripting-test.md)

@@ -59,7 +59,7 @@ with the following features:
 * Could be serialized and re-executed at a later point.
 
 A [function](/help/datagrok/concepts/functions/functions.md)
-could be written in [any language that Datagrok supports](scripting.md). Typically,
+could be written in [any language that Datagrok supports](scripting/scripting.mdx). Typically,
 computations are developed in `Python`, `R`, `Julia`, `Matlab/Octave`, `JavaScript`, or `C++`. Data access usually
 uses `SQL`, `SPARQL`, `OpenAPI`, or `JavaScript`.
 
@@ -164,7 +164,7 @@ Typically, there would be three essential parts of a model: data access, computa
 
 ### Creating
 
-The computational part of the model is a regular [Datagrok script](scripting.md)
+The computational part of the model is a regular [Datagrok script](scripting/scripting.mdx)
 written in `R`, `Python`, `Matlab` or any other language supported by Datagrok. 
 
 ### Visualization

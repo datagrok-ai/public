@@ -15,7 +15,7 @@ develop platform [applications](/help/develop/how-to/build-an-app.md) and combin
 * **Ease of use:** Diff Studio intuitive interface makes it accessible
   and useful to both beginners and experts in mathematical modeling.
 * **Rapid design:** The collection of built-in model templates and examples speeds up model design.
-* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting.md),
+* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting/scripting.mdx),
   implementing no-code development.
 * **Broad application scope:** Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
   and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
@@ -348,7 +348,7 @@ Provide a description in the `#description` line:
 #description: Complex bioreaction simulation
 ```
 
-The export feature provides an extension of your project with [scripting](scripting.md) tools. Apply it to get:
+The export feature provides an extension of your project with [scripting](scripting/scripting.mdx) tools. Apply it to get:
 
 * non-elementary and special functions' use
 * Datagrok packages' functions call

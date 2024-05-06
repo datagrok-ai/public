@@ -63,17 +63,17 @@
 1. Open **Tools | Scripting | Browse Scripts**
 
 * "Scripting Browser" is open
-* Context help switch to [Scripting](../../compute/scripting.md) page
+* Context help switch to [Scripting](../../compute/scripting/scripting.mdx) page
 
 1. Click on "Clone and detach" button on context help window
 
-* Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
+* Current page ([Scripting](../../compute/scripting/scripting.mdx)) is fixed by separate window
   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 1. Open **Admin | Data Queries**
 
 * "Queries Browser" is open
-* Context help switch to [Scripting](../../compute/scripting.md) page
+* Context help switch to [Scripting](../../compute/scripting/scripting.mdx) page
 * [Scripting](../features /scripting) page help page remains on fixed window
 
 1. Open various modules and components of platform (dialogs, views, entities, features, etc.)

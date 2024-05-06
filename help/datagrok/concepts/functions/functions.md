@@ -12,7 +12,7 @@ that can be executed within the platform is a function. Here are some examples o
 * Deleting a column from the table
 * Sending an email
 * Applying [predictive model](../../../learn/learn.md) to a dataset
-* Calculating molecule properties via a [Python script](../../../compute/scripting.md)
+* Calculating molecule properties via a [Python script](../../../compute/scripting/scripting.mdx)
 * Showing a dialog.
 
 All of the above-mentioned functions are quite different in terms of what and how they do - some of them execute on the
@@ -57,7 +57,7 @@ public environment.
 
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../../learn/learn.md#train-model),
-[running an R script](../../../compute/scripting.md), or
+[running an R script](../../../compute/scripting/scripting.mdx), or
 [computing chemical descriptors](../../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../../develop/under-the-hood/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
@@ -94,4 +94,4 @@ You can use these fields to filter functions with [smart search](../../../explor
 See also:
 
 * [Console](../../navigation/navigation.md#console)
-* [Scripting](../../../compute/scripting.md)
+* [Scripting](../../../compute/scripting/scripting.mdx)

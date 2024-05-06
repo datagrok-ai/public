@@ -14,10 +14,10 @@ changes.
 
 Info panels are added as part of a [package](../develop.md). There are two ways
 of developing them for Datagrok: either as panel
-[scripts](../../compute/scripting.md) or as JavaScript panel
+[scripts](../../compute/scripting/scripting.mdx) or as JavaScript panel
 [functions](../../datagrok/concepts/functions/functions.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
-is available [here](../../compute/scripting.md#supported-languages)). In this
+is available [here](../../compute/scripting/scripting.mdx#supported-languages)). In this
 case, the main difference between the two implementations pertains to where the
 code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.
@@ -133,6 +133,6 @@ See also:
 * [JavaScript API
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../compute/scripting/scripting.mdx)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 * [Semantic types](../../catalog/semantic-types.md)

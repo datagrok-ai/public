@@ -15,7 +15,7 @@ Info panes provide contextual information about current objects, such as tables,
 queries, or molecules. The concept is similar to an email client, where clicking
 a subject reveals the content of an email in another pane. However, in Datagrok,
 info panes serve a wider range of functions, making use of all Datagrok's
-capabilities, including [scripting](../../../compute/scripting.md),
+capabilities, including [scripting](../../../compute/scripting/scripting.mdx),
 [queries](../../../access/access.md#data-query),
 [functions](../../concepts/functions/functions.md),
 [viewers](../../../visualize/viewers/viewers.md), [predictive
@@ -211,7 +211,7 @@ based on the structure of the table that is currently open.
 
 See the following info pane (viewer-scatter.grok) in action by opening
 (project:demog). It creates a [Scatter
-Plot](../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined
+Plot](../../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined
 columns, and adds a regression line.
 
 <details>
@@ -331,5 +331,5 @@ predictedSales = PredictSalesByStatistics(statistics)
 ## See also
 
 * [Data augmentation](../../../explore/data-augmentation/data-augmentation.md)
-* [Scripting](../../../compute/scripting.md)
+* [Scripting](../../../compute/scripting/scripting.mdx)
 * [Semantic types](../../../govern/catalog/semantic-types.md)

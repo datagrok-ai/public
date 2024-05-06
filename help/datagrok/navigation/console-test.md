@@ -31,12 +31,12 @@
 
 * Commands for opening dialogs and data operations (with parameters) were written to the console.
 
-1. Run [scripts](../compute/scripting.md) from Script Browser.
+1. Run [scripts](../compute/scripting/scripting.mdx) from Script Browser.
 
 * The command of script run was written to the console.
 * The command matches the script name and has selected parameters.
 
-1. Start writing the name of the [script](../compute/scripting.md) "Linear regression" in the input field of the
+1. Start writing the name of the [script](../compute/scripting/scripting.mdx) "Linear regression" in the input field of the
    command [console](../datagrok/navigation.md#console). After entering the "Line"
    press the ```"Tab"``` key from the keyboard.
 
@@ -67,4 +67,4 @@
 See also:
 
 * [Console](../datagrok/navigation.md#console)
-* [Scripting](../compute/scripting.md)
+* [Scripting](../compute/scripting/scripting.mdx)

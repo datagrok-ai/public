@@ -4,7 +4,7 @@ title: "Function call"
 
 Function Call is a result of executing a <!--data job
 , -->[data query](../../../access/access.md#data-query),
-[script](../../../compute/scripting.md), or any other [function](functions.md).
+[script](../../../compute/scripting/scripting.mdx), or any other [function](functions.md).
 
 ## Data
 

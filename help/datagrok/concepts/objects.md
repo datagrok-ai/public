@@ -21,7 +21,7 @@ objects _entities_. Here they are:
 * [Package](../../develop/develop.md#packages)
 * [Project](../../collaborate/project.md)
 * Repository
-* [Script](../../compute/scripting.md)
+* [Script](../../compute/scripting/scripting.mdx)
 * [Table (dataframe)](table.md)
 * [View Layout](../../visualize/view-layout.md)
 

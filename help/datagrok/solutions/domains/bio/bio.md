@@ -62,7 +62,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 * [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)
-  * Ability to add or customize any functionality using [scripts](../../../../compute/scripting.md) in Python, R, Matlab, and other supported languages.
+  * Ability to add or customize any functionality using [scripts](../../../../compute/scripting/scripting.mdx) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
 * [Enterprise-grade platform](../../../solutions/enterprise/enterprise-evaluation-faq.md) for efficient data access and management.
 
@@ -558,7 +558,7 @@ To learn more and how to use, see the [OligoToolkit](oligo-toolkit.md) page.
 
 Datagrok is a highly flexible platform that can be tailored to meet your specific needs and requirements.
 With its comprehensive set of [functions](../../../../develop/function-roles.md) and
-[scripting capabilities](../../../../compute/scripting.md),
+[scripting capabilities](../../../../compute/scripting/scripting.mdx),
 you can customize and enhance any aspect of the platform to suit your biological data needs.
 
 For instance, you can add new data formats,

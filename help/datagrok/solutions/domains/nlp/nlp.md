@@ -63,5 +63,5 @@ The `Text Statistics` info panel calculates two common formulas:
 See also:
 
 * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
-* [Scripting](../../../../compute/scripting.md)
+* [Scripting](../../../../compute/scripting/scripting.mdx)
 * [Info panels](../../../../explore/data-augmentation/info-panels.md)

@@ -692,7 +692,7 @@ To view the chemical scripts you've created or those shared with you, open the [
 
 :::note
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting.md).
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
 
@@ -793,7 +793,7 @@ You can use the `Chem: TwoComponentReaction` function to apply specified chemica
 ## Customizing and extending the platform
 
 Datagrok is a highly flexible platform that can be tailored to meet your specific needs and requirements. With its comprehensive set of [functions](../../../../develop/function-roles.md) and
-[scripting capabilities](../../../../compute/scripting.md), you can customize and enhance any aspect of the platform to suit your chemical data needs.
+[scripting capabilities](../../../../compute/scripting/scripting.mdx), you can customize and enhance any aspect of the platform to suit your chemical data needs.
 
 For instance, you can add new data formats, apply custom models, and perform other operations on molecules. You can also add or change UI elements, create custom connectors, menus, context actions, and more. You can even develop entire applications on top of the platform or customize any existing [open-source plugins](https://github.com/datagrok-ai/public/tree/master/packages).
 
