@@ -75,28 +75,6 @@ const uniqueUsersChartStyle = {
   'autoLayout': false,
 };
 
-const userEventsChartStyle = {
-  'aggrType': 'count',
-  'innerChartMarginTop': 0,
-  'innerChartMarginBottom': 0,
-  'outerChartMarginTop': 0,
-  'outerChartMarginBottom': 0,
-  'outerChartMarginLeft': 0,
-  'outerChartMarginRight': 0,
-  'yGlobalScale': false,
-  'showTopPanel': false,
-  'showMouseOverRowLine': false,
-  'showXSelector': false,
-  'showYSelectors': false,
-  'showAggrSelectors': false,
-  'showSplitSelector': false,
-  'showYAxis': false,
-  'legendVisibility': 'Never',
-  'showMarkers': 'Never',
-  'autoLayout': false,
-};
-
-
 const userErrorsChartStyle = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
