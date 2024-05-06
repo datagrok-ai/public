@@ -1,5 +1,7 @@
 // Oprimizer routine
 
+import * as DG from 'datagrok-api/dg';
+
 export type Extremum = {
   point: Float32Array,
   cost: number,
@@ -9,7 +11,7 @@ export type Extremum = {
 
 export type OptimizationResult = {
   extremums: Extremum[],
-  warnings: string[],
+  fails: DG.DataFrame | null,
 };
 
 export type OptimizationTask = {

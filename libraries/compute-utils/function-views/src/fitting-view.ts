@@ -14,7 +14,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
-import {NELDER_MEAD_DEFAULTS, NelderMeadSettings} from './fitting/optimizer-nelder-mead';
+import {NELDER_MEAD_DEFAULTS, NelderMeadSettings, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
 
@@ -314,6 +314,8 @@ export class FittingView {
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
 
+  private failsDF: DG.DataFrame | null = null;
+
   private toSetSwitched = true;
   private samplesCount = 10;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -486,7 +488,7 @@ export class FittingView {
 
   private generateNelderMeadSettingsInputs(): void {
     const tolInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'tolerance',
+      name: nelderMeadCaptions.get('tolerance'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.TOLERANCE,
       min: 1e-20,
@@ -495,7 +497,7 @@ export class FittingView {
     tolInp.onChanged(() => this.nelderMeadSettings.tolerance = tolInp.value);
 
     const maxIterInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Max iterations',
+      name: nelderMeadCaptions.get('maxIter'),
       inputType: 'Int',
       defaultValue: NELDER_MEAD_DEFAULTS.MAX_ITER,
       min: 1,
@@ -504,7 +506,7 @@ export class FittingView {
     maxIterInp.onChanged(() => this.nelderMeadSettings.maxIter = maxIterInp.value);
 
     const nonZeroParamInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Non-zero param',
+      name: nelderMeadCaptions.get('nonZeroParam'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
       min: 1e-20,
@@ -513,7 +515,7 @@ export class FittingView {
     nonZeroParamInp.onChanged(() => this.nelderMeadSettings.nonZeroParam = nonZeroParamInp.value);
 
     const initialScaleInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Initial scale',
+      name: nelderMeadCaptions.get('initialScale'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
       min: 1e-20,
@@ -522,21 +524,21 @@ export class FittingView {
     initialScaleInp.onChanged(() => this.nelderMeadSettings.initialScale = initialScaleInp.value);
 
     const scaleReflactionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Scale reflection',
+      name: nelderMeadCaptions.get('scaleReflaction'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
     }));
     scaleReflactionInp.onChanged(() => this.nelderMeadSettings.scaleReflaction = scaleReflactionInp.value);
 
     const scaleExpansionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Scale expansion',
+      name: nelderMeadCaptions.get('scaleExpansion'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
     }));
     scaleExpansionInp.onChanged(() => this.nelderMeadSettings.scaleExpansion = scaleExpansionInp.value);
 
     const scaleContractionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: 'Scale contraction',
+      name: nelderMeadCaptions.get('scaleContraction'),
       inputType: 'Float',
       defaultValue: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
     }));
@@ -713,7 +715,7 @@ export class FittingView {
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
   }
 
-  /** Perform the Nelder-Mead method */
+  /** Perform optimization */
   private async runOptimization(): Promise<void> {
     try {
     // check applicability
@@ -723,12 +725,14 @@ export class FittingView {
       if (this.samplesCount < 1)
         return;
 
+      this.failsDF = null;
+
       // inputs of the source function
       const inputs: any = {};
 
       // add fixed inputs
-      this.getFixedInputs().forEach((name) => inputs[name] = this.store.inputs[name].const.value);
-      //console.log(inputs);
+      const fixedInputs = this.getFixedInputs();
+      fixedInputs.forEach((name) => inputs[name] = this.store.inputs[name].const.value);
 
       // get varied inputs, optimization is performed with respect to them
       const variedInputs = this.getVariedInputs();
@@ -831,25 +835,32 @@ export class FittingView {
         throw new Error(`The '${this.method}' method has not been implemented.`);
 
       const extremums = optResult.extremums;
-      const warnings = new Set(optResult.warnings);
       const rowCount = extremums.length;
 
-      if (rowCount < 1) {
-        let mes: string;
-        let bul: string;
+      // Process fails
+      if (rowCount < this.samplesCount) {
+        this.failsDF = optResult.fails;
+        const cols = this.failsDF!.columns;
 
-        if (warnings.size > 1) {
-          mes = `No extremums have been found. Issues:`;
-          bul = '-';
-        } else {
-          mes = `No extremums have been found:`;
-          bul = '';
-        }
+        variedInputsCaptions.forEach((cap, idx) => cols.byIndex(idx).name = cols.getUnusedName(cap));
 
-        const div = ui.divV([ui.divText(mes)]);
-        warnings.forEach((w) => div.appendChild(ui.divText(`${bul} ${w}`)));
-        grok.shell.warning(div);
-        return;
+        fixedInputs.forEach((name) => {
+          const inp = this.store.inputs[name];
+
+          if (inp.prop.propertyType === DG.TYPE.DATA_FRAME)
+            return;
+
+          cols.add(DG.Column.fromList(
+            inp.prop.propertyType as unknown as DG.COLUMN_TYPE,
+            cols.getUnusedName(inp.prop.caption ?? inp.prop.name),
+            new Array(this.failsDF?.rowCount).fill(inp.const.value),
+          ));
+        });
+
+        this.showFittingFails();
+
+        if (rowCount < 1)
+          return;
       }
 
       this.clearPrev();
@@ -1174,4 +1185,68 @@ export class FittingView {
       this.gridCellChangeSubscription = null;
     }
   } // clearPrev
+
+  /** Show fitting failes */
+  private showFittingFails(): void {
+    if (this.failsDF === null)
+      return;
+
+    const btn = ui.button('Issues', () => {
+      switch (this.method) {
+      case METHOD.NELDER_MEAD:
+        this.showNelderMeadFails();
+        break;
+
+      default:
+        throw new Error(`The '${this.method}' method has not been implemented.`);
+      }
+    }, 'Show issues');
+
+    btn.style.padding = '0px';
+    const div = ui.divV([
+      ui.label(`Failed to find ${this.samplesCount} points`),
+      ui.div([btn]),
+    ]);
+
+    grok.shell.warning(div);
+  } // showFittingFails
+
+  /** Show fails of the Nelder-Mead fails */
+  private showNelderMeadFails(): void {
+    if (this.failsDF === null)
+      return;
+
+    // show fails info: inputs, issue message
+    const view = grok.shell.addTableView(this.failsDF);
+
+    // add method's settings
+    view.addViewer(DG.Viewer.form(DG.DataFrame.fromColumns(
+      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat32Array(nelderMeadCaptions.get(e[0]) ?? e[0], new Float32Array([e[1]]))),
+    )), {description: 'The Nelder-Mead method settings', showNavigation: false});
+
+    // create tooltips
+    const count = this.getVariedInputs().length;
+    const tooltips = new Map<string, string>();
+    this.failsDF.columns.names().forEach((name, idx) => {
+      if (idx < count)
+        tooltips.set(name, `Initial value of "${name}" used in the Nelder-Mead method`);
+      else if (idx > count)
+        tooltips.set(name, `Value of "${name}" (fixed input)`);
+      else
+        tooltips.set(name, 'Error message raised');
+    });
+
+    // add tooltips
+    view.grid.onCellTooltip(function(cell, x, y) {
+      if (cell.isColHeader) {
+        const cellCol = cell.tableColumn;
+        if (cellCol) {
+          const name = cell.tableColumn.name;
+          const msg = tooltips.get(name);
+          ui.tooltip.show(msg ?? '', x, y);
+          return true;
+        }
+      }
+    });
+  } // showNelderMeadFails
 }

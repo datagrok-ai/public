@@ -22,6 +22,17 @@ export enum NELDER_MEAD_DEFAULTS {
   SCALE_CONTRACTION = -0.5,
 };
 
+/** Captions for the Nelder-Mead method settings */
+export const nelderMeadCaptions = new Map([
+  ['tolerance', 'Tolerance'],
+  ['maxIter', 'Max iterations'],
+  ['nonZeroParam', 'Non-zero param'],
+  ['initialScale', 'Initial scale'],
+  ['scaleReflaction', 'Scale reflection'],
+  ['scaleExpansion', 'Scale expansion'],
+  ['scaleContraction', 'Scale contraction'],
+]);
+
 async function getInitialParams(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   settings: NelderMeadSettings,

@@ -47,7 +47,7 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
     throw new Error(`No "${arg}" column in the "${expDf.name}" table`);
 
   if (simArg === null)
-    throw new Error(`No "${arg}" column in the "${simDf.name}" table"`);
+    throw new Error(`No "${arg}" column in the "${simDf.name}" table`);
 
   const indeces = getIndeces(expArg, simArg);
 

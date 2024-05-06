@@ -1,4 +1,5 @@
-/** Monte Carlo optimizer */
+/** the Nelder-Mead optimizer */
+import * as DG from 'datagrok-api/dg';
 
 import {Extremum, OptimizationResult} from './optimizer-misc';
 import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
@@ -15,17 +16,35 @@ export async function performNelderMeadOptimization(
 
   const extremums: Extremum[] = [];
   const warnings: string[] = [];
+  const failedInitPoint: Float32Array[] = [];
+  let failsCount = 0;
+  let failsDF: DG.DataFrame | null = null;
 
   for (let i = 0; i < samplesCount; ++i) {
     try {
       extremums.push(await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop));
     } catch (e) {
+      ++failsCount;
       warnings.push((e instanceof Error) ? e.message : 'Platform issue');
+      failedInitPoint.push(params[i]);
     }
+  }
+
+  if (failsCount > 0) {
+    const dim = paramsTop.length;
+    const raw = new Array<Float32Array>(dim);
+
+    for (let i = 0; i < dim; ++i)
+      raw[i] = new Float32Array(failsCount);
+
+    failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
+
+    failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`arg${idx}`, arr)));
+    failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
   }
 
   return {
     extremums: extremums,
-    warnings: warnings,
+    fails: failsDF,
   };
 }
