@@ -10,6 +10,7 @@ export class HitAppBase<T> {
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: Promise<ComputeFunctions>;
+  // public layouts: Promise<DG.ViewLayout[]>;
   constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
     this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
@@ -21,6 +22,12 @@ export class HitAppBase<T> {
         .filter(`#${HitTriageComputeFunctionTag}`).list();
       resolve({functions, scripts, queries});
     });
+
+    // this.layouts = new Promise<DG.ViewLayout[]>(async (resolve) => {
+    //   // we need all layouts, as applicable ones might not be enaugh
+    //   const layouts = await grok.dapi.layouts.list();
+    //   resolve(layouts);
+    // });
   }
 
   public resetBaseUrl() {

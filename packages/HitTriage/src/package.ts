@@ -5,9 +5,42 @@ import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from './app/hit-triage-app';
 import {HitDesignApp} from './app/hit-design-app';
 import {GasteigerPngRenderer} from './pngRenderers';
+import {loadCampaigns} from './app/utils';
 // import {loadCampaigns} from './app/utils';
 
 export const _package = new DG.Package();
+
+//input: dynamic treeNode
+//input: view browseView
+export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const camps = await loadCampaigns('Hit Triage', []);
+
+  for (const [_, camp] of Object.entries(camps)) {
+    treeNode.item(camp.name).onSelected.subscribe(async (_) => {
+      try {
+        const df = await grok.dapi.files.readCsv(camp.ingest.query);
+        if (!df)
+          return;
+
+        const semtypeInfo = camp.columnSemTypes;
+        if (semtypeInfo) {
+          for (const [colName, semType] of Object.entries(semtypeInfo)) {
+            const col = df.columns.byName(colName);
+            if (col)
+              col.semType = semType;
+          }
+        }
+        const tv = DG.TableView.create(df, false);
+        const layout = camp.layout;
+        browseView.preview = tv;
+        if (layout)
+          tv.loadLayout(DG.ViewLayout.fromViewState(layout));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+}
 
 //tags: app
 //name: Hit Triage
@@ -17,28 +50,38 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
   return new HitTriageApp(c).multiView;
 }
 
-// //input: dynamic treeNode
-// //input: view browseView
-// export async function TODOhitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-//   const camps = await loadCampaigns('Hit Triage', []);
+//input: dynamic treeNode
+//input: view browseView
+export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  const camps = await loadCampaigns('Hit Design', []);
 
-//   for (const [_, camp] of Object.entries(camps)) {
-//     treeNode.item(camp.name).onSelected.subscribe(async (_) => {
-//       try {
-//         const df = await grok.dapi.files.readCsv(camp.ingest.query);
-//         if (!df)
-//           return;
-//         const tv = DG.TableView.create(df, false);
-//         const layout = camp.layout;
-//         if (layout)
-//           tv.loadLayout(DG.ViewLayout.fromViewState(layout));
-//         browseView.preview = tv;
-//       } catch (e) {
-
-//       }
-//     });
-//   }
-// }
+  for (const [_, camp] of Object.entries(camps)) {
+    if (!camp.savePath || await grok.dapi.files.exists(camp.savePath) === false)
+      continue;
+    treeNode.item(camp.name).onSelected.subscribe(async (_) => {
+      try {
+        const df = await grok.dapi.files.readCsv(camp.savePath!);
+        if (!df)
+          return;
+        const semtypeInfo = camp.columnSemTypes;
+        if (semtypeInfo) {
+          for (const [colName, semType] of Object.entries(semtypeInfo)) {
+            const col = df.columns.byName(colName);
+            if (col)
+              col.semType = semType;
+          }
+        }
+        const tv = DG.TableView.create(df, false);
+        browseView.preview = tv;
+        const layout = camp.layout;
+        if (layout)
+          tv.loadLayout(DG.ViewLayout.fromViewState(layout));
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+}
 
 //tags: app
 //name: Hit Design
