@@ -28,7 +28,7 @@ notified that someone asked for help.
 * New topic created successfully
 * "Test_sub" topic appeared in the "Chats" tab for current user
 
-1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation.md#context-panel) for
+1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel) for
    current
    [user](../govern/user.md)
 

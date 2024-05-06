@@ -10,4 +10,4 @@ Use job editor to define data flows and transformation by drag-and-dropping
 See also:
 
 * [Functions](../datagrok/concepts/functions/functions.md)
-* [Console](../datagrok/navigation/navigation.md#console)
+* [Console](../datagrok/navigation/panels/panels.md#console)

@@ -134,7 +134,7 @@ query transformations, data flows, and many other features.
 The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be
 used from console, gets registered in help, there could be an optional audit trail associated with the invocations, etc)
 
-To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../../datagrok/navigation/navigation.md#console).
+To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../../datagrok/navigation/panels/panels.md#console).
 
 ```javascript
 grok.functions.register({

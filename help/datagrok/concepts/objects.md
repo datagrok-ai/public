@@ -36,6 +36,6 @@ The following operations can be applied to any entity:
 See also:
 
 * [Privileges](../../govern/authorization.md)
-* [Sharing](../../collaborate/sharing.md)
+* [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
 * [Self-Learning platform](../../govern/catalog/self-learning-platform.md)
 * [Audit](../../govern/audit.md)

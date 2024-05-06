@@ -7,7 +7,7 @@ user starts dragging an object, all possible drop zones get highlighted.
 
 Here are some of commonly used drag-and drop operations:
 
-* [Variables view](navigation.md#variables)
+* Variables view
 * Columns
   * Rearrange grid column order (drag by the grid column header)
   * Drag into [Add New Column](../../transform/add-new-column.md) dialog

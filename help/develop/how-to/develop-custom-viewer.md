@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [context panel](../../datagrok/navigation/navigation.md#context-panel). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation/panels/panels.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 

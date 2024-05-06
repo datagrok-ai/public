@@ -75,8 +75,8 @@ Example for R Caret engine:
 * Apply model
 
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**)
-or as suggested models in table properties in [Toolbox](../datagrok/navigation/navigation.md#toolbox)
-or [Context Panel](../datagrok/navigation/navigation.md#context-panel).
+or as suggested models in table properties in **Toolbox**
+or [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 
 ## Outputs
 

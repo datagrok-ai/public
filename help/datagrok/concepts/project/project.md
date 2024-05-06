@@ -8,7 +8,7 @@ with either static or dynamic data), and visualizations applied to them.
 
 ## Uploading a project
 
-Creating a project is easy. After getting the data of interest in the scratchpad project in [workspace](../datagrok/navigation/workspace.md),
+Creating a project is easy. After getting the data of interest in the scratchpad project in [Browse](../../datagrok/navigation/views/browse.md),
 click on the `UPLOAD` button. After the project gets uploaded to the server, a separate window pops us asking you whom
 to share the project with. By default, it is only accessible by you, you have to share it in order for others to use it.
 

@@ -20,7 +20,7 @@ Here you can find an overview of the platform's key capabilities as well as the 
 [API Samples](https://public.datagrok.ai/js), browse a gallery of publicly available
 [projects](../concepts/project/project.md) and more.
 
-The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
+The welcome page consists of several visual components: a sidebar, toolbox](#toolbox), main
 view, [context panel](#context-panel), and [context help](#context-help). Typically, the view resides in the center and
 occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains controls
 over the main functionality, while the toolbox displays options specific to the current view. The context panel and

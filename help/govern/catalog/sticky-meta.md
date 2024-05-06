@@ -40,7 +40,7 @@ To set up a schema:
    * Add **Properties** to your schema. Define each property with a name and data type. The available data types are `string`, `int`, `bool`, `double`, and `datetime`.
    * Click **OK**.
 
-To preview, edit, and manage schemas, use the [Context Panel](../../datagrok/navigation/navigation.md#context-panel).
+To preview, edit, and manage schemas, use the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel).
 
 </details>
 
@@ -64,7 +64,7 @@ To create an entity type:
 
 ## Applying metadata
 
-Once metadata is configured, Datagrok shows parameters for the selected object in the [Context Panel](../../datagrok/navigation/navigation.md#context-panel) under **Sticky Meta**. Here, you can enter or edit metadata as needed. All metadata entries are saved to the [Postgres database](../../develop/under-the-hood/infrastructure.md#database) in real time.
+Once metadata is configured, Datagrok shows parameters for the selected object in the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) under **Sticky Meta**. Here, you can enter or edit metadata as needed. All metadata entries are saved to the [Postgres database](../../develop/under-the-hood/infrastructure.md#database) in real time.
 
 ### Working with dataframes
 

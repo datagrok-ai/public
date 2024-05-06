@@ -601,7 +601,7 @@ and other package entities shared to the group.
 
 *References:*
 
-* [Sharing](../../collaborate/sharing.md)
+* [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
 * [Security](../../govern/security.md)
 * [Authorization](../../govern/authorization.md)
 

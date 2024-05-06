@@ -235,7 +235,7 @@ versions, versions of the language interpreter, etc. We use
 There are two aspects to sharing — enabling access via privileges, and providing a link to the model.
 
 By default, a freshly onboarded model is accessible only to the author. To share it with others, use the
-built-in [sharing](../collaborate/sharing.md) mechanism. If a model is part of the package, you can set the desired
+built-in [sharing](../datagrok/navigation/basic-tasks/basic-tasks.md#share) mechanism. If a model is part of the package, you can set the desired
 audience there as well.
 
 Providing a link is easy - each model could be shared via the URL. A model execution with the specific input parameters

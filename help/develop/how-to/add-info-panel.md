@@ -6,7 +6,7 @@ title: "Add an info panel"
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
 typically appear along with the rest of the information in the [context
-panel](../../datagrok/navigation/navigation.md#context-panel) and [visibility
+panel](../../datagrok/navigation/navigation/panels/panels.md#context-panel) and [visibility
 conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 

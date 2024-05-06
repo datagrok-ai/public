@@ -16,7 +16,7 @@ Use the regular tools for modifying the data, mostly located under Edit, Select,
 
 ### From the console
 
-Execute commands from the [console](../datagrok/navigation/navigation.md#console).
+Execute commands from the [console](../datagrok/navigation/panels/panels.md#console).
 
 ### Grid cell popup menu
 
@@ -45,4 +45,4 @@ Click to step to view recipe step results
 See also:
 
 * [Job Editor](job-editor.md)
-* [Console](../datagrok/navigation/navigation.md#console)
+* [Console](../datagrok/navigation/panels/panels.md#console)
