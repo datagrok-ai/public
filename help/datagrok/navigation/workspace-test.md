@@ -3,9 +3,9 @@
 
 # Tests: workspace
 
-[Workspace](workspace.md) is a collection of currently opened [projects](project.md).
+Workspace is a collection of currently opened [projects](project.md).
 
-[Workspace](workspace.md) Tree is a hierarchical viewer that is used for navigating and
+[Browse](../../datagrok/navigation/views/browse.md) Tree is a hierarchical viewer that is used for navigating and
 managing [projects](project.md),
 [tables](table.md), [connections](../access/access.md#data-connection), and other entities.
 
@@ -13,12 +13,12 @@ managing [projects](project.md),
 
 1. Open *"demog"* [project](project.md)
 
-1. Open "[Workspace](workspace.md)" via **View | Workspace** (or ```Alt + W```)
+1. Open "Workspace" via **View | Workspace** (or ```Alt + W```)
 
-* [Workspace](workspace.md) is opened, in which empty Scratchpad and *"
+* Workspace is opened, in which empty Scratchpad and *"
   demog"* [project](project.md)
 
-1. Expand *"demog"* in [Workspace](workspace.md)
+1. Expand *"demog"* in Workspace
 
 * In *"demog"* branch there are subelements tables and view next to which number of internal elements is displayed (1)
 
@@ -52,7 +52,7 @@ managing [projects](project.md),
 
 1. To add entities (queries, connections, data jobs, models, scripts, notebooks)
    to [project](project.md), you can drag them from any location directly to [project](project.md)
-   branch in [Workspace](workspace.md)
+   branch in Workspace
 
 * After adding entity to [project](project.md), all available operations on them can be performed from their context
   menu in [project](project.md) tree
@@ -93,7 +93,7 @@ managing [projects](project.md),
 
 See also:
 
-* [Workspace](workspace.md)
+* [Browse](../../datagrok/navigation/views/browse.md)
 * [Project](project.md)
 * [Scratchpad](scratchpad.md)
 * [Table](table.md)

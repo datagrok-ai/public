@@ -21,7 +21,7 @@
 
 * Commands for adding all viewers were written to the console.
 
-1. Show different windows from menu "View". ([Tables](table.md), [Workspace](workspace.md), etc.)
+1. Show different windows from menu "View". ([Tables](table.md), [Browse](../../datagrok/navigation/views/browse.md), etc.)
 
 * Commands for opening all windows were written to the console.
 

@@ -24,4 +24,4 @@ See also:
 
 * [Predictive modeling](learn.md)
 * [Data queries](../access/access.md#data-query)
-* [Projects](../collaborate/project.md)
+* [Projects](../concepts/project/project.md)

@@ -150,7 +150,7 @@
 
 * "noethwind" connection queries are displayed
 
-1. Open a list of [Projects](../collaborate/project.md)
+1. Open a list of [Projects](../datagrok/concepts/project/project.md)
    on [Context Panel](../datagrok/navigation.md#context-panel)
 
 * Projects that include "northwind" connection are displayed

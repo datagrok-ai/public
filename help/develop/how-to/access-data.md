@@ -186,7 +186,7 @@ To see how this method works, refer to [this example](https://public.datagrok.ai
 
 ### Sharing connections
 
-Data connections can be shared as part of a [project](../../collaborate/project.md)
+Data connections can be shared as part of a [project](../../concepts/project/project.md)
 , [package](../develop.md#packages) (and [repository](../../access/databases/connectors/git.md) containing this package), or as a
 standalone [entity](../../datagrok/concepts/objects.md). The access rights of a database connection are inherited from the access rights of a
 query. However, the access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection will be shared automatically. However, sharing a connection does not automatically share your queries. In the case of web queries, they are shared automatically when the corresponding connection is shared.

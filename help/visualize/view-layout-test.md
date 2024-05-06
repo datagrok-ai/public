@@ -22,7 +22,7 @@ choose **Clone**.
 * New view created for *"demog"* table
 * New view is called *"demog copy"*
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Add each one available [Viewer](../visualize/viewers/viewers.md) for *"demog"* table
 
@@ -35,7 +35,7 @@ choose **Clone**.
 * New view is called *"demog copy"*
 * On *"demog copy"* view there are added viewers with modified style properties.
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Clear *"demog"* view from menu **View | Layout | Clear** or **View | Reset** from context menu to *demog* tab or use
    keyboard ```Ctrl + Shift + R```

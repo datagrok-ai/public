@@ -18,7 +18,7 @@ Here you can find an overview of the platform's key capabilities as well as the 
 [Wiki](https://datagrok.ai/help), [Community Forums](https://community.datagrok.ai), Tutorials,
 [YouTube Channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg),
 [API Samples](https://public.datagrok.ai/js), browse a gallery of publicly available
-[projects](../../collaborate/project.md) and more.
+[projects](../concepts/project/project.md) and more.
 
 The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
 view, [context panel](#context-panel), and [context help](#context-help). Typically, the view resides in the center and
@@ -52,7 +52,7 @@ file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`. Yo
 toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the
 moment you choose to upload it to the server. This is always done explicitly. See the list
 of [supported file formats](../../access/files/supported-formats.md)
-and read more about [saving data to the server](../../collaborate/project.md#uploading-a-project).
+and read more about [saving data to the server](../../datagrok/concepts/project/project.md#uploading-a-project).
 
 ### File browser
 

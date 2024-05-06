@@ -19,7 +19,7 @@ objects _entities_. Here they are:
 * [Model](../../learn/learn.md)
 * [Notebook](../../compute/jupyter-notebook.md)
 * [Package](../../develop/develop.md#packages)
-* [Project](../../collaborate/project.md)
+* [Project](../../datagrok/concepts/project/project.md)
 * Repository
 * [Script](../../compute/scripting/scripting.mdx)
 * [Table (dataframe)](table.md)

@@ -483,7 +483,7 @@ chart pinned to the right.
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
-mode. This also means that users can persist this viewer as part of a [project](../../collaborate/project.md).
+mode. This also means that users can persist this viewer as part of a [project](../../concepts/project/project.md).
 
 ![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 

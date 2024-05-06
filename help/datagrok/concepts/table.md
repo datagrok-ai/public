@@ -18,7 +18,7 @@ Same as columns, each table can be annotated with attributes in the form of key-
 annotates certain tables with metadata (such as the source of the table, or time of import, etc). To edit metadata
 manually, use **Properties...** context menu option.
 
-It is possible to use metadata as a search criteria in the [Projects](../../collaborate/project.md).
+It is possible to use metadata as a search criteria in the [Projects](../../datagrok/concepts/project/project.md).
 
 ## Filtering
 
@@ -39,7 +39,7 @@ You can use these fields to filter tables with [smart search](../../explore/sear
 See also:
 
 * [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame)
-* [Project](../../collaborate/project.md)
+* [Project](../../datagrok/concepts/project/project.md)
 * [Table view](../navigation/table-view.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)

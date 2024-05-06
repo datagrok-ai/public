@@ -19,7 +19,7 @@
 | .h5        | Hierarchical Data Format                         | Core                   |
 | .nc        | NetCDF                                           | Core                   |
 | .mat       | MATLAB MAT                                       | Core                   |
-| .d42       | Datagrok [project](../../collaborate/project.md) | Core                   |
+| .d42       | Datagrok [project](../../datagrok/concepts/project/project.md) | Core                   |
 | .zip       | ZIP archive (for supported types)                | Core                   |
 | .gz, .gzip | gzip                                             | Core                   |
 | .tar       | Tape archive                                     | Core                   |
