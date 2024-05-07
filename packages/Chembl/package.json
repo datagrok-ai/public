@@ -3,8 +3,8 @@
   "version": "1.0.35",
   "description": "Chembl integration, commonly used queries and browser",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "fullName": "Chembl",
   "repository": {
