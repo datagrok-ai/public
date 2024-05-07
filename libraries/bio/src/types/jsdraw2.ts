@@ -63,4 +63,91 @@ declare module 'JSDraw2' {
 
     constructor(host: HTMLElement, options?: Partial<IEditorOptions>);
   }
+
+  export interface IPistoiaBase {
+    get T(): string;
+  }
+
+  export const enum BioTypes {
+    AA = 'AA',
+    //BASE: 'BASE',
+    ANTIBODY = 'ANTIBODY',
+    PROTEIN = 'PROTEIN',
+    GENE = 'GENE',
+    DNA = 'DNA',
+    RNA = 'RNA',
+    BASE_DNA = 'BASEDNA',
+    BASE_RNA = 'BASERNA'
+  }
+
+  export type BioType = `${BioTypes}`;
+
+  export interface IBio<TBio> {
+    id?: number | null;
+    type: TBio;
+    ambiguity?: string | null;
+    annotation?: string | null;
+    annotationshowright?: string | null;
+  }
+
+  export abstract class JsAtom<TBioType> implements IPistoiaBase {
+    get T(): 'ATOM';
+
+    get p(): Point;
+
+    get elem(): string;
+
+    get bio(): IBio<TBioType>
+
+    // [propName: string]: any;
+
+    // get charge(): number;
+    //
+    // get isotope(): string | null;
+    //
+    // get radical(): string | null;
+    //
+    // get group(): string | null;
+    //
+    // get alias(): string | null;
+    //
+    // get superatom(): string | null;
+    //
+    // get attachpoints(): [];
+    //
+    // get rgroup(): string | null;
+    //
+    // get locked(): boolean;
+    //
+    // get hidden(): boolean | null;
+    //
+    // private get _rect(): object | null;
+    //
+    // get color(): string | null;
+    //
+    // get hcount(): number | null;
+    //
+    // get selected(): boolean;
+    //
+    // get f(): number | null;
+    //
+    // get bonds(): [] | null;
+    //
+    // get id(): string | null;
+    //
+    // get atommapid(): string | null;
+  }
+
+  export class Atom<TBioType> extends JsAtom<TBioType> {
+    biotype(): TBioType;
+
+    constructor(p: Point, elem: string, bio: TBioType);
+  }
+
+  export class Point {
+    public x: number;
+    public y: number;
+
+    constructor(x: number, y: number);
+  }
 }

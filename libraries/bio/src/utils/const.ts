@@ -2,6 +2,20 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import '../types/helm';
+import * as org from 'org';
+// Alias helm types
+import PolymerTypes = org.helm.PolymerTypes;
+import HelmTypes = org.helm.HelmTypes;
+import MonomerTypes = org.helm.MonomerTypes;
+
+export {PolymerTypes, HelmTypes, MonomerTypes};
+
+import HELM_POLYMER_TYPE = org.helm.PolymerTypes;
+import HELM_MONOMER_TYPE = org.helm.MonomerTypes;
+
+export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
+
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export const enum HELM_REQUIRED_FIELD {
@@ -45,18 +59,6 @@ export const enum HELM_FIELDS {
   ID = 'id',
   POLYMER_TYPE = 'polymerType',
   SYMBOL = 'symbol'
-}
-
-// possible values of polymers
-export const enum HELM_POLYMER_TYPE {
-  PEPTIDE = 'PEPTIDE',
-  RNA = 'RNA',
-}
-
-export const enum HELM_MONOMER_TYPE {
-  BACKBONE = 'Backbone',
-  TERMINAL = 'Terminal',
-  BRANCH = 'Branch',
 }
 
 // core fields of HELM library object used in toAtomicLevel function

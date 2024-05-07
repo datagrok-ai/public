@@ -19,18 +19,17 @@ import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-ha
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {getRS} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService, initHelmPatchDojo, initHelmPatchPistoia} from './package-utils';
+import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
 
 let monomerLib: IMonomerLib | null = null;
 
-export const _package = new DG.Package();
+export const _package = new HelmPackage();
 
 //tags: init
 export async function initHelm(): Promise<void> {
@@ -38,7 +37,7 @@ export async function initHelm(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
   org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
-  return Promise.all([
+  await Promise.all([
     new Promise((resolve, reject) => {
       // @ts-ignore
       dojo.ready(function() { resolve(null); });
@@ -51,7 +50,7 @@ export async function initHelm(): Promise<void> {
       _package.logger.debug(`${logPrefix}, then(), lib loaded`);
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
-      initHelmPatchPistoia(monomerLib, _package.logger);
+      _package.initHelmPatchPistoia(monomerLib, _package.logger);
       monomerLib.onChanged.subscribe((_) => {
         try {
           const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
@@ -79,6 +78,7 @@ export async function initHelm(): Promise<void> {
       errRes.stack = err.stack;
       throw errRes;
     });
+  _package.logger.debug(`${logPrefix}, end`);
 }
 
 export function getMonomerLib(): IMonomerLib {
@@ -105,6 +105,7 @@ function rewriteLibraries() {
       };
 
       if (monomer.rgroups.length > 0) {
+        // @ts-ignore
         webEditorMonomer.rs = monomer.rgroups.length;
         const at: { [prop: string]: any } = {};
         monomer.rgroups.forEach((it) => {
@@ -112,6 +113,7 @@ function rewriteLibraries() {
         });
         webEditorMonomer.at = at;
       } else if (monomer[SMILES] != null) {
+        // @ts-ignore
         webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
         webEditorMonomer.at = getRS(monomer[SMILES].toString());
       } else
@@ -145,19 +147,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 function checkMonomersAndOpenWebEditor(cell: DG.Cell, value?: string, units?: string) {
-  const cellValue: string = !!cell && units === undefined ? cell.value : value;
-  const monomerList: string[] = parseHelm(cellValue);
-  const missedMonomerSet = findMonomers(monomerList);
-  if (missedMonomerSet.size === 0)
-    webEditor(cell, value, units);
-  else if (missedMonomerSet.size === 1 && missedMonomerSet.has(GapOriginals[NOTATION.HELM]))
-    grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapOriginals[NOTATION.HELM]}'.`);
-  else {
-    grok.shell.warning(
-      `Monomers ${Array.from(missedMonomerSet).map((m) => `'${m}'`).join(', ')} are not found. <br/>` +
-      `Please specify the monomer library to use. <br/>` +
-      `<a href="https://datagrok.ai/help/datagrok/solutions/domains/bio/#manage-monomer-libraries" target="_blank">Learn more</a>`);
-  }
+  openWebEditor(cell, value, units);
 }
 
 //tags: cellEditor
@@ -192,7 +182,7 @@ export function propertiesWidget(sequence: DG.SemanticValue): DG.Widget {
   return getPropertiesWidget(sequence);
 }
 
-function webEditor(cell: DG.Cell, value?: string, units?: string) {
+function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   // const df = grok.shell.tv.grid.dataFrame;
   // const col = df.columns.bySemType('Macromolecule')!;
@@ -274,6 +264,7 @@ export async function getHelmHelper(): Promise<IHelmHelper> {
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+import {getRS} from './utils/dummy-monomer';
 
 //name: measureCellRenderer
 export async function measureCellRenderer(): Promise<void> {

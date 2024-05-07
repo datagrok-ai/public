@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {MonomerLib} from '../monomer-lib';
 import {

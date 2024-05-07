@@ -6,17 +6,27 @@ import * as org from 'org';
 import scil from 'scil';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {Atom, HelmType, IMonomerLib, Monomer, WebEditorMonomer} from '@datagrok-libraries/bio/src/types';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PolymerTypes, HelmTypes} from '@datagrok-libraries/bio/src/utils/const';
+import {
+  HELM_REQUIRED_FIELD as REQ
+} from '@datagrok-libraries/bio/src/utils/const';
+
+import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, LibraryWebEditorMonomer} from './dummy-monomer';
 
 import {_package} from '../package';
 
+const monomerRe = /[\w()]+/;
+//** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
+const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 
-export type GetMonomerResType = org.helm.WebEditorMonomer | null;
+export type GetMonomerResType = WebEditorMonomer | null;
 
-export type GetMonomerFunc = (a: org.helm.IAtom | org.helm.HelmType, name: string) => GetMonomerResType;
+export type GetMonomerFunc = (a: Atom<HelmType> | HelmType, name: string | undefined) => GetMonomerResType;
 type GetMonomerOverridingFunc = (
-  a: org.helm.IAtom | org.helm.HelmType, name: string, monomerLib: IMonomerLib,
-  originalGetMonomer: (a: org.helm.IAtom | org.helm.HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
+  a: Atom<HelmType> | HelmType, name: string, monomerLib: IMonomerLib,
+  originalGetMonomer: (a: Atom<HelmType> | HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
 
 export function getMonomerOverrideAndLogAlert(
   monomerLib: IMonomerLib, getMonomerOverriding: GetMonomerOverridingFunc, trigger: () => void, logger: ILogger,
@@ -27,7 +37,7 @@ export function getMonomerOverrideAndLogAlert(
   const alertOriginal = scil.Utils.alert;
   try {
     org.helm.webeditor.Monomers.getMonomer = (
-      a: org.helm.IAtom | org.helm.HelmType, name: string
+      a: Atom<HelmType> | HelmType, name: string
     ): GetMonomerResType => {
       return getMonomerOverriding(a, name, monomerLib, getMonomerOriginal);
     };
@@ -40,4 +50,62 @@ export function getMonomerOverrideAndLogAlert(
     monomers.getMonomer = getMonomerOriginal;
     scil.Utils.alert = alertOriginal;
   }
+}
+
+/** Inputs logic */
+function getMonomerHandleArgs(
+  a: Atom<HelmType> | HelmType, name: string
+): [/** biotype */ HelmType, /** elem */ string] {
+  let s: string;
+  let biotype: HelmType;
+  if ((a as Atom<HelmType>).T === 'ATOM') {
+    biotype = (a as Atom<HelmType>).biotype();
+    s = (a as Atom<HelmType>).elem;
+  } else {
+    biotype = a as HelmType;
+    s = org.helm.webeditor.IO.trimBracket(name);
+  }
+  return [biotype, s];
+}
+
+
+/** Substitutes {@link org.helm.webeditor.Monomers.getMonomer()} */
+export function getWebEditorMonomer(
+  monomerLib: IMonomerLib,
+  a: Atom<HelmType> | HelmType, argName: string,
+): WebEditorMonomer | null {
+  const [biotype, elem] = getMonomerHandleArgs(a, argName);
+  const pt = helmTypeToPolymerType(biotype);
+
+  /** Get or create {@link Monomer} object (in case it is missing in monomer library current config) */
+  let m: Monomer | null = monomerLib.getMonomer(pt, elem);
+  if (m && biotype == HelmTypes.LINKER && m[REQ.RGROUPS].length != 2) {
+    // Web Editor expects null
+    return null;
+  }
+  if (m && biotype == HelmTypes.SUGAR && m[REQ.RGROUPS].length != 3) {
+    // Web Editor expects null
+    return null;
+  }
+  if (!m /* && biotype != HelmTypes.LINKER*/)
+    m = monomerLib.addMissingMonomer(pt, elem);
+
+  /** Get or create {@link org,helm.WebEditorMonomer} */
+  let resWem: WebEditorMonomer | undefined = m.wem;
+  if (!resWem) {
+    if (elem === '*')
+      resWem = m.wem = new GapWebEditorMonomer(biotype, elem);
+    else if (
+      (biotype === 'HELM_NUCLETIDE' && elem === 'N') ||
+      (biotype === 'HELM_AA' && elem === 'X') ||
+      (biotype === 'HELM_CHEM' && false) || // TODO: Ambiguous monomer for CHEM
+      ambMonomerRe.test(elem) // e.g. (A,R,_)
+    )
+      resWem = m.wem = new AmbiguousWebEditorMonomer(biotype, elem);
+
+    if (!resWem)
+      resWem = m.wem = LibraryWebEditorMonomer.fromMonomer(biotype, m);
+  }
+
+  return resWem;
 }

@@ -10,6 +10,8 @@ import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-wo
 
 import {getMonomerLibHelper} from '../package';
 import * as C from './constants';
+import {HelmType} from '@datagrok-libraries/bio/src/types';
+import {HelmTypes} from '@datagrok-libraries/bio/src/utils/const';
 
 const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
@@ -31,11 +33,13 @@ export class MonomerTooltipHandler {
       !gridCell.tableColumn || !gridCell.isTableCell
     ) return false;
 
-    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet);
+    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet) as ALPHABET;
     const monomerName = gridCell.cell.value;
     const mw = new MonomerWorks(getMonomerLibHelper().getBioLib());
     const polymerType: org.helm.PolymerType = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
       alphabet === ALPHABET.PT ? 'PEPTIDE' : 'PEPTIDE';
+    // const biotype: HelmType = [ALPHABET.RNA, ALPHABET.DNA].includes(alphabet) ? HelmTypes.NUCLEOTIDE :
+    //   [ALPHABET.PT].includes(alphabet) ? HelmTypes.AA : HelmTypes.AA;
 
     const monomerMol: string | null = mw.getCappedRotatedMonomer(polymerType, monomerName);
     const nameDiv = ui.div(monomerName);

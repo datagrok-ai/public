@@ -22,7 +22,7 @@ import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-ha
 import {ISeqSplitted, SeqSplittedBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {alphabetPolymerTypes, IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {alphabetPolymerTypes, IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {

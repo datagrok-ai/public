@@ -5,12 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import org from 'org';
 import scil from 'scil';
 
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, HelmType, Atom} from '@datagrok-libraries/bio/src/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {HelmService} from './utils/helm-service';
-import {GetMonomerFunc, GetMonomerResType} from './utils/get-monomer';
+import {GetMonomerFunc, GetMonomerResType, getWebEditorMonomer} from './utils/get-monomer';
+
 
 type HelmWindowType = Window & {
   $helmService?: HelmServiceBase,
@@ -55,54 +57,92 @@ export function initHelmPatchDojo(): void {
   };
 }
 
-/** Patches Pistoia Monomers.getMonomer method to utilize DG Bio monomer Lib */
-export function initHelmPatchPistoia(monomerLib: IMonomerLib, logger: ILogger): void {
-  const logPrefix: string = 'Helm: initHelmPatchPistoia()';
-  const monomers = org.helm.webeditor.Monomers;
-  const getMonomerOriginal: GetMonomerFunc = monomers.getMonomer.bind(monomers);
-  const alertOriginal = scil.Utils.alert;
-  org.helm.webeditor.Monomers.getMonomer = (
-    a: org.helm.IAtom | org.helm.HelmType, name: string
-  ): GetMonomerResType => {
-    const oWem = getMonomerOriginal(a, name);
-    const dgWem = monomerLib.getWebEditorMonomer(a, name);
-    return oWem;
-  };
-  scil.Utils.alert = (s: string): void => {
-    logger.warning(`${logPrefix}, scil.Utils.alert() s = 's'.`);
-  };
+export const helmJsonReplacer = (key: string, value: any): any => {
+  switch (key) {
+  case '_parent': {
+    return `${value.toString()}`;
+  }
+  default:
+    return value;
+  }
+};
 
-  org.helm.webeditor.Monomers = new class {
-    constructor(base: org.helm.IMonomers) {
-      return new Proxy(base, {
-        get(target: any, p: string | symbol, _receiver: any): any {
-          return target[p];
-        },
-        set(target: any, p: string | symbol, newValue: any, _receiver: any): boolean {
-          target[p] = newValue;
-          return true;
-        },
-        apply(target: any, thisArg: any, argArray: any[]): any {
-          return target[thisArg](...argArray);
-        },
-      });
-    }
-  }(org.helm.webeditor.Monomers) as org.helm.IMonomers;
+export class HelmPackage extends DG.Package {
+  public getMonomerOriginal: GetMonomerFunc;
+  public alertOriginal: (s: string) => void;
 
-  org.helm.webeditor = new class {
-    constructor(base: org.helm.IOrgHelmWebEditor) {
-      return new Proxy(base, {
-        get(target: any, p: string | symbol, _receiver: any): any {
-          return target[p];
-        },
-        set(target: any, p: string | symbol, newValue: any, _receiver: any): boolean {
-          target[p] = newValue;
-          return true;
-        },
-        apply(target: any, thisArg: any, argArray: any[]): any {
-          return target[thisArg](...argArray);
-        },
-      });
-    }
-  }(org.helm.webeditor) as org.helm.IOrgHelmWebEditor;
+  /** Patches Pistoia Monomers.getMonomer method to utilize DG Bio monomer Lib */
+  public initHelmPatchPistoia(monomerLib: IMonomerLib, logger: ILogger): void {
+    const logPrefix: string = 'Helm: initHelmPatchPistoia()';
+    const monomers = org.helm.webeditor.Monomers;
+
+    this.getMonomerOriginal = monomers.getMonomer.bind(monomers);
+    this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
+
+    this.alertOriginal = scil.Utils.alert;
+
+    org.helm.webeditor.Monomers.getMonomer = (
+      a: Atom<HelmType> | HelmType, name: string
+    ): GetMonomerResType => {
+      const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
+      try {
+        logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
+
+        // Creates monomers in lib
+        const dgWem = getWebEditorMonomer(monomerLib, a, name);
+
+        // Returns null for gap
+        const oWem = this.getMonomerOriginal(a, name);
+        if (!oWem)
+          logger.warning(`${logPrefixInt}, getMonomerOriginal( a: ${a}, name: ${name}) returns null`);
+        return dgWem; //dgWem;
+      } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        logger.error(`${logPrefixInt}, Error: ${errMsg}`, undefined, errStack);
+        throw err;
+      }
+    };
+    scil.Utils.alert = (s: string): void => {
+      logger.warning(`${logPrefix}, scil.Utils.alert() s = 's'.`);
+    };
+
+    // @ts-ignore, intercept with proxy to observe access and usage
+    org.helm.webeditor.Monomers = new class {
+      constructor(base: org.helm.IMonomers) {
+        return new Proxy(base, {
+          get(target: any, p: string | symbol, _receiver: any): any {
+            return target[p];
+          },
+          set(target: any, p: string | symbol, newValue: any, _receiver: any): boolean {
+            if (p != 'sugars' && p != 'linkers' && p != 'bases' && p != 'aas') {
+              const k = 11;
+            }
+            target[p] = newValue;
+            return true;
+          },
+          apply(target: any, thisArg: any, argArray: any[]): any {
+            return target[thisArg](...argArray);
+          },
+        });
+      }
+    }(org.helm.webeditor.Monomers) as org.helm.IMonomers;
+
+    // @ts-ignore, intercept with proxy to observe access and usage
+    org.helm.webeditor = new class {
+      constructor(base: org.helm.IOrgHelmWebEditor) {
+        return new Proxy(base, {
+          get(target: any, p: string | symbol, _receiver: any): any {
+            return target[p];
+          },
+          set(target: any, p: string | symbol, newValue: any, _receiver: any): boolean {
+            target[p] = newValue;
+            return true;
+          },
+          apply(target: any, thisArg: any, argArray: any[]): any {
+            return target[thisArg](...argArray);
+          },
+        });
+      }
+    }(org.helm.webeditor) as org.helm.IOrgHelmWebEditor;
+  }
 }
