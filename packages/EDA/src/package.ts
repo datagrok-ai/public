@@ -153,7 +153,7 @@ export async function reduceDimensionality(): Promise<void> {
         fastRowCount: 10000,
       }, params.postProcessingFunction, params.postProcessingFunctionArgs);
     }).show();
-  dialog.helpUrl = 'https://datagrok.ai/help/compute/dimensionality-reduction';
+  dialog.helpUrl = 'https://datagrok.ai/help/explore/dim-reduction.md';
   const validate = () => {
     const cols = editor.columnsInput.value;
     const okButton = dialog.getButton('OK');

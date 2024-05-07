@@ -30,7 +30,7 @@ customize the platform for any domain of knowledge. For example:
 * Powerful, chemical spreadsheet and other chemically-aware viewers
 * Customizable [chemical info panes](domains/chem/info-panels/_chem-info-panes.md)
 * Substructure search
-* [Chemical space analysis](../../compute/chem-space.md)
+* [Chemical space analysis](./domains/chem/chem.md#chemical-space)
 * R-groups decomposition
 * Scaffold tree
 * Activity cliffs
@@ -38,7 +38,7 @@ customize the platform for any domain of knowledge. For example:
 * [Dose-response curves](https://github.com/datagrok-ai/public/blob/master/packages/Curves/README.md)
 * ADMETox
 * Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
-clustering and other tasks, [dimensionality reduction using WebGPU](../../compute/dimensionality-reduction.md). Built-in statistics
+clustering and other tasks, [dimensionality reduction using WebGPU](../../explore/dim-reduction.md). Built-in statistics
 * And much more ...
 
 [**Visit the cheminformatics page >**](domains/chem/chem.md)
@@ -52,13 +52,12 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../comput
 * Sequence editing, search, and filtering
 * Multiple sequence alignment
 * Sequence composition
-* [Sequence space](../../compute/sequence-space.md)
+* [Sequence space](./domains/bio/bio.md#sequence-space)
 * Sequence-activity relationship. Activity cliffs. [SAR for peptides](domains/bio/peptides-sar.md)
 * [Oligonucleotides toolkit](domains/bio/oligo-toolkit.md)
 * Connection to chemistry level: split to monomers, get the atomic-level structure. Monomer libraries management
 * Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
-clustering and other tasks, [dimensionality reduction using
-WebGPU](../../compute/dimensionality-reduction.md). Built-in statistics
+clustering and other tasks, [dimensionality reduction using WebGPU](../../explore/dim-reduction.md). Built-in statistics
 * And much more ...
 
 [**Visit the bioinformatics page >**](domains/bio/bio.md)
@@ -70,7 +69,7 @@ WebGPU](../../compute/dimensionality-reduction.md). Built-in statistics
 * [Exploratory data analysis](domains/use-cases/eda.md) with built-in statistics
 * Integration with [Jupyter Notebook](../../compute/jupyter-notebook.md)
 * [Predictive modeling](../../learn/learn.md)
-* [Dimensionality reduction using WebGPU](../../compute/dimensionality-reduction.md)
+* [Dimensionality reduction using WebGPU](../../explore/dim-reduction.md)
 
 [**Visit the data science page >**](domains/data-science.md)
 

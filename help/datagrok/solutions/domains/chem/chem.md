@@ -59,7 +59,7 @@ with chemical data:
   * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
   * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
   * [Substructure search](#substructure-search--filtering).
-  * [Chemical space analysis](#similarity-and-diversity-search).
+  * [Chemical space analysis](#chemical-space).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
   * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
   <!--* [ADME/Tox calculators](#admetox).-->
@@ -331,16 +331,44 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D or 3D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
 
-![chem-space](img/chem-space-0.png)
+![chem-space](../../../../compute/chem-space.gif)
 
 <details>
-<summary> How to use </summary>
+<summary> How to use: </summary>
 
-1. Go to the **Menu Ribbon** and choose **Chem** > **Analyze Structure** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
-1. In the dialog, select the source of the molecule and set the parameters such as the distance metric (Tanimoto, Asymmetric, Cosine, Sokal) and the algorithm you want to use. To change the default settings for the selected algorithm, click the **Gear** icon next to the **Method name** control.
-1. Click **OK**. A scatterplot is added to the view.
+Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+
+The dialog has the following inputs:
+
+* **Table**: The table containing the column of sequences.
+* **Column**: The column containing the sequences.
+* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+* **Method**: The dimensionality reduction method that will be used. The options are:
+    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+
+    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
+* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
+
+* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
+* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
+    * **None**: No postprocessing will be applied.
+    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+
+**WebGPU (experimental)**
+
+WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+
+Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
+* Go to settings and find display settings
+* Go to Graphics settings.
+* In the list of apps, make sure that your browser is set to use high performance GPU.
 
 </details>
 
