@@ -45,6 +45,24 @@ const groupMaps = [
   'Map',
 ];
 
+const CHARTS_VIEWERS_TEST_DATA: {[key: string] : ((table: DG.DataFrame) => boolean)} = {
+  'Chord': (table) => [...table.columns.categorical].length >= 2 && [...table.columns.numerical].length >= 1,
+  'Globe': (table) => table.columns.toList().filter((col) => ['double', 'int']
+    .includes(col.type)).length >= 1,
+  'Group Analysis': (table) => table.columns.length >= 1,
+  'Radar': (table) => table.columns.toList().filter((col) => ['double', 'int']
+    .includes(col.type)).length >= 1,
+  'Sankey': (table) => table.columns.toList().filter((col) => col.type === 'string' && col.categories.length <= 50)
+    .length >= 2 && table.columns.toList().filter((col) => ['double', 'int'].includes(col.type)).length >= 1,
+  'Sunburst': (table) => table.columns.toList().length >= 1,
+  'Surface plot': (table) => table.columns.toList().length >= 3,
+  'Timelines': (table) => table.columns.toList().filter((col) => col.type === DG.COLUMN_TYPE.STRING)
+    .length >= 1 && [...table.columns.numerical].length >= 1,
+  'Tree': (table) => table.columns.toList().length >= 1,
+  'Word cloud': (table) => table.columns.toList().filter((col) => col.type === DG.TYPE.STRING)
+    .length >= 1,
+};
+
 const viewers: any = {};
 const jsViewers: any = {};
 const rootViewers = ui.divH([], 'viewer-gallery');
@@ -54,7 +72,7 @@ const viewersCount = ui.div([], 'vg-counter-label');
 
 export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFrame) {
   getViewers(viewers);
-  getJsViewers(jsViewers);
+  getJsViewers(jsViewers, currentTable);
 
   view = currentView;
   table = currentTable;
@@ -162,11 +180,18 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
   }
 }
 
-function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }) {
+function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
   const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
+    if (v.package.name === 'Charts') {
+      if (CHARTS_VIEWERS_TEST_DATA[v.friendlyName] === undefined)
+        continue;
+      const isViewerApplicable = CHARTS_VIEWERS_TEST_DATA[v.friendlyName](table);
+      if (!isViewerApplicable)
+        continue;
+    }
     Object.assign(jsViewers, {
       [i]: {
         name: v.friendlyName,

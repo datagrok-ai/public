@@ -404,8 +404,14 @@ export class RadarViewer extends EChartViewer {
     return value.split(specialCharactersRegex).join("\n");
   }
 
+  _testColumns(): boolean {
+    const columns = this.dataFrame.columns.toList();
+    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+    return numColumns.length >= 1;
+  }
+
   render(indexes?: number[]) {
-    if (this.valuesColumnNames.length < 1) {
+    if (!this._testColumns()) {
       this._showMessage('The Radar viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
