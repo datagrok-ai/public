@@ -7,6 +7,7 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
+  COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
@@ -37,6 +38,7 @@ export class HistoricalRunsList extends DG.Widget {
       DG.Column.bool(EXP_COLUMN_NAME, 0),
       ...this.options?.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
       ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+      DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
       DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
       DG.Column.string(AUTHOR_COLUMN_NAME, 0),
       DG.Column.string(TAGS_COLUMN_NAME, 0),
@@ -234,20 +236,18 @@ export class HistoricalRunsList extends DG.Widget {
 
       const getColumnByName = (key: string) => {
         if (key === STARTED_COLUMN_NAME) {
-          const getStartedOrNull = (run: DG.FuncCall) => {
-            try {
-              return run.started;
-            } catch {
-              return null;
-            }
-          };
-
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) =>
               (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
                 newRuns[idx].started: dayjs.unix(newRuns[idx].options['createdOn'])),
             );
+        }
+
+        if (key === COMPLETE_COLUMN_NAME) {
+          return DG.Column.bool(getColumnName(key), newRuns.length)
+            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+            .init((idx) =>getStartedOrNull(newRuns[idx]));
         }
 
         return DG.Column.fromStrings(
@@ -283,6 +283,7 @@ export class HistoricalRunsList extends DG.Widget {
               .init((idx) => favorites.includes(newRuns[idx].id))]: [],
           ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
           getColumnByName(STARTED_COLUMN_NAME),
+          getColumnByName(COMPLETE_COLUMN_NAME),
           getColumnByName(AUTHOR_COLUMN_NAME),
           DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
             newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
@@ -826,7 +827,7 @@ export class HistoricalRunsList extends DG.Widget {
         ...showMetadata &&
         (this.currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],
-        ...showMetadata ? [STARTED_COLUMN_NAME]:[],
+        ...showMetadata ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
         ...showMetadata &&
         this.currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
         ...showMetadata &&
