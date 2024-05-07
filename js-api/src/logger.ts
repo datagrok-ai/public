@@ -33,7 +33,7 @@ export class Logger {
     return new Logger(undefined, {staticLogger: true});
   }
 
-  static translateStackTrace(stackTrace: string): string {
+  static translateStackTrace(stackTrace: string): Promise<string> {
      return api.grok_Log_TranslateStackTrace(stackTrace);
   }
 

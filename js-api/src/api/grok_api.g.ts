@@ -1013,7 +1013,7 @@ export interface IDartApi {
   grok_Progress_Updated(pi: any): any;
   grok_Progress_Log_Updated(pi: any): any;
   grok_Progress_Canceled(pi: any): any;
-  grok_Log_TranslateStackTrace(s: String): any;
+  grok_Log_TranslateStackTrace(s: String): Promise<any>;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
   grok_TagEditor(): any;

@@ -361,7 +361,7 @@ export async function runTests(options?:
         if (value.before && !skipped)
           await value.before();
       } catch (x: any) {
-        value.beforeStatus = getResult(x);
+        value.beforeStatus = await getResult(x);
       }
       const t = value.tests ?? [];
       const res = [];
@@ -380,7 +380,7 @@ export async function runTests(options?:
         if (value.after && !skipped)
           await value.after();
       } catch (x: any) {
-        value.afterStatus = getResult(x);
+        value.afterStatus = await getResult(x);
       }
       // Clear after category
       // grok.shell.closeAll();
@@ -441,8 +441,8 @@ export async function runTests(options?:
   return results;
 }
 
-function getResult(x: any) {
-  return `${x.toString()}\n${x.stack ? DG.Logger.translateStackTrace(x.stack) : ''}`;
+async function getResult(x: any): Promise<string> {
+  return `${x.toString()}\n${x.stack ? (await DG.Logger.translateStackTrace(x.stack)) : ''}`;
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
@@ -466,7 +466,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
-    r = {success: false, result: getResult(x), ms: 0, skipped: false};
+    r = {success: false, result: await getResult(x), ms: 0, skipped: false};
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
