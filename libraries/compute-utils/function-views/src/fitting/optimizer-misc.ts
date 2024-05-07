@@ -28,3 +28,10 @@ export interface IOptimizer {
     restrictionsBottom: Float32Array,
     restrictionsTop: Float32Array): Promise<Extremum>;
 };
+
+/** */
+export class InconsistentTables extends Error {
+  constructor(msg: string) {
+    super(msg);
+  }
+}

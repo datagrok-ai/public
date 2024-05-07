@@ -3,6 +3,8 @@
 
 import * as DG from 'datagrok-api/dg';
 
+import {InconsistentTables} from './optimizer-misc';
+
 /** Returns indeces corresponding to the closest items */
 export function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   const expArgRaw = expArg.getRawData();
@@ -44,10 +46,10 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
   const simArg = simDf.col(arg);
 
   if (expArg === null)
-    throw new Error(`No "${arg}" column in the "${expDf.name}" table`);
+    throw new InconsistentTables(`no "${arg}" column in the target dataframe "${expDf.name}"`);
 
   if (simArg === null)
-    throw new Error(`No "${arg}" column in the "${simDf.name}" table`);
+    throw new InconsistentTables(`no "${arg}" column in the output dataframe "${simDf.name}"`);
 
   const indeces = getIndeces(expArg, simArg);
 
@@ -60,10 +62,8 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
     if (expCol.name !== arg) {
       const simCol = simDf.col(expCol.name);
 
-      if (simCol === null) {
-        throw new Error(`Inconsistent dataframes "${expDf.name}" & "${simDf.name}":
-          no "${expCol.name}" column in "${expDf.name}".`);
-      }
+      if (simCol === null)
+        throw new InconsistentTables(`no "${expCol.name}" column in the output dataframe "${simDf.name}"`);
 
       const simRaw = simCol.getRawData();
       const expRaw = expCol.getRawData();

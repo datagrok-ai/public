@@ -1,7 +1,7 @@
 /** the Nelder-Mead optimizer */
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, OptimizationResult} from './optimizer-misc';
+import {Extremum, OptimizationResult, InconsistentTables} from './optimizer-misc';
 import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
 
@@ -24,6 +24,9 @@ export async function performNelderMeadOptimization(
     try {
       extremums.push(await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop));
     } catch (e) {
+      if (e instanceof InconsistentTables)
+        throw new Error(`Inconsistent dataframes: ${e.message}`);
+
       ++failsCount;
       warnings.push((e instanceof Error) ? e.message : 'Platform issue');
       failedInitPoint.push(params[i]);
