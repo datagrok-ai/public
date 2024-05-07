@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import wu from 'wu';
+import '../css/model-card.css';
 
 
 export class ModelCatalogView extends DG.CustomCardView {
