@@ -7,12 +7,13 @@ import {ViewHandler} from '../view-handler';
 category('App', () => {
   const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests', 'Reports'];
   const num = [4, 4, 5, 4, 3, 5, 7];
+  const handler = new ViewHandler();
 
   before(async () => {
-    if (grok.shell.sidebar.panes.every((p) => p.name != ViewHandler.UAname)) {
-      await ViewHandler.getInstance().init();
-      grok.shell.addView(ViewHandler.UA);
-      grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UAname);
+    if (grok.shell.sidebar.panes.every((p) => p.name != ViewHandler.UA_NAME)) {
+      await handler.init();
+      grok.shell.addView(handler.view);
+      grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UA_NAME);
     }
   });
 
@@ -22,7 +23,7 @@ category('App', () => {
 
   for (let i = 0; i < 7; i++) {
     test(tabs[i], async () => {
-      ViewHandler.changeTab(tabs[i]);
+      handler.changeTab(tabs[i]);
       const view = grok.shell.v.root;
       let err = null;
       let s = ['Log', 'Errors'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
