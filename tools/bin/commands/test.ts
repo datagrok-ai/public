@@ -47,17 +47,18 @@ export function test(args: TestArgs): boolean {
 
   if (args.package) {
     process.env.TARGET_PACKAGE = utils.kebabToCamelCase(args.package);
-  } else
-  if (!utils.isPackageDir(curDir)) {
-    color.error('File `package.json` not found. Run the command from the package directory or specify plugin using \'--package\' option');
-    return false;
   } else {
-    const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
-    if (packageData.name) {
-      process.env.TARGET_PACKAGE = utils.kebabToCamelCase(packageData.name);
-    } else {
-      color.error('Invalid package name. Set the `name` field in `package.json`');
+    if (!utils.isPackageDir(curDir)) {
+      color.error('File `package.json` not found. Run the command from the package directory or specify plugin using \'--package\' option');
       return false;
+    } else {
+      const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+      if (packageData.name) {
+        process.env.TARGET_PACKAGE = utils.kebabToCamelCase(packageData.name);
+      } else {
+        color.error('Invalid package name. Set the `name` field in `package.json`');
+        return false;
+      }
     }
   }
 
@@ -79,8 +80,9 @@ export function test(args: TestArgs): boolean {
       test();
     else
       publish(test);
-  } else
+  } else {
     build(args['skip-publish'] ? test : () => publish(test));
+  }
 
 
   function build(callback: Function): void {
@@ -224,8 +226,14 @@ export function test(args: TestArgs): boolean {
               resolve({ failReport, skipReport, passReport, failed, csv, countReport });
             }).catch((e: any) => {
               const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
-                resolve({ failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: { skip: 0, pass: 0 } });
-              });
+              resolve({
+                failReport: `${e.message}\n${stack}`,
+                skipReport: '',
+                passReport: '',
+                failed: true,
+                csv: '',
+                countReport: {skip: 0, pass: 0}
+              });});
             });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
