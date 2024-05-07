@@ -20,6 +20,12 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-05-07 1.18.6
+
+### Addressed Issues
+
+
+
 ## 2024-05-01 1.18.5
 
 ### Addressed Issues
