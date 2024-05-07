@@ -997,8 +997,8 @@ export class CodeEditor {
     this.dart = dart;
   }
 
-  static create(script = '', mode = 'javascript', placeholder = ''): CodeEditor {
-    return toJs(api.grok_CodeEditor(script, mode, placeholder));
+  static create(script = '', mode = 'javascript', placeholder = '', root?: HTMLDivElement): CodeEditor {
+    return toJs(api.grok_CodeEditor(script, mode, placeholder, root));
   }
 
   append(text: string): void {
