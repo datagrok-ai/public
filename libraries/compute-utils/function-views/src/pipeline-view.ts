@@ -346,7 +346,7 @@ export class PipelineView extends FunctionView {
         // cannot use instanceof
         const view = step.view as RichFunctionView | undefined;
         if (view?.blockRuns)
-	  view.blockRuns.next(updating);
+          view.blockRuns.next(updating);
       }
     });
     this.subs.push(blockedSub);

@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
@@ -101,6 +101,9 @@ export class RichFunctionView extends FunctionView {
     startWith(null),
     map(() => this.validationState),
   );
+
+  private _isOutputOutdated = new BehaviorSubject<boolean>(true);
+  public isOutputOutdated = this._isOutputOutdated.pipe(distinctUntilChanged());
 
   public blockRuns = new BehaviorSubject(false);
 
@@ -232,7 +235,7 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
-    this.showOutputTabsElem();
+    this.showOutput();
     this.tabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
@@ -401,8 +404,8 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    if (this.inputTabsLabels.length === 0)
-      $(this.tabsElem.root).hide();
+
+    this.hideOutput();
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
@@ -712,9 +715,9 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutputTabsElem() {
-    $(this.tabsElem.root).show();
-    $(this.tabsElem.root).css('display', 'flex');
+  private showOutput() {
+    ui.setDisplay(this.tabsElem.root, true);
+    this._isOutputOutdated.next(false);
   }
 
   public buildOutputBlock(): HTMLElement {
@@ -804,7 +807,7 @@ export class RichFunctionView extends FunctionView {
               return currentParam.onChanged;
             }),
           ).subscribe(() => {
-            this.showOutputTabsElem();
+            this.showOutput();
             this.inputTabsLabels.forEach((inputTabName) => {
               $(this.tabsElem.getPane(inputTabName).header).show();
             });
@@ -937,10 +940,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.showOutputTabsElem();
-    this.tabsElem.panes.forEach((tab) => {
-      $(tab.header).show();
-    });
+    this.showOutput();
   }
 
   // Stores mapping between DF and its' viewers
@@ -1490,7 +1490,7 @@ export class RichFunctionView extends FunctionView {
       if (field === SYNC_FIELD.INPUTS) {
         this.isHistorical.next(false);
 
-        this.hideOutdatedOutput();
+        this.hideOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
         const currentState = this.getInputLockState(newParam.name);
@@ -1660,7 +1660,8 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(validExpRun);
   }
 
-  private hideOutdatedOutput() {
+  private hideOutput() {
+    this._isOutputOutdated.next(true);
     if (this.keepOutput())
       return;
 
