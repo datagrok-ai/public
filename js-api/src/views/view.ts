@@ -258,8 +258,6 @@ export class View extends ViewBase {
   }
 
   get root(): HTMLElement {
-    if (api.grok_View_Get_Root == null)
-      return this._root;
     return api.grok_View_Get_Root(this.dart);
   }
 
@@ -290,8 +288,7 @@ export class View extends ViewBase {
 
   /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
-   *  See also {@link saveLayout}
-   *  @param {ViewLayout} layout */
+   *  See also {@link saveLayout} */
   loadLayout(layout: ViewLayout, pickupColumnTags?: boolean): void {
     return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
