@@ -28,7 +28,7 @@ customize the platform for any domain of knowledge. For example:
 * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
 * Multiple molecular sketchers
 * Powerful, chemical spreadsheet and other chemically-aware viewers
-* Customizable [chemical info panes](domains/chem/info-panels/_chem-info-panes.md)
+* Customizable [chemical info panes](domains/chem/info-panels/chem-info-panes.md)
 * Substructure search
 * [Chemical space analysis](./domains/chem/chem.md#chemical-space)
 * R-groups decomposition
@@ -37,7 +37,7 @@ customize the platform for any domain of knowledge. For example:
 * Matched molecular pairs
 * [Dose-response curves](https://github.com/datagrok-ai/public/blob/master/packages/Curves/README.md)
 * ADMETox
-* Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
+* Comprehensive [ML toolkit](domains/data-science.md) for
 clustering and other tasks, [dimensionality reduction using WebGPU](../../explore/dim-reduction.md). Built-in statistics
 * And much more ...
 
@@ -46,7 +46,7 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 </TabItem>
 <TabItem value="bio" label="Bioinformatics" default>
 
-* Automatic detection of sequences upon data import. Support for [multiple formats](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities
+* Automatic detection of sequences upon data import. Support for [multiple formats](../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities
 * Powerful spreadsheet that shows both macro- and small molecules, domain-specific viewers
 * Customizable biological info panes
 * Sequence editing, search, and filtering
@@ -56,7 +56,7 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 * Sequence-activity relationship. Activity cliffs. [SAR for peptides](domains/bio/peptides-sar.md)
 * [Oligonucleotides toolkit](domains/bio/oligo-toolkit.md)
 * Connection to chemistry level: split to monomers, get the atomic-level structure. Monomer libraries management
-* Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
+* Comprehensive [ML toolkit](domains/data-science.md) for
 clustering and other tasks, [dimensionality reduction using WebGPU](../../explore/dim-reduction.md). Built-in statistics
 * And much more ...
 
