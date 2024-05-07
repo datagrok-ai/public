@@ -17,7 +17,7 @@ export enum LOSS {
 
 export const lossTooltip = new Map([
   [LOSS.MAD, 'Maximum absolute deviation'],
-  [LOSS.RMSE, 'Root mean sqaure error'],
+  [LOSS.RMSE, 'Root mean sqaure error (weighted)'],
 ]);
 
 /** Grid elements sizes */

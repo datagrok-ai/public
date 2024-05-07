@@ -92,12 +92,12 @@ export class FittingView {
       if (inputProp.propertyType === DG.TYPE.FLOAT) {
         const isChangingInputMin = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
-          this.updateRunWidgetsState();
+          this.updateApplicabilityState();
         });
 
         const isChangingInputConst = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
-          this.updateRunWidgetsState();
+          this.updateApplicabilityState();
         });
 
         const caption = inputProp.caption ?? inputProp.name;
@@ -108,9 +108,9 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(caption, defaultValue, (v: number) => {
+              const inp = ui.floatInput(caption, defaultValue, (v: number) => {
                 ref.const.value = v;
-                this.updateRunWidgetsState();
+                this.updateApplicabilityState();
               });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
@@ -125,7 +125,7 @@ export class FittingView {
               (() => {
                 const inp = ui.floatInput(`${caption} (min)`, getInputValue(inputProp, 'min'), (v: number) => {
                   (ref as FittingNumericStore).min.value = v;
-                  this.updateRunWidgetsState();
+                  this.updateApplicabilityState();
                 });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
@@ -139,7 +139,7 @@ export class FittingView {
             input: (() => {
               const inp = ui.floatInput(`${caption} (max)`, getInputValue(inputProp, 'max'), (v: number) => {
                 (ref as FittingNumericStore).max.value = v;
-                this.updateRunWidgetsState();
+                this.updateApplicabilityState();
               });
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Max value of '${caption}'`);
@@ -195,7 +195,7 @@ export class FittingView {
             temp.caption = inputProp.caption ?? inputProp.name;
             temp.onInput(() => {
               tempDefault.value = temp.value;
-              this.updateRunWidgetsState();
+              this.updateApplicabilityState();
             });
             temp.root.insertBefore(switchMock, temp.captionLabel);
             temp.addPostfix(inputProp.options['units']);
@@ -256,7 +256,7 @@ export class FittingView {
                 }
               }
 
-              this.updateRunWidgetsState();
+              this.updateApplicabilityState();
             });
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
@@ -266,7 +266,7 @@ export class FittingView {
               this.toSetSwitched,
               (v: boolean) => {
                 temp.isInterest.next(v);
-                this.updateRunWidgetsState();
+                this.updateApplicabilityState();
                 input.input.hidden = !v;
                 input.setTooltip(v ? 'Target value' :
                   (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
@@ -336,7 +336,7 @@ export class FittingView {
     min: 1,
     max: 1000,
   }));
-  private loss = LOSS.MAD;
+  private loss = LOSS.RMSE;
   private lossInput = ui.choiceInput(TITLE.LOSS_LOW, this.loss, [LOSS.MAD, LOSS.RMSE], () => {
     this.loss = this.lossInput.value!;
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
@@ -463,15 +463,16 @@ export class FittingView {
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
     this.samplesCountInput.onChanged(() => {
       this.samplesCount = this.samplesCountInput.value;
-      this.updateRunWidgetsState();
+      this.updateApplicabilityState();
     });
     this.samplesCountInput.setTooltip('Number fitted inputs sets');
 
-    this.updateRunIcon();
+    this.updateRunIconStyle();
     this.updateRunIconDisabledTooltip('Select inputs for fitting');
     this.runIcon.classList.add('fas');
-  }
+  } // constructor
 
+  /** Check fiiting applicability to the function */
   private isOptimizationApplicable(func: DG.Func): boolean {
     for (const output of func.outputs) {
       if (isValidForFitting(output))
@@ -479,21 +480,9 @@ export class FittingView {
     }
 
     return false;
-  }
+  } // isOptimizationApplicable
 
-  private updateRunWidgetsState(): void {
-    this.readyToRun = this.canFittingBeRun();
-    this.updateRunIcon();
-  }
-
-  private updateRunIcon(): void {
-    if (this.readyToRun) {
-      this.runIcon.style.color = 'var(--green-2)';
-      ui.tooltip.bind(this.runIcon, 'Run fitting');
-    } else
-      this.runIcon.style.color = 'var(--grey-3)';
-  }
-
+  /** Generate UI for the Nelder-Mead method settings */
   private generateNelderMeadSettingsInputs(): void {
     const tolInp = ui.input.forProperty(DG.Property.fromOptions({
       name: nelderMeadCaptions.get('tolerance'),
@@ -561,7 +550,7 @@ export class FittingView {
       scaleExpansionInp,
       scaleContractionInp,
     ]);
-  }
+  } // generateNelderMeadSettingsInputs
 
   private generateGradDescentSettingsInputs(): void {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
@@ -594,6 +583,7 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  /** Build form with inputs */
   private buildForm() {
     let prevCategory = 'Misc';
     const fitHeader = ui.h1(TITLE.FIT);
@@ -678,7 +668,7 @@ export class FittingView {
 
     $(form).addClass('ui-form');
 
-    this.updateRunWidgetsState();
+    this.updateApplicabilityState();
 
     $(form).css({
       'padding-left': '12px',
@@ -686,8 +676,31 @@ export class FittingView {
       'padding-right': '4px',
     });
     return form;
-  }
+  } // buildForm
 
+  /** Update run icon tooltip: disabled case */
+  private updateRunIconDisabledTooltip(msg: string): void {
+    ui.tooltip.bind(this.runIcon, () => {
+      const label = ui.label(msg);
+      label.style.color = '#FF0000';
+      return label;
+    });
+  } // updateRunIconDisabledTooltip
+
+  private updateApplicabilityState(): void {
+    this.readyToRun = this.canFittingBeRun();
+    this.updateRunIconStyle();
+  } // updateApplicabilityState
+
+  private updateRunIconStyle(): void {
+    if (this.readyToRun) {
+      this.runIcon.style.color = 'var(--green-2)';
+      ui.tooltip.bind(this.runIcon, 'Run fitting');
+    } else
+      this.runIcon.style.color = 'var(--grey-3)';
+  } // updateRunIconStyle
+
+  /** Check inputs */
   private areInputsReady(): boolean {
     let isAnySelected = false;
     let areSelectedFilled = true;
@@ -728,16 +741,9 @@ export class FittingView {
       this.updateRunIconDisabledTooltip(`No parameters for fitting are selected`);
 
     return isAnySelected && areSelectedFilled;
-  }
+  } // areInputsReady
 
-  private updateRunIconDisabledTooltip(msg: string): void {
-    ui.tooltip.bind(this.runIcon, () => {
-      const label = ui.label(msg);
-      label.style.color = '#FF0000';
-      return label;
-    });
-  }
-
+  /** Check outputs */
   private areOutputsReady(): boolean {
     let isAnySelected = false;
     let areSelectedFilled = true;
@@ -765,28 +771,32 @@ export class FittingView {
       this.updateRunIconDisabledTooltip(`No targets are selected`);
 
     return isAnySelected && areSelectedFilled;
-  }
+  } // areOutputsReady
 
+  /** Check samples count */
   private isSamplesCountValid(): boolean {
     if (this.samplesCount > 0)
       return true;
 
     this.updateRunIconDisabledTooltip('Invalid samples conut');
     return false;
-  }
+  } // isSamplesCountValid
 
+  /** Check inputs/outputs/settings */
   private canFittingBeRun(): boolean {
     return this.areInputsReady() && this.areOutputsReady() && this.isSamplesCountValid();
-  }
+  } // canFittingBeRun
 
+  /** Return names of the fixed inputs */
   private getFixedInputs() {
     return Object.keys(this.store.inputs).filter((propName) => !this.store.inputs[propName].isChanging.value);
-  }
+  } // getFixedInputs
 
-  private getVariedInputs() {
+  /** Return names of the fitted inputs */
+  private getFittedInputs() {
     return Object.keys(this.store.inputs)
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
-  }
+  } // getFittedInputs
 
   /** Perform optimization */
   private async runOptimization(): Promise<void> {
@@ -808,7 +818,7 @@ export class FittingView {
       fixedInputs.forEach((name) => inputs[name] = this.store.inputs[name].const.value);
 
       // get varied inputs, optimization is performed with respect to them
-      const variedInputs = this.getVariedInputs();
+      const variedInputs = this.getFittedInputs();
       const dim = variedInputs.length;
 
       // varied inputs specification
@@ -851,13 +861,15 @@ export class FittingView {
 
         let sumOfSquaredErrors = 0;
         let outputsCount = 0;
+        let cur = 0;
 
         outputsOfInterest.forEach((output) => {
           if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
-            sumOfSquaredErrors += (output.target as number - calledFuncCall.getParamValue(output.prop.name)) ** 2;
+            cur = output.target as number;
+            sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
             ++outputsCount;
           } else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name))
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), true)
               .forEach((err) => {
                 sumOfSquaredErrors += err ** 2;
                 ++outputsCount;
@@ -880,7 +892,7 @@ export class FittingView {
           if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
             mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
           else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name))
+            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), false)
               .forEach((err) => mad = Math.max(mad, Math.abs(err)));
           }
         });
@@ -1298,7 +1310,7 @@ export class FittingView {
     )), {description: 'The Nelder-Mead method settings', showNavigation: false});
 
     // create tooltips
-    const count = this.getVariedInputs().length;
+    const count = this.getFittedInputs().length;
     const tooltips = new Map<string, string>();
     this.failsDF.columns.names().forEach((name, idx) => {
       if (idx < count)

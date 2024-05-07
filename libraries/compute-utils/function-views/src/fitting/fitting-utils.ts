@@ -41,7 +41,7 @@ export function getIndeces(expArg: DG.Column, simArg: DG.Column): Uint32Array {
   return indeces;
 };
 
-export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame): Float32Array {
+export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame, toScale: boolean): Float32Array {
   const expArg = expDf.col(arg);
   const simArg = simDf.col(arg);
 
@@ -68,10 +68,20 @@ export function getErrors(arg: string, expDf: DG.DataFrame, simDf: DG.DataFrame)
       const simRaw = simCol.getRawData();
       const expRaw = expCol.getRawData();
 
-      indeces.forEach((simIdx, expIdx) => {
-        errors[errIdx] = simRaw[simIdx] - expRaw[expIdx];
-        ++errIdx;
-      });
+      if (toScale) {
+        const expScale = expCol.stats.max - expCol.stats.min;
+        const coef = (expScale > 0) ? expScale : 1;
+
+        indeces.forEach((simIdx, expIdx) => {
+          errors[errIdx] = (simRaw[simIdx] - expRaw[expIdx]) / coef;
+          ++errIdx;
+        });
+      } else {
+        indeces.forEach((simIdx, expIdx) => {
+          errors[errIdx] = simRaw[simIdx] - expRaw[expIdx];
+          ++errIdx;
+        });
+      }
     }
   }
 

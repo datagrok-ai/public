@@ -99,7 +99,6 @@ function fillPoint(
   }
 }
 
-
 export const optimizeNM:IOptimizer = async function(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   paramsInitial: Float32Array,
