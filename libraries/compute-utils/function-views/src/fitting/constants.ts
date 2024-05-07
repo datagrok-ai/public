@@ -57,6 +57,9 @@ enum HELP_ITEMS {
   LOSS = '`' + TITLE.LOSS_LOW + '`',
 };
 
+/** Progress bar time to sleep */
+export const MS_TO_SLEEP = 10;
+
 /** Starting help markdown */
 export const STARTING_HELP = `# Fitting
 

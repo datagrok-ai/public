@@ -29,9 +29,14 @@ export interface IOptimizer {
     restrictionsTop: Float32Array): Promise<Extremum>;
 };
 
-/** */
+/** Inconsistent tables error */
 export class InconsistentTables extends Error {
   constructor(msg: string) {
     super(msg);
   }
 }
+
+// Sleep function
+export function sleep(ms: number) {
+  return new Promise((resolve, reject) => setTimeout(resolve, ms));
+};

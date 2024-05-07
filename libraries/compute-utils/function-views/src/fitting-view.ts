@@ -242,6 +242,8 @@ export class FittingView {
                   temp.colNameInput.value = null;
                 }
               }
+
+              this.updateRunWidgetsState();
             });
 
             if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
@@ -478,11 +480,6 @@ export class FittingView {
     } else {
       this.runIcon.style.color = 'var(--grey-3)';
       this.runIcon.classList.remove('fas');
-      ui.tooltip.bind(this.runIcon, () => {
-        const label = ui.label('Cannot run fitting: incomplete inputs');
-        label.style.color = '#FF0000';
-        return label;
-      });
     }
   }
 
@@ -694,16 +691,44 @@ export class FittingView {
     return false;
   }
 
-  private isAnyOutputSelected(): boolean {
+  private updateRunIconDisabledTooltip(msg: string): void {
+    ui.tooltip.bind(this.runIcon, () => {
+      const label = ui.label(msg);
+      label.style.color = '#FF0000';
+      return label;
+    });
+  }
+
+  private areOutputsReady(): boolean {
+    let isAnySelected = false;
+    let areSelectedFilled = true;
+    let cur: boolean;
+
     for (const propName of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[propName].isInterest.value === true)
-        return true;
+      const output = this.store.outputs[propName];
+
+      if (output.isInterest.value === true) {
+        isAnySelected = true;
+        cur = (output.input.value !== null) && (output.input.value !== undefined);
+
+        if (output.prop.propertyType === DG.TYPE.DATA_FRAME)
+          cur = cur && (output.colNameInput.value !== null) && (output.colName !== '');
+
+        if (!cur)
+          this.updateRunIconDisabledTooltip(`Incomplete the "${output.input.caption}" target`);
+
+        areSelectedFilled = areSelectedFilled && cur;
+      }
     }
-    return false;
+
+    if (!isAnySelected)
+      this.updateRunIconDisabledTooltip(`No targets are selected`);
+
+    return isAnySelected && areSelectedFilled;
   }
 
   private canEvaluationBeRun(): boolean {
-    return this.isAnyInputSelected() && this.isAnyOutputSelected() && (this.samplesCount > 0);
+    return this.isAnyInputSelected() && this.areOutputsReady() && (this.samplesCount > 0);
   }
 
   private getFixedInputs() {

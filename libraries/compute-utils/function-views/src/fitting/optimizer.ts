@@ -1,9 +1,10 @@
 /** the Nelder-Mead optimizer */
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, OptimizationResult, InconsistentTables} from './optimizer-misc';
+import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
 import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
+import {MS_TO_SLEEP} from './constants';
 
 export async function performNelderMeadOptimization(
   objectiveFunc: (x: Float32Array) => Promise<number>,
@@ -20,10 +21,22 @@ export async function performNelderMeadOptimization(
   let failsCount = 0;
   let failsDF: DG.DataFrame | null = null;
 
-  for (let i = 0; i < samplesCount; ++i) {
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting...`);
+
+  let i: number;
+
+  for (i = 0; i < samplesCount; ++i) {
     try {
       extremums.push(await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop));
+
+      pi.update(100 * (i + 1) / samplesCount, `Fitting...`);
+      await sleep(MS_TO_SLEEP);
+
+      if ((pi as any).canceled)
+        break;
     } catch (e) {
+      pi.close();
+
       if (e instanceof InconsistentTables)
         throw new Error(`Inconsistent dataframes: ${e.message}`);
 
@@ -32,6 +45,8 @@ export async function performNelderMeadOptimization(
       failedInitPoint.push(params[i]);
     }
   }
+
+  pi.close();
 
   if (failsCount > 0) {
     const dim = paramsTop.length;
