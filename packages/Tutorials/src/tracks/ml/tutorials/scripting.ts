@@ -28,8 +28,7 @@ export class ScriptingTutorial extends Tutorial {
 
     this.title('Run a script');
 
-    const providerRoot = $('div.d4-tree-view-group-label').filter((idx, el) =>
-        (el.textContent ?? '')?.startsWith('Scripts'))[0]!;
+    const providerRoot = $('div[name="tree-Functions---Scripts"]').get(0);
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
       'sample dataset (press <b>F1</b> to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';
@@ -76,12 +75,11 @@ export class ScriptingTutorial extends Tutorial {
       [],//this.getSidebarHints('Windows', 'Console'),
       scriptOutputInfo);
 
-    // @ts-ignore
-    const editor = sv.root.lastChild.lastChild.CodeMirror;
+    const editor = (sv.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
     const scriptBodyIndex = doc.getValue().split('\n').findIndex((line: string) => !line.startsWith('#'));
     doc.replaceRange('\n', { line: scriptBodyIndex - 1 });
-    const lastLineIndex = doc.lineCount() - 1;
+    const lastLineIndex = doc.lineCount();
     const newOutputParam = '#output: dataframe clone';
     const newOutputParamDef = 'clone = table';
 
