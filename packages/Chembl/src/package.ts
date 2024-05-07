@@ -54,7 +54,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
       return;
     }
     const moleculeCol = table.getCol('smiles');
-    const molregnoCol = table.getCol('molregno');
+    const chemblId = table.getCol('chembl_id');
     const molCount = Math.min(table.rowCount, 20);
 
     for (let i = 0; i < molCount; i++) {
@@ -67,9 +67,9 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
         });
 
       ui.tooltip.bind(molHost,
-        () => ui.divText(`ChEMBL ID: ${molregnoCol.get(i)}\nClick to open in ChEMBL Database`));
+        () => ui.divText(`ChEMBL ID: ${chemblId.get(i)}\nClick to open in ChEMBL Database`));
       molHost.addEventListener('click',
-        () => window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL${molregnoCol.get(i)}`, '_blank'));
+        () => window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblId.get(i)}`, '_blank'));
       compsHost.appendChild(molHost);
     }
 

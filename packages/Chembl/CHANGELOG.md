@@ -1,5 +1,11 @@
 # Chembl changelog
 
+## 1.0.36 (2024-05-07)
+
+### Bug fixes
+
+* Return ChemblId instead of molregno in substructure and similarity search
+
 ## 1.0.35 (2023-11-29)
 
 ### Features
