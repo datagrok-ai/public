@@ -1002,7 +1002,7 @@ export interface IDartApi {
   grok_ColorInput(name: any, value: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
-  grok_CodeEditor(script: String, mode: String, placeholder: String): any;
+  grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
   grok_ProgressIndicator_Get_Description(pi: any): any;
