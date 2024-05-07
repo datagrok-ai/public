@@ -1,5 +1,6 @@
 ---
 title: "Widgets"
+sidebar_position: 4
 ---
 
 Widgets are various Datagrok UI elements that together comprise the platform's user interface. For instance, an

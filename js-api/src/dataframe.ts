@@ -86,8 +86,11 @@ export interface CsvExportOptions {
   /** Column order */
   columns?: string[];
 
-  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  /** Expands qualified numbers into two columns: `qual(column)` and `column` */
   qualifierAsColumn?: boolean;
+
+  /// Saves MOLBLOCKS as SMILES.
+  moleculesAsSmiles?: boolean;
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
@@ -297,6 +300,14 @@ export class DataFrame {
    * */
   toCsv(options?: CsvExportOptions, grid?: Grid): string {
     return api.grok_DataFrame_ToCsv(this.dart, options, grid?.dart);
+  }
+
+  /** Exports the content to comma-separated-values format asynchronously with converting the molblock columns to smiles if specified.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  async toCsvEx(options?: CsvExportOptions, grid?: Grid): Promise<string> {
+    return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
   }
 
   /** Exports the content to JSON format */

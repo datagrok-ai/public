@@ -23,7 +23,7 @@ What's more, Datagrok understands the nature of your
   data, offering actionable insights. It can
   [suggest suitable visualizations](../../../../visualize/view-layout.md#layout-suggestions) for your datasets, automatically render  chemical structures, calculate descriptors, or predict properties. It gives you every tool you need to explore data and uncover its meaning.
 
-![img](../../../../visualize/viewers/img/viewers-interaction-main.gif)
+![img](../../../navigation/views/img/viewers-interaction-main.gif)
 
 * [Bring data from anywhere](../../../../access/access.md#data-sources). Your data is automatically parsed and rendered in a spreadsheet. The spreadsheet works with _millions of columns_ and _billions of rows_ and has powerful features:
   * Built-in statistics and dataset overview
@@ -40,12 +40,12 @@ What's more, Datagrok understands the nature of your
   viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
 * Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
 * Seamlessly access information with [widgets](../../../../visualize/widgets.md)
- and context-driven [info panes](../../../../explore/data-augmentation/info-panels.md). 
+ and context-driven [info panes](../../../navigation/panels/info-panels.md). 
 * Create dashboards in seconds. Share your analysis in easy and
 [secure](../../../../govern/security.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
 * Use data annotations and team discussions to collaborate on decision-making. 
 
-Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting.md).
+Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting/scripting.mdx).
 
 [Learn more about capabilities here](../../../datagrok.md).
 

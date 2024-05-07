@@ -80,7 +80,7 @@ In the end, we came up with a solution that not only satisfied the initial requi
 for evolving the ecosystem on a global scale:
 
 * First-class functions, reflectable, with metadata on parameters
-* Support for [multiple languages](../../compute/scripting.md)
+* Support for [multiple languages](../../compute/scripting/scripting.mdx)
 * Multiple dynamic backends for functions
 * Everything is a function (db queries, web services, predictive models, etc)
 * Flexible way for [packaging](../../develop/develop.md#packages), deploying, and targeting functions

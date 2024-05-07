@@ -59,6 +59,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {identifiersWidget} from './widgets/identifiers';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
+  _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -1294,10 +1295,11 @@ export function addScaffoldTree(): void {
 //name:  Matched Molecular Pairs
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
-//input: column_list activities {type:numerical}
+//input: column_list activities {type: numerical}
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//output: object result
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<void> {
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<MmpAnalysis> {
   const view = grok.shell.tv;
   const mmp = await MmpAnalysis.init(table, molecules, activities, fragmentCutoff);
 
@@ -1311,6 +1313,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+  return mmp;
 }
 
 //name: Scaffold Tree Filter
@@ -1385,6 +1388,13 @@ export async function demoChemOverview(): Promise<void> {
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
 export async function demoSimilarityDiversitySearch(): Promise<void> {
   await _demoSimilarityDiversitySearch();
+}
+
+//name: Demo Matched Molecular Pairs
+//description: Detect matched molecule pairs calculate the difference in activity values between them
+//meta.demoPath: Cheminformatics | Matched Molecular Pairs
+export async function demoMMPA(): Promise<void> {
+  await _demoMMPA();
 }
 
 

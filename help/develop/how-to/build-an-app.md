@@ -5,7 +5,7 @@ title: "Build an application"
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular
 problem. They are written in JavaScript or TypeScript, and use [JS API](../packages/js-api.md) to control the platform, including
 executing database queries, accessing web services, or running
-[scripts written in R or Python](../../compute/scripting.md). Here are some examples of Datagrok applications:
+[scripts written in R or Python](../../compute/scripting/scripting.mdx). Here are some examples of Datagrok applications:
 
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
@@ -38,7 +38,7 @@ app:
 The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages. A
 Datagrok [package](../develop.md#packages) might contain zero, one, or more Datagrok applications. These come along with
 other entities in the package, which the applications may be using, such as [connections](access-data.md#connections),
-[viewers](develop-custom-viewer.md), [scripts](../../compute/scripting.md), etc.
+[viewers](develop-custom-viewer.md), [scripts](../../compute/scripting/scripting.mdx), etc.
 
 Consider a simple example of a webpack-based package with just one trivial app in a `src/package.js`:
 
@@ -499,7 +499,7 @@ When the script is run, here is what happens under the hood:
 
 * The dataframe and all other input parameters are serialized and sent to the Datagrok server
 * The Datagrok server is hosting a so-called [compute virtual machine](../../compute/compute.md) with a ready-to-execute
-  instance of a [Jupyter Kernel](../../compute/scripting.md) for Python, as well as for other supported scripting
+  instance of a [Jupyter Kernel](../../compute/scripting/scripting.mdx) for Python, as well as for other supported scripting
   languages
 * When the request to execute a script arrives to the server along with its parameters, CVM loads scripts' code from its
   storage and runs it with these parameters
@@ -517,11 +517,11 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 
 * [Datagrok architecture](../under-the-hood/architecture.md)
 * [Exercises](../onboarding/exercises.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../compute/scripting/scripting.mdx)
 
 #### Datagrok functions
 
-You could notice in ["Scripting"](../../compute/scripting.md) and ["Accessing databases"](access-data.md) that many
+You could notice in ["Scripting"](../../compute/scripting/scripting.mdx) and ["Accessing databases"](access-data.md) that many
 entities in Datagrok are callable functions. In fact, everything in Datagrok is a function. This gives powerful
 compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
 
@@ -545,7 +545,7 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../../compute/scripting.md#running-a-script)
+* [Running a script](../../compute/scripting/scripting.mdx#running-a-script)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations
@@ -601,7 +601,7 @@ and other package entities shared to the group.
 
 *References:*
 
-* [Sharing](../../collaborate/sharing.md)
+* [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
 * [Security](../../govern/security.md)
 * [Authorization](../../govern/authorization.md)
 

@@ -183,7 +183,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting/scripting.mdx), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -322,7 +322,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript
-   API](../../compute/scripting.md#running-a-script).
+   API](../../compute/scripting/scripting.mdx#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
@@ -390,7 +390,7 @@ functions.
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
    outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
-   from the function call (refer to the [Scripting](../../compute/scripting.md#running-a-script) article for details).
+   from the function call (refer to the [Scripting](../../compute/scripting/scripting.mdx#running-a-script) article for details).
    :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a

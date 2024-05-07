@@ -6,7 +6,6 @@ import {welcomeView} from './welcome-view';
 import {compareColumns} from './compare-columns';
 import {AddNewColumnDialog} from './dialogs/add-new-column';
 import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/formula-lines';
-import {SystemStatusWidget} from './widgets/system-status-widget';
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
@@ -40,12 +39,6 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
 //output: view home
 export function _welcomeView(): DG.View | undefined {
   return welcomeView();
-}
-
-//output: widget result
-//tags: dashboard
-export function systemStatusWidget(): DG.Widget {
-  return new SystemStatusWidget();
 }
 
 //output: widget result

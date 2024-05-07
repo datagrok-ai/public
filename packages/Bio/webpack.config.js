@@ -41,6 +41,8 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
+    'scil': 'scil',
+    'org': 'org',
   },
   output: {
     filename: '[name].js',

@@ -24,15 +24,15 @@ Aggregation Editor allows you to get table with aggregated values by columns fro
 * Table values corresponds to average value of "*unitprice"* column for intersection of values of "*suplplierid"*
   and "*productid"* columns
 
-1. Click on "Run query..." action on [Toolbox](../../datagrok/navigation.md#toolbox)
+1. Click on "Run query..." action on Toolbox
 
-* Table with result of aggregations from "Aggregation Editor" is added to [workspace](../../datagrok/workspace.md)
+* Table with result of aggregations from "Aggregation Editor" is added to workspace
 
 1. Return to view with [Source Tree](../../access/access.md#data-sources)
 
 1. Click on "Get All" from context menu of **products** DB table
 
-* Table "*products*" with all values and columns added to [workspace](../../datagrok/workspace.md)
+* Table "*products*" with all values and columns added to workspace
 
 1. Open **Data | Aggregate Rows**
 

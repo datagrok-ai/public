@@ -1,6 +1,6 @@
 ---
 title: "Acknowledgments"
-sidebar position: 3
+sidebar position: 4
 ---
 
 We are using a number of great open-source projects in our platform. Here they are, in no particular order:
@@ -8,7 +8,7 @@ We are using a number of great open-source projects in our platform. Here they a
 ## Data science
 
 * [OpenCPU](https://www.opencpu.org/) - integration with R
-* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](../compute/scripting.md),
+* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](../compute/scripting/scripting.mdx),
   and [notebooks](../compute/jupyter-notebook.md)
 * [caret](https://github.com/topepo/caret/) - predictive modeling engine
 * [scikit-learn](https://scikit-learn.org/) - predictive modeling engine

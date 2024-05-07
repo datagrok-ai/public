@@ -1,8 +1,7 @@
-import {FunctionView, ComputationView, PipelineView, RichFunctionView, RunComparisonView,
+export {FunctionView, ComputationView, PipelineView, RichFunctionView, RunComparisonView,
   SensitivityAnalysisView} from './function-views';
-import {historyUtils} from './history-utils/src/history-utils';
-import {UiUtils} from './shared-components';
-
-export {historyUtils};
-export {FunctionView, ComputationView, PipelineView, RichFunctionView, RunComparisonView, SensitivityAnalysisView};
-export {UiUtils};
+export {historyUtils} from './history-utils/src/history-utils';
+export {UiUtils} from './shared-components';
+export {makeValidationResult, makeAdvice, makeRevalidation, ValidationInfo} from './shared-utils/validation';
+export {CompositionPipeline, PipelineConfiguration, PipelineCompositionConfiguration,
+  RuntimeController, path} from './composition-pipeline';

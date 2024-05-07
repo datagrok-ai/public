@@ -22,7 +22,7 @@ choose **Clone**.
 * New view created for *"demog"* table
 * New view is called *"demog copy"*
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Add each one available [Viewer](../visualize/viewers/viewers.md) for *"demog"* table
 
@@ -35,7 +35,7 @@ choose **Clone**.
 * New view is called *"demog copy"*
 * On *"demog copy"* view there are added viewers with modified style properties.
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Clear *"demog"* view from menu **View | Layout | Clear** or **View | Reset** from context menu to *demog* tab or use
    keyboard ```Ctrl + Shift + R```
@@ -80,7 +80,7 @@ choose **Clone**.
 * Table is sorted by values ​​of *Age* column descending
 
 1. Save received view to Layouts Gallery from menu **View | Layout | Save to Gallery** or use ```Ctrl + S``` or use
-   **SAVE** button in "Layouts" tab on [Toolbox](../datagrok/navigation.md#toolbox)
+   **SAVE** button in "Layouts" tab on Toolbox
 
 1. Open Layouts Gallery from **View | Layout | Open Gallery** or use ```Ctrl + L```
 
@@ -88,7 +88,7 @@ choose **Clone**.
 
 1. Restart **Grok** platform and open *"demog"* table in new session
 
-1. Open "Layouts" tab on [Toolbox](../datagrok/navigation.md#toolbox)
+1. Open "Layouts" tab on **Toolbox**
 
 * Saved layout in step 19 is offered in "Layouts" tab.
 

@@ -53,6 +53,9 @@ export class MmpAnalysis {
   currentTab = '';
   lastSelectedPair: number | null = null;
   propPanelViewer: FormsViewer;
+  sliderInputs: DG.InputBase[];
+  colorInputs: DG.InputBase[];
+  activeInputs: DG.InputBase[];
 
   private setupTransformationTab(): void {
     this.transformationsMask.setAll(true);
@@ -260,6 +263,9 @@ export class MmpAnalysis {
     this.setupTransformationTab();
 
     //Cliffs tab setup
+    this.sliderInputs = sliderInputs;
+    this.colorInputs = colorInputs;
+    this.activeInputs = activeInputs;
     this.cutoffMasks = new Array<DG.BitSet>(sliderInputs.length);
     this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);
     this.linesMask = new BitArray(linesIdxs.length);
@@ -333,8 +339,8 @@ export class MmpAnalysis {
     const cases: number[] = [];
     const idx = this.allPairsGrid.table.currentRowIdx;
     if (idx !== -1) {
-      const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
-      const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
+      const ruleSmi1 = this.allPairsGrid.table.getCol(MMP_COLNAME_FROM).get(idx);
+      const ruleSmi2 = this.allPairsGrid.table.getCol(MMP_COLNAME_TO).get(idx);
       const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
       const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
 

@@ -25,56 +25,56 @@ Project browser allows you to view previously created [projects](project.md), vi
 * "Details" dialog open
 * Here is the description of the project, [project](project.md) elements and activity.
 
-1. Open the "General" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "General" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "General" tab is open
 * The correct and actually information for all fields is displayed (Created, Created by)
 
-1. Open the "Tables" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Tables" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "Tables" tab is open
 * Display all [tables](table.md) which are included in [project](project.md)
 
-1. Open the "Connections" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Connections" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "Connections" tab is open
 * Display all [connections](../access/access.md#data-connection) which are included in [project](project.md)
 
-1. Open the "Queries" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Queries" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "Queries" tab is open
 * Display all [queries](../access/access.md#data-query) which are included in [project](project.md)
 
-1. Open the "Jobs" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Jobs" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "Jobs" tab is open
 * Display all data jobs which are included in [project](project.md)
 
-1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Activity" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
    for [project](project.md)
 
 * "Activity" tab is open
 * Display information about actual actions with [project](project.md)
 
-1. Open the "Shared with" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Shared with" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Shared with" tab is open
 * Display [users](../govern/user.md) and users [groups](../govern/group.md) which this [project](project.md) is
   available for view or edit
 
-1. Open the "Resources" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Resources" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Open the "Notebooks" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Notebooks" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Notebooks" tab is open
 * Display all [notebooks](../compute/jupyter-notebook.md) which are included in [project](project.md)
 
-1. Open the "Models" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Models" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Models" tab is open
 * Display all [models](../learn/learn.md) which are included in project

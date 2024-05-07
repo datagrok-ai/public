@@ -8,6 +8,8 @@ import {SeqHandler} from './seq-handler';
 import {MonomerToShortFunc} from './macromolecule';
 import {IMonomerLib} from '../types';
 import {SeqSplittedBase} from './macromolecule/types';
+import {CellRendererBackBase} from './cell-renderer-back-base';
+import {ILogger} from './logger';
 
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
@@ -16,7 +18,7 @@ type MonomerPlacerProps = {
   monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
 };
 
-export class MonomerPlacer {
+export class MonomerPlacer extends CellRendererBackBase<string> {
   private _monomerLengthList: number[][] | null = null;
 
   // width of separator symbol
@@ -30,55 +32,28 @@ export class MonomerPlacer {
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
   public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
 
-  private readonly subs: Unsubscribable[] = [];
-  private destroyed: boolean = false;
-
   /** View is required to subscribe and handle for data frame changes */
   constructor(
-    public readonly grid: DG.Grid | null,
-    public readonly col: DG.Column<string>,
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column<string>,
+    logger: ILogger,
     private readonly propsProvider: () => MonomerPlacerProps
   ) {
+    super(gridCol, tableCol, logger);
     this.props = this.propsProvider();
-    this._rowsProcessed = DG.BitSet.create(this.col.length);
-    if (this.grid) {
-      // Changes handling is available only in with a view
-      this.subs.push(col.dataFrame.onDataChanged.subscribe(() => {
-        try {
-          this.props = this.propsProvider();
-          this._monomerLengthList = null;
-          this._rowsProcessed = DG.BitSet.create(this.col.length);
-        } catch (err: any) {
-          console.error(err);
-        }
-      }));
-      this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
-        this._monomerStructureMap = {};
-      }));
-      this.subs.push(grok.events.onViewRemoving.subscribe((eventData: DG.EventData) => {
-        try {
-          const eventView = eventData.args.view;
-          if (this.grid?.dart && this.grid.view?.id === eventView.id && !this.destroyed)
-            this.destroy();
-        } catch (err) {
-          console.error(err);
-        }
-      }));
-      this.subs.push(grok.events.onTableRemoved.subscribe((eventData: DG.EventData) => {
-        try {
-          const eventDf: DG.DataFrame = eventData.args.dataFrame;
-          if (this.col.dataFrame?.dart && this.col.dataFrame.id === eventDf.id && !this.destroyed)
-            this.destroy();
-        } catch (err) {
-          console.error(err);
-        }
-      }));
-    }
+    this._rowsProcessed = DG.BitSet.create(this.tableCol!.length);
+
+    this.subs.push(this.props.monomerLib.onChanged.subscribe(() => {
+      this.reset();
+    }));
   }
 
-  private destroy() {
-    for (const sub of this.subs) sub.unsubscribe();
-    this.destroyed = true;
+  protected override reset(): void {
+    if (this.propsProvider) this.props = this.propsProvider();
+    this._rowsProcessed = DG.BitSet.create(this.tableCol!.length);
+    this._monomerLengthList = null;
+    this._monomerLengthMap = {};
+    this._monomerStructureMap = {};
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
@@ -95,13 +70,13 @@ export class MonomerPlacer {
 
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
     if (this._monomerLengthList === null) {
-      this._monomerLengthList = new Array(this.col.length).fill(null);
+      this._monomerLengthList = new Array(this.tableCol.length).fill(null);
       this._updated = true;
     }
 
     let res: number[] = this._monomerLengthList[rowIdx];
     if (res === null) {
-      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.col).getSplitted(rowIdx).originals;
+      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(rowIdx).originals;
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
 
       for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
@@ -127,21 +102,22 @@ export class MonomerPlacer {
 
     const {startIdx, endIdx} = (() => {
       try {
-        if (this.grid && this.grid.dart) {
+        const grid: DG.Grid | null = this.gridCol && this.gridCol.dart ? this.gridCol.grid : null;
+        if (grid && grid.dart) {
           return {
-            startIdx: Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0),
-            endIdx: Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length)
+            startIdx: Math.max(Math.floor((grid?.vertScroll.min ?? 0) - 10), 0),
+            endIdx: Math.min(Math.ceil((grid?.vertScroll.max ?? 0) + 10), this.tableCol.length)
           };
-        } else return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
+        } else return {startIdx: 0, endIdx: Math.min(this.tableCol.length, 10)};
       } catch (_e) {
-        return {startIdx: 0, endIdx: Math.min(this.col.length, 10)};
+        return {startIdx: 0, endIdx: Math.min(this.tableCol.length, 10)};
       }
     })();
 
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._rowsProcessed.get(seqIdx))
         continue;
-      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.col).getSplitted(seqIdx).originals;
+      const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(seqIdx).originals;
       if (seqMonList.length > res.length)
         res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
 
@@ -158,7 +134,7 @@ export class MonomerPlacer {
   /** Returns seq position for pointer x */
   public getPosition(rowIdx: number, x: number): number | null {
     const [_monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
-    const sh = SeqHandler.forColumn(this.col);
+    const sh = SeqHandler.forColumn(this.tableCol);
     const seqMonList: string[] = wu(sh.getSplitted(rowIdx).originals).toArray();
     if (seqMonList.length === 0) return null;
 

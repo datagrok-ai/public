@@ -122,6 +122,7 @@ export class ChordViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.init();
+    this.filter = this.dataFrame.filter;
 
     this.strColumns = this.dataFrame.columns.toList()
       .filter((col) => col.type === 'string')

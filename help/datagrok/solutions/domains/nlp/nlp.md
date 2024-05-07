@@ -63,5 +63,5 @@ The `Text Statistics` info panel calculates two common formulas:
 See also:
 
 * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
-* [Scripting](../../../../compute/scripting.md)
-* [Info panels](../../../../explore/data-augmentation/info-panels.md)
+* [Scripting](../../../../compute/scripting/scripting.mdx)
+* [Info panels](../../../../datagrok/navigation/panels/info-panels.md)

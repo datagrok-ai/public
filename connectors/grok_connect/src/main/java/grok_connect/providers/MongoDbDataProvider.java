@@ -65,7 +65,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
                                        Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
         while (resultSet.next()) {
             Object object = resultSet.getObject(OBJECT_INDEX);
-            resultSetManager.processValue(object, OBJECT_INDEX);
+            resultSetManager.processValue(object, OBJECT_INDEX, queryLogger);
         }
         resultSet.close();
         DataFrame dataFrame = new DataFrame();

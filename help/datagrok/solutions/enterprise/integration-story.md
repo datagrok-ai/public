@@ -10,7 +10,7 @@ already; if not, let us know and we'll come up with a solution!
 
 ## Custom scripts
 
-[Scripting](../../../compute/scripting.md) is an integration mechanism with different languages, mostly used for statistical
+[Scripting](../../../compute/scripting/scripting.mdx) is an integration mechanism with different languages, mostly used for statistical
 computing and machine learning. Scripting combines fast interactive visualizations and other features of the Datagrok
 platform with thousands of statistical packages and visualizations available in
 [R](https://www.r-project.org/about.html), [Python](https://www.python.org)
@@ -51,9 +51,9 @@ OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
 Grok's [functions](../../concepts/functions/functions.md). This has many benefits:
 
 * Ability to easily call that web method from:
-  * [Console](../../navigation/navigation.md#console)
+  * [Console](../../navigation/panels/panels.md#console)
   * Event handler
-  * [Info pane](../../../explore/data-augmentation/info-panels.md)
+  * [Info pane](../../../datagrok/navigation/panels/info-panels.md)
 * Audit
 * Data lineage
 

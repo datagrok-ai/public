@@ -166,10 +166,6 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
     'width': `calc(${prop.options['block'] ?? '100'}% - ${prop.options['block'] ? '2': '0'}px)`,
     'box-sizing': 'border-box',
   });
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-    if (prop.options['units']) t.addPostfix(prop.options['units']);
 };
 
 export const injectInputBaseValidation = (t: DG.InputBase) => {

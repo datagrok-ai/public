@@ -9,6 +9,7 @@ import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
+import {getLayoutInput} from './layout-input';
 
 export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   preset?: HitDesignTemplate): Promise<INewTemplateResult<HitDesignTemplate>> {
@@ -38,7 +39,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
-
+  const layoutInput = getLayoutInput();
   // ######### TEMPLATE NAME INPUT #########
   function onTemplateNameChanged() {
     if (templateNameInput.value === '' || availableTemplateNames.includes(templateNameInput.value?.trim() ?? '')) {
@@ -103,7 +104,9 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   const fieldsEditor = getCampaignFieldEditors(preset?.campaignFields);
   const tileCategoriesEditor = getTileCategoryEditor(preset?.stages);
   const detailsDiv = ui.divV(
-    [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]), fieldsEditor.fieldsDiv]);
+    [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]),
+      layoutInput.dataFileInput,
+      fieldsEditor.fieldsDiv]);
 
   const stagesHeader = ui.h2('Stages');
   ui.tooltip.bind(stagesHeader,
@@ -148,6 +151,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
         key: templateKeyInput.value,
         campaignFields: fieldsEditor.getFields(),
         stages: tileCategoriesEditor.getFields(),
+        layoutViewState: layoutInput.getLayoutViewState() ?? undefined,
         compute: {
           descriptors: {
             enabled: !!funcDialogRes?.descriptors?.length,

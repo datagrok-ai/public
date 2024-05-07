@@ -343,7 +343,7 @@ Your package might contain the following additional folders, depending on your n
 
 [script for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem/scripts
 
-[scripts]: ../../compute/scripting.md "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
+[scripts]: ../../compute/scripting/scripting.mdx "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
 
 [semantic type detectors]: ../how-to/define-semantic-type-detectors.md
 

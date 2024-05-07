@@ -94,7 +94,7 @@ The same works in reverse. Clicking a molecule on a scatterplot or a similarity
 viewer updates the current row in all other viewers, including grid. 
 
 To further aid with data exploration, the **Context Panel** dynamically updates
-to show [info panes](../../explore/data-augmentation/info-panels.md) specific to
+to show [info panes](../../datagrok/navigation/panels/info-panels.md) specific to
 the current molecule.
 
 ![](img/grid-rows-interactivity.gif)

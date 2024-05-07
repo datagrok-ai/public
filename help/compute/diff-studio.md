@@ -7,7 +7,7 @@ title: "Diff Studio"
 Differential equations play a crucial role in modeling complex systems in diverse fields, from chemical engineering and drug design to environmental studies and financial modeling.
 
 Using **Diff Studio**, you can create mathematical models, build interactive [visualizations](../visualize/viewers),
-develop platform [applications](../develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
+develop platform [applications](/help/develop/how-to/build-an-app.md) and combine them with other features of Datagrok.
 
 **Key benefits and features**:
 
@@ -15,7 +15,7 @@ develop platform [applications](../develop/how-to/build-an-app.md) and combine t
 * **Ease of use:** Diff Studio intuitive interface makes it accessible
   and useful to both beginners and experts in mathematical modeling.
 * **Rapid design:** The collection of built-in model templates and examples speeds up model design.
-* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting.md),
+* **Streamlined integration:** In a single click, you can convert formulas to the platform [script](scripting/scripting.mdx),
   implementing no-code development.
 * **Broad application scope:** Diff Studio usage ranges from [pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics)
   and [hybrid antibody formation](https://doi.org/10.1073/pnas.1220145110) simulation to [queues](https://en.wikipedia.org/wiki/Queueing_theory) modeling.
@@ -209,7 +209,7 @@ You can add any number of `update` blocks. Simulation stages are marked with a c
 ## Usability improvements
 
 For all Diff Studio parameters, you can add annotations described in
-[functional annotations](../datagrok/concepts/functions/func-params-annotation.md).
+[functional annotations](/help/datagrok/concepts/functions/func-params-annotation.md).
 When you convert your model into the Datagrok script,
 Diff Studio converts it to the script input annotations,
 allowing Datagrok to automatically create rich and self-explaining UI.
@@ -348,7 +348,7 @@ Provide a description in the `#description` line:
 #description: Complex bioreaction simulation
 ```
 
-The export feature provides an extension of your project with [scripting](scripting.md) tools. Apply it to get:
+The export feature provides an extension of your project with [scripting](scripting/scripting.mdx) tools. Apply it to get:
 
 * non-elementary and special functions' use
 * Datagrok packages' functions call

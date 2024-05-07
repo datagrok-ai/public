@@ -235,6 +235,7 @@ export interface IDartApi {
   grok_ViewInfo_Set_UserDataValue(info: any, key: String, data: String): any;
   grok_ViewInfo_Get_UserDataValue(info: any, key: String): any;
   grok_ViewInfo_Get_View(info: any): any;
+  grok_ViewInfo_Get_Table(info: any): any;
   grok_ViewInfo_FromJson(json: String): any;
   grok_ViewInfo_FromViewState(state: String): any;
   grok_ViewInfo_ToJson(info: any): any;
@@ -454,6 +455,7 @@ export interface IDartApi {
   grok_DataFrame_Cell(t: any, idx: Num, name: String): any;
   grok_DataFrame_ColumnByName(t: any, colName: String): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
+  grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
   grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
@@ -1192,6 +1194,7 @@ export interface IDartApi {
   grok_Meta_RenderCard(meta: any, x: any): any;
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
+  grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;
   grok_Route(url: String): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
@@ -1485,6 +1488,14 @@ export interface IDartApi {
   grok_ViewerEvent_Get_bitset(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
+  grok_GridCellStyle_Get_defaultStyle(): any;
+  grok_GridCellStyle_Set_defaultStyle(v: any): any;
+  grok_GridCellStyle_Get_textStyle(): any;
+  grok_GridCellStyle_Set_textStyle(v: any): any;
+  grok_GridCellStyle_Get_numberStyle(): any;
+  grok_GridCellStyle_Set_numberStyle(v: any): any;
+  grok_GridCellStyle_Get_styles(): any;
+  grok_GridCellStyle_Set_styles(v: any): any;
   grok_GridCellStyle_Get_font(x: any): any;
   grok_GridCellStyle_Set_font(x: any, v: String): any;
   grok_GridCellStyle_Get_horzAlign(x: any): any;

@@ -1,5 +1,6 @@
 ---
 title: "Dashboard"
+sidebar_position: 3
 ---
 
 Use dashboard to visually present data in a pre-specified way. In contrast to
@@ -29,7 +30,7 @@ clicks on that button.
 
 ## Form designer
 
-* Click on an object to select it; its properties appear in [Context Panel](../datagrok/navigation/navigation.md#context-panel)
+* Click on an object to select it; its properties appear in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 * Click-and-drag to select multiple objects at once.
 
 See also:

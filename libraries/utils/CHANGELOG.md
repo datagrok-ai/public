@@ -1,5 +1,12 @@
 # utils changelog
 
+## 4.2.3 (2024-05-06)
+
+### Features
+
+* Added support to check Sets and Maps
+* Added serialization support for Sets and Maps
+
 ## 4.2.2 (2024-04-22)
 
 ### Bug fixes

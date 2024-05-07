@@ -1,4 +1,5 @@
 import DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -12,6 +13,10 @@ import {SequenceToMolfileConverter} from './apps/structure/model/sequence-to-mol
 import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
+
+import {getPolyToolDialog} from './polytool/ui';
+import {_setPeptideColumn} from './polytool/utils';
+import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
@@ -138,4 +143,36 @@ async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   const appUI = getSpecifiedAppUI(appName);
   const view = await appUI.getAppView();
   return view;
+}
+
+//top-menu: Bio | Convert | PolyTool
+//name: polyTool
+//description: Perform cyclization of polymers
+export async function polyTool(): Promise<void> {
+  let dialog: DG.Dialog;
+  try {
+    dialog = await getPolyToolDialog();
+    dialog.show();
+  } catch (err: any) {
+    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
+  }
+}
+
+//name: polyToolColumnChoice
+//input: dataframe df [Input data table]
+//input: column macroMolecule
+export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+  _setPeptideColumn(macroMolecule);
+  await grok.data.detectSemanticTypes(df);
+}
+
+//name: createMonomerLibraryForPolyTool
+//input: file file
+export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
+  const fileContent = await file.readAsString();
+  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
+  const libObject = await libHandler.getJson();
+  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
+  const jsonFileContent = JSON.stringify(libObject, null, 2);
+  DG.Utils.download(jsonFileName, jsonFileContent);
 }

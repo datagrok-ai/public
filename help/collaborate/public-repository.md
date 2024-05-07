@@ -44,7 +44,7 @@ important to academia:
 * Making your research globally available by using [data augmentation](../explore/data-augmentation/data-augmentation.md) capabilities.
   The platform proactively suggests contextual actions and enriches the current object
   using [functions](../datagrok/concepts/functions/functions.md)
-  implemented in [R, Python, Julia, Matlab, or other language](../compute/scripting.md). In other words, Datagrok not
+  implemented in [R, Python, Julia, Matlab, or other language](../compute/scripting/scripting.mdx). In other words, Datagrok not
   only can run a function, but also suggests _what_ could be derived from your dataset. This cross-pollination of
   knowledge could be transformative within and across a broad range of scientific disciplines.
 

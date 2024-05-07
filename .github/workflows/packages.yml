@@ -199,7 +199,7 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
@@ -214,6 +214,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
+    permissions:
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -501,12 +503,6 @@ jobs:
           echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
-#      - name: Cleanup datagrok stand
-#        if: steps.datagrok-image.outcome == 'success'
-#        run: |
-#          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
-#          docker system prune -af --volumes
-
       - name: Get docker image version
         if: matrix.build_docker == 'true'
         id: docker_name_ver
@@ -566,12 +562,6 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
-      # - name: Cleanup datagrok-tools
-      #   if: steps.datagrok-tools.outcome == 'success'
-      #   timeout-minutes: 15
-      #   run: |
-      #     npm uninstall -g datagrok-tools@latest
-
       - name: Publish to npm
         run: npm publish --access public
         id: publish
@@ -627,12 +617,6 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 
-#      - name: Upload Docker image as artifact
-#        if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
-#        uses: ishworkh/docker-image-artifact-upload@v1
-#        with:
-#          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
-
       - name: Save package Docker image to tar archive
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         id: save-docker
@@ -646,14 +630,6 @@ jobs:
           name: ${{ matrix.package }}.docker.tar
           retention-days: 14
           if-no-files-found: warn
-
-#      - name: Build and push package Docker image
-#        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
-#        uses: docker/build-push-action@v3
-#        with:
-#          context: packages/${{ matrix.package }}/dockerfiles
-#          push: true
-#          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
 
       - name: Publish package Docker image
         if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
@@ -708,14 +684,14 @@ jobs:
         run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
         env:
           GH_TOKEN: ${{ github.token }}
-      
+
       - name: Slack Notification
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ steps.publish.outcome }}
           steps: ${{ toJson(steps) }}
           matrix: ${{ toJson(matrix) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
       - name: Slack Failed-Cancelled Notification
         if: failure() || cancelled()
@@ -723,5 +699,5 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

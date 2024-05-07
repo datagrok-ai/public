@@ -21,12 +21,12 @@ other assets with other users.
 
 * Actions "Open", "Share", "Copy Link", "Details", "Delete Project" are available from context menu
 
-1. Choose "Demog" project for [context panel](../../datagrok/navigation.md#context-panel)
+1. Choose "Demog" project for [context panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 * Tabs "Details", "Connections", "Queries", "Activity", "Shared with", "Published in" and "Chats"
-  are present on [context panel](../../datagrok/navigation.md#context-panel)
+  are present on [context panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Click on "Created by me" filter on [Toolbox](../../datagrok/navigation.md#toolbox)
+1. Click on "Created by me" filter on Toolbox
 
 * Only projects created by current user are displayed in browser
 * Search field filled with predefined query *author = @current*

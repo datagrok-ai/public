@@ -1,5 +1,6 @@
 ---
 title: "Dataframe"
+sidebar_position: 1
 ---
 
 Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
@@ -8,16 +9,16 @@ are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 ## Column
 
 Dataframes consist of columns. In addition to the data type, a column can be associated with
-[tags](../../govern/catalog/tags.md) that specify units, data format, semantic type, tooltip content and so forth. Right-click on
-a column header and open `Properties...` to view the tags and other column information.
+[tags](../../govern/catalog/tags.md) that specify units, data format, [semantic type](../../govern/catalog/semantic-types.md), tooltip content and so forth. Right-click 
+a column header and open **Properties...** to view the tags and other column information.
 
 ## Metadata
 
 Same as columns, each table can be annotated with attributes in the form of key-value pairs. Datagrok automatically
 annotates certain tables with metadata (such as the source of the table, or time of import, etc). To edit metadata
-manually, use `Properties...` context menu option.
+manually, use **Properties...** context menu option.
 
-It is possible to use metadata as a search criteria in the [Projects](../../collaborate/project.md).
+It is possible to use metadata as a search criteria in the [Projects](../../datagrok/concepts/project/project.md).
 
 ## Filtering
 
@@ -38,7 +39,7 @@ You can use these fields to filter tables with [smart search](../../explore/sear
 See also:
 
 * [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame)
-* [Project](../../collaborate/project.md)
+* [Project](../../datagrok/concepts/project/project.md)
 * [Table view](../navigation/table-view.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)

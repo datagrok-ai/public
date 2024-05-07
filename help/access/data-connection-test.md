@@ -101,11 +101,11 @@
 
 1. Open "Connection browser" from **Admin | Data Connections**
 
-1. Apply "Created by me" filter from "Filters" tab on [Toolbox](../datagrok/navigation.md#toolbox)
+1. Apply "Created by me" filter from "Filters" tab on Toolbox
 
 * Only connections created current user are displayed in browser, including those created in previous paragraph
 
-1. Open *"Add new connection"* dialog from "Actions" tab tab on [Toolbox](../datagrok/navigation.md#toolbox)
+1. Open *"Add new connection"* dialog from "Actions" tab tab on Toolbox
 
 1. Select alternately different source in "Data source" field
 
@@ -138,27 +138,27 @@
 
 1. Return to connection browser
 
-1. Select "northwind" (PostgreSQL) connection to display on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Select "northwind" (PostgreSQL) connection to display on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Open the "Details" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Details" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Details" tab is open
 * The correct information for all fields is displayed (Description, Server, Database, Created by, Created, Updated,
   Tags)
 
-1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "noethwind" connection queries are displayed
 
-1. Open a list of [Projects](../collaborate/project.md)
-   on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of [Projects](../datagrok/concepts/project/project.md)
+   on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * Projects that include "northwind" connection are displayed
 
 1. Delete all test [connections](access.md#data-connection) created in previous steps from their context menu
 
 * When deleting connection, confirmation occurs in "Are you sure?" dialog
-* Deleted connections are no longer displayed in browser and on [Context Panel](../datagrok/navigation.md#context-panel)
+* Deleted connections are no longer displayed in browser and on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Go to "Connect to data" view
 

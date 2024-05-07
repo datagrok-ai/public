@@ -5,8 +5,10 @@ import {MmpRules} from './mmp-fragments';
 import {SUBSTRUCT_COL} from '../../constants';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MMP_COL_PAIRNUM_FROM,
   MMP_COL_PAIRNUM_TO, MMP_COLNAME_MEANDIFF, MMP_COLNAME_DIFF, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME,
-  MMP_COLOR} from './mmp-constants';
+  MMP_COLOR,
+  columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
+import { createColumnWithDescription } from './mmp-generations';
 
 function calculateActivityDiffs(molecules: DG.Column, activities: DG.ColumnList,
   mmpRules: MmpRules, variates: number, allCasesNumber: number) :
@@ -143,9 +145,10 @@ function createLines(variates: number, activityPairsIdxs: BitArray[],
 
 function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
   occasions: Int32Array, activities: DG.ColumnList, meanDiffs: Float32Array[]) : [string[], DG.Grid] {
-  const fromCol = DG.Column.fromList('string', MMP_COLNAME_FROM, fromFrag);
-  const toCol = DG.Column.fromList('string', MMP_COLNAME_TO, toFrag);
+  const fromCol = createColumnWithDescription('string', MMP_COLNAME_FROM, fromFrag);
+  const toCol = createColumnWithDescription('string', MMP_COLNAME_TO, toFrag);
   const occasionsCol = DG.Column.fromInt32Array(MMP_COLNAME_PAIRS, occasions);
+  occasionsCol.setTag('description', columnsDescriptions[MMP_COLNAME_PAIRS]);
   fromCol.semType = DG.SEMTYPE.MOLECULE;
   toCol.semType = DG.SEMTYPE.MOLECULE;
   occasionsCol.semType = DG.TYPE.INT;
@@ -167,14 +170,16 @@ function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
   allPairsCols.push(colorCol);
 
   const dfAllPairs = DG.DataFrame.fromColumns(allPairsCols);
-  return [activityMeanNames, dfAllPairs.plot.grid()];
+  const grid = dfAllPairs.plot.grid();
+  grid.col(MMP_COLOR)!.visible = false;
+  return [activityMeanNames, grid];
 }
 
 function getCasesGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
   molNumFrom: Int32Array, molNumTo: Int32Array, pairsFromSmiles: string[],
   pairsToSmiles: string[], ruleNum: Int32Array, activities: DG.ColumnList, diffs: Float32Array[]) : DG.Grid {
-  const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, molFrom);
-  const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, molTo);
+  const pairsFromCol = createColumnWithDescription('string', MMP_COLNAME_FROM, molFrom);
+  const pairsToCol = createColumnWithDescription('string', MMP_COLNAME_TO, molTo);
   const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);

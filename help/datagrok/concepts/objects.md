@@ -1,5 +1,6 @@
 ---
 title: "Entities"
+sidebar_position: 3
 ---
 
 Certain classes of objects in Datagrok have a common set of operations and features applicable to them. We call these
@@ -18,9 +19,9 @@ objects _entities_. Here they are:
 * [Model](../../learn/learn.md)
 * [Notebook](../../compute/jupyter-notebook.md)
 * [Package](../../develop/develop.md#packages)
-* [Project](../../collaborate/project.md)
-* [Repository](../../access/databases/connectors/git.md)
-* [Script](../../compute/scripting.md)
+* [Project](../../datagrok/concepts/project/project.md)
+* Repository
+* [Script](../../compute/scripting/scripting.mdx)
 * [Table (dataframe)](table.md)
 * [View Layout](../../visualize/view-layout.md)
 
@@ -35,6 +36,6 @@ The following operations can be applied to any entity:
 See also:
 
 * [Privileges](../../govern/authorization.md)
-* [Sharing](../../collaborate/sharing.md)
+* [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
 * [Self-Learning platform](../../govern/catalog/self-learning-platform.md)
 * [Audit](../../govern/audit.md)

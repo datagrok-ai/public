@@ -75,7 +75,7 @@ The goal for today is to gain experience with the platform by learning about its
    1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/Scripting) tutorial
    1. Read documentation:
       1. [Scripting for non-developers](../../compute/scripting-for-non-developers.mdx)
-      1. [Scripting](../../compute/scripting.md)
+      1. [Scripting](../../compute/scripting/scripting.mdx)
    1. Create a JavaScript script and share it with your mentor:
       1. Cylinder Volume Calculator takes parameters `radius` and `height` and returns `volume` rounded to 2 decimal
          places.

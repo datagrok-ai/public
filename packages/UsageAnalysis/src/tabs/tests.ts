@@ -44,7 +44,7 @@ export class TestsView extends UaView {
         this.current.innerText = getDate(date.toDate());
         if (!!this.rightDate.innerText)
           done.disabled = false;
-        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date});
+        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {'date': date});
         this.updateGrid(df);
         ui.setUpdateIndicator(this.grid.root, false);
       });
@@ -55,7 +55,8 @@ export class TestsView extends UaView {
 
     // Table
     const grid = ui.wait(async () => {
-      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {date: getDate(new Date())});
+      const d = getDate(new Date());
+      const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsToday', {'date': d});
       this.updateGrid(df);
       return this.grid!.root;
     });
@@ -111,7 +112,7 @@ export class TestsView extends UaView {
 
   updateCards(date: any): void {
     this.cardsView.innerHTML = '';
-    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount', {date});
+    const cardsDfP: Promise<DG.DataFrame> = grok.functions.call('UsageAnalysis:TestsCount', {'date': date});
     for (let i = 0; i < 3; i++) {
       const c = counters[i];
       const card = ui.div([ui.divText(c), ui.wait(async () => {

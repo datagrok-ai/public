@@ -1,5 +1,31 @@
-import {TERMINI, TERMINUS} from './const';
+import * as grok from 'datagrok-api/grok';
+import {STRAND, STRANDS, TERMINI, TERMINUS} from './const';
 import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
+import {EventBus} from './event-bus';
+
+export function bulkTranslate(eventBus: EventBus): void {
+  const df = eventBus.getTableSelection();
+  if (!df) {
+    grok.shell.warning('Please select a table');
+    return;
+  }
+  const strandColNames = STRANDS.filter(
+    (strand) => !(strand === STRAND.ANTISENSE && !eventBus.isAntisenseStrandActive())
+  ).map((strand) => eventBus.getSelectedStrandColumn(strand))
+    .filter((colName) => colName) as string[];
+
+  if (strandColNames.length === 0) {
+    grok.shell.warning('Please column for sense strand');
+    return;
+  }
+
+  const idColumnName = eventBus.getSelectedIdColumn();
+  if (!idColumnName) throw new Error('No ID column selected');
+
+  const idColumn = df.getCol(idColumnName);
+
+  const strandCols = strandColNames.map((colName) => df.getCol(colName));
+}
 
 export function applyPatternToRawSequence(
   rawNucleotideSequence: string,
