@@ -31,19 +31,19 @@ type InputValues = {
   saForm: DG.InputBase[],
 }
 
-type SensitivityNumericStore = {
+type FittingNumericStore = {
   prop: DG.Property,
   type: DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
   min: InputWithValue,
   max: InputWithValue,
 } & InputValues;
 
-type SensitivityBoolStore = {
+type FittingBoolStore = {
   prop: DG.Property,
   type: DG.TYPE.BOOL,
 } & InputValues;
 
-type SensitivityConstStore = {
+type FittingConstStore = {
   prop: DG.Property,
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL | DG.TYPE.STRING>,
 } & InputValues;
@@ -54,7 +54,7 @@ type GoFViewer = {
   root: HTMLElement,
 };
 
-type FittingInputsStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
+type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
@@ -108,10 +108,13 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(caption, defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(caption, defaultValue, (v: number) => {
+                ref.const.value = v;
+                this.updateRunWidgetsState();
+              });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
-              inp.setTooltip(`Value of the '${caption}' input`);
+              inp.setTooltip(`Value of '${caption}'`);
               inp.nullable = false;
               return inp;
             })(),
@@ -120,10 +123,13 @@ export class FittingView {
           min: {
             input:
               (() => {
-                const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (min)`, getInputValue(inputProp, 'min'), (v: number) => (ref as SensitivityNumericStore).min.value = v);
+                const inp = ui.floatInput(`${caption} (min)`, getInputValue(inputProp, 'min'), (v: number) => {
+                  (ref as FittingNumericStore).min.value = v;
+                  this.updateRunWidgetsState();
+                });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
-                inp.setTooltip(`Min value of the '${caption}' input`);
+                inp.setTooltip(`Min value '${caption}'`);
                 inp.nullable = false;
                 return inp;
               })(),
@@ -131,9 +137,12 @@ export class FittingView {
           },
           max: {
             input: (() => {
-              const inp = ui.floatInput(`${inputProp.caption ?? inputProp.name} (max)`, getInputValue(inputProp, 'max'), (v: number) => (ref as SensitivityNumericStore).max.value = v);
+              const inp = ui.floatInput(`${caption} (max)`, getInputValue(inputProp, 'max'), (v: number) => {
+                (ref as FittingNumericStore).max.value = v;
+                this.updateRunWidgetsState();
+              });
               inp.addPostfix(inputProp.options['units']);
-              inp.setTooltip(`Max value of the '${caption}' input`);
+              inp.setTooltip(`Max value of '${caption}'`);
               inp.nullable = false;
               return inp;
             })(),
@@ -154,9 +163,9 @@ export class FittingView {
             temp.min.input,
             temp.max.input,
           ],
-        } as SensitivityNumericStore;
+        } as FittingNumericStore;
 
-        const ref = acc[inputProp.name] as SensitivityNumericStore;
+        const ref = acc[inputProp.name] as FittingNumericStore;
         ref.isChanging.subscribe((val) => {
           isChangingInputMin.notify = false;
           isChangingInputMin.value = val;
@@ -183,7 +192,11 @@ export class FittingView {
         const tempDefault = {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
-            temp.onChanged(() => tempDefault.value = temp.value);
+            temp.caption = inputProp.caption ?? inputProp.name;
+            temp.onInput(() => {
+              tempDefault.value = temp.value;
+              this.updateRunWidgetsState();
+            });
             temp.root.insertBefore(switchMock, temp.captionLabel);
             temp.addPostfix(inputProp.options['units']);
             temp.nullable = false;
@@ -200,7 +213,7 @@ export class FittingView {
           type: inputProp.propertyType,
           prop: inputProp,
           isChanging: new BehaviorSubject(false),
-        } as SensitivityConstStore;
+        } as FittingConstStore;
       }
 
       return acc;
@@ -299,10 +312,6 @@ export class FittingView {
   };
 
   private readyToRun = false;
-  private runButton = ui.bigButton('Run', async () => {
-    if (this.readyToRun)
-      await this.runOptimization();
-  }, 'Run fitting');
 
   private runIcon = ui.iconFA('play', async () => {
     if (this.readyToRun)
@@ -417,8 +426,7 @@ export class FittingView {
       return;
     }
 
-    const form = this.buildFormWithBtn();
-    this.updateRunWidgetsState();
+    const form = this.buildForm();
     this.comparisonView = baseView;
 
     this.comparisonView.dockManager.dock(
@@ -458,6 +466,10 @@ export class FittingView {
       this.updateRunWidgetsState();
     });
     this.samplesCountInput.setTooltip('Number fitted inputs sets');
+
+    this.updateRunIcon();
+    this.updateRunIconDisabledTooltip('Select inputs for fitting');
+    this.runIcon.classList.add('fas');
   }
 
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -470,17 +482,16 @@ export class FittingView {
   }
 
   private updateRunWidgetsState(): void {
-    this.readyToRun = this.canEvaluationBeRun();
-    this.runButton.disabled = !this.readyToRun;
+    this.readyToRun = this.canFittingBeRun();
+    this.updateRunIcon();
+  }
 
+  private updateRunIcon(): void {
     if (this.readyToRun) {
       this.runIcon.style.color = 'var(--green-2)';
-      this.runIcon.classList.add('fas');
       ui.tooltip.bind(this.runIcon, 'Run fitting');
-    } else {
+    } else
       this.runIcon.style.color = 'var(--grey-3)';
-      this.runIcon.classList.remove('fas');
-    }
   }
 
   private generateNelderMeadSettingsInputs(): void {
@@ -583,7 +594,7 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
-  private buildFormWithBtn() {
+  private buildForm() {
     let prevCategory = 'Misc';
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
@@ -669,12 +680,6 @@ export class FittingView {
 
     this.updateRunWidgetsState();
 
-    const buttons = ui.buttonsInput([this.runButton]);
-
-    form.appendChild(
-      buttons,
-    );
-
     $(form).css({
       'padding-left': '12px',
       'overflow-y': 'scroll',
@@ -683,12 +688,46 @@ export class FittingView {
     return form;
   }
 
-  private isAnyInputSelected(): boolean {
+  private areInputsReady(): boolean {
+    let isAnySelected = false;
+    let areSelectedFilled = true;
+    let cur: boolean;
+
     for (const propName of Object.keys(this.store.inputs)) {
-      if (this.store.inputs[propName].isChanging.value === true)
-        return true;
+      const input = this.store.inputs[propName];
+      const caption = input.prop.caption ?? input.prop.name;
+
+      if (input.isChanging.value === true) {
+        isAnySelected = true;
+        const min = (input as FittingNumericStore).min.input.value;
+        const max = (input as FittingNumericStore).max.input.value;
+
+        cur = (min !== null) && (min !== undefined) && (max !== undefined) && (max !== undefined);
+
+        if (cur) {
+          if (min > max) {
+            cur = false;
+            this.updateRunIconDisabledTooltip(`Invalid min & max of "${caption}"`);
+          }
+        } else
+          this.updateRunIconDisabledTooltip(`Incomplete "${caption}"`);
+
+        areSelectedFilled = areSelectedFilled && cur;
+      } else {
+        const val = input.const.input.value;
+        cur = (val !== null) && (val !== undefined);
+
+        if (!cur)
+          this.updateRunIconDisabledTooltip(`Incomplete "${caption}"`);
+
+        areSelectedFilled = areSelectedFilled && cur;
+      }
     }
-    return false;
+
+    if (!isAnySelected)
+      this.updateRunIconDisabledTooltip(`No parameters for fitting are selected`);
+
+    return isAnySelected && areSelectedFilled;
   }
 
   private updateRunIconDisabledTooltip(msg: string): void {
@@ -709,7 +748,8 @@ export class FittingView {
 
       if (output.isInterest.value === true) {
         isAnySelected = true;
-        cur = (output.input.value !== null) && (output.input.value !== undefined);
+        const val = output.input.value;
+        cur = (val !== null) && (val !== undefined);
 
         if (output.prop.propertyType === DG.TYPE.DATA_FRAME)
           cur = cur && (output.colNameInput.value !== null) && (output.colName !== '');
@@ -727,8 +767,16 @@ export class FittingView {
     return isAnySelected && areSelectedFilled;
   }
 
-  private canEvaluationBeRun(): boolean {
-    return this.isAnyInputSelected() && this.areOutputsReady() && (this.samplesCount > 0);
+  private isSamplesCountValid(): boolean {
+    if (this.samplesCount > 0)
+      return true;
+
+    this.updateRunIconDisabledTooltip('Invalid samples conut');
+    return false;
+  }
+
+  private canFittingBeRun(): boolean {
+    return this.areInputsReady() && this.areOutputsReady() && this.isSamplesCountValid();
   }
 
   private getFixedInputs() {
@@ -744,7 +792,7 @@ export class FittingView {
   private async runOptimization(): Promise<void> {
     try {
     // check applicability
-      if (!this.canEvaluationBeRun())
+      if (!this.canFittingBeRun())
         return;
 
       if (this.samplesCount < 1)
@@ -771,7 +819,7 @@ export class FittingView {
 
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
-        const propConfig = this.store.inputs[name] as SensitivityNumericStore;
+        const propConfig = this.store.inputs[name] as FittingNumericStore;
         minVals[idx] = propConfig.min.value;
         maxVals[idx] = propConfig.max.value;
         variedInputNames.push(name);
