@@ -61,7 +61,7 @@ You may see view-specific options on top such as the **Create new connection** b
 
 Subject to your privileges, you can move objects from other directories to your personal directory or
 **Namespaces**. To do this, click an object and start dragging. As you drag,
-drop zones within the **Browse** tree and **Preview** are highlighted::
+drop zones within the **Browse** tree and **Preview** are highlighted:
 
 * On the **Browse** tree, potential directories are indicated by a dotted border.
 * In the **Preview**, drop zones are marked by a gray area.
@@ -78,7 +78,7 @@ When moving objects, you have two options:
 
 ## Home page
 
-When you first log in, you land on the **Home Page**, which contains
+When you first log in, the **Browse** shows a landing view called **Home Page**. This view contains
 [widgets](../../../visualize/widgets.md) like **Recent projects** or **Usage**.
 The widgets you see depend on the [plugins](link) installed. For example, the
 **Recent projects** widget is provided by the [PowerPack

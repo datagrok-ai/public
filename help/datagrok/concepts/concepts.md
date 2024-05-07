@@ -90,10 +90,10 @@ separation lets you do the following:
 <Tabs>
 <TabItem value="projects" label="Projects">
 
-[Projects](project/project.md) in Datagrok act like folders or containers,
-housing various _entities_ such as dataframes, queries, or scripts. They are
+[Projects](project/project.md) in Datagrok act like folders,
+containing various _entities_ such as dataframes, queries, or scripts. They are
 essential for organizing, managing, and sharing data assets. For example,
-[dashboards](../../visualize/dashboard.md) are a type of project that contains
+[dashboards](../../visualize/dashboard.md) are projects that contains
 two _entities_: the underlying data (a _dataframe_) and the visualizations
 applied to it (a _layout_).
 
