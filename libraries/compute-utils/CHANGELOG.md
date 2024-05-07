@@ -1,5 +1,14 @@
 # compute-utils changelog
 
+## 1.33.1 (2024-05-07)
+
+### Features
+
+- Rearranged CSS files
+- RFV: Added isOutdatedOutput subject
+- HistoryInput: Hides incomplete runs
+- HistoryPanel: Added completeness filter
+
 ## 1.33.0 (2024-05-06)
 
 - Added CompositionPipeline
