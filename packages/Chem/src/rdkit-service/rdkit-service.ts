@@ -7,9 +7,9 @@ import {IFpResult} from './rdkit-service-worker-similarity';
 import {LockedEntity} from '../utils/locked-entitie';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getRdKitModule} from '../package';
-import { SubstructureSearchType } from '../constants';
-import { tanimotoSimilarity } from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import { getRDKitFpAsUint8Array } from '../chem-searches';
+import {SubstructureSearchType} from '../constants';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {getRDKitFpAsUint8Array} from '../chem-searches';
 import {IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
 export interface IParallelBatchesRes {
   getProgress: () => number,
@@ -192,7 +192,7 @@ export class RdKitService {
   /**
    * Calls _doParallel with pre-defined map function which splits data by number of workers
    * @async
-   * @param {string[]} molecules - list of molecules to split by workers
+   * @param {Array<T>} molecules - list of molecules to split by workers
    * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} workerFunc - function
    * from rdkit service worker client (basicaly action which we need to perform inside worker - getFingerprints,
    * searchSubstructure etc.)
@@ -325,9 +325,8 @@ export class RdKitService {
           for (let i = 0; i < batch.length; ++i) {
             if (fpResult.fps[i]) {
               const simScore = tanimotoSimilarity(rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
-              if (simScore >= simCutOff) {
+              if (simScore >= simCutOff)
                 finalBitArray.setBit(i, true);
-              }
             }
           }
         } catch (e: any) {
@@ -363,9 +362,8 @@ export class RdKitService {
       if (fpResult.fps[i]) {
         for (let j = 0; j < patternFpUint8Length; ++j) {
           const bitToCompare = superStructSearch ? fpResult.fps[i]![j] : fpRdKit[j];
-          if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare) {
+          if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
             continue checkEl;
-          }
         }
         patternFpFilterBitArray.setFast(i, true);
       }
@@ -418,7 +416,6 @@ export class RdKitService {
     return res;
   }
 
-
   async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation): Promise<string[]> {
     const t = this;
     const res =
@@ -449,7 +446,8 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): Promise<IRGroupAnalysisResult> {
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): 
+    Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       t.parallelWorkers[i].rGroupAnalysis(segment, coreMolecule, coreIsQMol, options),

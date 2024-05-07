@@ -53,7 +53,8 @@
     "typescript": "latest",
     "worker-loader": "latest",
     "source-map-loader": "^4.0.1",
-    "wu": "latest"
+    "wu": "latest",
+    "@webgpu/types": "^0.1.40"
   },
   "devDependencies": {
     "@types/wu": "latest",

@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
 
 export type MmpRules = {
   rules: {
@@ -12,6 +13,14 @@ export type MmpRules = {
 
 type Fragments = [string, string][][];
 
+type MolecularPair = {
+  first: number,
+  second: number,
+  core: string,
+  firstR: string,
+  secondR: string
+}
+
 /**
 * Runs paralled fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
@@ -20,6 +29,13 @@ export async function getMmpFrags(molecules: DG.Column): Promise<Fragments> {
   const service = await getRdKitService();
   const res = await service.mmpGetFragments(molecules.toList());
   return res;
+}
+
+export async function getMmpRules(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
+  if (frags.length < 10)
+    return getMmpRulesTrivial(frags, fragmentCutoff);
+  else
+    return await getMmpRulesGPU(frags, fragmentCutoff);
 }
 
 function getBestFragmentPair(
@@ -103,40 +119,83 @@ function fillRules(
   return [ruleCounter, allCasesCounter];
 }
 
-export function getMmpRules(frags: Fragments, fragmentCutoff: number): [MmpRules, number] {
+function encodeFragments(frags: Fragments): [[number, number][][], string[], Uint32Array] {
+  const res: [number, number][][] = new Array(frags.length)
+    .fill(null).map((_, i) => new Array(frags[i].length).fill(null).map((_) => [0, 0]));
+
+  let fragmetnCounter = 0;
+  const fragmentMap: Record<string, number> = {};
+  for (let i = 0; i < frags.length; i++) {
+    for (let j = 0; j < frags[i].length; j++) {
+      if (!fragmentMap[frags[i][j][0]]) {
+        fragmentMap[frags[i][j][0]] = fragmetnCounter;
+        fragmetnCounter++;
+      }
+      if (!fragmentMap[frags[i][j][1]]) {
+        fragmentMap[frags[i][j][1]] = fragmetnCounter;
+        fragmetnCounter++;
+      }
+      res[i][j][0] = fragmentMap[frags[i][j][0]];
+      res[i][j][1] = fragmentMap[frags[i][j][1]];
+    }
+  }
+
+  const maxFragmentIndex = fragmetnCounter;
+  const fragIdToFragName = new Array<string>(maxFragmentIndex);
+  Object.entries(fragmentMap).forEach(([key, val]) => {
+    fragIdToFragName[val] = key;
+  });
+
+  const fragSizes = new Uint32Array(maxFragmentIndex).map((_, i) => fragIdToFragName[i].length);
+
+
+  return [res, fragIdToFragName, fragSizes];
+}
+
+function getMmpRulesTrivial(frags: Fragments, fragmentCutoff: number): [MmpRules, number] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = frags.length;
 
-  const nelements = dim*(dim - 1) / 2; //number of elements in upper triangle
-  const cores = new Array<string>(nelements);
-  const firstRs = new Array<string>(nelements);
-  const secondRs = new Array<string>(nelements);
+  const pairs: MolecularPair[] = [];
 
   for (let i = 0; i < dim; i++) {
     const dimFirstMolecule = frags[i].length;
-    const rowPart = i*dim- i*(i + 1) / 2 - i - 1; //number of elements passed in upper triangele
     for (let j = i + 1; j < dim; j++) {
-      const idx = rowPart + j;
-
       const dimSecondMolecule = frags[j].length;
-      [cores[idx], firstRs[idx], secondRs[idx]] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
+      const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, frags);
+      if (core === '' ||
+      firstR.length / core.length > fragmentCutoff ||
+      secondR.length / core.length > fragmentCutoff) {/*idx++;*/ continue;}
+
+      pairs.push({first: i, second: j, core, firstR, secondR});
     }
   }
 
   let ruleCounter = 0;
   let allCasesCounter = 0;
 
-  let idx = 0;
-  for (let i = 0; i < dim; i++) {
-    for (let j = i + 1; j < dim; j++) {
-      if (cores[idx] === '' ||
-          firstRs[idx].length / cores[idx].length > fragmentCutoff ||
-          secondRs[idx].length / cores[idx].length > fragmentCutoff) {idx++; continue;}
+  for (let i = 0; i < pairs.length; i++) {
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
+      pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second,
+      ruleCounter, allCasesCounter);
+  }
 
-      [ruleCounter, allCasesCounter] =
-        fillRules(mmpRules, firstRs[idx], i, secondRs[idx], j, ruleCounter, allCasesCounter);
-      idx++;
-    }
+  return [mmpRules, allCasesCounter];
+}
+
+async function getMmpRulesGPU(frags: Fragments, fragmentCutoff: number): Promise<[MmpRules, number]> {
+  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
+
+  const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(frags);
+  const pairs = await webGPUMMP(encodedFrags, fragSizes, fragmentCutoff);
+
+  let ruleCounter = 0;
+  let allCasesCounter = 0;
+
+  for (let i = 0; i < pairs!.coreIdx.length; i++) {
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
+      fragIdToFragName[pairs!.frag1Idx[i]], pairs!.mol1Idx[i], fragIdToFragName[pairs!.frag2Idx[i]], pairs!.mol2Idx[i],
+      ruleCounter, allCasesCounter);
   }
 
   return [mmpRules, allCasesCounter];

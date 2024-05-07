@@ -139,7 +139,7 @@ export class MmpAnalysis {
     const sliders = ui.divV(roots, 'css-flex-wrap mmpa-slider-roots');
     sp.root.style.width = '100%';
 
-    const cliffs1 = ui.divV([sliders, ui.box(sp.root,
+    const cliffs = ui.divV([sliders, ui.box(sp.root,
       {style: {maxHeight: '100px', paddingRight: '6px'}})], 'css-flex-wrap');
 
     this.totalCutoffMask.setAll(true);
@@ -154,7 +154,7 @@ export class MmpAnalysis {
 
     this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
 
-    return ui.box(cliffs1);
+    return ui.box(cliffs);
   }
 
   private getTabs(tp: DG.Viewer, sliderInputs: DG.InputBase[], activeInputs: DG.InputBase[],
@@ -302,7 +302,7 @@ export class MmpAnalysis {
     const t1 = performance.now();
     const frags = await getMmpFrags(molecules);
     const t2 = performance.now();
-    const [mmpRules, allCasesNumber] = getMmpRules(frags, fragmentCutoff);
+    const [mmpRules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff);
     const t3 = performance.now();
     console.log(`Call to fragments took ${t2 - t1} milliseconds`);
     console.log(`Call to rules took ${t3 - t2} milliseconds`);

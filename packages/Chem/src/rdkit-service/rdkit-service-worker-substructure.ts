@@ -94,9 +94,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (this._requestTerminated)
         return matches.buffer;
 
-      if (queryCanonicalSmiles) {
+      if (queryCanonicalSmiles)
         matches.setFast(i, molecules[i] === queryCanonicalSmiles);
-      } else {
+      else {
         let mol: RDMol | null = null;
         let isCached = false;
         try {
@@ -120,20 +120,20 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType): boolean {
     switch (searchType) {
-      case SubstructureSearchType.CONTAINS:
-        return mol.get_substruct_match(queryMol) !== '{}';
-      case SubstructureSearchType.INCLUDED_IN:
-        return queryMol.get_substruct_match(mol) !== '{}';
-      case SubstructureSearchType.NOT_CONTAINS:
-          return mol.get_substruct_match(queryMol) == '{}';
-      case SubstructureSearchType.NOT_INCLUDED_IN:
-          return queryMol.get_substruct_match(mol) == '{}';
-      case SubstructureSearchType.EXACT_MATCH:
-        const match1 = mol.get_substruct_match(queryMol);
-        const match2 = queryMol.get_substruct_match(mol);
-        return match1 !== '{}' && match2 !== '{}';
-      default:
-        throw Error('Unknown search type: ' + searchType);
+    case SubstructureSearchType.CONTAINS:
+      return mol.get_substruct_match(queryMol) !== '{}';
+    case SubstructureSearchType.INCLUDED_IN:
+      return queryMol.get_substruct_match(mol) !== '{}';
+    case SubstructureSearchType.NOT_CONTAINS:
+      return mol.get_substruct_match(queryMol) == '{}';
+    case SubstructureSearchType.NOT_INCLUDED_IN:
+      return queryMol.get_substruct_match(mol) == '{}';
+    case SubstructureSearchType.EXACT_MATCH:
+      const match1 = mol.get_substruct_match(queryMol);
+      const match2 = queryMol.get_substruct_match(mol);
+      return match1 !== '{}' && match2 !== '{}';
+    default:
+      throw Error('Unknown search type: ' + searchType);
     }
   }
 
@@ -150,7 +150,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules || this._requestTerminated)
       return [];
     let addedToCache = false;
-    let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+    const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
       (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
     const results = new Array<string>(molecules.length).fill(result);
 
@@ -175,24 +175,24 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (rdMol) {
         try {
           switch (targetNotation) {
-            case MolNotation.MolBlock:
-              if (!rdMol.has_coords())
-                rdMol.set_new_coords();
-              results[i] = rdMol.get_molblock();
-              break;
-            case MolNotation.Smiles:
-              if (!rdMol.is_qmol)
-                results[i] = rdMol.get_smiles();
-              break;
-            case MolNotation.V3KMolBlock:
-              results[i] = rdMol.get_v3Kmolblock();
-              break;
-            case MolNotation.Smarts:
-              results[i] = rdMol.get_smarts();
-              break;
-            default:
-              rdMol?.delete();
-              throw Error('Unknown notation: ' + targetNotation);
+          case MolNotation.MolBlock:
+            if (!rdMol.has_coords())
+              rdMol.set_new_coords();
+            results[i] = rdMol.get_molblock();
+            break;
+          case MolNotation.Smiles:
+            if (!rdMol.is_qmol)
+              results[i] = rdMol.get_smiles();
+            break;
+          case MolNotation.V3KMolBlock:
+            results[i] = rdMol.get_v3Kmolblock();
+            break;
+          case MolNotation.Smarts:
+            results[i] = rdMol.get_smarts();
+            break;
+          default:
+            rdMol?.delete();
+            throw Error('Unknown notation: ' + targetNotation);
           }
           addedToCache = this.addToCache(rdMol);
         } catch {
@@ -334,8 +334,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
                   bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
               }
               col[j] = rgroup.get_smiles();
-            }
-            else {
+            } else {
               counter++;
               col[j] = '';
             }
@@ -348,8 +347,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return {colNames: [], smiles: [], atomsToHighLight: [], bondsToHighLight: []};
     } catch (e: any) {
       throw new Error(e.message);
-    }
-    finally {
+    } finally {
       core?.delete();
       mols?.delete();
       res?.delete();
