@@ -178,7 +178,7 @@ To save your work, save the objects in the
 **Scratchpad** as a project using **SAVE** button. You can then share it with
 others. If you don't make any changes, the **SAVE** button is disabled.
 
-For [Table Views], when you save a project, you save both the underlying data (i.e., a [table] and its [Layout]. To learn more, see [Saving](link).
+For [Table Views], when you save a project, you save both the underlying data (i.e., a [table] and its [Layout]. To learn more, see [Saving].
 
 **Scratchpad** is a project. This means you can move tables and other objects within, to and from **Scratchpad** using drag-and-drop, like any other **Browse** directory. To exclude objects from the Scratchpad, use its **Context Menu**.
 

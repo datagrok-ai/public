@@ -72,7 +72,7 @@ You can access available options for rows, columns, and cells in a number of way
 
 * From an object's context menu (right-click to open)
 * From the **Top Menu** options and icons
-* For the current object, from the [Context Panel](link)
+* For the current object, from the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 * For columns, by clicking the **Hamburger** **(≡)** icon (hover over the column's header to display)
 
 From there, you can [change the cell format](#format-cells), [color code a column](#color-code-columns), [pin rows](#pin-rows-and-columns), and do more. For shortcuts, see [Controls](#controls).
@@ -194,7 +194,7 @@ To apply a cell renderer manually:
    opens.
 1. In the dialog, set the tag key to `cell.renderer` and the tag value to the
    desired cell renderer  name (e.g., `Tags`). 
-  >Note: Some cell renderers <!--(e.g., [MultiChoice](link))  //TODO: New doc: supported-cell-renderers.md--> may require
+  >Note: Some cell renderers <!--(e.g., [MultiChoice])  //TODO: New doc: supported-cell-renderers.md--> may require
   >additional parameters. 
 1. Click **OK**.
 

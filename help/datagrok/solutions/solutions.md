@@ -106,8 +106,8 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
   encryption, and audit trails. Data catalog
 * Collaboration features with version control across projects
 * Scales well
-* Extensive customization options through [plugins](link)
-* Real-time data processing and analytics. [Usage analysis](link)
+* Extensive customization options through [plugins](../../develop/how-to/create-package.md)
+* Real-time data processing and analytics. [Usage analysis](../../govern/usage-analysis.md)
 * Flexible deployment options: cloud-based, on-premises, hybrid
 
 [**Visit the Enterprise IT page >**](enterprise/enterprise.md)

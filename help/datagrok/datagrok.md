@@ -77,7 +77,7 @@ suggestions.
 #### Compute
 
 Write in any language, annotate, publish, and apply scientific models, methods,
-and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD](link))-->.
+and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD])-->.
 
 * [500+ available functions](https://public.datagrok.ai/functions), or write your own in R, Python, or JavaScript
 * [Metadata-annotated](../compute/compute.md#metadata) scripts with [cross-language support](../compute/compute.md#functions-and-cross-language-support)
