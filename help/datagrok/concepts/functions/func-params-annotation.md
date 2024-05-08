@@ -87,10 +87,10 @@ Let's explore it on the following example:
 
 ```javascript 
 //name: ParameterTestFunction
-//description: Small fucntion to illustrate parameter mapping
+//description: Small function to illustrate parameter mapping
 //language: javascript
-//input: int one=1 {caption: First} [First farameter]
-//input: int two=2 {caption: Second} [First farameter]
+//input: int one=1 {caption: First} [First parameter]
+//input: int two=2 {caption: Second} [Second parameter]
 export function ParameterTestFunctionPkg(two, one) {
     const result = `First:${one}, second:${two}`;
     console.log(result);
@@ -273,7 +273,7 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../../datagrok/navigation/views/table-view#search-patterns).
+To learn more, see [search patterns](../../navigation/views/table-view#search-patterns).
 </details>
 
 
@@ -319,7 +319,7 @@ to assure the validity of the parameters.
 
 The easiest way is to define a `validator` GrokScript expression that gets evaluated when input changes.
 Result `true` or `null` means that the input is valid. `false` or a string error message means that the input is invalid, 
-it gets highlighed and the validation message is shown in the tooltip. Note that the expression can depend not only on the
+it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
 <details>

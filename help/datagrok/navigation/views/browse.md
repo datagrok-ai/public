@@ -48,10 +48,10 @@ You may see view-specific options on top such as the **Create new connection** b
 * **Dashboards**: Dashboards
 * **Apps**: Installed apps
 * **Namespaces**: Here, you can create
-   folders that align with organizational use, such as by project or department. Each folder is a Datagrok [project](link) that can be shared with teams.  
+   folders that align with organizational use, such as by project or department. Each folder is a Datagrok [project](../../concepts/project/project.md) that can be shared with teams.  
 * **Files**: [File shares](../../../access/files/files.mdx)
 * **Databases**: Connections, queries, database schemas, tables, and columns
-* **Plugins**: All installed [plugins](link)
+* **Plugins**: All installed [plugins](../../plugins.md)
 * **Functions**: Queries, scripts, [OpenAPI](../../../access/open-api.md)
 * **Platform**: Users, groups, [connectors](../../../access/databases/connectors/connectors.md), notebooks, predictive models, repositories, dockers, [layouts](../../../visualize/view-layout.md), [sticky meta](../../../govern/catalog/sticky-meta.md)
 
@@ -80,13 +80,13 @@ When moving objects, you have two options:
 
 When you first log in, the **Browse** shows a landing view called **Home Page**. This view contains
 [widgets](../../../visualize/widgets.md) like **Recent projects** or **Usage**.
-The widgets you see depend on the [plugins](link) installed. For example, the
+The widgets you see depend on the [plugins](../../plugins.md) installed. For example, the
 **Recent projects** widget is provided by the [PowerPack
 package](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack),
 and the **Learn** widget appears with the [Tutorials
 package](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials).
 
-Above the main area , there is a search ribbon for [searching anything](link) both within and outside the platform.
+Above the main area , there is a search ribbon for searching anything both within and outside the platform.
 
 <br/>
 
@@ -178,9 +178,9 @@ To save your work, save the objects in the
 **Scratchpad** as a project using **SAVE** button. You can then share it with
 others. If you don't make any changes, the **SAVE** button is disabled.
 
-For [Table Views](table-view.md), when you save a project, you save both the underlying data (i.e., a [table](../../concepts/table.md)) and its [Layout]. To learn more, see [Saving](link).
+For [Table Views], when you save a project, you save both the underlying data (i.e., a [table] and its [Layout]. To learn more, see [Saving](link).
 
-**Scratchpad** is a [project](../../collaborate/project.md). This means you can move tables and other objects within, to and from **Scratchpad** using drag-and-drop, like any other **Browse** directory. To exclude objects from the Scratchpad, use its **Context Menu**.
+**Scratchpad** is a project. This means you can move tables and other objects within, to and from **Scratchpad** using drag-and-drop, like any other **Browse** directory. To exclude objects from the Scratchpad, use its **Context Menu**.
 
 .
 

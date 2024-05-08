@@ -10,7 +10,7 @@ a [table view](../../datagrok/navigation/views/table-view.md), along with the vi
 data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
 different dataset
 (**View | Layout | Open Gallery**). 
-Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
+Saved layouts that are [applicable](#layout-applicability) to the current table are shown in the 
 "Layouts" pane, see picture below.
 
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and

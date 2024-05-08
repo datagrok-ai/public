@@ -17,7 +17,7 @@ The platform has browsers for the following entities:
 
 | Entity Browser                                 | URL                                                                                |
 |------------------------------------------------|------------------------------------------------------------------------------------|
-| [Projects](../../datagrok/concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
+| [Projects](../concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
 | [Files](../../access/files/files.mdx)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../../compute/scripting/scripting.mdx)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
@@ -35,7 +35,7 @@ The platform has browsers for the following entities:
 
 ## Projects
 
-A [project](../../datagrok/concepts/project/project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
+A [project](../concepts/project/project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
 view, you can pass the name of a specific view to the URL so that you can see it after opening. Links to projects are
 generated according to the following
 rule: `https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}`
@@ -117,4 +117,4 @@ See also:
 
 * [Navigation](navigation.md)
 * [Entities](../concepts/objects.md)
-* [Smart search](../../explore/search-filter-select/smart-search.md)
+

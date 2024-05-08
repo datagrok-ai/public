@@ -46,7 +46,7 @@ function views, and analytical blocks are part of the
 
 [Data access](#data-access), [computations](#scalable-computations), and
 [visualizations](#exploratory-data-analysis) are the cornerstones of scientific computing. In Datagrok, all of them
-are [functions](https://datagrok.ai/help/datagrok/functions/function)
+are [functions](../datagrok/concepts/functions/functions.md)
 with the following features:
 
 * Advanced support for input and output parameters
@@ -119,8 +119,8 @@ graphics and results, and bringing it to life by making it interactive. Addition
 category, description, input type (slider/combo box/etc), and others are also taken into account.
 
 The simple examples are available in the 
-[adding viewers](getting-started#adding-viewers-for-output-dataframes)
-section of the [scripting](getting-started) tutorial.
+[adding viewers](scripting/getting-started.mdx#adding-viewers-for-output-dataframes)
+section of the [scripting](scripting/getting-started.mdx) tutorial.
 
 The [RichFunctionView](scripting/Advanced%20scripting/Advanced%20scripting.mdx##using-richfunctionview-input-control)
 editor allows you to create complex UI with parameter tabs and groups just by adding annotation comments.
@@ -498,7 +498,7 @@ as **Monte Carlo**:
 
 ![bioreactor-analysis.png](grid-analysis.png)
 
-Sensitivity Analysis can be applied to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"sens-analysis": true}` to enable it:
+Sensitivity Analysis can be applied to any function with the [RichFunctionView](scripting/Advanced%20scripting/Advanced%20scripting.mdx#running-scripts-with-richfunctionview) editor. Add `meta.features: {"sens-analysis": true}` to enable it:
 
 ```javascript
 //name: Test

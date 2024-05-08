@@ -510,10 +510,6 @@ To select rows in the [grid](../../../visualize/viewers/grid.md):
 | (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
 | (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
 
-
-
-
-
 ## Resources
 
 * [YouTube video](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=589s)

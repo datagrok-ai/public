@@ -52,7 +52,7 @@ file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`. Yo
 toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the
 moment you choose to upload it to the server. This is always done explicitly. See the list
 of [supported file formats](../../access/files/supported-formats.md)
-and read more about [saving data to the server](../../datagrok/concepts/project/project.md#uploading-a-project).
+and read more about [saving data to the server](/concepts/project/project.md#uploading-a-project).
 
 ### File browser
 
@@ -153,7 +153,7 @@ Some visual components, such as viewers, activate the context panel in a special
 viewer, you would click on a gear icon `⚙` in the top right corner of the viewer's header.
 
 What is more, the information provided for a current object can be expanded by means of
-[info panes](../../datagrok/navigation/panels/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
+[info panes](../navigation/panels/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
 
 ### Toolbox
 
@@ -299,5 +299,5 @@ is provided in the toolbox of the help icon.
 See also:
 
 * [Functions](../concepts/functions/functions.md)
-* [Info panes](../../datagrok/navigation/panels/info-panels.md)
+* [Info panes](../navigation/panels/info-panels.md)
 * [Entities](../concepts/objects.md)

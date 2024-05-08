@@ -8,17 +8,17 @@ We are using a number of great open-source projects in our platform. Here they a
 ## Data science
 
 * [OpenCPU](https://www.opencpu.org/) - integration with R
-* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](../compute/scripting/scripting.mdx),
-  and [notebooks](../compute/jupyter-notebook.md)
+* [Jupyter](https://jupyter.org/) - R, Python, Julia [scripting](../../compute/scripting/scripting.mdx),
+  and [notebooks](../../compute/jupyter-notebook.md)
 * [caret](https://github.com/topepo/caret/) - predictive modeling engine
 * [scikit-learn](https://scikit-learn.org/) - predictive modeling engine
 * [H2O](https://github.com/topepo/caret/) - predictive modeling engine
 
 ## Cheminformatics
 
-* [RDKit](https://www.rdkit.org/) - server-side and client-side [cheminformatics](../datagrok/solutions/domains/chem/chem.md)
+* [RDKit](https://www.rdkit.org/) - server-side and client-side [cheminformatics](../solutions/domains/chem/chem.md)
 * [OpenChemLib JS](https://github.com/cheminfo/openchemlib-js) -
-  client-side [cheminformatics](../datagrok/solutions/domains/chem/chem.md)
+  client-side [cheminformatics](../solutions/domains/chem/chem.md)
 * [NGL Viewer](https://nglviewer.org/) - web-based molecular graphics
 * [Deepchem](https://deepchem.io/) - deep learning for drug discovery
 * [MoleculeNet](https://moleculenet.org/) - a benchmark for molecular machine learning

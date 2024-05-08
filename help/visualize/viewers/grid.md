@@ -253,7 +253,7 @@ To show data from multiple columns, you can design a form:
 
 1. Right-click a cell, select **Add** > **Forms** > **Design a Form...**. This
    opens a [form viewer](forms.md).  
-1. In the form viwer, column names and values are shown as individual components
+1. In the form viewer, column names and values are shown as individual components
    that you can edit. Design your form with clicks and drags.
 1. Once done, click the **CLOSE AND APPLY** button to add the form as a column to your dataset.
 

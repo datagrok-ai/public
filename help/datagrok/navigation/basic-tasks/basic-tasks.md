@@ -19,7 +19,7 @@ To open a file, table, or other object in Datagrok, open **Browse** (**Sidebar**
 open.
 
 To learn more about data access options, see the
-[Access](../../access/access.md) section of our documentation.
+[Access](../../../access/access.md) section of our documentation.
 
 ## Save
 
@@ -37,16 +37,16 @@ where to save it.
 
 ### Table Views
 
-When you open a CSV file or run a [function](../concepts/functions/functions.md)
+When you open a CSV file or run a [function](../../concepts/functions/functions.md)
 that produces a table, it opens a [Table
 View](../navigation/views/table-view.md) resembling Excel. Here, you can edit both the data
-(the [table](../concepts/objects.md)) and it visual representation (the
-[layout](../../visualize/view-layout.md)).
+(the [table](../../concepts/objects.md)) and it visual representation (the
+[layout](../../../visualize/view-layout.md)).
 
-Tables and layouts are separate [entities](../concepts/objects.md). This means you can
+Tables and layouts are separate [entities](../../concepts/objects.md). This means you can
 choose to save changes made to the data, layout, or both.
 
-All _entities_ are stored within [projects](../concepts/project/project.md).
+All _entities_ are stored within [projects](../../concepts/project/project.md).
 Based on your privileges, you can either update the original project, or create
 a copy with your changes.
 
@@ -77,16 +77,16 @@ To save:
 
 ## Share
 
-You can share Datagrok [entities](../concepts/objects.md) with other users or
-[groups](../govern/group.md). When you share an entity, you grant a
-[privilege](../govern/authorization.md) (typically, _view_ or _edit_) to others.
+You can share Datagrok [entities](../../concepts/objects.md) with other users or
+[groups](../../../govern/group.md). When you share an entity, you grant a
+[privilege](../../../govern/authorization.md) (typically, _view_ or _edit_) to others.
 To learn how to manage groups and privileges, see
-[Security](../govern/security.md).
+[Security](../../../govern/security.md).
 
 You can share _entities_ in two ways:
 
 1. Via context actions, accessible through the **Context Menu** (right-click) or
-   the [Context Panel](../navigation/panels/panels.md#context-panel).
+   the [Context Panel](../panels/panels.md#context-panel).
 1. By sharing the entity's URL. To access an entity via an URL, the recipient
    needs appropriate permissions. The URL links never expire, can't be revoked,
    and may break if the entity is renamed. Use them with caution.
@@ -149,7 +149,7 @@ To download all open tables at once, you have two options:
 1. Create a zip archive with separate CVS files. To do this, select the **CSV
 and PNG as ZIP** command. This generates a zip file that includes CSV files for
 each open table, along with "screenshots" that capture the current visual state
-of all viewers, including [grid](../../visualize/viewers/grid.md).
+of all viewers, including [grid](../../../visualize/viewers/grid.md).
 1. Save open tables as individual worksheets in an XLSX file. To do this, select
    the **As Excel Document** command. This creates a separate worksheet within
    the Excel file for each open table.
@@ -161,7 +161,7 @@ screenshots that you can resize or delete as needed.
 :::tip
 
 In Datagrok, the underlying data (tables) and their visual representations
-([layout](../../visualize/view-layout.md)) are distinct entities. You can download a _layout_ for any
+([layout](../../../visualize/view-layout.md)) are distinct entities. You can download a _layout_ for any
 open table. 
 
 To download a layout, in the **Top Menu**, select **View** > **Layouts** >

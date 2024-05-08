@@ -19,6 +19,6 @@ Right-click on the project picture to see available options.
 See also:
 
 * [Project](project.md)
-* [Data connection](../access/access.md#data-connection)
-* [Data query](../access/access.md#data-query)
-* [Function call](../datagrok/concepts/functions/function-call.md)
+* [Data connection](../../../access/access.md#data-connection)
+* [Data query](../../../access/access.md#data-query)
+* [Function call](../functions/function-call.md)

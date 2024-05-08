@@ -27,13 +27,13 @@ Viewers are docked within a view. To rearrange it, start dragging viewer's heade
 move the mouse cursor to one of them and release the mouse button to dock the viewer at that spot. To resize the viewer,
 drag the viewer's border.
 
-![viewers-interaction-main](../../datagrok/navigation/views/img/viewers-interaction-main.gif)
+![viewers-interaction-main](../navigation/views/img/viewers-interaction-main.gif)
 
 <br/>
 
 :::tip
 
-For quick profiling, use the **Plots** [info pane](link). Datagrok automatically generates visualizations when you select one or more columns.
+For quick profiling, use the **Plots** info pane. Datagrok automatically generates visualizations when you select one or more columns.
 
 ![](../../deploy/releases/platform/img/plots-info-pane.gif)
 
@@ -61,11 +61,11 @@ View class.
 ## Layouts
 
 View Layout contains relative positions of viewers in
-a [table view](../../datagrok/navigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../navigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
 different dataset
 (**View | Layout | Open Gallery**). 
-Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
+Saved layouts that are [applicable](../../visualize/view-layout.md#layout-applicability) to the current table are shown in the 
 "Layouts" pane, see picture below.
 
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
@@ -94,7 +94,7 @@ viewers:
 | Shift+Click      | Select point or group              |
 | Ctrl+Shift+Click | Deselect point or group            |
 
-To select rows in the [grid](grid.md):
+To select rows in the [grid](../../visualize/viewers/grid.md):
 
 |                                 |                                        |
 |---------------------------------|----------------------------------------|
@@ -109,7 +109,7 @@ To select rows in the [grid](grid.md):
 | (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
 | (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
 
-![viewers-selection](img/viewers-selection.gif)
+![viewers-selection](../navigation/views/img/viewers-selection.gif)
 
 ## Current rows
 
@@ -125,22 +125,20 @@ you move from one row to another you immediately see where the row values belong
 the most similar structure to the reference. This also works the other way around: by first clicking on a visual
 element, you will see the row it represents in the grid.
 
-![current-rows](img/current-rows-2.gif "Current rows")
+![current-rows](../navigation/views/img/current-rows-2.gif "Current rows")
 
 ## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
 
-![filters](img/filters.gif)
+![filters](../navigation/views/img/filters.gif)
 
-Alternatively, click on the column's "hamburger icon" to filter by the individual column:
-
-![grid-column-filter](img/grid-column-filter.png)
+Alternatively, click on the column's "hamburger icon" to filter by the individual column.
 
 ### Viewers as filters
 
 By default, clicking on a segment that represents multiple rows will select these rows. However, some viewers, such
-as [Bar Chart](bar-chart.md) and [Pie Chart](pie-chart.md), could be also used for filtering of the
+as [Bar Chart](../../visualize/viewers/bar-chart.md) and [Pie Chart](../../visualize/viewers/pie-chart.md), could be also used for filtering of the
 underlying table. Such viewers are a popular choice for interactive dashboards.
 
 [![Filters](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4201s)
@@ -154,7 +152,7 @@ this sets two different [properties](#properties) of a viewer:
 By setting these properties manually, it is possible to achieve different combination of interactivity (for instance, a
 viewer that shows only selected rows)
 
-![viewers-as-filters](img/viewers-as-filters.gif)
+![viewers-as-filters](../navigation/views/img/viewers-as-filters.gif)
 
 ## Common actions
 
@@ -174,8 +172,8 @@ The following commands are the most common:
 
 |            |                                                                                                                                                                                             |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Properties | Show viewer properties in the [context panel](../../datagrok/navigation/panels/panels.md#context-panel)                                                                                        |
-| Reset View | Reset zoom level. Applies for: [Scatter plot](scatter-plot.mdx), [Line chart](line-chart.md), [Bar chart](bar-chart.md), [3D scatter plot](3d-scatter-plot.md), and [Box plot](box-plot.md) |
+| Properties | Show viewer properties in the [context panel](../navigation/panels/panels.md#context-panel)                                                                                        |
+| Reset View | Reset zoom level. Applies for: [Scatter plot](../../visualize/viewers/scatter-plot.mdx), [Line chart](../../visualize/viewers/line-chart.md), [Bar chart](../../visualize/viewers/bar-chart.md), [3D scatter plot](../../visualize/viewers/3d-scatter-plot.md), and [Box plot](../../visualize/viewers/box-plot.md) |
 
 General commands are available under the **General** submenu:
 
@@ -184,8 +182,8 @@ General commands are available under the **General** submenu:
 | Clone           | Create a copy of the viewer                                            |
 | Full Screen     | Show in full screen. **Alt+F**                                         |
 | Close           | Close the viewer                                                       |
-| Use in Trellis  | Add a [Trellis plot](trellis-plot.md), using this viewer as a renderer |
-| Save to Gallery | Saves this viewer to a [gallery](../view-layout.md#layout-suggestions) |
+| Use in Trellis  | Add a [Trellis plot](../../visualize/viewers/trellis-plot.md), using this viewer as a renderer |
+| Save to Gallery | Saves this viewer to a [gallery](../../visualize/view-layout.md#layout-suggestions) |
 | Embed           | Create HTML code that can be embedded in an external site              |
 
 Style-related commands reside under the **Style** submenu:
@@ -230,7 +228,7 @@ select `Viewer | Properties`.
 
 [![Properties](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
 
-![viewer-property-panel](img/viewer-property-panel.gif)
+![viewer-property-panel](../navigation/views/img/viewer-property-panel.gif)
 
 ## Tooltips
 
@@ -265,11 +263,11 @@ The following picture illustrates the concept:
 
 To help users analyze their data in depth, our visualizations include a number of statistical features:
 
-* Box plots show [p-value](box-plot.md#t-test), which allows to determine whether the findings are statistically
+* Box plots show [p-value](../../visualize/viewers/box-plot.md#t-test), which allows to determine whether the findings are statistically
   significant
-* Scatter plots can display a [regression line](scatter-plot.mdx#regression-line) along with its equation;
+* Scatter plots can display a [regression line](../../visualize/viewers/scatter-plot.mdx#regression-line) along with its equation;
   moreover, it is possible to plot multiple regression lines by encoding categories with color
-* The values of Pearson's correlation coefficient computed for [correlation plots](correlation-plot.md) are
+* The values of Pearson's correlation coefficient computed for [correlation plots](../../visualize/viewers/correlation-plot.md) are
   highlighted, which makes it easy to trace the strength of relationship between given variables
 * Statistics viewer gives a concise summary of commonly used [measures](statistics.md#statistical-measures) for
   selected columns
@@ -293,8 +291,3 @@ works only for data uploaded as a project to the server.
 
 [![Viewers](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=67LzPsdNrEc)
 
-See also:
-
-* [Table view](../../datagrok/navigation/views/table-view.md)
-* [Column selectors](column-selectors.md)
-* [Chemically-aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md)

@@ -67,9 +67,9 @@ A view may have these elements associated with it:
 <Tabs>
 <TabItem value="table-view" label="Table View">
 
-The [Table View](link) is used to analyze tabular data.
+The [Table View](../navigation/views/table-view.md) is used to analyze tabular data.
 
-Similar to Excel, the **Top Menu** lets you edit the dataset, format cells, and so on. The **Toolbox** lets you add [viewers](link), apply [layouts](link), refresh dashboards,
+Similar to Excel, the **Top Menu** lets you edit the dataset, format cells, and so on. The **Toolbox** lets you add [viewers](../../visualize/viewers/viewers.md), apply [layouts](../../visualize/view-layout.md), refresh dashboards,
 and more.
 
 ![](img/table-view-marked-up.gif)
@@ -77,7 +77,7 @@ and more.
 </TabItem>
 <TabItem value="browse" label="Browse">
 
-[Browse](link) is used for navigation and data management. From its **Top Menu**, you can open local files, toggle preview, refresh the view, and more.
+[Browse](views/browse.md) is used for navigation and data management. From its **Top Menu**, you can open local files, toggle preview, refresh the view, and more.
 
 ![](img/browse-marked-up.gif)
 
@@ -104,15 +104,15 @@ debug, or save changes to the query. <br/>
 Located on the far right, panels provide additional windows alongside your main
 _view_ and include:
 
-* [Context Panel](link): Shows information and options for your current
+* [Context Panel](../navigation/panels/panels.md#context-panel): Shows information and options for your current
   object. For example, clicking a molecule shows details
   like its weight or toxicity. Clicking a query shows its SQL code and
   parameters. 
-* [Context Help](link): Shows a help page for your current object.
-* [Console](link): Automatically logs every function call associated
+* [Context Help](../navigation/panels/panels.md#context-help): Shows a help page for your current object.
+* [Console](../navigation/panels/panels.md#console): Automatically logs every function call associated
   with visual data transformations. You can also use it to call functions
   directly.
-* [Variables](link): Used to declare variables in your current view.
+* [Variables](../navigation/panels/panels.md#variables): Used to declare variables in your current view.
 
 By default, only **Context Panel** and **Context Help** are visible. Depending
 on your needs, you can toggle visibility of any panel from the **Status Bar**.
@@ -152,6 +152,6 @@ changes happen in the UI:
 * A **Top Menu** item labeled **Chem** appears.
 * Context actions now show molecule specific commands like "sketch" or "copy as SMILES".
 * The **Table View** includes a new substructure based filter.
-* Clicking a molecule updates the [Context Panel](link) with molecule-specific info panes.
+* Clicking a molecule updates the [Context Panel](../navigation/panels/panels.md#context-panel) with molecule-specific info panes.
 
 ![Chem dataset exploration](../solutions/domains/chem/img/chem-exploration.png)

@@ -63,8 +63,7 @@ as an example.
 It is possible to define your own semantic types. To apply a custom detector,
 first define a function that determines the corresponding semantic type in your
 [detectors.js](../develop.md#package-structure) file. Then you can write a
-function for auto-detection, as done in our demo package
-[Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer).
+function for auto-detection<!--, as done in our demo package [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer) -->.
 
 ### Scripts
 

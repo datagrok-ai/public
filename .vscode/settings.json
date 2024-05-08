@@ -54,6 +54,7 @@
         "Phylo",
         "Phylocanvas",
         "Phylotree",
+        "qnum",
         "QSAR",
         "QSPR",
         "rdkit",
@@ -74,7 +75,6 @@
     ],
 
     "files.exclude": {
-        "**/*-test.md": {},
         "**/*-test.side": {},
         "**/*.d.ts": {"when": "$(basename).ts"},
         "**/*.js": {"when": "$(basename).ts"},
