@@ -1,16 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import {ILineSeries} from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {MmpRules} from './mmp-fragments';
+import {MmpRules, MmpInput} from './mmp-constants';
 import {SUBSTRUCT_COL} from '../../constants';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MMP_COL_PAIRNUM_FROM,
   MMP_COL_PAIRNUM_TO, MMP_COLNAME_MEANDIFF, MMP_COLNAME_DIFF, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME,
   MMP_COLOR,
   columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
-import { createColumnWithDescription } from './mmp-generations';
+import {createColumnWithDescription} from './mmp-generations';
 
-function calculateActivityDiffs(molecules: DG.Column, activities: DG.ColumnList,
+function calculateActivityDiffs(mmpInput: MmpInput,
   mmpRules: MmpRules, variates: number, allCasesNumber: number) :
   { maxActs: number [],
     fromFrag: string[],
@@ -66,12 +66,12 @@ function calculateActivityDiffs(molecules: DG.Column, activities: DG.ColumnList,
       const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
       const idx2 = mmpRules.rules[i].pairs[j].secondStructure;
 
-      molFrom[pairIdx] = molecules.get(idx1);
-      molTo[pairIdx] = molecules.get(idx2);
+      molFrom[pairIdx] = mmpInput.molecules.get(idx1);
+      molTo[pairIdx] = mmpInput.molecules.get(idx2);
 
       for (let k = 0; k < variates; k++) {
         //TODO: make more efficient
-        const col = activities.byIndex(k);
+        const col = mmpInput.activities.byIndex(k);
         const diff = col.get(idx2) - col.get(idx1);
         diffs[k][pairIdx] = diff;
         if (diff > 0) {
@@ -211,7 +211,7 @@ function getCasesGrid(variates: number, molFrom: string[], molTo: string[], pair
   return pairedTransformations.plot.grid();
 }
 
-export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.ColumnList, mmpRules: MmpRules,
+export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: MmpRules,
   allCasesNumber: number, palette: PaletteCodes): {
   maxActs: number[],
   diffs: Array<Float32Array>,
@@ -222,15 +222,15 @@ export function getMmpActivityPairsAndTransforms(molecules: DG.Column, activitie
   lines: ILineSeries,
   linesActivityCorrespondance: Uint32Array
 } {
-  const variates = activities.length;
-  const activityDiffs = calculateActivityDiffs(molecules, activities, mmpRules, variates, allCasesNumber);
+  const variates = mmpInput.activities.length;
+  const activityDiffs = calculateActivityDiffs(mmpInput, mmpRules, variates, allCasesNumber);
 
   const [activityMeanNames, allPairsGrid] = getAllPairsGrid(variates, activityDiffs.fromFrag, activityDiffs.toFrag,
-    activityDiffs.occasions, activities, activityDiffs.meanDiffs);
+    activityDiffs.occasions, mmpInput.activities, activityDiffs.meanDiffs);
 
   const casesGrid = getCasesGrid(variates, activityDiffs.molFrom, activityDiffs.molTo, activityDiffs.pairNum,
     activityDiffs.molNumFrom, activityDiffs.molNumTo, activityDiffs.pairsFromSmiles,
-    activityDiffs.pairsToSmiles, activityDiffs.ruleNum, activities, activityDiffs.diffs);
+    activityDiffs.pairsToSmiles, activityDiffs.ruleNum, mmpInput.activities, activityDiffs.diffs);
 
   const lines =
     createLines(variates, activityDiffs.activityPairsIdxs, activityDiffs.molNumFrom, activityDiffs.molNumTo, palette);

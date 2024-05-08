@@ -1226,7 +1226,7 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
-  return await chemDiversitySearch(col, similarityMetric[metricName], limit, 
+  return await chemDiversitySearch(col, similarityMetric[metricName], limit,
     fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
 
@@ -1301,7 +1301,7 @@ export function addScaffoldTree(): void {
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<MmpAnalysis> {
   const view = grok.shell.tv;
-  const mmp = await MmpAnalysis.init(table, molecules, activities, fragmentCutoff);
+  const mmp = await MmpAnalysis.init({table, molecules, activities, fragmentCutoff});
 
   //need this workaround with closing dock node since element cannot be docked repeatedly
   mmp.mmpView.root.classList.add('mmpa');

@@ -4,23 +4,24 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {getMmpFrags, getMmpRules, MmpRules} from './mmp-fragments';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
+  MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MmpRules, MmpInput} from './mmp-constants';
+import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
+import {getMmpFrags, getMmpRules} from './mmp-fragments';
 import {getMmpActivityPairsAndTransforms} from './mmp-pairs-transforms';
 import {getMmpTrellisPlot} from './mmp-frag-vs-frag';
+import {fillPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
+import {getGenerations} from './mmp-generations';
+
+import {debounceTime} from 'rxjs/operators';
+import {getSigFigs} from '../../utils/chem-common';
+import {drawMoleculeLabels} from '../../rendering/molecule-label';
 
 import {ILineSeries, MouseOverLineEvent, ScatterPlotLinesRenderer}
   from '@datagrok-libraries/utils/src/render-lines-on-sp';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {debounceTime} from 'rxjs/operators';
-import {getSigFigs} from '../../utils/chem-common';
-
-import {fillPairInfo, getMmpScatterPlot, runMmpChemSpace} from './mmp-cliffs';
-import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
-import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
-  MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
-import {drawMoleculeLabels} from '../../rendering/molecule-label';
-import {getGenerations} from './mmp-generations';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
@@ -233,7 +234,7 @@ export class MmpAnalysis {
     return tabs;
   }
 
-  constructor(table: DG.DataFrame, molecules: DG.Column, palette: PaletteCodes,
+  constructor(mmpInput: MmpInput, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer,
@@ -243,8 +244,8 @@ export class MmpAnalysis {
     rdkitModule: RDModule) {
     this.rdkitModule = rdkitModule;
 
-    this.parentTable = table;
-    this.parentCol = molecules;
+    this.parentTable = mmpInput.table;
+    this.parentCol = mmpInput.molecules;
     this.colorPalette = palette;
     this.mmpRules = rules;
 
@@ -280,7 +281,7 @@ export class MmpAnalysis {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
         grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-          casesGrid.dataFrame, diffs, table, rdkitModule, this.propPanelViewer);
+          casesGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer);
         this.lastSelectedPair = event.id;
       }
     });
@@ -294,41 +295,41 @@ export class MmpAnalysis {
     this.propPanelViewer.columns = propertiesColumnsNames;
   }
 
-  static async init(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList, fragmentCutoff: number) {
+  static async init(mmpInput: MmpInput) {
     //rdkit module
     const module = getRdKitModule();
 
     //initial calculations
     const t1 = performance.now();
-    const frags = await getMmpFrags(molecules);
+    const frags = await getMmpFrags(mmpInput.molecules);
     const t2 = performance.now();
-    const [mmpRules, allCasesNumber] = await getMmpRules(frags, fragmentCutoff);
+    const [mmpRules, allCasesNumber] = await getMmpRules(frags, mmpInput.fragmentCutoff);
     const t3 = performance.now();
     console.log(`Call to fragments took ${t2 - t1} milliseconds`);
     console.log(`Call to rules took ${t3 - t2} milliseconds`);
-    const palette = getPalette(activities.length);
+    const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
     const {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
-      getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, palette);
+      getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames, palette);
 
-    const embedColsNames = getEmbeddingColsNames(table).map((it) => `~${it}`);
+    const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
     //Cliffs tab
     const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] =
-      getMmpScatterPlot(table, activities, maxActs, embedColsNames);
-    drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
+      getMmpScatterPlot(mmpInput, maxActs, embedColsNames);
+    drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
-    const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, linesActivityCorrespondance,
+    const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      getGenerations(molecules, frags, allPairsGrid, activityMeanNames, activities, module);
+      getGenerations(mmpInput, frags, allPairsGrid, activityMeanNames, module);
 
-    return new MmpAnalysis(table, molecules, palette, mmpRules, diffs, linesIdxs,
+    return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
       colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
   }
