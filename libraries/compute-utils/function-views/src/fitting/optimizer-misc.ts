@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 // Oprimizer routine
 
 import * as DG from 'datagrok-api/dg';
@@ -42,7 +43,19 @@ export class InconsistentTables extends Error {
   }
 }
 
-// Sleep function
+/** Sleep function */
 export function sleep(ms: number) {
   return new Promise((resolve, reject) => setTimeout(resolve, ms));
 };
+
+/** Distance between point */
+export function distance(x: Float32Array, y: Float32Array): number {
+  if (x.length !== y.length)
+    throw new Error('Inconsistent found points');
+
+  let max = 0;
+
+  x.forEach((val, idx) => max = Math.max(Math.abs(val - y[idx]) / Math.max(1e-20, Math.abs(val)), max));
+
+  return max;
+}

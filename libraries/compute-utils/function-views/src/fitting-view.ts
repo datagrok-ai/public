@@ -16,7 +16,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -322,6 +322,17 @@ export class FittingView {
     window.open('https://datagrok.ai/help/compute/#input-parameter-optimization', '_blank');
   }, 'Open help in a new tab');
 
+  private showFailsBtn = ui.button('Issues', () => {
+    switch (this.method) {
+    case METHOD.NELDER_MEAD:
+      this.showNelderMeadFails();
+      break;
+
+    default:
+      throw new Error(`Not implemented the '${this.method}' method`);
+    }
+  }, 'Show issues');
+
   private gridClickSubscription: any = null;
   private gridCellChangeSubscription: any = null;
 
@@ -460,6 +471,8 @@ export class FittingView {
     ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
     ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
+
+    this.showFailsBtn.style.padding = '0px';
 
     this.samplesCountInput.addCaption(TITLE.SAMPLES);
     this.samplesCountInput.onChanged(() => {
@@ -819,6 +832,9 @@ export class FittingView {
       if (this.samplesCount < 1)
         return;
 
+      if (this.similarity < FITTING_UI.SIMILARITY_MIN)
+        return;
+
       this.failsDF = null;
 
       // inputs of the source function
@@ -930,11 +946,11 @@ export class FittingView {
       else
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      const extremums = optResult.extremums;
-      const rowCount = extremums.length;
+      const allExtremums = optResult.extremums;
+      const allExtrCount = allExtremums.length;
 
       // Process fails
-      if (rowCount < this.samplesCount) {
+      if (allExtrCount < this.samplesCount) {
         this.failsDF = optResult.fails;
         const cols = this.failsDF!.columns;
 
@@ -952,15 +968,42 @@ export class FittingView {
             new Array(this.failsDF?.rowCount).fill(inp.const.value),
           ));
         });
-
-        this.showFittingFails();
-
-        if (rowCount < 1)
-          return;
       }
+
+      const extremums: Extremum[] = [allExtremums[0]];
+
+      allExtremums.forEach((extr) => {
+        let toPush = true;
+
+        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point) > this.similarity));
+
+        if (toPush)
+          extremums.push(extr);
+      });
+
+      const rowCount = extremums.length;
+
+      // Show info/warning reporting results
+      if (allExtrCount < this.samplesCount) {
+        if (allExtrCount < 1) {
+          grok.shell.warning(ui.divV([
+            ui.label(`Failed to find ${this.samplesCount} points`),
+            ui.div([this.showFailsBtn]),
+          ]));
+
+          return;
+        } else {
+          grok.shell.info(ui.divV([
+            ui.label(`Found ${rowCount} points`),
+            ui.div([this.showFailsBtn]),
+          ]));
+        }
+      } else
+        grok.shell.info(`Found ${rowCount} points`);
 
       this.clearPrev();
       extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
       const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
@@ -1281,31 +1324,6 @@ export class FittingView {
       this.gridCellChangeSubscription = null;
     }
   } // clearPrev
-
-  /** Show fitting failes */
-  private showFittingFails(): void {
-    if (this.failsDF === null)
-      return;
-
-    const btn = ui.button('Issues', () => {
-      switch (this.method) {
-      case METHOD.NELDER_MEAD:
-        this.showNelderMeadFails();
-        break;
-
-      default:
-        throw new Error(`Not implemented the '${this.method}' method`);
-      }
-    }, 'Show issues');
-
-    btn.style.padding = '0px';
-    const div = ui.divV([
-      ui.label(`Failed to find ${this.samplesCount} points`),
-      ui.div([btn]),
-    ]);
-
-    grok.shell.warning(div);
-  } // showFittingFails
 
   /** Show fails of the Nelder-Mead fails */
   private showNelderMeadFails(): void {
