@@ -14,7 +14,7 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
-import {NELDER_MEAD_DEFAULTS, NelderMeadSettings, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
+import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum} from './fitting/optimizer-misc';
 
@@ -353,15 +353,7 @@ export class FittingView {
   });
 
   // The Nelder-Mead method settings
-  private nelderMeadSettings: NelderMeadSettings = {
-    tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
-    maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
-    nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
-    initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
-    scaleReflaction: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
-    scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
-    scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
-  };
+  private nelderMeadSettings = new Map<string, number>();
 
   // Gradient descent settings
   private gradDescentSettings = {
@@ -439,6 +431,8 @@ export class FittingView {
 
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
+    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+
     const rbnPanels = this.comparisonView.getRibbonPanels();
     rbnPanels.push([this.helpIcon, this.runIcon]);
     this.comparisonView.setRibbonPanels(rbnPanels);
@@ -484,74 +478,44 @@ export class FittingView {
 
   /** Generate UI for the Nelder-Mead method settings */
   private generateNelderMeadSettingsInputs(): void {
-    const tolInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('tolerance'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.TOLERANCE,
-      min: 1e-20,
-      max: 1e-1,
-    }));
-    tolInp.onChanged(() => this.nelderMeadSettings.tolerance = tolInp.value);
+    const inputs: DG.InputBase[] = [];
 
-    const maxIterInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('maxIter'),
-      inputType: 'Int',
-      defaultValue: NELDER_MEAD_DEFAULTS.MAX_ITER,
-      min: 1,
-      max: 10000,
-    }));
-    maxIterInp.onChanged(() => this.nelderMeadSettings.maxIter = maxIterInp.value);
+    nelderMeadSettingsVals.forEach((vals, key) => {
+      const inp = ui.input.forProperty(DG.Property.fromOptions({
+        name: nelderMeadCaptions.get(key),
+        inputType: (key !== 'maxIter') ? 'Float' : 'Int',
+        defaultValue: vals.default,
+        min: vals.min,
+        max: vals.max,
+      }));
 
-    const nonZeroParamInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('nonZeroParam'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
-      min: 1e-20,
-      max: 1e-1,
-    }));
-    nonZeroParamInp.onChanged(() => this.nelderMeadSettings.nonZeroParam = nonZeroParamInp.value);
+      inp.addCaption(nelderMeadCaptions.get(key)!);
+      inp.nullable = false;
 
-    const initialScaleInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('initialScale'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
-      min: 1e-20,
-      max: 1e-1,
-    }));
-    initialScaleInp.onChanged(() => this.nelderMeadSettings.initialScale = initialScaleInp.value);
+      inp.onChanged(() => {
+        this.nelderMeadSettings.set(key, inp.value);
+        this.updateApplicabilityState();
+      });
 
-    const scaleReflactionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('scaleReflaction'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
-    }));
-    scaleReflactionInp.onChanged(() => this.nelderMeadSettings.scaleReflaction = scaleReflactionInp.value);
+      inputs.push(inp);
+    });
 
-    const scaleExpansionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('scaleExpansion'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
-    }));
-    scaleExpansionInp.onChanged(() => this.nelderMeadSettings.scaleExpansion = scaleExpansionInp.value);
-
-    const scaleContractionInp = ui.input.forProperty(DG.Property.fromOptions({
-      name: nelderMeadCaptions.get('scaleContraction'),
-      inputType: 'Float',
-      defaultValue: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
-    }));
-    scaleContractionInp.onChanged(() => this.nelderMeadSettings.scaleContraction = scaleContractionInp.value);
-
-    this.settingsInputs.set(METHOD.NELDER_MEAD, [
-      tolInp,
-      maxIterInp,
-      nonZeroParamInp,
-      initialScaleInp,
-      scaleReflactionInp,
-      scaleExpansionInp,
-      scaleContractionInp,
-    ]);
+    this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
   } // generateNelderMeadSettingsInputs
 
+  /** Check correctness of the Nelder-Mead settings */
+  private areNelderMeadSettingsCorrect(): boolean {
+    for (const [key, val] of this.nelderMeadSettings) {
+      if ((val === null) || (val === undefined) || (val > nelderMeadSettingsVals.get(key)!.max) || (val < nelderMeadSettingsVals.get(key)!.min)) {
+        this.updateRunIconDisabledTooltip(`Invalid "${key}": check method settings`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** Generate UI for the gradient descent method */
   private generateGradDescentSettingsInputs(): void {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'iterations',
@@ -572,13 +536,34 @@ export class FittingView {
     learningRateInp.onChanged(() => this.gradDescentSettings.learningRate = learningRateInp.value);
 
     this.settingsInputs.set(METHOD.GRAD_DESC, [iterInp, learningRateInp]);
+  } // generateGradDescentSettingsInputs
+
+  /** Check correctness of the gradient descent settings */
+  private areGradDescentSettingsCorrect(): boolean {
+    return false;
   }
 
+  /** Check correctness of the method settings */
+  private areMethodSettingsCorrect(): boolean {
+    switch (this.method) {
+    case METHOD.NELDER_MEAD:
+      return this.areNelderMeadSettingsCorrect();
+
+    case METHOD.GRAD_DESC:
+      return this.areGradDescentSettingsCorrect();
+
+    default:
+      return true;
+    }
+  } // areMethodSettingsCorrect
+
+  /** Create UI for each method */
   private generateSettingInputs(): void {
     this.generateNelderMeadSettingsInputs();
     this.generateGradDescentSettingsInputs();
   }
 
+  /** Show settings UI of the current method */
   private showHideSettingInputs(): void {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
@@ -687,6 +672,7 @@ export class FittingView {
     });
   } // updateRunIconDisabledTooltip
 
+  /** Check applicability of fitting */
   private updateApplicabilityState(): void {
     this.readyToRun = this.canFittingBeRun();
     this.updateRunIconStyle();
@@ -784,19 +770,19 @@ export class FittingView {
 
   /** Check inputs/outputs/settings */
   private canFittingBeRun(): boolean {
-    return this.areInputsReady() && this.areOutputsReady() && this.isSamplesCountValid();
-  } // canFittingBeRun
+    return this.areInputsReady() && this.areOutputsReady() && this.isSamplesCountValid() && this.areMethodSettingsCorrect();
+  }
 
   /** Return names of the fixed inputs */
   private getFixedInputs() {
     return Object.keys(this.store.inputs).filter((propName) => !this.store.inputs[propName].isChanging.value);
-  } // getFixedInputs
+  }
 
   /** Return names of the fitted inputs */
   private getFittedInputs() {
     return Object.keys(this.store.inputs)
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
-  } // getFittedInputs
+  }
 
   /** Perform optimization */
   private async runOptimization(): Promise<void> {

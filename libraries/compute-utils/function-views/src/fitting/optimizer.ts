@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
-import {optimizeNM, NelderMeadSettings} from './optimizer-nelder-mead';
+import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
 import {MS_TO_SLEEP} from './constants';
 
@@ -10,7 +10,7 @@ export async function performNelderMeadOptimization(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   paramsBottom: Float32Array,
   paramsTop: Float32Array,
-  settings: NelderMeadSettings,
+  settings: Map<string, number>,
   samplesCount: number = 1,
 ): Promise<OptimizationResult> {
   const params = sampleParams(samplesCount, paramsTop, paramsBottom);

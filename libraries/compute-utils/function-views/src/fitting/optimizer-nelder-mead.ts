@@ -1,48 +1,37 @@
-import {Extremum, IOptimizer} from './optimizer-misc';
+import {Extremum, IOptimizer, Setting} from './optimizer-misc';
 
-/** The Nelder-Mead method settings */
-export type NelderMeadSettings = {
-  tolerance: number,
-  maxIter: number,
-  nonZeroParam: number,
-  initialScale: number,
-  scaleReflaction: number,
-  scaleExpansion: number,
-  scaleContraction: number,
-};
-
-/** Default values for the Nelder-Mead method */
-export enum NELDER_MEAD_DEFAULTS {
-  TOLERANCE = 0.000001,
-  MAX_ITER = 50,
-  NON_ZERO_PARAM = 0.0001,
-  INITIAL_SCALE = 0.02,
-  SCALE_REFLECTION = 1,
-  SCALE_EXPANSION = 2,
-  SCALE_CONTRACTION = -0.5,
-};
+/** The Nelder Mead seetings vals */
+export const nelderMeadSettingsVals = new Map<string, Setting>([
+  ['tolerance', {default: 0.000001, min: 1e-20, max: 1e-1}],
+  ['maxIter', {default: 50, min: 1, max: 10000}],
+  ['nonZeroParam', {default: 0.0001, min: 1e-20, max: 1e-1}],
+  ['initialScale', {default: 0.02, min: 1e-20, max: 1e-1}],
+  ['scaleReflaction', {default: 1, min: 1, max: 2}],
+  ['scaleExpansion', {default: 2, min: 1, max: 2}],
+  ['scaleContraction', {default: -0.5, min: -0.5, max: 0}],
+]);
 
 /** Captions for the Nelder-Mead method settings */
 export const nelderMeadCaptions = new Map([
-  ['tolerance', 'Tolerance'],
-  ['maxIter', 'Max iterations'],
-  ['nonZeroParam', 'Non-zero param'],
-  ['initialScale', 'Initial scale'],
-  ['scaleReflaction', 'Scale reflection'],
-  ['scaleExpansion', 'Scale expansion'],
-  ['scaleContraction', 'Scale contraction'],
+  ['tolerance', 'tolerance'],
+  ['maxIter', 'max iterations'],
+  ['nonZeroParam', 'non-zero param'],
+  ['initialScale', 'initial scale'],
+  ['scaleReflaction', 'scale reflection'],
+  ['scaleExpansion', 'scale expansion'],
+  ['scaleContraction', 'scale contraction'],
 ]);
 
 async function getInitialParams(
   objectiveFunc: (x: Float32Array) => Promise<number>,
-  settings: NelderMeadSettings,
+  settings: Map<string, number>,
   paramsInitial: Float32Array,
   restrictionsBottom: Float32Array,
   restrictionsTop: Float32Array): Promise<[Float32Array[], number[]]> {
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
-  const nonZeroParam = settings.nonZeroParam;
-  const initScale = settings.initialScale;
+  const nonZeroParam = settings.get('nonZeroParam')!;
+  const initScale = settings.get('initialScale')!;
 
   const optParams = new Array<Float32Array>(dim);
   const pointObjectives = new Array<number>(dim);
@@ -102,16 +91,16 @@ function fillPoint(
 export const optimizeNM:IOptimizer = async function(
   objectiveFunc: (x: Float32Array) => Promise<number>,
   paramsInitial: Float32Array,
-  settings: NelderMeadSettings,
+  settings: Map<string, number>,
   restrictionsBottom: Float32Array,
   restrictionsTop: Float32Array) : Promise<Extremum> {
   // Settings initialization
-  const tolerance = settings.tolerance;
-  const maxIter = settings.maxIter;
+  const tolerance = settings.get('tolerance')!;
+  const maxIter = settings.get('maxIter')!;
+  const scaleReflection = settings.get('scaleReflaction')!;
+  const scaleExpansion = settings.get('scaleExpansion')!;
+  const scaleContraction = settings.get('scaleContraction')!;
 
-  const scaleReflection = settings.scaleReflaction;
-  const scaleExpansion = settings.scaleExpansion;
-  const scaleContraction = settings.scaleContraction;
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
 

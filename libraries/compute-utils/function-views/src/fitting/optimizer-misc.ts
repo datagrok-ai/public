@@ -9,6 +9,12 @@ export type Extremum = {
   iterCount: number,
 }
 
+export type Setting = {
+  default: number,
+  min: number,
+  max: number,
+}
+
 export type OptimizationResult = {
   extremums: Extremum[],
   fails: DG.DataFrame | null,
@@ -24,7 +30,7 @@ export type OptimizationTask = {
 export interface IOptimizer {
   (objectiveFunc: (x: Float32Array) => Promise<number>,
     paramsInitial: Float32Array,
-    settings: any,
+    settings: Map<string, number>,
     restrictionsBottom: Float32Array,
     restrictionsTop: Float32Array): Promise<Extremum>;
 };
