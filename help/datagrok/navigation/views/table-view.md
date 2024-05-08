@@ -22,7 +22,7 @@ The **Table View** also has these UI elements associated with it:
 
 * **Toolbox**: To the left of the **Table View**, it has several panels. For
   example, **Viewers** lets you add viewers, while **Search** lets you [search
-  values ](#search-in-tables) within a table.
+  values](#search) within a table.
 * **Top Menu** with applicable commands. Depending on your dataset, you
   may see context-specific menus like **Chem** or **Bio**.
 * **Status bar**: The central section shows the table's name, row/column counts,
@@ -471,7 +471,7 @@ Style-related commands under the **Style** submenu:
 | Apply Data Settings  | Apply only the settings from the **Data** section. Can be used for viewers belonging to different views as long as the data source remains the same                                                                    |
 | Apply Style Settings | Apply all settings except for the **Data** settings. You can use this option for viewers with different data sources                                                                                        |
 | Set as Default       | Set settings as default for all viewers of that type. The properties of all viewers in a **Table View** are automatically updated to the default settings                                                             |
-| Reset Default        | Clear default settings                                                                                                        
+| Reset Default        | Clear default settings                                                                                                        |
 
 <!---                                                                                 |
 The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or
