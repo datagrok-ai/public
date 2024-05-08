@@ -22,7 +22,7 @@ It is possible to use metadata as a search criteria in the [Projects](../../data
 
 ## Filtering
 
-You can use these fields to filter tables with [smart search](../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter tables with smart search:
 
 | Field       | Description                      |
 |-------------|----------------------------------|
@@ -40,7 +40,7 @@ See also:
 
 * [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame)
 * [Project](../../datagrok/concepts/project/project.md)
-* [Table view](../navigation/table-view.md)
+* [Table view](..navigation/views/table-view.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)
 * [Grid](../../visualize/viewers/grid.md)

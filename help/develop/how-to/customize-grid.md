@@ -222,5 +222,5 @@ t.col('weight').meta.colors.setConditional({'<100': DG.Color.green, '100-200': '
 See also:
 
 * [Grid](../../visualize/viewers/grid.md)
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagroknavigation/views/table-view.md)
 * [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.Grid)

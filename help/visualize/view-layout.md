@@ -3,8 +3,34 @@ title: "View layout"
 sidebar_position: 2
 ---
 
+## Layouts
+
+View Layout contains relative positions of viewers in
+a [table view](../../datagroknavigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
+data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
+different dataset
+(**View | Layout | Open Gallery**). 
+Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
+"Layouts" pane, see picture below.
+
+To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
+choose **Clone**.
+
+To save a layout and then apply it to a different dataset:
+1. Open a dataset
+2. Add viewers, arrange them, and customize the way you want
+3. Click View | Layout | Save to gallery to save the layout on a server (or View | Layout | Download to save locally)
+4. Open another dataset with similar columns
+5. Click View | Layout | Open Gallery and select a layout saved in step 3. Or, in case you saved it locally at step 3, drag-and-drop the layout file to the view.
+
+![layout-suggestions](../datagrok/navigation/views/img/layout-suggestions.gif)
+
+
+
+----CHECK ABOVE -----
+
 View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagroknavigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
 (**View | Layout | Open Gallery**).
@@ -57,5 +83,5 @@ column, which are evaluated in the following order:
 
 See also:
 
-* [Table view](../datagrok/navigation/table-view.md)
+* [Table view](../datagroknavigation/views/table-view.md)
 * [Self-learning platform](../govern/catalog/self-learning-platform.md)

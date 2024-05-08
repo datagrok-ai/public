@@ -91,7 +91,7 @@ application. Let's look at a more UI-rich side of things.
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations
 and controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes), in this
-case it's called a [table view](../../datagrok/navigation/table-view.md). However, essentially a view can contain pretty much
+case it's called a [table view](../../datagroknavigation/views/table-view.md). However, essentially a view can contain pretty much
 anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either

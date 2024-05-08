@@ -452,5 +452,5 @@ To show, hide, or reorder columns:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagroknavigation/views/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

@@ -32,5 +32,5 @@ Here is how to embed iframes:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagroknavigation/views/table-view.md)
 * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)

@@ -6,7 +6,7 @@ Represents the identity of a person, and is used for [group](group.md) and role 
 
 ## Filtering
 
-Within the users view, you can use these fields to filter users with [smart search](../explore/search-filter-select/smart-search.md):
+Within the users view, you can use these fields to filter users with smart search:
 
 | Field       | Description                                            |
 |-------------|--------------------------------------------------------|

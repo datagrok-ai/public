@@ -27,5 +27,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagroknavigation/views/table-view.md)
 * [JS API: Histogram](https://public.datagrok.ai/js/samples/ui/viewers/types/histogram)

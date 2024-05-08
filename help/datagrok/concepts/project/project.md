@@ -52,7 +52,7 @@ version has its own project, which allows sharing packages on a version level.
 
 ## Project gallery
 
-Browse projects that are available to you. Use [Smart search](../explore/search-filter-select/smart-search.md) for powerful filtering capabilities.
+Browse projects that are available to you.
 
 Click on the context menu to the left of the search box to control sort order, as well as access your recent searches.
 
@@ -66,7 +66,7 @@ Controls:
 
 ## Filtering
 
-The following fields could be used to filter projects with [smart search](../explore/search-filter-select/smart-search.md):
+The following fields could be used to filter projects with smart search:
 
 | Field        | Description                                 |
 |--------------|---------------------------------------------|

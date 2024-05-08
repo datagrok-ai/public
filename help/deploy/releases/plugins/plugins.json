@@ -1,6 +1,16 @@
 [
   {
     "name": "Compute",
+    "date": "2024-05-07T16:07:21.269Z",
+    "version": "1.33.1",
+    "summary": "- Rearranged CSS files\r\n- RFV: Added isOutdatedOutput subject\r\n- HistoryInput: Hides incomplete runs\r\n- HistoryPanel: Added completeness filter",
+    "dir": "packages/Compute",
+    "changelog": true,
+    "changelogDate": "2024-05-07",
+    "readme": true
+  },
+  {
+    "name": "Compute",
     "date": "2024-05-06T15:43:10.172Z",
     "version": "1.33.0",
     "summary": "- Added CompositionPipeline",

@@ -38,6 +38,6 @@ chemical structures after performing [R-Group Analysis](../../datagrok/solutions
 See also:
 
 * [Viewers](viewers.md)
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagroknavigation/views/table-view.md)
 * [R-Group analysis](../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis)
 * [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)

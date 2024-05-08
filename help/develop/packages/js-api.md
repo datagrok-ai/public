@@ -111,7 +111,7 @@ DataFrame code snippets:
 
 ## Views
 
-Control [views](../../datagrok/navigation/table-view.md) via the following methods:
+Control [views](../../datagroknavigation/views/table-view.md) via the following methods:
 
 ```javascript
 grok.shell.addTableView(table);

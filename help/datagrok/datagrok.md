@@ -44,7 +44,7 @@ flexible [authentication](../govern/authentication.md),
 [entities](concepts/objects.md). Powerful "everything" browser for
 managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
-* [Global search](../explore/search-filter-select/smart-search.md). 
+* Global search. 
 
 #### Transform
 

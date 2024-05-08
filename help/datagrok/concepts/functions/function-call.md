@@ -30,7 +30,7 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter action runs with [smart search](../../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter action runs with [smart search](../../../datagrok/navigation/views/table-view#search):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

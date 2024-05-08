@@ -1,308 +1,37 @@
 ---
-title: "Viewers"
-sidebar_position: 0
+title: "Supported viewers"
 ---
 
-A viewer is a visual component associated with a [table](../../datagrok/concepts/table.md). Unlike other products, our viewers
-are [superfast](../../develop/under-the-hood/performance.md#viewers), completely interactive, and are capable of handling tens
-of
-millions of rows (or millions of columns).
-
-Viewers belonging to the same [view](../../datagrok/navigation/table-view.md) share the same row selection and filter. Viewers are
-saved as part of the [project](../../collaborate/project.md). Also, it is possible to save viewers and views individually
-and
-reuse them (or share with teammates) later on.
-
-* [Creating](#creating)
-* [Docking](#docking)
-* [Selection](#selection)
-* [Current rows](#current-rows)
-* [Filter](#filter)
-* [Viewers as filters](#viewers-as-filters)
-* [Embedding](#embedding)
-* [Interaction](#interaction)
-* [Properties](#properties)
-* [Common actions](#common-actions)
-* [Group tooltips](#group-tooltips)
-* [Statistical hypothesis testing](#statistical-hypothesis-testing)
-* [Layouts](#layouts)
-
-## Creating
-
-Once a table is open, click on the icons shown on the left pane to open the corresponding viewer.
-
-Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone indicators will appear;
-move the mouse cursor to one of them and release the mouse button to dock the viewer at that spot. To resize the viewer,
-drag the viewer's border.
-
-![viewers-interaction-main](img/viewers-interaction-main.gif)
-
-<br/>
-
-:::tip
-
-For quick profiling, use the **Plots** [info pane](link). Datagrok automatically generates visualizations when you select one or more columns.
-
-![](../../deploy/releases/platform/img/plots-info-pane.gif)
-
-:::
-
-## Docking
-
-Datagrok provides a flexible window management system, where windows
-could be either dragged out and positioned manually, or set up automatically.
-
-# Top-level window docking
-
-Use `grok.shell.dockManager` to dock, undock, or reposition windows.
-See also `View.dockNode`
-
-### Nested docking
-
-Some of the views contain a nested docking manager, which allows to manage
-windows within that particular view (they cannot be undocked and docked on
-a top level, or within a different view). See `dockManager` property of the
-View class.
-
-[![Docking](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1726s)
-
-## Layouts
-
-View Layout contains relative positions of viewers in
-a [table view](../../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
-data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
-different dataset
-(**View | Layout | Open Gallery**). 
-Saved layouts that are [applicable](../view-layout.md#layout-applicability) to the current table are shown in the 
-"Layouts" pane, see picture below.
-
-To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
-choose **Clone**.
-
-To save a layout and then apply it to a different dataset:
-1. Open a dataset
-2. Add viewers, arrange them, and customize the way you want
-3. Click View | Layout | Save to gallery to save the layout on a server (or View | Layout | Download to save locally)
-4. Open another dataset with similar columns
-5. Click View | Layout | Open Gallery and select a layout saved in step 3. Or, in case you saved it locally at step 3, drag-and-drop the layout file to the view.
-
-![layout-suggestions](img/layout-suggestions.gif)
-
-## Selection
-
-All viewers share the same row selection and filtered state, which can be manipulated in a consistent way across all
-viewers:
-
-|                  |                                    |
-|------------------|------------------------------------|
-| ESC              | Deselect all rows and reset filter |
-| Ctrl+A           | Select all rows                    |
-| Ctrl+Shift+A     | Deselect all rows                  |
-| Ctrl+Click       | Toggle selected state              |
-| Shift+Click      | Select point or group              |
-| Ctrl+Shift+Click | Deselect point or group            |
-
-To select rows in the [grid](grid.md):
-
-|                                 |                                        |
-|---------------------------------|----------------------------------------|
-| Shift+Mouse Drag                | Select rows                            |
-| Ctrl+Shift+Mouse Drag           | Deselect rows                          |
-| Mouse Drag row headers          | Select rows                            |
-| Shift+drag column headers       | Select columns                         |
-| Ctrl+click column headers       | Select columns                         |
-| Ctrl+Shift+click column headers | Deselect columns                       |
-| (Ctrl+) Shift + ↑↓              | (Un)select rows                        |
-| (Ctrl+) Shift + ←→              | (Un)select columns                     |
-| (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
-| (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
-
-![viewers-selection](img/viewers-selection.gif)
-
-## Current rows
-
-Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and
-highlights it in green. This indication is a neat and lightweight way to update information related to the current value
-and lets users explore and compare rows with ease.
-
-To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info
-panels in the context panel get synchronized with the current cell.
-
-It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as
-you move from one row to another you immediately see where the row values belong on the chart or which molecules have
-the most similar structure to the reference. This also works the other way around: by first clicking on a visual
-element, you will see the row it represents in the grid.
-
-![current-rows](img/current-rows-2.gif "Current rows")
-
-## Filter
-
-To open filter group, click on the funnel icon in the toolbox:
-
-![filters](img/filters.gif)
-
-Alternatively, click on the column's "hamburger icon" to filter by the individual column:
-
-![grid-column-filter](img/grid-column-filter.png)
-
-### Viewers as filters
-
-By default, clicking on a segment that represents multiple rows will select these rows. However, some viewers, such
-as [Bar Chart](bar-chart.md) and [Pie Chart](pie-chart.md), could be also used for filtering of the
-underlying table. Such viewers are a popular choice for interactive dashboards.
-
-[![Filters](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4201s)
-
-To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the desired mode. Internally,
-this sets two different [properties](#properties) of a viewer:
-
-* `row source` - specifies which rows should be visualized on the viewer (all | filtered | selected)
-* `on click` - specifies what happens when user click on a group of rows (select | filter).
-
-By setting these properties manually, it is possible to achieve different combination of interactivity (for instance, a
-viewer that shows only selected rows)
-
-![viewers-as-filters](img/viewers-as-filters.gif)
-
-## Common actions
-
-Many viewers support the following:
-
-|                 |                 |
-|-----------------|-----------------|
-| Double-click    | Reset View      |
-| Alt+drag        | Zoom            |
-| Mouse drag      | Pan             |
-
-All of the common actions are available from the context menu. To bring it up, either right-click, or click on the "
-hamburger" menu in the top left corner. The icons in the viewer header are only visible when the mouse is hovering over
-the viewer.
-
-The following commands are the most common:
-
-|            |                                                                                                                                                                                             |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Properties | Show viewer properties in the [context panel](../../datagrok/navigation/navigation.md#context-panel)                                                                                        |
-| Reset View | Reset zoom level. Applies for: [Scatter plot](scatter-plot.mdx), [Line chart](line-chart.md), [Bar chart](bar-chart.md), [3D scatter plot](3d-scatter-plot.md), and [Box plot](box-plot.md) |
-
-General commands are available under the **General** submenu:
-
-|                 |                                                                        |
-|-----------------|------------------------------------------------------------------------|
-| Clone           | Create a copy of the viewer                                            |
-| Full Screen     | Show in full screen. **Alt+F**                                         |
-| Close           | Close the viewer                                                       |
-| Use in Trellis  | Add a [Trellis plot](trellis-plot.md), using this viewer as a renderer |
-| Save to Gallery | Saves this viewer to a [gallery](../view-layout.md#layout-suggestions) |
-| Embed           | Create HTML code that can be embedded in an external site              |
-
-Style-related commands reside under the **Style** submenu:
-
-|                      |                                                                                                                                                                                                                |
-|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Pick up              | Remember the style of the current viewer                                                                                                                                                                       |
-| Apply                | Apply previously remembered style. This option, as well as the "Apply data settings" and "Apply Style Settings", is only enabled when the settings of the corresponding viewer type were picked up previously. |
-| Apply Data Settings  | Apply only "Data" section of the settings. Can be used for viewers belonging to different views as long as the data source remains the same                                                                    |
-| Apply Style Settings | Apply all settings, except for the "Data" section. You can use this option for viewers that have different data source                                                                                         |
-| Set as Default       | Use style settings for new viewers of that type. The viewer's properties will be changed automatically to match the ones from the remembered style                                                             |
-| Reset Default        | Clear default settings                                                                                                                                                                                         |
-
-![Pick up](../../uploads/gifs/pickupstyle.gif "Pick up")
-
-The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or
-Python:
-
-|           |                                                                   |
-|-----------|-------------------------------------------------------------------|
-| to R      | Open the visualization preview and get the code snippet in R      |
-| to Python | Open the visualization preview and get the code snippet in Python |
-
-
-## Interaction
-
-All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
-
-![Viewers Interaction](../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
-
-For example, filtering on a [histogram](histogram.md) affects the [scatter plot](scatter-plot.mdx):
-
-![Viewers Interaction 2](../../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
-
-## Properties
-
-Each viewer has a set of properties associated with it that define either the appearance
-(such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important data properties (usually
-columns to visualize) are exposed as combo boxes on top of the viewer. To edit the rest of the properties, either click
-on the "gear" icon on top of the viewer, or press F4 when the viewer has focus, or right-click and
-select `Viewer | Properties`.
-
-[![Properties](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
-
-![viewer-property-panel](img/viewer-property-panel.gif)
-
-## Tooltips
-
-### Row tooltips
-
-Tooltip-related settings reside under the **Tooltip** submenu:
-
-|                           |                                                                                  |
-|---------------------------|----------------------------------------------------------------------------------|
-| Hide                      | Hide the tooltip                                                                 |
-| Use as Group Tooltip      | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
-| Remove Group Tooltip      | Stop using this viewer as a group tooltip                                        |
-| Set Default Tooltip...    | Set row tooltip settings for all viewers associated with the data frame          |
-| Set `<Viewer>` Tooltip... | Set a tooltip template for this specific viewer                                  |
-
-See also: [setting tooltips programmatically](https://public.datagrok.ai/js/samples/ui/viewers/viewew-tooltips)
-
-### Group tooltips
-
-One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows in a tooltip,
-using the settings of another viewer.
-
-Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required, and it is safe to close
-it if you choose so.
-
-The following picture illustrates the concept:
-
-![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
-
-
-## Statistical hypothesis testing
-
-To help users analyze their data in depth, our visualizations include a number of statistical features:
-
-* Box plots show [p-value](box-plot.md#t-test), which allows to determine whether the findings are statistically
-  significant
-* Scatter plots can display a [regression line](scatter-plot.mdx#regression-line) along with its equation;
-  moreover, it is possible to plot multiple regression lines by encoding categories with color
-* The values of Pearson's correlation coefficient computed for [correlation plots](correlation-plot.md) are
-  highlighted, which makes it easy to trace the strength of relationship between given variables
-* Statistics viewer gives a concise summary of commonly used [measures](statistics.md#statistical-measures) for
-  selected columns
-* The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used
-  to [reproduce charts](https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s) with Python or R code respectively
-
-[![Statistical hypothesis testing](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4810s)
-
-## Embedding
-
-Each viewer created in Datagrok can be embedded into an external site as an iframe. It remains fully interactive and
-will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its
-context menu, then go to the **Viewer** submenu and select **Embed**:
-
-![Viewers Embedding](../../uploads/viewers/embedding.png "Viewers Embedding")
-
-Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this feature
-works only for data uploaded as a project to the server.
-
-## Resources
-
-[![Viewers](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=67LzPsdNrEc)
-
-See also:
-
-* [Table view](../../datagrok/navigation/table-view.md)
-* [Column selectors](column-selectors.md)
-* [Chemically-aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md)
+A _viewer_ is a visual component associated with a
+[table](../../datagrok/concepts/table.md). They are [extremely fast and
+interactive](../../develop/under-the-hood/performance.md#viewers), handling
+datasets with tens of millions of rows (or millions of columns).
+
+To learn how to use viewers, including creation, managing properties,
+filtering, row selection, tooltips, and more, see [Table View](viewers.md).
+
+
+| <div style={{ width:200 }}></div>        |  <div style={{ width:300 }}></div>                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|<h4>[Grid](grid.md)</h4>A high-performance, customizable spreadsheet optimized for interactive exploration of data.<br/><br/> Provides color-coding, filtering, sorting, custom cell types, and hundreds of other features.                                     |      ![](img/grid-small.gif)       |
+|<h4>[Scatterplot](scatter-plot.mdx)</h4>Displays data points on the X and Y axes to show the relationship between two variables. Show up to three additional data dimensions by using marker color, shape, and size.<br/> <br/> Supports regression lines, and data annotations.                         |     ![](img/scatter-plot-small.gif)| 
+|<h4>[Histogram](histogram.md)</h4> Shows the distribution of the numerical data. Supports multiple distribution, with a few normalization options. Use the slider below to filter the dataset.                                                                                                                                                                              |     ![](img/histogram-small.gif)   | 
+| <h4>[Line chart](line-chart.md)</h4>Shows points connected by lines. Points are ordered by the X component, with multiple values for the same X aggregated. <br/> <br/> Supports multiple charts, multiple axes, different normalization and aggregation options. <br/><br/>Chart types: lines, area, stacked bar chart, stacked area chart.                                                                                                                                                                                |     ![](img/line-chart-small.gif)  |
+| <h4>[Bar chart](bar-chart.md)</h4>Shows grouped data with rectangular bars with lengths proportional to the values that they represent. <br/> <br/> Supports multiple data type-dependent aggregation functions for values. Works with dates as a category, converting them to year, Q1-Q4, or month. <br/><br/> To create a stacked bar chart, use the **Stack** selector.                                                                                                                                                                             |     ![](img/bar-chart-small.gif)  |
+|<h4>[Box plot](box-plot.md)</h4>Summarizes distributions of values by showing minimum, first quartile, median, third quartile, and maximum. <br/> <br/> Shows each point and lets you color-code them. <br/> <br/> When comparing multiple sets, automatically tests for statistical significance and calculates p-values.                                                                                                                                                                             |     ![](img/box-plot-small.gif)    | 
+|<h4>[Pie chart](pie-chart.md)</h4>Shows proportions by dividing data into slices.                                                                                                                                                                                                                                                                                                                      |     ![](img/pie-chart-small.gif)    | 
+|<h4>[Parallel coordinates plot](pc-plot.md)</h4>Shows each row as a trajectory, where each column value gets mapped to the corresponding axis. <br/> <br/> Useful for analyzing multidimensional data.                                                                                                                                                                                |     ![](img/pc-plot-small.gif)         | 
+|<h4>[3D scatterplot](3d-scatter-plot.md)</h4>Shows the relationship between three variables in 3d space. <br/> <br/>  You can color-code points, size-code points, and display labels next to markers.                                                                                                                                                                             |     ![](img/3d-scatter-plot-small.gif) | 
+|<h4>[Calendar](calendar.md)</h4>Lets you analyze longitudinal data. Requires at least one column of type DateTime.                                                                                                                                                                            |     ![](img/calendar-small.gif)        | 
+|<h4>[Trellis plot](trellis-plot.md)</h4>Lets you analyze multiple dimensions of your data simultaneously. <br/> <br/> For categorical columns, unique values along the X and Y axes create subsets of data. Each intersecting cell visualizes rows belonging to the corresponding subset. <br/> <br/> Supports multiple columns per axis and multiple chart options.                                                                                                                                                                                |     ![](img/trellis-plot-small.gif)    | 
+|<h4>[Tree map](tree-map.md)</h4>Displays hierarchical data as a set of nested rectangles. A leaf node's rectangle has an area proportional to a specified dimension of the data.                                                                                                                                                                                |     ![](img/tree-map-small.gif)        | 
+|<h4>[Form](form.md)</h4>Lets you customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. <br/> <br/> A form can be used either as a standalone viewer, or as a row template of the [Tile Viewer](tile-viewer).                                                                                                                                                                        |     ![](img/form-small.gif)            | 
+|<h4>[Tile viewer](tile-viewer.md)</h4>Visualizes rows as [forms](form.md) positioned as tiles. <br/> <br/> Useful for reviewing the contents of each row.                                                                                                                                                                                 |     ![](img/tile-viewer-small.gif)     | 
+|<h4>[Word cloud](word-cloud.md)</h4>A visual depiction of word frequency. <br/> <br/> You can use other aggregation functions to represent the size or color of the specific word.                                                                                                                                                                                |     ![](img/word-cloud-small.png)      | 
+|<h4>[Density plot](density-plot.md)</h4>Shows density of points for the chosen X and Y columns, unlike [scatter plot](scatter-plot.mdx) that shows all of them.                                                                                                                                                                                |     ![](img/density-plot-small.gif)    | 
+|<h4>[Matrix plot](matrix-plot.md)</h4>Shows the relationships between the selected columns using [density plots](density-plot.md) and [histograms](histogram.md).                                                                                                                                                                                                                                                                                                                         |     ![](img/matrix-plot-small.png)|                                                                   
+|<h4>[Network diagram](network-diagram.md)</h4>Visualizes graphs, with values of the specified two columns as nodes, and rows as edges. <br/> <br/> To the right, you see relationships between the _Game of Thrones_ characters. Can you guess what the two clusters are?                                                                                                                                                                                 |     ![](img/network-diagram-small.gif) | 
+|<h4>[Heatmap](heat-map.md)</h4>A condensed representation of the grid, where it shows all dataset at once with the color-coded cells                                                                                                                                                                                                                                                                                                                        |     ![](img/heatmap-small.gif)         | 
+|<h4>[Filters](filters.md)</h4>Let you quickly filter and select rows based on the column values. <br/> <br/> Filters automatically adjust to the data type and semantics. Built-in filters: numerical, categorical, molecular, sequences, calendar, free text, lists, etc.                                                                                                                                                                                 |     ![](img/filters-small.gif)         | 
+|<h4>[Correlation plot](correlation-plot.md)</h4>Lets you see correlations between all columns at once. Cells are color-coded by the [Pearsson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient). <br/> <br/> Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable.                                                                                                                                                                             |     ![](img/corr-plot-small.gif)|                                                                                            
+|<h4>[Markup Viewer](markup.md)</h4>Use to host any text, arbitrary HTML content, or [markdown-formatted text](../develop/help-pages//markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it.                                                                                                                                                                                   | ![Markup](img/markup-viewer.png "Markup") |

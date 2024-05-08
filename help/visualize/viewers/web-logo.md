@@ -41,5 +41,5 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 
 ## See also
 
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagroknavigation/views/table-view.md)
 * [Viewers](viewers.md)

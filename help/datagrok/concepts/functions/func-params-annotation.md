@@ -273,7 +273,7 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../../explore/search-filter-select/data-search-patterns.md).
+To learn more, see [search patterns](../../../datagrok/navigation/views/table-view#search-patterns).
 </details>
 
 

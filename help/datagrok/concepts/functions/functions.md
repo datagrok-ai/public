@@ -73,7 +73,7 @@ corresponding audit record will contain a reference to it.
 
 ## Filtering
 
-You can use these fields to filter functions with [smart search](../../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter functions with [smart search](../../../datagrok/navigation/views/table-view#search):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
