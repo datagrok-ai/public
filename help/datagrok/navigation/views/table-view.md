@@ -33,13 +33,13 @@ The **Table View** also has these UI elements associated with it:
 ## Navigation
    
 * To switch between **Table Views**, use the **Sidebar**, **Toolbox**, or the
-  [Table Manager](../panels/table-manager.md).
+  [Table Manager](../panels/table-manager.md) (<kbd>Alt + T</kbd>).
 * To jump to a specific column, use the [Column
   Manager](../panels/column-manager.md) (**Status Bar** > **Columns:**).
 * To jump to a specific row, press <kbd>Ctrl+G</kbd>, which opens the **Go to**
-  dialog.
+  dialog. 
 
-  <img src={GoToDialog} width="233"/>
+  <img src={GoToDialog} width="180"/>
 
 ## Table View layout
 
@@ -103,7 +103,7 @@ To access the tooltip options:
   tooltip using a [form viewer](../../../visualize/viewers/form.md).
 * **For columns**: Right click the column's header and select the desired option
   under **Tooltip > Current Column**.
-* **For viewers**, click the **Hamburger icon** in the viewer's header and select **Tooltip** > **Edit...** This opens the same **Tooltip** dialog as described above.
+* **For viewers**: Click the **Hamburger icon** in the viewer's header and select **Tooltip** > **Edit...** This opens the same **Tooltip** dialog as described above.
 
 By default, tooltips display all columns in tables that have fewer than 21
 columns. For tables with 21 or more columns, no columns are shown in tooltips.
@@ -136,7 +136,7 @@ To set a viewer as a group tooltip:
    (![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Tooltip > Use as Group Tooltip**. This viewer is now set as a group tooltip.
   
 The tooltip settings remain in effect even if you close the underlying viewer.
-To remove the group tooltip, repeat the steps above but this select **Tooltip >
+To remove the group tooltip, repeat the steps above but select **Tooltip >
 Remove Group Tooltip** instead.
 
 ![Group Tooltip](../../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
@@ -145,16 +145,16 @@ Remove Group Tooltip** instead.
 
 Certain viewers include statistical features:
 
-* [Box plots](../../../visualize/viewers/box-plot.md) show [p-value](box-plot.md#t-test), allowing you to determine
+* [Box plots](../../../visualize/viewers/box-plot.md) show [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
 * Scatterplots can show one or more [regression
-  lines](scatter-plot.mdx#regression-line) with associated equations and
+  lines](../../../visualize/viewers/scatter-plot.mdx#regression-line) with associated equations and
   color-coding.
-* [Correlation plots](correlation-plot.md) highlight the values of Pearson's
+* [Correlation plots](../../../visualize/viewers/correlation-plot.md) highlight the values of Pearson's
   correlation coefficient, making it easy to trace the strength of relationship
   between given variables.
 * The statistics viewer provides a summary of key
-  [statistics measures](statistics.md#statistical-measures) for the selected columns.
+  [statistics measures](../../../visualize/viewers/statistics.md#statistical-measures) for the selected columns.
 
 <!--- ChaRPY packages is not active now
 
@@ -195,6 +195,8 @@ This synchronization lets you explore the dataset visually and instantly find pa
 
 ![Viewers Interaction](../../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
 
+<br/>
+
 To filter, you have these options:
 
 * Use the designated filters viewer
@@ -220,7 +222,7 @@ similar to any other viewer. To learn more about the filters viewer, see
 #### Viewers as filters
 
 By default, clicking a segment that represents multiple rows in viewers like a 
-[bar chart](bar-chart.md) or a [pie chart](pie-chart.md) selects those rows.
+[bar chart](../../../visualize/viewers/bar-chart.md) or a [pie chart](../../../visualize/viewers/pie-chart.md) selects those rows.
 However, you can set the viewer to filter the underlying table instead. To do
 this, click the **Hamburger (![](../../../uploads/icons/hamburger-menu.png))
 icon** on its header and select **On click** > **Filter**. 
@@ -231,7 +233,7 @@ settings:
 * **On Click** determines the action on click. 
 
 To customize these settings, click the **Gear (<img src={GearIcon} width="20"/>)
-icon** on top of the viewer. You can then adjust the settings in the **Context
+icon** at the viewer's top. You can now adjust the settings in the **Context
 Panel** under **Data**.
 
 ![viewers-as-filters](img/viewers-as-filters.gif)
@@ -275,12 +277,14 @@ You can filter or select matching rows based on search parameters:
 
 </details>
 
+To replace values matching your search, use the [find and replace](../../../transform/find-and-replace.md) command (<kbd>Ctrl + H</kbd>).
+
 ##### Search patterns
 
 Search patterns let you specify conditions in a free text search. Datagrok uses
 the same syntax to search both searching in tables and externally, such as
 when accessing databases with [parameterized
-queries](../../access/databases/databases.mdx#parameterized-queries). 
+queries](../../../access/databases/databases.mdx#parameterized-queries). 
 
 When searching in tables, you can use conditions with the column
 name (e.g., `age > 21`). However, for external queries, specifying the column
@@ -408,6 +412,8 @@ To embed:
 **Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** that appears
 when you hover over a column header or the top of a viewer.
 
+To see a complete list of available controls, visit [Controls](../shortcuts.md).
+
 ### Columns
 
 Properties:
@@ -442,8 +448,8 @@ Many viewers support the following:
 | Double-click    | Reset View      |
 | Alt+drag        | Zoom            |
 | Mouse drag      | Pan             |
-| Properties | Show viewer properties in the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)                                                                                        |
-| Reset View | Reset zoom level. Use in: [scatterplot](scatter-plot.mdx), [line chart](line-chart.md), [bar chart](bar-chart.md), [3D scatterplot](3d-scatter-plot.md), and [box plot](box-plot.md) |
+| Properties | Show viewer properties in the [Context Panel](../panels/panels.md#context-panel)                                                                                        |
+| Reset View | Reset zoom level. Use in: [scatterplot](../../../visualize/viewers/scatter-plot.mdx), [line chart](../../../visualize/viewers/line-chart.md), [bar chart](../../../visualize/viewers/bar-chart.md), [3D scatterplot](../../../visualize/viewers/3d-scatter-plot.md), and [box plot](../../../visualize/viewers/box-plot.md) |
 
 General commands available under the **General** submenu:
 
@@ -452,8 +458,8 @@ General commands available under the **General** submenu:
 | Clone           | Create a copy of the viewer                                            |
 | Full Screen (**Alt+F**) | Show in full screen                                         |
 | Close           | Close the viewer                                                       |
-| Use in Trellis  | Add a [trellis plot](trellis-plot.md), using this viewer as a renderer |
-| Save to Gallery | Saves this layout to a [gallery](../view-layout.md#layout-suggestions) |
+| Use in Trellis  | Add a [trellis plot](../../../visualize/viewers/trellis-plot.md), using this viewer as a renderer |
+| Save to Gallery | Saves this layout to a [gallery](../../../visualize/view-layout.md#layout-suggestions) |
 | Embed           | Create HTML code that can be embedded in an external site              |
 
 Style-related commands under the **Style** submenu:
@@ -489,7 +495,7 @@ Selection:
 | Shift+Click      | Select point or group              |
 | Ctrl+Shift+Click | Deselect point or group            |
 
-To select rows in the [grid](grid.md):
+To select rows in the [grid](../../../visualize/viewers/grid.md):
 
 |                                 |                                        |
 |---------------------------------|----------------------------------------|
