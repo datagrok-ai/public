@@ -738,7 +738,7 @@ export class FittingView {
     }
 
     if (!isAnySelected)
-      this.updateRunIconDisabledTooltip(`No parameters for fitting are selected`);
+      this.updateRunIconDisabledTooltip(`No parameters for fitting selected`);
 
     return isAnySelected && areSelectedFilled;
   } // areInputsReady
@@ -768,7 +768,7 @@ export class FittingView {
     }
 
     if (!isAnySelected)
-      this.updateRunIconDisabledTooltip(`No targets are selected`);
+      this.updateRunIconDisabledTooltip(`No targets selected`);
 
     return isAnySelected && areSelectedFilled;
   } // areOutputsReady
@@ -917,7 +917,7 @@ export class FittingView {
       if (this.method === METHOD.NELDER_MEAD)
         optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
       else
-        throw new Error(`The '${this.method}' method has not been implemented.`);
+        throw new Error(`Not implemented the '${this.method}' method`);
 
       const extremums = optResult.extremums;
       const rowCount = extremums.length;
@@ -1283,7 +1283,7 @@ export class FittingView {
         break;
 
       default:
-        throw new Error(`The '${this.method}' method has not been implemented.`);
+        throw new Error(`Not implemented the '${this.method}' method`);
       }
     }, 'Show issues');
 
