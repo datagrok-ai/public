@@ -1,6 +1,6 @@
 # compute-utils changelog
 
-## 1.33.2 (2024-05-08)
+## 1.33.3 (2024-05-08)
 
 ### Features
 
