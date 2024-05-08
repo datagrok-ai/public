@@ -4,7 +4,7 @@ sidebar_position: 3
 ---
 
 Use dashboard to visually present data in a pre-specified way. In contrast to
-[table views](../datagroknavigation/views/table-view.md) that excel at
+[table views](../datagrok/navigation/views/table-view.md) that excel at
 [exploratory data analysis](../datagrok/solutions/domains/use-cases/eda.md),
 [data wrangling](../transform/transform.md) and other table-specific tasks, dashboards trade the ability to quickly
 interrogate data in unpredicted ways for delivering the visuals exactly as designed. In particular, here are some
@@ -35,4 +35,4 @@ clicks on that button.
 
 See also:
 
-* [Table view](../datagroknavigation/views/table-view.md)
+* [Table view](../datagrok/navigation/views/table-view.md)
