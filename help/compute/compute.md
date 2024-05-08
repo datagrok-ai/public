@@ -513,7 +513,57 @@ let y = x + 3;
 
 ### Input parameter optimization
 
-Solve an inverse problem: find input conditions leading to specified output constraints.
+Solve an inverse problem: find input conditions leading to specified output constraints. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
+
+1. Press the "Run fitting" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens.
+
+2. In the `Fit` block, use switchers to specify inputs to be found:
+
+   * Set `min` and `max` values for each selected item. They define the variation range
+   * Set values of all other inputs
+
+3. Set output constraints in the `Target` block:
+   * Use switchers to specify target outputs
+   * Set target value for each selected item
+
+4. Choose `method`. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
+
+5. Specify the loss function type (in the `loss` field).
+
+6. Enter the number of points to be found (in the `samples` field).
+
+7. Set max distance between similar points(in the `similarity` field).
+If distance between two fitted points is less than this value, they are the same.
+
+8. Press the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
+[grid](https://datagrok.ai/help/visualize/viewers/grid) containing
+
+   * loss function values
+   * fitted inputs
+   * viewers visualizing the goodness of fit
+   * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
+
+If target is a dataframe, choose `argument`. 
+
+Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row.
+
+Apply parameter optimization to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
+
+```javascript
+//name: Test
+//language: javascript
+//input: double x
+//output: double y
+//editor: Compute:RichFunctionViewEditor
+//meta.features: {"fitting": true}
+
+let y = x * x;
+```
+
+Learn more
+
+* [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
+* [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 
 ### Miscellaneous
 
