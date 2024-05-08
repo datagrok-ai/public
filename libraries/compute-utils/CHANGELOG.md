@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.33.2 (2024-05-08)
+
+### Features
+
+- Bundle size optimizations
+
 ## 1.33.1 (2024-05-07)
 
 ### Features

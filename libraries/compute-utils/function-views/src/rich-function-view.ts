@@ -3,8 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
@@ -1714,9 +1714,11 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
-        DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        //@ts-ignore
+        const loadedExcelJS = window.ExcelJS as ExcelJS;
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-        const exportWorkbook = new ExcelJS.Workbook();
+        const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
 
         const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
@@ -1854,7 +1856,9 @@ export class RichFunctionView extends FunctionView {
 
       const tabControl = this.tabsElem;
 
-      DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      //@ts-ignore
+      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
       for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
@@ -1868,7 +1872,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
 
@@ -1889,7 +1893,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
 
