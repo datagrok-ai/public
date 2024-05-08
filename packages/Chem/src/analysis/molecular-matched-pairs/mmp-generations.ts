@@ -2,20 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions } from './mmp-constants';
-import { FILTER_TYPES, chemSubstructureSearchLibrary } from '../../chem-searches';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions} from './mmp-constants';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../../chem-searches';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { SubstructureSearchType } from '../../constants';
+import {SubstructureSearchType} from '../../constants';
+import {MmpInput} from './mmp-constants';
 
-export function getGenerations(molecules: DG.Column, frags: [string, string][][],
-  allPairsGrid: DG.Grid, activityMeanNames: Array<string>, activities: DG.ColumnList, module:RDModule):
+export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
+  allPairsGrid: DG.Grid, activityMeanNames: Array<string>, module:RDModule):
   DG.Grid {
   const rulesColumns = allPairsGrid.dataFrame.columns;
   const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM);
   const rulesTo = rulesColumns.byName(MMP_COLNAME_TO);
   const activityN = activityMeanNames.length;
 
-  const structures = molecules.toList();
+  const structures = mmpInput.molecules.toList();
   const cores = new Array<string>(activityN * structures.length);
   const from = new Array<string>(activityN * structures.length);
   const to = new Array<string>(activityN * structures.length);
@@ -28,7 +29,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
     const singleActivities = new Array<number>(activityN);
     for (let j = 0; j < activityN; j++) {
       const name = activityMeanNames[j].replace('Mean Difference ', '');
-      const initActivity = activities.byName(name).get(i);
+      const initActivity = mmpInput.activities.byName(name).get(i);
       singleActivities[j] = initActivity;
       allStructures[j * structures.length + i] = structures[i];
       allInitActivities[j * structures.length + i] = initActivity;
@@ -84,7 +85,7 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
   cols.push(createColumnWithDescription('double', `Prediction`, prediction));
   cols.push(createColumnWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
-  createIsMoleculeExistingCol(molecules, generation, grid);
+  createIsMoleculeExistingCol(mmpInput.molecules, generation, grid);
   return grid;
 }
 

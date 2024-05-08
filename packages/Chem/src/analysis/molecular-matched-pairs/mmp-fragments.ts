@@ -1,15 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
-
-export type MmpRules = {
-  rules: {
-    smilesRule1: number,
-    smilesRule2: number,
-    pairs: {firstStructure: number, secondStructure: number}[]
-  } [],
-  smilesFrags: string[]
-};
+import {MmpRules} from './mmp-constants';
 
 type Fragments = [string, string][][];
 
