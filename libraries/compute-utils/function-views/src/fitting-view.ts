@@ -10,7 +10,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip} from './fitting/constants';
+import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI} from './fitting/constants';
 import {getIndeces} from './fitting/fitting-utils';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
@@ -328,7 +328,8 @@ export class FittingView {
   private failsDF: DG.DataFrame | null = null;
 
   private toSetSwitched = true;
-  private samplesCount = 10;
+
+  private samplesCount = FITTING_UI.SAMPLES;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
     name: TITLE.SAMPLES,
     inputType: 'Int',
@@ -341,6 +342,12 @@ export class FittingView {
     this.loss = this.lossInput.value!;
     this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
   });
+  private similarity = FITTING_UI.SIMILARITY_DEFAULT;
+  private similarityInput = ui.input.forProperty(DG.Property.fromOptions({
+    name: TITLE.SIMILARITY,
+    inputType: 'Float',
+    defaultValue: this.similarity,
+  }));
 
   // Auxiliary dock nodes with results
   private helpDN: DG.DockNode | undefined = undefined;
@@ -459,7 +466,14 @@ export class FittingView {
       this.samplesCount = this.samplesCountInput.value;
       this.updateApplicabilityState();
     });
-    this.samplesCountInput.setTooltip('Number fitted inputs sets');
+    this.samplesCountInput.setTooltip('Number of points to be found');
+
+    this.similarityInput.onChanged(() => {
+      this.similarity = this.similarityInput.value;
+      this.updateApplicabilityState();
+    });
+    this.similarityInput.addCaption(TITLE.SIMILARITY);
+    this.similarityInput.setTooltip('Max distance between similar points');
 
     this.updateRunIconStyle();
     this.updateRunIconDisabledTooltip('Select inputs for fitting');
@@ -645,11 +659,12 @@ export class FittingView {
       this.fittingSettingsDiv.append(input.root);
     }));
 
-    this.samplesCountInput.root.insertBefore(getSwitchMock(), this.samplesCountInput.captionLabel);
-    form.appendChild(this.samplesCountInput.root);
-
-    this.lossInput.root.insertBefore(getSwitchMock(), this.lossInput.captionLabel);
-    form.appendChild(this.lossInput.root);
+    // Add general settings
+    [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
+      inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
+      inp.nullable = false;
+      form.appendChild(inp.root);
+    });
 
     $(form).addClass('ui-form');
 
@@ -764,13 +779,23 @@ export class FittingView {
     if (this.samplesCount > 0)
       return true;
 
-    this.updateRunIconDisabledTooltip('Invalid samples conut');
+    this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SAMPLES}"`);
+    return false;
+  } // isSamplesCountValid
+
+  /** Check similarity */
+  private isSimilarityValid(): boolean {
+    if (this.similarity > FITTING_UI.SIMILARITY_MIN)
+      return true;
+
+    this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SIMILARITY}"`);
     return false;
   } // isSamplesCountValid
 
   /** Check inputs/outputs/settings */
   private canFittingBeRun(): boolean {
-    return this.areInputsReady() && this.areOutputsReady() && this.isSamplesCountValid() && this.areMethodSettingsCorrect();
+    return this.areInputsReady() && this.areOutputsReady() &&
+      this.isSamplesCountValid() && this.areMethodSettingsCorrect() && this.isSimilarityValid();
   }
 
   /** Return names of the fixed inputs */
