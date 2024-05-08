@@ -25,7 +25,7 @@ export function dna_nucleotide(nucleotide: string): string {
   // your code goes here
   return nucleotide;
 }
- 
+
 //name: complementWidget
 //tags: panel, widgets
 //input: string nucleotides {semType: dna_nucleotide}
