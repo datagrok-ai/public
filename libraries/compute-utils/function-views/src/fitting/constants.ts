@@ -17,7 +17,7 @@ export enum LOSS {
 
 export const lossTooltip = new Map([
   [LOSS.MAD, 'Maximum absolute deviation'],
-  [LOSS.RMSE, 'Root mean sqaure error (weighted)'],
+  [LOSS.RMSE, 'Root mean square error'],
 ]);
 
 /** Grid elements sizes */
@@ -64,8 +64,9 @@ export const MS_TO_SLEEP = 10;
 
 /** Fitting UI constants */
 export enum FITTING_UI {
-  SIMILARITY_MIN = 1e-20,
-  SIMILARITY_DEFAULT = 0.001,
+  SIMILARITY_MIN = 0,
+  SIMILARITY_MAX = 100,
+  SIMILARITY_DEFAULT = 1,
   SAMPLES = 10,
 };
 
@@ -83,17 +84,15 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
    * Use switchers to specify target outputs
    * Set target value for each selected item
 
-3. Choose ${HELP_ITEMS.METHOD}. Press <i class="grok-icon fal fa-cog"></i>
-to specify its settings.
+3. Choose ${HELP_ITEMS.METHOD}. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
 
 4. Specify the loss function type (in the ${HELP_ITEMS.LOSS} field).
 
 5. Enter the number of points to be found (in the ${HELP_ITEMS.SAMPLES} field).
 
-6. Set max distance between similar points(in the ${HELP_ITEMS.SIMILARITY} field).
-If distance between two fitted points is less than this value, they are the same.
+6. Set the maximum relative deviation (%) between similar fitted points (in the ${HELP_ITEMS.SIMILARITY} field).
 
-7. Press **Run** or <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
+7. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing 
 
    * loss function values

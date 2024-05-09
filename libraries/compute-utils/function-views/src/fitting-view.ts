@@ -358,6 +358,9 @@ export class FittingView {
     name: TITLE.SIMILARITY,
     inputType: 'Float',
     defaultValue: this.similarity,
+    min: 0,
+    max: 100,
+    units: '%',
   }));
 
   // Auxiliary dock nodes with results
@@ -486,7 +489,8 @@ export class FittingView {
       this.updateApplicabilityState();
     });
     this.similarityInput.addCaption(TITLE.SIMILARITY);
-    this.similarityInput.setTooltip('Max distance between similar points');
+    this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
+    ui.tooltip.bind(this.similarityInput.captionLabel, `Max relative deviation (%) between similar fitted points`);
 
     this.updateRunIconStyle();
     this.updateRunIconDisabledTooltip('Select inputs for fitting');
@@ -798,7 +802,7 @@ export class FittingView {
 
   /** Check similarity */
   private isSimilarityValid(): boolean {
-    if (this.similarity > FITTING_UI.SIMILARITY_MIN)
+    if ((this.similarity >= FITTING_UI.SIMILARITY_MIN) && (this.similarity <= FITTING_UI.SIMILARITY_MAX))
       return true;
 
     this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SIMILARITY}"`);
@@ -935,7 +939,7 @@ export class FittingView {
         costTooltip = 'maximum absolute devation';
       } else {
         costFunc = rmseCostFunc;
-        costTooltip = 'root mean square deviation';
+        costTooltip = 'root mean square error';
       }
 
       let optResult: OptimizationResult;
@@ -971,11 +975,12 @@ export class FittingView {
       }
 
       const extremums: Extremum[] = [allExtremums[0]];
+      const dist = this.similarity / 100;
 
       allExtremums.forEach((extr) => {
         let toPush = true;
 
-        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point) > this.similarity));
+        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point) > dist));
 
         if (toPush)
           extremums.push(extr);
@@ -987,19 +992,19 @@ export class FittingView {
       if (allExtrCount < this.samplesCount) {
         if (allExtrCount < 1) {
           grok.shell.warning(ui.divV([
-            ui.label(`Failed to find ${this.samplesCount} points`),
+            ui.label(`Failed to find ${this.samplesCount} point${this.samplesCount > 1 ? 's' : ''}`),
             ui.div([this.showFailsBtn]),
           ]));
 
           return;
         } else {
           grok.shell.info(ui.divV([
-            ui.label(`Found ${rowCount} points`),
+            ui.label(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`),
             ui.div([this.showFailsBtn]),
           ]));
         }
       } else
-        grok.shell.info(`Found ${rowCount} points`);
+        grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
 
       this.clearPrev();
       extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
