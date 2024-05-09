@@ -1,5 +1,10 @@
 # EDA changelog
 
+## 1.1.23 (2024-05-09)
+
+* Disable webGPU input in case if none is available.
+* Improvements to GPU device handling
+
 ## 1.1.22 (2024-04-25)
 
 Add support for webGPU MCL in full (sparse matrix and expansion/normalization operators)
