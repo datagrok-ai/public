@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.24 (2024-05-09)
+
+* Fix GPU description nullish value.
+
 ## 1.1.23 (2024-05-09)
 
 * Disable webGPU input in case if none is available.
