@@ -179,6 +179,10 @@ export class Dapi {
     return new FileSource();
   }
 
+  get reports(): UserReportsDataSource {
+    return new UserReportsDataSource();
+  }
+
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @deprecated
    * @param {string} method
@@ -947,6 +951,12 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    */
   getContainerLogs(containerId: string, limit: number = 10000): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, containerId, limit);
+  }
+}
+
+export class UserReportsDataSource {
+  getReports(num?: number, limit?: number): Promise<DataFrame> {
+    return api.grok_Reports_Get(num, limit);
   }
 }
 

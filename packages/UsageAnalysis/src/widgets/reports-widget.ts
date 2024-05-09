@@ -13,10 +13,10 @@ export class ReportsWidget extends DG.Widget {
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
     const currentUserId = DG.User.current().id;
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.DataFrame = await grok.functions.call('UsageAnalysis:ReportsTop20', {'packageOwnerId': currentUserId});
+      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20);
       const users: {[_: string]: any} = {};
       (await grok.dapi.users.list()).forEach((user) => {
-        users[user.friendlyName] = {
+        users[user.id] = {
           'avatar': user.picture,
           'name': user.friendlyName,
           'data': user,
@@ -45,7 +45,7 @@ export class ReportsWidget extends DG.Widget {
         item.style.padding = '5px';
         item.addEventListener('click', (e) => {
           e.preventDefault();
-          DetailedLog.showReportProperties(currentRow.get('report_id'), result, i);
+          DetailedLog.showReportProperties(currentRow.get('id'), result, i);
         });
         items.push(item);
       }
