@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.7 (2024-05-09)
+
+* Fix GPU description getting if value is nullish.
+
 ## 6.6.6 (2024-05-09)
 
 Disable webGPU input in case if none is available.
