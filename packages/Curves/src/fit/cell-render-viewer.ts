@@ -23,15 +23,10 @@ export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCel
       this.canvas.height = h;
       this.render();
     });
-
-    const bind = (f: (gridCell: DG.GridCell, e: MouseEvent) => void) => (e: MouseEvent) => {
-      if (this.gridCell)
-        f(this.gridCell, e);
-    }
-
-    this.canvas.onmousemove = bind(this.renderer.onMouseMove);
-    this.canvas.onmouseenter = bind(this.renderer.onMouseEnter);
-    this.canvas.onmouseleave = bind(this.renderer.onMouseLeave);
+  
+    this.canvas.onmousemove = (e: MouseEvent) => this.renderer.onMouseMove(this.gridCell!, e);
+    this.canvas.onmouseenter = (e: MouseEvent) => this.renderer.onMouseEnter(this.gridCell!, e);
+    this.canvas.onmouseleave = (e: MouseEvent) => this.renderer.onMouseLeave(this.gridCell!, e);
   }
 
   static fromGridCell(gridCell: DG.GridCell): CellRenderViewer {
