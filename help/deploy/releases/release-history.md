@@ -21,6 +21,16 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+
+
+## 2024-05-08 1.18.6
+
+### Fixes:
+
+* FormViewer: fixed an issue with dragging column headers
+* Scripting: Clear temporary token for input files
+
+
 ## 2024-05-01 1.18.5
 
 ### Improvemets:
