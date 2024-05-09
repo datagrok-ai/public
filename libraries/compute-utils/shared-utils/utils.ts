@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 import type ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type html2canvas from 'html2canvas';
 import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
