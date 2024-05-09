@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { swapTwoWays } from './swap';
 
 export const _package = new DG.Package();
 
@@ -13,9 +14,9 @@ export function info() {
 //name: complement
 //input: string nucleotides
 //output: string result
-export function complement(nucleotide: string): string {
-  // your code goes here
-  return nucleotide;
+export async function complement(nucleotide: string): Promise<string> { 
+  let result = await swapTwoWays(nucleotide, 'A', 'T');
+  return result;
 }
 
 //name: dna_nucleotide 
