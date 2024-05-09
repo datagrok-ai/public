@@ -1,5 +1,45 @@
 [
   {
+    "name": "EDA",
+    "date": "2024-05-09T12:42:20.158Z",
+    "version": "1.1.23",
+    "summary": "* Disable webGPU input in case if none is available.\r\n* Improvements to GPU device handling",
+    "dir": "packages/EDA",
+    "changelog": true,
+    "changelogDate": "2024-05-09",
+    "readme": true
+  },
+  {
+    "name": "Compute",
+    "date": "2024-05-09T12:07:51.864Z",
+    "version": "1.33.5",
+    "summary": "- RFV: Property default value getting both for 1.18.x and 1.19",
+    "dir": "packages/Compute",
+    "changelog": true,
+    "changelogDate": "2024-05-09",
+    "readme": true
+  },
+  {
+    "name": "Compute",
+    "date": "2024-05-08T11:02:48.732Z",
+    "version": "1.33.3",
+    "summary": "- Bundle size optimizations",
+    "dir": "packages/Compute",
+    "changelog": true,
+    "changelogDate": "2024-05-08",
+    "readme": true
+  },
+  {
+    "name": "Chembl",
+    "date": "2024-05-08T08:31:42.864Z",
+    "version": "1.0.36",
+    "summary": "",
+    "dir": "packages/Chembl",
+    "changelog": true,
+    "changelogDate": "2024-05-07",
+    "readme": true
+  },
+  {
     "name": "Compute",
     "date": "2024-05-07T16:07:21.269Z",
     "version": "1.33.1",
