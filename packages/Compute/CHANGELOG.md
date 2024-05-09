@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.33.4 (2024-05-09)
+
+### Features
+
+- Heavyweight imports optimization
+
 ## 1.33.3 (2024-05-08)
 
 ### Features
