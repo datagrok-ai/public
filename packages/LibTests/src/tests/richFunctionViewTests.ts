@@ -230,6 +230,30 @@ category('RichFunctionView Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
   });
 
+  test('Simple inputs default values', async () => {
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
+    await delay(100);
+    const expected = {
+      'inputs': [
+        [
+          'a',
+          1,
+        ],
+        [
+          'b',
+          2.2,
+        ],
+        [
+          'c',
+          'test',
+        ],
+      ],
+    };
+    expectDeepEqual(getFuncCallIO(view.funcCall).inputs, expected.inputs);
+  });
+
   test('Complex inputs setParamValue', async () => {
     const view = new RichFunctionView('Libtests:complexInputs');
     const inputValues: Record<string, any> = {
