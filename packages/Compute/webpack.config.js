@@ -1,9 +1,6 @@
 const path = require('path');
 
 module.exports = {
-  cache: {
-    type: 'filesystem',
-  },
   mode: 'development',
   entry: {
     package: './src/package.ts',
