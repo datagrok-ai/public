@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.33.5 (2024-05-09)
+
+### Features
+
+- RFV: Property default value getting both for 1.18.x and 1.19
+
 ## 1.33.4 (2024-05-09)
 
 ### Features
