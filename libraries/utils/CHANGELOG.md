@@ -1,5 +1,11 @@
 # utils changelog
 
+## 4.2.4 (2024-05-09)
+
+### Features
+
+* Testing viewers with async rendering
+
 ## 4.2.3 (2024-05-06)
 
 ### Features

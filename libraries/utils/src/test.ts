@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {testData} from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
+import { changeOptionsSaveLayout, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
@@ -91,10 +92,33 @@ export async function testEvent<T>(event: Observable<T>,
         resolve('OK');
       } catch (e) {
         reject(e);
+      } finally {
+        sub.unsubscribe();
+        clearTimeout(timeout);
       }
-      // Do not clearTimeout or event sub if handler fails
+    });
+    const timeout = setTimeout(() => {
       sub.unsubscribe();
-      clearTimeout(timeout);
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject(reason);
+    }, ms);
+    trigger();
+  });
+}
+
+export async function testEventAsync<T>(event: Observable<T>,
+  handler: (args: T) => Promise<void>, trigger: () => void, ms: number = 0, reason: string = `timeout`
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const sub = event.subscribe((args: T) => {
+        handler(args).then(() => {
+          resolve('OK');
+        }).catch((e) => {
+          reject(e);
+        }).finally(() => {
+          sub.unsubscribe();
+          clearTimeout(timeout);
+        });
     });
     const timeout = setTimeout(() => {
       sub.unsubscribe();
@@ -446,7 +470,7 @@ async function getResult(x: any): Promise<string> {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  categoryTimeout?: number, packageName?: string, verbose?: boolean) {
+  categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
   let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
   let type: string = 'package';
@@ -466,6 +490,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
+    stdError(x);
     r = {success: false, result: await getResult(x), ms: 0, skipped: false};
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
@@ -588,90 +613,48 @@ export async function testViewer(v: string, df: DG.DataFrame, options?: {
   detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
   packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
 }): Promise<void> {
-  const createViewer = async (tv: DG.TableView, v: string, packageName?: string): Promise<DG.Viewer> => {
-    let res: DG.Viewer;
-    if (packageName) {
-      res = await tv.dataFrame.plot.fromType(v) as DG.Viewer;
-      tv.dockManager.dock(res);
-    } else
-      res = tv.addViewer(v);
-    return res;
-  };
 
-  if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
-  let tv = grok.shell.addTableView(df);
-  const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  // const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
-  //   ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
-  const selector = ['div.ui-box' /* root */, 'canvas', 'svg', 'img', 'input', 'h1', 'a', '.d4-viewer-error']
-    .map((selTag) => `${viewerName} ${selTag}`).join(', ');
-  const res = [];
+  const packageName = options?.packageName ?? '';
+  if (options?.detectSemanticTypes)
+    await grok.data.detectSemanticTypes(df);
+  const tv = grok.shell.addTableView(df);
+
   try {
-    let viewer = await createViewer(tv, v, options?.packageName);
-    await awaitCheck(() => document.querySelector(selector) !== null,
-      'cannot load viewer', 3000);
-    const tag = document.querySelector(selector)?.tagName;
-    res.push(Array.from(tv.viewers).length);
-    if (!options?.readOnly) {
-      Array.from(df.row(0).cells).forEach((c:any) => c.value = null);
-      const num = df.rowCount < 20 ? Math.floor(df.rowCount / 2) : 10;
-      df.rows.select((row: DG.Row) => row.idx >= 0 && row.idx < num);
-      await delay(50);
-      for (let i = num; i < num * 2; i++) df.filter.set(i, false);
-      await delay(50);
-      df.currentRowIdx = 1;
-      const df1 = df.clone();
-      df.columns.names().slice(0, Math.ceil(df.columns.length / 2)).forEach((c: any) => df.columns.remove(c));
-      await delay(100);
-      tv.dataFrame = df1;
-    }
-    let optns: { [p: string]: any };
-    try {
-      optns = viewer.getOptions(true).look;
-    } catch (err: any) {
-      throw new Error(`Viewer's .getOptions() error.`, {cause: err});
-    }
-    let props: DG.Property[];
-    try {
-      props = viewer.getProperties();
-    } catch (err: any) {
-      throw new Error(`Viewer's .getProperties() error.`, {cause: err});
-    }
-    const newProps: Record<string, string | boolean> = {};
-    Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
-    props.filter((p: DG.Property) => p.choices !== null)
-      .forEach((p: DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
-    viewer.setOptions(newProps);
-    await delay(300);
-    const layout = tv.saveLayout();
-    const oldProps = viewer.getOptions().look;
-    tv.resetLayout();
-    res.push(Array.from(tv.viewers).length);
-    tv.loadLayout(layout);
-    const selector1 = `${viewerName} ${tag}`;
-    await awaitCheck(() => document.querySelector(selector1) !== null,
-      'cannot load viewer from layout', 3000);
-    res.push(Array.from(tv.viewers).length);
-    viewer = Array.from(tv.viewers).find((v: any) => v.type !== 'Grid')!;
-    expectArray(res, [2, 1, 2]);
-    expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
-    if (options?.arbitraryDfTest !== false) {
-      if (options?.awaitViewer) await options.awaitViewer(viewer);
-      grok.shell.closeAll();
+    //1. Open, do nothing and close
+    await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded);
+    //in case viewer with async rendering - wait for render to complete
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);
 
-      await delay(100);
-      tv = grok.shell.addTableView(catDF);
-      try {
-        viewer = await createViewer(tv, v, options?.packageName);
-      } catch (e) {
-        grok.shell.closeAll();
-        DG.Balloon.closeAll();
-        return;
-      }
-      await awaitCheck(() => document.querySelector(selector) !== null,
-        'cannot load viewer on arbitrary dataset', 3000);
+    //2. Open viewer, run selection, filter, etc. and close
+    if (!options?.readOnly) {
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, selectFilterChangeCurrent);
+      if (options?.awaitViewer)
+        await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, selectFilterChangeCurrent, options!.awaitViewer);
     }
-    if (options?.awaitViewer) await options.awaitViewer(viewer);
+
+    //2. Open viewer, change options, save layout and close
+    let propsAndLayout: { layout: any, savedProps: any } | null = null;
+    propsAndLayout = await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, changeOptionsSaveLayout);
+    if (options?.awaitViewer)
+      propsAndLayout = await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded,
+        changeOptionsSaveLayout, options!.awaitViewer)
+
+    //3. Load layout
+    await testViewerInternal(tv, v, packageName, grok.events.onViewLayoutApplied, loadLayout, undefined, propsAndLayout?.layout,
+      { savedProps: propsAndLayout?.savedProps });
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewLayoutApplied, loadLayout, options!.awaitViewer,
+        propsAndLayout?.layout, { savedProps: propsAndLayout?.savedProps });
+
+    //4. Open viewer on arbitary dataset
+    if (options?.arbitraryDfTest !== false) {
+      tv.dataFrame = catDF;
+      await delay(50);
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded);
+      if (options?.awaitViewer)
+        await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);
+    }
   } finally {
     // closeAll() is handling by common test workflow
     // grok.shell.closeAll();
