@@ -528,9 +528,9 @@ Solve an inverse problem: find input conditions leading to specified output cons
 
 4. Choose `method`. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
 
-5. Specify the loss function type (in the `loss` field).
+5. Specify the `loss` function type.
 
-6. Enter the number of points to be found (in the `samples` field).
+6. Set `samples` and `similarity`.
 
 7. Press the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing
@@ -540,9 +540,26 @@ Solve an inverse problem: find input conditions leading to specified output cons
    * viewers visualizing the goodness of fit
    * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
 
-If target is a dataframe, choose `argument`.
+![fitting-run.gif](/pics/fitting-run.gif)
 
-Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row.
+Apply the feature to functions with table outputs as well:
+
+1. Specify the target dataframe in the table input
+
+2. Set dataframe column with values of independent variable (in the `argument` choice input)
+
+![fitting-table.gif](/pics/fitting-table.gif)
+
+An inverse problem may have several solutions. Specify their expected number in the `samples` field. To filter fitted points, set `similarity`:
+
+* it is the maximum relative (%) deviation between coordinates of the "similar" points
+* the higher the value, the fewer points will be displayed
+
+![fitting-similarity.gif](/pics/fitting-similarity.gif)
+
+Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row:
+
+![fitting-context-panel.gif](/pics/fitting-context-panel.gif)
 
 Apply parameter optimization to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
 
