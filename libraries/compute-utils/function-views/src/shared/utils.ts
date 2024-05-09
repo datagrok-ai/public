@@ -7,6 +7,18 @@ import wu from 'wu';
 import {Observable} from 'rxjs';
 import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
 
+export const getDefaultValue = (prop: DG.Property) => {
+  // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
+  if (prop.options?.['default'])
+    return JSON.parse(prop.options?.['default']);
+
+  const legacyDefaultValue = prop.defaultValue;
+
+  return prop.propertyType === DG.TYPE.STRING && legacyDefaultValue?
+    (legacyDefaultValue as string).substring(1, legacyDefaultValue.length - 1):
+    legacyDefaultValue;
+};
+
 export function properUpdateIndicator(e: HTMLElement, state: boolean) {
   if (state) {
     $(e).addClass('ui-box').css({'width': 'auto', 'height': 'auto'});

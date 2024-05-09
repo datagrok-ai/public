@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDfFromRuns, getPropViewers} from './shared/utils';
+import {getDefaultValue, getDfFromRuns, getPropViewers} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getOutput} from './variance-based-analysis/sa-outputs-routine';
@@ -98,7 +98,7 @@ export class SensitivityAnalysisView {
     analysisInputs.samplesCount.input.root.insertBefore(getSwitchMock(), analysisInputs.samplesCount.input.captionLabel);
 
     const getInputValue = (input: DG.Property, key: string) => (
-      input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
+      input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key])
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput = true) => {
@@ -141,12 +141,12 @@ export class SensitivityAnalysisView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(inputProp.caption ?? inputProp.name, getDefaultValue(inputProp), (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
-            value: inputProp.defaultValue,
+            value: getDefaultValue(inputProp),
           },
           min: {
             input:
@@ -227,7 +227,7 @@ export class SensitivityAnalysisView {
           prop: inputProp,
           const: {
             input: (() => {
-              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v);
+              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, getDefaultValue(inputProp) ?? false, (v: boolean) => boolRef.const.value = v);
               temp.root.insertBefore(isChangingInputBoolConst.root, temp.captionLabel);
 
               return temp;
@@ -260,7 +260,7 @@ export class SensitivityAnalysisView {
 
             return temp;
           })(),
-          value: inputProp.defaultValue,
+          value: getDefaultValue(inputProp),
         };
         acc[inputProp.name] = {
           const: tempDefault,

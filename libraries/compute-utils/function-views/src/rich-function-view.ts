@@ -18,7 +18,7 @@ import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
+import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -1270,7 +1270,7 @@ export class RichFunctionView extends FunctionView {
       const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
       Object.entries(mapping).forEach(([input, key]) => this.setInput(
         input,
-        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? extractValue(key): getDefaultValue(this.funcCall.inputParams[input].property),
         funcCallInput.chosenRun ? 'restricted': 'user input',
       ));
     });
@@ -1283,7 +1283,7 @@ export class RichFunctionView extends FunctionView {
       return this.inputsOverride[val.property.name];
 
     if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
-      return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
+      return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
     case DG.TYPE.DATA_FRAME:
@@ -1461,10 +1461,7 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
-        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
-        newParam.property.defaultValue;
-      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
+      const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
