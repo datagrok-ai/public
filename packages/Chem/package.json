@@ -55,7 +55,8 @@
     "worker-loader": "latest",
     "source-map-loader": "^4.0.1",
     "wu": "latest",
-    "@webgpu/types": "^0.1.40"
+    "@webgpu/types": "^0.1.40",
+    "ngl": "latest"
   },
   "devDependencies": {
     "@types/wu": "latest",
