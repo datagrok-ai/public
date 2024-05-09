@@ -515,7 +515,7 @@ let y = x + 3;
 
 Solve an inverse problem: find input conditions leading to specified output constraints. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
 
-1. Press the "Run fitting" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens.
+1. Press the "Fit inputs" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens.
 
 2. In the `Fit` block, use switchers to specify inputs to be found:
 
@@ -532,10 +532,7 @@ Solve an inverse problem: find input conditions leading to specified output cons
 
 6. Enter the number of points to be found (in the `samples` field).
 
-7. Set max distance between similar points(in the `similarity` field).
-If distance between two fitted points is less than this value, they are the same.
-
-8. Press the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
+7. Press the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing
 
    * loss function values
@@ -543,7 +540,7 @@ If distance between two fitted points is less than this value, they are the same
    * viewers visualizing the goodness of fit
    * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
 
-If target is a dataframe, choose `argument`. 
+If target is a dataframe, choose `argument`.
 
 Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row.
 
