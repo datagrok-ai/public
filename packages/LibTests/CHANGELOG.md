@@ -1,5 +1,9 @@
 # LibTests changelog
 
+## 1.1.3 (2024-05-09)
+
+- Deps update (compute-utils v.1.33.5)
+
 ## 1.1.2 (2024-05-08)
 
 - Added author
