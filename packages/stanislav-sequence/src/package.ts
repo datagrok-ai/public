@@ -14,7 +14,7 @@ export function info() {
 //name: complement
 //input: string nucleotides
 //output: string result
-export async function complement(nucleotide: string): Promise<string> { 
+export async function complement(nucleotide: string): Promise<string> {
   let result = await swapTwoWays(nucleotide, 'A', 'T');
   return result;
 }
@@ -35,4 +35,14 @@ export function dna_nucleotide(nucleotide: string): string {
 export function complementWidget(nucleotide: any): any {
   // your code goes here
   return new DG.Widget(ui.divText(dna_nucleotide(nucleotide)));;
+}
+
+//name: executeFunction
+//tags: panel, widgets
+//input: string sequence 
+//input: string subsequence    
+//output: int result
+
+export async function executeCountSubsequence(sequence: string, subsequence: string): Promise<number> {
+  return await grok.functions.call('StanislavSequence:CountSubsequencePython', { sequence, subsequence });
 }
