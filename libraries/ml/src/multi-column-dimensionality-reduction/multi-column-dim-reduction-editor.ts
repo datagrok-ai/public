@@ -35,14 +35,15 @@ export class UMAPOptions {
   used with spread to control the clumped/dispersed nature of the embedding`};
   randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
-    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations', type: 'boolean'};
+    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations', type: 'boolean',
+      disableTooltip: 'WebGPU is not available'};
   constructor() {
     getGPUAdapterDescription().then((desc) => {
       if (desc) {
         this.useWebGPU.tooltip += ` (${desc})`;
       } else {
         this.useWebGPU.value = false;
-        this.useWebGPU.forceRemove = true;
+        this.useWebGPU.disable = true;
       }
     });
   };
@@ -252,20 +253,22 @@ export class MultiColumnDimReductionEditor {
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam | IDimReductionParam<string> | IDimReductionParam<boolean> =
           (params as any)[it];
-        if (!param.forceRemove) {
-          const input = param.type === 'string' ?
-            ui.stringInput(param.uiName, param.value ?? '', () => {
-              param.value = (input as DG.InputBase<string>).value;
-            }) : param.type === 'boolean' ?
-              ui.boolInput(param.uiName, param.value ?? false, () => {
-                param.value = (input as DG.InputBase<boolean>).value;
-              }) :
-              ui.floatInput(param.uiName, param.value as any, () => {
-                param.value = input.value;
-              });
-          ui.tooltip.bind(input.input ?? input.root, param.tooltip);
-          paramsForm.append(input.root);
-        }
+
+        const input = param.type === 'string' ?
+          ui.stringInput(param.uiName, param.value ?? '', () => {
+            param.value = (input as DG.InputBase<string>).value;
+          }) : param.type === 'boolean' ?
+            ui.boolInput(param.uiName, param.value ?? false, () => {
+              param.value = (input as DG.InputBase<boolean>).value;
+            }) :
+            ui.floatInput(param.uiName, param.value as any, () => {
+              param.value = input.value;
+            });
+        if (param.disable) {
+          input.enabled = false;
+          ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
+        } else { ui.tooltip.bind(input.input ?? input.root, param.tooltip); }
+        paramsForm.append(input.root);
       });
       return paramsForm;
     }

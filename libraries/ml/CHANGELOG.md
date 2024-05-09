@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.6 (2024-05-09)
+
+Disable webGPU input in case if none is available.
+
 ## 6.6.5 (2024-04-25)
 
 Add webGPU MCL implementation.
