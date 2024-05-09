@@ -300,17 +300,12 @@ export class MmpAnalysis {
     const module = getRdKitModule();
 
     //initial calculations
-    const t1 = performance.now();
     const frags = await getMmpFrags(mmpInput.molecules);
-    const t2 = performance.now();
     const [mmpRules, allCasesNumber] = await getMmpRules(frags, mmpInput.fragmentCutoff);
-    const t3 = performance.now();
-    console.log(`Call to fragments took ${t2 - t1} milliseconds`);
-    console.log(`Call to rules took ${t3 - t2} milliseconds`);
     const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
-    const {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
+    const {maxActs, diffs, meanDiffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
       getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
@@ -327,7 +322,7 @@ export class MmpAnalysis {
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      getGenerations(mmpInput, frags, allPairsGrid, activityMeanNames, module);
+      getGenerations(mmpInput, frags, meanDiffs, allPairsGrid, activityMeanNames, module);
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,

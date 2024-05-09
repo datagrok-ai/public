@@ -8,7 +8,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SubstructureSearchType} from '../../constants';
 import {MmpInput} from './mmp-constants';
 
-export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
+export function getGenerations(mmpInput: MmpInput, frags: [string, string][][], meanDiffs: Float32Array[],
   allPairsGrid: DG.Grid, activityMeanNames: Array<string>, module:RDModule):
   DG.Grid {
   const rulesColumns = allPairsGrid.dataFrame.columns;
@@ -20,9 +20,9 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
   const cores = new Array<string>(activityN * structures.length);
   const from = new Array<string>(activityN * structures.length);
   const to = new Array<string>(activityN * structures.length);
-  const prediction = new Array<number>(activityN * structures.length).fill(0);
+  const prediction = new Float32Array(activityN * structures.length).fill(0);
   const allStructures = Array(structures.length * activityN);
-  const allInitActivities: Array<number> = Array(structures.length * activityN);
+  const allInitActivities = new Float32Array(structures.length * activityN);
   const activityName: Array<string> = Array(structures.length * activityN);
 
   for (let i = 0; i < structures.length; i ++) {
@@ -43,7 +43,7 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
         for (let k = 0; k < rulesFrom.length; k++) {
           if (subst === rulesFrom.get(k)) {
             for (let kk = 0; kk < activityN; kk++) {
-              const activity = singleActivities[kk] + rulesColumns.byName(activityMeanNames[kk]).get(k);
+              const activity = singleActivities[kk] + meanDiffs[kk][k];
               if (activity > prediction[kk * structures.length + i]) {
                 prediction[kk * structures.length + i] = activity;
                 cores[kk * structures.length + i] = core;
@@ -56,7 +56,6 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
       }
     }
   }
-
 
   const generation = new Array<string>(cores.length);
   let mol = null;
@@ -76,20 +75,20 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][],
   }
 
   const cols = [];
-  cols.push(createColumnWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
-  cols.push(createColumnWithDescription('double', `Initial value`, allInitActivities));
-  cols.push(createColumnWithDescription('string', `Activity`, activityName));
-  cols.push(createColumnWithDescription('string', `Core`, cores, DG.SEMTYPE.MOLECULE));
-  cols.push(createColumnWithDescription('string', `From`, from, DG.SEMTYPE.MOLECULE));
-  cols.push(createColumnWithDescription('string', `To`, to, DG.SEMTYPE.MOLECULE));
-  cols.push(createColumnWithDescription('double', `Prediction`, prediction));
-  cols.push(createColumnWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', `Initial value`, Array.from(allInitActivities)));
+  cols.push(createColWithDescription('string', `Activity`, activityName));
+  cols.push(createColWithDescription('string', `Core`, cores, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', `From`, from, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', `To`, to, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', `Prediction`, Array.from(prediction)));
+  cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
-  createIsMoleculeExistingCol(mmpInput.molecules, generation, grid);
+  //createMoleculeExistsCol(mmpInput.molecules, generation, grid);
   return grid;
 }
 
-export function createColumnWithDescription(colType: any, colName: string, list: any[], semType?: DG.SemType): DG.Column {
+export function createColWithDescription(colType: any, colName: string, list: any[], semType?: DG.SemType): DG.Column {
   const col = DG.Column.fromList(colType, colName, list);
   if (columnsDescriptions[colName])
     col.setTag('description', columnsDescriptions[colName]);
@@ -98,17 +97,17 @@ export function createColumnWithDescription(colType: any, colName: string, list:
   return col;
 }
 
-export async function createIsMoleculeExistingCol(molecules: DG.Column, generation: string[], grid: DG.Grid): Promise<void> {
-  const progressBar = DG.TaskBarProgressIndicator.create(`Calculating generations...`);
-  const promises = [];
-  for (let i = 0; i < generation.length; i++)
-    promises.push(await chemSubstructureSearchLibrary(molecules, generation[i], '', FILTER_TYPES.substructure,
-      false, true, SubstructureSearchType.EXACT_MATCH));
-  Promise.all(promises).then((res: BitArray[]) => {
-    const molExistsColNew = createColumnWithDescription('bool', `Existing`, res.map((it, i) => generation[i] && !it.allFalse));
-    grid.dataFrame.columns.add(molExistsColNew);
-    grid.col(molExistsColNew.name)!.editable = false;
-    grid.invalidate();
-    progressBar.close();
-  });
-}
+// export async function createMoleculeExistsCol(molecules: DG.Column, generation: string[], grid: DG.Grid): Promise<void> {
+//   const progressBar = DG.TaskBarProgressIndicator.create(`Calculating generations...`);
+//   const promises = [];
+//   for (let i = 0; i < generation.length; i++)
+//     promises.push(await chemSubstructureSearchLibrary(molecules, generation[i], '', FILTER_TYPES.substructure,
+//       false, true, SubstructureSearchType.EXACT_MATCH));
+//   Promise.all(promises).then((res: BitArray[]) => {
+//     const molExistsColNew = createColumnWithDescription('bool', `Existing`, res.map((it, i) => generation[i] && !it.allFalse));
+//     grid.dataFrame.columns.add(molExistsColNew);
+//     grid.col(molExistsColNew.name)!.editable = false;
+//     grid.invalidate();
+//     progressBar.close();
+//   });
+// }
