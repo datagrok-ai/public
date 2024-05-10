@@ -2,7 +2,7 @@
 --friendlyName: Converters | ChEMBL to SMILES
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
---connection: Chembl
+--connection: ChemblSql
 --input: string id = "CHEMBL1185" { semType: CHEMBL_ID }
 --output: string smiles { semType: Molecule }
 --tags: unit-test
@@ -14,7 +14,7 @@ where d.chembl_id = @id
 
 --name: molregnoToSmiles
 --friendlyName: Converters | Molregno to SMILES
---connection: Chembl
+--connection: ChemblSql
 --input: int molregno
 --output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures where molregno = @molregno
@@ -25,7 +25,7 @@ select canonical_smiles from compound_structures where molregno = @molregno
 --friendlyName: Converters | Name to SMILES
 --meta.role: converter
 --meta.inputRegexp: (^[A-Z, a-z]+|\s+$)
---connection: Chembl
+--connection: ChemblSql
 --input: string compoundName
 --output: string smiles { semType: Molecule }
 select cs.canonical_smiles
@@ -42,7 +42,7 @@ inner join
 
 --name: namesToSmiles
 --friendlyName: Converters | Names to SMILES
---connection: Chembl
+--connection: ChemblSql
 --input: list<string> names
 WITH names AS (
     SELECT unnest as name FROM unnest(@names)
@@ -61,7 +61,7 @@ on t1.name = t2.name
 
 --name: inchiKeyToChembl
 --friendlyName: Converters | Inchi Key to ChEMBL
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   molecule_dictionary.chembl_id
@@ -75,7 +75,7 @@ from
 
 --name: inchiKeyToSmiles
 --friendlyName: Converters | Inchi Key to SMILES
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -88,7 +88,7 @@ from
 
 --name: inchiKeyToInchi
 --friendlyName: Converters | Inchi Key to Inchi
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -100,7 +100,7 @@ from
 
 --name: chemblToSmiles
 --friendlyName: Converters | ChEMBL to SMILES
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -114,7 +114,7 @@ from
 
 --name: chemblToInchi
 --friendlyName: Converters | ChEMBL to Inchi
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -128,7 +128,7 @@ from
 
 --name: chemblToInchiKey
 --friendlyName: Converters | ChEMBL to Inchi Key
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi_key
