@@ -299,9 +299,10 @@ export class MmpAnalysis {
     console.profile('MMP');
     //rdkit module
     const module = getRdKitModule();
+    const moleculesArray = mmpInput.molecules.toList();
 
     //initial calculations
-    const fragsOut = await getMmpFrags(mmpInput.molecules);
+    const fragsOut = await getMmpFrags(moleculesArray);
     const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
     const palette = getPalette(mmpInput.activities.length);
 
@@ -324,7 +325,7 @@ export class MmpAnalysis {
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      getGenerations(mmpInput, fragsOut, meanDiffs, allPairsGrid, activityMeanNames, module);
+      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames);
     console.profileEnd('MMP');
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,

@@ -16,9 +16,9 @@ type MolecularPair = {
 * Runs paralled fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
-export async function getMmpFrags(molecules: DG.Column): Promise<IMmpFragmentsResult> {
+export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsResult> {
   const service = await getRdKitService();
-  const res = await service.mmpGetFragments(molecules.toList());
+  const res = await service.mmpGetFragments(molecules);
   return res;
 }
 

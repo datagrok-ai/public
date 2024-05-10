@@ -412,6 +412,27 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {frags, smiles};
   }
 
+  mmpLinkFragments(cores: string[], fragments: string[]): string[] {
+    const size = cores.length;
+    const smiles = new Array<string>(size);
+    for (let i = 0; i < size; i++) {
+      let mol;
+      let smilesGen = '';
+      try {
+        const smi = `${cores[i]}.${fragments[i]}`.replaceAll('([*:1])', '9').replaceAll('[*:1]', '9');
+        mol = getMolSafe(smi, {}, this._rdKitModule);
+        smilesGen = mol.mol!.get_smiles();
+        smiles[i] = smilesGen;
+      } catch (e: any) {
+        smiles[i] = '';
+      } finally {
+        mol?.mol?.delete();
+      }
+    }
+
+    return smiles;
+  }
+
   mmpGetMcs(molecules: [string, string][]): string[] {
     const res: string[] = new Array<string>(molecules.length);
     for (let i = 0; i < molecules.length; i++) {

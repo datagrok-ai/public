@@ -1,29 +1,31 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions} from './mmp-constants';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../../chem-searches';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SubstructureSearchType} from '../../constants';
 import {MmpInput} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
+import {getRdKitService} from '../../utils/chem-common-rdkit';
 
-export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
-  allPairsGrid: DG.Grid, activityMeanNames: Array<string>, module:RDModule):
-  DG.Grid {
+export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
+  fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
+  allPairsGrid: DG.Grid, activityMeanNames: Array<string>):
+  Promise<DG.Grid> {
   const rulesColumns = allPairsGrid.dataFrame.columns;
-  const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM);
-  const rulesTo = rulesColumns.byName(MMP_COLNAME_TO);
 
-  // const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM).getRawData();
-  // const rulesTo = rulesColumns.byName(MMP_COLNAME_TO).getRawData();
-  // const rulesFromCats = rulesColumns.byName(MMP_COLNAME_FROM).categories;
-  // const rulesToCats = rulesColumns.byName(MMP_COLNAME_TO).categories;
+  const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM).getRawData();
+  const rulesTo = rulesColumns.byName(MMP_COLNAME_TO).getRawData();
+  const rulesFromCats = rulesColumns.byName(MMP_COLNAME_FROM).categories;
+  const rulesToCats = rulesColumns.byName(MMP_COLNAME_TO).categories;
   const activityN = activityMeanNames.length;
 
-  const structures = mmpInput.molecules.toList();
-  const structuresN = structures.length;
+  //const structures = mmpInput.molecules.toList();
+  //const structuresN = structures.length;
+  // const structures = mmpInput.molecules.getRawData();
+  // const structuresCats = mmpInput.molecules.categories;
+  const structuresN = mmpInput.molecules.length;
   const cores = new Array<string>(activityN *structuresN);
   const from = new Array<string>(activityN * structuresN);
   const to = new Array<string>(activityN * structuresN);
@@ -31,7 +33,6 @@ export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult
   const allStructures = Array(structuresN * activityN);
   const allInitActivities = new Float32Array(structuresN * activityN);
   const activityName: Array<string> = Array(structuresN * activityN);
-  //const singleActivities = new Float32Array(activityN);
   const activities = new Array<Float32Array>(activityN);
   const activityNames = Array<string>(activityN);
   for (let i = 0; i < activityN; i++) {
@@ -41,24 +42,18 @@ export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult
   }
 
   for (let i = 0; i < structuresN; i ++) {
-    // console.log('structure');
-    // console.log(i);
     for (let j = 0; j < activityN; j++) {
-      //const initActivity = mmpInput.activities.byName(name).get(i);
-      //singleActivities[j] = activities[j];
-      allStructures[j * structuresN + i] = structures[i];
-      allInitActivities[j * structuresN + i] = activities[j][i];//initActivity;
+      allStructures[j * structuresN + i] = moleculesArray[i];//mmpInput.molecules.get(i);
+      allInitActivities[j * structuresN + i] = activities[j][i];
       activityName[j * structuresN + i] = activityNames[j];
     }
 
     for (let j = 0; j < fragsOut.frags[i].length; j++) {
-      // console.log('frag');
-      // console.log(j);
       const core = fragsOut.frags[i][j][0];
       const subst = fragsOut.frags[i][j][1];
       if (core != '') {
         for (let k = 0; k < rulesFrom.length; k++) {
-          if (subst === rulesFrom.get(k)) {//{ rulesFromCats[rulesFrom[k]] ) {
+          if (subst === rulesFromCats[rulesFrom[k]] ) {
             for (let kk = 0; kk < activityN; kk++) {
               const activity = activities[kk][i] + meanDiffs[kk][k];
               const add = kk * structuresN;
@@ -66,7 +61,7 @@ export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult
                 prediction[add + i] = activity;
                 cores[add + i] = core;
                 from[add + i] = subst;
-                to[add + i] = rulesTo.get(k);
+                to[add + i] = rulesToCats[rulesTo[k]];
               }
             }
           }
@@ -75,26 +70,7 @@ export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult
     }
   }
 
-  const generation = new Array<string>(cores.length);
-  let mol = null;
-  for (let i = 0; i < cores.length; i++) {
-    let smilesGen = '';
-    try {
-      //very hacky way to link fragment to core.
-      //R group is substituted to max cycle number to get the linkage of two fragments
-      //(RDKit suuports 9 max embeded cycles)
-      const smi = `${cores[i]}.${to[i]}`.replaceAll('([*:1])', '9').replaceAll('[*:1]', '9');
-      mol = module.get_mol(smi);
-      smilesGen = mol.get_smiles();
-      generation[i] = smilesGen;
-    } catch (e: any) {
-
-    } finally {
-      mol?.delete();
-      generation[i] = smilesGen;
-    }
-  }
-
+  const generation = await (await getRdKitService()).mmpLinkFragments(cores, to);
   const cols = [];
   cols.push(createColWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('double', `Initial value`, Array.from(allInitActivities)));
