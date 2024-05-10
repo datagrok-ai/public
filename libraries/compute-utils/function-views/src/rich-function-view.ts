@@ -1384,7 +1384,7 @@ export class RichFunctionView extends FunctionView {
   private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
     const paramName = param.property.name;
 
-    ui.tooltip.bind(t.root, () => {
+    const generateTooltip = () => {
       const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
 
       const getExplanation = () => {
@@ -1401,7 +1401,9 @@ export class RichFunctionView extends FunctionView {
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
         ], {style: {'max-width': '300px'}}) : null;
-    });
+    };
+    ui.tooltip.bind(t.captionLabel, generateTooltip);
+    ui.tooltip.bind(t.input, generateTooltip);
   }
 
   private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {
