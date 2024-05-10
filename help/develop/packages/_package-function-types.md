@@ -89,7 +89,7 @@ To be continued...
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../../access/files/files.mdx). The platform provides a way to
+File viewers are used in Datagrok's [file share browser](../../access/files/files.md). The platform provides a way to
 define custom viewers or editors in addition to the native ones. These functions work with files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 

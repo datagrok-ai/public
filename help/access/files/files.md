@@ -1,8 +1,7 @@
 ---
 title: "Files"
+format: mdx
 ---
-
-# Files
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
@@ -13,10 +12,10 @@ Datagrok lets you work with files and directories on your system from the
 convenience of a web browser. You can browse, preview, open, create, delete,
 rename, download, clone, and share files and directories. When you sign up for
 Datagrok, a personal directory called **Home** is automatically created for you.
-Additionally, you can connect to [popular file systems](../databases/connectors/connectors.md), 
-including the [Amazon S3 bucket](../databases/connectors/s3.md),
-[Dropbox](../databases/connectors/dropbox.md), [Google Drive](../databases/connectors/googlecloud.md), and
-[Git](../databases/connectors/git.md), as well as [Windows and Linux network shares](../databases/connectors/files.md).
+Additionally, you can connect to [popular file systems](../databases/connectors/shares.md), 
+including the [Amazon S3 bucket](shares/s3.md),
+[Dropbox](shares/dropbox.md), [Google Drive](shares/googlecloud.md), and
+[Git](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).
 
 :::note
 
@@ -28,7 +27,7 @@ and is not available on the public Datagrok instance (public.datagrok.ai).
 :::note developers
 
 You can [create custom connectors](../databases/create-custom-connectors.md) 
-and [read files programmatically](../../develop/how-to/access-data.md/#reading-files).
+and [read files programmatically](../../develop/how-to/access-data.md#reading-files).
 
 :::
 
@@ -55,7 +54,7 @@ specify them correctly:
 * _Credentials_. You can specify credentials manually or using the 
 [Secrets Manager](../data-connection-credentials.md), such as the AWS Secrets Manager. 
 When entered manually, Datagrok stores secrets in a 
-[secure privilege management system](../../govern/security.md/#credentials). 
+[secure privilege management system](../../govern/security.md#credentials). 
 To specify who can change the connection credentials, click the **Gear** icon 
 and select from the **Credential owner** dropdown.
 
@@ -287,7 +286,7 @@ expire and can't be revoked.
 For tabular formats, you can create dynamic dashboards and share them with
 others via URL or reference them on external websites. To learn more about
 dynamic data updates, see 
-[Dynamic data](../../datagrok/concepts/project/project.md/#dynamic-data).
+[Dynamic data](../../datagrok/concepts/project/project.md#dynamic-data).
 
 :::
 

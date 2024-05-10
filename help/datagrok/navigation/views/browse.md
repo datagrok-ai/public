@@ -49,7 +49,7 @@ You may see view-specific options at the top, such as the **Create new connectio
 * **Apps**: Installed apps
 * **Namespaces**: Here, you can create
    folders that align with organizational use, such as by project or department. Each folder is a Datagrok [project](../../concepts/project/project.md) that can be shared with teams.  
-* **Files**: [File shares](../../../access/files/files.mdx)
+* **Files**: [File shares](../../../access/files/files.md)
 * **Databases**: Connections, queries, database schemas, tables, and columns
 * **Plugins**: All installed [plugins](../../plugins.md)
 * **Functions**: Queries, scripts, [OpenAPI](../../../access/open-api.md)

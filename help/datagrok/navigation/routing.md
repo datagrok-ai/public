@@ -18,7 +18,7 @@ The platform has browsers for the following entities:
 | Entity Browser                                 | URL                                                                                |
 |------------------------------------------------|------------------------------------------------------------------------------------|
 | [Projects](../concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
-| [Files](../../access/files/files.mdx)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
+| [Files](../../access/files/files.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../../compute/scripting/scripting.mdx)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
 | [Functions](../concepts/functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
@@ -48,7 +48,7 @@ not specified, the first view from the project will open.
 
 ## Files
 
-A [file share](../../access/files/files.mdx) for which the user has access is available by the link. You should
+A [file share](../../access/files/files.md) for which the user has access is available by the link. You should
 specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .

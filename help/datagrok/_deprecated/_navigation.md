@@ -43,7 +43,7 @@ Now, let's proceed to the sidebar icons and explore the functionality they offer
 This tab brings together the platform's main data-retrieving capabilities. There are multiple ways in which you can work
 with data in Datagrok: from a full in-browser experience to establishing data connections, deploying interactive
 applications, running data jobs, building pipelines. It all starts with a simple step
-of [importing data](../../access/files/files.mdx).
+of [importing data](../../access/files/files.md).
 
 ### Local files
 
@@ -56,7 +56,7 @@ and read more about [saving data to the server](/concepts/project/project.md#upl
 
 ### File browser
 
-[File shares](../../access/files/files.mdx) are arguably an even more popular choice for working with data. Files
+[File shares](../../access/files/files.md) are arguably an even more popular choice for working with data. Files
 form a hierarchy, which you can browse naturally from the interface. The
 [File Browser](https://public.datagrok.ai/files) operates as a file system: you can organize pieces of data into folders
 and subfolders, rename and move files. The [tree map](../../visualize/viewers/tree-map.md)
@@ -75,7 +75,7 @@ users can do that from `Data | Files | Actions | New File Share`. Besides, since
 connections, they can be added in the connection dialog (`Databases | Actions | Add New Connection`)
 . If you enable indexing feature, the platform will extract metadata from the files, which you can later apply in the
 search. The articles on
-[data access](../../access/access.md), [file shares](../../access/files/files.mdx)
+[data access](../../access/access.md), [file shares](../../access/files/files.md)
 and
 [routing](routing.md#files) explain in more detail how to work with file shares.
 

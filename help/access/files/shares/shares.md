@@ -23,4 +23,4 @@ See also:
 
 * [Supported connectors](../../databases/connectors/connectors.md)
 * [Databases](../../databases/databases.mdx)
-* [File shares](../files.mdx)
+* [File shares](../files.md)

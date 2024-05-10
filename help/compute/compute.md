@@ -247,7 +247,7 @@ could also be shared as URL
 The platform allows to seamlessly [access](../access/access.md) any machine-readable data source, such
 as [databases](../access/databases/databases.mdx),
 [web services](../access/open-api.md),
-[files](../access/files/files.mdx) (either on network shares on in S3). To make a model retrieve the
+[files](../access/files/files.md) (either on network shares on in S3). To make a model retrieve the
 input data from the data source, annotate the input parameter with the
 corresponding [parameterized query](../access/databases/databases.mdx#parameterized-queries). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
