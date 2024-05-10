@@ -1385,7 +1385,7 @@ export class RichFunctionView extends FunctionView {
     const paramName = param.property.name;
 
     ui.tooltip.bind(t.root, () => {
-      const desc = param.property.description ? `${param.property.description}.`: null;
+      const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
 
       const getExplanation = () => {
         if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
