@@ -32,7 +32,6 @@ zip
 /js-api/ui.js
 
 # JSDoc
-!/js-api/docs/.gitkeep
 /js-api/docs
 .DS_Store
 
@@ -67,6 +66,7 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
+docusaurus/js-api
 
 .terraform
 

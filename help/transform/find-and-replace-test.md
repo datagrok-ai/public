@@ -99,7 +99,7 @@ supports specifying the columns to run against, and [search patterns](../datagro
 1. Open [Find and Replace](find-and-replace-test.md) dialog
 
 1. Use search [patterns](../explore/data-search-patterns.md)  for numerical values (*">"*, *"<"*
-   . *"<="*, *">="*, *"range"*) in "Find what" field
+   . *"\<="*, *">="*, *"range"*) in "Find what" field
 
 * Numerical values ​​found correspond to the entered [pattern](../explore/data-search-patterns.md)
 

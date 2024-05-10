@@ -267,9 +267,9 @@ export class Widget<TSettings = any> {
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
-   *  Registered property gets added to {@see properties}.
+   *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *
+   *  
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue

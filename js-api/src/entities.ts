@@ -255,7 +255,7 @@ export class Func extends Entity {
   }
 
   /**
-   *  Executes the function with the specified {link parameters}, and returns result.
+   *  Executes the function with the specified {@link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
   async apply(parameters: {[name: string]: any} | any[] = {}): Promise<any> {
@@ -1076,8 +1076,8 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead. 
-   *  Returns properties for a package. 
+   * Deprecated. Use getSettings instead.
+   *  Returns properties for a package.
   */
   getProperties(): Promise<any> {
     return this.getSettings();

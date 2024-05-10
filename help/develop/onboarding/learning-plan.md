@@ -93,9 +93,9 @@ The goal for today is to set up the environment and learn how to create simple p
 
 1. Check out these links:
 
-   1. Wiki: <https://datagrok.ai/help>
-   1. JS API reference: <https://datagrok.ai/js-api/>
-   1. API samples: <https://public.datagrok.ai/js>
+   1. [Wiki](https://datagrok.ai/help)
+   1. [JS API reference](https://datagrok.ai/js-api/)
+   1. [API samples](https://public.datagrok.ai/js)
 
    Developers use these resources on a regular basis, so consider adding them to your bookmarks.
 1. Read our [Contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git

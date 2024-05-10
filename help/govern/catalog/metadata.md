@@ -18,7 +18,7 @@ Each entity can be associated with a list of key-value pairs.
 
 To search for entities with the specified parameters, use the `<paramName> <op> <value>` syntax, for instance:
 
-* `imported < 10/02/2019`
+* `imported \< 10/02/2019`
 * `rows > 200`
 * `author = @current`
 

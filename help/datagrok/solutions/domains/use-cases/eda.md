@@ -66,7 +66,8 @@ Need a specific tool or functionality? Easily [add custom viewers](../../../../d
 <iframe src="https://www.youtube.com/embed/tVwpRB8fikQ?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h3 class="card-title">Coffee Company</h3>
-    <p class="card-text">How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we achieve the following:<br />
+    <p class="card-text">
+    How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we achieve the following:<br />
                          • Retrieve historical data from the Postgres database<br />
                          • Explore, visualize, and clean the dataset<br />
                          • Impute missing values<br />

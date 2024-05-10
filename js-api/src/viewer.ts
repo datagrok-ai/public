@@ -52,7 +52,7 @@ export class TypedEventArgs<TData> {
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
  * See also {@link https://datagrok.ai/help/develop/how-to/manipulate-viewers}
  *
- * Use Viewer to control the viewers. To develop a custom viewer, {@see JsViewer}.
+ * @see Use Viewer to control the viewers. To develop a custom viewer, {@link JsViewer}.
  *
  * @example
  * let view = grok.shell.addTableView(grok.data.demo.demog());

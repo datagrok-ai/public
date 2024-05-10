@@ -21,8 +21,8 @@ already specified at the query level.
 | not equals             | != 5       |
 | greater than           | > 5        |
 | greater than or equals | >= 5       |
-| less than              | < 5        |
-| less than or equals    | <= 5       |
+| less than              | \< 5        |
+| less than or equals    | \<= 5       |
 | range (inclusive)      | 10-20      |
 | in                     | in (5, 10) |
 | not in                 | not in (5, 10) |

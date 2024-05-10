@@ -1401,7 +1401,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Chem: updated ml dependency, bump version
 * Ketcher: updated utils dependence, bump version
 * Charts: restructured the package
-* Adjusted the type for Entity.getProperties() to {[index: string]: any}
+* Adjusted the type for Entity.getProperties() to \{[index: string]: any}
 * Issue #1492: Chem | Elemental analysis: malformed data in dataset handling
 * Chem: bump new version
 * Tooltip.show now accepts String | HtmlElement
@@ -6613,7 +6613,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Histogram: Opacity for bands has no effect
 * (Bug) Line Chart: Exception while activating multiAxis & overviewType at the same time
 * (Bug) Line Chart: Previous renders of the chart are visible on the canvas
-* (Bug) Line Chart: X axis overlays on lines when { overviewType: "Line Chart" }
+* (Bug) Line Chart: X axis overlays on lines when \{ overviewType: "Line Chart" }
 * AppEvents.lastError: simplified the code and fixed a bug
 * Updated package-locks.
 * (Bug) Filters: show header property does not work

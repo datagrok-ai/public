@@ -10,6 +10,8 @@ keywords:
 format: mdx
 ---
 
+
+
 A **View** takes up most of the screen and is your primary work area. Commonly
 used views include [Browse](browse.md) and [Table View](table-view.md).
 Additionally, there are views for specialized tasks, like data access or

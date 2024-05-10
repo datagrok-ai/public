@@ -567,12 +567,10 @@ from our server.
    </details>
 
 1. Now let's see how to load external files by URL. Run a code snippet:
-   <https://public.datagrok.ai/js/samples/data-access/external/stock-prices>. We will see another application of  the
+   [stock-prices](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). We will see another application of  the
    `grok.data.loadTable` method in one of the next steps.
-1. Create a folder `files` in your package. Download the demographics dataset
-   <https://public.datagrok.ai/f/System.DemoFiles/demog.csv> and
-   <https://public.datagrok.ai/f/System.DemoFiles/cars.csv>. Add these files to the new folder. Also, put several files
-   with another extension there, e.g. <https://public.datagrok.ai/files/system.demofiles/chem/mol/aspirin.mol>.
+1. Create a folder `files` in your package. Download the [demographics dataset](https://public.datagrok.ai/f/System.DemoFiles/demog.csv) and [cars dataset](https://public.datagrok.ai/f/System.DemoFiles/cars.csv). Add these files to the new folder. Also, put several files
+   with another extension there, e.g. [aspirin mol file](https://public.datagrok.ai/files/system.demofiles/chem/mol/aspirin.mol).
 1. Write a function that works with files distributed with your package. It should add all *tables* from the `files`
    folder to the workspace:
 
