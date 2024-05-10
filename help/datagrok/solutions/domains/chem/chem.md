@@ -66,7 +66,7 @@ with chemical data:
   * Property and descriptor [calculators](#calculators).
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
 * Common utilities: [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), [dataset mutation](#mutation), and [virtual synthesis](#virtual-synthesis).
 * [Extensible environment](#customizing-and-extending-the-platform)
@@ -83,7 +83,7 @@ Chemical queries against data sources require a chemical cartridge, such as [RDK
 <details>
 <summary> Example: Substructure search in a database </summary>
 
-To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../../../access/databases/databases.mdx#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
+To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../../../access/databases/databases.md#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
 
 Substructure search:
 

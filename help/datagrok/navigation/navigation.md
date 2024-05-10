@@ -84,7 +84,7 @@ and more.
 </TabItem>
 <TabItem value="query-editor" label="Query Editor">
 
-[Query Editor](../../access/databases/databases.mdx#query-editor) is the main
+[Query Editor](../../access/databases/databases.md#query-editor) is the main
 interface for executing database queries. From its **Top Menu**, you can run,
 debug, or save changes to the query. <br/>
 

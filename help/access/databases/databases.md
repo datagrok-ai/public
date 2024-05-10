@@ -1,8 +1,7 @@
 ---
 title: "Databases"
+format: mdx
 ---
-
-# Databases
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';

@@ -76,7 +76,7 @@ link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datag
 The link to a [data query](../../access/access.md#data-query), in addition to its name, must also contain the
 corresponding [data connection](../../access/access.md#data-connection) name and the namespace (or several nested namespaces).
 
-[Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
+[Parameterized queries](../../access/databases/databases.md#parameterized-queries) can be executed as well. In this case, query parameters are
 passed directly in the URL. For example:
 
 [https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY](https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY)

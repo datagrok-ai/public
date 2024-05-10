@@ -289,7 +289,7 @@ To replace values matching your search, use the [find and replace](../../../tran
 Search patterns let you specify conditions in a free text search. Datagrok uses
 the same syntax to search both in tables and externally, such as
 when accessing databases with [parameterized
-queries](../../../access/databases/databases.mdx#parameterized-queries). 
+queries](../../../access/databases/databases.md#parameterized-queries). 
 
 When searching in tables, you can use conditions with the column
 name (e.g., `age > 21`). However, for external queries, specifying the column

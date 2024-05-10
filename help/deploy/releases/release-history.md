@@ -554,7 +554,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 * Improved data streaming, leading to major performance improvements for small queries.
 * Client-side caching of function results, allowing to save time and server capacity when executing immutable functions and queries.
-* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.mdx#debug-query).
+* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.md#debug-query).
 * Simplified and updated Datagrok local installation, now available with a [one-click script](https://datagrok.ai/help/develop/admin/docker-compose).
 * Self-adjustable viewer layouts that keep viewers usable even in a small window.
 * [Fuzzy text filter](../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.

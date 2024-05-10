@@ -50,5 +50,5 @@ following:
 
 See also:
 
-* [Databases](../databases.mdx)
+* [Databases](../databases.md)
 * [File shares](../../files/files.md)

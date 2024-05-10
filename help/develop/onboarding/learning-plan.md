@@ -25,7 +25,7 @@ perspective.
       and import it into the platform using different approaches: drag-and-drop, double-click the "Data" icon on the
       sidebar, select "Data > Open local file", press `Ctrl+O`, and so on.
    1. [File shares](../../access/files/files.md). Add the dataset to your *Home* directory.
-   1. [Databases](../../access/databases/databases.mdx#database-manager).
+   1. [Databases](../../access/databases/databases.md#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
       1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/Tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.

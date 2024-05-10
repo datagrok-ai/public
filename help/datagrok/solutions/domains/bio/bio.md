@@ -58,7 +58,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
     * A fit-for-purpose application for [SAR analysis for peptides](#sar-for-peptides)
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)

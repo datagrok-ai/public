@@ -38,7 +38,7 @@ The following commands are available from the **Top Menu**:
 * **Open text**: Opens a [window to import text](../../../access/files/files.mdx#)
 * **Refresh view**: Refreshes the **Browse** view
 
-You may see view-specific options at the top, such as the **Create new connection** button for [databases](../../../access/databases/databases.mdx).
+You may see view-specific options at the top, such as the **Create new connection** button for [databases](../../../access/databases/databases.md).
 
 ## Tree
 

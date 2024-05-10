@@ -245,11 +245,11 @@ could also be shared as URL
 ### Data access
 
 The platform allows to seamlessly [access](../access/access.md) any machine-readable data source, such
-as [databases](../access/databases/databases.mdx),
+as [databases](../access/databases/databases.md),
 [web services](../access/open-api.md),
 [files](../access/files/files.md) (either on network shares on in S3). To make a model retrieve the
 input data from the data source, annotate the input parameter with the
-corresponding [parameterized query](../access/databases/databases.mdx#parameterized-queries). Since both queries and models are functions,
+corresponding [parameterized query](../access/databases/databases.md#parameterized-queries). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
 
 By untangling the computation from the data access, implementing both of them as
@@ -259,22 +259,22 @@ applications also automatically benefit from all other cross-cutting features.
 
 The following example illustrates it. Suppose we want to develop an R-based simulation against the freshest data from
 the database. This would require two steps:
-[creating a parameterized query](../access/databases/databases.mdx#parameterized-queries), and creating a computation script. Here are the
+[creating a parameterized query](../access/databases/databases.md#parameterized-queries), and creating a computation script. Here are the
 query, the computation, and the automatically generated end result:
 
 ![auto-ui-queries](auto-ui-queries.png)
 
 Note that the `Powder` and `Metal` inputs above have lists of allowed values that were retrieved dynamically by
 executing the specified `PowderNames` and `Metals` queries. If these queries slow the UI down,
-consider [caching](../access/databases/databases.mdx#caching-data) the results.
+consider [caching](../access/databases/databases.md#caching-data) the results.
 
 Parameterized queries work via Datagrok's [data access](../access/access.md#data-connection) mechanism, allowing you to benefit
 from other access-related features:
 
-* [Result caching](../access/databases/databases.mdx#caching-data) (very useful when working with data that changes overnight)
-* [Visual table query builder](../access/databases/databases.mdx#query-editor)
-* [Visual schema query builder](../access/databases/databases.mdx#join-tables)
-* [DB explorer](../access/databases/databases.mdx#database-manager)
+* [Result caching](../access/databases/databases.md#caching-data) (very useful when working with data that changes overnight)
+* [Visual table query builder](../access/databases/databases.md#query-editor)
+* [Visual schema query builder](../access/databases/databases.md#join-tables)
+* [DB explorer](../access/databases/databases.md#database-manager)
 
 ## Reproducible computations
 

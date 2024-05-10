@@ -26,10 +26,10 @@ If it's machine-readable, we can work with it!
   databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))
 * Support for [OpenAPI](access/open-api.md) and access to [public datasets](../access/public-datasets.md)
 * [20+ file formats, 30+ molecule structure formats](../access/files/supported-formats.md). Drag-and-drop files to open
-* [Browse relational database schemas](../access/databases/databases.mdx#schema-browser)
-* Create, edit, and debug queries with [visual tools](../access/databases/databases.mdx#working-with-queries)
-* [Annotate queries](../access/databases/databases.mdx#parameterized-queries)
-  and save query results as [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results).
+* [Browse relational database schemas](../access/databases/databases.md#schema-browser)
+* Create, edit, and debug queries with [visual tools](../access/databases/databases.md#working-with-queries)
+* [Annotate queries](../access/databases/databases.md#parameterized-queries)
+  and save query results as [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results).
 
 [Learn more about data access](../access/access.md).
 
@@ -135,7 +135,7 @@ for areas like [cheminformatics](solutions/domains/chem/chem.md),
 * Data analysts? Drag and drop your local files to start analyzing. 
 * Data scientists mapping new store locations? [Excellent for strategic planning](https://www.youtube.com/watch?v=tVwpRB8fikQ).
 * Research scientists running complex simulations? [Absolutely](../compute/compute.md).
-* Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results), no coding needed. 
+* Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results), no coding needed. 
 * Developers? Quickly develop and test data-driven applications.   
 
 **Team size**: Datagrok is for individuals and teams of all sizes - from
