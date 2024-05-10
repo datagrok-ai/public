@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.33.6 (2024-05-10)
+
+### Features
+
+- Added lodash.cloneDeepWith types
+
 ## 1.33.5 (2024-05-09)
 
 ### Features

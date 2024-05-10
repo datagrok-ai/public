@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.33.5",
+  "version": "1.33.6",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -16,11 +16,11 @@
     "datagrok-api": "^1.17.0",
     "dayjs": "=1.11.10",
     "lodash.clonedeepwith": "^4.5.0",
+    "@types/lodash.clonedeepwith": "^4.5.9",
     "exceljs": "^4.3.0",
     "html2canvas": "^1.4.1"
   },
   "devDependencies": {
-    "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
