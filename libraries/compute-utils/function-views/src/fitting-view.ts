@@ -361,8 +361,6 @@ export class FittingView {
     inputType: 'Float',
     defaultValue: this.similarity,
     min: 0,
-    max: 100,
-    units: '%',
   }));
 
   // Auxiliary dock nodes with results
@@ -811,7 +809,7 @@ export class FittingView {
 
   /** Check similarity */
   private isSimilarityValid(): boolean {
-    if ((this.similarity >= FITTING_UI.SIMILARITY_MIN) && (this.similarity <= FITTING_UI.SIMILARITY_MAX))
+    if (this.similarity >= FITTING_UI.SIMILARITY_MIN)
       return true;
 
     this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SIMILARITY}"`);
@@ -983,13 +981,13 @@ export class FittingView {
         });
       }
 
-      const extremums: Extremum[] = [allExtremums[0]];
-      const dist = this.similarity / 100;
+      const extremums: Extremum[] = [];
+      const dist = this.similarity;
 
       allExtremums.forEach((extr) => {
         let toPush = true;
 
-        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point) > dist));
+        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point, minVals, maxVals) > dist));
 
         if (toPush)
           extremums.push(extr);
@@ -1100,7 +1098,7 @@ export class FittingView {
           gc.style.element = lossFuncGraphRoots[gc.gridRow];
 
         outputColNames.forEach((name) => {
-          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null)
+          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null && gofViewers[gc.gridRow] !== undefined)
             gc.style.element = gofViewers[gc.gridRow].get(name) ?? ui.label('');
         });
       });

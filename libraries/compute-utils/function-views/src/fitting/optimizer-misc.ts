@@ -49,13 +49,13 @@ export function sleep(ms: number) {
 };
 
 /** Distance between point */
-export function distance(x: Float32Array, y: Float32Array): number {
-  if (x.length !== y.length)
+export function distance(x: Float32Array, y: Float32Array, mins: Float32Array, maxs: Float32Array): number {
+  if ((x.length !== y.length) || (x.length !== mins.length) || (x.length !== maxs.length))
     throw new Error('Inconsistent found points');
 
-  let max = 0;
+  return x.reduce((sum, cur, idx) => {
+    const div = maxs[idx] - mins[idx];
 
-  x.forEach((val, idx) => max = Math.max(Math.abs(val - y[idx]) / Math.max(1e-20, Math.abs(val)), max));
-
-  return max;
+    return sum + ((div > 0) ? Math.abs(cur - y[idx]) / div : 0);
+  });
 }
