@@ -157,6 +157,9 @@ Certain viewers include statistical features:
   measures](../../../visualize/viewers/statistics.md#statistical-measures) for
   the selected columns.
 
+To learn about available hypothesis tests, see [Statistical hypothesis
+testing](../../solutions/domains/data-science.md#statistical-hypothesis-testing).
+
 <!--- ChaRPY package is not active now
 
 In addition, you can use the **To Script > To Python** and **To Script > To R**

@@ -1,6 +1,16 @@
 [
   {
     "name": "EDA",
+    "date": "2024-05-09T21:42:51.819Z",
+    "version": "1.1.24",
+    "summary": "* Fix GPU description nullish value.",
+    "dir": "packages/EDA",
+    "changelog": true,
+    "changelogDate": "2024-05-09",
+    "readme": true
+  },
+  {
+    "name": "EDA",
     "date": "2024-05-09T12:42:20.158Z",
     "version": "1.1.23",
     "summary": "* Disable webGPU input in case if none is available.\r\n* Improvements to GPU device handling",
