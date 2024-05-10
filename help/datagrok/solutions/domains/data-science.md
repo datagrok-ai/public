@@ -40,8 +40,8 @@ interactive dashboards based on the retrieved data, and publish these dashboards
 
 Available hypothesis tests:
 
-* [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test): #{x.TTest}
-* [Kolmogorov–Smirnov test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test): #{x.KSTest}
+* [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test): #\{x.TTest}
+* [Kolmogorov–Smirnov test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test): #\{x.KSTest}
 
 Return p-values.
 

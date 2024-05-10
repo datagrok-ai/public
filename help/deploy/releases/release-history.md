@@ -2559,7 +2559,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Grid's Hamburger menu jumps around cursor when resizing columns
 * Library gridext: Enabled pinned column resize functionality
 * GIS: detectors optimization, colorcoding issue fixed
-* (Bug) Parameterized Queries: Parameters with {choices} not working
+* (Bug) Parameterized Queries: Parameters with \{choices} not working
 * bio lib: Calculate .alphabetSize tag on demand
 * Closes #1171 Bio: enhance detectMacromolecule speed
 * Library gridext: Bumping Up the library's version

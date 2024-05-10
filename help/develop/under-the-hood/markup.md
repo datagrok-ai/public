@@ -37,7 +37,7 @@ To embed an expression, use: `#{expression}`
 | Current cell        | t.currentCell                                                | X0273T21000400001          |
 | Current row value   | t.row\[USUBJID\]                                             | X0273T21000200001          |
 | Color               | color(AGE)                                                   | #e5e5ff                    |
-| Formula             | formula(${AGE} * 2)                                          | 116                        |
+| Formula             | formula($\{AGE} * 2)                                         | 116                        |
 | Value editor        | t.editor\[USUBJID\]                                          |                            |
 | Statistics          | t.stats.avg(AGE)                                             | 45.69                      |
 | Chart               | chart\{"type":"Histogram","look":\{"valueColumnName":"AGE"}} |                            |
