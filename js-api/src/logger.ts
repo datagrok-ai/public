@@ -135,8 +135,8 @@ export class PackageLogger extends Logger {
 }
 
 export class DetailedLog {
-  static showReportProperties(reportId: string, df: DataFrame, index: number): void {
-    api.grok_DetailedLog_Get_Accordion(reportId, toDart(df), index);
+  static showReportProperties(reportId: string): void {
+    api.grok_DetailedLog_Get_Accordion(reportId);
   }
 }
 

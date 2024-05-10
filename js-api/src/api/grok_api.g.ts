@@ -1432,8 +1432,11 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String, df: any, index: Num): any;
+  grok_DetailedLog_Get_Accordion(reportId: String): any;
   grok_Reports_Get(num: Num, limit: Num): Promise<any>;
+  grok_UserReport_id(report: any): any;
+  grok_UserReport_isResolved(report: any): any;
+  grok_UserReport_jiraTicket(report: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

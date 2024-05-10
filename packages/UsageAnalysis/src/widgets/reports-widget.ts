@@ -11,7 +11,6 @@ export class ReportsWidget extends DG.Widget {
     super(ui.box());
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
-    const currentUserId = DG.User.current().id;
     this.root.appendChild(ui.waitBox(async () => {
       const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20);
       const users: {[_: string]: any} = {};
@@ -45,7 +44,7 @@ export class ReportsWidget extends DG.Widget {
         item.style.padding = '5px';
         item.addEventListener('click', (e) => {
           e.preventDefault();
-          DetailedLog.showReportProperties(currentRow.get('id'), result, i);
+          DetailedLog.showReportProperties(currentRow.get('id'));
         });
         items.push(item);
       }

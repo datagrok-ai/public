@@ -1407,3 +1407,21 @@ export class Schema {
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
 }
+
+export class UserReport extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get id(): string {
+    return api.grok_UserReport_id(this.dart);
+  }
+
+  get isResolved(): boolean {
+    return api.grok_UserReport_isResolved(this.dart);
+  }
+
+  get jiraTicket(): string {
+    return api.grok_UserReport_jiraTicket(this.dart);
+  }
+}

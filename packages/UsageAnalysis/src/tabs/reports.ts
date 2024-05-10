@@ -48,15 +48,6 @@ export class ReportsView extends UaView {
                 const newViewer = DG.Viewer.grid(df);
                 this.updateDf(df, newViewer, this.users);
                 viewer.root.replaceWith(newViewer.root);
-                setTimeout(() => {
-                  const numbers = df.getCol('number');
-                  for (let i = 0; i < numbers.length; i++)
-                    if (numbers.get(i) == reportNumber) {
-                      df.currentRowIdx = i;
-                      break;
-                    }
-                  newViewer.vertScroll.scrollBy(df.currentRowIdx);
-                }, 200);
               });
           }
         }
@@ -102,6 +93,7 @@ export class ReportsView extends UaView {
   updateDf(t: DG.DataFrame, viewer: DG.Grid, users: { [_: string]: any; }) {
     if (t.rowCount === 0) return viewer.root
     viewer.sort(['is_resolved', 'time'], [true, false]);
+    this._scroll(viewer);
     this.applyStyle(viewer);
     viewer.onCellPrepare(async function(gc) {
       if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -135,18 +127,42 @@ export class ReportsView extends UaView {
 
     t.getCol('labels').setTag(DG.Tags.MultiValueSeparator, ',');
     t.onCurrentRowChanged.subscribe(async (_: any) => this.showPropertyPanel(t));
-    t.onValuesChanged.subscribe(async () => viewer.sort(['is_resolved', 'time'], [true, false]));
+    t.onValuesChanged.subscribe(async () => {
+      viewer.sort(['is_resolved', 'time'], [true, false]);
+      this._scroll(viewer);
+    });
+    grok.events.onEvent('d4-report-resolved').subscribe((r: DG.UserReport) => {
+      const idCol = t.getCol('id');
+      const length = idCol.length;
+      for (let i = 0; i < length; i++) {
+        if (idCol.get(i) === r.id) {
+          t.cell(i, 'is_resolved').value = r.isResolved;
+          t.fireValuesChanged();
+        }
+      }
+    });
+
+    grok.events.onEvent('d4-report-ticket_created').subscribe((r: DG.UserReport) => {
+      const idCol = t.getCol('id');
+      const length = idCol.length;
+      for (let i = 0; i < length; i++) {
+        if (idCol.get(i) === r.id) {
+          t.cell(i, 'jira').value = r.jiraTicket;
+          t.fireValuesChanged();
+        }
+      }
+    });
 
     this.reloadFilter(t);
   }
 
   showPropertyPanel(t: DG.DataFrame) {
     const currentRow = t.currentRowIdx;
-    if (currentRow === null || currentRow === undefined || currentRow === -1) return;
+    if (currentRow === -1) return;
     const reportId = t.getCol('id').get(currentRow);
     if (!reportId) return;
     this.updatePath(t.getCol('number').get(currentRow));
-    DG.DetailedLog.showReportProperties(reportId, t, currentRow);
+    DG.DetailedLog.showReportProperties(reportId);
   }
 
   reloadFilter(table: DG.DataFrame) {
@@ -160,14 +176,34 @@ export class ReportsView extends UaView {
     }
   }
 
-  updatePath(reportNumber: string): void {
+  _scroll(viewer: DG.Grid): void {
+    const segments = window.location.href.split('/');
+    const last = segments[segments.length - 1];
+    if (last !== 'reports' && /^-?\d+$/.test(last)) {
+      const num = parseInt(last);
+      if (num) {
+        setTimeout(() => {
+          const df = viewer.dataFrame;
+          const numbers = df.getCol('number');
+          for (let i = 0; i < numbers.length; i++)
+            if (numbers.get(i) == num) {
+              viewer.scrollToCell('is_resolved', i);
+              df.currentRowIdx = i;
+              break;
+            }
+        }, 200);
+      }
+    }
+  }
+
+  updatePath(reportNumber: number): void {
     const segments = window.location.href.split('/');
     const last = segments[segments.length - 1];
     if (last === 'reports')
-      segments.push(reportNumber);
+      segments.push(reportNumber.toString());
     else {
       if (/^-?\d+$/.test(last))
-        segments[segments.length - 1] = reportNumber;
+        segments[segments.length - 1] = reportNumber.toString();
       else
         return;
     }
