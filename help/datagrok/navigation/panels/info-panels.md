@@ -211,7 +211,7 @@ based on the structure of the table that is currently open.
 
 See the following info pane (viewer-scatter.grok) in action by opening
 (project:demog). It creates a [Scatter
-Plot](../../../visualize/viewers/scatter-plot.mdx), sets the axes to the predefined
+Plot](../../../visualize/viewers/scatter-plot.md), sets the axes to the predefined
 columns, and adds a regression line.
 
 <details>

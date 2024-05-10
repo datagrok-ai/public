@@ -144,7 +144,7 @@ Subject to permissions, you can:
 <TabItem value="navigation" label="Navigation">
 
 For quick navigation, preview, or batch actions, use the 
-[Column Manager](../../datagrok/navigation/column-manager.md).
+[Column Manager](../../datagrok/navigation/panels/column-manager.md).
 To open, on the **Status Bar**, click **Columns:**
 
 <br/>

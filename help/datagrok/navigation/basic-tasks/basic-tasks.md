@@ -38,8 +38,7 @@ where to save it.
 ### Table Views
 
 When you open a CSV file or run a [function](../../concepts/functions/functions.md)
-that produces a table, it opens a [Table
-View](../navigation/views/table-view.md) resembling Excel. Here, you can edit both the data
+that produces a table, it opens a [Table View](../views/table-view.md) resembling Excel. Here, you can edit both the data
 (the [table](../../concepts/objects.md)) and it visual representation (the
 [layout](../../../visualize/view-layout.md)).
 
@@ -68,8 +67,7 @@ To save:
          data.
    1. Optional:
       1. To update the data every time you open a project, toggle **Data sync**.
-         This feature is commonly used to create [dynamic
-         dashboards](../../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results)
+         This feature is commonly used to create [dynamic dashboards](../../../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results)
          or when tables link to different projects.
       1. To save your project in a presentation mode, toggle **Presentation mode**.
 1. Click **OK** to save. The **SAVE** button in the **Table View** turns grey,
@@ -107,8 +105,7 @@ To share an entity using context actions:
    1. To notify via email, when entering the user identity, use emails instead of user/group names. The email notification will include a link to the shared entity and the description provided.
    1. To notify via Datagrok, enter a user or group name. The recipients will receive an in-app notification.
    1. To skip notification, clear the **Send notification** checkbox.
-1. Click **OK** to share. The shared item appears in the recipient's [Browse
-   view](../navigation/views/browse.md).
+1. Click **OK** to share. The shared item appears in the recipient's [Browse view](../views/browse.md).
 
 ## Download
 

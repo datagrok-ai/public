@@ -167,7 +167,7 @@ Some info panes can customized. To reveal an info pane's available options, hove
 
 ![Customize-info-panes](img/interactive-panes.gif)
 
-To learn how to customize and extend the platform programmatically, see the [Develop](../../develop/) section of our documentation.
+To learn how to customize and extend the platform programmatically, see the **Develop** section of our documentation.
 
 </details>
 
@@ -187,7 +187,7 @@ The spreadsheet lets you visualize, edit, and efficiently work with chemical str
 
 Datagrok _viewers_ recognize and display chemical data. The viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. They also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
 
-In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
+In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
 
 To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../../../visualize/viewers/viewers.md) section of our documentation.
 
@@ -331,7 +331,7 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.md).
 
 ![chem-space](../../../../compute/chem-space.gif)
 
@@ -508,7 +508,7 @@ You can use a scaffold tree with other [filters](../../../../visualize/viewers/f
 
 ### Activity cliffs
 
-The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules with highly similar structures but significantly different activity levels, known as "activity cliffs." This tool uses distance-based dimensionality reduction algorithms (such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/)) to convert cross-similarities into a [2D scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
+The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules with highly similar structures but significantly different activity levels, known as "activity cliffs." This tool uses distance-based dimensionality reduction algorithms (such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/)) to convert cross-similarities into a [2D scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![Activity cliffs](activity-cliffs-0.png)
 
@@ -595,7 +595,7 @@ in the analyzed activity or property resulting from a fragment substitution.
 <TabItem value="cliffs" label="Cliffs"> 
 
 In the **Cliffs** tab, a
-[scatterplot](../../../../visualize/viewers/scatter-plot.mdx) shows clusters of
+[scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
 molecules with similar structures but significant differences in the analyzed
 activity or property. Arrows connecting molecules represent changes in the
 specified activity or property, with the arrow pointing toward the molecule with

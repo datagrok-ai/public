@@ -30,7 +30,7 @@ You can also [connect to a data source, query data, and share connections progra
 
 ### Adding connection
 
-![Add new database connection](img/database-connection.gif)
+![Add a new database connection](img/database-connection.gif)
 
 To add a new connection, follow these steps:
 

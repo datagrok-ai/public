@@ -90,13 +90,13 @@ _[layout](../../visualize/view-layout.md)_) is separated from the data
 <TabItem value="projects" label="Projects">
 
 Projects act like folders containing various _entities_ such as dataframes,
-queries, or scripts. For example, [dashboards](../../../visualize/dashboard.md) are
+queries, or scripts. For example, [dashboards](../../visualize/dashboard.md) are
 projects that include two _entities_: the underlying data (a [dataframe](../table.md)) and
-the visualizations applied to it (a [layout](../../../visualize/view-layout.md)). 
+the visualizations applied to it (a [layout](../../visualize/view-layout.md)). 
 
 Projects are essential for organizing, managing, and sharing data assets. The
 [Browse](../../navigation/views/browse.md) view organizes projects in a tree
-that governs [entity privileges](../../../govern/authorization.md).
+that governs [entity privileges](../../govern/authorization.md).
 
 </TabItem>
 </Tabs>

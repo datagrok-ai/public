@@ -551,7 +551,7 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 ### Visualizations
 
 Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
-[Scatter Plot](../../visualize/viewers/scatter-plot.mdx)
+[Scatter Plot](../../visualize/viewers/scatter-plot.md)
 , [Histogram](../../visualize/viewers/histogram.md), Line Chart, Bar Chart, Pie Chart, Trellis, Matrix Plot, 3D Scatter,
 Density Plot, PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlation, Calendar, Table Grid,
 Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are purpose-fit

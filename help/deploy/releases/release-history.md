@@ -400,7 +400,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
     * [#2316](https://github.com/datagrok-ai/public/issues/2316): Errors on combining scaffold tree with some other filters.
     * [#2359](https://github.com/datagrok-ai/public/issues/2359): For some filters the item search is not working when another filter search is open
     * The min and max values for dates do not fit the entire value.
-* For [Scatter plot](../../visualize/viewers/scatter-plot.mdx) fixed:
+* For [Scatter plot](../../visualize/viewers/scatter-plot.md) fixed:
   * [#2285](https://github.com/datagrok-ai/public/issues/2285): Default marker size is not changed on moving slider.
   * [#2408](https://github.com/datagrok-ai/public/issues/2408): Incorrect tooltip for 'zoom and filter'.
   * [#2402](https://github.com/datagrok-ai/public/issues/2402): Min/max values are not saved/restored in the layout.
@@ -583,7 +583,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue, which caused error message when called through `grok.events.onContextMenu` context.
   * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views.
   * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   
   * [#2089](https://github.com/datagrok-ai/public/issues/2089): Added an option to change Scatter plot and Trellis plot's mouse drag action from panning to selection. For trellis plot with an inner scatter plot viewer, the default value is `selection`.
   *  [#2108](https://github.com/datagrok-ai/public/issues/2108): Improved behavior of 'Dot' marker type on Scatter plot.
@@ -735,7 +735,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * [Filter Panel](../../visualize/viewers/filters.md):
   * Added the ability to sort the default filters by #categories.
   * Fixed [#1837](https://github.com/datagrok-ai/public/issues/1837): Filters cannot be enabled if all filters were disabled in another view
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
    * [#1746](https://github.com/datagrok-ai/public/issues/1746): Added the ability to set date for the Min and Max values on axes.
    * [#1882](https://github.com/datagrok-ai/public/issues/1882): Reset the Min and Max values on column change.
    * Fixed:
@@ -980,7 +980,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
     * Filters re-ordering dialog is not opened if a custom filter was added to filters panel
     * The usability of range filters when min/max values existing in the table were shown instead of actually set range
     * Slow filtering if there are multiple bar charts on several views.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   * Now it displays legend labels for conditional coloring.
   * Added date picker for X and Y axes min/max values.
   * Harmonized the scatter plot context menu:
@@ -1787,7 +1787,7 @@ Here are some of the biggest improvements:
     configuration isn't applied to the column in the grid.
   * Fixed changing the linear color scheme issue. Now the null values don't get colored.
   * Fixed inconsistent behavior of color coding checkboxes in the columns context menu.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   * Added the exact min/max of the column on the axes' ticks.
   * Context menu: marker section doesn't close on click.
   * Fixed axis buffer and filters interaction.

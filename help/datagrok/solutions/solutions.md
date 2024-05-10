@@ -28,7 +28,7 @@ customize the platform for any domain of knowledge. For example:
 * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
 * Multiple molecular sketchers
 * Powerful, chemical spreadsheet and other chemically-aware viewers
-* Customizable [chemical info panes](domains/chem/info-panels/chem-info-panes.md)
+* Customizable [chemical info panes](domains/chem/info-panels/info-panels.md)
 * Substructure search
 * [Chemical space analysis](./domains/chem/chem.md#chemical-space)
 * R-groups decomposition

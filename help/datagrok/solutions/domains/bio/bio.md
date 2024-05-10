@@ -180,7 +180,7 @@ an interconnected system ideal for exploratory data analysis.
 Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers
 ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)),
 and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
-can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
+can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md),
 a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
 a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md),
 and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
@@ -333,7 +333,7 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 ### Sequence space
 
 Sequence space visualizes a collection of sequences in 2D such that similar sequences are placed close to each other
-(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), [distance functions](https://www.sciencedirect.com/science/article/pii/S0888613X07000382)). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
+(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), [distance functions](https://www.sciencedirect.com/science/article/pii/S0888613X07000382)). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 

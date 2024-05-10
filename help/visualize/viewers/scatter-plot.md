@@ -1,5 +1,6 @@
 ---
 title: "Scatterplot"
+format: mdx
 ---
 
 A scatterplot displays data points on the horizontal (X) and vertical (Y) axes
@@ -95,7 +96,7 @@ customize the scatterplot's tooltip to show the data you want using the
 **Tooltip** info panel or via the context menu.
 
 In addition, a scatterplot itself can be used as a 
-[group tooltip](viewers.md#group-tooltips), which may be especially useful when 
+[group tooltip](../../datagrok/navigation/views/table-view.md#group-tooltips), which may be especially useful when 
 dealing with grouped or clustered data or when the screen space is limited.
 
 ![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
@@ -114,7 +115,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 See also:
 
 * [Column selectors](column-selectors.md)
-* [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigationn/views/table-view.md)
+* [Viewers](viewers.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API:
   Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)

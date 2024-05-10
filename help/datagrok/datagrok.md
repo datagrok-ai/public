@@ -68,7 +68,7 @@ suggestions.
 
 * [50+ interactive viewers](../visualize/viewers/viewers.md) for synchronized, dynamic dashboards
 * [Integration with visualizations in R, Python, or Julia](../visualize/viewers/scripting-viewer.md)
-* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.mdx#calculations-and-trends),
+* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.md#calculations-and-trends),
   confidence intervals, correlations, and statistics
 * Automatic detection of outliers, [missing values](../transform/missing-values-imputation.md),
  or incorrect data types

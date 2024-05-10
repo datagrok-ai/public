@@ -3,8 +3,8 @@ title: "Markup"
 sidebar_position: 4
 ---
 
-Datagrok Markup is a lightweight scripting language used in both the [Flex
-View](views/views.md#flex-view) and [Markup
+Datagrok Markup is a lightweight scripting language used in both the Flex
+View and [Markup
 viewer](../visualize/supported-viewers.md). Using Markup, you can combine text
 narrative, calculations, and Datagrok UI elements like
 [viewers](../../visualize/supported-viewers.md) or
