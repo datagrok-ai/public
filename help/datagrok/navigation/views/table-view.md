@@ -77,12 +77,12 @@ the viewer's appearance or data. For example, you can hide or color-code grid
 columns or change the background color in other viewers.
 
 To access a viewer's settings, do any of the following:
-* Click the **Gear (<img src={GearIcon} width="20"/>) icon** on top of the viewer
-* Press <kbd>F4</kbd> when the viewer has focus
-* Right-click it and select **Properties...**
+* Click the **Gear (<img src={GearIcon} width="20"/>) icon** on top of the viewer.
+* Press <kbd>F4</kbd> when the viewer has focus.
+* Right-click it and select **Properties...**.
 
 These actions update the **Context Panel** with available settings. The most
-important data properties are shown on the viewer itself, for example, combo
+important data properties are shown on the viewer, for example, combo
 boxes that select columns. 
 
 Grid is a special viewer. To learn about how to change its appearance or settings, see [Grid](../../../visualize/viewers/grid.md).
@@ -92,21 +92,21 @@ Grid is a special viewer. To learn about how to change its appearance or setting
 ### Tooltips
 
 By default, Datagrok shows tooltips for columns, rows, and data visualized in
-viewers. For example, tooltips for a table column show statistics for numeric
+viewers. For example,  in tables, tooltips show statistics for numeric
 columns and distribution for categorical columns. 
 
 You can change this default information or disable the tooltip altogether. 
 
 To access the tooltip options:
-* **For rows**: In the **Top Menu**, select **View** > **Tooltip**. This opens the
-  **Tooltip** dialog where you can select the columns to show or design a custom
-  tooltip using a [form viewer](../../../visualize/viewers/form.md).
+* **For rows**: In the **Top Menu**, select **View** > **Tooltip**. This opens
+  the **Tooltip** dialog, where you can select the columns to show or design a
+  custom tooltip using a [form viewer](../../../visualize/viewers/form.md).
 * **For columns**: Right click the column's header and select the desired option
   under **Tooltip > Current Column**.
 * **For viewers**: Click the **Hamburger icon** in the viewer's header and select **Tooltip** > **Edit...** This opens the same **Tooltip** dialog as described above.
 
-By default, tooltips display all columns in tables that have fewer than 21
-columns. For tables with 21 or more columns, no columns are shown in tooltips.
+By default, tooltips display values from all columns in tables with fewer than 21
+columns. Tooltips don't show any column values for tables with 21 or more columns.
 
 :::note developers
 
@@ -136,8 +136,8 @@ To set a viewer as a group tooltip:
    (![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Tooltip > Use as Group Tooltip**. This viewer is now set as a group tooltip.
   
 The tooltip settings remain in effect even if you close the underlying viewer.
-To remove the group tooltip, repeat the steps above but select **Tooltip >
-Remove Group Tooltip** instead.
+To remove the group tooltip, repeat the steps above, but this time, select **Tooltip >
+Remove Group Tooltip**.
 
 ![Group Tooltip](../../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
@@ -145,18 +145,19 @@ Remove Group Tooltip** instead.
 
 Certain viewers include statistical features:
 
-* [Box plots](../../../visualize/viewers/box-plot.md) show [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
+* Box [plots](../../../visualize/viewers/box-plot.md) show the [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
 * Scatterplots can show one or more [regression
-  lines](../../../visualize/viewers/scatter-plot.mdx#regression-line) with associated equations and
-  color-coding.
-* [Correlation plots](../../../visualize/viewers/correlation-plot.md) highlight the values of Pearson's
-  correlation coefficient, making it easy to trace the strength of relationship
-  between given variables.
-* The statistics viewer provides a summary of key
-  [statistics measures](../../../visualize/viewers/statistics.md#statistical-measures) for the selected columns.
+  lines](../../../visualize/viewers/scatter-plot.mdx#regression-line) with
+  associated equations and color-coding. [Correlation
+  plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
+  Pearson's correlation coefficient, making it easy to trace the strength of the
+  relationship between given variables.
+* The statistics viewer shows key [statistics
+  measures](../../../visualize/viewers/statistics.md#statistical-measures) for
+  the selected columns.
 
-<!--- ChaRPY packages is not active now
+<!--- ChaRPY package is not active now
 
 In addition, you can use the **To Script > To Python** and **To Script > To R**
 commands to recreate Datagrok viewers in Python or R.
@@ -205,9 +206,9 @@ To filter, you have these options:
 
 #### Filters viewer
 
-To toggle filters, click the **Funnel (<img src={FunnelIcon} width="14"/>)
-icon** either on the **Toolbox** or at the top of the **Table View**. To chose which columns are
-visible, at the top of the **Filters** panel, click the **Hamburger
+To toggle filters, click the **Funnel (**) icon** on the **Toolbox** or at the
+top of the **Table View**. To choose which columns are visible, at the top of
+the **Filters** panel, click the **Hamburger
 (![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Select
 Columns...** You can also add specific columns directly by clicking the
 **Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** in the
@@ -216,16 +217,17 @@ column header and choosing the **Add as filter** command.
 ![](img/filters-viewer.gif)
 
 The filters panel is a _viewer_. This means it interacts with viewers
-similar to any other viewer. To learn more about the filters viewer, see
+like any other viewer. To learn more about the filters viewer, see
 [Filters](../../../visualize/viewers/filters.md).
 
 #### Viewers as filters
 
-By default, clicking a segment that represents multiple rows in viewers like a 
-[bar chart](../../../visualize/viewers/bar-chart.md) or a [pie chart](../../../visualize/viewers/pie-chart.md) selects those rows.
-However, you can set the viewer to filter the underlying table instead. To do
-this, click the **Hamburger (![](../../../uploads/icons/hamburger-menu.png))
-icon** on its header and select **On click** > **Filter**. 
+By default, clicking a segment representing multiple rows in viewers, like a
+[bar](../../../visualize/viewers/bar-chart.md) or a [pie
+chart](../../../visualize/viewers/pie-chart.md), selects those rows. However,
+you can set the viewer to filter the underlying table instead. To do this, click
+the **Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** on its
+header and select **On click** > **Filter**. 
 
 You can also specify custom behavior using the **Row Source** and **On click**
 settings:
@@ -242,7 +244,7 @@ Panel** under **Data**.
 
 You can filter or select matching rows based on search parameters:
 
-1. In the **Table View** go to the **Toolbox** and expand the **Search** pane.
+1. In the **Table View**, go to the **Toolbox** and expand the **Search** pane.
 1. Click the **Hamburger** (![](../../../uploads/icons/hamburger-menu.png)) **icon** to choose whether matching rows should be selected or filtered as you modify the search.
 1. In the **Search** field, enter your search criteria using a [search pattern](#search-patterns).
 
@@ -282,7 +284,7 @@ To replace values matching your search, use the [find and replace](../../../tran
 ##### Search patterns
 
 Search patterns let you specify conditions in a free text search. Datagrok uses
-the same syntax to search both searching in tables and externally, such as
+the same syntax to search both in tables and externally, such as
 when accessing databases with [parameterized
 queries](../../../access/databases/databases.mdx#parameterized-queries). 
 
@@ -383,7 +385,7 @@ patterns, Datagrok defaults to an `exact value` search.
 ### Save and share
 
 You can [save](../basic-tasks/basic-tasks.md#save) and [share](../basic-tasks/basic-tasks.md#share) a **Table View** as a special
-type of project called  a [dashboard](../../../visualize/dashboard.md). To learn more about projects, see
+type of project called a [dashboard](../../../visualize/dashboard.md). To learn more about projects, see
 [Projects](../../concepts/project/project.md). To save just the layout, in the **Top Menu**, select **View** > **Layout** > **Save to Gallery**.
 
 ###  Embed
@@ -399,8 +401,8 @@ To embed:
    * For dashboards, in the **Top Menu**, select
     **View** > **Embed**.
    * For viewers, hover over the viewer's top, click the **Hamburger
-(![](../../../uploads/icons/hamburger-menu.png)) icon** and select **General** > **Embed...**
-1. Copy the generated iframe and use it in your site.
+(![](../../../uploads/icons/hamburger-menu.png)) icon**, and select **General** > **Embed...**
+1. Copy the generated iframe and use it on your site.
 
 <img src={EmbedViewerDialog} width="450"/>
 

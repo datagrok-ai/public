@@ -15,9 +15,9 @@ import TabItem from '@theme/TabItem';
 ```
 
 Datagrok supports a variety of [data-related tasks](../datagrok.md), with its
-interface adapting to the specific data or task at hand. For example, the interface for
-the analysis of tabular data resembles Excel, the navigation interface resembles
-File Explorer, and apps or plugins can introduce custom interfaces.
+interface adapting to the specific data or task at hand. For example, the
+interface for analyzing tabular data resembles Excel, the navigation interface
+resembles File Explorer, and apps or plugins can introduce custom interfaces.
 
 Yet, despite this variety, the UI consistently includes several key elements:
 
@@ -27,7 +27,7 @@ Yet, despite this variety, the UI consistently includes several key elements:
 <TabItem value="Sidebar" label ="Sidebar" default>
 
 Positioned on the far left, the **Sidebar** provides access to settings,
-commands, favorites, and lets you switch between different windows. It
+commands, and favorites, and lets you switch between different windows. It
 remains fixed in its position no matter where you are on the platform or
 what you work on.
 
@@ -55,10 +55,10 @@ A view may have these elements associated with it:
 
 1. **Toolbox**: Located to the left of the _view_, it provides tools and
    functionalities specific to that view.
-1. **Top Menu**: Typically at the top of the _view_, it provides
+1. **Top Menu**: Often at the top of the _view_, it provides
    view-specific commands.
-1. **Status bar**: The central section is view-specific. For example, for the
-   **Table View**, it shows the table's name, row/column counts, as well as
+1. **Status bar**: The central section is view-specific. For example, in **Table
+   View**, the **Status Bar** shows the table's name, row/column counts, and
    filtered and selected row counts.
 
 <details>
@@ -115,37 +115,36 @@ _view_ and include:
 * [Variables](../navigation/panels/panels.md#variables): Used to declare variables in your current view.
 
 By default, only **Context Panel** and **Context Help** are visible. Depending
-on your needs, you can toggle visibility of any panel from the **Status Bar**.
+on your needs, you can toggle the visibility of any panel from the **Status Bar**.
 
 </TabItem>
 <TabItem value="status-bar" label ="Status Bar">
 
-Located at the bottom of the screen, the **Status Bar** has three sections:
+Located at the bottom of the screen, the **Status Bar** has these sections:
 * _Right_: Has icons for global search, toggling panels, and activating presentation mode.
 * _Left_: Shows progress during task execution.
+* _Center_: Is view specific.
 
 </TabItem>
 </Tabs>
 
 ### UI features
 
-Datagrok UI is flexible. For example, you can move or resize panels, float them is separate
-windows, or toggle their visibility.
+Datagrok UI is flexible. For example, you can move or resize panels, float them
+in separate windows, or toggle their visibility.
 
 ![](img/ui-docking.gif)
 
 When you start dragging an object, all potential drop zones are highlighted,
-guiding you on where you can place it.
-
-You can drag-and-drop almost any object. For example, in a **Table
-View**, most viewers and many dialogs can accept columns that are dragged into
-or from them. 
+guiding you where to place it. You can drag and drop almost any object. For
+example, in a **Table View**, most viewers and many dialogs can accept columns
+dragged into or from them. 
 
 ![](img/drag-and-drop-columns.gif)
 
-<!--Expand examples t include other views. Reordering columns by dragging doesn't work?-->
+<!--Expand examples to include other views. Reordering columns by dragging doesn't work?-->
 
-Many of the UI elements are context-driven and adjust dynamically to your
+Many UI elements are context-driven and adjust dynamically to your
 current task or data. For example, when you open a table with molecules, several
 changes happen in the UI:
 
