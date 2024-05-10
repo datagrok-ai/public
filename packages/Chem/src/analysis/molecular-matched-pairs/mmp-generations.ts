@@ -81,7 +81,7 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   cols.push(createColWithDescription('double', `Prediction`, Array.from(prediction)));
   cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
-  //createMolExistsCol(mmpInput.molecules, generation, grid);
+  createMolExistsCol(fragsOut.smiles, generation, grid);
   return grid;
 }
 
@@ -94,20 +94,10 @@ export function createColWithDescription(colType: any, colName: string, list: an
   return col;
 }
 
-// export async function createMolExistsCol(molecules: DG.Column, generation: string[], grid: DG.Grid): Promise<void> {
-//   const progressBar = DG.TaskBarProgressIndicator.create(`Calculating generations...`);
-//   const promises = [];
-//   for (let i = 0; i < generation.length; i++) {
-//     promises.push(await chemSubstructureSearchLibrary(molecules, generation[i], '', FILTER_TYPES.substructure,
-//       false, true, SubstructureSearchType.EXACT_MATCH));
-//   }
-
-//   Promise.all(promises).then((res: BitArray[]) => {
-//     const molExistsColNew =
-//       createColWithDescription('bool', `Existing`, res.map((it, i) => generation[i] && !it.allFalse));
-//     grid.dataFrame.columns.add(molExistsColNew);
-//     grid.col(molExistsColNew.name)!.editable = false;
-//     grid.invalidate();
-//     progressBar.close();
-//   });
-// }
+export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
+  const moleculesSet = new Set(molecules);
+  const boolCol = DG.Column.bool('Existing', generation.length).init((i) => moleculesSet.has(generation[i]))
+  grid.dataFrame.columns.add(boolCol);
+  grid.col(boolCol.name)!.editable = false;
+  grid.invalidate();
+}
