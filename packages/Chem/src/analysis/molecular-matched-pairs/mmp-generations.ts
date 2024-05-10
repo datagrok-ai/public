@@ -7,48 +7,66 @@ import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../../chem-searches';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SubstructureSearchType} from '../../constants';
 import {MmpInput} from './mmp-constants';
+import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 
-export function getGenerations(mmpInput: MmpInput, frags: [string, string][][], meanDiffs: Float32Array[],
+export function getGenerations(mmpInput: MmpInput, fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
   allPairsGrid: DG.Grid, activityMeanNames: Array<string>, module:RDModule):
   DG.Grid {
   const rulesColumns = allPairsGrid.dataFrame.columns;
   const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM);
   const rulesTo = rulesColumns.byName(MMP_COLNAME_TO);
+
+  // const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM).getRawData();
+  // const rulesTo = rulesColumns.byName(MMP_COLNAME_TO).getRawData();
+  // const rulesFromCats = rulesColumns.byName(MMP_COLNAME_FROM).categories;
+  // const rulesToCats = rulesColumns.byName(MMP_COLNAME_TO).categories;
   const activityN = activityMeanNames.length;
 
   const structures = mmpInput.molecules.toList();
-  const cores = new Array<string>(activityN * structures.length);
-  const from = new Array<string>(activityN * structures.length);
-  const to = new Array<string>(activityN * structures.length);
-  const prediction = new Float32Array(activityN * structures.length).fill(0);
-  const allStructures = Array(structures.length * activityN);
-  const allInitActivities = new Float32Array(structures.length * activityN);
-  const activityName: Array<string> = Array(structures.length * activityN);
+  const structuresN = structures.length;
+  const cores = new Array<string>(activityN *structuresN);
+  const from = new Array<string>(activityN * structuresN);
+  const to = new Array<string>(activityN * structuresN);
+  const prediction = new Float32Array(activityN * structuresN).fill(0);
+  const allStructures = Array(structuresN * activityN);
+  const allInitActivities = new Float32Array(structuresN * activityN);
+  const activityName: Array<string> = Array(structuresN * activityN);
+  //const singleActivities = new Float32Array(activityN);
+  const activities = new Array<Float32Array>(activityN);
+  const activityNames = Array<string>(activityN);
+  for (let i = 0; i < activityN; i++) {
+    const name = activityMeanNames[i].replace('Mean Difference ', '');
+    activities[i] = mmpInput.activities.byName(name).getRawData() as Float32Array;
+    activityNames[i] = name;
+  }
 
-  for (let i = 0; i < structures.length; i ++) {
-    const singleActivities = new Array<number>(activityN);
+  for (let i = 0; i < structuresN; i ++) {
+    // console.log('structure');
+    // console.log(i);
     for (let j = 0; j < activityN; j++) {
-      const name = activityMeanNames[j].replace('Mean Difference ', '');
-      const initActivity = mmpInput.activities.byName(name).get(i);
-      singleActivities[j] = initActivity;
-      allStructures[j * structures.length + i] = structures[i];
-      allInitActivities[j * structures.length + i] = initActivity;
-      activityName[j * structures.length + i] = name;
+      //const initActivity = mmpInput.activities.byName(name).get(i);
+      //singleActivities[j] = activities[j];
+      allStructures[j * structuresN + i] = structures[i];
+      allInitActivities[j * structuresN + i] = activities[j][i];//initActivity;
+      activityName[j * structuresN + i] = activityNames[j];
     }
 
-    for (let j = 0; j < frags[i].length; j++) {
-      const core = frags[i][j][0];
-      const subst = frags[i][j][1];
+    for (let j = 0; j < fragsOut.frags[i].length; j++) {
+      // console.log('frag');
+      // console.log(j);
+      const core = fragsOut.frags[i][j][0];
+      const subst = fragsOut.frags[i][j][1];
       if (core != '') {
         for (let k = 0; k < rulesFrom.length; k++) {
-          if (subst === rulesFrom.get(k)) {
+          if (subst === rulesFrom.get(k)) {//{ rulesFromCats[rulesFrom[k]] ) {
             for (let kk = 0; kk < activityN; kk++) {
-              const activity = singleActivities[kk] + meanDiffs[kk][k];
-              if (activity > prediction[kk * structures.length + i]) {
-                prediction[kk * structures.length + i] = activity;
-                cores[kk * structures.length + i] = core;
-                from[kk * structures.length + i] = subst;
-                to[kk * structures.length + i] = rulesTo.get(k);
+              const activity = activities[kk][i] + meanDiffs[kk][k];
+              const add = kk * structuresN;
+              if (activity > prediction[add + i]) {
+                prediction[add + i] = activity;
+                cores[add + i] = core;
+                from[add + i] = subst;
+                to[add + i] = rulesTo.get(k);
               }
             }
           }
@@ -62,6 +80,9 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][], 
   for (let i = 0; i < cores.length; i++) {
     let smilesGen = '';
     try {
+      //very hacky way to link fragment to core.
+      //R group is substituted to max cycle number to get the linkage of two fragments
+      //(RDKit suuports 9 max embeded cycles)
       const smi = `${cores[i]}.${to[i]}`.replaceAll('([*:1])', '9').replaceAll('[*:1]', '9');
       mol = module.get_mol(smi);
       smilesGen = mol.get_smiles();
@@ -84,7 +105,7 @@ export function getGenerations(mmpInput: MmpInput, frags: [string, string][][], 
   cols.push(createColWithDescription('double', `Prediction`, Array.from(prediction)));
   cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
   const grid = DG.DataFrame.fromColumns(cols).plot.grid();
-  //createMoleculeExistsCol(mmpInput.molecules, generation, grid);
+  //createMolExistsCol(mmpInput.molecules, generation, grid);
   return grid;
 }
 
@@ -97,14 +118,17 @@ export function createColWithDescription(colType: any, colName: string, list: an
   return col;
 }
 
-// export async function createMoleculeExistsCol(molecules: DG.Column, generation: string[], grid: DG.Grid): Promise<void> {
+// export async function createMolExistsCol(molecules: DG.Column, generation: string[], grid: DG.Grid): Promise<void> {
 //   const progressBar = DG.TaskBarProgressIndicator.create(`Calculating generations...`);
 //   const promises = [];
-//   for (let i = 0; i < generation.length; i++)
+//   for (let i = 0; i < generation.length; i++) {
 //     promises.push(await chemSubstructureSearchLibrary(molecules, generation[i], '', FILTER_TYPES.substructure,
 //       false, true, SubstructureSearchType.EXACT_MATCH));
+//   }
+
 //   Promise.all(promises).then((res: BitArray[]) => {
-//     const molExistsColNew = createColumnWithDescription('bool', `Existing`, res.map((it, i) => generation[i] && !it.allFalse));
+//     const molExistsColNew =
+//       createColWithDescription('bool', `Existing`, res.map((it, i) => generation[i] && !it.allFalse));
 //     grid.dataFrame.columns.add(molExistsColNew);
 //     grid.col(molExistsColNew.name)!.editable = false;
 //     grid.invalidate();

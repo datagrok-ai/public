@@ -10,7 +10,7 @@ import {getRdKitModule} from '../package';
 import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
-import {IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -488,13 +488,22 @@ export class RdKitService {
       });
   }
 
-  async mmpGetFragments(molecules: string[]): Promise<[string, string][][]> {
+  async mmpGetFragments(molecules: string[]): Promise<IMmpFragmentsResult> {
     const t = this;
+
+    const getResult = (data: IMmpFragmentsResult[]): IMmpFragmentsResult => {
+      return {
+        frags: ([] as [string, string][][]).concat(...data.map(((it) => it.frags))),
+        smiles: ([] as Array<string>).concat(...data.map(((it) => it.smiles))),
+      };
+    };
+
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       t.parallelWorkers[i].mmpGetFragments(segment),
-    (data: [string, string][][][]): [string, string][][] => {
-      return ([] as [string, string][][]).concat(...data);
+    (data: IMmpFragmentsResult[]) => {
+      return getResult(data);
     });
+
     return res;
   }
 

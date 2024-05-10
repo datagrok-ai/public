@@ -296,16 +296,18 @@ export class MmpAnalysis {
   }
 
   static async init(mmpInput: MmpInput) {
+    console.profile('MMP');
     //rdkit module
     const module = getRdKitModule();
 
     //initial calculations
-    const frags = await getMmpFrags(mmpInput.molecules);
-    const [mmpRules, allCasesNumber] = await getMmpRules(frags, mmpInput.fragmentCutoff);
+    const fragsOut = await getMmpFrags(mmpInput.molecules);
+    const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
     const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
-    const {maxActs, diffs, meanDiffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
+    const {maxActs, diffs, meanDiffs, activityMeanNames,
+      linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
       getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
@@ -322,7 +324,8 @@ export class MmpAnalysis {
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      getGenerations(mmpInput, frags, meanDiffs, allPairsGrid, activityMeanNames, module);
+      getGenerations(mmpInput, fragsOut, meanDiffs, allPairsGrid, activityMeanNames, module);
+    console.profileEnd('MMP');
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
