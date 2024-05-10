@@ -15,6 +15,9 @@ import {ID_COLUMN_NAME} from './history-input';
 import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -240,7 +243,7 @@ export class HistoricalRunsList extends DG.Widget {
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
             .init((idx) =>
               (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
-                newRuns[idx].started: dayjs.unix(newRuns[idx].options['createdOn'])),
+                newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
             );
         }
 
@@ -768,7 +771,7 @@ export class HistoricalRunsList extends DG.Widget {
     for (let i = 0; i < this._historyGrid.columns.length; i++) {
       const col = this._historyGrid.columns.byIndex(i);
       if (col && col.column?.type === DG.TYPE.DATE_TIME)
-        col.format = 'MMM d HH:mm';
+        col.format = 'MMM d, h:mm tt';
     }
 
     this.setGridColumnsRendering();
