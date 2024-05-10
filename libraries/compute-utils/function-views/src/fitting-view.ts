@@ -127,6 +127,7 @@ export class FittingView {
                   (ref as FittingNumericStore).min.value = v;
                   this.updateApplicabilityState();
                 });
+                inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
                 inp.setTooltip(`Min value '${caption}'`);
@@ -141,6 +142,7 @@ export class FittingView {
                 (ref as FittingNumericStore).max.value = v;
                 this.updateApplicabilityState();
               });
+              inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Max value of '${caption}'`);
               inp.nullable = false;
@@ -730,8 +732,10 @@ export class FittingView {
 
       if (input.isChanging.value === true) {
         isAnySelected = true;
-        const min = (input as FittingNumericStore).min.input.value;
-        const max = (input as FittingNumericStore).max.input.value;
+        const minInp = (input as FittingNumericStore).min.input;
+        const maxInp = (input as FittingNumericStore).max.input;
+        const min = minInp.value;
+        const max = maxInp.value;
 
         cur = (min !== null) && (min !== undefined) && (max !== undefined) && (max !== undefined);
 
@@ -739,6 +743,11 @@ export class FittingView {
           if (min > max) {
             cur = false;
             this.updateRunIconDisabledTooltip(`Invalid min & max of "${caption}"`);
+            minInp.input.classList.add('d4-invalid');
+            maxInp.input.classList.add('d4-invalid');
+          } else {
+            minInp.input.classList.remove('d4-invalid');
+            maxInp.input.classList.remove('d4-invalid');
           }
         } else
           this.updateRunIconDisabledTooltip(`Incomplete "${caption}"`);
@@ -1118,7 +1127,7 @@ export class FittingView {
 
       // Add grid cell effects: show funccall outputs in the context panel
       const cellEffect = async (cell: DG.GridCell) => {
-        if (!cell)
+        if ((cell === null) || (cell === undefined))
           return;
 
         const row = cell.tableRowIndex ?? 0;
