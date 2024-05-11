@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.3.0 (2024-05-11)
+
+### Features
+
+* [#2797](https://github.com/datagrok-ai/public/issues/2797): Changed optimizer for fitting
+
 ## 1.2.13 (2024-04-18)
 
 ### Features
