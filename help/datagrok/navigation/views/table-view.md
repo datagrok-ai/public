@@ -208,7 +208,7 @@ To filter, you have these options:
 
 #### Filters viewer
 
-To toggle filters, click the **Funnel (**) icon** on the **Toolbox** or at the
+To toggle filters, click the **Funnel (<img src={FunnelIcon} width="15"/>) icon** on the **Toolbox** or at the
 top of the **Table View**. To choose which columns are visible, at the top of
 the **Filters** panel, click the **Hamburger
 (![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Select
