@@ -142,7 +142,7 @@ View](../views/table-view.md).
 ### Entity search
 
 Instead of navigating the **Browse** tree, you can search for a specific
-[entity](../../concepts/objects.md) within an **Entity Gallery** view. 
+[entity](../../concepts/objects.md) within an [Entity Gallery view](#entity-views). 
 
 The search allows free-text input. Typing a single string prompts the search
 engine to filter entities by name. You can also search by the entity's metadata,

@@ -286,7 +286,7 @@ expire and can't be revoked.
 For tabular formats, you can create dynamic dashboards and share them with
 others via URL or reference them on external websites. To learn more about
 dynamic data updates, see 
-[Dynamic data](../../datagrok/concepts/project/project.md#dynamic-data).
+[Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
 
 :::
 

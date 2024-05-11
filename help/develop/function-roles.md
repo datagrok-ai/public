@@ -7,7 +7,7 @@ A package can contain functions that get discovered and integrated with the plat
 Typically, each function type has a special tag denoting what the function does, for example:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](../visualize/dashboard.md)
+* `#dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` for [package initialization](#package-initialization)
 * `#autostart` for [automatic execution at platform startup](#autostart)

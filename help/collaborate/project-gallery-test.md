@@ -87,7 +87,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 
 1. Open **View | Workspace**  ( ``` Alt + W ```)
 
-* In it there is a tree of the [project](project.md) "Test" and the default project "[Scratchpad](../datagrok/navigation/scratchpad.md)"
+* In it there is a tree of the [project](project.md) "Test" and the default project Scratchpad
 
 1. Test all elements of the context menu of the "Test" [project](project.md) in the  "Workspace"
    window
