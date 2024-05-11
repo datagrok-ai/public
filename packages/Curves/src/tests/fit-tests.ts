@@ -30,7 +30,7 @@ category('fit', () => {
 		expectArray(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), [0.1, -1, 4, 4]);
 		const params = new Float32Array(sigmoidSeries.parameters?.length!);
 		params.set(sigmoidSeries.parameters!);
-		expect(sigmoidFitFunc.y(params, 1.1), 1.6914214213007113);
+		expect(sigmoidFitFunc.y(params, 1.1), 1.6914214561555851);
 		expect(polynomialFitFunc.y(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), 1.1), 7.3231);
 	});
 
@@ -38,10 +38,10 @@ category('fit', () => {
 		const sigmoidCurve = getCurve(sigmoidSeries, sigmoidFitFunc);
 		const polynomialCurve = getCurve(polynomialSeries, polynomialFitFunc);
 
-		expect(sigmoidCurve(2.5), 1.6907865884456907);
-		expect(sigmoidCurve(5.8858), 0.5356637992990292);
-		expect(polynomialCurve(1.56), 7.6502648725700535);
-		expect(polynomialCurve(3.99876), 6.09328601677405);
+		expect(sigmoidCurve(2.5), 1.690786623428712);
+		expect(sigmoidCurve(5.8858), 0.5356638447565519);
+		expect(polynomialCurve(1.56), 7.650264639782428);
+		expect(polynomialCurve(3.99876), 6.093284856699922);
 	});
 
 	test('fitSeries', async () => {
@@ -50,10 +50,10 @@ category('fit', () => {
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
 		const stop = Date.now();
 
-		expect(sigmoidFitSeries.fittedCurve(2.5), 1.690742266220136);
-		expect(polynomialFitSeries.fittedCurve(3.99876), 6.09328601677405);
-		expectArray(sigmoidFitSeries.parameters, [1.691390784119389, 1.1540819399621425, 5.4104428146970704, 0.20886765646057662]);
-		expectArray(polynomialFitSeries.parameters, [0.07070206940832963, -1.138666933634074, 3.947509109407932, 3.9947960440506685]);
+		expect(sigmoidFitSeries.fittedCurve(2.5), 1.7023284700958918);
+		expect(polynomialFitSeries.fittedCurve(3.99876), 4.793906282943224);
+		expectArray(sigmoidFitSeries.parameters, [1.7039494514465332, 1.030500888824463, 5.367032051086426, 0.2426503598690033]);
+		expectArray(polynomialFitSeries.parameters, [0.09034820646047592, -1.148695945739746, 3.3145318031311035, 4.130721569061279]);
 		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 
@@ -61,20 +61,20 @@ category('fit', () => {
 		const sigmoidSeriesConfidenceIntervals = getSeriesConfidenceInterval(sigmoidSeries, sigmoidFitFunc, true);
 		const polynomialSeriesConfidenceIntervals = getSeriesConfidenceInterval(polynomialSeries, polynomialFitFunc, true);
 
-		expect(sigmoidSeriesConfidenceIntervals.confidenceTop(2.578), 1.8540854906189528);
-		expect(polynomialSeriesConfidenceIntervals.confidenceTop(2.3342), 10.035230015978911);
-		expect(sigmoidSeriesConfidenceIntervals.confidenceBottom(3.987), 1.494930602732917);
-		expect(polynomialSeriesConfidenceIntervals.confidenceBottom(3.8796), 4.168651824724921);
+		expect(sigmoidSeriesConfidenceIntervals.confidenceTop(2.578), 1.8540855269320198);
+		expect(polynomialSeriesConfidenceIntervals.confidenceTop(2.3342), 10.03522960294218);
+		expect(sigmoidSeriesConfidenceIntervals.confidenceBottom(3.987), 1.4949306416468298);
+		expect(polynomialSeriesConfidenceIntervals.confidenceBottom(3.8796), 4.1686506915250385);
 	});
 
 	test('getSeriesStatistics', async () => {
 		const sigmoidSeriesStatistics = getSeriesStatistics(sigmoidSeries, sigmoidFitFunc);
 		const polynomialSeriesStatistics = getSeriesStatistics(polynomialSeries, polynomialFitFunc);
 
-		expect(sigmoidSeriesStatistics.auc, 9.33542235488813);
-		expect(polynomialSeriesStatistics.auc, 36.52554692824738);
-		expect(sigmoidSeriesStatistics.rSquared, 0.9781915962446398);
-		expect(polynomialSeriesStatistics.rSquared, 0.8460557736673078);
+		expect(sigmoidSeriesStatistics.auc, 9.335422628533761);
+		expect(polynomialSeriesStatistics.auc, 36.525538394763096);
+		expect(sigmoidSeriesStatistics.rSquared, 0.9781915962461156);
+		expect(polynomialSeriesStatistics.rSquared, 0.846055768956569);
 	});
 
 	test('calculateBoxPlotStatistics', async () => {
@@ -92,8 +92,8 @@ category('fit', () => {
 		const parameters = [2.612687371569039, -1.421800778574126, 5.16688669906018, 0.341788492203575];
 		const params = new Float32Array(4);
 		params.set(parameters);
-		expect(sigmoid(params, 0.5), 0.34178901799627626);
-		expect(sigmoid(params, 2.5), 0.3421552218929382);
-		expect(sigmoid(params, 5.678976), 2.254881739737238);
+		expect(sigmoid(params, 0.5), 0.341789026340178);
+		expect(sigmoid(params, 2.5), 0.34215523020636207);
+		expect(sigmoid(params, 5.678976), 2.2548815999597016);
 	});
 });
