@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {ILineChartSettings} from "datagrok-api/dg";
 
 export class UsageWidget extends DG.Widget {
   caption: string;
@@ -55,7 +56,7 @@ export class UsageWidget extends DG.Widget {
   }
 }
 
-const uniqueUsersChartStyle = {
+const uniqueUsersChartStyle: Partial<ILineChartSettings> = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
   'innerChartMarginBottom': 0,
@@ -75,7 +76,7 @@ const uniqueUsersChartStyle = {
   'autoLayout': false,
 };
 
-const userErrorsChartStyle = {
+const userErrorsChartStyle: Partial<ILineChartSettings> = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
   'innerChartMarginBottom': 0,
