@@ -187,6 +187,7 @@ export interface IDartApi {
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
+  grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
   grok_CardView_Set_SearchValue(v: any, s: String): any;

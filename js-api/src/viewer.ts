@@ -516,6 +516,9 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
     super(dart);
   }
 
+  get canvas(): HTMLCanvasElement { return this.getInfo()['canvas']; }
+  get overlay(): HTMLCanvasElement { return this.getInfo()['overlay']; }
+
   /** Rerender plot */
   invalidateCanvas(): void{
     api.grok_ScatterPlotViewer_InvalidateCanvas(this.dart);

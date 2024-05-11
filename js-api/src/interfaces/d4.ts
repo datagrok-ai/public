@@ -72,13 +72,19 @@ export interface IScatterPlot3dLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -125,13 +131,19 @@ export interface ITreeMapLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -280,13 +292,19 @@ export interface IHistogramLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -337,13 +355,19 @@ export interface IFiltersLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -567,13 +591,19 @@ export interface IScatterPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -618,6 +648,10 @@ export interface ILineChartLookSettings {
   xMin: number;
 
   xMax: number;
+
+  yMin: number;
+
+  yMax: number;
 
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
@@ -744,6 +778,10 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
+  /// When true, lines are added to the legend
+  /// Requires *Multi Axis* to be enabled
+  addLinesToLegend: boolean;
+
   innerChartMarginTop: number;
 
   innerChartMarginBottom: number;
@@ -788,13 +826,19 @@ export interface ILineChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -937,13 +981,19 @@ export interface IBarChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -986,13 +1036,19 @@ export interface IDensityPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1110,13 +1166,19 @@ export interface IBoxPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1196,13 +1258,19 @@ export interface IPieChartLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1243,13 +1311,19 @@ export interface IMatrixPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1303,13 +1377,19 @@ export interface ISummaryLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1345,13 +1425,19 @@ export interface ISparklinesLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1573,13 +1659,19 @@ export interface IGridLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1663,13 +1755,19 @@ export interface ICalendarLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1728,13 +1826,19 @@ export interface ITrellisPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1825,13 +1929,19 @@ export interface IPcPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1872,13 +1982,19 @@ export interface IMapViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1907,13 +2023,19 @@ export interface IStatsViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1950,13 +2072,19 @@ export interface ICorrelationPlotLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -1984,6 +2112,8 @@ export interface IFormLookSettings {
 
   sketchState: Map<any, any>;
 
+  columnNames: Array<string>;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1997,13 +2127,19 @@ export interface IFormLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -2032,17 +2168,25 @@ export interface IMarkupViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -2156,13 +2300,19 @@ export interface INetworkDiagramLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -2187,13 +2337,19 @@ export interface ICardLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -2234,17 +2390,25 @@ export interface ITileViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 
@@ -2281,13 +2445,19 @@ export interface IPivotViewerLookSettings {
 
   table: string;
 
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
 
 }
 

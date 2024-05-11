@@ -413,6 +413,7 @@ export class TableView extends View {
       api.grok_View_AddViewer(this.dart, v.dart);
     if (options !== null)
       v.setOptions(options);
+    api.grok_TableView_ProcessNewViewer(this.dart, v.dart);
     return v;
   }
 
