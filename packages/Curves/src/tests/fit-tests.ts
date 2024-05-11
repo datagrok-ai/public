@@ -28,7 +28,9 @@ category('fit', () => {
 		expectArray(polynomialFitFunc.parameterNames, ['Slope', 'Intercept', 'Parameter3', 'Parameter4']);
 		expectArray(sigmoidFitFunc.getInitialParameters(sigmoidXs, sigmoidYs), [1.8561450242996216, 1, 5.099999904632568, 0.23361243307590485]);
 		expectArray(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), [0.1, -1, 4, 4]);
-		expect(sigmoidFitFunc.y(sigmoidSeries.parameters!, 1.1), 1.6914214213007113);
+		const params = new Float32Array(sigmoidSeries.parameters?.length!);
+		params.set(sigmoidSeries.parameters!);
+		expect(sigmoidFitFunc.y(params, 1.1), 1.6914214213007113);
 		expect(polynomialFitFunc.y(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), 1.1), 7.3231);
 	});
 
@@ -88,8 +90,10 @@ category('fit', () => {
 
 	test('sigmoid', async () => {
 		const parameters = [2.612687371569039, -1.421800778574126, 5.16688669906018, 0.341788492203575];
-		expect(sigmoid(parameters, 0.5), 0.34178901799627626);
-		expect(sigmoid(parameters, 2.5), 0.3421552218929382);
-		expect(sigmoid(parameters, 5.678976), 2.254881739737238);
+		const params = new Float32Array(4);
+		params.set(parameters);
+		expect(sigmoid(params, 0.5), 0.34178901799627626);
+		expect(sigmoid(params, 2.5), 0.3421552218929382);
+		expect(sigmoid(params, 5.678976), 2.254881739737238);
 	});
 });

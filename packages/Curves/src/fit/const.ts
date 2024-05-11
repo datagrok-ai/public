@@ -3,6 +3,9 @@ import {IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 export class FitConstants {
     static TAG_FIT_CHART_FORMAT = '.fitChartFormat';
     static TAG_FIT_CHART_FORMAT_3DX = '3dx';
+    static FIT_SEM_TYPE = 'fit';
+    static FIT_CELL_TYPE = 'fit';
+    static TAG_FIT = '.fit';
 
     static CELL_DEFAULT_WIDTH = 230;
     static CELL_DEFAULT_HEIGHT = 160;
@@ -48,6 +51,14 @@ export class FitConstants {
         'dashed': [5, 5],
         'dashdotted': [5, 5, 2, 5],
     };
+
+    static CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
+        TOP: 'top',
+        BOTTOM: 'bottom',
+    };
+
+    static CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.4)';
+    static CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
 
     static CONDITION_MAP: {[key: string]: ((series?: IFitSeries[]) => boolean)} = {
         'No series to show': (series) => series === undefined || series?.length === 0,
