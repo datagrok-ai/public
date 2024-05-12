@@ -1,5 +1,15 @@
 [
   {
+    "name": "Curves",
+    "date": "2024-05-11T16:48:38.162Z",
+    "version": "1.4.0",
+    "summary": "* [#1645](https://github.com/datagrok-ai/public/issues/1645): MultiCurveViewer: Removed unnecessary margins",
+    "dir": "packages/Curves",
+    "changelog": true,
+    "changelogDate": "2024-05-11",
+    "readme": true
+  },
+  {
     "name": "EDA",
     "date": "2024-05-09T21:42:51.819Z",
     "version": "1.1.24",

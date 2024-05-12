@@ -302,7 +302,7 @@ Subject to permissions, you can [add, delete, or modify records in your dataset]
 In addition, the **Top Menu** provides multiple options for data
 cleaning and transformation. For example, you can
  [add calculated columns](../../transform/add-new-column.md),
-[impute missing values](../../transform/missing-values-imputation.md), 
+[impute missing values](../../explore/missing-values-imputation.md), 
 [delete duplicates](../../transform/aggregate-rows.md#), and more.
 
 To learn more about data transformation, visit the 

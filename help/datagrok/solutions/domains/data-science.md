@@ -66,7 +66,7 @@ Actions", see "Math" section.
 Performs clustering using k-means algorithm. An interactive visualization lets you see clustering results in real-time,
 which makes the process a lot more intuitive.
 
-### [Missing Value Imputation](../../../transform/missing-values-imputation.md)
+### [Missing Value Imputation](../../../explore/missing-values-imputation.md)
 
 Allows to do fast and simple missing values imputation using k-nearest neighbours algorithm.
 

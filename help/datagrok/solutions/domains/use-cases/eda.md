@@ -31,7 +31,7 @@ What's more, Datagrok understands the nature of your
   * [Summary columns](../../../../deploy/releases/platform/1-17.md#summary-columns) and sparklines
   * Editable rows, and [_more_](../../../../visualize/viewers/grid.md).
 * [Wrangle data](../../../../transform/transform.md) right from your visualization
-  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../transform/missing-values-imputation.md), find
+  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../explore/missing-values-imputation.md), find
   and treat duplicates and outliers.
 * Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
 * Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
