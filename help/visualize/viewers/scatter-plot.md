@@ -14,7 +14,7 @@ A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/ch
 
 :::tip
 
-To show the relationship between three variables, use a [3D Scatterplot](img/3d-scatter-plot.md).
+To show the relationship between three variables, use a [3D Scatterplot](3d-scatter-plot.md).
 
 ::: 
 

@@ -96,28 +96,24 @@ supports specifying the columns to run against, and [search patterns](../datagro
 * Values   in ```F```  "SEX" column have replaced by values ```test```
 * Filter has been applied to rows with replaced values.
 
-1. Open [Find and Replace](find-and-replace-test.md) dialog
+1. Open **Find and Replace** dialog (<kbd>Ctrl+H</kbd>)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for numerical values (*">"*, *"<"*
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for numerical values (*">"*, *"<"*
    . *"\<="*, *">="*, *"range"*) in "Find what" field
 
-* Numerical values   found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* Numerical values   found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for string values (*"starts with"*, *"
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for string values (*"starts with"*, *"
    ends with"*. *"contains"*, *"regex"*)
 
-* String values   found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* String values found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for datetime values (eg, *"1990-1991"*
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns) for datetime values (eg, *"1990-1991"*
    , *"June 1990"*. *"Oct 17, 1990"*, *"before 10/17/1990"*, *"after 10/17/1990"*, *"today"*, "this week", *"regex"*, *"
    yesterday"* and etc. )
 
-* Datetime values   found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* Datetime values   found correspond to the entered [pattern](.../datagrok/navigation/views/table-view.md#search-patterns)
 
 1. Test non-functional modules (help, navigation, UI, UX)
 
 * Non-functional modules work correctly and are intuitive
-
-See also:
-
-* [Find and replace](find-and-replace.md)

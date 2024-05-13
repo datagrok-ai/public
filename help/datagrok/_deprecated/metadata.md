@@ -2,7 +2,7 @@
 title: "Metadata"
 ---
 
-Any [entity](../../datagrok/concepts/objects.md) can be annotated with metadata, which can be used for searching. In Datagrok, there
+Any [entity](../datagrok/concepts/objects.md) can be annotated with metadata, which can be used for searching. In Datagrok, there
 are three kinds of metadata: tags, parameters, and properties.
 
 ## Tags
@@ -18,7 +18,7 @@ Each entity can be associated with a list of key-value pairs.
 
 To search for entities with the specified parameters, use the `<paramName> <op> <value>` syntax, for instance:
 
-* `imported \< 10/02/2019`
+* `imported < 10/02/2019`
 * `rows > 200`
 * `author = @current`
 

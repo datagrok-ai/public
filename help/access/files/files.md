@@ -12,7 +12,7 @@ Datagrok lets you work with files and directories on your system from the
 convenience of a web browser. You can browse, preview, open, create, delete,
 rename, download, clone, and share files and directories. When you sign up for
 Datagrok, a personal directory called **Home** is automatically created for you.
-Additionally, you can connect to [popular file systems](../databases/connectors/shares.md), 
+Additionally, you can connect to [popular file systems](shares/shares.md), 
 including the [Amazon S3 bucket](shares/s3.md),
 [Dropbox](shares/dropbox.md), [Google Drive](shares/googlecloud.md), and
 [Git](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).

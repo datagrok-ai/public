@@ -18,10 +18,8 @@ position: 6 # float position is supported
 | [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
-- [Versioning policy](versioning-policy.md)
+- [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
-
-
 
 ## 2024-05-08 1.18.6
 
@@ -215,7 +213,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
 * Scripting | Variables: added the scrollbar to the variables window.
 *  API to send an email from DG.
 
-#### [JS API](../../../develop/js-api.md)
+#### JS API
 
   * ` Column.getNumber()` method.
   * Dynamical dependencies load for `Utils.loadJsCss(files)`.
@@ -466,7 +464,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * Ability to set choice items and values separately.
 * Option to allow `DG.Accordion` panes dragging.
 
-#### [JS API](../../../develop/packages/js-api.md)
+#### JS API
 
 * [#2118](https://github.com/datagrok-ai/public/issues/2118): API configuration to define layout import settings 
  * Capability to set grid cell value with `onCellValueEdited` event.
@@ -1035,7 +1033,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 ### Data Access
 
 * Improvements:
-  * Added the support of [CoreWeave Object Storage](../../access/databases/connectors/coreweave.md).
+  * Added the support of [CoreWeave Object Storage](../../access/files/shares/coreweave.md).
   * Conducted Postgres harmonization, which includes complete types support and the addition of regex support in the string pattern for the connector.
   * The MySQL connector now fully supports all types.
   * Added the ability to display SQL views along with tables.

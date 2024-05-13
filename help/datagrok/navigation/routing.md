@@ -116,5 +116,5 @@ URL [https://public.datagrok.ai/apps/Discovery/cars/Honda](https://public.datagr
 See also:
 
 * [Navigation](navigation.md)
-* [Entities](concepts/objects.md)
+* [Entities](../concepts/objects.md)
 

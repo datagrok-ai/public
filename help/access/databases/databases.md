@@ -234,7 +234,7 @@ Use the menu ribbon on top to add or remove columns quickly.
 :::note Developers
 
 You can create custom transformation functions in R, Python, or any other
-language. See [Scripting](../../compute/scripting/scripting/scripting.mdx).
+language. See [Scripting](../../compute/scripting/scripting.mdx).
 
 :::
 

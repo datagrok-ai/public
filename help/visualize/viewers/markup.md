@@ -11,7 +11,7 @@ Properties:
 |---------------------|---------|
 | Content             |     |
 | Mode                | Text, Html, Markdown, or Auto |
-| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../datagrok/navigation/markup.md) engine |
+| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../develop/under-the-hood/markup.md) engine |
 
 Context menu:
 

@@ -40,7 +40,7 @@ Your data is [FAIR](../govern/catalog/fair.md) and secure.
 * Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
 flexible [authentication](../govern/authentication.md), 
 [secrets managers](../access/data-connection-credentials.md)
-* Centralized [metadata](../govern/catalog/metadata.md)-annotated catalog of
+* Centralized [metadata](concepts/objects.md#metadata)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
 managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
@@ -63,14 +63,14 @@ Automatically generate macros from data transformations and use them on new data
 
 Slice, dice, and visualize your data. Render millions of data points
 interactively and find patterns. Build dynamic dashboards in seconds. Leverage
-[metadata](../govern/catalog/metadata.md) for automated data enrichment and contextual
+[metadata](concepts/objects.md#metadata) for automated data enrichment and contextual
 suggestions.
 
 * [50+ interactive viewers](../visualize/viewers/viewers.md) for synchronized, dynamic dashboards
 * [Integration with visualizations in R, Python, or Julia](../visualize/viewers/scripting-viewer.md)
 * Built-in [regression and formula lines](../visualize/viewers/scatter-plot.md#calculations-and-trends),
   confidence intervals, correlations, and statistics
-* Automatic detection of outliers, [missing values](../transform/missing-values-imputation.md),
+* Automatic detection of outliers, [missing values](../explore/missing-values-imputation.md),
  or incorrect data types
 * Adaptive UI and data-specific suggestions.
 

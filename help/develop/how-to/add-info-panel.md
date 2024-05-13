@@ -134,4 +134,4 @@ See also:
 * [JavaScript development](../develop.md)
 * [Scripting](../../compute/scripting/scripting.mdx)
 * [Functions](../../datagrok/concepts/functions/functions.md)
-* [Semantic types](../../catalog/semantic-types.md)
+* [Semantic types](../../govern/catalog/semantic-types.md)

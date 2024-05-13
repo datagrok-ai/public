@@ -19,7 +19,7 @@ options:
 * Choose specific columns (current, selected, all) and rows (selected, filtered)
   to target for the operation.
 * Automatically filter all matching rows.
-* Use [search patterns](../explore/search-filter-select/data-search-patterns.md) for matching non-textual columns. For
+* Use [search patterns](../datagrok/navigation/views/table-view.md#search-patterns) for matching non-textual columns. For
   example, you can search for `this week` in a datetime column and replace it
   with a specific date like `Nov 7, 2000` or `7/11/2000`.
 * In string columns, you can also match case, entire word, or use regular

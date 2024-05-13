@@ -200,7 +200,7 @@ To apply a cell renderer manually:
 
 ![](../../deploy/releases/platform/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
-Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers](../supported-cell-renderers.md).  //TODO: New doc: supported-cell-renderers.md-->
+Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers].  //TODO: New doc: supported-cell-renderers.md-->
 
 :::note developers
 

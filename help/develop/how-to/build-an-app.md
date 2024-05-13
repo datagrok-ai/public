@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../govern/catalog/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../datagrok/concepts/objects.md#metadata). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../govern/catalog/metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 
 ##### Column tags
 
