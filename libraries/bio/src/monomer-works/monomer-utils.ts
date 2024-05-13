@@ -2,6 +2,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import {Observable} from 'rxjs';
+
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
@@ -10,8 +15,6 @@ import {IMonomerLib} from '../types/index';
 import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
 import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -135,9 +138,36 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   return resultLib;
 }
 
+export interface IMonomerLibFileEventManager {
+  get addLibraryFileRequested$(): Observable<void>;
+  get updateUIControlsRequested$(): Observable<string[]>;
+  get librarySelectionRequested$(): Observable<[string, boolean]>;
+
+  updateLibrarySelectionStatus(libFileName: string, isSelected: boolean): void;
+}
+
+export interface IMonomerLibFileManager {
+  get eventManager(): IMonomerLibFileEventManager;
+
+  getValidLibraryPaths(): string[];
+  getValidLibraryPathsAsynchronously(): Promise<string[]>;
+
+  addLibraryFile(fileContent: string, fileName: string): Promise<void>;
+  deleteLibraryFile(fileName: string): Promise<void>;
+
+  loadLibraryFromFile(path: string, fileName: string): Promise<IMonomerLib>;
+}
+
 export interface IMonomerLibHelper {
+  get eventManager(): IMonomerLibFileEventManager;
+
+  /** Ensures files are loaded and validated, throws error after timeout */
+  awaitLoaded(timeout?: number): Promise<void>;
+
   /** Singleton monomer library */
   getBioLib(): IMonomerLib;
+
+  getFileManager(): Promise<IMonomerLibFileManager>;
 
   /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
    * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]

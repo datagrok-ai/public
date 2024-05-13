@@ -8,8 +8,6 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLibFileManager} from '../utils/monomer-lib/library-file-manager/file-manager';
-import {MonomerLibFileEventManager} from '../utils/monomer-lib/library-file-manager/event-manager';
 
 
 category('monomerLibraries', () => {
@@ -51,8 +49,7 @@ category('monomerLibraries', () => {
   test('empty', async () => {
     // exclude all monomer libraries for empty set
     const libSettings = await getUserLibSettings();
-    const libFileEventManager = MonomerLibFileEventManager.getInstance();
-    const libFileManager = await MonomerLibFileManager.getInstance(libFileEventManager);
+    const libFileManager = await monomerLibHelper.getFileManager();
 
     let libFnList = libFileManager.getValidLibraryPaths();
     if (libFnList.length === 0)

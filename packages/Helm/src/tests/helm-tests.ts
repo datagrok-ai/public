@@ -75,6 +75,7 @@ category('Helm', () => {
     'comples-monomer', 'complex-monomer+side-chain', 'complex-monomer+side-chain-RNA',
     'complex-side-chain', 'complex+side-chain+linker'
   ];
+
   test('parseHelm', async () => {
     const expectedResults = [
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'D-Tyr_Et', 'Aze', 'dV', 'E', 'Phe_4Me'],

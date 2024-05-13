@@ -1,5 +1,16 @@
 # Helm changelog
 
+## 2.2.1 (2024-05-13)
+
+### Features
+
+* Use Bio monomerLib within Helm Web Editor
+
+### Bug fixes
+
+* Optimize getMonomer tests to prevent reloading the monomer lib
+* Add tests for adding missing monomers with Helm Web Editor
+
 ## 2.2.0 (2024-05-01)
 
 Optimize cell renderer on async renderer base

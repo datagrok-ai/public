@@ -86,8 +86,8 @@ export const _package = new BioPackage();
 //name: getMonomerLibHelper
 //description:
 //output: object result
-export function getMonomerLibHelper(): IMonomerLibHelper {
-  return MonomerLibManager.instance;
+export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
+  return await MonomerLibManager.getInstance();
 }
 
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -104,12 +104,20 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
+let monomerLib: IMonomerLib | null = null;
+
 //tags: init
 export async function initBio() {
-  _package.logger.debug('Bio: initBio(), started');
+  const logPrefix = 'Bio: initBio()';
+  _package.logger.debug(`${logPrefix}, start`);
   const module = await grok.functions.call('Chem:getRdKitModule');
+  const t1: number = window.performance.now();
   await Promise.all([
-    (async () => { await MonomerLibManager.instance.loadLibraries(); })(),
+    (async () => {
+      const monomerLibManager = await MonomerLibManager.getInstance();
+      await monomerLibManager.loadLibraries();
+      monomerLib = monomerLibManager.getBioLib();
+    })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -117,9 +125,10 @@ export async function initBio() {
     })(),
   ]).finally(() => {
     _package.completeInit();
+    const t2: number = window.performance.now();
+    _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
   });
 
-  const monomerLib = MonomerLibManager.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
 
@@ -161,8 +170,8 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
 
 //name: getBioLib
 //output: object monomerLib
-export function getBioLib(): IMonomerLib {
-  return MonomerLibManager.instance.getBioLib();
+export function getMonomerLib(): IMonomerLib | null {
+  return monomerLib;
 }
 
 //name: getSeqHandler
@@ -571,7 +580,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    await sequenceToMolfile(table, seqCol, nonlinear);
+    const monomerLib = (await getMonomerLibHelper()).getBioLib();
+    await sequenceToMolfile(table, seqCol, nonlinear, monomerLib);
   } finally {
     pi.close();
   }

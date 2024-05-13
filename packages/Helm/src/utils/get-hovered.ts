@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as org from 'org';
 import * as JSDraw2 from 'JSDraw2';
 
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PolymerType} from '@datagrok-libraries/bio/src/types';
 
 import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 
@@ -80,32 +80,21 @@ export function getHoveredMonomerFallback(
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
   if (left >= 0)
-    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left], helmPlacer.monomerLib);
+    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left]);
   return hoveredSeqMonomer;
 }
 
 function getSeqMonomerFromHelmAtom(atom: JSDraw2.IEditorMolAtom): ISeqMonomer {
-  let polymerType: string | undefined = undefined;
-  switch (atom.bio.type) {
-  case 'HELM_BASE':
-  case 'HELM_SUGAR': // r - ribose, d - deoxyribose
-  case 'HELM_LINKER': // p - phosphate
-    polymerType = 'RNA';
-    break;
-  case 'HELM_AA':
-    polymerType = 'PEPTIDE';
-    break;
-  default:
-    polymerType = 'PEPTIDE';
-  }
+  const polymerType = helmTypeToPolymerType(atom.bio.type);
   return {symbol: atom.elem, polymerType: polymerType};
 }
 
 function getSeqMonomerFromHelm(
-  helmPrefix: string, symbol: string, monomerLib: IMonomerLib
+  helmPrefix: string, symbol: string
 ): ISeqMonomer {
   let resSeqMonomer: ISeqMonomer | undefined = undefined;
-  for (const polymerType of monomerLib.getPolymerTypes()) {
+  const polymerTypeList: PolymerType[] = ['RNA', 'PEPTIDE', 'CHEM', 'BLOB', 'G'];
+  for (const polymerType of polymerTypeList) {
     if (helmPrefix.startsWith(polymerType))
       resSeqMonomer = {symbol: symbol, polymerType: polymerType};
   }
