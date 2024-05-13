@@ -19,6 +19,10 @@
   "dependencies": {
     "@docusaurus/core": "3.2.1",
     "@docusaurus/preset-classic": "3.2.1",
+    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/free-brands-svg-icons": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/react-fontawesome": "^0.2.0",
     "@mdx-js/react": "^3.0.1",
     "clsx": "^2.1.1",
     "markdown-to-jsx": "^7.1.9",
@@ -27,8 +31,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.2.1",
     "@docusaurus/logger": "3.2.1",
+    "@docusaurus/module-type-aliases": "3.2.1",
     "@tsconfig/docusaurus": "^2.0.3",
     "docusaurus-plugin-typedoc": "^1.0.0",
     "docusaurus-theme-search-typesense": "0.18.0",

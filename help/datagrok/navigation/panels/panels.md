@@ -30,7 +30,7 @@ Located at the top right hand-side, the **Context Panel** serves two main functi
 
 * For visual UI components like [viewers](../../../visualize/viewers/viewers.md)
 or [widgets](../../../visualize/widgets.md), it provides
-access to settings. To access settings, click the **Gear** (⚙) icon in the
+access to settings. To access settings, click the **Gear** (<FAIcon icon="fas fa-gear" size="1x" />) icon in the
 top right corner of the visual component.
 * For Datagrok [entities](../../concepts/objects.md) and other data objects
   (e.g., molecules), it shows information and options for your _current object_.
