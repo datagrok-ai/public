@@ -57,6 +57,7 @@ export class MmpAnalysis {
   sliderInputs: DG.InputBase[];
   colorInputs: DG.InputBase[];
   activeInputs: DG.InputBase[];
+  calculatedOnGPU;
 
   private setupTransformationTab(): void {
     this.transformationsMask.setAll(true);
@@ -241,7 +242,7 @@ export class MmpAnalysis {
     sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
     colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
-    rdkitModule: RDModule) {
+    rdkitModule: RDModule, gpuUsed: boolean) {
     this.rdkitModule = rdkitModule;
 
     this.parentTable = mmpInput.table;
@@ -256,6 +257,7 @@ export class MmpAnalysis {
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
+    this.calculatedOnGPU = gpuUsed
 
     //transformations tab setup
     this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
@@ -303,7 +305,7 @@ export class MmpAnalysis {
 
     //initial calculations
     const fragsOut = await getMmpFrags(moleculesArray);
-    const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
+    const [mmpRules, allCasesNumber, gpu] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
     const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
@@ -330,7 +332,7 @@ export class MmpAnalysis {
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
-      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
+      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu);
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {

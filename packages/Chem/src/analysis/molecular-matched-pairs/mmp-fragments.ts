@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {MmpRules} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 
@@ -22,8 +23,9 @@ export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsRes
   return res;
 }
 
-export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number]> {
-  if (fragsOut.frags.length < 10)
+export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
+  const gpu = await getGPUDevice();
+  if (fragsOut.frags.length < 10 || !gpu)
     return getMmpRulesTrivial(fragsOut, fragmentCutoff);
   else
     return await getMmpRulesGPU(fragsOut, fragmentCutoff);
@@ -143,7 +145,7 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], 
   return [res, fragIdToFragName, fragSizes];
 }
 
-function getMmpRulesTrivial(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): [MmpRules, number] {
+function getMmpRulesTrivial(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): [MmpRules, number, boolean] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = fragsOut.frags.length;
 
@@ -171,10 +173,10 @@ function getMmpRulesTrivial(fragsOut: IMmpFragmentsResult, fragmentCutoff: numbe
       ruleCounter, allCasesCounter);
   }
 
-  return [mmpRules, allCasesCounter];
+  return [mmpRules, allCasesCounter, false];
 }
 
-async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number]> {
+async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
 
   const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);
@@ -189,5 +191,5 @@ async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: num
       ruleCounter, allCasesCounter);
   }
 
-  return [mmpRules, allCasesCounter];
+  return [mmpRules, allCasesCounter, true];
 }
