@@ -100,11 +100,15 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       this._sweepToggle(this._busy = true);
 
       // TODO: Use requestAnimationFrame()
-      this.logger.debug(`${logPrefix}, window.setTimeout() -> this._processQueue() `);
-      window.setTimeout(() => { this._processQueue(); }, 0 /* next event cycle */);
+      this.logger.debug(`${logPrefix}, window.requestAnimationFrame() -> this._processQueue() `);
+      window.requestAnimationFrame(() => { this._processQueue(); });
     }
 
     return consumerId;
+  }
+
+  isBusy(consumerId: number): boolean {
+    return this._queue.some((item) => item.consumerId === consumerId);
   }
 
   protected getTask(): RenderQueueItem<TProps, TAux> | undefined {
@@ -145,8 +149,8 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       if (renderSub) renderSub.unsubscribe(); // renderSub can be undefined for a sync render service (?)
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
-        this.logger.debug(`${logPrefixR}, ` + 'window.setTimeout() -> this._processQueue() ');
-        window.setTimeout(() => { this._processQueue(); }, 0 /* next event cycle */);
+        this.logger.debug(`${logPrefixR}, ` + 'window.requestAnimationFrame() -> this._processQueue() ');
+        window.requestAnimationFrame(() => { this._processQueue(); });
       } else {
         // release flag allowing _processQueue on add queue item
         this.logger.debug(`${logPrefixR}, ` + 'this._busy = false');
@@ -373,6 +377,11 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
         this.renderOnGrid(g, bd, gridCell, cellImageData);
+      }
+
+      if (!this.consumerId || !service.isBusy(this.consumerId)) {
+        // No async render task enqueued, fire onRendered as completed
+        this._onRendered.next();
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();

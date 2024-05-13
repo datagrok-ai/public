@@ -60,8 +60,13 @@ export interface IMonomerLib {
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 
+  /** Summary string with lib monomer count by type
+   * @deprecated Keep for backward compatibility */
+  getSummary(): string;
+
   /** Summary with lib monomer count by type */
-  getSummary(): MonomerLibSummaryType;
+  getSummaryObj(): MonomerLibSummaryType;
+
   /** Gets dataframe with columns 'polymerType', 'count'. */
   getSummaryDf(): DG.DataFrame;
 

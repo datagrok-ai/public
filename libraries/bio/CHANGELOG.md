@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.41.2 (2024-05-13)
+
+### Bug fixes
+
+Fix MonomerLib.getSummary for backward compatibility
+Fix cell renderer async base for sync rendering
+
 ## 5.41.1 (2024-05-13)
 
 ### Features

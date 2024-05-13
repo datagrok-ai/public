@@ -105,13 +105,13 @@ export abstract class CellRendererBackBase<TValue> implements IRenderer {
   }
 
   async awaitRendered(
-    timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`
+    timeout: number = 10000, reason: string = `${timeout} timeout`
   ): Promise<void> {
     const logPrefix = `${this.toLog()}.awaitRendered()`;
     this.logger.debug(`${logPrefix}, start, testEvent before`);
     await testEvent(this._onRendered, () => {}, () => {
       this.invalidate();
-    }, timeout, reason);
+    }, timeout, `${logPrefix}, ${reason}`);
 
     // Rethrow stored syncer error (for test purposes)
     if (this.errors.length > 0) {

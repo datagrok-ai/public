@@ -11,7 +11,7 @@ export const defaultMonomerLibSummary: MonomerLibSummaryType = {'PEPTIDE': 322, 
 
 export function expectMonomerLib(lib: IMonomerLib, summary?: { [polymerType: string]: number }): void {
   const exp: MonomerLibSummaryType = summary ?? defaultMonomerLibSummary;
-  const act: MonomerLibSummaryType = lib.getSummary();
+  const act: MonomerLibSummaryType = lib.getSummaryObj();
 
   for (const pt in exp)
     if (!exp[pt]) delete exp[pt];
