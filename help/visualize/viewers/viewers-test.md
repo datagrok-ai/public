@@ -109,13 +109,13 @@ scenarios common to all viewers were identified:
 
 3. Select *"Age"* column in "Size" selector on [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"*
+    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values   of *"Age"*
       column
     * Under "Size" selector only columns with numerical types are represented
 
 4. Drag *"Sex"* column from grid to "Color" selector on [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"*
+    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values   of *"Age"*
       column
     * When dragging column, "Colort" selector on [Scatter Plot](../viewers/scatter-plot.md)
       is highlighted

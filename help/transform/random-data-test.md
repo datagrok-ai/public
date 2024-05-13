@@ -33,11 +33,11 @@ distribution can be edited as well.
    distribution
 
 1. Open "Random data" dialog. Leave the values of all fields by default. Set the value of field "
-   Show histogram" as true. Alternately select all the possible values ​​of the "Distribution"
+   Show histogram" as true. Alternately select all the possible values   of the "Distribution"
    field ("Normal", "Log-Normal", "Binomial", "Poisson", "Uniform")
 
 * When you select a new value for the "Distribution" field, a new column is added to "demog" table
-* Names and values ​​of new columns correspond to the selected distribution
+* Names and values   of new columns correspond to the selected distribution
 * [Histogram](../visualize/viewers/histogram.md) is created for each new column
 * When "Distribution" field value changed, then parameters that are not suitable for the corresponding distribution
   become unavailable for editing

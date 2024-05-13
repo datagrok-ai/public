@@ -6668,7 +6668,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed grok_shared build
 * (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog
 * (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters
-* (Bug) Filters: ​double-click on checkbox: weird characters are visible
+* (Bug) Filters:  double-click on checkbox: weird characters are visible
 * (Bug) Scatter Plot: Custom linear coloring is not propagated
 * NPM repositories: add an option to skip installation of deployed packages during repository publication
 * Push version from package.json for master branch

@@ -22,7 +22,7 @@ operations like filtering, sorting, or aggregations.
 
 Dataframes can be manipulated directly through the UI,
 [Console](../navigation/panels/panels.md#console), or scripts that automate
-data transformations​. Every change made to a dataframe is automatically
+data transformations . Every change made to a dataframe is automatically
 recorded, which means it can be audited and reproduced.
 
 Dataframes are visualized using the [grid](../../visualize/viewers/grid.md) viewer.
@@ -91,11 +91,11 @@ _[layout](../../visualize/view-layout.md)_) is separated from the data
 
 Projects act like folders containing various _entities_ such as dataframes,
 queries, or scripts. For example, [dashboards](project/dashboard.md) are
-projects that include two _entities_: the underlying data (a [dataframe](../table.md)) and
+projects that include two _entities_: the underlying data (a [dataframe](table.md)) and
 the visualizations applied to it (a [layout](../../visualize/view-layout.md)). 
 
 Projects are essential for organizing, managing, and sharing data assets. The
-[Browse](../../navigation/views/browse.md) view organizes projects in a tree
+[Browse](../navigation/views/browse.md) view organizes projects in a tree
 that governs [entity privileges](../../govern/authorization.md).
 
 </TabItem>
