@@ -90,14 +90,14 @@ declare module 'JSDraw2' {
     annotationshowright?: string | null;
   }
 
-  export abstract class JsAtom<TBioType> implements IPistoiaBase {
+  export abstract class JsAtom<TBio> implements IPistoiaBase {
     get T(): 'ATOM';
 
     get p(): Point;
 
     get elem(): string;
 
-    get bio(): IBio<TBioType>
+    get bio(): IBio<TBio>
 
     // [propName: string]: any;
 
@@ -138,10 +138,10 @@ declare module 'JSDraw2' {
     // get atommapid(): string | null;
   }
 
-  export class Atom<TBioType> extends JsAtom<TBioType> {
-    biotype(): TBioType;
+  export class Atom<TBio> extends JsAtom<TBio> {
+    biotype(): TBio;
 
-    constructor(p: Point, elem: string, bio: TBioType);
+    constructor(p: Point, elem: string, bio: IBio<TBio>);
   }
 
   export class Point {

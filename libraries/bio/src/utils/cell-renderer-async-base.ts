@@ -126,9 +126,8 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
           }
         }
       }
-      if (priorityItemIdx !== null) {
+      if (priorityItemIdx !== null)
         resItem = this._queue.splice(priorityItemIdx, 1)[0];
-      }
     }
     if (!resItem) resItem = this._queue.shift();
     return resItem;
@@ -472,23 +471,6 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     } finally {
       gCtx.restore();
     }
-  }
-
-  // -- IRenderer --
-
-  private _onRendered: Subject<void> = new Subject<void>();
-
-  get onRendered(): Observable<void> { return this._onRendered; }
-
-  invalidate(caller?: string): void {
-    this.invalidateGrid();
-  }
-
-  async awaitRendered(
-    timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`
-  ): Promise<void> {
-    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); },
-      timeout, reason);
   }
 }
 

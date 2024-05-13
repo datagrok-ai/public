@@ -255,10 +255,10 @@ export class SeqHandler {
   //   }
   //   return this._splitted;
   // }
-  public getSplitted(rowIdx: number): ISeqSplitted {
-    if (!this.cached) {
+  public getSplitted(rowIdx: number, limit?: number): ISeqSplitted {
+    if (!this.cached || limit !== undefined) {
       const seq = this.column.get(rowIdx);
-      return this.splitter(seq);
+      return this.getSplitter(limit)(seq);
     } else {
       if (this.column.version !== this.columnVersion || this._splitted === null) {
         this.columnVersion = this.column.version;

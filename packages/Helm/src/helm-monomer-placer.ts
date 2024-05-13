@@ -20,8 +20,6 @@ export interface ISeqMonomer {
 }
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
-  public readonly monomerLib: IMonomerLib;
-
   private _allPartsList: (string[] | null)[];
   private _lengthsList: (number[] | null)[];
   private _editorMolList: (JSDraw2.IEditorMol | null)[];
@@ -35,8 +33,6 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     tableCol: DG.Column<string>
   ) {
     super(gridCol, tableCol, _package.logger);
-    this.monomerLib = getMonomerLib();
-    this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
   }
 
   protected override reset(): void {
@@ -79,19 +75,6 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     }
 
     return [allParts, lengths];
-  }
-
-  getMonomer(monomer: ISeqMonomer): Monomer | null {
-    let res: Monomer | null = null;
-    if (monomer.polymerType)
-      res = this.monomerLib.getMonomer(monomer.polymerType, monomer.symbol);
-    else {
-      for (const polymerType of this.monomerLib.getPolymerTypes()) {
-        res = this.monomerLib.getMonomer(polymerType, monomer.symbol);
-        if (res) break;
-      }
-    }
-    return res;
   }
 
   // -- Handle events --

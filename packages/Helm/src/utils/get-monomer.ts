@@ -3,10 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as org from 'org';
-import scil from 'scil';
+import * as scil from 'scil';
+import * as JSDraw2 from 'JSDraw2';
+import Atom = JSDraw2.Atom;
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {Atom, HelmType, IMonomerLib, Monomer, WebEditorMonomer} from '@datagrok-libraries/bio/src/types';
+import {HelmType, IMonomerLib, Monomer, WebEditorMonomer} from '@datagrok-libraries/bio/src/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PolymerTypes, HelmTypes} from '@datagrok-libraries/bio/src/utils/const';
 import {
@@ -14,8 +16,6 @@ import {
 } from '@datagrok-libraries/bio/src/utils/const';
 
 import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, LibraryWebEditorMonomer} from './dummy-monomer';
-
-import {_package} from '../package';
 
 const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
@@ -53,19 +53,19 @@ export function getMonomerOverrideAndLogAlert(
 }
 
 /** Inputs logic */
-function getMonomerHandleArgs(
-  a: Atom<HelmType> | HelmType, name: string
+export function getMonomerHandleArgs(
+  a: Atom<HelmType> | HelmType, name?: string
 ): [/** biotype */ HelmType, /** elem */ string] {
-  let s: string;
   let biotype: HelmType;
+  let elem: string;
   if ((a as Atom<HelmType>).T === 'ATOM') {
     biotype = (a as Atom<HelmType>).biotype();
-    s = (a as Atom<HelmType>).elem;
+    elem = (a as Atom<HelmType>).elem;
   } else {
     biotype = a as HelmType;
-    s = org.helm.webeditor.IO.trimBracket(name);
+    elem = org.helm.webeditor.IO.trimBracket(name!);
   }
-  return [biotype, s];
+  return [biotype, elem];
 }
 
 

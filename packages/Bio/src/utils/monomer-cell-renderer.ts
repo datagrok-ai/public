@@ -2,16 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as org from 'org';
-
 import {ALPHABET, getPaletteByType, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PolymerType} from '@datagrok-libraries/bio/src/types';
 
-import {getMonomerLibHelper} from '../package';
 import * as C from './constants';
-import {HelmType} from '@datagrok-libraries/bio/src/types';
-import {HelmTypes} from '@datagrok-libraries/bio/src/utils/const';
+import {getMonomerLib} from '../package';
 
 const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
@@ -35,8 +32,18 @@ export class MonomerTooltipHandler {
 
     const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet) as ALPHABET;
     const monomerName = gridCell.cell.value;
-    const mw = new MonomerWorks(getMonomerLibHelper().getBioLib());
-    const polymerType: org.helm.PolymerType = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
+    const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
+    const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
+    const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
+
+    const monomerLib = getMonomerLib();
+    if (!monomerLib) {
+      ui.tooltip.show(ui.divText('Monomer library is not available.'), x1, y1);
+      return true;
+    }
+
+    const mw = new MonomerWorks(monomerLib);
+    const polymerType: PolymerType = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
       alphabet === ALPHABET.PT ? 'PEPTIDE' : 'PEPTIDE';
     // const biotype: HelmType = [ALPHABET.RNA, ALPHABET.DNA].includes(alphabet) ? HelmTypes.NUCLEOTIDE :
     //   [ALPHABET.PT].includes(alphabet) ? HelmTypes.AA : HelmTypes.AA;
@@ -46,9 +53,6 @@ export class MonomerTooltipHandler {
     const molDiv = !monomerMol ? null :
       grok.chem.svgMol(monomerMol, undefined, undefined, svgMolOptions);
 
-    const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
-    const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
-    const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
     ui.tooltip.show(ui.divV([nameDiv, ...(molDiv ? [molDiv] : [])]), x1, y1);
 
     return true; // To prevent default tooltip behaviour

@@ -2,21 +2,32 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
 import * as org from 'org';
+import * as JSDraw2 from 'JSDraw2';
+import Atom = JSDraw2.Atom;
+import JsAtom = JSDraw2.JsAtom;
 
-import {JsAtom, Atom, HelmType, IMonomerLib, WebEditorMonomer} from '@datagrok-libraries/bio/src/types';
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat
 } from '@datagrok-libraries/utils/src/test';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {HelmType, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
+import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
-import {GetMonomerFunc} from '../utils/get-monomer';
+import {GetMonomerFunc, getMonomerHandleArgs} from '../utils/get-monomer';
 
 import {_package} from '../package-test';
-import {_package as helmPackage} from '../package';
-import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmPackage} from '../package-utils';
 
-const tests: { [testName: string]: { args: { a: any, name?: string }, tgt: any } } = {
+type TestDataType = { args: { a: any, name?: string }, tgt: any };
+
+const tests: { [testName: string]: TestDataType } = {
   /* eslint-disable */
   //@formatter:off
   t0:{"args":{"a":"HELM_BASE","name":"A"},"tgt":{"id":"A","m":"HELM Core Monomer library\n  Ketcher 10131612512D 1   1.00000     0.00000     0\n\n 11 12  0     0  0            999 V2000\n    0.9632   -3.5449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0970   -4.0450    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0970   -5.0451    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9630   -5.5451    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8291   -5.0452    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8293   -4.0451    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8536   -5.3539    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.4413   -4.5449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8535   -3.7357    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9632   -2.5448    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.1626   -6.3051    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1 10  1  0     0  0\n  1  6  2  0     0  0\n  1  2  1  0     0  0\n  9  2  1  0     0  0\n  2  3  2  0     0  0\n  7  3  1  0     0  0\n  3  4  1  0     0  0\n  4  5  2  0     0  0\n  5  6  1  0     0  0\n  7  8  1  0     0  0\n  7 11  1  0     0  0\n  8  9  2  0     0  0\nA   11\nR1\nM  END\n","n":"Adenine","na":"A","rs":1,"at":{"R1":"H"}}},
@@ -53,36 +64,125 @@ const tests: { [testName: string]: { args: { a: any, name?: string }, tgt: any }
 };
 
 category('getMonomer', ()=>{
-  // We cannot wait here while the main package is loaded (category is not async)
-  for (const [testName, testData] of Object.entries(tests)) {
-    test(`original-${testName}`, async ()=>{
-      // Ensure the main Helm package is loaded
-      const helmHelper: IHelmHelper = await grok.functions.call('Helm:getHelmHelper');
-      expect(helmHelper != null, true);
-      // @ts-ignore
-      const mainPkg: HelmPackage = helm._package;
+  let monomerLibHelper: IMonomerLibHelper;
+  /** Backup actual user's monomer libraries settings */
+  let userLibSettings: UserLibSettings;
 
+  before(async ()=>{
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+
+    // Tests 'findMonomers' requires default monomer library loaded
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.awaitLoaded();
+    await monomerLibHelper.loadLibraries(true); // load default libraries for tests
+  });
+
+  after(async ()=>{
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadLibraries(true);
+  });
+
+  test('original', async () =>{
+    const helmHelper: IHelmHelper = await getHelmHelper();
+    expect(helmHelper != null, true);
+    // @ts-ignore
+    const mainPkg: HelmPackage = helm._package;
+    const getMonomerFunc = mainPkg.getMonomerOriginal;
+
+    return _testAll('original', getMonomerFunc);
+  }, {isAggregated: true});
+
+  test('monomerLib', async () =>{
+    const monomerLib = monomerLibHelper.getBioLib();
+    expectMonomerLib(monomerLib);
+
+    const getMonomerFunc = org.helm.webeditor.Monomers.getMonomer;
+    return _testAll('monomerLib', getMonomerFunc);
+  }, {isAggregated: true});
+
+  function _testAll(prefix: string, getMonomerFunc: GetMonomerFunc): DG.DataFrame {
+    const resDf = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('subTest', []),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'success', []),
+      DG.Column.fromStrings('res', []),
+      DG.Column.fromStrings('tgt', []),
+      DG.Column.fromStrings('error', []),
+      DG.Column.fromStrings('stack', []),
+    ]);
+
+    // const testCount: number = Object.keys(tests).length + 1;
+    // //* eslint-disable no-array-constructor */
+    // const subTestList: string[] = new Array<string>(testCount);
+    // const successList: boolean[] = new Array<boolean>(testCount);
+    // const resList: string[] = new Array<string>(testCount);
+    // const tgtList:string[] = new Array<string>(testCount);
+    // const errorList: string[] = new Array<string>(testCount);
+    // const stackList: string[] = new Array<string>(testCount);
+    // /* eslint-enable no-array-constructor */
+
+    const resI = resDf.rows.addNew().idx;
+    resDf.set('subTest', resI, 'Monomer lib');
+    resDf.set('res', resI, '');
+    resDf.set('tgt', resI, '');
+    try {
+      const monomerLib = monomerLibHelper.getBioLib();
+      expectMonomerLib(monomerLib);
+      resDf.set('success', resI, true);
+    } catch (err) {
+      const [errMsg, errStack] = errInfo(err);
+      resDf.set('error', resI, errMsg);
+      resDf.set('stack', resI, errStack);
+      resDf.set('success', resI, false);
+    }
+
+    for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
       const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
-      _testGetMonomer(a, testData.args.name, testData.tgt, mainPkg.getMonomerOriginal);
-    });
+      const [biotype, elem] = getMonomerHandleArgs(a, testData.args.name);
+      const tgt = testData.tgt;
+
+      const resI = resDf.rows.addNew().idx;
+      resDf.set('subTest', resI, `${prefix}-${testName}-${biotype}-${elem}`);
+      resDf.set('tgt', resI, JSON.stringify(tgt ? {id: tgt.id, n: tgt.n, rs: tgt.rs} : null));
+      try {
+        const res: any = getMonomerFunc(a, testData.args.name);
+        resDf.set('res', resI, JSON.stringify(res ? {id: res.id, n: res.n, rs: res.rs} : null));
+        expectObjectWithNull(res, tgt);
+        resDf.set('success', resI, true);
+      } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        resDf.set('error', resI, errMsg);
+        resDf.set('stack', resI, errStack);
+        resDf.set('success', resI, false);
+      }
+    }
+    return resDf;
   }
 
-  for (const [testName, testData] of Object.entries(tests)) {
-    test(`monomerLib-${testName}`, async () =>{
-      const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
-      const getMonomer = org.helm.webeditor.Monomers.getMonomer;
-      _testGetMonomer(a, testData.args.name, testData.tgt, getMonomer);
-    });
-  }
+  test('missing', async ()=> {
+    /* Tests getMonomer function adding missing monomers. */
+    const helmStr = 'PEPTIDE1{[mis1].R.[mis2].T.C.F}$$$$;';
+
+
+    expectMonomerLib(monomerLibHelper.getBioLib());
+    const editor = new JSDraw2.Editor(ui.div(), {viewonly: true});
+    editor.setHelm(helmStr);
+    const withMissing = JSON.parse(JSON.stringify(
+      defaultMonomerLibSummary)) as MonomerLibSummaryType;
+    withMissing['PEPTIDE'] += 2;
+    expectMonomerLib(monomerLibHelper.getBioLib(), withMissing);
+  });
 });
 
-function _testGetMonomer(
-  a: Atom<HelmType> | HelmType, name: string | undefined, tgt: WebEditorMonomer, getMonomerFunc: GetMonomerFunc
-): void {
-  const res: any = getMonomerFunc(a, name);
-  expectObjectWithNull(res, tgt);
+function getAtomFromJson(argA: JsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
+  let res: Atom<HelmType> | HelmType;
+  const a = argA as JsAtom<HelmType>;
+  if (a.T === 'ATOM')
+    res = new JSDraw2.Atom<HelmType>(a.p, a.elem, a.bio);
+  else
+    res = argA as HelmType;
+  return res;
 }
-
 
 export function expectObjectWithNull(actual: { [key: string]: any }, expected: { [key: string]: any }) {
   if (actual == null && expected == null)
@@ -108,14 +208,3 @@ export function expectObjectWithNull(actual: { [key: string]: any }, expected: {
     }
   }
 }
-
-function getAtomFromJson(argA: JsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
-  let res: Atom<HelmType> | HelmType;
-  const a = argA as JsAtom<HelmType>;
-  if (a.T === 'ATOM')
-    res = new JSDraw2.Atom<HelmType>(a.p, a.elem, a.bio);
-  else
-    res = argA as HelmType;
-  return res;
-}
-

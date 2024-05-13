@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../types/helm';
 import * as org from 'org';
-// Alias helm types
+// Alias helm consts
 import PolymerTypes = org.helm.PolymerTypes;
 import HelmTypes = org.helm.HelmTypes;
 import MonomerTypes = org.helm.MonomerTypes;

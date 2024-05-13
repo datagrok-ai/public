@@ -6,9 +6,9 @@ import * as DG from 'datagrok-api/dg';
 // import '@datagrok-libraries/bio/src/types/dojo';
 // import * as dojo from 'DOJO';
 import '@datagrok-libraries/bio/src/types/helm';
+import '@datagrok-libraries/bio/src/types/jsdraw2';
 import * as scil from 'scil';
 import * as org from 'org';
-import '@datagrok-libraries/bio/src/types/jsdraw2';
 import * as JSDraw2 from 'JSDraw2';
 
 import $ from 'cash-dom';
@@ -20,7 +20,6 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
-import {findMonomers, parseHelm} from './utils';
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
@@ -44,25 +43,35 @@ export async function initHelm(): Promise<void> {
     }).then(() => {
       initHelmPatchDojo();
     }),
-    grok.functions.call('Bio:getBioLib'),
+    (async () => {
+      const libHelper = await getMonomerLibHelper();
+      return libHelper.getBioLib();
+    })()
   ])
     .then(([_, lib]: [unknown, IMonomerLib]) => {
       _package.logger.debug(`${logPrefix}, then(), lib loaded`);
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
       _package.initHelmPatchPistoia(monomerLib, _package.logger);
+
       monomerLib.onChanged.subscribe((_) => {
         try {
+          const libSummary = monomerLib!.getSummary();
+          const isLibEmpty = Object.keys(libSummary).length == 0;
+          const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
+            .map(([pt, count]) => `${pt}: ${count}`)
+            .join(', ');
           const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
-          _package.logger.debug(`${logPrefixInt}, start, org,helm.webeditor.Monomers updating`);
-          rewriteLibraries(); // initHelm()
+          _package.logger.debug(`${logPrefixInt}, start, lib: { ${libSummaryLog} }`);
 
-          const libSummary: string = monomerLib!.getSummary()
-            .replaceAll('\n', '<br />\n')
-            .replaceAll(',', ' ');
-          const libMsg: string = `Monomer lib updated:<br /> ${libSummary}'`;
+          const libSummaryHtml = isLibEmpty ? 'empty' : Object.entries(libSummary)
+            .map(([pt, count]) => `${pt} ${count}`)
+            .join('<br />');
+          const libMsg: string = `Monomer lib updated:<br /> ${libSummaryHtml}`;
           grok.shell.info(libMsg);
 
+          _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
+          rewriteLibraries(); // initHelm()
           _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
         } catch (err: any) {
           const errMsg = errorToConsole(err);
@@ -81,8 +90,8 @@ export async function initHelm(): Promise<void> {
   _package.logger.debug(`${logPrefix}, end`);
 }
 
-export function getMonomerLib(): IMonomerLib {
-  return monomerLib!;
+export function getMonomerLib(): IMonomerLib | null {
+  return monomerLib;
 }
 
 /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
@@ -265,6 +274,7 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 //name: measureCellRenderer
 export async function measureCellRenderer(): Promise<void> {

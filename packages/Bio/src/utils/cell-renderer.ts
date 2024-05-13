@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
-import {Unsubscribable} from 'rxjs';
 
 import {printLeftOrCentered, DrawStyle, TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
@@ -31,14 +30,16 @@ import {
 } from '../utils/cell-renderer-consts';
 import * as C from './constants';
 
-import {_package, getBioLib} from '../package';
+import {_package, getMonomerLib} from '../package';
 
 type TempType = { [tagName: string]: any };
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: MonomerToShortFunc = monomerToShort;
 
-function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number, dpr: number): number {
+function getUpdatedWidth(
+  grid: DG.Grid | null | undefined, g: CanvasRenderingContext2D, x: number, w: number, dpr: number
+): number {
   return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }
 
@@ -99,7 +100,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     //   maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
     // const maxIndex = maxLengthWords.length;
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
-    const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX);
+    const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX, gridCellBounds.width);
 
     const seqCList: SeqSplittedBase = SeqHandler.forColumn(tableCol)
       .getSplitted(gridCell.tableRowIndex!).canonicals;
@@ -113,8 +114,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           const alphabet = sh.alphabet ?? ALPHABET.UN;
           const polymerType = alphabetPolymerTypes[alphabet as ALPHABET];
 
-          const lib: IMonomerLib = seqColTemp.props.monomerLib!;
-          return lib.getTooltip(polymerType, monomerSymbol);
+          const lib: IMonomerLib | null = getMonomerLib();
+          return lib ? lib.getTooltip(polymerType, monomerSymbol) : ui.divText('Monomer library is not available');
         })();
       }
       tooltipElements.push(monomerDiv);
@@ -142,22 +143,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     _cellStyle: DG.GridCellStyle
   ): void {
     const logPrefix: string = 'MacromoleculeSequenceCellRenderer.render()';
+
+    const dpr = window.devicePixelRatio;
+    const [gridCol, tableCol, _temp] =
+      getGridCellRendererBack<string, MonomerPlacer>(gridCell);
+    if (!tableCol) return;
+    const tableColTemp: TempType = tableCol.temp;
+
     let gapLength = 0;
     const msaGapLength = 8;
     let maxLengthOfMonomer = 50; // in case of long monomer representation, do not limit max length
-
-    // TODO: Store temp data to GridColumn
-    // Now the renderer requires data frame table Column underlying GridColumn
-    let grid: DG.Grid | undefined = undefined;
-    try { grid = gridCell.grid; } catch (err: any) {
-      grid = undefined;
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-    }
-    const tableCol: DG.Column = gridCell.cell.column;
-    if (!grid || !tableCol) return;
-
-    const tableColTemp: TempType = tableCol.temp;
 
     // Cell renderer settings
     const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
@@ -170,46 +165,41 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
     }
 
-    const [gridCol, _tc, temp] =
+    const [_gc, _tc, temp] =
       getGridCellRendererBack<string, MonomerPlacer>(gridCell);
-    let seqColTemp: MonomerPlacer = temp['rendererBack'];
+    let seqColTemp: MonomerPlacer = temp.rendererBack;
     if (!seqColTemp) {
-      seqColTemp = new MonomerPlacer(gridCol, tableCol, _package.logger,
+      seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger,
         () => {
           const sh = SeqHandler.forColumn(tableCol);
           return {
             seqHandler: sh,
             monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction, monomerLengthLimit: maxLengthOfMonomer,
-            monomerLib: getBioLib()
           };
         });
     }
 
-    if (tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true) {
-      gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
-      // this event means that the mm renderer settings have changed, particularly monomer representation and max width.
-      seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
-      seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
-      tableCol.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.false);
-    }
-
-    const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
-      seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!);
-    const _maxIndex = maxLengthWords.length;
-
-    // Store updated seqColTemp to the col temp
-    if (seqColTemp.updated) temp['rendererBack'] = seqColTemp;
-
     g.save();
     try {
-      const dpr = window.devicePixelRatio;
-      const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
+      if (tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true) {
+        gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
+        // this event means that the mm renderer settings have changed,
+        // particularly monomer representation and max width.
+        seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
+        seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
+        tableCol.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.false);
+      }
+
+      const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
+        seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!, w);
+      const _maxIndex = maxLengthWords.length;
+
       const value: any = gridCell.cell.value;
       const rowIdx = gridCell.cell.rowIndex;
       const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
-      w = getUpdatedWidth(grid, g, x, w, dpr);
+      w = getUpdatedWidth(gridCol?.grid, g, x, w, dpr);
       g.beginPath();
       g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
@@ -223,7 +213,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const palette = getPaletteByType(paletteType);
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
-      const splitLimit = w / 5;
+      const minMonWidth = seqColTemp.props.separatorWidth + 1 * seqColTemp.props.monomerCharWidth;
+      const splitLimit = w / minMonWidth;
       const sh = SeqHandler.forColumn(tableCol);
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
@@ -247,7 +238,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
 
-      for (let posIdx: number = 0; posIdx < subParts.length; ++posIdx) {
+      const visibleSeqLength = Math.min(subParts.length, splitLimit);
+      for (let posIdx: number = 0; posIdx < visibleSeqLength; ++posIdx) {
         const amino: string = subParts.getOriginal(posIdx);
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
@@ -259,8 +251,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         if (minDistanceRenderer > w) break;
       }
     } catch (err: any) {
-      const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Error \'undefined\'';
-      _package.logger.error(`Bio: MacromoleculeSequenceCellRenderer.render() error: ${errMsg}`);
+      const [errMsg, errStack] = errInfo(err);
+      seqColTemp.logger.error(errMsg, undefined, errStack);
+      seqColTemp.errors.push(err);
       //throw err; // Do not throw to prevent disabling renderer
     } finally {
       g.restore();

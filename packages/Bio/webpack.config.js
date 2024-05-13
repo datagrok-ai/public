@@ -43,7 +43,7 @@ module.exports = {
     'wu': 'wu',
     'scil': 'scil',
     'org': 'org',
-    'JSDraw2': 'JSDraw2',
+    // 'JSDraw2': 'JSDraw2',
   },
   output: {
     filename: '[name].js',

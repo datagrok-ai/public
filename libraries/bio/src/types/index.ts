@@ -7,21 +7,12 @@ import * as org from 'org';
 import PolymerType = org.helm.PolymerType;
 import HelmType = org.helm.HelmType;
 import MonomerType = org.helm.MonomerType;
-
 import WebEditorMonomer = org.helm.WebEditorMonomer;
 
 export {WebEditorMonomer, PolymerType, HelmType, MonomerType};
 
-import './jsdraw2';
-import * as JSDraw2 from 'JSDraw2';
-
-import JsAtom = JSDraw2.JsAtom;
-import Atom = JSDraw2.Atom;
-
-export {JsAtom, Atom};
-
-
 import {Observable} from 'rxjs';
+
 import {
   HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,
@@ -54,6 +45,8 @@ export type Monomer = {
   wem?: WebEditorMonomer,
 };
 
+export type MonomerLibSummaryType = { [polymerType: string]: number };
+
 export interface IMonomerLib {
   get source(): string | undefined;
   get error(): string | undefined;
@@ -67,8 +60,11 @@ export interface IMonomerLib {
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 
-  /** Summary with lib monomer count by type, csv */
-  getSummary(): string;
+  /** Summary with lib monomer count by type */
+  getSummary(): MonomerLibSummaryType;
+  /** Gets dataframe with columns 'polymerType', 'count'. */
+  getSummaryDf(): DG.DataFrame;
+
   getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement;
 }
 

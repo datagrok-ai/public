@@ -7,14 +7,13 @@ import wu from 'wu';
 
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {IEditor, IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
 import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
-import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
-// import {_package} from './package'; // NullError: method not found: '_package' on null
+import {getMonomerLib} from './package';
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -74,7 +73,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (seqMonomer) {
         if (!missedMonomers.has(seqMonomer.symbol)) {
           const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
-          const monomerDiv = helmPlacer.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+          const monomerLib = getMonomerLib();
+          const monomerDiv = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+            ui.divText('Monomer library is not available.');
           tooltipElements.push(monomerDiv);
           ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
         } else {

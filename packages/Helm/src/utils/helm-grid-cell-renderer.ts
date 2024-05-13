@@ -16,7 +16,6 @@ import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
 import {_package, getMonomerLib} from '../package';
 
@@ -44,15 +43,12 @@ class WrapLogger implements ILogger {
 
 export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
   private _auxList: (HelmAux | null)[];
-  private readonly monomerLib: IMonomerLib;
 
   constructor(
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column<string>,
   ) {
     super(gridCol, tableCol, new WrapLogger(_package.logger) /* _package.logger */, true);
-    this.monomerLib = getMonomerLib();
-    this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
   }
 
   protected override reset(): void {
@@ -146,7 +142,9 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const seqMonomer: ISeqMonomer | null = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
 
     if (seqMonomer) {
-      const tooltipEl = this.monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol);
+      const monomerLib = getMonomerLib();
+      const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+        ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, e.x + 16, e.y + 16);
     } else {
       // Tooltip for missing monomers

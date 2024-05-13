@@ -2,13 +2,13 @@
 declare module 'scil' {
   function apply<T>(dest: T, atts: Partial<T>, defaults?: Partial<T>): void;
 
-  namespace Utils {
-    export function alert(s: string): void;
-
-    export function isNullOrEmpty(s: string): boolean;
-
-    export function endswith(s: string, token: string, casesensitive?: boolean): boolean;
+  interface IUtils {
+    alert: (s: string) => void; // to override
+    isNullOrEmpty(s: string): boolean;
+    endswith(s: string, token: string, casesensitive?: boolean): boolean;
   }
+
+  const Utils: IUtils;
 }
 
 declare module 'org' {
@@ -122,9 +122,6 @@ declare module 'org' {
 
     /** 'RNA' | 'PEPTIDE' | 'CHEM' | 'BLOB' | 'G' */
     export type PolymerType = `${PolymerTypes}`
-
-    // TODO: Use const from Pistoia
-    export const polymerTypes: PolymerTypes;
 
     export const enum HelmTypes {
       BASE = 'HELM_BASE',

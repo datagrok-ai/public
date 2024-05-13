@@ -15,12 +15,11 @@ import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-
 import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
-import {_package, getMonomerLib} from '../package';
+import {_package} from '../package';
 
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private monomerLib!: IMonomerLib;
   private editor!: JSDraw2.Editor;
   private image: HTMLImageElement | null = null;
 
@@ -48,9 +47,6 @@ export class HelmService extends HelmServiceBase {
     const logPrefix = `${this.toLog()}.requestRender()`;
     this.logger.debug(`${logPrefix}, start, ` + `key: ${key?.toString()}`);
     const emptyCanvasHash: number = 0;
-
-    if (!this.monomerLib)
-      this.monomerLib = getMonomerLib();
 
     if (!this.editor) {
       this.editor = new JSDraw2.Editor(this.hostDiv,

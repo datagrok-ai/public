@@ -2,9 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {Observable, Subject, Unsubscribable} from 'rxjs';
+
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+
 import {ILogger} from './logger';
-import {Unsubscribable} from 'rxjs';
-import {CellRendererBackAsyncBase} from './cell-renderer-async-base';
+import {IRenderer} from '../types/renderer';
 
 type GridCellRendererTemp<TBack> = {
   rendererBack: TBack;
@@ -28,15 +31,16 @@ export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBa
   return [gridCol, tableCol, temp];
 }
 
-export abstract class CellRendererBackBase<TValue> {
+export abstract class CellRendererBackBase<TValue> implements IRenderer {
   protected subs: Unsubscribable[] = [];
   protected destroyed: boolean = false;
 
+  /** Overriding care to trigger {@link onRendered} event. */
   protected constructor(
     /** Not null if rendered on a grid */
     protected readonly gridCol: DG.GridColumn | null,
     protected readonly tableCol: DG.Column<TValue>,
-    protected readonly logger: ILogger,
+    public readonly logger: ILogger,
   ) {
     this.reset();
     if (this.tableCol && this.tableCol.dataFrame) {
@@ -87,4 +91,34 @@ export abstract class CellRendererBackBase<TValue> {
   }
 
   protected abstract reset(): void;
+
+  // -- IRenderer --
+
+  public errors: Error[] = [];
+
+  protected _onRendered: Subject<void> = new Subject<void>();
+
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    this.invalidateGrid();
+  }
+
+  async awaitRendered(
+    timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`
+  ): Promise<void> {
+    const logPrefix = `${this.toLog()}.awaitRendered()`;
+    this.logger.debug(`${logPrefix}, start, testEvent before`);
+    await testEvent(this._onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout, reason);
+
+    // Rethrow stored syncer error (for test purposes)
+    if (this.errors.length > 0) {
+      const err = this.errors[0];
+      this.errors = [];
+      throw err;
+    }
+    this.logger.debug(`${logPrefix}, end`);
+  }
 }

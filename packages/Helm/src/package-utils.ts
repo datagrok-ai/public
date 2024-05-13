@@ -2,12 +2,14 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import org from 'org';
-import scil from 'scil';
+import * as org from 'org';
+import * as scil from 'scil';
+import * as JSDraw2 from 'JSDraw2';
+import Atom = JSDraw2.Atom;
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {IMonomerLib, HelmType, Atom} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, HelmType} from '@datagrok-libraries/bio/src/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {HelmService} from './utils/helm-service';
@@ -86,15 +88,15 @@ export class HelmPackage extends DG.Package {
     ): GetMonomerResType => {
       const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
       try {
-        logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
+        // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
 
         // Creates monomers in lib
         const dgWem = getWebEditorMonomer(monomerLib, a, name);
 
-        // Returns null for gap
-        const oWem = this.getMonomerOriginal(a, name);
-        if (!oWem)
-          logger.warning(`${logPrefixInt}, getMonomerOriginal( a: ${a}, name: ${name}) returns null`);
+        // // Returns null for gap
+        // const oWem = this.getMonomerOriginal(a, name);
+        // if (!oWem)
+        //   logger.warning(`${logPrefixInt}, getMonomerOriginal( a: ${a}, name: ${name}) returns null`);
         return dgWem; //dgWem;
       } catch (err) {
         const [errMsg, errStack] = errInfo(err);

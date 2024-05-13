@@ -1,5 +1,17 @@
 # bio changelog
 
+## 5.41.1 (WIP)
+
+### Features
+
+* Add types for Helm Web Editor
+
+### Bug fixes
+
+* Unveil cell renderer errors for tests
+* Fix cell renderer for StackOverflow error on long seqs
+* Optimize SeqHandler.getSplitter for split limit (separator)
+
 ## 5.41.0 (2024-05-01)
 
 Optimize cell renderer on async renderer base

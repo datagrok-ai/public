@@ -5,7 +5,9 @@ import addErrors from 'ajv-errors';
 export class MonomerLibFileValidator {
   private validateMonomerSchema: ValidateFunction<any>;
 
-  constructor(private helmMonomerSchema: JSONSchemaType<any>) {
+  constructor(
+    private helmMonomerSchema: JSONSchemaType<any>
+  ) {
     const ajv = new Ajv2020({allErrors: true, strictTuples: false});
     addErrors(ajv);
     this.validateMonomerSchema = ajv.compile(this.helmMonomerSchema);
