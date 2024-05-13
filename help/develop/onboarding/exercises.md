@@ -681,11 +681,11 @@ Viewers | Python | Scatter Plot`.
            newly created column
    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
 
-To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)).
-Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package. Write a test that creates two dataframes
-with the columns with dna_nucleotide semantic type, appends the dataframes and calculates the `Counts` column. The test
-should check the existence of the appended columns and the `Counts` column, as well as its values. After the test is written,
-run it to make sure it fails.
+   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)).
+   Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package. Write a test that creates two dataframes
+   with the columns with dna_nucleotide semantic type, appends the dataframes and calculates the `Counts` column. The test
+   should check the existence of the appended columns and the `Counts` column, as well as its values. After the test is written,
+   run it to make sure it fails.
 
 3. Add a function to the package as follows:
 
