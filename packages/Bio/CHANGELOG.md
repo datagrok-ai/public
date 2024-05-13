@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.12.18 (WIP)
+## 2.12.18 (2024-05-13)
 
 ### Bug fixes
 

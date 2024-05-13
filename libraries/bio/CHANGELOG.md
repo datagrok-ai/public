@@ -1,6 +1,6 @@
 # bio changelog
 
-## 5.41.1 (WIP)
+## 5.41.1 (2024-05-13)
 
 ### Features
 
