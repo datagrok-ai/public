@@ -10,7 +10,10 @@ keywords:
 format: mdx
 ---
 
-
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
 
 A **View** takes up most of the screen and is your primary work area. Commonly
 used views include [Browse](browse.md) and [Table View](table-view.md).
