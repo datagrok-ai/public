@@ -377,7 +377,7 @@ M  END
     //filter1 is active filter, detaching filter2 and check that df is still filtered
     filter2.detach();
     await delay(500); //waiting for detach to complete
-    expect(df.filter.trueCount, 5, 'filter has been reset');
+    expect(df.filter.trueCount, 5, 'filter has been reset 1');
 
     const filter3 = await createFilter('Structure', df, sketcherDialogs, 10000);
     //filter by structure and wait for results
@@ -386,14 +386,14 @@ M  END
     //filter1 is active filter, detaching active filter and check that df is still filtered
     filter1.detach();
     await delay(1000); //waiting for detach to complete
-    expect(df.filter.trueCount, 32, 'filter has been reset');
+    expect(df.filter.trueCount, 32, 'filter has been reset 2');
 
     const filter4 = await createFilter('Structure', df, sketcherDialogs, 10000);
 
     //detaching active filter3 while bitset hasn't yet been synchronized with filter4
     filter3.detach();
     await delay(1000); //waiting for detach to complete
-    expect(df.filter.trueCount, 32, 'filter has been reset');
+    expect(df.filter.trueCount, 32, 'filter has been reset 3');
 
     filter4.detach();
     sketcherDialogs.forEach((it) => it.close());
