@@ -17,6 +17,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
+import {ILineChartLookSettings} from 'datagrok-api/dg';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -1265,6 +1266,9 @@ export class FittingView {
       const simArgCol = simDf.col(argColName);
       const expArgCol = expDf.col(argColName);
 
+      const configs = getPropViewers(prop).config;
+      console.log(configs);
+
       if ((simArgCol === null) || (expArgCol === null))
         throw new Error('Creating viewer fails: incorrect argument column name');
 
@@ -1273,6 +1277,21 @@ export class FittingView {
       const rowCount = indeces.length;
       const argVals = Array<number>(rowCount);
       indeces.forEach((val, idx) => argVals[idx] = simArgRaw[val]);
+
+      // Line chart segments features
+      let segmentCol: DG.Column<DG.COLUMN_TYPE.STRING> | null = null;
+
+      configs.filter((conf) => conf['type'] as string === DG.VIEWER.LINE_CHART)
+        .forEach((conf) => {
+          const segmentColName = conf['segmentColumnName'];
+
+          if (segmentColName) {
+            const segmData = Array<string>(rowCount);
+            indeces.forEach((val, idx) => segmData[idx] = simDf.col(segmentColName as string)!.get(val));
+            console.log(segmData);
+            segmentCol = DG.Column.fromStrings(segmentColName as string, segmData);
+          }
+        });
 
       let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
       let col: DG.Column | null;
@@ -1297,17 +1316,24 @@ export class FittingView {
           rawBuf = col.getRawData();
           const expVals = Array<number>(rowCount);
           indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
+          const options: Partial<ILineChartLookSettings> = {
+            multiAxis: true,
+            yGlobalScale: true,
+          };
+          const df = DG.DataFrame.fromColumns([
+            expArgCol,
+            DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
+            DG.Column.fromList(col.type, TITLE.TARGET, expVals),
+          ]);
+
+          if (segmentCol) {
+            df.columns.add(segmentCol);
+            options.segmentColumnName = segmentCol.name;
+          }
 
           result.push({
             caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            root: DG.Viewer.lineChart(DG.DataFrame.fromColumns([
-              expArgCol,
-              DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
-              DG.Column.fromList(col.type, TITLE.TARGET, expVals),
-            ]), {
-              multiAxis: true,
-              yGlobalScale: true,
-            }).root,
+            root: DG.Viewer.lineChart(df, options).root,
           });
         }
       });
