@@ -48,14 +48,15 @@ export function sleep(ms: number) {
   return new Promise((resolve, reject) => setTimeout(resolve, ms));
 };
 
-/** Distance between point */
+/** Distance between points */
 export function distance(x: Float32Array, y: Float32Array, mins: Float32Array, maxs: Float32Array): number {
-  if ((x.length !== y.length) || (x.length !== mins.length) || (x.length !== maxs.length))
+  const len = x.length;
+
+  if ((len !== y.length) || (len !== mins.length) || (len !== maxs.length))
     throw new Error('Inconsistent found points');
 
-  return x.reduce((sum, cur, idx) => {
+  return x.reduce((mad, cur, idx) => {
     const div = maxs[idx] - mins[idx];
-
-    return sum + ((div > 0) ? Math.abs(cur - y[idx]) / div : 0);
-  });
+    return div > 0 ? Math.max(mad, Math.abs(cur - y[idx]) / div) : mad;
+  }, 0);
 }
