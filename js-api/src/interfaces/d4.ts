@@ -1560,9 +1560,6 @@ export interface ISparklinesSettings {
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
-  /// Aggregation that will be used for the columns
-  aggregation: string;
-
   /// List of aggregations for the columns
   aggregations: Array<string>;
 
