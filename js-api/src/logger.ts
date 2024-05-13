@@ -134,9 +134,3 @@ export class PackageLogger extends Logger {
   }
 }
 
-export class DetailedLog {
-  static showReportProperties(reportId: string): void {
-    api.grok_DetailedLog_Get_Accordion(reportId);
-  }
-}
-

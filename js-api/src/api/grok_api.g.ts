@@ -23,7 +23,7 @@ export interface IDartApi {
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
-  grok_Set_CurrentObject(x: any): any;
+  grok_Set_CurrentObject(x: any, freeze: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
   grok_Get_LastError(): any;
@@ -1433,11 +1433,13 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String): any;
   grok_Reports_Get(num: Num, limit: Num): Promise<any>;
-  grok_UserReport_id(report: any): any;
-  grok_UserReport_isResolved(report: any): any;
-  grok_UserReport_jiraTicket(report: any): any;
+  grok_Reports_Find(id: String): Promise<any>;
+  grok_UserReport_Id(report: any): any;
+  grok_UserReport_IsResolved(report: any): any;
+  grok_UserReport_JiraTicket(report: any): any;
+  grok_UserReport_Assignee(report: any): any;
+  grok_Get_StackTrace_Hash(stackTrace: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

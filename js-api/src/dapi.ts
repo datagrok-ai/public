@@ -19,7 +19,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout, ViewInfo} from "./views/view";
@@ -957,6 +957,10 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
 export class UserReportsDataSource {
   getReports(num?: number, limit?: number): Promise<DataFrame> {
     return api.grok_Reports_Get(num, limit);
+  }
+
+  find(id: string): Promise<UserReport> {
+    return api.grok_Reports_Find(id);
   }
 }
 

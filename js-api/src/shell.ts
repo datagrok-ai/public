@@ -74,7 +74,11 @@ export class Shell {
 
   /** Current object (rendered in the context panel) */
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
-  set o(x: any) { api.grok_Set_CurrentObject(toDart(x)); }
+  set o(x: any) { this.setCurrentObject(x, true); }
+
+  setCurrentObject(x: any, freeze: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze);
+  }
 
   /** Current viewer */
   get viewer(): Viewer { return toJs(api.grok_Get_CurrentViewer(), false); }
