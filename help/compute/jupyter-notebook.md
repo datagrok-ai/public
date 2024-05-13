@@ -15,7 +15,7 @@ Datagrok lets you create, edit, import, link, and apply Notebooks into tables.
 Creating a new notebook is very easy. There are several ways to do this:
 
 1. Click `Functions | Notebooks | New Notebook`
-2. Run #{x.CmdNewNotebook} from the [Console](../datagrok/navigation/panels/panels.md#console)
+2. Run #\{x.CmdNewNotebook} from the [Console](../datagrok/navigation/panels/panels.md#console)
 3. Select one or more tables and click `Actions | Open in Notebooks` on
    the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 

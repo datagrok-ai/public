@@ -103,7 +103,7 @@ the `test` annotation:
 | Parameter type | Support | Input/output example                                                                                                         |
 |----------------|---------|------------------------------------------------------------------------------------------------------------------------------|
 | int            | &check; | `test: f(123) == 246`                                                                                                        |
-| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`                                                                                         |
+| double         | &check; | `test: 10 \< f(12.5) && f(12.5) \< 20`                                                                                         |
 | bool           | &check; | `test: f(true)`,<br />`test: returnsBool()`                                                                                  |
 | string         | &check; | `test: f("a") == "b"` (use `""` for strings)                                                                                 |
 | datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br />`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |

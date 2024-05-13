@@ -94,16 +94,16 @@ to move entities within the **Scratchpad** and between the projects in the **Bro
 To find projects using [smart
 search](../../navigation/views/browse.md#entity-search), you can use this metadata:
 
-| Field        | Description                                 |
-|--------------|---------------------------------------------|
-| name         |                                             |
-| description  |                                             |
-| createdOn    |                                             |
-| updatedOn    |                                             |
-| author       | [User](../../../govern/user.md) object            |
-| starredBy    | [User](../../../govern/user.md) object            |
-| commentedBy  | [User](../../../govern/user.md) object            |
-| usedBy       | [User](../../../govern/user.md) object            |
+| Field       | Description                            |
+|-------------|----------------------------------------|
+| name        |                                        |
+| description |                                        |
+| createdOn   |                                        |
+| updatedOn   |                                        |
+| author      | [User](../../../govern/user.md) object |
+| starredBy   | [User](../../../govern/user.md) object |
+| commentedBy | [User](../../../govern/user.md) object |
+| usedBy      | [User](../../../govern/user.md) object |
 
 ## Resources
 
@@ -112,10 +112,10 @@ YouTube videos:
 <div class="help-video-list" style={{display:"flex","flex-wrap":"wrap",}}>
 
 <div class="card" style={{width:"512px",}}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TtVjvxMj9Ds?si=8J08Iqbigx2RtR9T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<iframe src="https://www.youtube.com/embed/TtVjvxMj9Ds?si=8J08Iqbigx2RtR9T" title="YouTube video player" width="512" height="288" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
   <div class="card-body">
     <h2 class="card-title">Dynamic Dashboards</h2>
     <p class="card-text">Building dynamic dashboards using database queries</p>
-    </div>
+  </div>
 </div>
 </div>

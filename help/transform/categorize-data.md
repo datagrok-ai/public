@@ -9,7 +9,7 @@ associated with the same category (for instance, when classifying animals patter
 "dog", "cat" and "dolphin" might be associated with the "Mammals" category).
 
 For text columns, patterns are regular expressions. For numerical columns, use conditions like ">
-70", "<=30", "30-40" "40", etc.
+70", "\<=30", "30-40" "40", etc.
 
 **SAVE COLUMN** Creates a column 'category', and for all rows assigns the value of that column to the category of the
 first matching pattern. This option is mostly useful when categories do not overlap; if they do, it might make sense

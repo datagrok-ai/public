@@ -92,7 +92,7 @@ t.KeepRows(Selected())
 
 ### Table and column names convention
 
-Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
+Symbols '"', '{' and '}' should be replaced as '^^', '\<\[' and ']>'.
 
 You can run any system [action](../../datagrok/concepts/functions/functions.md) by calling it from the [**Console**](../../datagrok/navigation/panels/panels.md#console)
 
