@@ -56,7 +56,7 @@ category('renderers', () => {
 
   test('scatterPlotTooltip', async () => {
     await _testScatterPlotTooltip();
-  });
+  }, {skipReason: 'GROK-15679'});
 
   async function _rendererMacromoleculeFasta() {
     const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.csv');

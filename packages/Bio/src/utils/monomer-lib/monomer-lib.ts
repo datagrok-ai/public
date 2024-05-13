@@ -162,7 +162,7 @@ export class MonomerLib implements IMonomerLib {
     this._onChanged.next();
   }
 
-  getSummary(): MonomerLibSummaryType {
+  getSummaryObj(): MonomerLibSummaryType {
     const res: MonomerLibSummaryType = {};
     const ptList: PolymerType[] = this.getPolymerTypes();
     for (const pt of ptList)
@@ -182,6 +182,15 @@ export class MonomerLib implements IMonomerLib {
       DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', countList),
     ]);
     return resDf;
+  }
+
+  /** @deprecated Keep for backward compatibility */
+  getSummary(): string {
+    const monTypeList: PolymerType[] = this.getPolymerTypes();
+    const resStr: string = monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
+      return `${monType} ${this.getMonomerSymbolsByType(monType).length}`;
+    }).join('\n');
+    return resStr;
   }
 
   getTooltip(polymerType: PolymerType, monomerSymbol: string): HTMLElement {

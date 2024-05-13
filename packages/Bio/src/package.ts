@@ -168,10 +168,16 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
   return resWidget;
 }
 
+// Keep for backward compatibility
 //name: getBioLib
 //output: object monomerLib
+export function getBioLib(): IMonomerLib {
+  return monomerLib!;
+}
+
+// For sync internal use, on initialized package
 export function getMonomerLib(): IMonomerLib | null {
-  return monomerLib;
+  return monomerLib!;
 }
 
 //name: getSeqHandler

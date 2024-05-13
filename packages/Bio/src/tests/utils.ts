@@ -50,11 +50,7 @@ export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<
         getGridCellRendererBack<void, CellRendererBackBase<void>>(gridCell);
 
       const renderer = asRenderer(temp.rendererBack);
-      if (renderer) {
-        console.warn('Test: awaitRenderer before');
-        await renderer.awaitRendered();
-        console.warn('Test: awaitRenderer after');
-      }
+      if (renderer) await renderer.awaitRendered();
     }
   }
 }
