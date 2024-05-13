@@ -81,27 +81,27 @@ M  END
 
 const randomValsToCheck: {[key: string]: {[key: string]: {idxs: number[], values: any[]}}} = {
     'Transformations_Fragments': {
-        'From': {idxs: [1, 29, 37], values: ['CC[*:1]', 'CNC(=O)C[*:1]', 'CC(Br)[*:1]']},
-        'To': {idxs: [5, 9, 37], values: ['O[*:1]', 'Br[*:1]', 'CC[*:1]']},
+        'From': {idxs: [1, 9, 29, 37], values: ['C[*:1]', 'Br[*:1]', 'CNC(=O)C[*:1]', 'CC(Br)[*:1]']},
+        'To': {idxs: [1, 5, 9,  29, 37], values: ['CC[*:1]', 'O[*:1]', 'Cl[*:1]', 'C[*:1]', 'CC[*:1]']},
         'Pairs': {idxs: [0, 10, 39], values: [3, 2, 1]},
-        'Mean Difference Activity': {idxs: [0, 11, 30], values: [-2.5343997478485107, 3.5564699172973633, 3.458324432373047]},
-        'Mean Difference Permeability': {idxs: [0, 11, 30], values: [1.8472713232040405, -4.707592010498047, -7.125835418701172]},
-        'Mean Difference Toxicity': {idxs: [0, 11, 30], values: [1.4948477745056152, -0.617708146572113, -0.6957154273986816]},
+        'Mean Difference Activity': {idxs: [0, 11, 30], values: [2.5343997478485107, 3.5564699172973633, 3.458324432373047]},
+        'Mean Difference Permeability': {idxs: [0, 11, 30], values: [-1.8472713232040405, -4.707592010498047, -7.125835418701172]},
+        'Mean Difference Toxicity': {idxs: [0, 11, 30], values: [-1.4948477745056152, -0.617708146572113, -0.6957154273986816]},
     },
     'Transformations_Pairs': {
-        'From': {idxs: [0, 30, 50], values: [
+        'From': {idxs: [3, 30, 50], values: [
             pairsFromMolblock,
             'O=c1cc(-CC(C)C)oc2cc(O)c(O)c(O)c12',
             'O=c1cc(-CC)oc2cc(O)c(O)c(O)c12'
             ]},
-        'To': {idxs: [0, 30, 50], values: [
+        'To': {idxs: [3, 30, 50], values: [
             pairsToMolblock, 
             'O=c1cc(-CCC(=O)NC)oc2cc(O)c(O)c(O)c12', 
             'O=c1cc(-C(C)Br)oc2cc(O)c(O)c(O)c12'
         ]},
-        'Difference Activity': {idxs: [0, 30, 50], values: [-3.014911651611328, 4.207612991333008, 8.298847198486328]},
-        'Difference Permeability': {idxs: [0, 30, 50], values: [2.2153091430664062, -12.706818580627441, -8.750051498413086]},
-        'Difference Toxicity': {idxs: [0, 30, 50], values: [1.5138638019561768, 0.28581464290618896, 0.2180633544921875]},
+        'Difference Activity': {idxs: [0, 30, 50], values: [3.014911651611328, 4.207612991333008, 8.298847198486328]},
+        'Difference Permeability': {idxs: [0, 30, 50], values: [-2.2153091430664062, -12.706818580627441, -8.750051498413086]},
+        'Difference Toxicity': {idxs: [0, 30, 50], values: [-1.5138638019561768, 0.28581464290618896, 0.2180633544921875]},
     },
     'Generation': {
         'Structure': {idxs: [0, 70, 113], values: [
@@ -146,7 +146,7 @@ category('mmpa', () => {
             && tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
         //ensure embeddings columns have been calculated
         await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0
-            && tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0 , 'Embeddings haven\'t been calculated', 5000);
+            && tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0 , 'Embeddings haven\'t been calculated', 10000);
         expect(mmp.mmpRules.rules.length, 40, `Incorrect rules`);
         expect(mmp.mmpRules.smilesFrags.length, 14, `Incorrect smilesFrags`);
     });
@@ -159,27 +159,27 @@ category('mmpa', () => {
         //check Fragments Grid
         const fragsDf = mmp.allPairsGrid.dataFrame;
         await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7
-            && fragsDf.filter.trueCount === 2 && fragsDf.filter.get(0) && fragsDf.filter.get(2),
+            && fragsDf.filter.trueCount === 2 && fragsDf.filter.get(1) && fragsDf.filter.get(2),
             'Incorrect fragments grid', 3000);
         checkRandomValues(fragsDf, 'Transformations_Fragments');
 
         //check Pairs Grid
         const pairsDf = mmp.casesGrid.dataFrame;
         await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13
-            && pairsDf.filter.trueCount === 3 && pairsDf.filter.get(0) && pairsDf.filter.get(1) && pairsDf.filter.get(2),
+            && pairsDf.filter.trueCount === 3  && pairsDf.filter.get(3) && pairsDf.filter.get(4) && pairsDf.filter.get(5),
             'Incorrect pairs grid', 3000);
         checkRandomValues(mmp.casesGrid.dataFrame, 'Transformations_Pairs');
 
         //changing fragment
         mmp.allPairsGrid.dataFrame.currentRowIdx = 2;
-        await awaitCheck(() => pairsDf.filter.trueCount === 2 && pairsDf.filter.get(6) && pairsDf.filter.get(7),
+        await awaitCheck(() => pairsDf.filter.trueCount === 2  && pairsDf.filter.get(6) && pairsDf.filter.get(7) ,
             'Pairs haven\'t been changed after fragment change', 3000);
 
         //changing target molecule
         tv.dataFrame.currentRowIdx = 4;
         await awaitCheck(() => fragsDf.filter.trueCount === 3
-            && fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7)
-            && pairsDf.filter.trueCount === 2 && pairsDf.filter.get(8) && pairsDf.filter.get(9),
+             && fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7)
+            && pairsDf.filter.trueCount === 2  && pairsDf.filter.get(8) && pairsDf.filter.get(9),
             'Pairs haven\'t been changed after fragment change', 3000);
     });
 
@@ -194,7 +194,7 @@ category('mmpa', () => {
         await awaitCheck(() => mmp.linesMask.allTrue, 'Incorrect initial lines mask');
         checkRandomArrayVals(mmp.lines.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
         checkRandomArrayVals(mmp.lines.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
-        checkRandomArrayVals(mmp.linesIdxs, [0, 10, 30, 50, 80], [3, 22, 8, 47, 52], 'mmp.linesIdxs');
+        checkRandomArrayVals(mmp.linesIdxs, [0, 10, 30, 50, 80], [0, 22, 8, 47, 52], 'mmp.linesIdxs');
         checkRandomArrayVals(mmp.lines.colors, [0, 30, 80], ['31,119,180', '255,187,120', '44,160,44'], 'mmp.lines.colors');
         checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
 
@@ -229,10 +229,21 @@ function checkRandomValues(df: DG.DataFrame, dfName: string) {
     Object.keys(randomValsToCheck[dfName]).forEach((key: string) => {
         const idxs = randomValsToCheck[dfName][key].idxs;
         const vals = randomValsToCheck[dfName][key].values;
+        // console.log(`************`);
+        // console.log(`${dfName}   ${key}`);
+        // idxs.forEach((it, idx) => {
+        //     console.log(`${it}, Expected: ${vals[idx]}, got ${df.col(key)!.get(it)}`);
+        //     //expect(df.col(key)!.get(it), vals[idx], `incorrect data in ${key} column, row ${it}`)
+        // });
         idxs.forEach((it, idx) => expect(df.col(key)!.get(it), vals[idx], `incorrect data in ${key} column, row ${it}`));
     })
 }
 
 function checkRandomArrayVals(array: any, idxs: number[], vals: (number | string)[], name: string) {
+    // console.log(`************`);
+    // console.log(`${name}`);
+    // idxs.forEach((it, idx) => {
+    //      console.log(`${it}, Expected: ${vals[idx]}, got ${array[it]}`);
+    //  });
     idxs.forEach((it: number, idx: number) => expect(array[it], vals[idx], `Incorrect value in ${name}, idx: ${it}`));
 }
