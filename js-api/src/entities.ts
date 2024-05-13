@@ -1414,14 +1414,18 @@ export class UserReport extends Entity {
   }
 
   get id(): string {
-    return api.grok_UserReport_id(this.dart);
+    return api.grok_UserReport_Id(this.dart);
   }
 
   get isResolved(): boolean {
-    return api.grok_UserReport_isResolved(this.dart);
+    return api.grok_UserReport_IsResolved(this.dart);
   }
 
   get jiraTicket(): string {
-    return api.grok_UserReport_jiraTicket(this.dart);
+    return api.grok_UserReport_JiraTicket(this.dart);
+  }
+
+  get assignee(): User {
+    return toJs(api.grok_UserReport_Assignee(this.dart));
   }
 }

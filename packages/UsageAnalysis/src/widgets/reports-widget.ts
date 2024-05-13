@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {DetailedLog} from "datagrok-api/dg";
 
 export class ReportsWidget extends DG.Widget {
   caption: string;
@@ -42,9 +41,11 @@ export class ReportsWidget extends DG.Widget {
         item.style.border = 'none';
         item.style.marginLeft = 'auto';
         item.style.padding = '5px';
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
           e.preventDefault();
-          DetailedLog.showReportProperties(currentRow.get('id'));
+          const report = await grok.dapi.reports.find(currentRow.get('id'));
+          if (report)
+            grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
         });
         items.push(item);
       }

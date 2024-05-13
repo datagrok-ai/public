@@ -40,7 +40,7 @@ export class ReportsView extends UaView {
           t = await grok.dapi.reports.getReports(reportNumber);
           if (t && t.rowCount > 0) {
             t.currentRowIdx = 0;
-            this.showPropertyPanel(t);
+            await this.showPropertyPanel(t);
             grok.dapi.reports.getReports()
               .then(async (r: DG.DataFrame) => {
                 r.rows.removeWhere((r) => r.get('number') === reportNumber);
@@ -126,28 +126,19 @@ export class ReportsView extends UaView {
     });
 
     t.getCol('labels').setTag(DG.Tags.MultiValueSeparator, ',');
-    t.onCurrentRowChanged.subscribe(async (_: any) => this.showPropertyPanel(t));
+    t.onCurrentRowChanged.subscribe(async (_: any) => await this.showPropertyPanel(t));
     t.onValuesChanged.subscribe(async () => {
       viewer.sort(['is_resolved', 'time'], [true, false]);
       this._scroll(viewer);
     });
-    grok.events.onEvent('d4-report-resolved').subscribe((r: DG.UserReport) => {
+    grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
       const idCol = t.getCol('id');
       const length = idCol.length;
       for (let i = 0; i < length; i++) {
         if (idCol.get(i) === r.id) {
           t.cell(i, 'is_resolved').value = r.isResolved;
-          t.fireValuesChanged();
-        }
-      }
-    });
-
-    grok.events.onEvent('d4-report-ticket_created').subscribe((r: DG.UserReport) => {
-      const idCol = t.getCol('id');
-      const length = idCol.length;
-      for (let i = 0; i < length; i++) {
-        if (idCol.get(i) === r.id) {
           t.cell(i, 'jira').value = r.jiraTicket;
+          t.cell(i, 'assignee').value = r.assignee?.id;
           t.fireValuesChanged();
         }
       }
@@ -156,13 +147,15 @@ export class ReportsView extends UaView {
     this.reloadFilter(t);
   }
 
-  showPropertyPanel(t: DG.DataFrame) {
+  async showPropertyPanel(t: DG.DataFrame):Promise<void> {
     const currentRow = t.currentRowIdx;
     if (currentRow === -1) return;
     const reportId = t.getCol('id').get(currentRow);
     if (!reportId) return;
     this.updatePath(t.getCol('number').get(currentRow));
-    DG.DetailedLog.showReportProperties(reportId);
+    const report = await grok.dapi.reports.find(reportId);
+    if (report)
+      grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
   }
 
   reloadFilter(table: DG.DataFrame) {
