@@ -137,6 +137,6 @@ Testing options:
  
   2. Open the platform in a browser and go to **Data** > **Databases**.
   3. In the **Database Manager**, right-click your new connector and select **Add connection...** A parameter dialog opens.
-  4. In the parameter dialog, [fill in the connection parameters](databases.mdx#connecting-to-database) and click **TEST**. Upon successful connection, the database appears in the **Database Manager** under the respective data source. 
+  4. In the parameter dialog, [fill in the connection parameters](databases.md#connecting-to-database) and click **TEST**. Upon successful connection, the database appears in the **Database Manager** under the respective data source. 
 
   > Note: It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, restart the container.

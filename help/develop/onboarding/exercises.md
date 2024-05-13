@@ -183,7 +183,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting/scripting.mdx), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -322,7 +322,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript
-   API](../../compute/scripting.md#running-a-script).
+   API](../../compute/scripting/scripting.mdx#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
@@ -390,7 +390,7 @@ functions.
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
    outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
-   from the function call (refer to the [Scripting](../../compute/scripting.md#running-a-script) article for details).
+   from the function call (refer to the [Scripting](../../compute/scripting/scripting.mdx#running-a-script) article for details).
    :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a
@@ -516,7 +516,7 @@ from our server.
 
    There are several methods you can use to open a table. For demo files, the simplest way is
    [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
-   `Demo:Files` [file share](../../access/files/files.mdx), you can use
+   `Demo:Files` [file share](../../access/files/files.md), you can use
    [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
    `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
@@ -661,12 +661,35 @@ Viewers | Python | Scatter Plot`.
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#exercise-1-semantic-types).
 
-*You will learn:* how to join and union dataframes using the knowledge of semantic types, and display the result.
+*You will learn:* how to apply test-driven development (TDD), how to join and union dataframes using the knowledge of semantic types, and display the result.
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including the package called
    `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the exercise
    ["Semantic Types"](#exercise-1-semantic-types).
-2. Add a function to the package as follows:
+2. Your task will be to implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+
+   * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
+   * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
+   * creates a dataframe `df` out of `df1` and `df2` in the following way:
+      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
+        operation for dataframes, as in SQL; use the dataframe's
+        [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
+      * a new column `Counts` appears in `df`, which contains:
+         * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length
+           `N` in *all* the sequences of `col2`
+         * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
+           dataframes; use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
+           , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on a
+           newly created column
+   * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
+
+To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)).
+Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package. Write a test that creates two dataframes
+with the columns with dna_nucleotide semantic type, appends the dataframes and calculates the `Counts` column. The test
+should check the existence of the appended columns and the `Counts` column, as well as its values. After the test is written,
+run it to make sure it fails.
+
+3. Add a function to the package as follows:
 
    ```javascript
    //name: fuzzyJoin
@@ -676,30 +699,21 @@ Viewers | Python | Scatter Plot`.
    ...
    ```
 
-3. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+4. Implement the `fuzzyJoin` function.
 
-    * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
-    * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
-    * creates a dataframe `df` out of `df1` and `df2` in the following way:
-      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
-        operation for dataframes, as in SQL; use the dataframe's
-        [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
-      * a new column `Counts` appears in `df`, which contains:
-        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length
-          `N` in *all* the sequences of `col2`
-        * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
-          dataframes; use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
-          , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on a
-          newly created column
-    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
-
-4. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
+5. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
    on the Datagrok server, in this one we locally build the package before sending it. In addition, webpack output helps
    find some syntactic errors in JavaScript.
-5. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the package's
-   `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
-   ![exercises-transforming-dataframes](exercises-transforming-dataframes.png)
-6. Read more about joining dataframes through the case reviewed at our
+6. Launch the platform and run the test to check if you implemented the function correctly. If the test fails, fix the
+   function and run the test again until it passes.
+7. After the test passes, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
+   package's `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
+
+   ![exercises-transforming-dataframes](exercises-transforming-dataframes.png).
+
+If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
+of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
+8. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables).
 

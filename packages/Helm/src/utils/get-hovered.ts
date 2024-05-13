@@ -79,9 +79,8 @@ export function getHoveredMonomerFallback(
     }
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
-  if (left >= 0) {
+  if (left >= 0)
     hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left]);
-  }
   return hoveredSeqMonomer;
 }
 

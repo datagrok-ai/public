@@ -4,7 +4,7 @@ title: "Function annotations"
 
 # Function annotations
 
-There are various types of [functions](functions.md), such as [scripts](../../../compute/scripting.md) or
+There are various types of [functions](functions.md), such as [scripts](../../../compute/scripting/scripting.mdx) or
 [queries](../../../access/access.md#data-query). All of them are annotated in a similar way, and that 
 enables universal support for functions in the platform.
 
@@ -51,7 +51,7 @@ Some parameters are specific to script language and/or technology:
 
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
-  * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
+  * `environment`: [script environment](../../../compute/scripting/scripting.mdx#environments) (Conda environment for python, etc)
   * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
 * Script-based info panels
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
@@ -75,7 +75,7 @@ by type, name, optional default value, options, and optional description, just l
 
 :::warning Parameters mapping for functions
 There is a crucial difference between annotation of 
-[scrips](../../../compute/scripting.md) 
+[scrips](../../../compute/scripting/scripting.mdx) 
 and Javascript functions in 
 [packages](../../../develop/develop.md#packages).
 When you annotate a script in any supported language, parameters are mapped by the parameter name.
@@ -87,10 +87,10 @@ Let's explore it on the following example:
 
 ```javascript 
 //name: ParameterTestFunction
-//description: Small fucntion to illustrate parameter mapping
+//description: Small function to illustrate parameter mapping
 //language: javascript
-//input: int one=1 {caption: First} [First farameter]
-//input: int two=2 {caption: Second} [First farameter]
+//input: int one=1 {caption: First} [First parameter]
+//input: int two=2 {caption: Second} [Second parameter]
 export function ParameterTestFunctionPkg(two, one) {
     const result = `First:${one}, second:${two}`;
     console.log(result);
@@ -273,7 +273,7 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../../explore/search-filter-select/data-search-patterns.md).
+To learn more, see [search patterns](../../navigation/views/table-view#search-patterns).
 </details>
 
 
@@ -319,7 +319,7 @@ to assure the validity of the parameters.
 
 The easiest way is to define a `validator` GrokScript expression that gets evaluated when input changes.
 Result `true` or `null` means that the input is valid. `false` or a string error message means that the input is invalid, 
-it gets highlighed and the validation message is shown in the tooltip. Note that the expression can depend not only on the
+it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
 <details>

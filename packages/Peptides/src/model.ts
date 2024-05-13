@@ -905,9 +905,9 @@ export class PeptidesModel {
 
   /**
    * Sets grid properties such
-   * @param {DG.IGridLookSettings} props - Grid properties
+   * @param {DG.IGridSettings} props - Grid properties
    */
-  setGridProperties(props?: DG.IGridLookSettings): void {
+  setGridProperties(props?: DG.IGridSettings): void {
     const sourceGrid = this.analysisView.grid;
     const sourceGridProps = sourceGrid.props;
     sourceGridProps.allowColSelection = props?.allowColSelection ?? false;

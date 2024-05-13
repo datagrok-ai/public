@@ -162,9 +162,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       // if (layout)
       //   view.loadLayout(layout);
 
-      if (this._campaign?.layout) {
+      const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
+      if (layoutViewState) {
         try {
-          const layout = DG.ViewLayout.fromViewState(this._campaign.layout);
+          const layout = DG.ViewLayout.fromViewState(layoutViewState);
           view.loadLayout(layout);
         } catch (e) {
           console.error(e);
@@ -581,7 +582,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       columnTypes: colTypeMap,
       tilesViewerFormSketch: sketchStateString,
     };
-    console.log(this._filePath);
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();

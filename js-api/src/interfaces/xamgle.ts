@@ -8,6 +8,8 @@ export interface IDetailedLogSettings {
 
   assigneeId: string;
 
+  currentTime: number;
+
   id: string;
 
   isAuto: boolean;

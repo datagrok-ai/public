@@ -6,7 +6,7 @@
 A package can contain various functions, and each function is annotated with a tag that defines what this function does:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](../../visualize/dashboard.md)
+* `#dashboard` for [dashboards](../../datagrok/concepts/project/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
 * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
@@ -89,7 +89,7 @@ To be continued...
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../../access/files/files.mdx). The platform provides a way to
+File viewers are used in Datagrok's [file share browser](../../access/files/files.md). The platform provides a way to
 define custom viewers or editors in addition to the native ones. These functions work with files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 

@@ -1,5 +1,42 @@
 # compute-utils changelog
 
+## 1.33.6 (2024-05-10)
+
+### Features
+
+- Added lodash.cloneDeepWith types
+
+## 1.33.5 (2024-05-09)
+
+### Features
+
+- RFV: Property default value getting both for 1.18.x and 1.19
+
+## 1.33.4 (2024-05-09)
+
+### Features
+
+- Heavyweight imports optimization
+
+## 1.33.3 (2024-05-08)
+
+### Features
+
+- Bundle size optimizations
+
+## 1.33.1 (2024-05-07)
+
+### Features
+
+- Rearranged CSS files
+- RFV: Added isOutdatedOutput subject
+- HistoryInput: Hides incomplete runs
+- HistoryPanel: Added completeness filter
+
+## 1.33.0 (2024-05-06)
+
+- Added CompositionPipeline
+
 ## 1.32.4 (2024-05-03)
 
 ### Bug fixes

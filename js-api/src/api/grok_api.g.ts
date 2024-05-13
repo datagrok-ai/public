@@ -187,6 +187,7 @@ export interface IDartApi {
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
+  grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
   grok_CardView_Set_SearchValue(v: any, s: String): any;
@@ -1002,7 +1003,7 @@ export interface IDartApi {
   grok_ColorInput(name: any, value: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any): any;
   grok_RadioInput(name: any, value: any, items: any): any;
-  grok_CodeEditor(script: String, mode: String, placeholder: String): any;
+  grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_ProgressIndicator_Get_Canceled(pi: any): any;
   grok_ProgressIndicator_Get_Percent(pi: any): any;
   grok_ProgressIndicator_Get_Description(pi: any): any;
@@ -1013,7 +1014,7 @@ export interface IDartApi {
   grok_Progress_Updated(pi: any): any;
   grok_Progress_Log_Updated(pi: any): any;
   grok_Progress_Canceled(pi: any): any;
-  grok_Log_TranslateStackTrace(s: String): any;
+  grok_Log_TranslateStackTrace(s: String): Promise<any>;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
   grok_TagEditor(): any;
@@ -1432,7 +1433,11 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String, df: any, index: Num): any;
+  grok_DetailedLog_Get_Accordion(reportId: String): any;
+  grok_Reports_Get(num: Num, limit: Num): Promise<any>;
+  grok_UserReport_id(report: any): any;
+  grok_UserReport_isResolved(report: any): any;
+  grok_UserReport_jiraTicket(report: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

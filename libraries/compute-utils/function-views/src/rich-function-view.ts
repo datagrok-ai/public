@@ -3,12 +3,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
@@ -18,7 +18,7 @@ import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
+import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -94,10 +94,18 @@ export class RichFunctionView extends FunctionView {
   private validators: Record<string, Validator> = {};
   private validationState: Record<string, ValidationResult | undefined> = {};
 
+  private externalValidatorsUpdates = new Subject<string>();
+  private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
+
   public pendingValidations = this.validationUpdates.pipe(
     startWith(null),
     map(() => this.validationState),
   );
+
+  private _isOutputOutdated = new BehaviorSubject<boolean>(true);
+  public isOutputOutdated = this._isOutputOutdated.pipe(distinctUntilChanged());
+
+  public blockRuns = new BehaviorSubject(false);
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -157,7 +165,14 @@ export class RichFunctionView extends FunctionView {
       if (payload.field && this.runningOnInput && this.isRunnable())
         this.doRun();
     });
+
     this.subs.push(validationSub);
+
+    const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
+      this.updateInputValidationReuslts(name);
+    });
+
+    this.subs.push(externalValidationSub);
 
     // waiting for debounce and validation after enter is pressed
     const runSub = combineLatest([
@@ -191,7 +206,7 @@ export class RichFunctionView extends FunctionView {
         ]),
       ]));
     } else {
-      // always run validations on start
+      // run validations on start
       const controller = new AbortController();
       const results = await this.runValidation({isRevalidation: false}, controller.signal);
       this.setValidationResults(results);
@@ -220,7 +235,7 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
-    this.showOutputTabsElem();
+    this.showOutput();
     this.tabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
@@ -247,7 +262,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.isRunning).subscribe(() => {
+    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -389,8 +404,8 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    if (this.inputTabsLabels.length === 0)
-      $(this.tabsElem.root).hide();
+
+    this.hideOutput();
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
@@ -700,9 +715,9 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutputTabsElem() {
-    $(this.tabsElem.root).show();
-    $(this.tabsElem.root).css('display', 'flex');
+  private showOutput() {
+    ui.setDisplay(this.tabsElem.root, true);
+    this._isOutputOutdated.next(false);
   }
 
   public buildOutputBlock(): HTMLElement {
@@ -792,7 +807,7 @@ export class RichFunctionView extends FunctionView {
               return currentParam.onChanged;
             }),
           ).subscribe(() => {
-            this.showOutputTabsElem();
+            this.showOutput();
             this.inputTabsLabels.forEach((inputTabName) => {
               $(this.tabsElem.getPane(inputTabName).header).show();
             });
@@ -925,10 +940,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.showOutputTabsElem();
-    this.tabsElem.panes.forEach((tab) => {
-      $(tab.header).show();
-    });
+    this.showOutput();
   }
 
   // Stores mapping between DF and its' viewers
@@ -1052,6 +1064,11 @@ export class RichFunctionView extends FunctionView {
       this.isRunning.next(false);
       this.validationRequests.next({isRevalidation: false, isNewOutput: true});
     }
+  }
+
+  public setExternalValidationResults(inputName: string, results: ValidationResult) {
+    this.externalValidatorsState[inputName] = results;
+    this.externalValidatorsUpdates.next(inputName);
   }
 
   private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
@@ -1253,7 +1270,7 @@ export class RichFunctionView extends FunctionView {
       const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
       Object.entries(mapping).forEach(([input, key]) => this.setInput(
         input,
-        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? extractValue(key): getDefaultValue(this.funcCall.inputParams[input].property),
         funcCallInput.chosenRun ? 'restricted': 'user input',
       ));
     });
@@ -1266,7 +1283,7 @@ export class RichFunctionView extends FunctionView {
       return this.inputsOverride[val.property.name];
 
     if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
-      return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
+      return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
     case DG.TYPE.DATA_FRAME:
@@ -1444,10 +1461,7 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
-        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
-        newParam.property.defaultValue;
-      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
+      const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
@@ -1473,7 +1487,7 @@ export class RichFunctionView extends FunctionView {
       if (field === SYNC_FIELD.INPUTS) {
         this.isHistorical.next(false);
 
-        this.hideOutdatedOutput();
+        this.hideOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
         const currentState = this.getInputLockState(newParam.name);
@@ -1514,7 +1528,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public isRunnable() {
-    if (this.isRunning.value)
+    if (this.isRunning.value || this.blockRuns.value)
       return false;
 
     return this.isValid();
@@ -1525,6 +1539,11 @@ export class RichFunctionView extends FunctionView {
       if (!isValidationPassed(v))
         return false;
     }
+    for (const [_, v] of Object.entries(this.externalValidatorsState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+
     return true;
   }
 
@@ -1593,10 +1612,15 @@ export class RichFunctionView extends FunctionView {
   private setValidationResults(results: Record<string, ValidationResult | undefined>) {
     for (const [inputName, validationMessages] of Object.entries(results)) {
       this.validationState[inputName] = validationMessages;
-      const input = this.inputsMap[inputName];
-      if (isFuncCallInputValidated(input))
-        input.setValidation(validationMessages);
+      this.updateInputValidationReuslts(inputName);
     }
+  }
+
+  private updateInputValidationReuslts(inputName: string) {
+    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName]);
+    const input = this.inputsMap[inputName];
+    if (isFuncCallInputValidated(input))
+      input.setValidation(results);
   }
 
   private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {
@@ -1633,7 +1657,8 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(validExpRun);
   }
 
-  private hideOutdatedOutput() {
+  private hideOutput() {
+    this._isOutputOutdated.next(true);
     if (this.keepOutput())
       return;
 
@@ -1686,9 +1711,11 @@ export class RichFunctionView extends FunctionView {
 
         if (!this.func) throw new Error('The correspoding function is not specified');
 
-        DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        //@ts-ignore
+        const loadedExcelJS = window.ExcelJS as ExcelJS;
         const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-        const exportWorkbook = new ExcelJS.Workbook();
+        const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
 
         const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
@@ -1826,7 +1853,9 @@ export class RichFunctionView extends FunctionView {
 
       const tabControl = this.tabsElem;
 
-      DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      //@ts-ignore
+      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
       for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
         for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
@@ -1840,7 +1869,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
 
@@ -1861,7 +1890,7 @@ export class RichFunctionView extends FunctionView {
           await new Promise((r) => setTimeout(r, 100));
 
           for (const [i, viewer] of nonGridViewers.entries()) {
-            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
 
             if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
 

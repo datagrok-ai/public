@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
@@ -78,7 +79,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
   }
 
   private createSCViewer(): DG.ScatterPlotViewer | null {
-    const scatterPlotProps: Partial<DG.IScatterPlotLookSettings> & Options = {
+    const scatterPlotProps: Partial<DG.IScatterPlotSettings> & Options = {
       showXAxis: true,
       showYAxis: true,
       showXSelector: false,
@@ -175,11 +176,12 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     synSelectionCol.init((i) => {
       if (clusterCol.isNone(i))
         return null;
+      let r: string | null = null;
       if (i === maxActivityIndexPerClusterMap[clusterCol.get(i)])
-        return ClusterMaxActivityViewer.maxActivityLabel;
+        r = ClusterMaxActivityViewer.maxActivityLabel;
       if (connectivityCol && i === maxConnectivityIndexPerClusterMap[clusterCol.get(i)])
-        return ClusterMaxActivityViewer.maxConnectivityLabel;
-      return null;
+        r = r ? `${r}, ${ClusterMaxActivityViewer.maxConnectivityLabel}` : ClusterMaxActivityViewer.maxConnectivityLabel;
+      return r;
     });
 
     scatterPlotProps.xColumnName = ClusterMaxActivityViewer.clusterSizeColName;

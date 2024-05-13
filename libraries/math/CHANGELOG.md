@@ -1,5 +1,13 @@
 # math changelog
 
+## 1.1.7 (2024-05-09)
+
+* Fix webGPU description nullish value.
+
+## 1.1.6 (2024-04-25)
+
+Matched molecular pairs analysis paralleled via gpu.
+
 ## 1.1.5 (2024-04-25)
 
 Use npm for gpu rules storage.

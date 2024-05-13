@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
@@ -235,9 +235,11 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
 export const plotToSheet =
   async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
     columnForImage: number, rowForImage: number = 0) => {
-    DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    //@ts-ignore
+    const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
-    const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+    const canvas = await loadedHtml2canvas(plot as HTMLElement, {logging: false});
     const dataUrl = canvas.toDataURL('image/png');
 
     const imageId = exportWb.addImage({

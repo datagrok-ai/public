@@ -23,8 +23,9 @@ export const _package = new DG.Package();
 //input: map params {isOptional: true}
 //output: view v
 export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string): Promise<DG.ViewBase | null> {
-  await ViewHandler.getInstance().init(date, groups, packages, path);
-  return ViewHandler.UA;
+  const handler = new ViewHandler();
+  await handler.init(date, groups, packages, path);
+  return handler.view;
 }
 
 //name: Test Track

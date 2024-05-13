@@ -151,7 +151,11 @@ export class TreeViewer extends EChartViewer {
     const isAggregationApplicable = this.aggregationsStr.includes(aggrType);
     return isColumnNumerical || (!isColumnNumerical && isAggregationApplicable);
   }
-  
+
+  _testColumns() {
+    return this.dataFrame.columns.length >= 1;
+  }
+
   onTableAttached() {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);

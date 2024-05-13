@@ -300,6 +300,10 @@ export class SunburstViewer extends EChartViewer {
     return data;
   }
 
+  _testColumns() {
+    return this.dataFrame.columns.length >= 1;
+  }
+
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;

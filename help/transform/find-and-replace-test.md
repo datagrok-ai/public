@@ -4,7 +4,7 @@
 # Tests: find and replace
 
 This typical ["Find and Replace"](find-and-replace-test.md) dialog that you see in every text editor, except that it
-supports specifying the columns to run against, and [search patterns](../explore/search-filter-select/data-search-patterns.md) for matching non-textual columns.
+supports specifying the columns to run against, and [search patterns](../datagrok/navigation/views/table-view#search-patterns) for matching non-textual columns.
 
 ## Testing scenario
 

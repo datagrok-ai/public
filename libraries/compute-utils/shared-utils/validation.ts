@@ -3,36 +3,36 @@ import * as ui from 'datagrok-api/ui';
 import {RichFunctionView} from '../function-views';
 
 // validation/advisory system
-export interface ActionItems {
-    actionName: string;
-    action: Function;
-  }
+export interface ActionItem {
+  actionName: string;
+  action: Function;
+}
 
 export interface Advice {
-    description: string;
-    actions?: ActionItems[];
-  }
+  description: string;
+  actions?: ActionItem[];
+}
 
 export interface ValidationResultBase {
-    // awaiting for validation results
-    pending?: boolean;
-    errors?: Advice[];
-    warnings?: Advice[];
-    notifications?: Advice[];
-  }
+  // awaiting for validation results
+  pending?: boolean;
+  errors?: Advice[];
+  warnings?: Advice[];
+  notifications?: Advice[];
+}
 
 export interface ValidationResult extends ValidationResultBase {
-    // revalidation request
-    revalidate?: string[];
-    // revalidations context
-    context?: any;
-  }
+  // revalidation request
+  revalidate?: string[];
+  // revalidations context
+  context?: any;
+}
 
 export function isValidationPassed(result?: ValidationResult) {
   return !result?.errors?.length && !result?.pending;
 }
 
-export function makeAdvice(description: string, actions?: ActionItems[]) {
+export function makeAdvice(description: string, actions?: ActionItem[]) {
   return {description, actions};
 }
 

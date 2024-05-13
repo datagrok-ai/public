@@ -36,7 +36,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 
 * Required. [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem).
 * Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
-  [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/Ketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
+  [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
 * Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
 * Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
@@ -59,14 +59,14 @@ with chemical data:
   * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
   * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
   * [Substructure search](#substructure-search--filtering).
-  * [Chemical space analysis](#similarity-and-diversity-search).
+  * [Chemical space analysis](#chemical-space).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
   * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
   <!--* [ADME/Tox calculators](#admetox).-->
   * Property and descriptor [calculators](#calculators).
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
 * Common utilities: [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), [dataset mutation](#mutation), and [virtual synthesis](#virtual-synthesis).
 * [Extensible environment](#customizing-and-extending-the-platform)
@@ -83,7 +83,7 @@ Chemical queries against data sources require a chemical cartridge, such as [RDK
 <details>
 <summary> Example: Substructure search in a database </summary>
 
-To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../../../access/databases/databases.mdx#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
+To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../../../access/databases/databases.md#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
 
 Substructure search:
 
@@ -127,7 +127,7 @@ When you open a dataset, Datagrok automatically detects molecules and makes avai
 * Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
-* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../explore/data-augmentation/info-panels.md), such as **Toxicity** or **Drug Likeness**.
+* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness**.
 
 ![Chem dataset exploration](img/chem-exploration.png)
 
@@ -167,7 +167,7 @@ Some info panes can customized. To reveal an info pane's available options, hove
 
 ![Customize-info-panes](img/interactive-panes.gif)
 
-To learn how to customize and extend the platform programmatically, see the [Develop](../../develop/) section of our documentation.
+To learn how to customize and extend the platform programmatically, see the **Develop** section of our documentation.
 
 </details>
 
@@ -187,7 +187,7 @@ The spreadsheet lets you visualize, edit, and efficiently work with chemical str
 
 Datagrok _viewers_ recognize and display chemical data. The viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. They also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
 
-In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
+In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
 
 To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../../../visualize/viewers/viewers.md) section of our documentation.
 
@@ -331,16 +331,44 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 ### Chemical space
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D or 3D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.mdx).
+Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.md).
 
-![chem-space](img/chem-space-0.png)
+![chem-space](../../../../compute/chem-space.gif)
 
 <details>
-<summary> How to use </summary>
+<summary> How to use: </summary>
 
-1. Go to the **Menu Ribbon** and choose **Chem** > **Analyze Structure** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
-1. In the dialog, select the source of the molecule and set the parameters such as the distance metric (Tanimoto, Asymmetric, Cosine, Sokal) and the algorithm you want to use. To change the default settings for the selected algorithm, click the **Gear** icon next to the **Method name** control.
-1. Click **OK**. A scatterplot is added to the view.
+Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+
+The dialog has the following inputs:
+
+* **Table**: The table containing the column of sequences.
+* **Column**: The column containing the sequences.
+* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+* **Method**: The dimensionality reduction method that will be used. The options are:
+    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+
+    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
+* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
+
+* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
+* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
+    * **None**: No postprocessing will be applied.
+    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+
+**WebGPU (experimental)**
+
+WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+
+Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
+* Go to settings and find display settings
+* Go to Graphics settings.
+* In the list of apps, make sure that your browser is set to use high performance GPU.
 
 </details>
 
@@ -480,7 +508,7 @@ You can use a scaffold tree with other [filters](../../../../visualize/viewers/f
 
 ### Activity cliffs
 
-The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules with highly similar structures but significantly different activity levels, known as "activity cliffs." This tool uses distance-based dimensionality reduction algorithms (such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/)) to convert cross-similarities into a [2D scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
+The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules with highly similar structures but significantly different activity levels, known as "activity cliffs." This tool uses distance-based dimensionality reduction algorithms (such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/)) to convert cross-similarities into a [2D scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![Activity cliffs](activity-cliffs-0.png)
 
@@ -567,7 +595,7 @@ in the analyzed activity or property resulting from a fragment substitution.
 <TabItem value="cliffs" label="Cliffs"> 
 
 In the **Cliffs** tab, a
-[scatterplot](../../../../visualize/viewers/scatter-plot.mdx) shows clusters of
+[scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
 molecules with similar structures but significant differences in the analyzed
 activity or property. Arrows connecting molecules represent changes in the
 specified activity or property, with the arrow pointing toward the molecule with
@@ -645,7 +673,7 @@ and walk through an illustrative example of virtual screening exercise.
 <details>
 <summary>Augment</summary>
 
-A simple yet efficient way to deploy models is through the use of [info panes](../../../../explore/data-augmentation/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
+A simple yet efficient way to deploy models is through the use of [info panes](../../../../datagrok/navigation/panels/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
 
 ![Augmenting](../../../../uploads/gifs/chem-model-augment.gif "Augmenting")
 
@@ -692,7 +720,7 @@ To view the chemical scripts you've created or those shared with you, open the [
 
 :::note
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting.md).
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
 
 :::
 
@@ -793,7 +821,7 @@ You can use the `Chem: TwoComponentReaction` function to apply specified chemica
 ## Customizing and extending the platform
 
 Datagrok is a highly flexible platform that can be tailored to meet your specific needs and requirements. With its comprehensive set of [functions](../../../../develop/function-roles.md) and
-[scripting capabilities](../../../../compute/scripting.md), you can customize and enhance any aspect of the platform to suit your chemical data needs.
+[scripting capabilities](../../../../compute/scripting/scripting.mdx), you can customize and enhance any aspect of the platform to suit your chemical data needs.
 
 For instance, you can add new data formats, apply custom models, and perform other operations on molecules. You can also add or change UI elements, create custom connectors, menus, context actions, and more. You can even develop entire applications on top of the platform or customize any existing [open-source plugins](https://github.com/datagrok-ai/public/tree/master/packages).
 

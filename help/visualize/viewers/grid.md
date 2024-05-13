@@ -72,7 +72,7 @@ You can access available options for rows, columns, and cells in a number of way
 
 * From an object's context menu (right-click to open)
 * From the **Top Menu** options and icons
-* For the current object, from the [Context Panel](link)
+* For the current object, from the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 * For columns, by clicking the **Hamburger** **(≡)** icon (hover over the column's header to display)
 
 From there, you can [change the cell format](#format-cells), [color code a column](#color-code-columns), [pin rows](#pin-rows-and-columns), and do more. For shortcuts, see [Controls](#controls).
@@ -94,7 +94,7 @@ The same works in reverse. Clicking a molecule on a scatterplot or a similarity
 viewer updates the current row in all other viewers, including grid. 
 
 To further aid with data exploration, the **Context Panel** dynamically updates
-to show [info panes](../../explore/data-augmentation/info-panels.md) specific to
+to show [info panes](../../datagrok/navigation/panels/info-panels.md) specific to
 the current molecule.
 
 ![](img/grid-rows-interactivity.gif)
@@ -144,7 +144,7 @@ Subject to permissions, you can:
 <TabItem value="navigation" label="Navigation">
 
 For quick navigation, preview, or batch actions, use the 
-[Column Manager](../../datagrok/navigation/column-manager.md).
+[Column Manager](../../datagrok/navigation/panels/column-manager.md).
 To open, on the **Status Bar**, click **Columns:**
 
 <br/>
@@ -194,7 +194,7 @@ To apply a cell renderer manually:
    opens.
 1. In the dialog, set the tag key to `cell.renderer` and the tag value to the
    desired cell renderer  name (e.g., `Tags`). 
-  >Note: Some cell renderers <!--(e.g., [MultiChoice](link))  //TODO: New doc: supported-cell-renderers.md--> may require
+  >Note: Some cell renderers <!--(e.g., [MultiChoice])  //TODO: New doc: supported-cell-renderers.md--> may require
   >additional parameters. 
 1. Click **OK**.
 
@@ -253,7 +253,7 @@ To show data from multiple columns, you can design a form:
 
 1. Right-click a cell, select **Add** > **Forms** > **Design a Form...**. This
    opens a [form viewer](forms.md).  
-1. In the form viwer, column names and values are shown as individual components
+1. In the form viewer, column names and values are shown as individual components
    that you can edit. Design your form with clicks and drags.
 1. Once done, click the **CLOSE AND APPLY** button to add the form as a column to your dataset.
 
@@ -302,7 +302,7 @@ Subject to permissions, you can [add, delete, or modify records in your dataset]
 In addition, the **Top Menu** provides multiple options for data
 cleaning and transformation. For example, you can
  [add calculated columns](../../transform/add-new-column.md),
-[impute missing values](../../transform/missing-values-imputation.md), 
+[impute missing values](../../explore/missing-values-imputation.md), 
 [delete duplicates](../../transform/aggregate-rows.md#), and more.
 
 To learn more about data transformation, visit the 
@@ -452,5 +452,5 @@ To show, hide, or reorder columns:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 import {HistoricalRunsList} from './history-list';
-import {extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {extractStringValue, getMainParams, isIncomplete} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 
 class DatabaseService {
@@ -98,7 +98,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     );
 
     this.store.experimentRuns.subscribe((newRuns) => {
-      this._historyList.updateRuns(newRuns);
+      this._historyList.updateRuns(newRuns.filter((run) => !isIncomplete(run)));
     });
 
     this.store.isExperimentRunsLoading.subscribe((newValue) => {

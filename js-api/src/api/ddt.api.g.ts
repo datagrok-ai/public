@@ -43,6 +43,8 @@ export class Tags {
 
   static ColorCodingSchemeMin = '.color-coding-scheme-min';
 
+  static ShowMarkersAlways = '.show-markers-always';
+
   static DefaultAxisType = '.default-axis-type';
 
   static MarkerCoding = '.marker-coding';
@@ -219,6 +221,9 @@ export class Tags {
 
   /// Specifies the column that has entity key
   static DbPropertyReference = 'dbPropertyReference';
+
+  /// Specifies entity type that reference entity had
+  static DbPropertyReferenceType = 'dbPropertyReferenceType';
 
 }
 export class FuncOptions {

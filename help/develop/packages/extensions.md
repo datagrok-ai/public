@@ -17,8 +17,8 @@ our [guides](../develop.md), [API samples](https://public.datagrok.ai/js)
 With using our [JavaScript API](js-api.md), you can create your own:
 
 * [functions](../../datagrok/concepts/functions/functions.md), which may be written in any
-  [scripting language we support](../../compute/scripting.md), and later be reused in various contexts, including other
-  functions, or called directly from Datagrok UI or the [console](../../datagrok/navigation/navigation.md#console)
+  [scripting language we support](../../compute/scripting/scripting.mdx), and later be reused in various contexts, including other
+  functions, or called directly from Datagrok UI or the [console](../../datagrok/navigation/panels/panels.md#console)
 * [visualizations](../../visualize/viewers/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](../how-to/create-custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../function-roles.md#cell-renderers) — to visualize certain semantic types, such

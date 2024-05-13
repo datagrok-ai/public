@@ -2,11 +2,11 @@
 title: "Add an info panel"
 ---
 
-[Info panels](../../explore/data-augmentation/info-panels.md) are a powerful tool for bringing
+[Info panels](../../datagrok/navigation/panels/info-panels.md) are a powerful tool for bringing
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
 typically appear along with the rest of the information in the [context
-panel](../../datagrok/navigation/navigation.md#context-panel) and [visibility
+panel](../../datagrok/navigation/navigation/panels/panels.md#context-panel) and [visibility
 conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
@@ -14,10 +14,10 @@ changes.
 
 Info panels are added as part of a [package](../develop.md). There are two ways
 of developing them for Datagrok: either as panel
-[scripts](../../compute/scripting.md) or as JavaScript panel
+[scripts](../../compute/scripting/scripting.mdx) or as JavaScript panel
 [functions](../../datagrok/concepts/functions/functions.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
-is available [here](../../compute/scripting.md#supported-languages)). In this
+is available [here](../../compute/scripting/scripting.mdx#supported-languages)). In this
 case, the main difference between the two implementations pertains to where the
 code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.
@@ -63,8 +63,7 @@ as an example.
 It is possible to define your own semantic types. To apply a custom detector,
 first define a function that determines the corresponding semantic type in your
 [detectors.js](../develop.md#package-structure) file. Then you can write a
-function for auto-detection, as done in our demo package
-[Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer).
+function for auto-detection<!--, as done in our demo package [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer) -->.
 
 ### Scripts
 
@@ -128,11 +127,11 @@ export function valueWidget(value) {
 
 See also:
 
-* [Info panels](../../explore/data-augmentation/info-panels.md)
+* [Info panels](../../datagrok/navigation/panels/info-panels.md)
 * [Datagrok JavaScript API](../packages/js-api.md)
 * [JavaScript API
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../compute/scripting/scripting.mdx)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 * [Semantic types](../../catalog/semantic-types.md)

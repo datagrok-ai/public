@@ -7,7 +7,7 @@ import {Observable} from 'rxjs';
 import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
-import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
+import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
 
 
@@ -776,7 +776,7 @@ export class GridColumnList {
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
-export class FormViewer extends Viewer<IFormLookSettings> {
+export class FormViewer extends Viewer<IFormSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -828,7 +828,7 @@ export class Form {
 
 
 /** High-performance, flexible spreadsheet control */
-export class Grid extends Viewer<IGridLookSettings> {
+export class Grid extends Viewer<IGridSettings> {
 
   constructor(dart: any) {
     super(dart);

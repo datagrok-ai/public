@@ -4,8 +4,7 @@
 including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.
 
 - Fitting: computing parameters of the specified function to best fit the data
-  - Uses the BFGS optimization algorithm (multi-threading for performance).
-      For dose-response curves, we are typically fitting the sigmoid function
+  - For dose-response curves, we are typically fitting the sigmoid function
   - Ability to dynamically register custom fitting functions
     - Automatic fit function determination
     - Caching of custom fitting functions
@@ -87,7 +86,7 @@ Each series has its own parameters, such as:
 - `outlierColor` - overrides the standardized series outlier color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
-- `errorModel` - defines the series error model, which could be either `constant` or `proportional`
+- `errorModel` - defines the series error model, which could be either `constant`, `proportional` or `combined`
 - `connectDots` - defines whether to connect the points with lines or not
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not

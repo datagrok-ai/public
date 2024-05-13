@@ -46,5 +46,4 @@ Search criteria can be combined using 'and' or 'or' operands:
 
 See also
 
-* [Search](../explore/search-filter-select//smart-search.md)
 * [Entities](../datagrok/concepts/objects.md)

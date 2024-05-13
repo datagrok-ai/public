@@ -28,14 +28,13 @@ export class ScriptingTutorial extends Tutorial {
 
     this.title('Run a script');
 
-    const actionsPane = $('div.d4-toolbox div.d4-accordion-pane-header').filter((idx, el) => el.textContent?.startsWith('Actions') === true)[0];
-    const funcPaneHints = this.getSidebarHints('Functions', DG.View.SCRIPTS);
+    const providerRoot = $('div[name="tree-Functions---Scripts"]').get(0);
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
       'sample dataset (press <b>F1</b> to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';
     const sv = await this.openViewByType(
-      'On the Side Panel, click Functions > Scripts > Actions > New Python Script. This opens a script editor.',
-      'ScriptView', actionsPane ? [...funcPaneHints, actionsPane] : funcPaneHints, editorIntro);
+      'In the Browse Panel, click Functions > Scripts > New > Python Script. This opens a script editor.',
+      'ScriptView', providerRoot, editorIntro);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -73,15 +72,14 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Find the results in the console',
       interval(1000).pipe(filter(() => grok.shell.windows.showConsole)),
-      this.getSidebarHints('Windows', 'Console'),
+      [],//this.getSidebarHints('Windows', 'Console'),
       scriptOutputInfo);
 
-    // @ts-ignore
-    const editor = sv.root.lastChild.lastChild.CodeMirror;
+    const editor = (sv.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
     const scriptBodyIndex = doc.getValue().split('\n').findIndex((line: string) => !line.startsWith('#'));
     doc.replaceRange('\n', { line: scriptBodyIndex - 1 });
-    const lastLineIndex = doc.lineCount() - 1;
+    const lastLineIndex = doc.lineCount();
     const newOutputParam = '#output: dataframe clone';
     const newOutputParamDef = 'clone = table';
 

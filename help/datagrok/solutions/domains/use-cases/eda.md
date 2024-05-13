@@ -31,21 +31,21 @@ What's more, Datagrok understands the nature of your
   * [Summary columns](../../../../deploy/releases/platform/1-17.md#summary-columns) and sparklines
   * Editable rows, and [_more_](../../../../visualize/viewers/grid.md).
 * [Wrangle data](../../../../transform/transform.md) right from your visualization
-  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../transform/missing-values-imputation.md), find
+  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../explore/missing-values-imputation.md), find
   and treat duplicates and outliers.
 * Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
 * Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
-  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.mdx#regression-line)
+  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#regression-line)
   or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
   viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
 * Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
 * Seamlessly access information with [widgets](../../../../visualize/widgets.md)
- and context-driven [info panes](../../../../explore/data-augmentation/info-panels.md). 
+ and context-driven [info panes](../../../navigation/panels/info-panels.md). 
 * Create dashboards in seconds. Share your analysis in easy and
 [secure](../../../../govern/security.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
 * Use data annotations and team discussions to collaborate on decision-making. 
 
-Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting.md).
+Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting/scripting.mdx).
 
 [Learn more about capabilities here](../../../datagrok.md).
 

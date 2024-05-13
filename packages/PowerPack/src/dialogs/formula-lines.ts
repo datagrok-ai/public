@@ -258,7 +258,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartLookSettings>;
+  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartSettings>;
   dataFrame: DG.DataFrame;
   items: DG.FormulaLine[];
 
@@ -272,12 +272,12 @@ class Preview {
   get axisCols(): AxisColumns {
     let yColName;
     if (this.viewer.type === DG.VIEWER.LINE_CHART) {
-      const yCols: string[] = (this.viewer.props as DG.ILineChartLookSettings).yColumnNames;
+      const yCols: string[] = (this.viewer.props as DG.ILineChartSettings).yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
         yCols.some((n) => col.name.includes(n)))?.name;
     }
     else
-      yColName = (this.viewer.props as DG.IScatterPlotLookSettings).yColumnName;
+      yColName = (this.viewer.props as DG.IScatterPlotSettings).yColumnName;
     return {
       y: this.dataFrame.getCol(yColName!),
       x: this.dataFrame.getCol(this.viewer.props.xColumnName),

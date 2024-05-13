@@ -172,112 +172,103 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** @type {DataFrame} */
-  get dataFrame(): DataFrame {
-    return toJs(api.grok_Viewer_Get_DataFrame(this.dart));
-  }
+  get dataFrame(): DataFrame { return toJs(api.grok_Viewer_Get_DataFrame(this.dart)); }
+  set dataFrame(t: DataFrame) { api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart); }
 
-  set dataFrame(t: DataFrame) {
-    api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
-  }
+  /** Help URL */
+  get helpUrl(): string { return api.grok_Viewer_Get_HelpUrl(this.dart); }
+  set helpUrl(s: string) { api.grok_Viewer_Set_HelpUrl(this.dart, s); }
 
-  get helpUrl(): string {
-    return api.grok_Viewer_Get_HelpUrl(this.dart);
-  }
-
-  set helpUrl(s: string) {
-    api.grok_Viewer_Set_HelpUrl(this.dart, s);
-  }
-
-  static grid(t: DataFrame, options: object | null = null): Grid {
+  static grid(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
-  static histogram(t: DataFrame, options: object | null = null): Viewer<interfaces.IHistogramLookSettings> {
+  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): Viewer<interfaces.IHistogramSettings> {
     return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
-  static barChart(t: DataFrame, options: object | null = null): Viewer<interfaces.IBarChartLookSettings> {
+  static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
-  static heatMap(t: DataFrame, options: object | null = null): Viewer<interfaces.IGridLookSettings> {
+  static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Viewer<interfaces.IGridSettings> {
     return <Viewer>Viewer.fromType(VIEWER.HEAT_MAP, t, options);
   }
 
-  static boxPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IBoxPlotLookSettings> {
+  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {
     return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
-  static filters(t: DataFrame, options: object | null = null): Viewer<interfaces.IFiltersLookSettings> {
+  static filters(t: DataFrame, options?: Partial<interfaces.IFiltersSettings>): Viewer<interfaces.IFiltersSettings> {
     return new Viewer(api.grok_Viewer_Filters(t.dart, _toJson(options)));
   }
 
-  static scatterPlot(t: DataFrame, options: object | null = null): ScatterPlotViewer {
+  static scatterPlot(t: DataFrame, options?: Partial<interfaces.IScatterPlotSettings>): ScatterPlotViewer {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
-  static lineChart(t: DataFrame, options: object | null = null): Viewer<interfaces.ILineChartLookSettings> {
+  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): Viewer<interfaces.ILineChartSettings> {
     return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
-  static network(t: DataFrame, options: object | null = null): Viewer<interfaces.INetworkDiagramLookSettings> {
+  static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): Viewer<interfaces.INetworkDiagramSettings> {
     return <Viewer>Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
   }
 
-  static calendar(t: DataFrame, options: object | null = null): Viewer<interfaces.ICalendarLookSettings> {
+  static calendar(t: DataFrame, options?: Partial<interfaces.ICalendarSettings>): Viewer<interfaces.ICalendarSettings> {
     return <Viewer>Viewer.fromType(VIEWER.CALENDAR, t, options);
   }
 
-  static correlationPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.ICorrelationPlotLookSettings> {
+  static correlationPlot(t: DataFrame, options?: Partial<interfaces.ICorrelationPlotSettings>): Viewer<interfaces.ICorrelationPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
   }
 
-  static densityPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IDensityPlotLookSettings> {
+  static densityPlot(t: DataFrame, options?: Partial<interfaces.IDensityPlotSettings>): Viewer<interfaces.IDensityPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
   }
 
-  static form(t: DataFrame, options: object | null = null): Viewer<interfaces.IFormLookSettings> {
+  static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): Viewer<interfaces.IFormSettings> {
     return <Viewer>Viewer.fromType(VIEWER.FORM, t, options);
   }
 
-  static markup(t: DataFrame, options: object | null = null): Viewer<interfaces.IMarkupViewerLookSettings> {
+  static markup(t: DataFrame, options?: Partial<interfaces.IMarkupViewerSettings>): Viewer<interfaces.IMarkupViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.MARKUP, t, options);
   }
 
-  static matrixPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IMatrixPlotLookSettings> {
+  static matrixPlot(t: DataFrame, options?: Partial<interfaces.IMatrixPlotSettings>): Viewer<interfaces.IMatrixPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.MATRIX_PLOT, t, options);
   }
 
-  static pcPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IPcPlotLookSettings> {
+  static pcPlot(t: DataFrame, options?: Partial<interfaces.IPcPlotSettings>): Viewer<interfaces.IPcPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.PC_PLOT, t, options);
   }
 
-  static pieChart(t: DataFrame, options: object | null = null): Viewer<interfaces.IPieChartLookSettings> {
+  static pieChart(t: DataFrame, options?: Partial<interfaces.IPieChartSettings>): Viewer<interfaces.IPieChartSettings> {
     return <Viewer>Viewer.fromType(VIEWER.PIE_CHART, t, options);
   }
 
-  static scatterPlot3d(t: DataFrame, options: object | null = null): Viewer<interfaces.IScatterPlot3dLookSettings> {
+  static scatterPlot3d(t: DataFrame, options?: Partial<interfaces.IScatterPlot3dSettings>): Viewer<interfaces.IScatterPlot3dSettings> {
     return <Viewer>Viewer.fromType(VIEWER.SCATTER_PLOT_3D, t, options);
   }
 
-  static statistics(t: DataFrame, options: object | null = null): Viewer<interfaces.IStatsViewerLookSettings> {
+  static statistics(t: DataFrame, options?: Partial<interfaces.IStatsViewerSettings>): Viewer<interfaces.IStatsViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.STATISTICS, t, options);
   }
 
-  static tile(t: DataFrame, options: object | null = null): Viewer<interfaces.ITileViewerLookSettings> {
+  static tile(t: DataFrame, options?: Partial<interfaces.ITileViewerSettings>): Viewer<interfaces.ITileViewerSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TILE_VIEWER, t, options);
   }
 
-  static treeMap(t: DataFrame, options: object | null = null): Viewer<interfaces.ITreeMapLookSettings> {
+  static treeMap(t: DataFrame, options?: Partial<interfaces.ITreeMapSettings>): Viewer<interfaces.ITreeMapSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TREE_MAP, t, options);
   }
 
-  static trellisPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.ITrellisPlotLookSettings> {
+  static trellisPlot(t: DataFrame, options?: Partial<interfaces.ITrellisPlotSettings>): Viewer<interfaces.ITrellisPlotSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
   }
 
   /** @deprecated */
-  static wordCloud(t: DataFrame, options: object | null = null): Viewer {
+  static wordCloud(t: DataFrame, options?: any): Viewer {
     return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 
@@ -500,7 +491,7 @@ export class FilterGroup extends Viewer {
   }
 }
 
-export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
+export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -511,10 +502,13 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
 }
 
 /** 2D scatter plot */
-export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSettings> {
+export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   constructor(dart: any) {
     super(dart);
   }
+
+  get canvas(): HTMLCanvasElement { return this.getInfo()['canvas']; }
+  get overlay(): HTMLCanvasElement { return this.getInfo()['overlay']; }
 
   /** Rerender plot */
   invalidateCanvas(): void{
