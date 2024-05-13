@@ -1492,17 +1492,10 @@ export interface IMatrixPlotSettings {
 }
 
 export interface ISummarySettings {
-  /// Column to show aggregation on
-  aggr: string;
-  aggrColumnName: string;
-
   /// List of columns to show aggregations on
   columnNames: Array<string>;
 
-  /// Aggregation that will be used for the columns
-  aggregation: string;
-
-  /// List of aggregations for the columns (temporarily unavailable from UI)
+  /// List of aggregations for the columns
   aggregations: Array<string>;
 
   /// Controls the source of the data comparison
