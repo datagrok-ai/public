@@ -87,8 +87,7 @@ const config = {
                             "replace": "(../../help/develop/packages/$1.$2"
                         }
                     ]
-                },
-                // watch: process.env.TYPEDOC_WATCH
+                }
             },
         ],
         [

@@ -5,7 +5,7 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "node generatePluginsPages.js latest && docusaurus start",
-    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && node generatePluginsPages.js create && TYPEDOC_WATCH=true docusaurus start --config docusaurus-debug.config.js",
+    "start-debug": "cd ../js-api && npm install && cd ../docusaurus && node generatePluginsPages.js create && docusaurus start --config docusaurus-debug.config.js",
     "build": "node generatePluginsPages.js && docusaurus build",
     "generate-plugins-pages": "node generatePluginsPages.js",
     "swizzle": "docusaurus swizzle",
