@@ -111,6 +111,7 @@ jobs:
         id: build
         run: |
           npm run build > ../help/_docusaurus_build.txt 2>&1
+          cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
         continue-on-error: true
       - name: Set summary
