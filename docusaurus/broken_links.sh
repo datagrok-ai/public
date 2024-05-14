@@ -12,12 +12,11 @@ if [ ! -f "$input_file" ]; then
 fi
 
 temp_file="temp.txt"
-input_text=$(grep -e 'Broken link' -e 'Broken anchor' -e 'linking to' $input_file > $temp_file || true)
+grep -e 'Broken link' -e 'Broken anchor' -e 'linking to' $input_file > $temp_file || true
 
-if [ -z "${input_text}" ]; then
+if [ -f "${temp_file}" ]; then
     echo 'No broken link information found'
 else
-
     current_line_temp_file="temp_line.txt"
 
     output_file="${2:-output.csv}"
