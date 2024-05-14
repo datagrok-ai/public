@@ -110,6 +110,7 @@ jobs:
       - name: Build Docusaurus website
         id: build
         run: |
+          set -x
           npm run build > ../help/_docusaurus_build.txt 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         working-directory: ./docusaurus
@@ -117,6 +118,7 @@ jobs:
       - name: Set summary
         id: build_summary
         run: |
+          set -x
           echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
           if [[ "${{ steps.build.outputs.result }}" == "success" ]]; then
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
