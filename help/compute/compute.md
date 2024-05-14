@@ -540,7 +540,7 @@ Solve an inverse problem: find input conditions leading to specified output cons
    * viewers visualizing the goodness of fit
    * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
 
-![fitting-run.gif](/pics/fitting-run.gif)
+![fitting-run.gif](pics/fitting-run.gif)
 
 Apply the feature to functions with table outputs as well:
 
@@ -548,18 +548,18 @@ Apply the feature to functions with table outputs as well:
 
 2. Set dataframe column with values of independent variable (in the `argument` choice input)
 
-![fitting-table.gif](/pics/fitting-table.gif)
+![fitting-table.gif](pics/fitting-table.gif)
 
 Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row:
 
-![fitting-context-panel.gif](/pics/fitting-context-panel.gif)
+![fitting-context-panel.gif](pics/fitting-context-panel.gif)
 
 An inverse problem may have several solutions. Specify their expected number in the `samples` field. To filter fitted points, set `similarity`:
 
 * it is the maximum scaled deviation between "similar" points
 * the higher the value, the fewer points will be displayed
 
-![fitting-similarity.gif](/pics/fitting-similarity.gif)
+![fitting-similarity.gif](pics/fitting-similarity.gif)
 
 Apply parameter optimization to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
 
