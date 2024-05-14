@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.33.7",
+  "version": "1.34.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
@@ -13,7 +13,7 @@
     "rxjs": "^6.6.7",
     "wu": "^2.1.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.17.0",
+    "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
     "lodash.clonedeepwith": "^4.5.0",
     "@types/lodash.clonedeepwith": "^4.5.9",

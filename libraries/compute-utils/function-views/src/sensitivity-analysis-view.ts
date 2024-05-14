@@ -15,7 +15,7 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
-import {IBarChartSettings, ILineChartSettings, IScatterPlotSettings} from "datagrok-api/dg";
+import {IBarChartLookSettings, ILineChartLookSettings, IScatterPlotLookSettings} from 'datagrok-api/dg';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -122,6 +122,8 @@ export class SensitivityAnalysisView {
     };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
+      const defaultValue = getInputValue(inputProp, 'default');
+
       switch (inputProp.propertyType) {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
@@ -233,7 +235,7 @@ export class SensitivityAnalysisView {
 
               return temp;
             })(),
-            value: false,
+            value: defaultValue,
           } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
           lvl: 1,
@@ -1293,29 +1295,28 @@ export class SensitivityAnalysisView {
     return outputsOfInterest;
   }
 
-  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<IScatterPlotSettings> {
+  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<IScatterPlotLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnName: colNamesToShow[1],
-      color: nameOfNonFixedOutput,
-      size: nameOfNonFixedOutput,
+      colorColumnName: nameOfNonFixedOutput,
+      sizeColumnName: nameOfNonFixedOutput,
       markerMaxSize: 12,
       jitterSize: 5,
     };
   }
 
-  private getLineChartOpt(colNamesToShow: string[]): Partial<ILineChartSettings> {
+  private getLineChartOpt(colNamesToShow: string[]): Partial<ILineChartLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnNames: colNamesToShow.slice(1, Math.min(colNamesToShow.length, 8)),
       markerSize: 1,
       markerType: DG.MARKER_TYPE.GRADIENT,
       multiAxis: true,
-      multiAxisLegendPosition: 'RightCenter',
     };
   }
 
-  private getBarChartOpt(descr: string, split: string, value: string): Partial<IBarChartSettings> {
+  private getBarChartOpt(descr: string, split: string, value: string): Partial<IBarChartLookSettings> {
     return {
       description: descr,
       splitColumnName: split,
