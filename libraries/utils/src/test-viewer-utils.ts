@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { delay, expect, testEventAsync } from "./test";
+import { delay, expect, testEvent, testEventAsync } from "./test";
 import { Observable } from 'rxjs';
 
 export async function createViewer(tv: DG.TableView, v: string, packageName?: string): Promise<DG.Viewer> {
@@ -34,7 +34,11 @@ export async function testViewerInternal(tv: DG.TableView, viewerName: string, p
             args.viewer = viewer;
             actionsRes = await actions(args, actionsWithDelay);
         }
-        viewer.close();
+        viewer!.close();
+         //check that there are no active subscriptions in the viewer after close
+         await testEvent(grok.events.onViewerClosed, () => {
+             expect(viewer!.subs.some((s) => !s.closed), false);
+         }, () => viewer!.close(), 3000);
     }, async () => {
         layout ? tv.loadLayout(layout) : await createViewer(tv!, viewerName, packageName);
     }, 60000, 'TEST_EVENT_ASYNC');
@@ -67,6 +71,12 @@ export async function selectFilterChangeCurrent(args: any, withDelay = true): Pr
     //set back initial df with whole set of columns and preserved data
     args.tv!.dataFrame = dfSaved;
     await delay(50);
+}
+
+
+export async function filterAsync(args: any, withDelay = true): Promise<void> {
+    const currentDf: DG.DataFrame = args.tv.dataFrame;
+    setTimeout(() => currentDf.filter.set(0, !currentDf.filter.get(0)), 0);
 }
 
 
