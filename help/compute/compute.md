@@ -550,16 +550,16 @@ Apply the feature to functions with table outputs as well:
 
 ![fitting-table.gif](/pics/fitting-table.gif)
 
-An inverse problem may have several solutions. Specify their expected number in the `samples` field. To filter fitted points, set `similarity`:
-
-* it is the maximum relative (%) deviation between coordinates of the "similar" points
-* the higher the value, the fewer points will be displayed
-
-![fitting-similarity.gif](/pics/fitting-similarity.gif)
-
 Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row:
 
 ![fitting-context-panel.gif](/pics/fitting-context-panel.gif)
+
+An inverse problem may have several solutions. Specify their expected number in the `samples` field. To filter fitted points, set `similarity`:
+
+* it is the maximum scaled deviation between "similar" points
+* the higher the value, the fewer points will be displayed
+
+![fitting-similarity.gif](/pics/fitting-similarity.gif)
 
 Apply parameter optimization to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
 
@@ -576,7 +576,7 @@ let y = x * x;
 
 Learn more
 
-* [Parameters optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
+* [Optimization](https://en.wikipedia.org/wiki/Mathematical_optimization)
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 
 ### Miscellaneous
