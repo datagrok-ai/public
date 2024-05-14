@@ -147,7 +147,7 @@ jobs:
             exit 1
           fi
       - uses: actions/upload-artifact@v2
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' && steps.anchors.outputs.result == "success"
         with:
           name: docusaurus
           path: docusaurus/build
