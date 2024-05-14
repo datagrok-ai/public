@@ -564,6 +564,17 @@
   left: 360px!important;
 }
 
+.dlg-chem-descriptors {
+  width: 300px;
+  max-height: 400px;
+}
+
+.dlg-chem-descriptors.ui-form.ui-panel > div.ui-input-root.ui-input-column > label.d4-chem-descriptors-molecule-column-input {
+  width: auto;
+  min-width: auto;
+  margin-left: 6px;
+}
+
 .d4-filter-disabled > .chem-filter-sketcher-div{
   pointer-events: none;
 }

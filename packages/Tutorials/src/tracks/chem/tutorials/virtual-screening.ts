@@ -146,7 +146,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         '"MolSurf", "EState VSA" and "Descriptors 3D" and press the "OK" button',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const inputs = call.inputs.get('descriptors');
-        return call.func.name === 'ChemDescriptors' &&
+        return call.func.name === 'chemDescriptors' &&
             descriptors.length == inputs.length &&
             descriptors.every((d) => inputs.includes(d));
       })), groupHints, hasHistory ? descriptorDlgHistory : groupDescription);

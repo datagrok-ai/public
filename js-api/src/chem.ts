@@ -793,7 +793,8 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
-    await api.grok_Chem_Descriptors(table.dart, column, descriptors);
+    await grok.functions.call('Chem:chemDescriptors', {'table': table,
+      'molecules': table.columns.byName(column), 'descriptors': descriptors});
     return table;
   }
 
@@ -802,7 +803,7 @@ export namespace chem {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    * */
   export async function descriptorsTree(): Promise<object> {
-    return JSON.parse(await api.grok_Chem_DescriptorsTree());
+    return await grok.functions.call('Chem:chemDescriptorsTree');
   }
 
   /**
@@ -862,7 +863,6 @@ export namespace chem {
   export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);
   }
-
 
   export function convert(s: string, sourceFormat: Notation, targetFormat: Notation): string {
     const convertFunc = Func.find({package: 'Chem', name: 'convertMolNotation'})[0];
