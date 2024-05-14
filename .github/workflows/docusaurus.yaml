@@ -120,7 +120,7 @@ jobs:
 
           bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
           if [ -f help/_broken_links.csv ]; then
-            line_count=$(wc -l < help/broken_links.csv)
+            line_count=$(wc -l < help/_broken_links.csv)
           else
             line_count=0
           fi
