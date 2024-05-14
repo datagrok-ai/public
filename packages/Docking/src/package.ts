@@ -198,7 +198,7 @@ function formatColumns(autodockResults: DG.DataFrame) {
     col.setTag(DG.TAGS.FORMAT, '0.00');
 }
 
-function addColorCoding(column: DG.GridColumn) {
+export function addColorCoding(column: DG.GridColumn) {
   column.isTextColorCoded = true;
   column.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
   column.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.green}, ${DG.Color.red}]`;
@@ -296,6 +296,6 @@ function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElem
 //description: Small molecule docking to a macromolecule with pose visualization
 //meta.demoPath: Bioinformatics | Docking
 export async function demoDocking(): Promise<void> {
-  _demoDocking();
+  await _demoDocking();
 }
 // -- Demo --
