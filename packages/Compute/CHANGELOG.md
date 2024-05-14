@@ -1,5 +1,14 @@
 # Compute changelog
 
+## 1.34.0 (2024-05-14)
+
+### Features
+
+- RFV: Removed workaround for tableInput
+- RFV: Added tooltips for inputs
+- HistoryInput: Changed dates to local timezone
+- Added Fitting view
+
 ## 1.33.5 (2024-05-09)
 
 ### Features
