@@ -6,7 +6,7 @@ import {UaToolbox} from '../ua-toolbox';
 
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'assignee', 'time', 'number', 'is_resolved', 'labels'],
+  columnNames: ['time', 'is_resolved', 'labels'],
 };
 
 export class ReportsView extends UaView {
