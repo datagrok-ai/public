@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.34.0 (2024-05-14)
+
+- Added Fitting view
+
 ## 1.29.0 (2024-03-29)
 
 ### Features
