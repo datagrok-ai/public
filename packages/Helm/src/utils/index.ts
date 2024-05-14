@@ -1,5 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 
+import * as scil from 'scil';
+import * as org from 'org';
+
+import {_package} from '../package';
+
 import {
   RGROUP_CAP_GROUP_NAME,
   RGROUP_CAP_GROUP_SMILES,
@@ -24,7 +29,7 @@ export function removeGapsFromHelm(srcHelm: string): string {
 export function getParts(subParts: string[], s: string): string[] {
   const j = 0;
   const allParts: string[] = [];
-  for (let k = 0; k < subParts.length; ++k) {
+  for (let k = 0; k < (subParts ?? []).length; ++k) {
     const indexOfMonomer = s.indexOf(subParts[k]);
     const helmBeforeMonomer = s.slice(j, indexOfMonomer);
     allParts.push(helmBeforeMonomer);
@@ -39,7 +44,6 @@ export function parseHelm(s: string): string[] {
   const sections = split(s, '$');
   s = sections[0];
   const monomers = [];
-  //@ts-ignore
   if (!scil.Utils.isNullOrEmpty(s)) {
     const seqs = split(s, '|');
     for (let i = 0; i < seqs.length; ++i) {
@@ -88,13 +92,11 @@ export function parseHelm(s: string): string[] {
 //  * used in org.helm.webeditor / scil.helm.Monomers / org.helm.webeditor.Monomers .
 //  */
 // export function findMonomers(helmString: string) {
-//   //@ts-ignore
 //   const types: string[] = Object.keys(org.helm.webeditor.monomerTypeList());
 //   const monomerNameList: any[] = [];
 //   const monomerNameI: number = 0;
 //   const weMonomers = org.helm.webeditor.Monomers;
 //   for (let typeI = 0; typeI < types.length; typeI++) {
-//     //@ts-ignore
 //     const ofTypeMonomers: {} = weMonomers.getMonomerSet(types[typeI]) ?? {};
 //     Object.keys(ofTypeMonomers).forEach((key) => {
 //       const monomer: any = ofTypeMonomers[key];
@@ -112,9 +114,9 @@ export function findMonomers(monomerSymbolList: string[]): Set<string> {
   const monomers: any = [];
   const monomerNames: any = [];
   for (let i = 0; i < types.length; i++) {
-    //@ts-ignore
+    // @ts-ignore
     // eslint-disable-next-line new-cap
-    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+    monomers.push(new org.helm.webeditor.Monomers.getMonomerSet(types[i]));
     Object.keys(monomers[i]).forEach((k) => {
       monomerNames.push(monomers[i][k].id);
     });
@@ -210,7 +212,6 @@ function detachAnnotation(s: string) {
 
 function _detachAppendix(s: string, c: string) {
   let tag = null;
-  //@ts-ignore
   if (scil.Utils.endswith(s, c)) {
     let p = s.length - 1;
     while (p > 0) {
@@ -230,7 +231,6 @@ function _detachAppendix(s: string, c: string) {
 }
 
 function unescape(s: string) {
-  //@ts-ignore
   if (scil.Utils.isNullOrEmpty(s))
     return s;
 

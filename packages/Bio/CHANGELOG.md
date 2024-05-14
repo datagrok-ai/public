@@ -1,5 +1,111 @@
 # Bio changelog
 
+## 2.12.18 (2024-05-13)
+
+### Bug fixes
+
+Bio: Fix MonomerLibManager composition with files and events
+Bio: Unveil cell renderer errors for tests
+
+## 2.12.17 (2024-05-01)
+
+### Features
+
+* Add MonomerLib.getSummary
+* Use Pistoia typization
+
+### Bug fixes
+
+* Fix rendering on grid and without (row tooltip, scatter plot)
+
+## 2.12.16 (2024-04-25)
+
+Bio: Fix crushing substructure filter.
+
+## 2.12.15 (2024-04-19)
+
+Bio: Some optimization in Polytool
+
+## 2.12.14 (2024-04-18)
+
+Bio: Fixed stereochemistry in Polytool
+
+## 2.12.13 (2024-04-15)
+
+Bio: Fix cell renderer for scatter plot, add test
+
+## 2.12.12 (2024-04-15)
+
+### Features
+
+* Polytool: working with molV3000
+
+## 2.12.11 (2024-04-12)
+
+### Features
+
+* Add displaying a monomer's origin lib
+
+### Bug fixes
+
+* Fix the cell-renderer tooltip not showing a hovered monomer
+
+## 2.12.10 (2024-04-11)
+
+### Bug fixes
+
+* Bio: Fix detector for non-fasta seqs of the same length
+
+## 2.12.9 (2024-04-10)
+
+### Bug fixes
+
+* Fix SDF to JSON for Biovia lib
+
+## 2.12.8 (2024-04-09)
+
+### Features
+
+* To atomic level: STEABS block contains less than 80 symbols per row
+
+## 2.12.7 (2024-04-08)
+
+### Features
+
+* Ability to link monomers in molV3000 format
+
+## 2.12.6 (2024-04-07)
+
+### Bug fixes
+
+* Fix detectMacromolecule to invalidate on custom notation
+
+## 2.12.5 (2024-04-05)
+
+### Features
+
+* Add KNN computation on webGPU for UMAP (sequence space).
+
+## 2.12.4 (2024-04-05)
+
+### Features
+
+* Add support for custom notations, splitters
+* Add notation provider, splitter for cyclized macromolecules
+
+### Bug fixes
+
+* Fix cell renderer for original and tooltip with canonical
+* Fix WebLogo for positions out of seq length
+
+## 2.12.3 (2024-04-03)
+
+Updated version of openchemlib in dependencies
+
+## 2.12.2 (2024-04-03)
+
+Harmonized MM distance function with monomer similarity matrices.
+
 ## 2.12.1 (2024-04-02)
 
 ### Bug fixes

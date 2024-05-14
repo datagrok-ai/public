@@ -33,7 +33,7 @@ To enable Server-side cache:
 
 ## Using cache
 
-You can cache results of almost all types of functions. But it really shines with [DataQueries](../access/access.md#data-query) and [Scripts](../compute/scripting.md).
+You can cache results of almost all types of functions. But it really shines with [DataQueries](../access/access.md#data-query) and [Scripts](../compute/scripting/scripting.mdx).
 
 To cache results of a particular function:
 

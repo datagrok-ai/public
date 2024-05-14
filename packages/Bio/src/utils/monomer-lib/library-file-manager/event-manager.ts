@@ -1,7 +1,13 @@
-import * as rxjs from 'rxjs';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import {debounceTime, tap, skip} from 'rxjs/operators';
 
-export class MonomerLibFileEventManager {
+import {IMonomerLibFileEventManager} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
+export class MonomerLibFileEventManager implements IMonomerLibFileEventManager {
   // WARNING: this must be a singleton because it manages the unique state
   private constructor() {}
 
@@ -14,9 +20,9 @@ export class MonomerLibFileEventManager {
     return MonomerLibFileEventManager._instance;
   }
 
-  private _libraryFilesUpdateSubject$ = new rxjs.BehaviorSubject<string[]>([]);
-  private _addLibraryFilesSubject$ = new rxjs.Subject<void>();
-  private _librarySelectionSubject$ = new rxjs.Subject<[string, boolean]>();
+  private _libraryFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
+  private _addLibraryFilesSubject$ = new Subject<void>();
+  private _librarySelectionSubject$ = new Subject<[string, boolean]>();
 
   getValidFilesPathList(): string[] {
     return this._libraryFilesUpdateSubject$.getValue();
@@ -38,19 +44,19 @@ export class MonomerLibFileEventManager {
     this._libraryFilesUpdateSubject$.next(newList);
   }
 
-  get updateUIControlsRequested$(): rxjs.Observable<string[]> {
+  get updateUIControlsRequested$(): Observable<string[]> {
     return this._libraryFilesUpdateSubject$.pipe(
       // debounceTime(1000)
     );
   }
 
-  get updateValidLibraryFileListRequested$(): rxjs.Observable<string[]> {
+  get updateValidLibraryFileListRequested$(): Observable<string[]> {
     return this._libraryFilesUpdateSubject$.pipe(
       // debounceTime(3000)
     );
   }
 
-  get addLibraryFileRequested$(): rxjs.Observable<void> {
+  get addLibraryFileRequested$(): Observable<void> {
     return this._addLibraryFilesSubject$.pipe(
       // debounceTime(1000)
     );
@@ -60,7 +66,7 @@ export class MonomerLibFileEventManager {
     this._addLibraryFilesSubject$.next();
   }
 
-  get librarySelectionRequested$(): rxjs.Observable<[string, boolean]> {
+  get librarySelectionRequested$(): Observable<[string, boolean]> {
     return this._librarySelectionSubject$;
   }
 

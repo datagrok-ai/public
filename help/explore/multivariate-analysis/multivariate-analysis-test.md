@@ -21,13 +21,13 @@
     * After selecting a column with nulls for, a warning is displayed
     * "OK" does not available for clicking
     * In warning there is an opportunity to
-      use ["MissingValuesImputation"](../../transform/missing-values-imputation.md)
+      use ["MissingValuesImputation"](../missing-values-imputation.md)
 
-5. Click on ["MissingValuesImputation"](../../transform/missing-values-imputation.md) on the warning about nulls values.
-   Use ["MissingValuesImputation"](../../transform/missing-values-imputation.md)
+5. Click on ["MissingValuesImputation"](../missing-values-imputation.md) on the warning about nulls values.
+   Use ["MissingValuesImputation"](../missing-values-imputation.md)
    instrument for input missing values to WEIGHT column.
 
-    * After clicking on the ["MissingValuesImputation"](../../transform/missing-values-imputation.md), an appropriate
+    * After clicking on the ["MissingValuesImputation"](../missing-values-imputation.md), an appropriate
       dialog was opened
     * After imputation missing values, WEIGHT column became available for selection and does not cause notifications
 

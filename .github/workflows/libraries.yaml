@@ -37,17 +37,20 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            libraries
       - name: Get changed files
-        uses: tj-actions/changed-files@v37
+        uses: tj-actions/changed-files@v42
         id: changed-files
         with:
           files: 'libraries/**'
           separator: "\n"
           dir_names: true
           dir_names_max_depth: 2
+          safe_output: false
       - name: Generate matrix
         id: generate-matrix
         run: |
@@ -123,6 +126,14 @@ jobs:
         run: |
           echo -e "publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}"
           echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
+      - name: Slack Failed Notification
+        if: failure()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.project }}: ${{ matrix.job_name }}"
@@ -133,9 +144,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            libraries
+            js-api
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |
@@ -143,12 +157,14 @@ jobs:
             echo "::error title=${{ matrix.project }}: failed properties check::Library should be in '@datagrok-libraries' scope. Change library name to '@datagrok-libraries/<name>' in ${{ matrix.project }}/package.json"
             exit 1
           fi
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
+          cache: 'npm'
+          cache-dependency-path: |
+            libraries/${{ matrix.project }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -192,6 +208,13 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Slack Notification
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ steps.publish.outcome }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Prepare Slack Message
         if: steps.publish.outcome == 'success'
@@ -332,3 +355,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update library ${{ matrix.project }} (${{ steps.commit.outputs.name }}) for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
+      - name: Slack Failed Notification
+        if: failure()
+        uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          config: ".github/config/slack.yml"        
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

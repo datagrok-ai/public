@@ -9,12 +9,12 @@ import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
+import {getLayoutInput} from './layout-input';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
   dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
 ): Promise<INewTemplateResult<HitTriageTemplate>> {
-  const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
   for (const tn of availableTemplates) {
@@ -32,6 +32,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   submitFunctionInput.nullable = true;
   submitFunctionInput.fireChanged();
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
+  const layoutInput = getLayoutInput();
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
 
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
@@ -61,12 +62,6 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   templateKeyInput.root.style.borderBottom = 'none';
   errorDiv.style.opacity = '0%';
   keyErrorDiv.style.opacity = '0%';
-
-  const functionsMap: {[key: string]: string} = {};
-  functionsMap['Descriptors'] = 'Descriptors';
-  functions.forEach((func) => {
-    functionsMap[func.friendlyName ?? func.name] = `${func.package.name}:${func.name}`;
-  });
 
   let funcDialogRes: IComputeDialogResult | null = null;
   // used just for functions editor
@@ -114,6 +109,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
     ui.div([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
     dataSourceFunctionInput.root,
+    layoutInput.dataFileInput,
     fieldsEditor.fieldsDiv,
     ui.h2('Compute'),
     funcInput.root,
@@ -142,6 +138,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
         key: templateKeyInput.value,
         campaignFields: fieldsEditor.getFields(),
         dataSourceType: ingestTypeInput.value ?? 'Query',
+        layoutViewState: layoutInput.getLayoutViewState() ?? undefined,
         compute: {
           descriptors: {
             enabled: !!funcDialogRes?.descriptors?.length,

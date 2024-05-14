@@ -5,7 +5,7 @@ import {MolNotationType, OCLServiceCall} from './consts';
 export class OCLService {
   _threadCount: number = Math.max((navigator.hardwareConcurrency || 6) - 2, 1);
   _workers: Worker[] = new Array(this._threadCount).fill(null)
-    .map(() => new Worker(new URL('ocl-worker', import.meta.url)));
+    .map(() => new Worker(new URL('workers/ocl-worker', import.meta.url)));
   constructor() {
   }
 

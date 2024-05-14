@@ -21,6 +21,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: InfoView;
+  get infoView(): InfoView {return this._infoView;}
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
@@ -279,10 +280,10 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       await new Promise((r) => setTimeout(r, 1000));
 
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-
-      if (this._campaign?.layout) {
+      const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
+      if (layoutViewState) {
         try {
-          const layout = DG.ViewLayout.fromViewState(this._campaign.layout);
+          const layout = DG.ViewLayout.fromViewState(layoutViewState);
           view.loadLayout(layout);
         } catch (e) {
           console.error(e);

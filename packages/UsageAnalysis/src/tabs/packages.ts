@@ -4,10 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView, Filter} from './ua';
+import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {ViewHandler} from '../view-handler';
 import {getTime} from '../utils';
 
 const format = 'es-pa-u-hc-h23';
@@ -17,9 +16,8 @@ export function getUsersTable(usersHistogram: DG.DataFrame): HTMLTableElement {
   const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
   for (const r of usersHistogram.rows)
     usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
-  const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
+  return ui.table(Object.keys(usersData).sort((a, b) =>
     usersData[b].c - usersData[a].c), (k) => [usersData[k].e, usersData[k].c]);
-  return usersTable;
 }
 
 export class PackagesView extends UaView {
@@ -31,7 +29,7 @@ export class PackagesView extends UaView {
     this.rout = '/Usage';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const packagesViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Packages',
@@ -47,7 +45,7 @@ export class PackagesView extends UaView {
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
+        return DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'package',
           size: 'count',
@@ -61,7 +59,6 @@ export class PackagesView extends UaView {
           showYSelector: false,
           invertYAxis: true,
         });
-        return viewer;
       }});
 
     const packagesTimeViewer = new UaFilterableQueryViewer({
@@ -72,7 +69,7 @@ export class PackagesView extends UaView {
       //   return t;
       // },
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
+        return DG.Viewer.scatterPlot(t, {
           x: 'time',
           y: 'package',
           color: 'time',
@@ -82,7 +79,6 @@ export class PackagesView extends UaView {
           showYSelector: false,
           invertYAxis: true,
         });
-        return viewer;
       }});
 
     this.viewers.push(packagesViewer);
@@ -104,7 +100,7 @@ export class PackagesView extends UaView {
     const packages: string[] = df.getCol('pid').categories;
     const packageNames: string[] = df.getCol('package').categories;
     const users: string[] = df.getCol('uid').categories;
-    t.selection.init((i) => {
+    t.selection.init((_) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
         packages.includes(row.pid) && users.includes(row.uid) && packageNames.includes(row.package);
@@ -168,13 +164,13 @@ export class PackagesView extends UaView {
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
       uaToolbox.packagesDD.value = packageNames.length === 1 ?
         packageNames[0] : `${packageNames.length} packages`;
-      const fv = ViewHandler.getView('Functions');
+      const fv = uaToolbox.viewHandler.getView('Functions');
       fv.viewers[0].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
         groups: filter.groups, packages: packageNames});
       if (!fv.viewers[0].activated)
         fv.viewers[0].activated = true;
-      ViewHandler.changeTab('Functions');
-      uaToolbox.drilldown = ViewHandler.getCurrentView();
+      uaToolbox.viewHandler.changeTab('Functions');
+      uaToolbox.drilldown = uaToolbox.viewHandler.getCurrentView();
     });
     button.classList.add('ua-details-button');
     const fPane = cp.addPane('Functions', () => {
@@ -219,15 +215,15 @@ export class PackagesView extends UaView {
       // uaToolbox.packagesDD.value = packageNames.length === 1 ?
       //   packageNames[0] : `${packageNames.length} packages`;
       uaToolbox.packagesDD.value = '';
-      const ev = ViewHandler.getView('Events');
+      const ev = uaToolbox.viewHandler.getView('Events');
       ev.viewers[0].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`});
       ev.viewers[1].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`, groups: filter.groups});
       if (!ev.viewers[0].activated) {
         ev.viewers[0].activated = true;
         ev.viewers[1].activated = true;
       }
-      ViewHandler.changeTab('Events');
-      uaToolbox.drilldown = ViewHandler.getCurrentView();
+      uaToolbox.viewHandler.changeTab('Events');
+      uaToolbox.drilldown = uaToolbox.viewHandler.getCurrentView();
     });
     button.classList.add('ua-details-button');
     const lPane = cp.addPane('Log events summary', () => {

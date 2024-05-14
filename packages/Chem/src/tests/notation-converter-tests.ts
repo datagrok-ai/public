@@ -13,6 +13,7 @@ category('converters', async () => {
   let molfileV2K: string;
   let molfileV3K: string;
   let molecules: { [key: string]: string[]};
+  let rdkitModule: any;
   before(async () => { // wait until RdKit module gets initialized
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -28,6 +29,7 @@ category('converters', async () => {
       molblock: [molfileV2K],
       v3Kmolblock: [molfileV3K],
     };
+    rdkitModule = await grok.functions.call('Chem:getRdKitModule');
   });
 
 
@@ -72,7 +74,19 @@ category('converters', async () => {
     await namesToSmiles(df, df.col('Name')!);
     await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
         `Column with names has not been converted to smiles`, 5000);
-    expect(df.get('canonical_smiles', 3) === 'O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
+    expect(df.get('canonical_smiles', 4) === '');
+    let mol1, mol2, smiles1, smiles2;
+    try {
+      mol1 = rdkitModule.get_mol(df.get('canonical_smiles', 3));
+      smiles1 = mol1.get_smiles();
+      mol2 = rdkitModule.get_mol('O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
+      smiles2 = mol1.get_smiles();
+
+    } finally {
+      mol1?.delete();
+      mol2?.delete();
+    }
+    expect(smiles1 === smiles2);
   });
   test('Convert notations for column', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :

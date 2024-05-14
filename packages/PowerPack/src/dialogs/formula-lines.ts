@@ -19,6 +19,12 @@ const enum ITEM_CAPTION {
   VERT_BAND = 'Band - Vertical',
 }
 
+const enum ITEM_ORIENTATION {
+    VERTICAL = 'Vertical',
+    HORIZONTAL = 'Horizontal',
+    NONE = '',
+};
+
 /** Formula Line sources */
 const enum ITEM_SOURCE {
   VIEWER = 'Viewer',
@@ -252,7 +258,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartLookSettings>;
+  viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartSettings>;
   dataFrame: DG.DataFrame;
   items: DG.FormulaLine[];
 
@@ -266,12 +272,12 @@ class Preview {
   get axisCols(): AxisColumns {
     let yColName;
     if (this.viewer.type === DG.VIEWER.LINE_CHART) {
-      const yCols: string[] = (this.viewer.props as DG.ILineChartLookSettings).yColumnNames;
+      const yCols: string[] = (this.viewer.props as DG.ILineChartSettings).yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
         yCols.some((n) => col.name.includes(n)))?.name;
     }
     else
-      yColName = (this.viewer.props as DG.IScatterPlotLookSettings).yColumnName;
+      yColName = (this.viewer.props as DG.IScatterPlotSettings).yColumnName;
     return {
       y: this.dataFrame.getCol(yColName!),
       x: this.dataFrame.getCol(this.viewer.props.xColumnName),
@@ -292,7 +298,8 @@ class Preview {
    */
   _getItemAxes(item: DG.FormulaLine): AxisNames {
     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    let [previewY, previewX] = [itemMeta.funcName, itemMeta.argName];
+    let [previewY, previewX] = item.orientation === ITEM_ORIENTATION.VERTICAL ?
+      [itemMeta.argName, itemMeta.funcName] : [itemMeta.funcName, itemMeta.argName];
 
     /** If the source axes exist, then we try to set similar axes */
     if (this._scrAxes) {
@@ -368,6 +375,8 @@ class Preview {
      */
     this.viewer.root.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
+      if (this.viewer.type === DG.VIEWER.LINE_CHART)
+        return;
       const worldPoint = (this.viewer as DG.ScatterPlotViewer).screenToWorld(event.offsetX, event.offsetY);
       onContextMenu(worldPoint.y, worldPoint.x);
     });
@@ -789,11 +798,13 @@ class CreationControl {
 
           case ITEM_CAPTION.VERT_LINE:
             const vertVal = (valX ?? colX.stats.q2).toFixed(1);
+            item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.formula = '${' + colX.name + '} = ' + vertVal;
             break;
 
           case ITEM_CAPTION.HORZ_LINE:
             const horzVal = (valY ?? colY.stats.q2).toFixed(1);
+            item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.formula = '${' + colY.name + '} = ' + horzVal;
             break;
 
@@ -801,6 +812,7 @@ class CreationControl {
             const left = colX.stats.q1.toFixed(1);
             const right = colX.stats.q3.toFixed(1);
             item.formula = '${' + colX.name + '} in(' + left + ', ' + right + ')';
+            item.orientation = ITEM_ORIENTATION.VERTICAL;
             item.column2 = colY.name;
             break;
 
@@ -808,6 +820,7 @@ class CreationControl {
             const bottom = colY.stats.q1.toFixed(1);
             const top = colY.stats.q3.toFixed(1);
             item.formula = '${' + colY.name + '} in(' + bottom + ', ' + top + ')';
+            item.orientation = ITEM_ORIENTATION.HORIZONTAL;
             item.column2 = colX.name;
             break;
 
@@ -907,7 +920,7 @@ export class FormulaLinesDialog {
     this.dialog
       .add(layout)
       .onOK(this._onOKAction.bind(this))
-      .show({resizable: true, width: 850, height: 650});
+      .show({resizable: true, width: 850, height: 660});
   }
 
   _initHost(src: DG.DataFrame | DG.Viewer): Host {
@@ -916,7 +929,7 @@ export class FormulaLinesDialog {
 
   _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
     const preview = new Preview(this.host.viewerItems! ?? this.host.dframeItems!, src, this.creationControl.popupMenu);
-    preview.height = 300;
+    preview.height = 310;
     return preview;
   }
 

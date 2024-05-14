@@ -13,17 +13,20 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {chemSpace} from '../chem-space';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO, MMP_COLNAME_CHEMSPACE_X,
-  MMP_COLNAME_CHEMSPACE_Y, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO,
+  MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MmpInput} from './mmp-constants';
 import $ from 'cash-dom';
 
-export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList, maxActs: number[]) :
-[sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[]] {
-  table.columns.addNewFloat('~X');
-  table.columns.addNewFloat('~Y');
-  const sp = DG.Viewer.scatterPlot(table, {
-    x: '~X',
-    y: '~Y',
+export function getMmpScatterPlot(
+  mmpInput: MmpInput, maxActs: number[], axesColsNames: string[]) :
+[sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
+  activeInputs: DG.InputBase[]] {
+  mmpInput.table.columns.addNewFloat(axesColsNames[0]);
+  mmpInput.table.columns.addNewFloat(axesColsNames[1]);
+  const sp = DG.Viewer.scatterPlot(mmpInput.table, {
+    x: axesColsNames[0],
+    y: axesColsNames[1],
     zoomAndFilter: 'no action',
     //color: activities.name,
     showXSelector: false,
@@ -34,21 +37,27 @@ export function getMmpScatterPlot(table: DG.DataFrame, activities: DG.ColumnList
   const sliderInputs = new Array<DG.InputBase>(maxActs.length);
   const sliderInputValueDivs = new Array<HTMLDivElement>(maxActs.length);
   const colorInputs = new Array<DG.InputBase>(maxActs.length);
+  const activeInputs = new Array<DG.InputBase>(maxActs.length);
 
   for (let i = 0; i < maxActs.length; i ++) {
-    const sliderInput = ui.sliderInput(activities.byIndex(i).name, 0, 0, maxActs[i]);
-    $(sliderInput.root).css({'margin-left': '6px'});
-
+    const actName = mmpInput.activities.byIndex(i).name;
+    const sliderInput = ui.sliderInput(mmpInput.activities.byIndex(i).name, 0, 0, maxActs[i]);
     const sliderInputValueDiv = ui.divText(sliderInput.stringValue, 'ui-input-description');
     sliderInput.addOptions(sliderInputValueDiv);
+    sliderInput.root.classList.add('mmpa-slider-input');
+    ui.tooltip.bind(sliderInput.captionLabel, `Select the cutoff by ${actName} difference`);
+    ui.tooltip.bind(sliderInput.input, `${actName} value cutoff`);
     sliderInputs[i] = sliderInput;
     sliderInputValueDivs[i] = sliderInputValueDiv;
     const colorInput = ui.colorInput('', '#FF0000');
-    colorInput.root.style.marginLeft = '6px';
+    colorInput.root.classList.add('mmpa-color-input');
     colorInputs[i] = colorInput;
+    const activeInput = ui.boolInput('', true);
+    activeInput.classList.add('mmpa-bool-input');
+    activeInputs[i] = activeInput;
   }
 
-  return [sp, sliderInputs, sliderInputValueDivs, colorInputs];
+  return [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs];
 }
 
 function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstruct | null)[], div: HTMLDivElement,
@@ -91,9 +100,10 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
     diff.style.maxWidth = '150px';
     div.append(diff);
   }
-  if (subsrtFrom || subsrtTo)
-    drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx], [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
-  else {
+  if (subsrtFrom || subsrtTo) {
+    drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx],
+      [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
+  } else {
     moleculesDiv.append(ui.divText(`Loading...`));
     getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
       const {inverse1, inverse2, fromAligned, toAligned} = res;
@@ -101,7 +111,8 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
       pairsDf.set(MMP_STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
       pairsDf.set(MMP_COLNAME_FROM, pairIdx, fromAligned[0]);
       pairsDf.set(MMP_COLNAME_TO, pairIdx, toAligned[0]);
-      drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx], [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
+      drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+        [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
     });
   }
   return div;
@@ -114,26 +125,25 @@ function getMoleculesPropertiesDiv(propPanelViewer: FormsViewer, idxs: number[])
   return ui.div(propPanelViewer.root, {style: {height: '100%'}});
 }
 
-export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewer, lines: ILineSeries,
+export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineSeries,
   linesIdxs: Uint32Array, linesActivityCorrespondance: Uint32Array, pairsDf: DG.DataFrame, diffs: Array<Float32Array>,
-  rdkitModule: RDModule): ScatterPlotLinesRenderer {
+  rdkitModule: RDModule, embedColsNames: string[]): ScatterPlotLinesRenderer {
   const chemSpaceParams = {
-    seqCol: molecules,
+    seqCol: mmpInput.molecules,
     methodName: DimReductionMethods.UMAP,
     similarityMetric: BitArrayMetricsNames.Tanimoto as BitArrayMetrics,
-    embedAxesNames: [MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y],
+    embedAxesNames: embedColsNames,
     options: {},
   };
 
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
-    MMP_COLNAME_CHEMSPACE_X, MMP_COLNAME_CHEMSPACE_Y,
-    lines, ScatterPlotCurrentLineStyle.bold);
+    embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
 
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-        pairsDf, diffs, table, rdkitModule),
+        pairsDf, diffs, mmpInput.table, rdkitModule),
       event.x, event.y);
   });
 
@@ -141,7 +151,7 @@ export function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: D
   chemSpace(chemSpaceParams).then((res) => {
     const embeddings = res.coordinates;
     for (const col of embeddings)
-      table.columns.replace(col.name, col);
+      mmpInput.table.columns.replace(col.name, col);
     progressBarSpace.close();
   });
 

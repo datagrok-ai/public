@@ -3,32 +3,50 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {
   getUserLibSettings, setUserLibSettings, LIB_PATH
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
-  IMonomerLibHelper,
+  IMonomerLibFileEventManager, IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
 import {MonomerLib} from './monomer-lib';
 import {MonomerLibFileManager} from './library-file-manager/file-manager';
 import {MonomerLibFileEventManager} from './library-file-manager/event-manager';
+
 import {_package} from '../../package';
 
-type MonomerLibWindowType = Window & { $monomerLibHelper: MonomerLibManager };
+type MonomerLibWindowType = Window & { $monomerLibHelperPromise?: Promise<MonomerLibManager> };
 declare const window: MonomerLibWindowType;
-
-export async function getLibFileNameList(): Promise<string[]> {
-  const fileEventManager = MonomerLibFileEventManager.getInstance();
-  const fileManager = await MonomerLibFileManager.getInstance(fileEventManager);
-  return fileManager.getValidLibraryPaths();
-}
 
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
  * the platform  */
 export class MonomerLibManager implements IMonomerLibHelper {
-  private readonly _monomerLib = new MonomerLib({});
+  private readonly _monomerLib = new MonomerLib({}, 'MAIN');
+
+  private _eventManager: MonomerLibFileEventManager;
+
+  public get eventManager(): IMonomerLibFileEventManager { return this._eventManager; }
+
+  public async awaitLoaded(timeout: number = 3000): Promise<void> {
+    return await Promise.race([
+      (async () => {
+        const fileManager = await this.getFileManager();
+        await fileManager.filesPromise;
+        return true;
+      })(),
+      (async () => {
+        await delay(timeout);
+        return false;
+      })(),
+    ]).then((res) => {
+      if (!res)
+        throw new Error(`Loading monomer libraries is timeout ${timeout} ms.`);
+    });
+  }
 
   /** Protect constructor to prevent multiple instantiation. */
   protected constructor() {}
@@ -38,6 +56,19 @@ export class MonomerLibManager implements IMonomerLibHelper {
    */
   getBioLib(): IMonomerLib {
     return this._monomerLib;
+  }
+
+  /** Instance promise of {@link getFileManager} */
+  private _fileManagerPromise?: Promise<MonomerLibFileManager>;
+
+  async getFileManager(): Promise<MonomerLibFileManager> {
+    if (this._fileManagerPromise === undefined) {
+      this._fileManagerPromise = (async () => {
+        const fileManager: MonomerLibFileManager = await MonomerLibFileManager.create(this, this._eventManager);
+        return fileManager;
+      })();
+    }
+    return this._fileManagerPromise;
   }
 
   /** Allows syncing with managing settings/loading libraries */
@@ -53,7 +84,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       // through blocking this.loadLibrariesPromise
       try {
         const [libFileNameList, settings]: [string[], UserLibSettings] = await Promise.all([
-          getLibFileNameList(),
+          (await this.getFileManager()).getValidLibraryPaths(),
           getUserLibSettings(),
         ]);
 
@@ -70,7 +101,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
             return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
               const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
                 `${err instanceof Error ? err.message : err.toString()}`;
-              return new MonomerLib({}, errMsg);
+              return new MonomerLib({}, libFileName, errMsg);
             });
           }));
         this._monomerLib.updateLibs(libs, reload);
@@ -91,9 +122,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
    * @return {Promise<IMonomerLib>} Promise of IMonomerLib
    */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
-    const eventManager = MonomerLibFileEventManager.getInstance();
-    const libFileManager = await MonomerLibFileManager.getInstance(eventManager);
-    const lib: IMonomerLib = await libFileManager.loadLibraryFromFile(path, fileName);
+    const fileManager = await this.getFileManager();
+    const lib: IMonomerLib = await fileManager.loadLibraryFromFile(path, fileName);
     return lib;
   }
 
@@ -103,19 +133,27 @@ export class MonomerLibManager implements IMonomerLibHelper {
     if (invalidNames.length > 0)
       throw new Error(`Cannot select libraries ${invalidNames}: no such library in the list`);
     const settings = await getUserLibSettings();
-    settings.exclude = (await getLibFileNameList()).filter((fileName) => !libFileNameList.includes(fileName));
+    settings.exclude = ((await this.getFileManager()).getValidLibraryPaths())
+      .filter((fileName) => !libFileNameList.includes(fileName));
     await setUserLibSettings(settings);
   }
 
   private async getInvalidFileNames(libFileNameList: string[]): Promise<string[]> {
-    const availableFileNames = await getLibFileNameList();
+    const availableFileNames = (await this.getFileManager()).getValidLibraryPaths();
     const invalidNames = libFileNameList.filter((fileName) => !availableFileNames.includes(fileName));
     return invalidNames;
   }
 
   // -- Instance singleton --
-  public static get instance(): MonomerLibManager {
-    if (!window.$monomerLibHelper) window.$monomerLibHelper = new MonomerLibManager();
-    return window.$monomerLibHelper;
+  public static async getInstance(): Promise<MonomerLibManager> {
+    let res = window.$monomerLibHelperPromise;
+    if (res === undefined) {
+      res = window.$monomerLibHelperPromise = (async () => {
+        const instance = new MonomerLibManager();
+        instance._eventManager = MonomerLibFileEventManager.getInstance();
+        return instance;
+      })();
+    }
+    return res;
   }
 }

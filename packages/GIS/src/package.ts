@@ -369,7 +369,8 @@ export function gisViewer(): GisViewer {
 }
 
 //name: gisKMZAndKMLFileViewer
-//tags: fileViewer, fileViewer-kmz, fileViewer-kml
+//tags: fileViewer
+//meta.fileViewer: kmz,kml
 //input: file file
 //output: view result
 export async function gisKMZAndKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
@@ -476,7 +477,8 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 }
 
 //name: gisGeoJSONFileViewer
-//tags: fileViewer, fileViewer-geojson, fileViewer-topojson, fileViewer-json
+//tags: fileViewer
+//meta.fileViewer: geojson, topojson, json
 //input: file file
 //output: view result
 export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {

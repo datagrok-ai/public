@@ -293,7 +293,7 @@ function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElem
 }
 
 //name: Demo Docking
-//description: 
+//description: Small molecule docking to a macromolecule with pose visualization
 //meta.demoPath: Bioinformatics | Docking
 export async function demoDocking(): Promise<void> {
   _demoDocking();

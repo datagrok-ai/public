@@ -25,5 +25,5 @@ See also:
 
 * [Column Selectors](column-selectors.md)
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)

@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/chembl",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "description": "Chembl integration, commonly used queries and browser",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
   },
   "fullName": "Chembl",
   "repository": {
@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.16.0",
+    "datagrok-api": "../../js-api",
     "file-loader": "^6.2.0",
     "ts-loader": "latest",
     "typescript": "latest"
@@ -32,6 +32,7 @@
     "@datagrok/chem": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "build": "webpack",
@@ -45,5 +46,17 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "meta": {
+    "semanticTypes": [
+      {
+        "semType": "CHEMBL_ID",
+        "description": "Compound id in the CHEMBL database",
+        "parsers": [{
+          "regexp": "CHEMBL\\d+"
+        }]
+      }
+    ]
+  },
+  "skipCI": true
 }

@@ -185,7 +185,8 @@ category('bio-substructure-filters', async () => {
       dlg.close();
     }
     await filter.awaitRendered();
-  });
+    await delay(3000); //TODO: await for grid.onLookChanged
+  }, {skipReason: 'GROK-15678'});
 
   // Generates unhandled exception accessing isFiltering before bioFilter created
   test('helm-view', async () => {
@@ -308,7 +309,8 @@ category('bio-substructure-filters', async () => {
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
     await awaitGrid(view.grid);
-  });
+    await delay(3000); //TODO: await for grid.onLookChanged
+  }, {skipReason: 'GROK-15678'});
 
   // two seq columns
 

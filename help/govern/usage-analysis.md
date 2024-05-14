@@ -58,7 +58,7 @@ gets recorded in the audit. This is what you see under the "Activity" tab in the
 
 ![usage-analysis-pp-activity](usage-analysis-pp-activity.png)
 
-By default, each [script](../compute/scripting.md) execution gets logged, along with the parameter values. High-level
+By default, each [script](../compute/scripting/scripting.mdx) execution gets logged, along with the parameter values. High-level
 overview of the usage is available under the "Usage" tag:
 
 ![usage-analysis-pp-usage](usage-analysis-pp-usage.png)

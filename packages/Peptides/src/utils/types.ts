@@ -29,6 +29,7 @@ export interface PeptidesSettings {
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
   showDendrogram?: boolean,
+  showClusterMaxActivity?: boolean,
   showSequenceSpace?: boolean,
   columns?: AggregationColumns,
   sequenceSpaceParams: SequenceSpaceParams,

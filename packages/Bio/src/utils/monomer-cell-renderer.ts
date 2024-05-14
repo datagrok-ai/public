@@ -5,9 +5,10 @@ import * as ui from 'datagrok-api/ui';
 import {ALPHABET, getPaletteByType, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PolymerType} from '@datagrok-libraries/bio/src/types';
 
-import {getMonomerLibHelper} from '../package';
 import * as C from './constants';
+import {getMonomerLib} from '../package';
 
 const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
@@ -29,20 +30,29 @@ export class MonomerTooltipHandler {
       !gridCell.tableColumn || !gridCell.isTableCell
     ) return false;
 
-    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet);
+    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet) as ALPHABET;
     const monomerName = gridCell.cell.value;
-    const mw = new MonomerWorks(getMonomerLibHelper().getBioLib());
-    const monomerType: string = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
-      alphabet === ALPHABET.PT ? 'PEPTIDE' : 'PEPTIDE';
+    const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
+    const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
+    const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
 
-    const monomerMol: string | null = mw.getCappedRotatedMonomer(monomerType, monomerName);
+    const monomerLib = getMonomerLib();
+    if (!monomerLib) {
+      ui.tooltip.show(ui.divText('Monomer library is not available.'), x1, y1);
+      return true;
+    }
+
+    const mw = new MonomerWorks(monomerLib);
+    const polymerType: PolymerType = (alphabet === ALPHABET.DNA || alphabet === ALPHABET.RNA) ? 'RNA' :
+      alphabet === ALPHABET.PT ? 'PEPTIDE' : 'PEPTIDE';
+    // const biotype: HelmType = [ALPHABET.RNA, ALPHABET.DNA].includes(alphabet) ? HelmTypes.NUCLEOTIDE :
+    //   [ALPHABET.PT].includes(alphabet) ? HelmTypes.AA : HelmTypes.AA;
+
+    const monomerMol: string | null = mw.getCappedRotatedMonomer(polymerType, monomerName);
     const nameDiv = ui.div(monomerName);
     const molDiv = !monomerMol ? null :
       grok.chem.svgMol(monomerMol, undefined, undefined, svgMolOptions);
 
-    const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
-    const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
-    const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
     ui.tooltip.show(ui.divV([nameDiv, ...(molDiv ? [molDiv] : [])]), x1, y1);
 
     return true; // To prevent default tooltip behaviour

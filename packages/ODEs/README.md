@@ -63,6 +63,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Fermentation`
   * models the kinetics of the biochemical reactions in [fermentation](https://en.wikipedia.org/wiki/Fermentation)
   * shows the usage of `min` and `max` in inputs annotation
+* `PK`
+  * [pharmacokinetic](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) simulation
+  * one-compartment model
 * `PK-PD`
   * simulates pharmacokinetics (PK), pharmacodynamics (PD), and their [relationship](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046)
   * illustrates the usage of the `loop` feature for dosing specification

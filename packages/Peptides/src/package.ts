@@ -13,6 +13,7 @@ import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-wo
 import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
+import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -127,6 +128,13 @@ export function mostPotentResidues(): MostPotentResidues {
 //output: viewer result
 export function logoSummaryTable(): LogoSummaryTable {
   return new LogoSummaryTable();
+}
+
+//name: Active peptide selection
+//tags: viewer
+//output: viewer result
+export function clusterMaxActivity(): ClusterMaxActivityViewer {
+  return new ClusterMaxActivityViewer();
 }
 
 //name: Manual Alignment

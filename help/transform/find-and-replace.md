@@ -1,18 +1,28 @@
 ---
 title: "Find and replace"
+format: mdx
 ---
 
-This is the typical "Find and Replace" dialog that you see in every text editor, except that it supports specifying the
-columns to run against, and [search patterns](../explore/search-filter-select/data-search-patterns.md)
-for matching non-textual columns. It means that you can search for 'this week' in the datetime column, and replace it
-with a value that the datetime column understands, such as 'Nov 7, 2000' or '
-7/11/2000'.
+```mdx-code-block
+import FindAndReplace from './find-and-replace-dialog.png';
+```
 
-`Match case`, `Match whole word`, and `Use regular expressions` fields affect only string columns.
 
-When a replace command is executed, it is logged into [console](../datagrok/navigation/navigation.md#console).
 
-See also
+To find and replace values in tables, press <kbd>Ctrl + H</kbd>. This opens the
+**Find and replace** dialog. 
 
-* [Search](../explore/search-filter-select/data-search.md)
-* [Search patterns](../explore/search-filter-select/data-search-patterns.md)
+<img src={FindAndReplace} width="235"/>
+
+This feature is similar to other text editors but with additional
+options:
+* Choose specific columns (current, selected, all) and rows (selected, filtered)
+  to target for the operation.
+* Automatically filter all matching rows.
+* Use [search patterns](../datagrok/navigation/views/table-view.md#search-patterns) for matching non-textual columns. For
+  example, you can search for `this week` in a datetime column and replace it
+  with a specific date like `Nov 7, 2000` or `7/11/2000`.
+* In string columns, you can also match case, entire word, or use regular
+  expressions for more complex searches.
+
+All replace operations are logged in the [Console](../datagrok/navigation/panels/panels.md#console).

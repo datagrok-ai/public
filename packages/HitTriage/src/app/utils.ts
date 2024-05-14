@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {ComputeQueryMolColName} from './consts';
+import {CampaignJsonName, ComputeQueryMolColName} from './consts';
+import {AppName, CampaignsType} from './types';
+import {_package} from '../package';
 
 export const toFormatedDateString = (d: Date): string => {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
@@ -110,3 +112,21 @@ export async function joinQueryResults(df: DG.DataFrame, molColName: string, qRe
   const newColNames = qRes.columns.names().filter((name) => name !== ComputeQueryMolColName);
   df.join(qRes, [molColName], [resOriginalCol.name], undefined, newColNames, undefined, true);
 };
+
+export async function loadCampaigns<T extends AppName>(
+  appName: T, deletedCampaigns: string[],
+): Promise<{[name: string]: CampaignsType[T]}> {
+  const campaignFolders = (await _package.files.list(`${appName}/campaigns`))
+    .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
+  const campaignNamesMap: {[name: string]: CampaignsType[T]} = {};
+  for (const folder of campaignFolders) {
+    try {
+      const campaignJson: CampaignsType[T] = JSON.parse(await _package.files
+        .readAsText(`${appName}/campaigns/${folder.name}/${CampaignJsonName}`));
+      campaignNamesMap[campaignJson.name] = campaignJson;
+    } catch (e) {
+      continue;
+    }
+  }
+  return campaignNamesMap;
+}

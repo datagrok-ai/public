@@ -32,7 +32,7 @@
 1. Open **Chem | Help**
 
 * "Help view" is open
-* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
+* Toolbox shows help structure in tree
 * Current page ([Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)) is highlighted in the tree
 
 1. Go to another help page through links on [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)
@@ -47,7 +47,7 @@
 1. Open **Help | About**
 
 * "Help view" is open
-* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
+* Toolbox shows help structure in tree
 * Current page ("Data Grok" main page) is highlighted in tree
 
 1. Repeat steps 9-11 for help view from **Help | About**
@@ -63,17 +63,17 @@
 1. Open **Tools | Scripting | Browse Scripts**
 
 * "Scripting Browser" is open
-* Context help switch to [Scripting](../../compute/scripting.md) page
+* Context help switch to [Scripting](../../compute/scripting/scripting.mdx) page
 
 1. Click on "Clone and detach" button on context help window
 
-* Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
-  on [Context Panel](../../datagrok/navigation.md#context-panel)
+* Current page ([Scripting](../../compute/scripting/scripting.mdx)) is fixed by separate window
+  on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Open **Admin | Data Queries**
 
 * "Queries Browser" is open
-* Context help switch to [Scripting](../../compute/scripting.md) page
+* Context help switch to [Scripting](../../compute/scripting/scripting.mdx) page
 * [Scripting](../features /scripting) page help page remains on fixed window
 
 1. Open various modules and components of platform (dialogs, views, entities, features, etc.)
@@ -85,5 +85,5 @@
 1. Click on "Open in new window" button on context help window
 
 * "Help view" is open
-* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
+* Toolbox shows help structure in tree
 * Current page of context help is highlighted in tree

@@ -14,7 +14,7 @@ some of the features that can be controlled by the IT:
   * Role- and group-based privileges
   * Dataset sharing policies
 * [Audit](../../../govern/audit.md)
-* Managing [network file shares](../../../access/files/files.mdx)
+* Managing [network file shares](../../../access/files/files.md)
 * Managing [database connections](../../../access/access.md#data-connection)
   and [queries](../../../access/access.md#data-query)
 * Data Storage

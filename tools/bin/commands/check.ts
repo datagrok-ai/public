@@ -205,9 +205,10 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       let value = true;
       let message = '';
 
-      if (tags == null || tags.filter((t) => t.startsWith('fileViewer')).length < 2) {
+      // TODO: GROK-15398: Fix file viewer check in grok check
+      if (tags == null || (tags.length !== 1 || tags[0] !== 'fileViewer')) {
         value = false;
-        message += 'File viewers must have at least two special tags: "fileViewer" and "fileViewer-<extension>"\n';
+        message += 'File viewers must have only one tag: "fileViewer"\n';
       }
 
       if (inputs.length !== 1 || inputs[0].type !== 'file') {

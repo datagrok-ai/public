@@ -241,9 +241,9 @@ export class SurfacePlot extends EChartViewer {
     }
   }
 
-  // _testColumns() {
-  //   return this.dataFrame.columns.toList().length >= 3;
-  // }
+  _testColumns() {
+    return this.dataFrame.columns.toList().length >= 3;
+  }
 
   _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 

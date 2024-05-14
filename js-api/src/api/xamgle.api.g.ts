@@ -42,6 +42,9 @@ export interface SettingsInterface {
   /// Always show filters icons, not only on hover
   showFiltersIconsConstantly: boolean;
 
+  /// Determines when to show range sliders
+  showRangeSlidersOnViewers: string;
+
   /// Auto-apply existing layout after selected rows are extracted
   applyLayoutWhenExtractingRows: boolean;
 

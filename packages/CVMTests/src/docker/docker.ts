@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import {delay, category, expect, test, expectObject, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
-import {dapi} from "datagrok-api/grok";
 
 category('Packages: Docker', () => {
   const containerOnDemandName: string = 'Cvmtests-docker-test1';
@@ -25,11 +24,11 @@ category('Packages: Docker', () => {
     response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=-0.01244');
     // response from docker
     expect(response.status, 500);
-    await dapi.docker.dockerContainers.stop(container.id, true);
+    await grok.dapi.docker.dockerContainers.stop(container.id, true);
     response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=4');
     // response from server, container status is stopped
     expect(response.status, 400);
-    await dapi.docker.dockerContainers.run(container.id);
+    await grok.dapi.docker.dockerContainers.run(container.id);
   }, {timeout: 60000});
 
   test('Container timeout', async () => {

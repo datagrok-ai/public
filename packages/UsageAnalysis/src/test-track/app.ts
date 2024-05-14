@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getIcon, getStatusIcon, Status, colors, PASSED, FAILED, SKIPPED} from './utils';
+import {colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status} from './utils';
 import {_package} from '../package';
 
 const NEW_TESTING = 'New Testing';
@@ -93,9 +93,10 @@ export class TestTrack extends DG.ViewBase {
       const path = row.get('path');
       const status: Status = row.get('status');
       const reason: string = row.get('reason');
-      const el: TestCase = {name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(this.getReason(reason), 'tt-reason')};
-      this.map[path] = el;
+      this.map[path] = {
+        name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
+        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(this.getReason(reason), 'tt-reason')
+      };
     }
     const files = await filesP;
     const p: Promise<void>[] = [];
@@ -470,4 +471,4 @@ export class TestTrack extends DG.ViewBase {
       e.preventDefault();
     };
   }
-};
+}

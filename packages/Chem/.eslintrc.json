@@ -16,7 +16,7 @@
     "no-irregular-whitespace": "error",
     "no-unexpected-multiline": "error",
     "valid-jsdoc": [
-      "error",
+      "off",
       {
         "requireParamDescription": false,
         "requireReturnDescription": false,
@@ -147,10 +147,10 @@
       "error",
       2
     ],
-    "max-len": [
-      "error",
-      120
-    ],
+    "max-len": ["error", 120],
+    "max-params": ["warn", 7],
+    "max-lines-per-function": ["warn", 100],
+    "max-lines": ["warn", 300],
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",

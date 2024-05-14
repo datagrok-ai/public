@@ -7,7 +7,7 @@ import wu from 'wu';
 
 import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {

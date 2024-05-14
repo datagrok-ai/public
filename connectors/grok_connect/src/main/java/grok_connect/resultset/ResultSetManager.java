@@ -1,6 +1,7 @@
 package grok_connect.resultset;
 
 import grok_connect.managers.ColumnManager;
+import org.slf4j.Logger;
 import serialization.Column;
 import java.sql.ResultSetMetaData;
 
@@ -21,8 +22,9 @@ public interface ResultSetManager {
      *
      * @param o Object from ResultSet
      * @param index Column index
+     * @param queryLogger Logger
      */
-    void processValue(Object o, int index);
+    void processValue(Object o, int index, Logger queryLogger);
 
     /**
      * Return filled Columns

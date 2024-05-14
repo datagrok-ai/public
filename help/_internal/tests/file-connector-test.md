@@ -19,7 +19,7 @@ indexed and can be browsed.
 
 * There is files and directories from ```.../data/demo```
 
-1. Select "northwind" folder for the [Context Panel](../../datagrok/navigation.md#context-panel)
+1. Select "northwind" folder for the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab folder can be downloaded locally as zip-archive
@@ -32,11 +32,11 @@ indexed and can be browsed.
 
 * There is structured list of files and folders inside "northwind" folder
 
-1. Select "Northwind.xslx" file for the [Context Panel](../../datagrok/navigation.md#context-panel)
+1. Select "Northwind.xslx" file for the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab file can be downloaded locally, downloaded as zip-archive or opened
-  in [Workspace](../../datagrok/workspace.md)
+  in [Browse](../../datagrok/navigation/views/browse.md)
 
 1. Click "Download" action
 
@@ -48,7 +48,7 @@ indexed and can be browsed.
 
 1. Click "Open" action
 
-* File opened in [Workspace](../../datagrok/workspace.md)
+* File opened in [Browse](../../datagrok/navigation/views/browse.md)
 * Each sheet is opened as separate table
 
 1. Expand "Northwind.xslx" file in Source tree
@@ -56,19 +56,19 @@ indexed and can be browsed.
 * There is list of sheets inside file
 * Each sheet presented as separate table
 
-1. Select "Categories" sheet for the [Context Panel](../../datagrok/navigation.md#context-panel)
+1. Select "Categories" sheet for the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Details" tab shows number of rows and columns
-* In "Actions" tab sheet can be opened as separate table in [Workspace](../../datagrok/workspace.md)
+* In "Actions" tab sheet can be opened as separate table in [Browse](../../datagrok/navigation/views/browse.md)
 
 1. Click "Open" action
 
-* "Categories" table opened in [Workspace](../../datagrok/workspace.md)
+* "Categories" table opened in [Browse](../../datagrok/navigation/views/browse.md)
 
 1. Expand "Categories" sheet in Source tree
 
 * There is list of columns in "Categories" table
-* You can find columns data type selecting it on [Context Panel](../../datagrok/navigation.md#context-panel)
+* You can find columns data type selecting it on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 ## Connection creating
 
@@ -123,7 +123,7 @@ indexed and can be browsed.
 
 1. Run "Test Query" from Source Tree (by double-clicking)
 
-* "Products" table is added to [Workspace](../../datagrok/workspace.md)
+* "Products" table is added to [Browse](../../datagrok/navigation/views/browse.md)
 
 ## Common scenarios
 

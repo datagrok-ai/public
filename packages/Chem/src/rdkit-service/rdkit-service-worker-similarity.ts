@@ -81,6 +81,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
               rdMol?.delete();
               throw Error('Unknown fingerprint type: ' + fingerprintType);
           }
+          //only first N (MAX_MOL_CACHE_SIZE) molecules of the dataset are added to cache
           addedToCache = this.addToCache(rdMol);
         } catch {
           // nothing to do, fp is already null

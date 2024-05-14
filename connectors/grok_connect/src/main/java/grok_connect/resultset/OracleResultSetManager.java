@@ -2,7 +2,6 @@ package grok_connect.resultset;
 
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.OracleBigIntColumnManager;
-import grok_connect.managers.string_column.DefaultStringColumnManager;
 import serialization.BigIntColumn;
 import serialization.Column;
 import serialization.IntColumn;
@@ -29,23 +28,17 @@ public class OracleResultSetManager extends DefaultResultSetManager {
     }
 
     @Override
-    public void processValue(Object o, int index) {
-        if (isInit) {
-            Column currentColumn = columns[index - 1];
-            ColumnManager<?> currentManager = currentManagers[index - 1];
-            if (currentColumn.getType().equals(Types.INT) && currentManager.getClass().equals(OracleBigIntColumnManager.class)) {
-                setBigIntValue(o, index, currentColumn);
-            } else
-                currentColumn.add(currentManager
-                        .convert(o, columnsMeta[index - 1]));
-        } else
-            throw new RuntimeException("ResultSetManager should be init");
+    protected void setValue(Object o, int index) {
+        Column column = columns[index - 1];
+        if (column.getType().equals(Types.INT) && currentManagers[index - 1].getClass().equals(OracleBigIntColumnManager.class))
+            setBigIntValue(o, index, column);
+        else
+            super.setValue(o, index);
     }
-
 
     private void setBigIntValue(Object o, int index, Column column) {
         if (o == null)
-            column.add(o);
+            column.add(null);
         else {
             String str = o.toString();
             BigInteger bigIntValue = new BigInteger(str);

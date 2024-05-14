@@ -2,7 +2,7 @@ const df = grok.data.demo.demog();
 grok.shell.addTable(df);
 
 const inputs = [
-  ui.input.int('int', {value: 5, nullable: false, min: 2, max: 8, showPlusMinus: true}),
+  ui.input.int('int', {value: 6, nullable: false, min: 2, max: 12, step: 2, showPlusMinus: true}),
   // ui.input.bigInt('bigInt', {value: '12345678901234567890'}), // doesn't work yet with value
   ui.input.float('float', {value: 6.5758, min: 0, max: 10, step: 0.5, format: '#0.000', showSlider: true}),
   ui.input.qNum('qNum', {value: 5.959}),
@@ -33,4 +33,7 @@ const inputs = [
   await ui.input.markdown('markdown'),
 ];
 
-grok.shell.newView('Inputs', [ui.form(inputs)]);
+const form = DG.InputForm.forInputs(inputs);
+form.onInputChanged.subscribe((ed) => grok.shell.info(`Input - ${ed.args.input.caption}, new value - ${ed.args.input.value}`));
+
+grok.shell.newView('Inputs', [form.root]);

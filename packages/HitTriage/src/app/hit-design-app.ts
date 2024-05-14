@@ -21,6 +21,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: HitDesignInfoView;
+  get infoView(): HitDesignInfoView {return this._infoView;}
   private _designView?: DG.TableView;
   public _submitView?: HitDesignSubmitView;
   private _tilesView?: HitDesignTilesView;
@@ -59,10 +60,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
           this.setBaseUrl();
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-          if (grok.shell.v?.name === this.currentTilesViewId)
+          if (this.currentTilesViewId && grok.shell.v?.name === this.currentTilesViewId)
             await this._tilesView?.render();
-          else
-            this._tilesView?.destroy();
+          else {
+            const sketchStateString = this._tilesView?.sketchStateString;
+            if (sketchStateString && sketchStateString != '' && this.campaign)
+              this.campaign.tilesViewerFormSketch = sketchStateString;
+          }
 
           const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
             grok.shell.v = this.mainView;
@@ -120,7 +124,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     grok.shell.windows.showHelp = false;
 
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
-    const designV = grok.shell.addView(this.designView);
+    const designV = this.designView;
     this.currentDesignViewId = designV.name;
     this.setBaseUrl();
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
@@ -145,7 +149,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
-    const view = DG.TableView.create(this.dataFrame!, false);
+    const view = grok.shell.addTableView(this.dataFrame!);
     this._designViewName = this.campaign?.name ?? this._designViewName;
     view.name = this._designViewName;
     this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
@@ -158,9 +162,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       // if (layout)
       //   view.loadLayout(layout);
 
-      if (this._campaign?.layout) {
+      const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
+      if (layoutViewState) {
         try {
-          const layout = DG.ViewLayout.fromViewState(this._campaign.layout);
+          const layout = DG.ViewLayout.fromViewState(layoutViewState);
           view.loadLayout(layout);
         } catch (e) {
           console.error(e);
@@ -416,14 +421,16 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const tilesButton = ui.bigButton('Progress tracker', () => {
-          if (!this.currentTilesViewId || !grok.shell.view(this.currentTilesViewId)) {
-            this._tilesView = new HitDesignTilesView(this);
-            this._tilesView.parentCall = this.parentCall;
-            this._tilesViewTab = grok.shell.addView(this._tilesView);
-            this.currentTilesViewId = this._tilesViewTab.name;
-            this._tilesView.onActivated();
-          } else
-            grok.shell.v = grok.shell.view(this.currentTilesViewId)!;
+          if (this.currentTilesViewId && grok.shell.view(this.currentTilesViewId))
+            grok.shell.view(this.currentTilesViewId)?.close();
+
+          this._tilesView = new HitDesignTilesView(this);
+          this._tilesView.parentCall = this.parentCall;
+          this._tilesViewTab = grok.shell.addView(this._tilesView);
+          this.currentTilesViewId = this._tilesViewTab.name;
+          this._tilesView.onActivated();
+
+          grok.shell.v = grok.shell.view(this.currentTilesViewId)!;
         });
 
         const submitButton = ui.bigButton('Submit', () => {
@@ -561,6 +568,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const colTypeMap: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
+    const sketchStateString = this._tilesView?.sketchStateString ?? this.campaign?.tilesViewerFormSketch ?? undefined;
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
@@ -572,8 +580,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       filteredRowCount: enrichedDf.filter.trueCount,
       savePath: this._filePath,
       columnTypes: colTypeMap,
+      tilesViewerFormSketch: sketchStateString,
     };
-    console.log(this._filePath);
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();

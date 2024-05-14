@@ -1,0 +1,127 @@
+---
+title: "Under the hood"
+sidebar_position: 5
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+### Turning code into a Datagrok script
+
+Briefly, you only need to do the following:
+
+* Create a new script file in the
+  [Datagrok script editor](./getting-started#working-with-datagrok-script-editor)
+* Write the code in any [supported language](./getting-started#supported-languages).
+* Add **header**: the set of annotation comments specifying the script language, tags,
+  input and output variables.
+
+That's all.
+
+### Runtime environment
+
+For each language, Datagrok uses a predefined header and creates an environment with the set of pre-installed packages.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="python" label="Python" default>
+```
+
+```python
+import os
+import io
+import json
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="r" label="R">
+```
+
+```r
+require(httr)
+require(repr)
+require(data.table)
+require(R.utils)
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="octave" label="Octave">
+```
+
+Octave scripts run in a separate container on server. This container has following Octave packages pre-installed:
+
+* [symbolic](https://gnu-octave.github.io/packages/symbolic/)
+* [optim](https://gnu-octave.github.io/packages/optim/)
+
+Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="julia" label="Julia">
+```
+
+```julia
+using HTTP
+using DataFrames
+using CSV
+using Compat
+using MbedTLS
+using Dates
+using JSON
+```
+
+```mdx-code-block
+</TabItem>
+
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import * as OCL from 'openchemlib/full.js';
+import * as rxjs from 'rxjs';
+import * as rxjs.operators from 'rxjs/operators';
+import * as $ from 'cash-dom';
+import * as dayjs from 'dayjs';
+import * as wu from 'wu';
+import * as exceljs from 'ExcelJS';
+import * as html2canvas from 'html2canvas';
+```
+
+```mdx-code-block
+</TabItem>
+
+</Tabs>
+```
+
+### Environment isolation
+
+You can specify an environment for the script to use,
+including the language version and a set of libraries.
+
+Datagrok uses [Conda](https://docs.Conda.io/en/latest/)
+as the environment management system.
+A Conda environment:
+
+- isolates each script run,
+- resolves dependencies,
+- and takes time to be created before a script run.
+
+Later, the script uses the pre-created environment with *no delay* for resolving dependencies.
+
+In Datagrok, Conda environment configuration can be specified either [right inside the script](./Scripting features/specify-env.mdx),
+or as [part of a package](../scripting/Scripting%20features/store-env-in-code.mdx).
+

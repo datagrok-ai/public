@@ -199,22 +199,14 @@ export function getMarkedString(curIdx: number, queryIdx: number, strToBeMarked:
       e.stopImmediatePropagation();
       e.preventDefault();
 
+      stemCash.filters = grok.shell.getTableView(df.name).getFiltersGroup();
+
       setTimeout(() => {
-        if (!stemCash.filters) {
-          const view = grok.shell.getTableView(df.name);
-          stemCash.filters = view.filters() as DG.FilterGroup;
-          stemCash.filters.updateOrAdd({
-            type: 'text',
-            column: stemCash.colName,
-            gridNames: [word],
-          });
-        } else {
-          const state = stemCash.filters.getStates(stemCash.colName!, 'text')[0];
-          //@ts-ignore
-          state.gridNames.push(word);
-          stemCash.filters.updateOrAdd(state as DG.FilterState);
-        }
-      }, 500);
+        const state = stemCash.filters!.getStates(stemCash.colName!, 'text')[0];
+        // @ts-ignore
+        state.gridNames.push(word);
+          stemCash.filters!.updateOrAdd(state as DG.FilterState);
+      }, 50);
     };
     ui.tooltip.bind(p, 'Click to navigate. Right-click to add to filters');
 

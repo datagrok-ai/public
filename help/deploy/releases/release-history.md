@@ -6,20 +6,82 @@ position: 6 # float position is supported
 
 ## Latest version
 
-| Service                                                   | Docker Image                                                                                     |
-|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.1](https://hub.docker.com/r/datagrok/datagrok)                           |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                   |
-| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                    |
-| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                    |
-| [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)            |
-| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                      |
-| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                         |
+| Service                                                   | Docker Image                                                                                      |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.2](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
+| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
+| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
-- [Versioning policy](versioning-policy.md)
+- [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2024-05-08 1.18.6
+
+### Fixes:
+
+* FormViewer: fixed an issue with dragging column headers
+* Scripting: Clear temporary token for input files
+
+
+## 2024-05-01 1.18.5
+
+### Improvemets:
+
+* Error handling: "Report an error" dialog when you click on exclamation point.
+* Sticky meta: improve visibility for users:
+   * Show preview for entity types
+   * Support multi-values edit 
+   * Entity type settings with TabControl 
+   * Better type selector for schema editor.
+* JS API for entity properties/types/schemas.
+* [#2733](https://github.com/datagrok-ai/public/issues/2733): Viewers | Legend: provide diverse palette and markers' shape.
+* [#2742](https://github.com/datagrok-ai/public/issues/2742): Viewers: Indicate the selected column in the column selector.
+* [#2772](https://github.com/datagrok-ai/public/issues/2772): Pivot table: add a property to hide sparklines.
+* GROK-14412: Trellis plot | Column selectors: ESC should close the popup.
+
+### Fixes:
+
+* Azure blob: directory shown as a file.
+* GROK-15190: Scatterplot, line chart: updating formula lines does not work for those specified via a dataframe.
+* GROK-15249: Error when pressing Column Properties on a programmatically created Grid.
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases.
+* [#2644](https://github.com/datagrok-ai/public/issues/2644): Forms | Next row button: incorrect behavior after sorting the grid.
+* [#2749](https://github.com/datagrok-ai/public/issues/2749): Line chart and Trellis plot: '+' icon is missing.
+* [#1092](https://github.com/datagrok-ai/public/issues/1092): Multiple issues with Conditional Color Dialog.
+* [#2764](https://github.com/datagrok-ai/public/issues/2764): Box plot: wrong area is selected with shift-drag when categories at the left are filtered out.
+* [#2509](https://github.com/datagrok-ai/public/issues/2509): Pinned columns in multiple views for the same table cause performance issues in some cases.
+* [#2782](https://github.com/datagrok-ai/public/issues/2782): Line chart: incorrect color-coding while setting filters.
+* [#2636](https://github.com/datagrok-ai/public/issues/2636): Trellis plot | Bar chart: contrast color for blue instead of black works when there is no Stack set to the bar chart inner viewer.
+* [#2793](https://github.com/datagrok-ai/public/issues/2793): Scatter plot with 'filter by zoom': filtering by scatter plot is shown in filter panel's '?' after resetting in some cases.
+
+
+## 2024-04-05 1.18.4
+
+### Addressed Issues
+
+* (Bug) GROK-15334: Large file open fails (WIP)
+
+
+## 2024-03-28 1.18.3
+
+### Addressed Issues
+
+* (Bug) GROK-15300: Table duplicates after changing ID 
+
+
+## 2024-03-19 1.18.2
+
+### Addressed Issues
+
+* (Bug) GROK-15215: Async package functions don't work in Add new column 
+* (Bug) GROK-15216: Views migration didn't run 
+* (Bug) GROK-15166: Sunburst: error when trying to switch the Table property 
 
 
 ## 2024-03-14 1.18.1
@@ -151,7 +213,7 @@ Datagrok 1.18 release focuses on usability improvements and stability:
 * Scripting | Variables: added the scrollbar to the variables window.
 *  API to send an email from DG.
 
-#### [JS API](../../../develop/js-api.md)
+#### JS API
 
   * ` Column.getNumber()` method.
   * Dynamical dependencies load for `Utils.loadJsCss(files)`.
@@ -336,7 +398,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
     * [#2316](https://github.com/datagrok-ai/public/issues/2316): Errors on combining scaffold tree with some other filters.
     * [#2359](https://github.com/datagrok-ai/public/issues/2359): For some filters the item search is not working when another filter search is open
     * The min and max values for dates do not fit the entire value.
-* For [Scatter plot](../../visualize/viewers/scatter-plot.mdx) fixed:
+* For [Scatter plot](../../visualize/viewers/scatter-plot.md) fixed:
   * [#2285](https://github.com/datagrok-ai/public/issues/2285): Default marker size is not changed on moving slider.
   * [#2408](https://github.com/datagrok-ai/public/issues/2408): Incorrect tooltip for 'zoom and filter'.
   * [#2402](https://github.com/datagrok-ai/public/issues/2402): Min/max values are not saved/restored in the layout.
@@ -402,7 +464,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * Ability to set choice items and values separately.
 * Option to allow `DG.Accordion` panes dragging.
 
-#### [JS API](../../../develop/packages/js-api.md)
+#### JS API
 
 * [#2118](https://github.com/datagrok-ai/public/issues/2118): API configuration to define layout import settings 
  * Capability to set grid cell value with `onCellValueEdited` event.
@@ -490,7 +552,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 * Improved data streaming, leading to major performance improvements for small queries.
 * Client-side caching of function results, allowing to save time and server capacity when executing immutable functions and queries.
-* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.mdx#debug-query).
+* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.md#debug-query).
 * Simplified and updated Datagrok local installation, now available with a [one-click script](https://datagrok.ai/help/develop/admin/docker-compose).
 * Self-adjustable viewer layouts that keep viewers usable even in a small window.
 * [Fuzzy text filter](../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.
@@ -519,7 +581,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue, which caused error message when called through `grok.events.onContextMenu` context.
   * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views.
   * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   
   * [#2089](https://github.com/datagrok-ai/public/issues/2089): Added an option to change Scatter plot and Trellis plot's mouse drag action from panning to selection. For trellis plot with an inner scatter plot viewer, the default value is `selection`.
   *  [#2108](https://github.com/datagrok-ai/public/issues/2108): Improved behavior of 'Dot' marker type on Scatter plot.
@@ -671,7 +733,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * [Filter Panel](../../visualize/viewers/filters.md):
   * Added the ability to sort the default filters by #categories.
   * Fixed [#1837](https://github.com/datagrok-ai/public/issues/1837): Filters cannot be enabled if all filters were disabled in another view
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
    * [#1746](https://github.com/datagrok-ai/public/issues/1746): Added the ability to set date for the Min and Max values on axes.
    * [#1882](https://github.com/datagrok-ai/public/issues/1882): Reset the Min and Max values on column change.
    * Fixed:
@@ -916,7 +978,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
     * Filters re-ordering dialog is not opened if a custom filter was added to filters panel
     * The usability of range filters when min/max values existing in the table were shown instead of actually set range
     * Slow filtering if there are multiple bar charts on several views.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   * Now it displays legend labels for conditional coloring.
   * Added date picker for X and Y axes min/max values.
   * Harmonized the scatter plot context menu:
@@ -971,7 +1033,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 ### Data Access
 
 * Improvements:
-  * Added the support of [CoreWeave Object Storage](../../access/databases/connectors/coreweave.md).
+  * Added the support of [CoreWeave Object Storage](../../access/files/shares/coreweave.md).
   * Conducted Postgres harmonization, which includes complete types support and the addition of regex support in the string pattern for the connector.
   * The MySQL connector now fully supports all types.
   * Added the ability to display SQL views along with tables.
@@ -1337,7 +1399,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Chem: updated ml dependency, bump version
 * Ketcher: updated utils dependence, bump version
 * Charts: restructured the package
-* Adjusted the type for Entity.getProperties() to {[index: string]: any}
+* Adjusted the type for Entity.getProperties() to \{[index: string]: any}
 * Issue #1492: Chem | Elemental analysis: malformed data in dataset handling
 * Chem: bump new version
 * Tooltip.show now accepts String | HtmlElement
@@ -1723,7 +1785,7 @@ Here are some of the biggest improvements:
     configuration isn't applied to the column in the grid.
   * Fixed changing the linear color scheme issue. Now the null values don't get colored.
   * Fixed inconsistent behavior of color coding checkboxes in the columns context menu.
-* [Scatter plot](../../visualize/viewers/scatter-plot.mdx):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   * Added the exact min/max of the column on the axes' ticks.
   * Context menu: marker section doesn't close on click.
   * Fixed axis buffer and filters interaction.
@@ -2495,7 +2557,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Grid's Hamburger menu jumps around cursor when resizing columns
 * Library gridext: Enabled pinned column resize functionality
 * GIS: detectors optimization, colorcoding issue fixed
-* (Bug) Parameterized Queries: Parameters with {choices} not working
+* (Bug) Parameterized Queries: Parameters with \{choices} not working
 * bio lib: Calculate .alphabetSize tag on demand
 * Closes #1171 Bio: enhance detectMacromolecule speed
 * Library gridext: Bumping Up the library's version
@@ -6549,7 +6611,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Histogram: Opacity for bands has no effect
 * (Bug) Line Chart: Exception while activating multiAxis & overviewType at the same time
 * (Bug) Line Chart: Previous renders of the chart are visible on the canvas
-* (Bug) Line Chart: X axis overlays on lines when { overviewType: "Line Chart" }
+* (Bug) Line Chart: X axis overlays on lines when \{ overviewType: "Line Chart" }
 * AppEvents.lastError: simplified the code and fixed a bug
 * Updated package-locks.
 * (Bug) Filters: show header property does not work
@@ -6604,7 +6666,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed grok_shared build
 * (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog
 * (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters
-* (Bug) Filters: ​double-click on checkbox: weird characters are visible
+* (Bug) Filters:  double-click on checkbox: weird characters are visible
 * (Bug) Scatter Plot: Custom linear coloring is not propagated
 * NPM repositories: add an option to skip installation of deployed packages during repository publication
 * Push version from package.json for master branch

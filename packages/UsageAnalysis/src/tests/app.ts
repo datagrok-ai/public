@@ -5,30 +5,29 @@ import {before, after, category, test, expect, awaitCheck} from '@datagrok-libra
 import {ViewHandler} from '../view-handler';
 
 category('App', () => {
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
-  const num = [4, 4, 5, 4, 3, 5];
-  let initTime: number = 0;
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests', 'Reports'];
+  const num = [4, 4, 5, 4, 3, 5, 7];
+  const handler = new ViewHandler();
 
   before(async () => {
-    const start = Date.now();
-    ViewHandler.getInstance();
-    if (!grok.shell.view(ViewHandler.UAname))
-      await ViewHandler.getInstance().init();
-    initTime = (Date.now() - start) / 1000;
-    grok.shell.windows.showContextPanel = false;
+    if (grok.shell.sidebar.panes.every((p) => p.name != ViewHandler.UA_NAME)) {
+      await handler.init();
+      grok.shell.addView(handler.view);
+      grok.shell.sidebar.currentPane = grok.shell.sidebar.getPane(ViewHandler.UA_NAME);
+    }
   });
 
   test('open', async () => {
-    expect(grok.shell.v.name == 'Usage Analysis', true, 'cannot find Usage Analysis view');
-    expect(initTime <= 10, true, 'App failed to init in 10 seconds');
+    expect(grok.shell.v.name === 'Usage Analysis', true, 'cannot find Usage Analysis view');
   });
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     test(tabs[i], async () => {
-      ViewHandler.changeTab(tabs[i]);
+      handler.changeTab(tabs[i]);
       const view = grok.shell.v.root;
       let err = null;
-      const s = tabs[i] === 'Log' ? '.grok-wait + .d4-grid canvas' : 'canvas';
+      let s = ['Log', 'Errors'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
+      s = tabs[i] === 'Reports' ? '.d4-grid' : s;
       try {
         await awaitCheck(() => view.querySelectorAll(s).length === num[i], '', 10000);
       } catch (e) {

@@ -6,7 +6,7 @@ import {
   CandidateType, GAP_SYMBOL,
   ISeqSplitted,
   MonomerFreqs,
-  SeqColStats,
+  SeqColStats, SeqSplittedBase,
   SplitterFunc
 } from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION} from './consts';
@@ -21,20 +21,28 @@ import {UnknownSeqPalettes} from '../../unknown';
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
 
-  get canonicals(): Iterable<string> { return this.mList; }
+  get canonicals() { return this.mList; }
 
-  get originals(): Iterable<string> { return this.mList; }
+  get originals() { return this.mList; }
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
   }
 
-  getCanonical(posIdx: number): string { return this.mList[posIdx]; }
+  getCanonical(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.mList[posIdx];
+  }
 
-  getOriginal(posIdx: number): string { return this.mList[posIdx]; }
+  getOriginal(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.mList[posIdx];
+  }
 
   constructor(
-    private readonly mList: string[],
+    private readonly mList: SeqSplittedBase,
     private readonly gapOriginalMonomer: string
   ) {}
 }
@@ -42,22 +50,27 @@ export class StringListSeqSplitted implements ISeqSplitted {
 export class FastaSimpleSeqSplitted implements ISeqSplitted {
   get length(): number { return this.seqS.length; }
 
-  get canonicals(): Iterable<string> { return this.seqS; }
+  get canonicals() { return this.seqS; }
 
-  get originals(): Iterable<string> { return this.seqS; }
+  get originals() { return this.seqS; }
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === GapOriginals[NOTATION.FASTA];
   }
 
   getCanonical(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
     if (this.isGap(posIdx))
       return GAP_SYMBOL;
-
     return this.seqS[posIdx];
   }
 
-  getOriginal(posIdx: number): string { return this.seqS[posIdx]; }
+  getOriginal(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.seqS[posIdx];
+  }
 
   constructor(
     private readonly seqS: string
@@ -134,7 +147,21 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
     if (!seq)
       return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
-      const mmList: string[] = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
+      let mmList: string[];
+      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
+      if (limit !== undefined) {
+        mRe.lastIndex = 0;
+        mmList = new Array<string>(limit);
+
+        let mEa: RegExpExecArray | null = null;
+        let mI = 0;
+        while ((mEa = mRe.exec(seq)) !== null && mI < limit) {
+          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
+        }
+        mmList.splice(mI);
+      } else
+        mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
+
       return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.SEPARATOR]);
     }
   };

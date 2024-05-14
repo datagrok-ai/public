@@ -13,7 +13,7 @@ structural features essential for pharmaceutical activity. Another scaffold repr
 proposed by Bemis and Murcko. This method employs a more systematical way to dissect a molecule into four parts: ring
 systems, linkers, side chains, and the Murcko framework that is the union of ring systems and linkers in a molecule.
 
-To convert a column with molecules to Murcko scaffolds, use #{x.ChemMurckoScaffolds} function.
+To convert a column with molecules to Murcko scaffolds, use #\{x.ChemMurckoScaffolds} function.
 
 Here is how the resulting scaffolds look like:
 ![Murcko Scaffolds](../../../../../uploads/chem/murcko-scaffolds.png "Murcko Scaffolds")

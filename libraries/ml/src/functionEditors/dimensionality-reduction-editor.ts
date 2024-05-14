@@ -81,7 +81,7 @@ export class DimReductionBaseEditor {
     };
     dbScanParams = new DBScanOptions();
     similarityMetricInput!: DG.InputBase<string | null>;
-    get algorithmOptions(): IUMAPOptions | ITSNEOptions {
+    get algorithmOptions(): (IUMAPOptions | ITSNEOptions) & Options {
       const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
       const options: any = {};
       Object.keys(algorithmParams).forEach((key: string) => {
@@ -285,20 +285,27 @@ export class DimReductionBaseEditor {
     }
 
     private createAlgorithmSettingsDiv(
-      paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions | DBScanOptions
-    ): HTMLElement {
+      paramsForm: HTMLElement, params: UMAPOptions | TSNEOptions | DBScanOptions): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
-        const param: IDimReductionParam | IDimReductionParam<string> = (params as any)[it];
+        const param: IDimReductionParam | IDimReductionParam<string> | IDimReductionParam<boolean> =
+          (params as any)[it];
+
         const input = param.type === 'string' ?
           ui.stringInput(param.uiName, param.value ?? '', () => {
             param.value = (input as DG.InputBase<string>).value;
-          }) :
-          ui.floatInput(param.uiName, param.value as any, () => {
-            param.value = input.value;
-          });
-        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
+          }) : param.type === 'boolean' ?
+            ui.boolInput(param.uiName, param.value ?? false, () => {
+              param.value = (input as DG.InputBase<boolean>).value;
+            }) :
+            ui.floatInput(param.uiName, param.value as any, () => {
+              param.value = input.value;
+            });
         paramsForm.append(input.root);
+        if (param.disable) {
+          input.enabled = false;
+          ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
+        } else { ui.tooltip.bind(input.input ?? input.root, param.tooltip); }
       });
       return paramsForm;
     }

@@ -46,7 +46,7 @@ datetime types. It is possible to select and filter the values found
 * After entering a value in the [search](data-search.md) field, rows with the found cells are added to
   [filter](../visualize/viewers/filters.md) automatically
 
-1. Use search [patterns](data-search-patterns.md)  for numerical values (*">"*, *"<"*. *"<="*, *">
+1. Use search [patterns](data-search-patterns.md)  for numerical values (*">"*, *"<"*. *"\<="*, *">
    ="*, *"range"*)
 
 * Numerical values found correspond to the entered [pattern](data-search-patterns.md)

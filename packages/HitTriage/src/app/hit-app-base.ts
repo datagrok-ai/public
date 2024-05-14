@@ -10,15 +10,24 @@ export class HitAppBase<T> {
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: Promise<ComputeFunctions>;
+  // public layouts: Promise<DG.ViewLayout[]>;
   constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
     this.computeFunctions = new Promise<ComputeFunctions>(async (resolve) => {
-      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+      const functions = DG.Func.find({tags: [HitTriageComputeFunctionTag]})
+      //TODO: remove this when everyone is upgraded to support DG.FUNC.FIND returning all functions, queries and scripts
+        .filter((f) => f.type === 'function-package');
       const scripts = await grok.dapi.scripts.include('params').filter(`#${HitTriageComputeFunctionTag}`).list();
       const queries = await grok.dapi.queries.include('params,connection')
         .filter(`#${HitTriageComputeFunctionTag}`).list();
       resolve({functions, scripts, queries});
     });
+
+    // this.layouts = new Promise<DG.ViewLayout[]>(async (resolve) => {
+    //   // we need all layouts, as applicable ones might not be enaugh
+    //   const layouts = await grok.dapi.layouts.list();
+    //   resolve(layouts);
+    // });
   }
 
   public resetBaseUrl() {

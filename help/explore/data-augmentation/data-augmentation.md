@@ -47,7 +47,7 @@ do it on demand whenever the current record changes), and visualize the results 
 
 ## Info panes
 
-[Info panes](info-panels.md) provide additional information about the current context (which can be a table, a column,
+[Info panes](../../datagrok/navigation/panels/info-panels.md) provide additional information about the current context (which can be a table, a column,
 or any other [object](../../datagrok/concepts/objects.md)). Info panels are meant to be easily developed by the users of the
 platform, and shared with other users. You can use all features of the Datagrok platform, such as scripting, data
 querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
@@ -64,6 +64,6 @@ how to contribute to the public repository of scientific functions.
 
 See also:
 
-* [Info panes](info-panels.md)
+* [Info panes](../../datagrok/navigation/panels/info-panels.md)
 * [Predictive modeling](../../learn/learn.md)
 * [Public repository](../../collaborate/public-repository.md)

@@ -1,5 +1,27 @@
 # Peptides changelog
 
+## 1.17.17 (2024-05-06)
+
+Add both annotations to the active peptide selection viewer.
+
+## 1.17.16 (2024-04-29)
+
+Add thresholds to active peptide selection viewer.
+
+## 1.17.15 (2024-04-17)
+
+Cluster max activity viewer working on level of cluster, not cluster size.
+
+## 1.17.14 (2024-04-15)
+
+Fix display of the max activity vs cluster size viewer columns.
+
+## 1.17.13 (2024-04-02)
+
+### Features
+
+* Add max activity vs cluster size viewer.
+
 ## 1.17.12 (2024-03-30)
 
 ### Features

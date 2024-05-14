@@ -7,6 +7,18 @@ import wu from 'wu';
 import {Observable} from 'rxjs';
 import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
 
+export const getDefaultValue = (prop: DG.Property) => {
+  // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
+  if (prop.options?.['default'])
+    return JSON.parse(prop.options?.['default']);
+
+  const legacyDefaultValue = prop.defaultValue;
+
+  return prop.propertyType === DG.TYPE.STRING && legacyDefaultValue?
+    (legacyDefaultValue as string).substring(1, legacyDefaultValue.length - 1):
+    legacyDefaultValue;
+};
+
 export function properUpdateIndicator(e: HTMLElement, state: boolean) {
   if (state) {
     $(e).addClass('ui-box').css({'width': 'auto', 'height': 'auto'});
@@ -30,12 +42,18 @@ export const deepCopy = (call: DG.FuncCall) => {
   const deepClone = call.clone();
 
   const dfOutputs = wu(call.outputParams.values())
-    .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((output) =>
+      output.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.outputs[output.name],
+    );
   for (const output of dfOutputs)
     deepClone.outputs[output.name] = call.outputs[output.name].clone();
 
   const dfInputs = wu(call.inputParams.values())
-    .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    .filter((input) =>
+      input.property.propertyType === DG.TYPE.DATA_FRAME &&
+      !!call.inputs[input.name],
+    );
   for (const input of dfInputs)
     deepClone.inputs[input.name] = call.inputs[input.name].clone();
 
@@ -130,11 +148,10 @@ export const getDfFromRuns = (
   const uniqueRunNames = [] as string[];
   comparedRuns.forEach((run) => {
     let defaultRunName = run.options['title'] ??
-        `${run.func.name} - ${new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+        `${run.func.name} - ${getStarted(run)}`;
     let idx = 2;
     while (uniqueRunNames.includes(defaultRunName)) {
-      defaultRunName = `${run.func.name} - ${new Date(run.started.toString())
+      defaultRunName = `${run.func.name} - ${getStarted(run)})
         .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})} - ${idx}`;
       idx++;
     }
@@ -245,4 +262,13 @@ export const getDfFromRuns = (
   });
 
   return comparisonDf;
+};
+
+export const getStarted = (call: DG.FuncCall) => {
+  try {
+    return call.started.toDate()
+      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+  } catch {
+    return 'Not completed';
+  }
 };

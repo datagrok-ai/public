@@ -14,7 +14,7 @@ or [viewers](how-to/manipulate-viewers.md),
 applying [predictive models](../learn/learn.md), and
 even [building custom apps](../develop/how-to/build-an-app.md).
 
-There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
+There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting/scripting.mdx), use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications,
 use the packaging mechanism, which is the focus of this article.
 
@@ -28,7 +28,7 @@ package might contain different things:
 
 * JavaScript [functions](../datagrok/concepts/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
-* [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
+* [Scripts](../compute/scripting/scripting.mdx) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
 * [Tables](../access/files/supported-formats.md#tabular-formats), files, and other objects
 
@@ -50,10 +50,10 @@ The simplest JavaScript package consists of the following files:
 
 In addition to that, it might contain the following folders:
 
-* `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md).
+* `environments`: [environment configurations](../compute/scripting/scripting.mdx#environments)
+  for [scripts](../compute/scripting/scripting.mdx).
   Examples: [Demo]
-* `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
+* `scripts`: a collection of [scripts](../compute/scripting/scripting.mdx) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
@@ -482,7 +482,7 @@ section of the source tree by its decapitalized name.
 ### Source-based packages
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
-`api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints.
+`api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints.
 
 ### Troubleshooting debugging
 
@@ -548,7 +548,7 @@ Also, you can connect with fellow developers on either
 See also:
 
 * [Grok API](packages/js-api.md)
-* [Scripting](../compute/scripting.md)
+* [Scripting](../compute/scripting/scripting.mdx)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 

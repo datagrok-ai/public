@@ -23,5 +23,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Correlation plot](https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot)

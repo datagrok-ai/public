@@ -27,14 +27,14 @@ export class UaView extends DG.ViewBase {
     this.box = true;
   }
 
-  tryToinitViewers(): void {
+  async tryToinitViewers(path?: string): Promise<void> {
     if (!this.initialized) {
       this.initialized = true;
-      this.initViewers();
+      await this.initViewers(path);
     }
   }
 
-  async initViewers(): Promise<void> {}
+  async initViewers(path?: string): Promise<void> {}
 
   switchRout(): void {}
 }

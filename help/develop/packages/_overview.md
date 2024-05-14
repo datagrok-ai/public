@@ -25,7 +25,7 @@ Datagrok runs them remotely.
 Datagrok provides two options to run the JavaScript code:
 
 * Use the built-in JavaScript editor: On the [Datagrok Public site], go to **Functions** > **
-  Scripts** > **New JavaScript Script**. The [Scripting section](../../compute/scripting.md) provides more details on using
+  Scripts** > **New JavaScript Script**. The [Scripting section](../../compute/scripting/scripting.mdx) provides more details on using
   Datagrok's JavaScript editor.
 * For reusable functions, viewers, and applications, you can [develop packages].
 

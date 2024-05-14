@@ -9,7 +9,6 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-// const {jStat} = require('jstat');
 
 
 category('top menu activity cliffs', async () => {
