@@ -199,7 +199,7 @@ slight difference from the first example is that values that do not fall within 
 scope of the given rules, are not colored at all. Note that the `COLOR_CODING_CONDITIONAL` tag is optional, when it is
 not given and the type is set to conditional, the default coloring scheme will be applied to the column. The binning
 rules in this case rely on the column's statistics, and are generated automatically. See
-the [patterns](../../access/databases/databases.mdx#parameterized-queries)
+the [patterns](../../access/databases/databases.md#parameterized-queries)
 section to learn the syntax for rules. The principle is mostly the same for the linear option:
 when the desired color range is not specified, the cells are colored with standard shades. The missing values don't take
 on any special coloring.
@@ -222,5 +222,5 @@ t.col('weight').meta.colors.setConditional({'<100': DG.Color.green, '100-200': '
 See also:
 
 * [Grid](../../visualize/viewers/grid.md)
-* [Table view](../../datagrok/navigation/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.Grid)

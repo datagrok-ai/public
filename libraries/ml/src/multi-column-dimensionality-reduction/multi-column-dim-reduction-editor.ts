@@ -10,6 +10,9 @@ import {DIM_RED_DEFAULT_POSTPROCESSING_FUNCTION_META, DIM_RED_POSTPROCESSING_FUN
   SUPPORTED_SEMTYPES_TAG, SUPPORTED_TYPES_TAG, SUPPORTED_UNITS_TAG} from '../functionEditors/consts';
 import {DistanceAggregationMethods} from '../distance-matrix/types';
 import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim-reducer';
+import {Subject} from 'rxjs';
+import '../../css/styles.css';
+import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
@@ -32,8 +35,18 @@ export class UMAPOptions {
   used with spread to control the clumped/dispersed nature of the embedding`};
   randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
-    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations (EXPERIMENTAL)', type: 'boolean'};
-  constructor() {};
+    {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for KNN computations', type: 'boolean',
+      disableTooltip: 'WebGPU is not available'};
+  constructor() {
+    getGPUAdapterDescription().then((desc) => {
+      if (desc) {
+        this.useWebGPU.tooltip += ` (${desc})`;
+      } else {
+        this.useWebGPU.value = false;
+        this.useWebGPU.disable = true;
+      }
+    });
+  };
 }
 
 export class TSNEOptions {
@@ -75,7 +88,6 @@ export class MultiColumnDimReductionEditor {
     columnOptEditorsRoot: HTMLElement = ui.div();
     columnParamsEditorRoot: HTMLElement = ui.div();
     columnParamsEditorAccordion: DG.Accordion;
-    weightsEditor!: DimReductionweightsEditor;
     weightsEditorRoot: HTMLElement = ui.div();
     columnFunctionsMap: {[key: string]: string[]} = {};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
@@ -92,11 +104,15 @@ export class MultiColumnDimReductionEditor {
     plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
     clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', false);
     postProcessingEditor: PostProcessingFuncEditor;
-    aggregationMethodInput = ui.choiceInput('Aggregation method', DistanceAggregationMethods.EUCLIDEAN,
+    aggregationMethodInput = ui.choiceInput('Aggregation', DistanceAggregationMethods.EUCLIDEAN,
       [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]);
 
+    onColumnsChanged: Subject<void>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
+      this.aggregationMethodInput.setTooltip('Aggregation method for combining distances between columns');
+      this.onColumnsChanged = new Subject();
       this.editorSettings = editorSettings;
+      this.columnParamsEditorAccordion = ui.accordion();
       const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
       preporcessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
@@ -152,8 +168,7 @@ export class MultiColumnDimReductionEditor {
       this.clusterEmbeddingsInput.root.prepend(this.dbScanSettingsIcon);
       this.methodInput.root.classList.add('ml-dim-reduction-settings-input');
       this.methodInput.root.prepend(this.methodSettingsIcon);
-      this.columnParamsEditorAccordion = ui.accordion();
-      this.columnParamsEditorAccordion.addPane('Column options', () => this.columnOptEditorsRoot, false, null, false);
+      this.columnParamsEditorAccordion.addPane('Column options', () => this.columnOptEditorsRoot, true, null, false);
       this.columnParamsEditorAccordion.root.style.display = 'none';
       this.columnParamsEditorRoot.appendChild(this.columnParamsEditorAccordion.root);
       this.columnParamsEditorRoot.appendChild(this.weightsEditorRoot);
@@ -186,6 +201,7 @@ export class MultiColumnDimReductionEditor {
       });
       const supportedColNames = Object.keys(this.columnFunctionsMap);
       const columnsInput = ui.columnsInput('Columns', table, () => {
+        this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
         const cols = columnsInput.value;
@@ -193,22 +209,32 @@ export class MultiColumnDimReductionEditor {
           this.aggregationMethodInput.root.style.display = 'none';
         else
           this.aggregationMethodInput.root.style.display = 'flex';
-        if (!cols || cols.length === 0)
+        if (!cols || cols.length === 0) {
+          this.columnParamsEditorAccordion.root.style.display = 'none';
           return;
+        }
+        const editorWidths = [20, 30, 30, 20];
         this.columnOptEditors = cols.map((col) => {
           const editorClass = new DimReductionColumnEditor(col, this.columnFunctionsMap[col.name].map((it) =>
-            this.supportedFunctions[it]));
+            this.supportedFunctions[it]), editorWidths);
           return editorClass;
         });
+        const editorTitles = ['Column', 'Encoding function', 'Similarity metric', 'Weight'].map((it, i) =>
+          ui.h1(it, {style: {width: `${editorWidths[i]}%`, margin: 0}}));
+
+        ui.tooltip.bind(editorTitles[1], 'Encoding function for the column values');
+        ui.tooltip.bind(editorTitles[2], 'Distance/Similarity metric for the encoded column values');
+        ui.tooltip.bind(editorTitles[3], 'Weight of the column for combining distances between values');
+
+        const editorTitleRoot = ui.divH(editorTitles, {classes: 'ml-dim-reduction-column-editor-header-root'});
+        this.columnOptEditorsRoot.appendChild(editorTitleRoot);
+        const editorsRoot = ui.divV([], {style: {maxHeight: '400px', overflow: 'auto'}});
         this.columnOptEditors.forEach((editor) => {
-          this.columnOptEditorsRoot.appendChild(editor.accordionDiv);
+          editorsRoot.appendChild(editor.accordionDiv);
         });
-        this.weightsEditor = new DimReductionweightsEditor(cols);
-        this.weightsEditorRoot.appendChild(this.weightsEditor.accordionDiv);
-        if (this.columnOptEditors.some((e) => e.needsConfiguration))
+        this.columnOptEditorsRoot.appendChild(editorsRoot);
+        if (this.columnOptEditors.length > 0)
           this.columnParamsEditorAccordion.root.style.display = 'flex';
-        else
-          this.columnParamsEditorAccordion.root.style.display = 'none';
       }, {available: supportedColNames});
       columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
@@ -227,6 +253,7 @@ export class MultiColumnDimReductionEditor {
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam | IDimReductionParam<string> | IDimReductionParam<boolean> =
           (params as any)[it];
+
         const input = param.type === 'string' ?
           ui.stringInput(param.uiName, param.value ?? '', () => {
             param.value = (input as DG.InputBase<string>).value;
@@ -237,7 +264,10 @@ export class MultiColumnDimReductionEditor {
             ui.floatInput(param.uiName, param.value as any, () => {
               param.value = input.value;
             });
-        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
+        if (param.disable) {
+          input.enabled = false;
+          ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
+        } else { ui.tooltip.bind(input.input ?? input.root, param.tooltip); }
         paramsForm.append(input.root);
       });
       return paramsForm;
@@ -265,9 +295,9 @@ export class MultiColumnDimReductionEditor {
         this.tableInput.root,
         this.columnsInputRoot,
         this.columnParamsEditorRoot,
+        this.aggregationMethodInput.root,
         this.methodInput.root,
         this.methodSettingsDiv,
-        this.aggregationMethodInput.root,
         this.plotEmbeddingsInput,
         this.postProcessingEditor.root,
       ], {style: {minWidth: '420px'}, classes: 'ui-form'});
@@ -281,7 +311,7 @@ export class MultiColumnDimReductionEditor {
         methodName: this.methodInput.value!,
         preprocessingFunctions: this.columnOptEditors.map((it) => it.preProcessingFunction),
         distanceMetrics: this.columnOptEditors.map((it) => it.similarityMetricInput.value!),
-        weights: this.weightsEditor.weights,
+        weights: this.columnOptEditors.map((it) => it.weight ?? 1),
         options: {...this.algorithmOptions, ...this.dbScanOptions,
           preprocessingFuncArgs: this.columnOptEditors.map((it) => it.preprocessingFunctionSettings)},
         plotEmbeddings: this.plotEmbeddingsInput.value,
@@ -308,11 +338,14 @@ class DimReductionColumnEditor {
     hasExtraSettings: boolean = true;
     functionsMap: {[_: string]: DG.Func} = {};
     needsConfiguration: boolean = false;
-    constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[]) {
+    weightInput: DG.InputBase<number | null>;
+    weight: number = 1;
+    constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[], editorWidths: number[]) {
+      this.weightInput = ui.floatInput('Weight', 1, () => { this.weight = this.weightInput.value ?? 1; });
       this.column = column;
       // sort by specificity
       this.supportedFunctions = supportedFunctions.sort((a, b) => {
-        if (a.units.length === 0 || b.units.length === 0)
+        if ((a.units.length === 0 || b.units.length === 0) && a.units.length !== b.units.length)
           return b.units.length - a.units.length;
         if (a.units.length !== b.units.length)
           return a.units.length - b.units.length;
@@ -342,12 +375,11 @@ class DimReductionColumnEditor {
             this.preprocessingFuncSettingsIcon.style.display = 'flex';
         }
       );
-      if (this.supportedFunctions.length < 2) {
-        this.preprocessingFunctionInput.root.style.display = 'none';
-        this.createSettingsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[0].func);
-      } else {
-        this.preprocessingFunctionInput.root.style.display = 'flex';
-      }
+      this.preprocessingFunctionInput.root.style.display = 'flex';
+
+      this.createSettingsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[0].func)
+        .then(() => { ui.empty(this.preprocessingFuncSettingsDiv); });
+
       this.getSimilarityMetricInput(this.supportedFunctions[0]);
       this.hasExtraSettings = this.supportedFunctions[0].func.inputs.length > 2;
 
@@ -372,16 +404,30 @@ class DimReductionColumnEditor {
 
       this.needsConfiguration = !(supportedFunctions.length < 2 && !this.hasExtraSettings &&
       supportedFunctions[0].distanceFunctions.length < 2);
-      if (!this.needsConfiguration) {
-        this.accordionDiv = ui.div();
-      } else {
-        this.accordionDiv = ui.divV([]);
-        this.editorDiv.appendChild(this.preprocessingFunctionInput.root);
-        this.editorDiv.appendChild(this.similarityMetricInputRoot);
-        this.editorDiv.appendChild(this.preprocessingFuncSettingsDiv);
-        this.accordionDiv.appendChild(ui.h3(this.column.name));
-        this.accordionDiv.appendChild(this.editorDiv);
-      }
+
+      const columnTitle = ui.h3(this.column.name, {classes: 'ml-dim-reduction-column-editor-column-title'});
+      const colOptEditors = [
+        columnTitle, this.preprocessingFunctionInput.root,
+        this.similarityMetricInputRoot, this.weightInput.root
+      ];
+      // assign tooltips
+      ui.tooltip.bind(columnTitle, this.column.name);
+
+      colOptEditors.forEach((it, i) => {
+        it.style.width = `${editorWidths[i]}%`;
+      });
+
+      //add classes
+      colOptEditors.forEach((it) => it.classList.add('ml-dim-reduction-column-editor-input-root'));
+
+      const distanceOptionsDiv = ui.divH(
+        colOptEditors, {classes: 'ml-dim-reduction-column-editor-root'}
+      );
+
+      this.accordionDiv = ui.divV([]);
+      this.editorDiv.appendChild(distanceOptionsDiv);
+      this.editorDiv.appendChild(this.preprocessingFuncSettingsDiv);
+      this.accordionDiv.appendChild(this.editorDiv);
     }
 
     getSimilarityMetricInput(preFunc: DimRedSupportedFunctions) {
@@ -421,30 +467,8 @@ class DimReductionColumnEditor {
         input.onChanged(() => { this.preprocessingFunctionSettings[fInput.name] = input.value; });
         paramsForm.append(input.root);
       }
+      paramsForm.style.marginBottom = '10px';
       return paramsForm;
-    }
-}
-
-class DimReductionweightsEditor {
-    weightsInputs: DG.InputBase<number | null>[] = [];
-    accordionDiv: HTMLElement;
-    private _weights: number[] = [];
-    constructor(columns: DG.Column[]) {
-      const accordion = ui.accordion();
-      this._weights = columns.map(() => 1);
-      this.accordionDiv = accordion.root;
-      if (this._weights.length < 2)
-        return;
-      accordion.addPane('Weights', () => {
-        return ui.inputs(columns.map((col) => col.name).map((name, i) => {
-          const input = ui.floatInput(name, this._weights[i], () => this._weights[i] = input.value ?? 1);
-          this.weightsInputs.push(input);
-          return input;
-        }));
-      }, false, null, false);
-    }
-    get weights() {
-      return this._weights;
     }
 }
 

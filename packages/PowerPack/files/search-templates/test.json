@@ -28,7 +28,7 @@
       "name": "Report card",
       "widget": "webWidget",
       "templates": [{
-        "template": "(CHEMBL[0-9]+)",
+        "template": "(XXCHEMBL[0-9]+)",
         "url": "https://www.ebi.ac.uk/chembl/embed/#compound_report_card/${1}/name_and_classification"
       }]
     },

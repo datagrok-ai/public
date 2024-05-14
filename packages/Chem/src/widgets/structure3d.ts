@@ -4,6 +4,7 @@ import {smilesTo3DCoordinates} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import type NGL from 'ngl';
 
 const WIDTH = 300;
 const HEIGHT = 300;
@@ -32,8 +33,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
 
   await DG.Utils.loadJsCss(['/js/common/ngl_viewer/ngl.js']);
   //@ts-ignore
-  const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
-  //@ts-ignore
+  const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'}) as NGL;
   stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
     stage.setSize(WIDTH, HEIGHT);
     comp.addRepresentation('ball+stick');

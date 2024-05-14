@@ -2,11 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as JSDraw2 from 'JSDraw2';
+
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
 export class HelmWebEditor implements IHelmWebEditor {
-  host: any;
-  editor: any;
+  editor: JSDraw2.Editor;
+  host: HTMLDivElement;
+
   w = 200;
   h = 100;
 

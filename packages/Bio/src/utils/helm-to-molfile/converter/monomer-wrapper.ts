@@ -1,11 +1,11 @@
-import {Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {MonomerLibManager} from '../../monomer-lib/lib-manager';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+
 import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export class MonomerWrapper {
   private molfileWrapper: MolfileWrapper;
@@ -15,14 +15,15 @@ export class MonomerWrapper {
     private monomerSymbol: string,
     private monomerIdx: number,
     private helm: Helm,
-    shift: {x: number, y: number},
-    rdKitModule: RDModule
+    shift: { x: number, y: number },
+    rdKitModule: RDModule,
+    private readonly monomerLib: IMonomerLib
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
 
     let molfile = libraryMonomerObject.molfile;
     if (MolfileHandler.isMolfileV2K(molfile))
-      molfile = this.convertMolfileToV3KFormat(molfile, rdKitModule);
+      molfile = this.convertMolfileToV3KFormat(molfile, monomerSymbol, rdKitModule);
 
     this.molfileWrapper = MolfileWrapperFactory.getInstance(molfile, monomerSymbol);
     this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
@@ -34,14 +35,22 @@ export class MonomerWrapper {
     this.shiftCoordinates(shift);
   }
 
-  private convertMolfileToV3KFormat(molfileV2K: string, rdKitModule: RDModule): string {
-    return rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true})).get_v3Kmolblock();
+  private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
+    let mol: RDMol | null = null;
+    try {
+      mol = rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true}));
+      if (mol)
+        return mol.get_v3Kmolblock();
+      else
+        throw new Error(`Cannot convert ${monomerSymbol} to molV3000`);
+    } finally {
+      mol?.delete();
+    }
   }
 
   private getLibraryMonomerObject(): Monomer {
     const polymerType = this.helm.getPolymerTypeByMonomerIdx(this.monomerIdx);
-    const monomerLib = MonomerLibManager.instance.getBioLib();
-    const monomer = monomerLib.getMonomer(polymerType, this.monomerSymbol);
+    const monomer = this.monomerLib.getMonomer(polymerType, this.monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${this.monomerSymbol} is not found in the library`);
     return monomer;
@@ -63,7 +72,7 @@ export class MonomerWrapper {
     return result;
   }
 
-  private shiftCoordinates(shift: {x: number, y: number}): void {
+  private shiftCoordinates(shift: { x: number, y: number }): void {
     this.molfileWrapper.shiftCoordinates(shift);
   }
 

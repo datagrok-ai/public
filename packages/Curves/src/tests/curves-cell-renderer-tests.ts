@@ -7,6 +7,7 @@ import {createSigmoidPoints, createDemoDataFrame} from '../fit/fit-demo';
 import {category, test, delay} from '@datagrok-libraries/utils/src/test';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitConstants} from '../fit/const';
 
 
 export function createIFitChartData(seriesLength: number): IFitChartData {
@@ -67,7 +68,7 @@ category('rendering', () => {
 		const fitChartCellRenderer = new FitChartCellRenderer();
 		const fitChartData: IFitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
 		for (let i = 1; i <= renderingTimesAmount; i++) {
-			fitChartCellRenderer.renderCurves(g, canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight, fitChartData);
+			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
 		return `rendering performed ${renderingTimesAmount} times`;
@@ -85,7 +86,7 @@ category('rendering', () => {
 		const fitChartCellRenderer = new FitChartCellRenderer();
 		for (let i = 1; i <= renderingTimesAmount; i++) {
 			const fitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
-			fitChartCellRenderer.renderCurves(g, canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight, fitChartData);
+			fitChartCellRenderer.renderCurves(g, new DG.Rect(canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
 		return `rendering performed ${renderingTimesAmount} times`;

@@ -11,7 +11,7 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 1. Open "demog" dataset
 
 1. Add [Markup viewer](markup.md) (from "Viewers" section
-   on [Toolbox](../../datagrok/navigation.md#toolbox), "Add" menu or list on Toolbar)
+   on **Toolbox**, "Add" menu or list on Toolbar)
 
 * [Markup viewer](markup.md) is added on layout
 * Help switched to [Markup viewer](markup.md) page
@@ -33,9 +33,9 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 * New tab with Markup view added
 * There is sample text on view
-* Markup text shown on [Context Panel](../../datagrok/navigation.md#context-panel)
+* Markup text shown on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Enter markup text with the external viewer to [Context Panel](../../datagrok/navigation.md#context-panel) field *
+1. Enter markup text with the external viewer to [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) field *
 
 * Viewer from an external source displayed on markup view
 * All external viewer functionality is available inside the platform1. Return to view

@@ -1,5 +1,12 @@
 # Bioreactors changelog
 
+## 1.1.8 (2023-05-01)
+
+Updated functions annotations:
+
+* added the "fitting" feature
+* updated min/max values
+
 ## 1.1.7 (2023-02-20)
 
 Updated functions annotations.

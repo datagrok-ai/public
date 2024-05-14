@@ -1,8 +1,6 @@
 ---
-
 title: "Plugins"
-sidebar_position: 3 
-
+sidebar_position: 1.2 
 ---
 
 ## General
@@ -32,15 +30,15 @@ sidebar_position: 3
 
 |Area <div style={{ width:130 }}></div>  |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description | Release  |
 |------|-------|---------------|-----|--------------|
-|Spreadsheet |[PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Recommended| [Grid](../visualize/veiwers/grid.md) viewer enhancements | Stable|
+|Spreadsheet |[PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Recommended| [Grid](../visualize/viewers/grid.md) viewer enhancements | Stable|
 |Viewers, misc |[Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)|Optional| Visualizations based on external libraries ([ECharts](https://echarts.apache.org/en/index.html), [D3.js](https://d3js.org/), [Circos](https://github.com/nicgirault/circosJS), and [three.js](https://threejs.org/))| Stable |
 | Curve fitting |[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Beta |
 | Trees |[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)|Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
 | Trees |[PhyloTreeViewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
 |GIS|[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)|Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
 <!--
-|Viewers |[Forms](https://github.com/datagrok-ai/public/tree/master/packages/Forms)||???|Beta|
-|Misc |[ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy)|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
+|Viewers |[Forms]||???|Beta|
+|Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
 -->
 
 <!--
@@ -62,7 +60,7 @@ sidebar_position: 3
 |ML Toolkit |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)|Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
 |Jupyter Notebooks |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)|Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
 <!--
-|?? |[TensorFlow.js](link)|Optional|Support for training and applying TensorFlow.js-based predictive models|Labs|
+|?? |[TensorFlow.js]|Optional|Support for training and applying TensorFlow.js-based predictive models|Labs|
 -->
 
 ## Develop
@@ -90,7 +88,7 @@ sidebar_position: 3
 | Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
 | Hit to Lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Alpha|
 <!--
-|Misc |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)|Misc|Integration with the Chemspace, a service for online shopping for the chemical building blocks|Alpha|
+|Misc |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)|Misc|Integration with the Chemspace, a service for online shopping for the chemical building blocks|Alpha|
 -->
 
 ### Bio

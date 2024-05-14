@@ -156,7 +156,12 @@ export async function getKnnSparseOpInfo(
   const unionMatrixSize = resultUnionSizesArray.reduce((old, val) => old + val, 0);
 
 
-  device.destroy();
+  resultUnionSizesBuffer.destroy();
+  resultTransposeSizesBuffer.destroy();
+  sizesBuffer.destroy();
+  indexBuffer.destroy();
+  unionSizesBuffer.destroy();
+
   // sizes of each transposed knn row, sizes of each union of knn and its transpose row, total size of union matrix
   return {resultTransposeSizesArray, resultUnionSizesArray, unionMatrixSize};
 

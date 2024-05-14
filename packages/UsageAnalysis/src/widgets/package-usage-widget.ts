@@ -9,9 +9,8 @@ export class PackageUsageWidget extends DG.Widget {
   groupsP: Promise<DG.Group[]> = grok.dapi.groups.getGroupsLookup('All users');
 
   constructor(pack: DG.Package) {
-    const root = ui.box(null, {classes: 'ua-widget ua-package-widget'});
-    super(root);
-    root.append(ui.waitBox(async () => {
+    super(ui.box(null, {classes: 'ua-widget ua-package-widget'}));
+    this.root.append(ui.waitBox(async () => {
       const df: DG.DataFrame = await this.groupsP.then((groups) => grok.functions.call('UsageAnalysis:PackagesUsage',
         {date: this.date, groups: [groups[0].id], packages: ['all']}));
       df.rows.removeWhere((r: DG.Row) => r.get('package') !== pack.name);
@@ -21,9 +20,8 @@ export class PackageUsageWidget extends DG.Widget {
         .aggregate();
       if (usersHistogram.rowCount === 0)
         return ui.divText('No data to display', {style: {color: 'var(--failure)'}});
-      const usersTable = getUsersTable(usersHistogram);
-      return usersTable;
+      return getUsersTable(usersHistogram);
     }));
-    root.append(ui.label(this.date));
+    this.root.append(ui.label(this.date));
   }
 }

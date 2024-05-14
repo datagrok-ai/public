@@ -121,7 +121,7 @@ Datagrok has a [built-in credentials management system](../../govern/security.md
 
 Once the connection is established, you can extract data by sending a [query](../../access/access.md#data-query) to the data source. In a package, queries are typically placed in the `queries` folder.
 
-Similar to [scripts](../../compute/scripting.md), you can annotate SQL statements with comments as the underlying
+Similar to [scripts](../../compute/scripting/scripting.mdx), you can annotate SQL statements with comments as the underlying
 mechanism is fundamentally the same ([learn more about functions](../../datagrok/concepts/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.
 
 Here's an example for your `queries.sql` file:
@@ -162,7 +162,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.md#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
@@ -186,14 +186,14 @@ To see how this method works, refer to [this example](https://public.datagrok.ai
 
 ### Sharing connections
 
-Data connections can be shared as part of a [project](../../collaborate/project.md)
-, [package](../develop.md#packages) (and [repository](../../access/databases/connectors/git.md) containing this package), or as a
+Data connections can be shared as part of a [project](../../datagrok/concepts/project/project.md)
+, [package](../develop.md#packages) (and [repository](../../access/files/shares//git.md) containing this package), or as a
 standalone [entity](../../datagrok/concepts/objects.md). The access rights of a database connection are inherited from the access rights of a
 query. However, the access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection will be shared automatically. However, sharing a connection does not automatically share your queries. In the case of web queries, they are shared automatically when the corresponding connection is shared.
 
 ### Caching results
 
-See [Caching data](../../access/databases/databases.mdx#caching-data).
+See [Caching data](../../access/databases/databases.md#caching-data).
 
 ## Rest endpoints
 
@@ -295,7 +295,7 @@ For a comprehensive understanding of the `files` API, see [this example](https:/
 You can also use one of the following options to open files using JavaScript:
 
 1. Define a function that takes an input of `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)): When you use this option, you can call `file.readAsBytes()`
-  or `file.readAsString()` methods on this function. For example, by passing a string obtained from a file to `grok.data.parseCsv(csv, options)`, you can customize the construction of a dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to perform calculations and receive the results in your application's code.
+  or `file.readAsString()` methods on this function. For example, by passing a string obtained from a file to `grok.data.parseCsv(csv, options)`, you can customize the construction of a dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../../compute/scripting/scripting.mdx) to perform calculations and receive the results in your application's code.
 1. Use `grok.data.openTable(id)`: This method is helpful when replicating a process where you need to open a specific table by its ID. See [this example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
 
 See also:

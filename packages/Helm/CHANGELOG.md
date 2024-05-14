@@ -1,11 +1,49 @@
 # Helm changelog
 
+## 2.2.1 (2024-05-13)
+
+### Features
+
+* Use Bio monomerLib within Helm Web Editor
+
+### Bug fixes
+
+* Optimize getMonomer tests to prevent reloading the monomer lib
+* Add tests for adding missing monomers with Helm Web Editor
+
+## 2.2.0 (2024-05-01)
+
+Optimize cell renderer on async renderer base
+
+### Features
+
+* Add interactivity on monomers into HelmGridCellRenderer
+* Add sync render cell from cache (Helm editor specific)
+* Prioritize render queue by task consumer id and callback
+* Add HelmService test
+* Add Helm cell renderer test for scatter plot
+* Use types of Pistoia Helm, get rid of ts-ignore
+* Add handling missing monomers with Helm cell renderer
+
+### Bug fixes
+
+* Fix Helm cell renderer to clear editor on empty cell value
+* Fix alert message box with compressed Scilligence.JSDraw2.Lite.js
+
+## 2.1.34 (2024-04-22)
+
+Fix Helm grid cell renderer
+
+## 2.1.33 (2024-04-19)
+
+Fix cell renderer for scatter plot tooltip, add test
+
 ## 2.1.32 (2024-04-15)
 
 ### Features
 
 * Add displaying a monomer's origin lib
-  
+
 ### Bug fixes
 
 * Fix tests for default lib settings

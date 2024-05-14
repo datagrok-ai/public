@@ -7,6 +7,7 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
 import {HistoricalRunsList} from './history-list';
 import {filter} from 'rxjs/operators';
+import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
@@ -65,11 +66,11 @@ export class HistoryPanel extends DG.Widget {
 
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])
+      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((historicalRuns) => {
           ui.empty(this.root);
           this.root.appendChild(this.panel);
-          this.updateHistoryPane(historicalRuns.reverse());
+          this.updateHistoryPane(historicalRuns);
         })
         .catch((e) => grok.shell.error(e))
         .finally(() => ui.setUpdateIndicator(this.root, false));

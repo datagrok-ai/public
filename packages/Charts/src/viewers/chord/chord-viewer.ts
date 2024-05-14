@@ -117,11 +117,16 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   _testColumns() {
-    return (this.strColumns!.length >= 2 && this.numColumns!.length >= 1);
+    const strCols = this.dataFrame.columns.toList()
+      .filter((col) => col.type === 'string')
+      .sort((a, b) => a.categories.length - b.categories.length);
+    const numCols = [...this.dataFrame.columns.numerical];
+    return (strCols.length >= 2 && numCols.length >= 1);
   }
 
   onTableAttached() {
     this.init();
+    this.filter = this.dataFrame.filter;
 
     this.strColumns = this.dataFrame.columns.toList()
       .filter((col) => col.type === 'string')

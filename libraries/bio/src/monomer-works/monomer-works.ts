@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib} from '../types';
-
+import {IMonomerLib, HelmType, PolymerType} from '../types';
+import {HelmTypes, PolymerTypes} from '../utils/const';
 
 /** Hypothetical interface to convert mol block notation.
  * It should be placed in the chem-meta package, and have an implementation in the Chem package.
@@ -26,11 +26,39 @@ export class MonomerWorks {
   }
 
   //types according to Monomer possible
-  public getCappedRotatedMonomer(monomerType: string, monomerName: string): string | null {
+  public getCappedRotatedMonomer(monomerType: PolymerType, monomerName: string): string | null {
+    // TODO: Check type of monomerType arg
     const monomer = this.monomerLib.getMonomer(monomerType, monomerName);
     if (monomer)
       return monomer.molfile; //TODO cap
 
     return null;
   }
+}
+
+export function helmTypeToPolymerType(helmType: HelmType): PolymerType {
+  let polymerType: PolymerType | undefined = undefined;
+  switch (helmType) {
+  case HelmTypes.BASE:
+  case HelmTypes.SUGAR: // r - ribose, d - deoxyribose
+  case HelmTypes.LINKER: // p - phosphate
+  case HelmTypes.NUCLEOTIDE:
+    // @ts-ignore
+  case 'nucleotide':
+    polymerType = PolymerTypes.RNA;
+    break;
+  case HelmTypes.AA:
+    polymerType = PolymerTypes.PEPTIDE;
+    break;
+  case HelmTypes.CHEM:
+    polymerType = PolymerTypes.CHEM;
+    break;
+  case HelmTypes.BLOB:
+    polymerType = PolymerTypes.BLOB;
+    break;
+  default:
+    polymerType = PolymerTypes.PEPTIDE;
+    console.warn(`Unexpected HelmType '${helmType}'`);
+  }
+  return polymerType;
 }

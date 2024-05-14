@@ -1,5 +1,26 @@
 # EDA changelog
 
+## 1.1.24 (2024-05-09)
+
+* Fix GPU description nullish value.
+
+## 1.1.23 (2024-05-09)
+
+* Disable webGPU input in case if none is available.
+* Improvements to GPU device handling
+
+## 1.1.22 (2024-04-25)
+
+Add support for webGPU MCL in full (sparse matrix and expansion/normalization operators)
+
+## 1.1.21 (2024-04-23)
+
+Add GPU information to clustering algorithms.
+
+## 1.1.20 (2024-04-16)
+
+Improve dimensionality reduction dialog.
+
 ## 1.1.19 (2024-04-15)
 
 * PLS components computation

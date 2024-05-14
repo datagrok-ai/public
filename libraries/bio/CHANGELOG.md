@@ -1,5 +1,44 @@
 # bio changelog
 
+## 5.41.2 (2024-05-13)
+
+### Bug fixes
+
+Fix MonomerLib.getSummary for backward compatibility
+Fix cell renderer async base for sync rendering
+
+## 5.41.1 (2024-05-13)
+
+### Features
+
+* Add types for Helm Web Editor
+
+### Bug fixes
+
+* Unveil cell renderer errors for tests
+* Fix cell renderer for StackOverflow error on long seqs
+* Optimize SeqHandler.getSplitter for split limit (separator)
+
+## 5.41.0 (2024-05-01)
+
+Optimize cell renderer on async renderer base
+
+### Features
+
+* Use ImageData for cell image cache instead of toDataURL string
+* Add aux to RenderTask.onAfterRender callback (for interactivity)
+* Add cell sync render cell from cache while resizing
+* Prioritize render queue by task consumer id and callback
+* Add types for Pistoia Helm Web Editor
+
+### Bug fixes
+
+* Fix rendering on grid and without (row tooltip, scatter plot)
+
+## 5.40.8 (2024-04-16)
+
+Fix monomer placer destroying
+
 ## 5.40.7 (2024-04-15)
 
 Invalidate monomer placer cache on monomer lib changed

@@ -1,49 +1,67 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions} from './mmp-constants';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../../chem-searches';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {SubstructureSearchType} from '../../constants';
+import {MmpInput} from './mmp-constants';
+import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
+import {getRdKitService} from '../../utils/chem-common-rdkit';
 
-export function getGenerations(molecules: DG.Column, frags: [string, string][][],
-  allPairsGrid: DG.Grid, activityMeanNames: Array<string>, activities: DG.ColumnList, module:RDModule):
-  DG.Grid {
+export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
+  fragsOut: IMmpFragmentsResult, meanDiffs: Float32Array[],
+  allPairsGrid: DG.Grid, activityMeanNames: Array<string>):
+  Promise<DG.Grid> {
   const rulesColumns = allPairsGrid.dataFrame.columns;
-  const rulesFrom = rulesColumns.byName('From');
-  const rulesTo = rulesColumns.byName('To');
+
+  const rulesFrom = rulesColumns.byName(MMP_COLNAME_FROM).getRawData();
+  const rulesTo = rulesColumns.byName(MMP_COLNAME_TO).getRawData();
+  const rulesFromCats = rulesColumns.byName(MMP_COLNAME_FROM).categories;
+  const rulesToCats = rulesColumns.byName(MMP_COLNAME_TO).categories;
   const activityN = activityMeanNames.length;
 
-  const structures = molecules.toList();
-  const cores = new Array<Array<string>>(activityN);
-  const from = new Array<Array<string>>(activityN);
-  const to = new Array<Array<string>>(activityN);
-  const prediction = new Array<Array<number>>(activityN);
-
-  for (let i = 0; i < activityN; i ++) {
-    cores[i] = new Array<string>(structures.length);
-    from[i] = new Array<string>(structures.length);
-    to[i] = new Array<string>(structures.length);
-    prediction[i] = new Array<number>(structures.length);
-    for (let j = 0; j < structures.length; j++)
-      prediction[i][j] = 0;
+  //const structures = mmpInput.molecules.toList();
+  //const structuresN = structures.length;
+  // const structures = mmpInput.molecules.getRawData();
+  // const structuresCats = mmpInput.molecules.categories;
+  const structuresN = mmpInput.molecules.length;
+  const cores = new Array<string>(activityN *structuresN);
+  const from = new Array<string>(activityN * structuresN);
+  const to = new Array<string>(activityN * structuresN);
+  const prediction = new Float32Array(activityN * structuresN).fill(0);
+  const allStructures = Array(structuresN * activityN);
+  const allInitActivities = new Float32Array(structuresN * activityN);
+  const activityName: Array<string> = Array(structuresN * activityN);
+  const activities = new Array<Float32Array>(activityN);
+  const activityNames = Array<string>(activityN);
+  for (let i = 0; i < activityN; i++) {
+    const name = activityMeanNames[i].replace('Mean Difference ', '');
+    activities[i] = mmpInput.activities.byName(name).getRawData() as Float32Array;
+    activityNames[i] = name;
   }
 
-  for (let i = 0; i < structures.length; i ++) {
-    const singleActivities = new Array<number>(activityN);
-    for (let j = 0; j < activityN; j++)
-      singleActivities[j] = activities.byName(activityMeanNames[j].replace('Mean Difference ', '')).get(i);
+  for (let i = 0; i < structuresN; i ++) {
+    for (let j = 0; j < activityN; j++) {
+      allStructures[j * structuresN + i] = moleculesArray[i];//mmpInput.molecules.get(i);
+      allInitActivities[j * structuresN + i] = activities[j][i];
+      activityName[j * structuresN + i] = activityNames[j];
+    }
 
-    for (let j = 0; j < frags[i].length; j++) {
-      const core = frags[i][j][0];
-      const subst = frags[i][j][1];
+    for (let j = 0; j < fragsOut.frags[i].length; j++) {
+      const core = fragsOut.frags[i][j][0];
+      const subst = fragsOut.frags[i][j][1];
       if (core != '') {
         for (let k = 0; k < rulesFrom.length; k++) {
-          if (subst === rulesFrom.get(k)) {
-            for (let kk = 0; kk <activityN; kk++) {
-              const activity = singleActivities[kk] + rulesColumns.byName(activityMeanNames[kk]).get(k);
-              if (activity > prediction[kk][i]) {
-                prediction[kk][i] = activity;
-                cores[kk][i] = core;
-                from[kk][i] = subst;
-                to[kk][i] = rulesTo.get(k);
+          if (subst === rulesFromCats[rulesFrom[k]] ) {
+            for (let kk = 0; kk < activityN; kk++) {
+              const activity = activities[kk][i] + meanDiffs[kk][k];
+              const add = kk * structuresN;
+              if (activity > prediction[add + i]) {
+                prediction[add + i] = activity;
+                cores[add + i] = core;
+                from[add + i] = subst;
+                to[add + i] = rulesToCats[rulesTo[k]];
               }
             }
           }
@@ -52,62 +70,34 @@ export function getGenerations(molecules: DG.Column, frags: [string, string][][]
     }
   }
 
-  const allStructures = Array(structures.length * activityN).fill(0).map((_, i) => structures[i % structures.length]);
+  const generation = await (await getRdKitService()).mmpLinkFragments(cores, to);
+  const cols = [];
+  cols.push(createColWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', `Initial value`, Array.from(allInitActivities)));
+  cols.push(createColWithDescription('string', `Activity`, activityName));
+  cols.push(createColWithDescription('string', `Core`, cores, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', `From`, from, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('string', `To`, to, DG.SEMTYPE.MOLECULE));
+  cols.push(createColWithDescription('double', `Prediction`, Array.from(prediction)));
+  cols.push(createColWithDescription('string', `Generation`, generation, DG.SEMTYPE.MOLECULE));
+  const grid = DG.DataFrame.fromColumns(cols).plot.grid();
+  createMolExistsCol(fragsOut.smiles, generation, grid);
+  return grid;
+}
 
-  const colStructure = DG.Column.fromList('string', 'structure', allStructures);
-  colStructure.semType = DG.SEMTYPE.MOLECULE;
-  const cols = [colStructure];
-  let allCores: Array<string> = [];
-  let allFrom: Array<string> = [];
-  let allTo: Array<string> = [];
-  let allInits: Array<number> = [];
-  let activityName: Array<string> = [];
-  let allPreds: Array<number> = [];
+export function createColWithDescription(colType: any, colName: string, list: any[], semType?: DG.SemType): DG.Column {
+  const col = DG.Column.fromList(colType, colName, list);
+  if (columnsDescriptions[colName])
+    col.setTag('description', columnsDescriptions[colName]);
+  if (semType)
+    col.semType = semType;
+  return col;
+}
 
-  for (let i = 0; i < activityN; i ++) {
-    const name = activityMeanNames[i].replace('Mean Difference ', '');
-    allInits = allInits.concat(activities.byName(name).toList());
-    activityName = activityName.concat(Array(structures.length).fill(name));
-
-    allCores = allCores.concat(cores[i]);
-    allFrom = allFrom.concat(from[i]);
-    allTo = allTo.concat(to[i]);
-    allPreds = allPreds.concat(prediction[i]);
-  }
-
-  const generation = new Array<string>(allCores.length);
-  let mol = null;
-  for (let i = 0; i < allCores.length; i++) {
-    let smilesGen = '';
-    try {
-      const smi = `${allCores[i]}.${allTo[i]}`.replaceAll('([*:1])', '9').replaceAll('[*:1]', '9');
-      mol = module.get_mol(smi);
-      smilesGen = mol.get_smiles();
-      generation[i] = smilesGen;
-    } catch (e: any) {
-
-    } finally {
-      mol?.delete();
-      generation[i] = smilesGen;
-    }
-  }
-
-  cols.push(DG.Column.fromList('double', `Initial value`, allInits));
-  cols.push(DG.Column.fromList('string', `Activity`, activityName));
-  const coreCol = DG.Column.fromList('string', `Core`, allCores);
-  coreCol.semType = DG.SEMTYPE.MOLECULE;
-  cols.push(coreCol);
-  const fromCol = DG.Column.fromList('string', `From`, allFrom);
-  fromCol.semType = DG.SEMTYPE.MOLECULE;
-  cols.push(fromCol);
-  const toCol = DG.Column.fromList('string', `To`, allTo);
-  toCol.semType = DG.SEMTYPE.MOLECULE;
-  cols.push(toCol);
-  cols.push(DG.Column.fromList('double', `Prediction`, allPreds));
-  const generationCol = DG.Column.fromList('string', `Generation`, generation);
-  generationCol.semType = DG.SEMTYPE.MOLECULE;
-  cols.push(generationCol);
-
-  const generations = DG.DataFrame.fromColumns(cols);
-  return generations.plot.grid();
+export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
+  const moleculesSet = new Set(molecules);
+  const boolCol = DG.Column.bool('Existing', generation.length).init((i) => moleculesSet.has(generation[i]))
+  grid.dataFrame.columns.add(boolCol);
+  grid.col(boolCol.name)!.editable = false;
+  grid.invalidate();
 }

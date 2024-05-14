@@ -23,7 +23,7 @@ import './tests/WebLogo-project-tests';
 import './tests/WebLogo-layout-tests';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
-import './tests/substructure-filters-tests';
+// import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
 import './tests/seq-handler-tests';

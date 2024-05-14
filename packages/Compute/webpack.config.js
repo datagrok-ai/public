@@ -6,11 +6,11 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'},
+      {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
@@ -19,6 +19,7 @@ module.exports = {
         test: /\.js$/,
         enforce: 'pre',
         use: ['source-map-loader'],
+        exclude: /node_modules/
       },
     ],
   },
@@ -33,6 +34,7 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
+    'exceljs': 'ExcelJS'
   },
   output: {
     filename: '[name].js',

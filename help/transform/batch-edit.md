@@ -21,4 +21,4 @@ mouse-over row, or editing the values of the current row.
 
 To open the batch editor, in the Top Menu, select **Data** > **Batch Edit...**
 
-![Batch edit](../uploads/gifs/batch-edit.gif "Batch edit") <!--need to update gif due to changes in UI (Top Menu)>
+![Batch edit](../uploads/gifs/batch-edit.gif "Batch edit") <!--need to update gif due to changes in UI (Top Menu)-->

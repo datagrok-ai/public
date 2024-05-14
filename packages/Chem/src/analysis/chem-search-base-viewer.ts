@@ -7,11 +7,15 @@ import { Subject, Subscription } from 'rxjs';
 import { AVAILABLE_FPS } from '../constants';
 import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
-const BACKGROUND = 'background';
-const TEXT = 'text';
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
 export const MAX_LIMIT = 50;
+export enum RowSourceTypes {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  FilteredSelected = 'FilteredSelected',
+}
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -21,6 +25,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
   fingerprintChoices = AVAILABLE_FPS;
+  rowSourceChoices = [RowSourceTypes.All, RowSourceTypes.Filtered, RowSourceTypes.Selected, RowSourceTypes.FilteredSelected];
   sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
@@ -33,8 +38,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeProperties: string[];
   renderCompleted = new Subject<void>();
   isComputing = false;
-  recalculateOnFilter = false;
-  filterSub: Subscription | null = null;
+  rowSource: string;
   error = '';
 
   constructor(name: string, col?: DG.Column) {
@@ -43,7 +47,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
-    this.recalculateOnFilter = this.bool('recalculateOnFilter', this.recalculateOnFilter);
+    this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
@@ -62,7 +66,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
-    this.filterSub?.unsubscribe();
   }
 
   async onTableAttached(): Promise<void> {
@@ -77,7 +80,11 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
           await this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) => await this.render(false)));
+        .subscribe(async (_: any) => 
+          await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
+      this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
+        .subscribe(async (_: any) => 
+          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
@@ -104,14 +111,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (property.name === 'moleculeProperties') {
       this.render(false);
       return;
-    }
-    if (property.name === 'recalculateOnFilter') {
-      const recalcOnFilter = property.get(this);
-      if (!recalcOnFilter) {
-        this.filterSub?.unsubscribe();
-        this.filterSub = null;
-      } else
-        this.filterSub = DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe(async (_: any) => await this.render());
     }
     this.render();
   }
@@ -211,5 +210,27 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   clearResults() {
     if (this.root.hasChildNodes())
       this.root.removeChild(this.root.childNodes[0]);
+  }
+
+  getRowSourceIndexes(): DG.BitSet {
+    const bitset = DG.BitSet.create(this.dataFrame.rowCount);
+    switch(this.rowSource) {
+      case RowSourceTypes.All:
+        bitset.setAll(true);
+        break;
+      case RowSourceTypes.Filtered:
+        bitset.copyFrom(this.dataFrame.filter);
+        break;
+      case RowSourceTypes.Selected:
+        bitset.copyFrom(this.dataFrame.selection);
+        break;
+      case RowSourceTypes.FilteredSelected:
+        const filterCopy = DG.BitSet.create(this.dataFrame.rowCount).copyFrom(this.dataFrame.filter);
+        bitset.copyFrom(filterCopy.and(this.dataFrame.selection));
+        break;
+      default:
+        break;
+    }
+    return bitset;
   }
 }

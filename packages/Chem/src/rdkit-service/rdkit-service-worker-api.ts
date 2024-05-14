@@ -8,6 +8,7 @@ export enum WORKER_CALL {
   INVALIDATE_CACHE = 'invalidateCache',
   SET_TERMINATE_FLAG = 'setTerminateFlag',
   MMP_GET_FRAGMENTS = 'mmpGetFragments',
+  MMP_LINK_FRAGMENTS = 'mmpLinkFragments',
   MMP_GET_MCS = 'mmpGetMcs',
   MOST_COMMON_STRUCTURE = 'mostCommonStructure',
   R_GROUP_ANALYSIS = 'rGroupAnalysis',

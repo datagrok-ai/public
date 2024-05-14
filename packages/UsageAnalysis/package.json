@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/usage-analysis",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Platform usage analysis system",
   "repository": {
     "type": "git",
@@ -35,7 +35,9 @@
     "release-usageanalysis-localhost": "webpack && grok publish localhost --release",
     "test": "grok test",
     "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "test-local": "grok test --host localhost",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "devDependencies": {
     "@types/color-hash": "^1.0.2",
@@ -57,5 +59,9 @@
   "canView": [
     "All users"
   ],
-  "category": "General"
+  "category": "General",
+  "meta": {
+    "url": "/usage",
+    "dartium": false
+  }
 }

@@ -1,9 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from '../fit/fit-renderer';
-import {FIT_SEM_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {FitConstants} from '../fit/const';
 
 
 category('detectors', () => {
@@ -17,9 +16,9 @@ category('detectors', () => {
     const col3 = df.columns.byName('json chart 2');
     await grok.data.detectSemanticTypes(df);
     
-    expect(col1.semType, FIT_SEM_TYPE);
-    expect(col2.semType, FIT_SEM_TYPE);
-    expect(col3.semType, FIT_SEM_TYPE);
+    expect(col1.semType, FitConstants.FIT_SEM_TYPE);
+    expect(col2.semType, FitConstants.FIT_SEM_TYPE);
+    expect(col3.semType, FitConstants.FIT_SEM_TYPE);
   });
 
   test('detectXMLCurveChart', async () => {
@@ -29,7 +28,7 @@ category('detectors', () => {
     const col = df.columns.byName('xmlCurveFitChart');
     await grok.data.detectSemanticTypes(df);
     
-    expect(col.semType, FIT_SEM_TYPE);
-    expect(col.tags[TAG_FIT_CHART_FORMAT], TAG_FIT_CHART_FORMAT_3DX);
+    expect(col.semType, FitConstants.FIT_SEM_TYPE);
+    expect(col.tags[FitConstants.TAG_FIT_CHART_FORMAT], FitConstants.TAG_FIT_CHART_FORMAT_3DX);
   });
 });

@@ -32,7 +32,6 @@ zip
 /js-api/ui.js
 
 # JSDoc
-!/js-api/docs/.gitkeep
 /js-api/docs
 .DS_Store
 
@@ -67,6 +66,9 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
+docusaurus/js-api
+docusaurus/temp_*
+docusaurus/output.csv
 
 .terraform
 
@@ -84,3 +86,5 @@ help/deploy/releases/plugins/plugins.json
 !help/deploy/releases/plugins/TableFromJson.js
 
 tools/.cache/
+
+.history

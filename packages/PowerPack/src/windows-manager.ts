@@ -53,7 +53,7 @@ function setToggleState (v:boolean, toggle:HTMLDivElement) {
 
 export function windowsManagerPanel() {
     let root = ui.div([
-        ui.tooltip.bind(topmenuToggle, ()=>{ return ui.div(['Top Menu ', ui.span([''], {style:{color:'var(--grey-4)'}})])}), 
+        ui.tooltip.bind(topmenuToggle, ()=>{ return ui.div(['Tabs ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
         ui.tooltip.bind(toolboxToogle, ()=>{ return ui.div(['Toolbox ', ui.span([''], {style:{color:'var(--grey-4)'}})])}), 
         ui.tooltip.bind(propertiesToggle, ()=>{ return ui.div(['Context Panel ', ui.span(['F4'], {style:{color:'var(--grey-4)'}})])}), 
         ui.tooltip.bind(helpToggle, ()=>{ return ui.div(['Context Help ', ui.span(['F1'], {style:{color:'var(--grey-4)'}})])}),

@@ -1,6 +1,6 @@
 // a view that hosts multiple other views
 
-let custom = DG.View.fromRoot(ui.div([]));
+let custom = DG.View.fromRoot(ui.divText('Custom content'));
 custom.toolbox = ui.divText('my toolbox');
 custom.setRibbonPanels([[ui.button('hey')]]);
 

@@ -7,11 +7,17 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
+  COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
   FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getMainParams} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
+import {getStarted} from '../../function-views/src/shared/utils';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
 
@@ -35,6 +41,7 @@ export class HistoricalRunsList extends DG.Widget {
       DG.Column.bool(EXP_COLUMN_NAME, 0),
       ...this.options?.isHistory ? [DG.Column.bool(FAVORITE_COLUMN_NAME, 0)]: [],
       ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, 0)]: [],
+      DG.Column.bool(COMPLETE_COLUMN_NAME, 0),
       DG.Column.dateTime(STARTED_COLUMN_NAME, 0),
       DG.Column.string(AUTHOR_COLUMN_NAME, 0),
       DG.Column.string(TAGS_COLUMN_NAME, 0),
@@ -234,7 +241,16 @@ export class HistoricalRunsList extends DG.Widget {
         if (key === STARTED_COLUMN_NAME) {
           return DG.Column.dateTime(getColumnName(key), newRuns.length)
             // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].started));
+            .init((idx) =>
+              (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
+                newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
+            );
+        }
+
+        if (key === COMPLETE_COLUMN_NAME) {
+          return DG.Column.bool(getColumnName(key), newRuns.length)
+            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+            .init((idx) =>getStartedOrNull(newRuns[idx]));
         }
 
         return DG.Column.fromStrings(
@@ -270,15 +286,21 @@ export class HistoricalRunsList extends DG.Widget {
               .init((idx) => favorites.includes(newRuns[idx].id))]: [],
           ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
           getColumnByName(STARTED_COLUMN_NAME),
+          getColumnByName(COMPLETE_COLUMN_NAME),
           getColumnByName(AUTHOR_COLUMN_NAME),
           DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
             newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
           ),
           DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
           DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
-          ...this.visibleProps(func).map((key) => getColumn(key)),
-          DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)),
         ]);
+
+        this.visibleProps(func).map((key) => getColumn(key)).forEach((col) => {
+          col.name = newRunsGridDf.columns.getUnusedName(col.name);
+          newRunsGridDf.columns.add(col, false);
+        });
+
+        newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
 
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], false);
         ui.setDisplayAll([
@@ -331,6 +353,8 @@ export class HistoricalRunsList extends DG.Widget {
         this.redrawSelectionState();
       });
 
+      this.redrawSelectionState();
+
       this.subs.push(currentDfSub, selectionSub);
     });
 
@@ -377,10 +401,12 @@ export class HistoricalRunsList extends DG.Widget {
         $(gridWithControls).css({
           ...this.compactMode ? {'width': '100%'} : {'height': '100%'},
         });
-      });
 
-      this.styleHistoryGrid();
-      this.styleHistoryFilters();
+        setTimeout(() => {
+          this.styleHistoryGrid();
+          this.styleHistoryFilters();
+        }, 100);
+      });
     });
 
     this.subs.push(listChangedSub, compactModeSub, runDfChangedSub, filterSub);
@@ -560,8 +586,7 @@ export class HistoricalRunsList extends DG.Widget {
           ui.setDisplay(addToFavorites, true);
         }
 
-        const dateStarted = new Date(run.started.toString())
-          .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        const dateStarted = getStarted(run);
 
         const card = ui.divH([
           ui.divH([
@@ -578,16 +603,17 @@ export class HistoricalRunsList extends DG.Widget {
           ]),
         ], 'hp-funccall-card');
 
+        const tableRowIndex = cell.tableRowIndex!;
         card.addEventListener('mouseover', () => {
-          cell.grid.dataFrame.mouseOverRowIdx = cell.gridRow;
+          cell.grid.dataFrame.mouseOverRowIdx = tableRowIndex;
         });
         card.addEventListener('click', (e) => {
           if (e.shiftKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, true);
+            cell.grid.dataFrame.selection.set(tableRowIndex, true);
           else if (e.ctrlKey)
-            cell.grid.dataFrame.selection.set(cell.gridRow, false);
+            cell.grid.dataFrame.selection.set(tableRowIndex, false);
           else
-            cell.grid.dataFrame.currentRowIdx = cell.gridRow;
+            cell.grid.dataFrame.currentRowIdx = tableRowIndex;
         });
         cell.element = card;
       }
@@ -740,10 +766,12 @@ export class HistoricalRunsList extends DG.Widget {
       'extendLastColumn': this.compactMode,
     });
 
+    this._historyGrid.sort([STARTED_COLUMN_NAME], [false]);
+
     for (let i = 0; i < this._historyGrid.columns.length; i++) {
       const col = this._historyGrid.columns.byIndex(i);
       if (col && col.column?.type === DG.TYPE.DATE_TIME)
-        col.format = 'MMM d HH:mm';
+        col.format = 'MMM d, h:mm tt';
     }
 
     this.setGridColumnsRendering();
@@ -802,7 +830,7 @@ export class HistoricalRunsList extends DG.Widget {
         ...showMetadata &&
         (this.currentDf.col(FAVORITE_COLUMN_NAME)?.categories.length ?? 0) > 1 ?
           [FAVORITE_COLUMN_NAME]: [],
-        ...showMetadata ? [STARTED_COLUMN_NAME]:[],
+        ...showMetadata ? [STARTED_COLUMN_NAME, COMPLETE_COLUMN_NAME]:[],
         ...showMetadata &&
         this.currentDf.getCol(AUTHOR_COLUMN_NAME).categories.length > 1 ? [AUTHOR_COLUMN_NAME]: [],
         ...showMetadata &&

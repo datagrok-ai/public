@@ -220,7 +220,11 @@ export async function optimizationLoop(
       result[j][i] = headEmbeddings[i * dim + j] / divisionFactor;
   }
 
-  device.destroy();
+  matrixStorageBuffer.destroy();
+  epochStorageBuffer.destroy();
+  embeddingStorageBuffer.destroy();
+  computeInfoBuffer.destroy();
+  outEmbedViewBuffer.destroy();
 
   return result;
 }

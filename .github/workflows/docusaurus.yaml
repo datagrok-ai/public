@@ -51,72 +51,20 @@ jobs:
     outputs:
       result: ${{ steps.check.outputs.result }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
         with:
-          node-version: 18
-      - name: Install markdownlint-cli2
-        run: npm install -g markdownlint-cli2
-      - name: Lint-Fix Markdown
-        id: check
-        run: |
-          markdownlint-cli2 --fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
-          echo "result=success" >> $GITHUB_OUTPUT
-        continue-on-error: true
-#      - name: Commit package-lock.json
-#        id: git
-#        continue-on-error: true
-#        if: steps.check.outcome == 'success'
-#        run: |
-#          git config --global user.name 'github-actions[bot]'
-#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-#          git pull
-#          continue=false
-#          if [ -n "$(git status -s help/)" ]; then
-#            git add help/
-#            skip_ci=""
-#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-#              skip_ci="[skip ci]"
-#            fi
-#            git commit -m "GitHub Actions: Fix markdownlint findings $skip_ci
-#
-#            Workflow ${{ github.workflow }} ${{ github.run_number }}
-#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-#            continue=true
-#          fi
-#          if [[ "${continue}" == "true" ]]; then
-#            count=0
-#            retries=10
-#            until git push; do
-#              exit=$?
-#              wait=$((2 ** count))
-#              count=$((count + 1))
-#              if [ $count -lt "$retries" ]; then
-#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-#                sleep $wait
-#                git pull --rebase
-#              else
-#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-#                exit $exit
-#              fi
-#            done
-#          fi
-      - name: Set summary
-        run: |
-          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [[ "${{ steps.check.outputs.result }}" == "success" ]]; then
-            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
-          else
-            echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
-            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
-            echo ":no_entry_sign: Markdown Linter errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#markdown-linter)" >> help/_lint-check-report.md
-            sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
-            cat help/_lint-check-report.md
-            cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-            exit 1
-          fi
+          sparse-checkout: |
+            help
+            .markdownlint.yaml
+            .markdownlint-cli2.jsonc
+      - uses: DavidAnson/markdownlint-cli2-action@v16.0.0
+        if: steps.changed-files.outputs.any_changed == 'true'
+        with:
+          globs: |
+            help/**/*.md
+            help/**/*.mdx
+            packages/*/CHANGELOG.md
+          fix: true
 
   convert:
     name: Build
@@ -124,9 +72,14 @@ jobs:
     if: always() && (needs.lint.result == 'skipped' || needs.lint.result == 'success') && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docusaurus
+            help
+            packages
+            js-api
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
@@ -134,7 +87,7 @@ jobs:
             docusaurus/package-lock.json
             js-api/package-lock.json
       - name: Cache Docusaurus
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
@@ -145,105 +98,77 @@ jobs:
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
-      - name: Install hyperlink
-        if: github.event_name != 'workflow_dispatch'
-        run: npm install -g @untitaker/hyperlink
       - name: Install dependencies
         run: npm install
         working-directory: ./docusaurus
       - name: Install js-api dependencies
         run: npm install
         working-directory: ./js-api
-      - name: Build Docusaurus website
-        run: npm run build
-        working-directory: ./docusaurus
-      - name: Lint-Fix Markdown
-        run: |
-          npm install -g markdownlint-cli2
-          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
+      - run: npm run lint > help/_lint-check-report.md 2>&1
         continue-on-error: true
         if: github.event_name != 'workflow_dispatch' && needs.lint.outputs.result != 'success'
-      - name: Check anchors
-        id: anchors
+      - name: Build Docusaurus website
+        id: build
+        run: |
+          npm run build > ../help/_docusaurus_build.txt 2>&1
+          cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
-        if: github.event_name != 'workflow_dispatch'
         continue-on-error: true
-        run: |
-          hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
-          echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
-        if: github.event_name != 'workflow_dispatch'
-        continue-on-error: true
+        id: build_summary
         run: |
-          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then
-            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
+
+          bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
+          if [ -f help/_broken_links.csv ]; then
+            line_count=$(wc -l < help/_broken_links.csv)
           else
-            echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
-            echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#links-and-anchors-check)" >> help/_anchor-check-report.md
-            cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-            cat help/_anchor-check-report.md
-            sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,^(help/.*\.md)$,### \1,g' ${GITHUB_STEP_SUMMARY}
-            sed -i 's,error:,**Error:**,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,(at line [0-9]+),**\1**,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,^(output/help.*\.html)$,### \1,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r '/^Found [0-9]+ bad links/i ## Errors summary' ${GITHUB_STEP_SUMMARY}
-            sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
-            exit 1
+            line_count=0
           fi
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
+
+          if [ "$line_count" -gt 1 ] || [[ "${{ steps.build.outcome }}" == "failure" ]] ; then
+              echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
+
+              echo "## Local execution" >> ${GITHUB_STEP_SUMMARY}
+              echo "To test locally run 'npm run build' from docusaurus directory" >> ${GITHUB_STEP_SUMMARY}
+
+              if [ "$line_count" -gt 1 ]; then
+                echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
+                # Add CSV as Markdown table 
+                echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
+                tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "broken_links=true" >> $GITHUB_OUTPUT
+              else
+                echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
+                cat help/_docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
+                echo ":no_entry_sign: Docusaurus build errors:"
+                cat help/_docusaurus_build.txt
+              fi
+    
+              if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
+                  exit 1
+              else
+                  echo ':warning: Ignored docusaurus build warnings'
+              fi
+          else
+              echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - uses: actions/upload-artifact@v4
+        name: Save broken links report
+        if: always() && steps.build_summary.outputs.broken_links == 'true'
+        with:
+          name: broken_links.csv
+          path: help/_broken_links.csv
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        name: Save docusaurus build
+        if: github.ref == 'refs/heads/master'
         with:
           name: docusaurus
           path: docusaurus/build
           retention-days: 7
-      - name: 'debug'
-        run: |
-          echo ${{ github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true' }}
-          echo ${{ github.ref }}
-          echo ${{ needs.common-check.outputs.continue }}
-#      - name: Commit plugins.json
-#        id: git
-#        if: github.ref == 'refs/heads/master'
-#        continue-on-error: true
-#        run: |
-#          git config --global user.name 'github-actions[bot]'
-#          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-#          git pull
-#          continue=false
-#          if [ -n "$(git status -s help/deploy/releases/plugins/)" ]; then
-#            git add help/deploy/releases/plugins/
-#            skip_ci=""
-#            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-#              skip_ci="[skip ci]"
-#            fi
-#            git commit -m "GitHub Actions: Update plugins.json $skip_ci
-#
-#            Workflow ${{ github.workflow }} ${{ github.run_number }}
-#            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
-#            continue=true
-#          fi
-#          if [[ "${continue}" == "true" ]]; then
-#            count=0
-#            retries=10
-#            until git push; do
-#              exit=$?
-#              wait=$((2 ** count))
-#              count=$((count + 1))
-#              if [ $count -lt "$retries" ]; then
-#                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-#                sleep $wait
-#                git pull --rebase
-#              else
-#                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-#                exit $exit
-#              fi
-#            done
-#          fi
-#
-#
+
   deploy:
     name: Deploy
     needs: [ convert, common-check ]
@@ -254,8 +179,7 @@ jobs:
     runs-on: ubuntu-22.04
     environment: Help
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: docusaurus
           path: docusaurus/build
@@ -313,7 +237,7 @@ jobs:
       - name: Send to Slack
         id: slack
         if: steps.deploy.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
           payload: |
@@ -351,10 +275,11 @@ jobs:
     if: always() && needs.deploy.result == 'success'
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Update the DocSearch index
-        uses: celsiusnarhwal/typesense-scraper@v2
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docusaurus
+      - uses: celsiusnarhwal/typesense-scraper@v2
         continue-on-error: true
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}

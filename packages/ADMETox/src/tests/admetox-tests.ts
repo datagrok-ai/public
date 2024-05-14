@@ -2,8 +2,7 @@ import {awaitCheck, before, category, delay, expect, expectArray, test} from '@d
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetox, performChemicalPropertyPredictions, getQueryParams } from '../utils/admetox-utils';
-import { properties } from '../utils/const';
+import { runAdmetox, performChemicalPropertyPredictions, getQueryParams, properties } from '../utils/admetox-utils';
 
 category('Admetox', () => {
   let v: DG.TableView;
@@ -58,7 +57,7 @@ category('Admetox', () => {
     await delay(1000);
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Pgp-Substrate';
-    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn, false);
+    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
@@ -90,7 +89,7 @@ category('Admetox', () => {
         const molecules = grok.data.demo.molecules(moleculesCount);
         molecules.columns.remove('logD');
         const iterations = DG.Test.isInBenchmark ? 100 : 5;
-        const args = [molecules.toCsv(), getQueryParams(), 'false'];
+        const args = [molecules.toCsv(), await getQueryParams(), 'false'];
         return await runInLoop(iterations, runAdmetox, ...args);
     };
 

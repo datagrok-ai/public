@@ -21,12 +21,12 @@ in it, but does not contain the real data points. "[Anonymize Data](anonymize-da
 
 1. Anonymize data of string column "Sex"
 
-* Values ​​in the "Sex" column have changed to "Sex 0" and "Sex 1"
+* Values   in the "Sex" column have changed to "Sex 0" and "Sex 1"
 
 1. Use different values in "Number randomization factor" field (negatives, integers, floats) for anonymize data of "
    Height" field
 
-* Values ​​in the "Height" column are changed according to the randomization factor
+* Values   in the "Height" column are changed according to the randomization factor
 
 1. Test non-functional modules (UI, popup menu, help, navigation, properties, etc.)
 

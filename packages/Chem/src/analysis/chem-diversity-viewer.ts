@@ -45,7 +45,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         this.renderMolIds =
           await chemDiversitySearch(
             this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-            this.fingerprint as Fingerprint, this.tooltipUse, this.recalculateOnFilter);
+            this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -96,7 +96,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
-      panel[cnt++] = ui.div(grids, { classes: 'd4-flex-wrap' });
+      panel[cnt++] = ui.div(grids, { classes: 'd4-flex-wrap chem-diversity-search' });
       this.root.appendChild(ui.div(panel, { style: { margin: '5px' } }));
       if (!this.tooltipUse)
         progressBar!.close();
@@ -106,7 +106,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false, filterSync = false): Promise<number[]> {
+  limit: number, fingerprint: Fingerprint, rowSourceIndexes: DG.BitSet, tooltipUse: boolean = false): Promise<number[]> {
   let fingerprintArray: (BitArray | null)[];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
@@ -131,8 +131,8 @@ export async function chemDiversitySearch(
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);
 
   let indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
-  if (filterSync && moleculeColumn.dataFrame)
-    indexes = indexes.filter((it) => moleculeColumn.dataFrame.filter.get(it));
+  if (moleculeColumn.dataFrame)
+    indexes = indexes.filter((it) => rowSourceIndexes.get(it));
   if (!tooltipUse)
     malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);

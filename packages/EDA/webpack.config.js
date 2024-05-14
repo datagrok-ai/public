@@ -2,6 +2,9 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
@@ -14,6 +17,10 @@ module.exports = {
     rules: [
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
     ],
   },
   devtool: 'inline-source-map',

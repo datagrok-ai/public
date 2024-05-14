@@ -19,7 +19,7 @@ the commonly used routines:
 * [Extract regular expression](extract-regexp.md)
 * [Filter to Column](filter-to-column.md)
 * [Join Tables](join-tables.md)
-* [Impute Missing Values](missing-values-imputation.md)
+* [Impute Missing Values](../explore/missing-values-imputation.md)
 * [Select Duplicates](select-duplicates.md)
 * [Select Missing Values](select-missing-values.md)
 * [Select Random Rows](select-random-rows.md)
@@ -33,4 +33,4 @@ Press Alt+A to open data aggregation tool
 
 See also:
 
-* [Macros](../datagrok/navigation/navigation.md#console)
+* [Macros](../datagrok/navigation/panels/panels.md#console)

@@ -214,7 +214,6 @@ export async function multiColWebGPUSparseMatrix(
 
     `});
 
-
   const pipeline = device.createComputePipeline({
     label: 'sparse matrix compute pipeline',
     layout: 'auto',
@@ -321,7 +320,6 @@ export async function multiColWebGPUSparseMatrix(
   // we are done at this point.
   computeInfoBuffer.unmap();
 
-
   // create a buffer on the GPU to hold suppInfo
   // same here, we need to pad the size of the struct to 16 bytes
   const suppInfoBufferSize = suppInfoBuffer32Size * Uint32Array.BYTES_PER_ELEMENT;
@@ -358,7 +356,6 @@ export async function multiColWebGPUSparseMatrix(
     dummyView.set([1, 1, 1, 1]);
   }
   suppInfoBuffer.unmap();
-
 
   // create a buffer for the results
   const resultsBufferSize = resultsBuffer32Size * Uint32Array.BYTES_PER_ELEMENT;
@@ -430,7 +427,6 @@ export async function multiColWebGPUSparseMatrix(
     device.queue.submit([commandBuffer]);
 
     // Read the results
-
     await device.queue.onSubmittedWorkDone();
 
     await resultsOutBuffer.mapAsync(GPUMapMode.READ);
@@ -452,21 +448,7 @@ export async function multiColWebGPUSparseMatrix(
     isAllDone = resultsDone.every((d) => d === 1);
 
     const totalResults = resultsFound.reduce((a, b) => a + b, 0);
-    //combinedFound += totalResults;
-    //console.log(resultsFound);
 
-
-    // const doneCopy = new Uint32Array(numOfThreads);
-    // doneCopy.set(resultsDone);
-    // const resultsFoundCopy = new Uint32Array(numOfThreads);
-    // resultsFoundCopy.set(resultsFound);
-    // const iCopy = new Uint32Array(resultsI.length);
-    // iCopy.set(resultsI);
-    // const jCopy = new Uint32Array(resultsJ.length);
-    // jCopy.set(resultsJ);
-    // console.log(jCopy.filter((d) => d !== 0));
-
-    // console.log(iCopy.filter((d) => d !== 0));
     const combinedI = new Uint32Array(totalResults);
     const combinedJ = new Uint32Array(totalResults);
     const combinedDistances = new Float32Array(totalResults);
@@ -498,10 +480,12 @@ export async function multiColWebGPUSparseMatrix(
     finalOffset += resultIs[i].length;
   }
 
-  // console.log(finalI);
-  // console.log(finalJ);
-  // console.log(finalDistances);
-  device.destroy();
+  // as rule mandates, destroy all buffers.
+  computeInfoBuffer.destroy();
+  suppInfoBuffer.destroy();
+  resultsBuffer.destroy();
+  resultsOutBuffer.destroy();
+
   return {i: finalI, j: finalJ, distance: finalDistances};
 }
 

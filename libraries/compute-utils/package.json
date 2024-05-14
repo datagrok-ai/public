@@ -1,20 +1,22 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.31.0",
+  "version": "1.34.0",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.19",
+    "@datagrok-libraries/utils": "^4.2.3",
     "fflate": "^0.7.4",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.17.0",
-    "dayjs": "^1.11.10",
+    "datagrok-api": "^1.18.6",
+    "dayjs": "=1.11.10",
+    "lodash.clonedeepwith": "^4.5.0",
+    "@types/lodash.clonedeepwith": "^4.5.9",
     "exceljs": "^4.3.0",
     "html2canvas": "^1.4.1"
   },
@@ -34,6 +36,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "build": "tsc",
+    "clean": "tsc --build --clean",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

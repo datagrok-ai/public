@@ -17,7 +17,7 @@ Available tutorials:
 * [Importing data](importing-data.md)
 * [Miscellaneous](miscellaneous.md)
 * [Platform navigation](platform-navigation.md)
-* [Scripting](scripting.md)
+* [Scripting](scripting/scripting.mdx)
 * [Selecting franchise Locations](selecting-franchise-locations.md)
 * [Predictive modeling](learn.md)
 * [Projects](projects.md)

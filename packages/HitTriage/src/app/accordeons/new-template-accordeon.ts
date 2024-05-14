@@ -9,6 +9,7 @@ import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
+import {getLayoutInput} from './layout-input';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
@@ -31,6 +32,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   submitFunctionInput.nullable = true;
   submitFunctionInput.fireChanged();
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
+  const layoutInput = getLayoutInput();
   const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
 
   const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
@@ -107,6 +109,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
     ui.div([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
     dataSourceFunctionInput.root,
+    layoutInput.dataFileInput,
     fieldsEditor.fieldsDiv,
     ui.h2('Compute'),
     funcInput.root,
@@ -135,6 +138,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
         key: templateKeyInput.value,
         campaignFields: fieldsEditor.getFields(),
         dataSourceType: ingestTypeInput.value ?? 'Query',
+        layoutViewState: layoutInput.getLayoutViewState() ?? undefined,
         compute: {
           descriptors: {
             enabled: !!funcDialogRes?.descriptors?.length,

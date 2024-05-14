@@ -267,9 +267,9 @@ export class Widget<TSettings = any> {
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
-   *  Registered property gets added to {@see properties}.
+   *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *
+   *  
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -997,8 +997,8 @@ export class CodeEditor {
     this.dart = dart;
   }
 
-  static create(script = '', mode = 'javascript', placeholder = ''): CodeEditor {
-    return toJs(api.grok_CodeEditor(script, mode, placeholder));
+  static create(script = '', mode = 'javascript', placeholder = '', root?: HTMLDivElement): CodeEditor {
+    return toJs(api.grok_CodeEditor(script, mode, placeholder, root));
   }
 
   append(text: string): void {
@@ -1463,6 +1463,10 @@ export class Color {
 
   static darken(color: number, diff: number): number {
     return api.grok_Color_Darken(color, diff);
+  }
+
+  static  getRowColor(column: Column, row: number): number {
+    return api.grok_Color_GetRowColor(column.dart, row);
   }
 
   static scale(x: number, min: number, max: number): number {

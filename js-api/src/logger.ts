@@ -3,6 +3,9 @@ import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
 import dayjs from "dayjs";
+import {Accordion} from "./widgets";
+import {toJs} from "./wrappers";
+import {DataFrame} from "./dataframe";
 
 const api: IDartApi = <any>window;
 
@@ -30,7 +33,7 @@ export class Logger {
     return new Logger(undefined, {staticLogger: true});
   }
 
-  static translateStackTrace(stackTrace: string): string {
+  static translateStackTrace(stackTrace: string): Promise<string> {
      return api.grok_Log_TranslateStackTrace(stackTrace);
   }
 
@@ -85,12 +88,22 @@ export class Logger {
   }
 
   static interceptConsoleOutput(): void {
+    const regex = new RegExp('(?:\\d{4}-\\d{2}-\\d{2})?(?:[ T]\\d{2}:\\d{2}:\\d{2})?[.,]\\d{3}');
     const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
       const std = f.bind(console);
       return (...args: any[]) => {
-        try { this.consoleLogs.push({'time': dayjs().utc().valueOf(),
-          'message': args.map((x) => `${x}`).join(' ')}); }
-        catch (_) {}
+        try {
+          let message = args.map((x) => `${x}`).join(' ');
+          let time = dayjs().utc().valueOf();
+          if (regex.test(message)) {
+            const result = regex.exec(message);
+            if (result && result.length > 0) {
+              time = dayjs(result[0]).utc().valueOf();
+              message = message.replace(regex, '');
+            }
+          }
+          this.consoleLogs.push({'time': time, 'message': message});
+        } catch (_) {}
         std(...args);
       }
     };
@@ -118,13 +131,6 @@ export class PackageLogger extends Logger {
     //@ts-ignore
     msg.params['packageName'] = this.package.name;
     super._log(msg);
-  }
-}
-
-
-export class DetailedLog {
-  static async getAccordion(reportId: string): Promise<HTMLElement> {
-    return api.grok_DetailedLog_Get_Accordion(reportId);
   }
 }
 

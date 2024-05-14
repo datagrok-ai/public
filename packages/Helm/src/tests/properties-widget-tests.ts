@@ -5,7 +5,9 @@ import * as grok from 'datagrok-api/grok';
 import {after, before, category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {getPropertiesDict} from '../widgets/properties-widget';
@@ -88,7 +90,7 @@ category('properties-widget', () => {
 function testPropertiesDict(
   seq: string, units: NOTATION, separator: string | undefined, alphabet: ALPHABET | undefined, expPropDict: {}
 ) {
-  const col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [seq]);
+  const col = DG.Column.fromStrings('seq', [seq]) as DG.Column<string>;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag(DG.TAGS.UNITS, units);
   if (separator) col.setTag(bioTAGS.separator, separator);

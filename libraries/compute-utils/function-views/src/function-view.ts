@@ -9,14 +9,14 @@ import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {deepCopy, fcToSerializable} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {FileInput} from '../../shared-components/src/file-input';
 import {testFunctionView} from '../../shared-utils/function-views-testing';
-import {properUpdateIndicator} from './shared/utils';
+import {getStarted, properUpdateIndicator} from './shared/utils';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -64,7 +64,8 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super();
     this.box = true;
@@ -74,9 +75,11 @@ export abstract class FunctionView extends DG.ViewBase {
       this.parentCall = initValue;
 
     this.parentView = this.parentCall?.parentCall?.aux?.['view'];
-    this.basePath = `/${this.parentCall.func.name}`;
+    if (this.parentCall?.func?.name)
+      this.basePath = `/${this.parentCall.func.name}`;
 
-    this.init();
+    if (!options.skipInit)
+      this.init();
   }
 
   /**
@@ -103,20 +106,30 @@ export abstract class FunctionView extends DG.ViewBase {
       this.setAsLoaded();
     }
 
-    if (this.isHistoryEnabled && this.func && !this.options.isTabbed) {
-      const historySub = this.isHistorical.subscribe((newValue) => {
-        if (newValue) {
-          this.path = `?id=${this.funcCall.id}`;
-          const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
-          if ((this.name.indexOf(' — ') < 0))
-            this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
-          else
-            this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
-        } else {
-          this.path = ``;
-          this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
-        }
-      });
+    if (this.isHistoryEnabled && this.func) {
+      const historySub = this.options.isTabbed ?
+        this.isHistorical.subscribe((newValue) => {
+          if (!newValue) {
+            //@ts-ignore
+            this.funcCall.id = null;
+          }
+        }) :
+        this.isHistorical.subscribe((newValue) => {
+          if (newValue) {
+            this.path = `?id=${this.funcCall.id}`;
+            const dateStarted = getStarted(this.funcCall);
+            if ((this.name.indexOf(' — ') < 0))
+              this.name = `${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`;
+            else
+              this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`;
+          } else {
+            this.path = ``;
+            // Resetting Funccall's id to flag it as incomplete
+            //@ts-ignore
+            this.funcCall.id = null;
+            this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
+          }
+        });
       this.subs.push(historySub);
     }
   }
@@ -373,6 +386,10 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
+  protected async onSaveClick() {
+    await this.saveRun(this.funcCall);
+  }
+
   protected historyBlock = null as null | HistoryPanel;
   /**
    * Override to create a custom historical runs control.
@@ -409,7 +426,7 @@ export abstract class FunctionView extends DG.ViewBase {
       newHistoryBlock.afterRunEdited.subscribe((editedCall) => {
         if (editedCall.id === this.funcCall.id && editedCall.options['title']) {
           this.path = `?id=${this.funcCall.id}`;
-          const dateStarted = new Date(editedCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+          const dateStarted = getStarted(editedCall);
           if ((this.name.indexOf(' — ') < 0))
             this.name = `${this.name} — ${editedCall.options['title'] ?? dateStarted}`;
           else
@@ -460,6 +477,10 @@ export abstract class FunctionView extends DG.ViewBase {
       }
     });
 
+    const saveBtn = ui.iconFA('save', async () => {
+      await this.onSaveClick();
+    }, 'Save current state');
+
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
       this.getFormats(),
@@ -474,8 +495,8 @@ export abstract class FunctionView extends DG.ViewBase {
 
     const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
-        $(exportBtn).show();
-        $(editBtn).show();
+        ui.setDisplay(exportBtn, !isIncomplete(this.funcCall));
+        ui.setDisplay(editBtn, true);
       } else {
         $(exportBtn).hide();
         $(editBtn).hide();
@@ -510,6 +531,7 @@ export abstract class FunctionView extends DG.ViewBase {
         ...!this.options.isTabbed && this.isHistoryEnabled && this.options.historyEnabled ? [
           historyButton,
         ]: [],
+        ...!this.options.isTabbed && this.isHistoryEnabled ? [saveBtn] : [],
         ...!this.options.isTabbed && this.isExportEnabled && this.exportConfig && this.exportConfig.supportedFormats.length > 0 ? [
           exportBtn,
         ]: [],
@@ -631,11 +653,21 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
    */
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    await this.onBeforeSaveRun(callToSave);
-    const savedCall = await historyUtils.saveRun(callToSave);
+    let callCopy = deepCopy(callToSave);
+    await this.onBeforeSaveRun(callCopy);
+
+    if (isIncomplete(callToSave)) {
+      // Used to reset 'started' field
+      callCopy = await createPartialCopy(callToSave);
+    }
+    if (callCopy.id) callCopy.newId();
+
+    const savedCall = await historyUtils.saveRun(callCopy);
+    const loadedCall = await historyUtils.loadRun(savedCall.id);
 
     if (this.options.historyEnabled && this.isHistoryEnabled && this.historyBlock)
-      this.historyBlock.addRun(await historyUtils.loadRun(savedCall.id));
+      this.historyBlock.addRun(loadedCall);
+    this.linkFunccall(loadedCall);
 
     this.isHistorical.next(true);
 
@@ -724,8 +756,8 @@ export abstract class FunctionView extends DG.ViewBase {
 
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
-    this.funcCall.newId();
     try {
+      this.funcCall.newId();
       await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
       await this.onAfterRun(this.funcCall);
@@ -778,7 +810,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected async executeTest(spec: any, updateMode = false) {
-    await testFunctionView(spec, this, {updateMode});
+    await testFunctionView(spec, this, {updateMode, interactive: true});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);
@@ -844,7 +876,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   private helpCache = null as string | null;
 
-  protected async getContextHelp() {
+  public async getContextHelp() {
     const helpPath = this.func.options['help'];
 
     if (!helpPath) return null;
@@ -896,5 +928,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get hasUploadMode() {
     return this.getFeature('upload', false);
+  }
+
+  protected get isFittingEnabled() {
+    return this.getFeature('fitting', false);
   }
 }

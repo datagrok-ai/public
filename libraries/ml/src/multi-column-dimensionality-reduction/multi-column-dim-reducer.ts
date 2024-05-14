@@ -41,6 +41,8 @@ export interface IDimReductionParam<T extends number | string | boolean = number
     min?: number;
     max?: number;
     step?: number;
+    disable?: boolean;
+    disableTooltip?: string;
 }
 
 abstract class MultiColumnReducer {

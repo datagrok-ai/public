@@ -18,7 +18,7 @@ export class LogView extends UaView {
     this.name = 'Log';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     grok.dapi.users.list().then(
       (user) => user.map((u) => {
         const d = {
@@ -40,7 +40,6 @@ export class LogView extends UaView {
           'showRowHeader': false,
           'showColumnGridlines': false,
           'allowRowSelection': false,
-          'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
         });

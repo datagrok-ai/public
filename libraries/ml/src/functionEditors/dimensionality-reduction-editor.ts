@@ -290,6 +290,7 @@ export class DimReductionBaseEditor {
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam | IDimReductionParam<string> | IDimReductionParam<boolean> =
           (params as any)[it];
+
         const input = param.type === 'string' ?
           ui.stringInput(param.uiName, param.value ?? '', () => {
             param.value = (input as DG.InputBase<string>).value;
@@ -300,8 +301,11 @@ export class DimReductionBaseEditor {
             ui.floatInput(param.uiName, param.value as any, () => {
               param.value = input.value;
             });
-        ui.tooltip.bind(input.input ?? input.root, param.tooltip);
         paramsForm.append(input.root);
+        if (param.disable) {
+          input.enabled = false;
+          ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
+        } else { ui.tooltip.bind(input.input ?? input.root, param.tooltip); }
       });
       return paramsForm;
     }
