@@ -542,7 +542,7 @@ JOIN target_dictionary t on a.tid = t.tid
 JOIN activities act on a.assay_id = act.assay_id
 JOIN compound_structures c on act.molregno = c.molregno
 WHERE t.tid = CAST(@target_id as integer)
-AND c.canonical_smiles @>@substructure::qmol
+AND c.canonical_smiles::mol @>@substructure::qmol
 AND act.type = @activity_type
 LIMIT 50
 --end`;
