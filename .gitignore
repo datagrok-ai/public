@@ -67,6 +67,8 @@ docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
 docusaurus/js-api
+docusaurus/temp_*
+docusaurus/output.csv
 
 .terraform
 

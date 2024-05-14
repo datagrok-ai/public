@@ -12,6 +12,8 @@ const config = {
     baseUrl: '/',
     onBrokenLinks: 'warn',
     onBrokenMarkdownLinks: 'warn',
+    onBrokenAnchors: 'warn',
+    onDuplicateRoutes: 'warn',
     favicon: 'favicon/favicon.ico',
     staticDirectories: ['static'],
 
