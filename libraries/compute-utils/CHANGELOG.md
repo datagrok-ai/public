@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.33.7 (2024-05-14)
+
+### Features
+
+- RFV: Removed workaround for tableInput
+- RFV: Added tooltips for inputs
+- HistoryInput: Changed dates to local timezone
+
 ## 1.33.6 (2024-05-10)
 
 ### Features
