@@ -1294,8 +1294,6 @@ export class RichFunctionView extends FunctionView {
       return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
-    case DG.TYPE.DATA_FRAME:
-      return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
     case DG.TYPE.FLOAT:
@@ -1392,8 +1390,8 @@ export class RichFunctionView extends FunctionView {
   private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
     const paramName = param.property.name;
 
-    ui.tooltip.bind(t.root, () => {
-      const desc = param.property.description ? `${param.property.description}.`: null;
+    const generateTooltip = () => {
+      const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
 
       const getExplanation = () => {
         if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
@@ -1409,7 +1407,9 @@ export class RichFunctionView extends FunctionView {
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
         ], {style: {'max-width': '300px'}}) : null;
-    });
+    };
+    ui.tooltip.bind(t.captionLabel, generateTooltip);
+    ui.tooltip.bind(t.input, generateTooltip);
   }
 
   private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {

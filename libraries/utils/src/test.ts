@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {testData} from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
-import { changeOptionsSaveLayout, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
+import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
@@ -655,6 +655,12 @@ export async function testViewer(v: string, df: DG.DataFrame, options?: {
       if (options?.awaitViewer)
         await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);
     }
+
+    //5. Call postponed filtering
+    await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, filterAsync);
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, filterAsync, options!.awaitViewer);
+
   } finally {
     // closeAll() is handling by common test workflow
     // grok.shell.closeAll();

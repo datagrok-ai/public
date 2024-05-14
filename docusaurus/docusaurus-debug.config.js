@@ -157,7 +157,7 @@ const config = {
             links: [
                 {
                     label: 'Help',
-                    to: '/help/datagrok/datagrok',
+                    to: '/help/datagrok',
                 },
                 {
                     label: 'API Docs',

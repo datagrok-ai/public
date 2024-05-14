@@ -9,6 +9,7 @@ import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
+import {getStarted} from '../function-views/src/shared/utils';
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
   const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
