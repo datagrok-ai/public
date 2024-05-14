@@ -87,7 +87,7 @@ jobs:
             docusaurus/package-lock.json
             js-api/package-lock.json
       - name: Cache Docusaurus
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
@@ -154,14 +154,14 @@ jobs:
           else
               echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         name: Save broken links report
         if: always() && steps.build_summary.outputs.broken_links == 'true'
         with:
           name: broken_links.csv
-          path: help/broken_links.csv
+          path: help/_broken_links.csv
           retention-days: 14
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         name: Save docusaurus build
         if: github.ref == 'refs/heads/master'
         with:
@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-22.04
     environment: Help
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: docusaurus
           path: docusaurus/build
@@ -237,7 +237,7 @@ jobs:
       - name: Send to Slack
         id: slack
         if: steps.deploy.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
           payload: |
