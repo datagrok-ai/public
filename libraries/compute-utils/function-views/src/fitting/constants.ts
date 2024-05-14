@@ -65,7 +65,7 @@ export const MS_TO_SLEEP = 10;
 /** Fitting UI constants */
 export enum FITTING_UI {
   SIMILARITY_MIN = 0,
-  SIMILARITY_DEFAULT = 0.1,
+  SIMILARITY_DEFAULT = 0.01,
   SAMPLES = 10,
 };
 

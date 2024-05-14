@@ -602,32 +602,50 @@ export class FittingView {
 
   /** Build form with inputs */
   private buildForm() {
-    let prevCategory = 'Misc';
+    //1. Inputs of the function
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
 
-    const form = Object.values(this.store.inputs)
-      .reduce((container, inputConfig) => {
-        const prop = inputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h3(prop.category));
-          prevCategory = prop.category;
+    // inputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
+
+    // group inputs by categories
+    Object.values(this.store.inputs).forEach((inputConfig) => {
+      const category = inputConfig.prop.category;
+      const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+
+      if (inputsByCategories.has(category))
+        inputsByCategories.get(category)!.push(...roots);
+      else
+        inputsByCategories.set(category, roots);
+    });
+
+    // the main form
+    const form = ui.div([fitHeader], {style: {'overflow-y': 'scroll', 'width': '100%'}});
+
+    // add inputs to the main form (grouped by categories)
+    if (inputsByCategories.size > 1) {
+      inputsByCategories.forEach((roots, category) => {
+        if (category !== 'Misc') {
+          form.append(ui.h3(category));
+          form.append(...roots);
         }
+      });
 
-        container.append(
-          ...inputConfig.constForm.map((input) => input.root),
-          ...inputConfig.saForm.map((input) => input.root),
-        );
+      const miscRoots = inputsByCategories.get('Misc');
 
-        return container;
-      }, ui.div([
-        fitHeader,
-      ], {style: {'overflow-y': 'scroll', 'width': '100%'}}));
+      if (miscRoots!.length > 0) {
+        form.append(ui.h3('Misc'));
+        form.append(...inputsByCategories.get('Misc')!);
+      }
+    } else
+      form.append(...inputsByCategories.get('Misc')!);
 
+    // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
-    prevCategory = 'Misc';
+    let prevCategory = 'Misc';
 
     Object.values(this.store.outputs)
       .reduce((container, outputConfig) => {
@@ -643,7 +661,7 @@ export class FittingView {
         return container;
       }, form);
 
-    // make at least one output of interest
+    // 3. Make one output of interest
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
@@ -656,9 +674,9 @@ export class FittingView {
     if (!isAnyOutputSelectedAsOfInterest) {
       const firstOutput = this.store.outputs[Object.keys(this.store.outputs)[0]];
       firstOutput.isInterest.next(true);
-      // firstOutput.isInterest.input.value = true;
     }
 
+    // 4. Method & settings block
     const usingHeader = ui.h1('Using');
     ui.tooltip.bind(usingHeader, 'Specify fitting method');
     form.appendChild(usingHeader);
@@ -1267,7 +1285,6 @@ export class FittingView {
       const expArgCol = expDf.col(argColName);
 
       const configs = getPropViewers(prop).config;
-      console.log(configs);
 
       if ((simArgCol === null) || (expArgCol === null))
         throw new Error('Creating viewer fails: incorrect argument column name');
@@ -1288,7 +1305,6 @@ export class FittingView {
           if (segmentColName) {
             const segmData = Array<string>(rowCount);
             indeces.forEach((val, idx) => segmData[idx] = simDf.col(segmentColName as string)!.get(val));
-            console.log(segmData);
             segmentCol = DG.Column.fromStrings(segmentColName as string, segmData);
           }
         });
