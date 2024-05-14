@@ -1299,8 +1299,6 @@ export interface IDartApi {
   grok_ML_Cluster(table: any, features: any, clusters: any): Promise<any>;
   grok_ML_PCA(table: any, features: any, components: any, center: any, scale: any): Promise<any>;
   grok_ML_RandomData(table: any, distribution: String, params: any, seed: any): Promise<any>;
-  grok_Chem_Descriptors(table: any, column: String, descriptors: any): Promise<any>;
-  grok_Chem_DescriptorsTree(): Promise<any>;
   grok_Chem_Sketcher(handler: any, smiles: String): any;
   grok_Notebook_Get_Environment(n: any): any;
   grok_Notebook_Set_Environment(n: any, e: String): any;
