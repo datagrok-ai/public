@@ -1,5 +1,5 @@
 {
-  "name": "grokcompute",
+  "name": "@datagrok/grok-compute",
   "friendlyName": "GrokCompute",
   "version": "1.0.0",
   "description": "ML functionality from old grok_compute",
