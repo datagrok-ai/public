@@ -124,8 +124,12 @@ jobs:
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
-            bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/broken_links.csv
-            line_count=$(wc -l < help/broken_links.csv)
+            bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
+            if [ -f help/_broken_links.csv ]; then
+              line_count=$(wc -l < help/broken_links.csv)
+            else
+              line_count=0
+            fi
 
             echo "## Local execution" >> ${GITHUB_STEP_SUMMARY}
             echo "To test locally run 'npm run build' from docusaurus directory" >> ${GITHUB_STEP_SUMMARY}
@@ -133,10 +137,9 @@ jobs:
             if [ "$line_count" -gt 1 ]; then
               echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
               # Add CSV as Markdown table 
-              echo "|$(head -n 1 help/broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
-              echo "|$(head -n 1 help/broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
-              tail -n +2 help/broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
-
+              echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+              echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
+              tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
               echo "broken_links=true" >> $GITHUB_OUTPUT
             else
               echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
