@@ -14,6 +14,9 @@ import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/m
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {Mol2Writer} from 'molstar/lib/mol-io/writer/mol2';
+import {encode_mmCIF_categories, to_mmCIF} from 'molstar/lib/mol-model/structure/export/mmcif';
+import {Structure} from 'molstar/lib/mol-model/structure';
 
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {
@@ -431,6 +434,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         ['', ...this.biostructureDataProviderList.map((f) => f.nqName)];
     });
 
+    this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+
     superOnTableAttached();
     this.setData(logIndent + 1, callLog);
     this.logger.debug(`${logPrefix}, end`);
@@ -452,6 +457,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       superDetach();
     });
     this.logger.debug(`${logPrefix}, end`);
+  }
+
+  onContextMenuHandler(menu: DG.Menu): void {
+    menu.item('Download', () => {
+      this.writeToCif('test.cif');
+    });
+  }
+
+  writeToCif(name: string) {
+    const { structures } = this.viewer!.plugin.managers.structure.hierarchy.current;
+    const _s = structures[0];
+    const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
+    to_mmCIF(name, s!);
   }
 
   // -- Data --
