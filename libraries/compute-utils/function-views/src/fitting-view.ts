@@ -491,7 +491,7 @@ export class FittingView {
     });
     this.similarityInput.addCaption(TITLE.SIMILARITY);
     this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
-    ui.tooltip.bind(this.similarityInput.captionLabel, `Max relative deviation (%) between similar fitted points`);
+    ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
 
     this.updateRunIconStyle();
     this.updateRunIconDisabledTooltip('Select inputs for fitting');
