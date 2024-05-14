@@ -29,8 +29,7 @@ The following operations can be applied to any entity:
 
 * Getting its URL
 * Referencing it in a [chat](../../collaborate/chat.md), in
-  [markup](../../develop/under-the-hood/markup.md), or in a
-  [dashboard](project/dashboard.md)
+  [markup](../../develop/under-the-hood/markup.md), or a [dashboard](project/dashboard.md)
 * Assigning [privileges](../../govern/authorization.md), such as rights to view,
   edit, or share, to a particular instance
 * Using it as a parameter in the [audit](../../govern/audit.md) record
@@ -48,7 +47,7 @@ Datagrok, there are three kinds of metadata:
 ### Tags
 
 A tag is a short string that can be associated with any entity. Use it to
-organize and group different entities together. For example, a `#chem` tag could
+organize and group different entities. For example, a `#chem` tag could
 be used with chemical scripts, molecular datasets, or chemical database queries.
 
 To search for tagged entities, enter `#tagname` in the search box.
@@ -67,10 +66,10 @@ For example:
 
 ### Properties
 
-Properties are similar to parameters but unlike parameters, properties can
+Properties are similar to parameters, but unlike parameters, properties can
 include nested properties. Additionally, you can't edit them directly. 
 
-Some properties are universal across all entities, others are specific to
+Some properties are universal across all entities. Others are specific to
 particular entity types. Common properties include:
 
 * ID
