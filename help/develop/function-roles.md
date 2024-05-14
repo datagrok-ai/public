@@ -7,7 +7,7 @@ A package can contain functions that get discovered and integrated with the plat
 Typically, each function type has a special tag denoting what the function does, for example:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](../visualize/dashboard.md)
+* `#dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` for [package initialization](#package-initialization)
 * `#autostart` for [automatic execution at platform startup](#autostart)
@@ -120,7 +120,7 @@ are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../access/files/files.mdx). The platform provides a way
+File viewers are used in Datagrok's [file share browser](../access/files/files.md). The platform provides a way
 to define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 

@@ -2,6 +2,9 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     package: ['./src/sql-wasm.wasm', './src/package.ts'],

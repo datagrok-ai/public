@@ -19,7 +19,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout, ViewInfo} from "./views/view";
@@ -177,6 +177,10 @@ export class Dapi {
    *  @type {FileSource} */
   get files(): FileSource {
     return new FileSource();
+  }
+
+  get reports(): UserReportsDataSource {
+    return new UserReportsDataSource();
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -397,7 +401,6 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
-
   /**
    * Sends email
    * @param email - message that will be sent using configured SMTP service
@@ -406,14 +409,6 @@ export class AdminDataSource {
     if (email.to.length === 0)
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
-  }
-
-  getUserReport(reportId: string): Promise<Uint8Array> {
-    return api.grok_Dapi_Admin_Get_User_Report(this.dart, reportId);
-  }
-
-  postEventReport(eventId: string): Promise<void> {
-    return api.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId);
   }
 }
 
@@ -956,6 +951,16 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
    */
   getContainerLogs(containerId: string, limit: number = 10000): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, containerId, limit);
+  }
+}
+
+export class UserReportsDataSource {
+  getReports(num?: number, limit?: number): Promise<DataFrame> {
+    return api.grok_Reports_Get(num, limit);
+  }
+
+  find(id: string): Promise<UserReport> {
+    return api.grok_Reports_Find(id);
   }
 }
 

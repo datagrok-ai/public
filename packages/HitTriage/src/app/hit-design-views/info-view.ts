@@ -7,13 +7,12 @@ import {_package} from '../../package';
 import $ from 'cash-dom';
 import {CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
-import {addBreadCrumbsToRibbons, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
 
 export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
-  private deletedCampaigns: string[] = [];
   constructor(app: HitDesignApp) {
     super(app);
     this.name = 'Hit Design';
@@ -134,14 +133,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   private async getCampaignsTable() {
-    const campaignFolders = (await _package.files.list('Hit Design/campaigns'))
-      .filter((f) => this.deletedCampaigns.indexOf(f.name) === -1);
-    const campaignNamesMap: {[name: string]: HitDesignCampaign} = {};
-    for (const folder of campaignFolders) {
-      const campaignJson: HitDesignCampaign = JSON.parse(await _package.files
-        .readAsText(`Hit Design/campaigns/${folder.name}/${CampaignJsonName}`));
-      campaignNamesMap[campaignJson.name] = campaignJson;
-    }
+    const campaignNamesMap = await loadCampaigns('Hit Design', this.deletedCampaigns);
 
     const table = ui.table(Object.values(campaignNamesMap), (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
@@ -175,7 +167,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     return table;
   }
 
-  private async setCampaign(campaignName: string) {
+  public async setCampaign(campaignName: string) {
     const campaign = await this.checkCampaign(campaignName);
     this.app.campaign = campaign;
   }
@@ -185,7 +177,9 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       this.app.dataFrame = camp.df;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      this.app.saveCampaign(undefined, false);
+      await this.app.saveCampaign(undefined, false);
+      if (template.layoutViewState && this.app.campaign)
+        this.app.campaign.layout = template.layoutViewState;
     });
 
     cancelPromise.then(() => {

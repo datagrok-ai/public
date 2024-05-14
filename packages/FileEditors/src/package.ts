@@ -15,7 +15,8 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//tags: fileViewer, fileViewer-pdf
+//tags: fileViewer
+//meta.fileViewer: pdf
 //input: file file
 //output: view v
 export async function previewPdf(file: DG.FileInfo): Promise<DG.View> {
@@ -90,7 +91,8 @@ export async function viewPdf(bytes: Uint8Array): Promise<DG.DataFrame[]> {
   }
 }
 
-//tags: fileViewer, fileViewer-docx
+//tags: fileViewer
+//meta.fileViewer: docx
 //input: file file
 //output: view v
 export async function previewDocx(file: DG.FileInfo): Promise<DG.View> {

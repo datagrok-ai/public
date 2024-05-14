@@ -1,10 +1,14 @@
 # Arrow changelog
 
-## 1.0.6 (2024-19-03)
+## 1.0.7 (2024-04-09)
+
+* Create int column instead of bigint when possible
+
+## 1.0.6 (2024-03-19)
 
 * Updated tests to be compatible with changes in 1.0.5
 
-## 1.0.5 (2024-15-03)
+## 1.0.5 (2024-03-15)
 
 * Updated versions of parquet-wasm and arrow libraries
 * Significantly improved performance and correctness of handling of feather/parquet format

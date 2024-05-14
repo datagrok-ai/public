@@ -20,7 +20,7 @@ Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data virtualizat
 | `num`, `int`, `double` | =           | =100                       |
 |                        | >           | >1.02                      |
 |                        | >=          | >=4.1                      |
-|                        | <=          | <=100                      |
+|                        | \<=          | \<=100                      |
 |                        | !=          | !=5                        |
 |                        | in          | in (1, 3, 10.2)            |
 |                        | min-max     | 1.5-10.0                   |

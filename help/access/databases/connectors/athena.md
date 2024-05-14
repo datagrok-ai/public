@@ -22,7 +22,7 @@ service using SQL queries via a JDBC driver.
 | `num`, `int`, `double` | =           | =100                       |
 |                        | >           | >1.02                      |
 |                        | >=          | >=4.1                      |
-|                        | <=          | <=100                      |
+|                        | \<=          | \<=100                      |
 |                        | !=          | !=5                        |
 |                        | in          | in (1, 3, 10.2)            |
 |                        | min-max     | 1.5-10.0                   |
@@ -47,22 +47,22 @@ service using SQL queries via a JDBC driver.
 
 ## Supported output types
 
-| Type                              | Supported              |
-|-----------------------------------|------------------------|
-| boolean                           | :white_check_mark:     |
-| tinyint                           | :white_check_mark:     |
-| smallint                          | :white_check_mark:     |
-| int, integer                      | :white_check_mark:     |
-| bigint                            | :white_check_mark:     |
-| double                            | :white_check_mark:     |
-| float                             | :white_check_mark:     |
-| decimal                           | :white_check_mark:     |
-| char, varchar, string             | :white_check_mark:     |
-| date, timestamp                   | :white_check_mark:     |
-| array<data_type>                  | :white_check_mark: (1) |
-| map<primitive_type, data_type>    | :white_check_mark: (1) |
-| struct<col_name : data_type  ...> | :white_check_mark: (1) |
-| binary                            | not tested             |
+| Type                               | Supported              |
+|------------------------------------|------------------------|
+| boolean                            | :white_check_mark:     |
+| tinyint                            | :white_check_mark:     |
+| smallint                           | :white_check_mark:     |
+| int, integer                       | :white_check_mark:     |
+| bigint                             | :white_check_mark:     |
+| double                             | :white_check_mark:     |
+| float                              | :white_check_mark:     |
+| decimal                            | :white_check_mark:     |
+| char, varchar, string              | :white_check_mark:     |
+| date, timestamp                    | :white_check_mark:     |
+| array\<data_type>                  | :white_check_mark: (1) |
+| map\<primitive_type, data_type>    | :white_check_mark: (1) |
+| struct\<col_name : data_type  ...> | :white_check_mark: (1) |
+| binary                             | not tested             |
 
 * (1) supported as a string
 

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IRenderer, isIRenderer} from '../types/renderer';
+import {IRenderer, isRenderer} from '../types/renderer';
 
 export interface IViewer extends IRenderer {
   /** JsViewer.root(): HTMLElement */
@@ -16,7 +16,7 @@ export interface IViewer extends IRenderer {
 }
 
 export function isIViewer(value: IViewer): value is IViewer {
-  return isIRenderer(value) &&
+  return isRenderer(value) &&
     value.root !== undefined && value.close !== undefined && value.removeFromView !== undefined;
 }
 

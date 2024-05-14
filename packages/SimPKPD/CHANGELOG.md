@@ -1,5 +1,9 @@
 # SimPKPD changelog
 
+## 1.0.10 (2024-05-01)
+
+Added the fitting feature
+
 ## 1.0.9 (2024-02-20)
 
 Updated annotation providing better UI/UX

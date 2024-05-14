@@ -4,8 +4,7 @@
 including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.
 
 - Fitting: computing parameters of the specified function to best fit the data
-  - Uses the BFGS optimization algorithm (multi-threading for performance).
-      For dose-response curves, we are typically fitting the sigmoid function
+  - For dose-response curves, we are typically fitting the sigmoid function
   - Ability to dynamically register custom fitting functions
     - Automatic fit function determination
     - Caching of custom fitting functions
@@ -72,6 +71,8 @@ To render a fitted curve based on series points, you need to write it in the fol
     "logX": true,
     "logY": false,
     "allowXZeroes": true,
+    "mergeSeries": false,
+    "showColumnLabel": true
   }
 }
 ```
@@ -85,7 +86,7 @@ Each series has its own parameters, such as:
 - `outlierColor` - overrides the standardized series outlier color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
-- `errorModel` - defines the series error model, which could be either `constant` or `proportional`
+- `errorModel` - defines the series error model, which could be either `constant`, `proportional` or `combined`
 - `connectDots` - defines whether to connect the points with lines or not
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
@@ -111,6 +112,8 @@ Each chart has its own parameters as well, such as:
 - `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
 - `logX`, `logY` - defines whether the x and y data should be logarithmic or not
 - `allowXZeroes` - defines whether x zeroes allowed for logarithmic data or not. If the flag is true, it will calculate the approximate log(0) that will fit the chart
+- `mergeSeries` - defines whether to merge series or not
+- `showColumnLabel` - defines whether to show the column label in the legend or not
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
 (`auc`) or the coefficient of determination (`rSquared`))
 

@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {HitDesignTemplate, HitTriageTemplate} from './types';
+import {AppName, HitDesignTemplate, HitTriageTemplate} from './types';
 import {HitDesignApp} from './hit-design-app';
 import {HitTriageApp} from './hit-triage-app';
 import {_package} from '../package';
@@ -7,7 +7,7 @@ import {_package} from '../package';
 export class HitBaseView<Ttemplate extends HitDesignTemplate | HitTriageTemplate,
     Tapp extends HitDesignApp | HitTriageApp> extends DG.ViewBase {
   app: Tapp;
-
+  protected deletedCampaigns: string[] = [];
   constructor(app: Tapp) {
     super();
 
@@ -27,7 +27,7 @@ export class HitBaseView<Ttemplate extends HitDesignTemplate | HitTriageTemplate
   async process(): Promise<any> {
   }
 
-  async deleteCampaign(appName: string, campaignId: string): Promise<void> {
+  async deleteCampaign(appName: AppName, campaignId: string): Promise<void> {
     await _package.files.delete(`${appName}/campaigns/${campaignId}`);
   }
 }

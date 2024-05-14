@@ -13,64 +13,53 @@ import {TestsView, filters} from './tabs/tests';
 import {ReportsView} from "./tabs/reports";
 import {ErrorsView} from "./tabs/errors"
 
-const APP_PREFIX: string = `/apps/UsageAnalysis/`;
-
-
 export class ViewHandler {
-  private static instance: ViewHandler;
+  public static UA_NAME = 'Usage Analysis';
   private urlParams: Map<string, string> = new Map<string, string>();
-  public static UAname = 'Usage Analysis';
-  static UA: DG.MultiView;
-  dockFilters: DG.DockNode | null = null;
+  public view: DG.MultiView;
 
-  public static getInstance(): ViewHandler {
-    if (!ViewHandler.instance)
-      ViewHandler.instance = new ViewHandler();
-    return ViewHandler.instance;
+  constructor() {
+    this.view = new DG.MultiView({viewFactories: {}});
   }
 
-  async init() {
-    ViewHandler.UA = new DG.MultiView({viewFactories: {}});
-    ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
-    const toolbox = await UaToolbox.construct();
+  async init(date?: string, groups?: string, packages?: string, path?: string): Promise<void> {
+    this.view.parentCall = grok.functions.getCurrentCall();
+    const toolbox = await UaToolbox.construct(this);
     toolbox.filters.root.after(filters);
-    const params = this.getSearchParameters();
-    // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView, ReportsView];
-    const inits: Promise<void>[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      inits.push(currentView.tryToinitViewers());
-      ViewHandler.UA.addView(currentView.name, () => currentView, false);
+      this.view.addView(currentView.name, () => {
+        currentView.tryToinitViewers(path);
+        return currentView;
+      }, false);
     }
-    await Promise.all(inits);
-    const paramsHaveDate = params.has('date');
-    const paramsHaveUsers = params.has('groups');
-    const paramsHavePackages = params.has('packages');
-    const paramsHaveReport = params.has('report');
+    const paramsHaveDate = date != undefined;
+    const paramsHaveUsers = groups != undefined;
+    const paramsHavePackages = packages != undefined;
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
-        toolbox.setDate(params.get('date')!);
+        toolbox.setDate(date!);
       if (paramsHaveUsers)
-        toolbox.setGroups(params.get('groups')!);
+        toolbox.setGroups(groups!);
       if (paramsHavePackages)
-        toolbox.setPackages(params.get('packages')!);
+        toolbox.setPackages(packages!);
       toolbox.applyFilter();
     }
     let helpShown = false;
     const puButton = ui.bigButton('Usage', () => {
-      const v = ViewHandler.getCurrentView();
+      const v = this.getCurrentView();
       v.switchRout();
-      ViewHandler.updatePath();
+      this.updatePath();
       v.viewers[1].root.style.display = 'none';
       v.viewers[0].root.style.display = 'flex';
       puButton.disabled = true;
       piButton.disabled = false;
     });
     const piButton = ui.bigButton('Installation time', () => {
-      const v = ViewHandler.getCurrentView();
+      const v = this.getCurrentView();
       v.switchRout();
-      ViewHandler.updatePath();
+      this.updatePath();
       v.viewers[0].root.style.display = 'none';
       v.viewers[1].root.style.display = 'flex';
       puButton.disabled = false;
@@ -82,18 +71,18 @@ export class ViewHandler {
     toolbox.filters.root.before(pButtons);
 
     const fuButton = ui.bigButton('Usage', () => {
-      const v = ViewHandler.getCurrentView() as FunctionsView;
+      const v = this.getCurrentView() as FunctionsView;
       v.switchRout();
-      ViewHandler.updatePath();
+      this.updatePath();
       v.functionsExecTime.style.display = 'none';
       v.viewers[0].root.style.display = 'flex';
       fuButton.disabled = true;
       feButton.disabled = false;
     });
     const feButton = ui.bigButton('Execution time', () => {
-      const v = ViewHandler.getCurrentView() as FunctionsView;
+      const v = this.getCurrentView() as FunctionsView;
       v.switchRout();
-      ViewHandler.updatePath();
+      this.updatePath();
       v.viewers[0].root.style.display = 'none';
       v.functionsExecTime.style.display = 'flex';
       fuButton.disabled = false;
@@ -104,10 +93,10 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
-      const view = ViewHandler.UA.currentView;
+    this.view.tabs.onTabChanged.subscribe((_) => {
+      const view = this.view.currentView;
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
-      ViewHandler.updatePath();
+      this.updatePath();
       if (view instanceof UaView) {
         for (const viewer of view.viewers) {
           if (!viewer.activated) {
@@ -117,7 +106,7 @@ export class ViewHandler {
         }
       }
       if (!helpShown) {
-        if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
+        if (this.view.currentView instanceof PackagesView || this.view.currentView instanceof FunctionsView) {
           grok.shell.windows.showToolbox = true;
           grok.shell.windows.showContextPanel = true;
           const info = ui.divText(`To learn more about an event, click the corresponding point.\
@@ -144,39 +133,31 @@ export class ViewHandler {
       else
         fButtons.style.display = 'none';
     });
-    ViewHandler.UA.name = ViewHandler.UAname;
-    ViewHandler.UA.box = true;
-    const urlTab = window.location.pathname.match(/UsageAnalysis\/UsageAnalysis\/([a-zA-Z]+)/)?.[1] ?? 'Overview';
-    ViewHandler.UA.path = `/${urlTab}`;
-    if (viewClasses.some((v) => v.name === `${urlTab}View`)) ViewHandler.changeTab(urlTab);
-    grok.shell.addView(ViewHandler.UA);
-  }
+    this.view.name = ViewHandler.UA_NAME;
+    this.view.box = true;
+    let urlTab = 'Overview';
 
-  public static getView(name: string) {
-    return ViewHandler.UA.getView(name) as UaView;
-  }
-
-  public static getCurrentView(): UaView {
-    return ViewHandler.UA.currentView as UaView;
-  }
-
-  public static changeTab(name: string) {
-    ViewHandler.UA.tabs.currentPane = ViewHandler.UA.tabs.getPane(name);
-  }
-
-  getSearchParameters() : Map<string, string> {
-    const prmstr = window.location.search.substring(1);
-    return new Map<string, string>(Object.entries(prmstr ? this.transformToAssocArray(prmstr) : {}));
-  }
-
-  transformToAssocArray(prmstr: string) {
-    const params: {[key: string]: string} = {};
-    const prmarr = prmstr.split('&');
-    for (let i = 0; i < prmarr.length; i++) {
-      const tmparr = prmarr[i].split('=');
-      params[decodeURI(tmparr[0])] = decodeURI(tmparr[1]);
+    if (path != undefined && path.length > 1) {
+      const segments = path.split('/').filter((s) => s != '');
+      if (segments.length > 0) {
+        urlTab = segments[0];
+        urlTab = urlTab[0].toUpperCase() + urlTab.slice(1);
+      }
     }
-    return params;
+    if (viewClasses.some((v) => v.name === `${urlTab}View`))
+      this.changeTab(urlTab);
+  }
+
+  public getView(name: string) {
+    return this.view.getView(name) as UaView;
+  }
+
+  public getCurrentView(): UaView {
+    return this.view.currentView as UaView;
+  }
+
+  public changeTab(name: string) {
+    this.view.tabs.currentPane = this.view.tabs.getPane(name);
   }
 
   setUrlParam(key: string, value: string, saveDuringChangingView: boolean = false) {
@@ -191,13 +172,13 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    ViewHandler.UA.path = `${APP_PREFIX}${ViewHandler.getCurrentView().name}?${params.join('&')}`;
+    this.view.path = `/${this.getCurrentView().name}?${params.join('&')}`.toLowerCase();
   }
 
-  static updatePath(): void {
-    const v = ViewHandler.getCurrentView();
-    const s = ViewHandler.UA.path.split('?');
+   updatePath(): void {
+    const v = this.getCurrentView();
+    const s = this.view.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-    ViewHandler.UA.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`;
+     this.view.path = `/${v.name}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
   }
 }

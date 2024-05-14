@@ -3,13 +3,14 @@
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
 --connection: ChemblSql
---input: string id = "CHEMBL1185"
+--input: string id = "CHEMBL1185" { semType: CHEMBL_ID }
 --output: string smiles { semType: Molecule }
 --tags: unit-test
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
 where d.chembl_id = @id
 --end
+
 
 --name: molregnoToSmiles
 --friendlyName: Converters | Molregno to SMILES
@@ -18,6 +19,7 @@ where d.chembl_id = @id
 --output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures where molregno = @molregno
 --end
+
 
 --name: nameToSmiles
 --friendlyName: Converters | Name to SMILES
@@ -70,6 +72,7 @@ from
   order by ids.order
 --end
 
+
 --name: inchiKeyToSmiles
 --friendlyName: Converters | Inchi Key to SMILES
 --connection: ChemblSql
@@ -81,6 +84,7 @@ from
   right join ids on compound_structures.standard_inchi_key = ids.key
   order by ids.order
 --end
+
 
 --name: inchiKeyToInchi
 --friendlyName: Converters | Inchi Key to Inchi
@@ -107,6 +111,7 @@ from
   order by ids.order
 --end
 
+
 --name: chemblToInchi
 --friendlyName: Converters | ChEMBL to Inchi
 --connection: ChemblSql
@@ -119,6 +124,7 @@ from
   right join ids on molecule_dictionary.chembl_id = ids.key
   order by ids.order
 --end
+
 
 --name: chemblToInchiKey
 --friendlyName: Converters | ChEMBL to Inchi Key

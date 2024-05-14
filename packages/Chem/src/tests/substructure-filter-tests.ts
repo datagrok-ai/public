@@ -182,7 +182,7 @@ M  END
     filter2.sketcher.setMolFile(molfile2);
     await awaitCheck(() => df.filter.trueCount === 2 && df.filter.get(4) && df.filter.get(5) && !df.filter.get(0),
       'df hasn\'t been filtered', 7000);
-
+    await delay(1000); //to close progress bar
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
@@ -209,7 +209,6 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     const filter = await createFilter('smiles', df, sketcherDialogs);
-    const terminateFlag = 'terminate_substructure_search-tests/smi10K-smiles';
     const substr1 = 'C1CCCCC1';
     const substr2 = 'CC1CCCCC1';
 
@@ -217,13 +216,12 @@ M  END
     filter.sketcher.setSmiles(substr1);
     await delay(500);
     //terminating filtering by 1st structure
-    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
-    }, () => {filter.sketcher.setSmiles(substr2);}, 60000);
+    await awaitCheck(() => df.filter.trueCount !== df.rowCount, 'filtering by 1st structure hasn\'t been started', 60000);
+    filter.sketcher.setSmiles(substr2);
     //finishing filtering by 2nd structure
-    await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
-      expect(df.filter.trueCount, 286);
-    }, () => {}, 60000);
+    await awaitCheck(() => df.filter.trueCount === 286, 'filtering by 1st structure hasn\'t been started', 60000);
 
+    await delay(500); //for closing the progress bar
     sketcherDialogs.forEach((it) => it.close());
     filter.detach();
   }, {timeout: 60000});
@@ -248,8 +246,8 @@ M  END
     //opening 2nd filter, sketching a molecule and waiting for filters to complete search
     filter2.sketcher.setSmiles(substr2);
     await awaitCheck(() => df1.filter.trueCount === 462, 'df1 hasn\'t been filtered', 20000);
-    await awaitCheck(() => df2.filter.trueCount === 286, 'df1 hasn\'t been filtered', 20000);
-
+    await awaitCheck(() => df2.filter.trueCount === 286, 'df2 hasn\'t been filtered', 20000);
+    await delay(500); //for closing the progress bar
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
@@ -304,7 +302,7 @@ M  END
     //finish filtering
     await awaitCheck(() => df.filter.trueCount === df.rowCount, 'filter hasn\'t been reset', 10000);
     const simResults = await chemSimilaritySearch(df, df.col('smiles')!, df.get('smiles', 0),
-      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint);
+      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint, DG.BitSet.create(df.rowCount).setAll(true));
     expect(simResults?.get('indexes', 0), 0);
     expect(simResults?.get('indexes', 5), 4002);
     expect(simResults?.get('indexes', 11), 731);
@@ -372,28 +370,31 @@ M  END
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
-    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered', 3000);
-    await awaitCheck(() => filter2.bitset?.trueCount === 5, 'filters haven\'t been synchronized', 3000);
+    await awaitCheck(() => df.filter.trueCount === 5, 'df hasn\'t been filtered 1', 5000);
+    await awaitCheck(() => filter2.bitset?.trueCount === 5, 'filters haven\'t been synchronized 1', 5000);
+    await delay(500); //for closing the progress bar
     //filter1 is active filter, detaching filter2 and check that df is still filtered
     filter2.detach();
     await delay(500); //waiting for detach to complete
-    expect(df.filter.trueCount, 5, 'filter has been reset');
+    expect(df.filter.trueCount, 5, 'filter has been reset 1');
 
     const filter3 = await createFilter('Structure', df, sketcherDialogs, 10000);
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('c1ccccc1');
-    await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered', 3000);
+    await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered 2', 5000);
+    await awaitCheck(() => filter3.bitset?.trueCount === 32, 'filters haven\'t been synchronized 2', 5000);
+    await delay(500); //for closing the progress bar
     //filter1 is active filter, detaching active filter and check that df is still filtered
     filter1.detach();
     await delay(1000); //waiting for detach to complete
-    expect(df.filter.trueCount, 32, 'filter has been reset');
+    expect(df.filter.trueCount, 32, 'filter has been reset 2');
 
     const filter4 = await createFilter('Structure', df, sketcherDialogs, 10000);
 
     //detaching active filter3 while bitset hasn't yet been synchronized with filter4
     filter3.detach();
     await delay(1000); //waiting for detach to complete
-    expect(df.filter.trueCount, 32, 'filter has been reset');
+    expect(df.filter.trueCount, 32, 'filter has been reset 3');
 
     filter4.detach();
     sketcherDialogs.forEach((it) => it.close());
@@ -451,10 +452,9 @@ async function testOneColumn(dfName: string, colName: string, substructure: stri
   const filter = await createFilter(colName, df, sketcherDialogs);
 
   filter.sketcher.setSmiles(substructure);
-  await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
-    expect(df.filter.trueCount, expectedTrueCount);
-    expectArray(df.filter.getBuffer(), expectedResults[expectedKey]);
-  }, () => {}, 7000);
+  await awaitCheck(() => df.filter.trueCount === expectedTrueCount, 'df hasn\'t been filtered', 10000);
+  await delay(1000); //for progressBar to be closed
+  expectArray(df.filter.getBuffer(), expectedResults[expectedKey]);
   sketcherDialogs.forEach((it) => it.close());
   filter.detach();
 }

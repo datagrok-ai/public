@@ -2,14 +2,16 @@
  * RDKit-based molecule cell renderer.
  * */
 
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import * as DG from 'datagrok-api/dg';
+import {
+  ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, PARENT_MOL_COL,
+  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT, SUBSTRUCT_COL,
+} from '../constants';
+import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, PARENT_MOL_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL, SUBSTRUCT_COL } from '../constants';
-import { hexToPercentRgb } from '../utils/chem-common';
-import {V2K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-v2k-const';
-import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-v3k-const';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export interface ISubstruct {
   atoms?: number[],
@@ -134,7 +136,7 @@ M  END
     if ((details as any).isSubstructure) {
       const mappedDummiesAreRGroups = (details as any).mappedDummiesAreRGroups || false;
       if (molString.includes(' H ') || molString.includes('V3000')) {
-        molCtx = getMolSafe(molString, { mergeQueryHs: true, mappedDummiesAreRGroups }, _rdKitModule);
+        molCtx = getMolSafe(molString, {mergeQueryHs: true, mappedDummiesAreRGroups}, _rdKitModule);
         mol = molCtx.mol;
       } else {
         try {
@@ -146,7 +148,7 @@ M  END
             mol = null;
           }
         }
-        molCtx = { mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false };
+        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false};
       }
     } else {
       molCtx = getMolSafe(molString, details, _rdKitModule);
@@ -159,11 +161,11 @@ M  END
         let molHasRebuiltCoords = false;
         const scaffoldIsMolBlock = scaffolds.length && alignByFirstSubstr ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
         const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
-        const { haveReferenceSmarts, parentMolScaffoldMolString } = (details as any);
+        const {haveReferenceSmarts, parentMolScaffoldMolString} = (details as any);
         if (alignedByFirstSubstr) {
           const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule,
-            parentMolScaffoldMolString ? [{ molecule: parentMolScaffoldMolString }] : [],
-            molRegenerateCoords, false, { mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString }, false).molCtx;
+            parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}] : [],
+            molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false).molCtx;
           const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
           if (rdKitScaffoldMol) {
             rdKitScaffoldMol.normalize_depiction(0);
@@ -193,13 +195,13 @@ M  END
                 // do nothing
               }
             }
-            if (referenceSmarts) {
+            if (referenceSmarts)
               (alignOpts as any).referenceSmarts = referenceSmarts;
-            }
+
             try {
-              substructString = !scaffolds[0].isSuperstructure
-                ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify(alignOpts))
-                : mol.get_substruct_match(mol!);
+              substructString = !scaffolds[0].isSuperstructure ?
+                mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify(alignOpts)) :
+                mol.get_substruct_match(mol!);
             } catch {
               // exceptions should not be thrown anymore by RDKit, but let's play safe
             }
@@ -222,7 +224,7 @@ M  END
         for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
           if (scaffolds[i].color !== NO_SCAFFOLD_COLOR) {
             const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
-              { mergeQueryHs: true, isSubstructure: true }, false).molCtx.mol;
+              {mergeQueryHs: true, isSubstructure: true}, false).molCtx.mol;
             if (substructMol) {
               const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
               if (matchedAtomsAndBonds.length) {
@@ -271,7 +273,7 @@ M  END
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
       if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
-      toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
+        toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
     };
   }
 
@@ -304,13 +306,13 @@ M  END
       const newBondsUnique = newBonds.filter((item, pos) => newBonds.indexOf(item) === pos);
       if (substruct.highlightAtomColors) {
         if (substructureObj.highlightAtomColors) {
-          for (let key in substruct.highlightAtomColors)
+          for (const key in substruct.highlightAtomColors)
             substructureObj.highlightAtomColors[key] = substruct.highlightAtomColors[key];
         }
       }
       if (substruct.highlightBondColors) {
         if (substructureObj.highlightBondColors) {
-          for (let key in substruct.highlightBondColors)
+          for (const key in substruct.highlightBondColors)
             substructureObj.highlightBondColors[key] = substruct.highlightBondColors[key];
         }
       }
@@ -321,12 +323,12 @@ M  END
     }
 
     const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+    const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
     this.canvasCounter++;
-    if (rdKitMol != null)
+    if (rdKitMol != null) {
       drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas,
         scaffolds.length ? substructureObj ? newSubstruct : substruct : substructureObj ?? null);
-    else {
+    } else {
       // draw a crossed rectangle
       ctx.clearRect(0, 0, width, height);
       drawErrorCross(ctx, width, height);
@@ -342,7 +344,7 @@ M  END
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
-      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj);;
+      ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj); ;
 
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords,
@@ -384,7 +386,7 @@ M  END
   }
 
   _initScaffoldString(colTemp: any, tagName: string): IColoredScaffold[] {
-    let scaffoldString = colTemp ? colTemp[tagName] : null;
+    const scaffoldString = colTemp ? colTemp[tagName] : null;
     if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
       if (colTemp[tagName])
         delete colTemp[tagName];
@@ -397,9 +399,9 @@ M  END
     const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     const getSortedScaffolds = (): IColoredScaffold[] => {
       let scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);
-      if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule')) {
+      if (scaffoldArr.length > 0 && !scaffoldArr[0].hasOwnProperty('molecule'))
         scaffoldArr = scaffoldArr.reduce((acc: any, obj: any) => acc.concat(Object.values(obj)[0]), []);
-      }
+
       const scaffoldArrSorted = scaffoldArr.sort((a: any, b: any) => {
         const getNumAtoms = (molecule: string) => {
           if (molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule)) {
@@ -409,18 +411,18 @@ M  END
             return 0;
           }
           return 0;
-        }
+        };
         a.priority = a.priority ?? 1;
         b.priority = b.priority ?? 1;
 
-        if (a.priority !== b.priority) {
+        if (a.priority !== b.priority)
           return b.priority - a.priority;
-        }
+
 
         return getNumAtoms(a.molecule) - getNumAtoms(b.molecule);
       });
       return scaffoldArrSorted;
-    }
+    };
     if (scaffoldArrStr) {
       const sortedScaffolds = this.sortedScaffoldsCache
         .getOrCreate(scaffoldArrStr, () => getSortedScaffolds());
@@ -535,15 +537,14 @@ M  END
 
 function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
   const moveCursorToIdx = (steps: number, symbol: string) => {
-    for (let i = 0; i < steps; i++) {
+    for (let i = 0; i < steps; i++)
       dataBeginIdx = molfile.indexOf(symbol, dataBeginIdx) + 1;
-    }
-  }
+  };
   let dataBeginIdx = 0;
   const headerLinesNum = 4;
   //jump to atoms block
   moveCursorToIdx(headerLinesNum, '\n');
-  if (molfile.indexOf(V2K_CONST.HEADER) !== -1) {
+  if (MolfileHandler.isMolfileV2K(molfile)) {
     const zCoordShift = 20;
     const coordDigitsNum = 10;
     for (let i = 0; i < numAtoms; i++) {
@@ -552,7 +553,7 @@ function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
       //go to next row
       dataBeginIdx = molfile.indexOf('\n', dataBeginIdx) + 1;
     }
-  } else if (molfile.indexOf(V3K_CONST.HEADER) !== -1) {
+  } else if (MolfileHandler.isMolfileV3K(molfile)) {
     //jump to atoms block
     const atomCountsLinesNum = 3;
     moveCursorToIdx(atomCountsLinesNum, '\n');

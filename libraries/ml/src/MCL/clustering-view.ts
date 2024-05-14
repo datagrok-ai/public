@@ -22,7 +22,7 @@ export type MCLClusterViewerResult = {
 export async function markovCluster(
   df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
-  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false
 ): Promise<undefined | MCLClusterViewerResult> {
   const scatterPlotProps = {
     showXAxis: false,
@@ -56,7 +56,7 @@ export async function markovCluster(
   }
 
   const mclWorker = createMCLWorker(encodedColEntries.map((it) => it.entries),
-    threshold, weights, aggregationMethod, metrics, distanceFnArgs, maxIterations);
+    threshold, weights, aggregationMethod, metrics, distanceFnArgs, maxIterations, useWebGPU);
 
   const terminateSub = grok.events.onViewerClosed.subscribe((args) => {
     if (args.args.viewer?.props?.title === sc.props.title && sc.type === args.args?.viewer?.type) {

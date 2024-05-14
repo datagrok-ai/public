@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDfFromRuns, getPropViewers} from './shared/utils';
+import {getDefaultValue, getPropViewers} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getOutput} from './variance-based-analysis/sa-outputs-routine';
@@ -13,8 +13,9 @@ import {getCalledFuncCalls} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
-import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
+import {IBarChartLookSettings, ILineChartLookSettings, IScatterPlotLookSettings} from 'datagrok-api/dg';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -98,7 +99,7 @@ export class SensitivityAnalysisView {
     analysisInputs.samplesCount.input.root.insertBefore(getSwitchMock(), analysisInputs.samplesCount.input.captionLabel);
 
     const getInputValue = (input: DG.Property, key: string) => (
-      input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
+      input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key])
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput = true) => {
@@ -121,6 +122,8 @@ export class SensitivityAnalysisView {
     };
 
     const inputs = func.inputs.reduce((acc, inputProp) => {
+      const defaultValue = getInputValue(inputProp, 'default');
+
       switch (inputProp.propertyType) {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
@@ -141,12 +144,12 @@ export class SensitivityAnalysisView {
           const: {
             input:
             (() => {
-              const inp = ui.intInput(inputProp.caption ?? inputProp.name, inputProp.defaultValue, (v: number) => ref.const.value = v);
+              const inp = ui.intInput(inputProp.caption ?? inputProp.name, getDefaultValue(inputProp), (v: number) => ref.const.value = v);
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               return inp;
             })(),
-            value: inputProp.defaultValue,
+            value: getDefaultValue(inputProp),
           },
           min: {
             input:
@@ -227,12 +230,12 @@ export class SensitivityAnalysisView {
           prop: inputProp,
           const: {
             input: (() => {
-              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue ?? false, (v: boolean) => boolRef.const.value = v);
+              const temp = ui.boolInput(`${inputProp.caption ?? inputProp.name}`, getDefaultValue(inputProp) ?? false, (v: boolean) => boolRef.const.value = v);
               temp.root.insertBefore(isChangingInputBoolConst.root, temp.captionLabel);
 
               return temp;
             })(),
-            value: false,
+            value: defaultValue,
           } as InputWithValue<boolean>,
           isChanging: new BehaviorSubject<boolean>(false),
           lvl: 1,
@@ -260,7 +263,7 @@ export class SensitivityAnalysisView {
 
             return temp;
           })(),
-          value: inputProp.defaultValue,
+          value: getDefaultValue(inputProp),
         };
         acc[inputProp.name] = {
           const: tempDefault,
@@ -444,7 +447,7 @@ export class SensitivityAnalysisView {
     this.addTooltips();
     this.comparisonView = baseView;
 
-    const saDock = this.comparisonView.dockManager.dock(
+    this.comparisonView.dockManager.dock(
       form,
       DG.DOCK_TYPE.LEFT,
       null,
@@ -609,7 +612,7 @@ export class SensitivityAnalysisView {
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.store.outputs[name].isInterest.value) {
         isAnyOutputSelectedAsOfInterest = true;
         break;
       }
@@ -719,7 +722,7 @@ export class SensitivityAnalysisView {
 
   private isAnyInputSelected(): boolean {
     for (const propName of Object.keys(this.store.inputs)) {
-      if (this.store.inputs[propName].isChanging.value === true)
+      if (this.store.inputs[propName].isChanging.value)
         return true;
     }
     return false;
@@ -727,7 +730,7 @@ export class SensitivityAnalysisView {
 
   private isAnyOutputSelected(): boolean {
     for (const propName of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[propName].isInterest.value === true)
+      if (this.store.outputs[propName].isInterest.value)
         return true;
     }
     return false;
@@ -1292,30 +1295,28 @@ export class SensitivityAnalysisView {
     return outputsOfInterest;
   }
 
-  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Object {
+  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<IScatterPlotLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnName: colNamesToShow[1],
-      color: nameOfNonFixedOutput,
-      size: nameOfNonFixedOutput,
+      colorColumnName: nameOfNonFixedOutput,
+      sizeColumnName: nameOfNonFixedOutput,
       markerMaxSize: 12,
       jitterSize: 5,
     };
   }
 
-  private getLineChartOpt(colNamesToShow: string[]): Object {
+  private getLineChartOpt(colNamesToShow: string[]): Partial<ILineChartLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnNames: colNamesToShow.slice(1, Math.min(colNamesToShow.length, 8)),
       markerSize: 1,
       markerType: DG.MARKER_TYPE.GRADIENT,
-      sharex: true,
       multiAxis: true,
-      multiAxisLegendPosition: 'RightCenter',
     };
   }
 
-  private getBarChartOpt(descr: string, split: string, value: string): Object {
+  private getBarChartOpt(descr: string, split: string, value: string): Partial<IBarChartLookSettings> {
     return {
       description: descr,
       splitColumnName: split,

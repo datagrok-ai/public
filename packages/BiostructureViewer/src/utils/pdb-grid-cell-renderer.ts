@@ -5,118 +5,42 @@ import * as ui from 'datagrok-api/ui';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
+import {NglGlAux, NglGlProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {CellRendererBackAsyncBase, RenderServiceBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
 import {_package} from '../package';
 
-async function base64ToImg(base64: string): Promise<HTMLImageElement> {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    try {
-      const img = new Image();
-      img.onload = () => {
-        resolve(img);
-      };
-      img.src = base64;
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
 export const enum Temps {
-  renderer = '.pdb.renderer',
+  renderer = '.renderer.pdb',
 }
 
-export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
-  private readonly logger: ILogger;
-
-  private readonly taskQueueMap = new Map<number, NglGlTask>();
-  private readonly imageCache = new Map<number, HTMLImageElement>();
-
+export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProps, NglGlAux>
+  implements IPdbGridCellRenderer {
   constructor(
-    protected readonly gridCol: DG.GridColumn,
+    gridCol: DG.GridColumn | null,
+    tableCol: DG.Column<string>
   ) {
-    this.logger = _package.logger;
+    super(gridCol, tableCol, _package.logger, true);
   }
 
-  render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    _cellStyle: DG.GridCellStyle,
-  ): void {
-    const r = window.devicePixelRatio;
-    const service = _getNglGlService();
-
-    if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
-
-    const rowIdx: number = gridCell.tableRowIndex;
-    this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
-
-    g.save();
-    try {
-      const cacheDisabled: boolean = false;
-      const image = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
-
-      if (cacheDisabled || !image ||
-        Math.abs(image.width / r - gridCell.gridColumn.width) > 0.5 ||
-        Math.abs(image.height / r - gridCell.grid.props.rowHeight) > 0.5
-      ) {
-        // draw image
-
-        // mark rowIdx as in drawing state
-        //imageCache[rowIdx] = null;
-        //gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
-
-        const task: NglGlTask = {
-          name: gridCell.cell.rowIndex.toString(),
-          backColor: gridCell.grid.props.backColor,
-          props: {
-            pdb: gridCell.cell.value,
-            width: gridCell.gridColumn.width * r,
-            height: gridCell.grid.props.rowHeight * r,
-          },
-          onAfterRender: (canvas: HTMLCanvasElement) => {
-            g.save();
-            try {
-              this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
-              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, canvas);
-
-              const imageStr: string = canvas.toDataURL();
-              base64ToImg(imageStr).then((image) => {
-                this.imageCache.set(rowIdx, image);
-              });
-            } finally {
-              g.restore();
-              this.taskQueueMap.delete(rowIdx);
-              if (this.taskQueueMap.size === 0)
-                this._onRendered.next();
-            }
-          },
-        };
-
-        this.taskQueueMap.set(rowIdx, task);
-        service.render(task, rowIdx);
-      } else {
-        this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
-        service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
-      }
-    } catch (err: any) {
-      const errMsg: string = err instanceof Error ? err.message : err.toString();
-      this.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
-        err instanceof Error ? err.stack : undefined);
-      //throw err; // Do not throw to prevent disabling event handler
-    } finally {
-      g.restore();
-    }
-
-    return;
+  protected getRenderService(): RenderServiceBase<NglGlProps, NglGlAux> {
+    return _getNglGlService();
   }
+
+  protected override getRenderTaskProps(
+    gridCell: DG.GridCell, backColor: number, width: number, height: number
+  ): NglGlProps {
+    return new NglGlProps(gridCell.cell.value, backColor, width, height);
+  }
+
+  protected override storeAux(_gridCell: DG.GridCell, _aux: NglGlAux): void {}
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const callLog = 'onClick()';
@@ -142,45 +66,48 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
     if (!tview) return;
 
     switch (dockingRole) {
-      case DockingRole.ligand: {
-        // Biostructure, NGL viewers track current, selected rows to display ligands
-        break;
-      }
+    case DockingRole.ligand: {
+      // Biostructure, NGL viewers track current, selected rows to display ligands
+      break;
+    }
 
-      case DockingRole.target:
-      default: {
-        let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
-        // eslint-disable-next-line prefer-const
-        viewer = wu(tview.viewers).find((v) => {
-          return v.type === 'Biostructure' || v.type === 'NGL';
-        }) as DG.Viewer & IBiostructureViewer;
+    case DockingRole.target:
+    default: {
+      let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
+      // eslint-disable-next-line prefer-const
+      viewer = wu(tview.viewers).find((v) => {
+        return v.type === 'Biostructure' || v.type === 'NGL';
+      }) as DG.Viewer & IBiostructureViewer;
 
-        if (!viewer) {
-          df.plot.fromType('Biostructure', {pdb: value}).then(
-            (value: DG.Widget) => {
-              const viewer = value as DG.Viewer & IBiostructureViewer;
-              testEvent(viewer.onRendered, () => {
-                this._onClicked.next();
-              }, () => {
-                tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
-                viewer.invalidate(callLog); // To trigger viewer.onRendered
-              }, 10000).then(() => {});
-            }); // Ignore promise returned
-        } else {
-          testEvent(viewer.onRendered, () => {
-            this._onClicked.next();
-          }, () => {
-            viewer!.setOptions({pdb: value});
-            viewer!.invalidate(callLog); // To trigger viewer.onRendered
-          }, 10000).then(() => {});
-        }
+      if (!viewer) {
+        df.plot.fromType('Biostructure', {pdb: value}).then(
+          (value: DG.Widget) => {
+            const viewer = value as DG.Viewer & IBiostructureViewer;
+            testEvent(viewer.onRendered, () => {
+              this._onClicked.next();
+            }, () => {
+              tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+              viewer.invalidate(callLog); // To trigger viewer.onRendered
+            }, 10000).then(() => {});
+          }); // Ignore promise returned
+      } else {
+        testEvent(viewer.onRendered, () => {
+          this._onClicked.next();
+        }, () => {
+          viewer!.setOptions({pdb: value});
+          viewer!.invalidate(callLog); // To trigger viewer.onRendered
+        }, 10000).then(() => {});
       }
+    }
     }
   }
 
-  static getOrCreate(gridCol: DG.GridColumn): PdbGridCellRendererBack {
-    let res: PdbGridCellRendererBack = gridCol.temp[Temps.renderer];
-    if (!res) res = gridCol.temp[Temps.renderer] = new PdbGridCellRendererBack(gridCol);
+  static getOrCreate(gridCell: DG.GridCell): PdbGridCellRendererBack {
+    const [gridCol, tableCol, temp] =
+      getGridCellRendererBack<string, PdbGridCellRendererBack>(gridCell);
+
+    let res: PdbGridCellRendererBack = temp['rendererBack'];
+    if (!res) res = temp['rendererBack'] = new PdbGridCellRendererBack(gridCol, tableCol);
     return res;
   }
 
@@ -188,23 +115,6 @@ export class PdbGridCellRendererBack implements IPdbGridCellRenderer {
 
   private _onClicked: Subject<void> = new Subject<void>();
   get onClicked(): Observable<void> { return this._onClicked; }
-
-  // -- IRenderer --
-
-  private _onRendered: Subject<void> = new Subject<void>();
-
-  get onRendered(): Observable<void> { return this._onRendered; }
-
-  invalidate(caller?: string): void {
-    this.gridCol.grid.invalidate();
-  }
-
-  async awaitRendered(
-    timeout: number = 10000, reason: string = `await rendered ${timeout} timeout`
-  ): Promise<void> {
-    await testEvent(this._onRendered, () => {}, () => { this.invalidate(); },
-      timeout, reason);
-  }
 }
 
 export class PdbGridCellRenderer extends DG.GridCellRenderer {
@@ -221,8 +131,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     _package.logger.debug('BsV: PdbGridCellRenderer.onClick()');
-    const gridCol: DG.GridColumn = gridCell.gridColumn;
-    const back = PdbGridCellRendererBack.getOrCreate(gridCol);
+    const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.onClick(gridCell, e);
   }
 
@@ -235,14 +144,13 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
    * @param {number} w width of the cell.
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} _cellStyle Cell style.
+   * @param {DG.GridCellStyle} cellStyle Cell style.
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    const gridCol: DG.GridColumn = gridCell.gridColumn;
-    const back = PdbGridCellRendererBack.getOrCreate(gridCol);
+    const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
   }
 }

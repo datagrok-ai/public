@@ -218,36 +218,41 @@ export class FormsViewer extends DG.JsViewer {
 
     const form = ui.divV(
       this.fieldsColumnNames.map((name) => {
+        let resDiv: HTMLElement = ui.div();
         if (row === -1)
-          return ui.div();
+          return resDiv;
 
-        const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
-        if (input) {
-          if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
-            input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
-          input.input.setAttribute('column', name);
-          input.value = this.dataFrame.get(name, row);
-          input.readOnly = true;
+        try {
+          const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
+          if (input) {
+            if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
+              input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
+            input.input.setAttribute('column', name);
+            input.value = this.dataFrame.get(name, row);
+            input.readOnly = true;
 
-          if (this.colorCode) {
-            const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
-            const color = grid.cell(name, row).color;
-            if (grid.col(name)?.isTextColorCoded)
-              input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
-            else {
-              input.input.setAttribute('style',
-                `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
-              input.input.style.backgroundColor = DG.Color.toHtml(color);
+            if (this.colorCode) {
+              const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
+              if (grid) {
+                const color = grid.cell(name, row).color;
+                if (grid.col(name)?.isTextColorCoded)
+                  input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                else {
+                  input.input.setAttribute('style',
+                    `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                  input.input.style.backgroundColor = DG.Color.toHtml(color);
+                }
+              }
             }
-          }
-          input.input.onclick = (e: MouseEvent) => {
-            this.dataFrame.currentCell = this.dataFrame.cell(row, name);
-          };
-          ui.tooltip.bind(input.input, name);
+            input.input.onclick = (e: MouseEvent) => {
+              this.dataFrame.currentCell = this.dataFrame.cell(row, name);
+            };
+            ui.tooltip.bind(input.input, name);
 
-          return input.input;
-        }
-        return ui.div();
+            resDiv = input.input;
+          }
+        } catch { }
+        return resDiv;
       }
       ), 'd4-multi-form-form');
 

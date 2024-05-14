@@ -3,6 +3,8 @@ import { toDart } from "../wrappers";
 let api = <any>window;
 
 export class UsageType {
+  static CLICK = 'click';
+
   static MENU_CLICK = 'menu click';
 
   static DIALOG_OK = 'dialog ok';
@@ -26,8 +28,8 @@ export class ViewerEvent {
   set type(x: string) {api.grok_ViewerEvent_Set_type(this.dart, toDart(x)); }
   get eventFlag(): boolean { return api.grok_ViewerEvent_Get_eventFlag(this.dart); };
   set eventFlag(x: boolean) {api.grok_ViewerEvent_Set_eventFlag(this.dart, toDart(x)); }
-  get filters(): Map<string, any> { return api.grok_ViewerEvent_Get_filters(this.dart); };
-  set filters(x: Map<string, any>) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
+  get filters(): {[index: string]: any} { return api.grok_ViewerEvent_Get_filters(this.dart); };
+  set filters(x: {[index: string]: any}) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
   get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
   set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
@@ -103,12 +105,47 @@ export class GridCellStyleEx {
   static create(): GridCellStyleEx {
     return new GridCellStyleEx(api.grok_GridCellStyleEx_Create());
   }
+  static DATA_TYPE = 'data type';
+
+  static CELL_TYPE = 'cell type';
+
+  static VERT_ALIGN_TOP = 'top';
+
+  static VERT_ALIGN_CENTER = 'center';
+
+  static VERT_ALIGN_BOTTOM = 'bottom';
+
+  static HORZ_ALIGN_LEFT = 'left';
+
+  static HORZ_ALIGN_CENTER = 'center';
+
+  static HORZ_ALIGN_RIGHT = 'right';
+
+  static STYLE_DEFAULT = 'default';
+
+  static STYLE_TEXT = 'text';
+
+  static STYLE_NUMBER = 'number';
+
+  static STYLE_ROW_HEADER = 'row header';
+
+  static STYLE_COL_HEADER = 'column header';
+
+  static get defaultStyle(): any { return api.grok_GridCellStyle_Get_defaultStyle(); };
+  static set defaultStyle(x: any) {api.grok_GridCellStyle_Set_defaultStyle(toDart(x)); }
+  static get textStyle(): any { return api.grok_GridCellStyle_Get_textStyle(); };
+  static set textStyle(x: any) {api.grok_GridCellStyle_Set_textStyle(toDart(x)); }
+  static get numberStyle(): any { return api.grok_GridCellStyle_Get_numberStyle(); };
+  static set numberStyle(x: any) {api.grok_GridCellStyle_Set_numberStyle(toDart(x)); }
+  static get styles(): {[index: string]: any} { return api.grok_GridCellStyle_Get_styles(); };
+  static set styles(x: {[index: string]: any}) {api.grok_GridCellStyle_Set_styles(toDart(x)); }
   get font(): string { return api.grok_GridCellStyle_Get_font(this.dart); };
   set font(x: string) {api.grok_GridCellStyle_Set_font(this.dart, toDart(x)); }
   get horzAlign(): string { return api.grok_GridCellStyle_Get_horzAlign(this.dart); };
   set horzAlign(x: string) {api.grok_GridCellStyle_Set_horzAlign(this.dart, toDart(x)); }
   get vertAlign(): string { return api.grok_GridCellStyle_Get_vertAlign(this.dart); };
   set vertAlign(x: string) {api.grok_GridCellStyle_Set_vertAlign(this.dart, toDart(x)); }
+  /// When defined, overrides the default cell tooltip
   get tooltip(): string { return api.grok_GridCellStyle_Get_tooltip(this.dart); };
   set tooltip(x: string) {api.grok_GridCellStyle_Set_tooltip(this.dart, toDart(x)); }
   get cursor(): string { return api.grok_GridCellStyle_Get_cursor(this.dart); };
@@ -132,8 +169,10 @@ export class GridCellStyleEx {
   set marginBottom(x: number) {api.grok_GridCellStyle_Set_marginBottom(this.dart, toDart(x)); }
   get textVertical(): boolean { return api.grok_GridCellStyle_Get_textVertical(this.dart); };
   set textVertical(x: boolean) {api.grok_GridCellStyle_Set_textVertical(this.dart, toDart(x)); }
+  /// Applies to image columns only
   get imageScale(): number { return api.grok_GridCellStyle_Get_imageScale(this.dart); };
   set imageScale(x: number) {api.grok_GridCellStyle_Set_imageScale(this.dart, toDart(x)); }
+  /// Applies to image columns only
   get opacity(): number { return api.grok_GridCellStyle_Get_opacity(this.dart); };
   set opacity(x: number) {api.grok_GridCellStyle_Set_opacity(this.dart, toDart(x)); }
   get clip(): boolean { return api.grok_GridCellStyle_Get_clip(this.dart); };
@@ -141,6 +180,7 @@ export class GridCellStyleEx {
   /// For 'html' cell types only
   get element(): any { return api.grok_GridCellStyle_Get_element(this.dart); };
   set element(x: any) {api.grok_GridCellStyle_Set_element(this.dart, toDart(x)); }
+  /// When defined, the cell editor becomes a combo box with the specified values
   get choices(): Array<string> { return api.grok_GridCellStyle_Get_choices(this.dart); };
   set choices(x: Array<string>) {api.grok_GridCellStyle_Set_choices(this.dart, toDart(x)); }
 }

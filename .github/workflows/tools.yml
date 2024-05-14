@@ -23,9 +23,12 @@ jobs:
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       version: ${{ steps.check-version.outputs.version }}
+      job_name: ${{ steps.check-version.outputs.job_name }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools
       - name: Check version was changed
         id: check-version
         working-directory: ./tools
@@ -33,38 +36,51 @@ jobs:
           name="$(jq .name package.json | sed 's/"//g')"
           current_version="$(jq .version package.json | sed 's/"//g')"
           npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+          job_name="Build"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
+            echo "Package $name version ${current_version} already published"
+            echo "::notice title=${name}::Version ${current_version} is already published"
           else
-            changed_version='true'
+            if [[ ${{ github.ref }} == 'refs/heads/master' ]]; then
+              changed_version='true'
+              job_name="Build and publish to NPM"
+            else
+                echo "It is an actions for development branch. Publish will be skipped"
+                echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
+            fi
           fi
+          echo "job_name=${job_name}" >> $GITHUB_OUTPUT
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
           echo "version=${current_version}" >> $GITHUB_OUTPUT
 
   build:
-    name: Build and publish to npm
-    needs: [check, common-check]
+    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
+    needs: [ check, common-check ]
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
-      - name: Setup Node
-        uses: actions/setup-node@v3
+          sparse-checkout: |
+            tools
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            tools/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
-      - name: npm version
-        run: npm version
+      - run: npm version
       - run: npm install
         working-directory: ./tools
       - run: npm publish
         id: publish
         working-directory: ./tools
-        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
+        if: needs.check.outputs.changed_version == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Prepare Slack Message

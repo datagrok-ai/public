@@ -22,7 +22,13 @@ declare global {
      */
     polygon(pa: Point[]): CanvasRenderingContext2D;
   }
+
+  interface HTMLCanvasElement {
+    g2(): CanvasRenderingContext2D;
+  }
 }
+
+HTMLCanvasElement.prototype.g2 = function() { return this.getContext('2d')!; }
 
 CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
   this.fillStyle = fill;

@@ -13,13 +13,13 @@ export class EventsView extends UaView {
     this.name = 'Events';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const packagesViewer1 = new UaFilterableQueryViewer( {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Sources',
       queryName: 'EventsSources',
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.lineChart(t, {
+        return DG.Viewer.lineChart(t, {
           // 'overviewColumnName': 'date',
           xColumnName: 'time_start',
           showXSelector: false,
@@ -32,7 +32,6 @@ export class EventsView extends UaView {
           title: 'Sources',
           split: 'source',
         });
-        return viewer;
       }});
 
     const packagesViewer2 = new UaFilterableQueryViewer( {
@@ -40,7 +39,7 @@ export class EventsView extends UaView {
       name: 'User events',
       queryName: 'EventsUsersSources',
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
+        return DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'source',
           size: 'count',
@@ -55,7 +54,6 @@ export class EventsView extends UaView {
           title: 'User events',
           invertYAxis: true,
         });
-        return viewer;
       }});
 
     this.viewers.push(packagesViewer1);

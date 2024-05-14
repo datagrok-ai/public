@@ -3,47 +3,56 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {JSONSchemaType} from 'ajv';
+
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {MonomerLib} from '../monomer-lib';
 import {
   HELM_REQUIRED_FIELD as REQ,
 } from '@datagrok-libraries/bio/src/utils/const';
-import {JSONSchemaType} from 'ajv';
+import {
+  IMonomerLibHelper, IMonomerLibFileManager
+} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
+import {MonomerLib} from '../monomer-lib';
 import {HELM_JSON_SCHEMA_PATH} from './consts';
 import {MonomerLibFileEventManager} from './event-manager';
-
 import {MonomerLibFileValidator} from './file-validator';
-import {MonomerLibManager} from '../lib-manager';
+
+import {_package} from '../../../package';
+
 
 /** Singleton for adding, validation and reading of monomer library files.
  * All files **must** be aligned to the HELM standard before adding. */
-export class MonomerLibFileManager {
+export class MonomerLibFileManager implements IMonomerLibFileManager {
+  public filesPromise: Promise<void> = Promise.resolve();
+
   private constructor(
-    private libraryFileValidator: MonomerLibFileValidator,
-    private libraryEventManager: MonomerLibFileEventManager,
+    private readonly fileValidator: MonomerLibFileValidator,
+    private readonly libHelper: IMonomerLibHelper,
+    public readonly eventManager: MonomerLibFileEventManager,
   ) {
-    this.libraryEventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
+    this.eventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
       await this.updateValidLibraryList();
     });
   }
 
-  private static instancePromise: Promise<MonomerLibFileManager> | undefined;
+  private static objCounter: number = -1;
+  private readonly objId: number = ++MonomerLibFileManager.objCounter;
 
-  static async getInstance(
-    libraryEventManager: MonomerLibFileEventManager,
+  protected toLog(): string {
+    return `MonomerLibFileManager<${this.objId}>`;
+  }
+
+  /** For internal use only, get {@link IMonomerLibHelper.getFileManager} */
+  public static async create(
+    libHelper: IMonomerLibHelper, eventManager: MonomerLibFileEventManager
   ): Promise<MonomerLibFileManager> {
-    if (!MonomerLibFileManager.instancePromise) {
-      MonomerLibFileManager.instancePromise = (async () => {
-        const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
-        const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
+    const helmSchemaRaw = await grok.dapi.files.readAsText(HELM_JSON_SCHEMA_PATH);
+    const helmSchema = JSON.parse(helmSchemaRaw) as JSONSchemaType<any>;
 
-        const fileValidator = new MonomerLibFileValidator(helmSchema);
-        return new MonomerLibFileManager(fileValidator, libraryEventManager);
-      })();
-    }
-
-    return MonomerLibFileManager.instancePromise;
+    const fileValidator = new MonomerLibFileValidator(helmSchema);
+    return new MonomerLibFileManager(fileValidator, libHelper, eventManager);
   }
 
   /** Add standard .json monomer library  */
@@ -91,72 +100,82 @@ export class MonomerLibFileManager {
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
     const polymerTypes: string[] = [];
     rawLibData.forEach((monomer) => {
-      if (!polymerTypes.includes(monomer[REQ.POLYMER_TYPE])) {
-        monomers[monomer[REQ.POLYMER_TYPE]] = {};
-        polymerTypes.push(monomer[REQ.POLYMER_TYPE]);
+      const polymerType = monomer[REQ.POLYMER_TYPE];
+      const monomerSymbol = monomer[REQ.SYMBOL];
+      if (!polymerTypes.includes(polymerType)) {
+        monomers[polymerType] = {};
+        polymerTypes.push(polymerType);
       }
-      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
+      monomers[polymerType][monomerSymbol] = monomer as Monomer;
     });
 
-    return new MonomerLib(monomers);
+    return new MonomerLib(monomers, fileName);
   }
 
   getValidLibraryPaths(): string[] {
-    return this.libraryEventManager.getValidFilesPathList();
+    return this.eventManager.getValidFilesPathList();
   }
 
   // TODO: remove after adding init from user data storage
   // WARNING: a temporary solution
   async getValidLibraryPathsAsynchronously(): Promise<string[]> {
-    return await this.libraryEventManager.getValidLibraryPathsAsynchronously();
+    return await this.eventManager.getValidLibraryPathsAsynchronously();
   }
-
 
   private async libraryFileExists(fileName: string): Promise<boolean> {
     return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
 
   private async updateValidLibraryList(): Promise<void> {
-    const invalidFiles = [] as string[];
-    // console.log(`files before validation:`, this.libraryEventManager.getValidFilesPathList());
-    const filePaths = await this.getFilePathsAtDefaultLocation();
+    const logPrefix: string = `${this.toLog()}.updateValidLibraryList()`;
+    _package.logger.debug(`${logPrefix}, start`);
+    return this.filesPromise = this.filesPromise.then(async () => {
+      _package.logger.debug(`${logPrefix}, IN`);
+      const invalidFiles = [] as string[];
+      // console.log(`files before validation:`, this.libraryEventManager.getValidFilesPathList());
+      const filePaths = await this.getFilePathsAtDefaultLocation();
 
-    if (!this.fileListHasChanged(filePaths))
-      return;
-
-    for (const path of filePaths) {
-      if (!path.endsWith('.json')) {
-        invalidFiles.push(path);
-        continue;
+      if (!this.fileListHasChanged(filePaths)) {
+        _package.logger.debug(`${logPrefix}, end, not changed`);
+        return;
       }
 
-      const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${path}`);
-      if (!this.isValidHELMLibrary(fileContent, path))
-        invalidFiles.push(path);
-    }
+      for (const path of filePaths) {
+        if (!path.endsWith('.json')) {
+          invalidFiles.push(path);
+          continue;
+        }
 
-    const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
+        const fileContent = await grok.dapi.files.readAsText(LIB_PATH + `${path}`);
+        if (!this.isValidHELMLibrary(fileContent, path))
+          invalidFiles.push(path);
+      }
 
-    if (this.fileListHasChanged(validLibraryPaths)) {
-      this.libraryEventManager.changeValidFilesPathList(validLibraryPaths);
-      MonomerLibManager.instance.loadLibraries(true);
-    }
-    // console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
+      const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
 
-    if (validLibraryPaths.some((el) => !el.endsWith('.json')))
-      console.warn(`Wrong validation: ${validLibraryPaths}`);
+      if (this.fileListHasChanged(validLibraryPaths)) {
+        this.eventManager.changeValidFilesPathList(validLibraryPaths);
+        this.libHelper.loadLibraries(true);
+      }
+      // console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
 
-    if (invalidFiles.length > 0) {
-      const message = `Invalid monomer library files in ${LIB_PATH}` +
-      `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
+      if (validLibraryPaths.some((el) => !el.endsWith('.json')))
+        _package.logger.warning(`Wrong validation: ${validLibraryPaths}`);
 
-      console.warn(message);
-      // grok.shell.warning(message);
-    }
+      if (invalidFiles.length > 0) {
+        const message = `Invalid monomer library files in ${LIB_PATH}` +
+          `, consider fixing or removing them: ${invalidFiles.join(', ')}`;
+
+        _package.logger.warning(message);
+        // grok.shell.warning(message);
+      }
+      _package.logger.debug(`${logPrefix}, OUT`);
+    });
+    _package.logger.debug(`${logPrefix}, end`);
   }
 
   private fileListHasChanged(newList: string[]): boolean {
-    const currentList = this.libraryEventManager.getValidFilesPathList();
+    const currentList = this.eventManager.getValidFilesPathList();
     return newList.length !== currentList.length || newList.some((el, i) => el !== currentList[i]);
   }
 
@@ -167,7 +186,7 @@ export class MonomerLibFileManager {
   }
 
   private isValidHELMLibrary(fileContent: string, fileName: string): boolean {
-    return this.libraryFileValidator.validateFile(fileContent, fileName);
+    return this.fileValidator.validateFile(fileContent, fileName);
   }
 
   /** Get relative paths for files in LIB_PATH  */

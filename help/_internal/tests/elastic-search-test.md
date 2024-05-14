@@ -50,4 +50,4 @@ pages.
 
 1. Click on "eq" from drop-down list (Or go to it using ↓ and click "Enter")
 
-* "eq" action is open on [Context Panel](../../datagrok/navigation.md#context-panel)
+* "eq" action is open on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)

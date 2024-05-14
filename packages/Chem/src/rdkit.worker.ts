@@ -43,6 +43,8 @@ ctx.addEventListener('message', async (e: any) => {
       _rdKitServiceWorker!.setTerminateFlag(args[0]);
     else if (op === WORKER_CALL.MMP_GET_FRAGMENTS)
       result = _rdKitServiceWorker!.mmpGetFragments(args[0]);
+    else if (op === WORKER_CALL.MMP_LINK_FRAGMENTS)
+      result = _rdKitServiceWorker!.mmpLinkFragments(args[0], args[1]);
     else if (op === WORKER_CALL.MMP_GET_MCS)
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
     else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)

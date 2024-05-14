@@ -2,19 +2,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import dayjs from 'dayjs';
 import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
 import {HistoricalRunsList} from './history-list';
-
-export type FilterOptions = {
-  isOnlyFavorites: boolean,
-  text: string,
-  author?: DG.User,
-  startedAfter?: dayjs.Dayjs,
-  tags?: string[]
-}
+import {filter} from 'rxjs/operators';
+import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class HistoryPanel extends DG.Widget {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
@@ -31,7 +24,7 @@ export class HistoryPanel extends DG.Widget {
 
   public allRunsFetch = new Subject<true>();
 
-  private historyList = new HistoricalRunsList([], [], {fallbackText: 'No runs are found in history',
+  private historyList = new HistoricalRunsList([], {fallbackText: 'No runs are found in history',
     showActions: true, showBatchActions: true, isHistory: true});
   private panel = this.historyList.root;
 
@@ -64,17 +57,20 @@ export class HistoryPanel extends DG.Widget {
   ) {
     super(ui.box(ui.divText('No historical runs loaded', 'hp-no-elements-label'), {style: {'width': '100%', 'height': '100%'}}));
 
-    const clickedSub = this.historyList.onClicked.subscribe((clickedCall) => this.onRunChosen.next(clickedCall.id));
+    const clickedSub = this.historyList.onChosen
+      .pipe(
+        filter((call) => !!call),
+      ).subscribe((clickedCall) => this.onRunChosen.next(clickedCall!.id));
 
     const comparisonSub = this.historyList.onComparisonCalled.subscribe((ids) => this.onComparison.next(ids));
 
     const allRunsFetch = this.allRunsFetch.subscribe(async () => {
       ui.setUpdateIndicator(this.root, true);
-      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])
+      historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {}, ['session.user', 'options'])
         .then((historicalRuns) => {
           ui.empty(this.root);
           this.root.appendChild(this.panel);
-          this.updateHistoryPane(historicalRuns.reverse());
+          this.updateHistoryPane(historicalRuns);
         })
         .catch((e) => grok.shell.error(e))
         .finally(() => ui.setUpdateIndicator(this.root, false));

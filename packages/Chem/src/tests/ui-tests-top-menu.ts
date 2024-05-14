@@ -127,7 +127,7 @@ category('UI top menu', () => {
             grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
             await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
         }
-    }, {timeout: 60000});
+    }, {timeout: 60000, skipReason: 'GROK-15384'});
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);

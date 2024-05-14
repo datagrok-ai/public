@@ -2,6 +2,9 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     package: './src/package.ts',
@@ -36,6 +39,10 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
+    'scil': 'scil',
+    'org': 'org',
+    'dojo': 'dojo',
+    'JSDraw2': 'JSDraw2',
   },
   output: {
     filename: '[name].js',

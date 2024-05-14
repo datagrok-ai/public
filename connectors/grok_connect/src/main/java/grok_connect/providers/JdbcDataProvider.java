@@ -378,7 +378,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         Object value = getObjectFromResultSet(resultSet, c);
 
                         if (dryRun) continue;
-                        resultSetManager.processValue(value, c);
+                        resultSetManager.processValue(value, c, queryLogger);
 
                         if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
                             queryLogger.info("Query was canceled");

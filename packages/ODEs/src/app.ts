@@ -154,49 +154,56 @@ const strToVal = (s: string) => {
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
-  public async runSolverApp(content?: string): Promise<void> {
+  public async runSolverApp(content?: string): Promise<DG.ViewBase> {
     this.createEditorView(content, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
+    this.solverView.setRibbonPanels([
+      [this.openIcon, this.saveIcon],
+      [this.exportButton, this.sensAnIcon],
+      [this.helpIcon],
+    ]);
     this.toChangePath = true;
 
+    setTimeout(async () => {
     // routing
-    if (content)
-      await this.runSolving(false);
+      if (content)
+        await this.runSolving(false);
       // dfdf
+      else {
+        const modelIdx = this.startingPath.indexOf(PATH.MODEL);
+        const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
+        if (modelIdx > -1) {
+          const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
 
-    else {
-      const modelIdx = this.startingPath.indexOf(PATH.MODEL);
-      const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
+          if (MODELS.includes(model)) {
+            this.startingInputs = new Map<string, number>();
 
-      if (modelIdx > -1) {
-        const model = this.startingPath.slice(modelIdx + PATH.MODEL.length, (paramsIdx > -1) ? paramsIdx : undefined);
-
-        if (MODELS.includes(model)) {
-          this.startingInputs = new Map<string, number>();
-
-          if (modelIdx < paramsIdx) {
-            try {
-              this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
-                const eqIdx = equality.indexOf(PATH.EQ);
-                this.startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
-              });
-            } catch (error) {
-              this.startingInputs = null;
+            if (modelIdx < paramsIdx) {
+              try {
+                this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
+                  const eqIdx = equality.indexOf(PATH.EQ);
+                  this.startingInputs?.set(equality.slice(0, eqIdx).toLowerCase(), Number(equality.slice(eqIdx + 1)));
+                });
+              } catch (error) {
+                this.startingInputs = null;
+              }
             }
-          }
 
-          await this.setState(model as EDITOR_STATE, false);
+            await this.setState(model as EDITOR_STATE, false);
+          } else
+            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
         } else
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-      } else
-        await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-    }
+      }
+    },
+    TIMEOUT.APP_RUN_SOLVING);
+
+    return this.solverView;
   } // runSolverApp
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE, true);    
+    this.createEditorView(DEMO_TEMPLATE, true);
     this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
@@ -360,7 +367,7 @@ export class DiffStudio {
     this.saveIcon = ui.iconFA('save', async () => {await this.saveFn();}, HINT.SAVE_LOC);
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
-    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis()}, HINT.SENS_AN);
+    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
   }; // constructor
 
   /** Create model editor */
@@ -556,7 +563,7 @@ export class DiffStudio {
       grok.shell.addView(sView);
     } catch (err) {
       this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);      
+      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }
   }; // exportToJS
 
@@ -981,10 +988,9 @@ export class DiffStudio {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
-        if (input.value !== null) {
+        if (input.value !== null)
         ivp.inits.get(key)!.value = input.value;
         //await this.solve(ivp, getInputsPath());
-        }
       });
 
       categorizeInput(options, input);
@@ -996,10 +1002,9 @@ export class DiffStudio {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.onChanged(async () => {
-          if (input.value !== null) {
+          if (input.value !== null)
             ivp.params!.get(key)!.value = input.value;
             //await this.solve(ivp, getInputsPath());
-          }
         });
 
         categorizeInput(options, input);
@@ -1013,10 +1018,9 @@ export class DiffStudio {
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
-        if (input.value !== null) {
+        if (input.value !== null)
           ivp.loop!.count.value = input.value;
           //await this.solve(ivp, getInputsPath());
-        }
       });
 
       categorizeInput(options, input);
@@ -1040,12 +1044,12 @@ export class DiffStudio {
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
       await call.call();
-     
+
       //@ts-ignore
       await SensitivityAnalysisView.fromEmpty(script);
     } catch (err) {
-        this.clearSolution();
-        grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
-    }    
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
   }
 };

@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, merge } from 'rxjs';
+import $ from 'cash-dom';
 
 
 export class ViewersTutorial extends Tutorial {
@@ -14,6 +15,17 @@ export class ViewersTutorial extends Tutorial {
   get steps() { return 14; }
   
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
+
+  private async waitForElementClick(element: HTMLElement | null): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const intervalId = setInterval(() => {
+        if (!element) return;
+        
+        clearInterval(intervalId);
+        element.addEventListener('click', () => resolve());
+      }, 500);
+    });
+  }
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -32,6 +44,24 @@ export class ViewersTutorial extends Tutorial {
 
     this.title('Selection and current records display');
 
+    const ribbonPanels = grok.shell.v.getRibbonPanels();
+    const addViewerIcon = ribbonPanels[1][1];
+    await this.action(
+      'Locate and click the Add viewer icon', 
+      this.waitForElementClick(addViewerIcon), addViewerIcon);
+
+    const chartsSpanDiv = Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
+      const span = div.querySelector('span');
+      return span && span.textContent === 'Charts';
+    }) as HTMLElement;      
+    await this.action('Locate the Charts section and click on it', this.waitForElementClick(chartsSpanDiv), chartsSpanDiv);
+  
+    const radarViewerElement = Array.from(document.querySelectorAll('.viewer-gallery-root .d4-item-card.viewer-gallery .card-label'))
+      .find(label => label.textContent === 'Radar')
+      ?.closest('.d4-item-card.viewer-gallery') as HTMLElement ?? null;
+    await this.action('Locate the card containing Radar viewer', 
+    this.waitForElementClick(radarViewerElement), radarViewerElement);
+    
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
     const pie = await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);

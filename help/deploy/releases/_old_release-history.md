@@ -4236,7 +4236,7 @@ like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials
 * (Bug) Form: Title background remains after disabling the design mode
 * DevTools package (WIP)
 * (Bug) Line Chart: "Default Line Color" property does not change the chart color
-* Update scripting.md
+* Update scripting/scripting.mdx
 * JS API: Pass InputBase to Dialog() insted of InpuBase.root
 * Add "Switch" control to JS API
 * Tooling: Actualize datagrok-tools for the onboarding (WIP)

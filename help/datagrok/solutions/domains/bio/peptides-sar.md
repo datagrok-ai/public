@@ -183,4 +183,4 @@ gap open and gat extend penalties, whether to perform clustering on sequence emb
 # Analysis sharing
 
 You can easily save and share Peptide analysis with Datagrok projects. Learn more about Datagrok project saving and
-sharing [here](../../../../collaborate/project.md).
+sharing [here](../../../concepts/project/project.md).

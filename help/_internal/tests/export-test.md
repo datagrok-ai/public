@@ -28,7 +28,7 @@ project in *d42* format or in ZIP-archive that will contain *csv* files of all p
 
 * *"Save as CSV"* dialog is open
 
-1. Change the values ​​of all boolean fields to **FALSE**.(*Include header*, *Selected columns only*
+1. Change the values   of all boolean fields to **FALSE**.(*Include header*, *Selected columns only*
    , *Filtered rows only*, *Selected rows only*)
 
 1. Export *"demog"* table to CSV files with different delimiters choosing appropriate in **
@@ -55,7 +55,7 @@ project in *d42* format or in ZIP-archive that will contain *csv* files of all p
 
 1. Apply filter on value *"M"* to **"SEX"** column
 
-1. Select all rows *​​"Asian"* in **"RACE"** column and select **"SEX"**, **"RACE"** and **"
+1. Select all rows *  "Asian"* in **"RACE"** column and select **"SEX"**, **"RACE"** and **"
    Height"** columns (for original *demog* table)
 
 1. Open *"Save as CSV"* dialog (**File** | **Save** | **Table as CSV (options)**) for export settings to *csv* format (
@@ -63,7 +63,7 @@ project in *d42* format or in ZIP-archive that will contain *csv* files of all p
 
 1. Type *"test"* into **Missing Value** field
 
-1. Set values ​​for boolean fields: **"Include header**" = FALSE,  **"Selected columns only"** = TRUE, **"Filtered rows
+1. Set values   for boolean fields: **"Include header**" = FALSE,  **"Selected columns only"** = TRUE, **"Filtered rows
    only"** = TRUE, **"Selected rows only"** = TRUE
 
 1. Click on ```"Set as default"``` button
@@ -73,10 +73,10 @@ project in *d42* format or in ZIP-archive that will contain *csv* files of all p
 1. Open downloaded file in any suitable text editor
 
 * There are three columns in downloaded *CSV* file. (**"SEX"**, **"RACE"** and **"Height"**)
-* The file has only rows that correspond to values *​​"Asian"* in **"RACE"** column and *"M"*
+* The file has only rows that correspond to values *  "Asian"* in **"RACE"** column and *"M"*
   in **"SEX"** column
 * Column headers are missing in file
-* Null values ​​in **Height** column replaced by *"test"*
+* Null values   in **Height** column replaced by *"test"*
 
 1. Repeat **3-4** steps
 

@@ -367,7 +367,7 @@ export class FuncCall extends Entity {
 
   /** Executes the function call synchronously*/
   callSync(options?: {processed?: boolean, report?: boolean}): FuncCall {
-     return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
+    return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
   }
 
   /** Shows the corresponding dialog (or view). */

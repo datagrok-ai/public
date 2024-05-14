@@ -104,7 +104,7 @@ export type DistributionLabelMap = { [key in SPLIT_CATEGORY]?: string };
  * @param labelMap - Mapping object for distribution labels.
  * @return - Panel with distribution plot and statistics.
  */
-export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramLookSettings>, statsMap: StringDictionary,
+export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, statsMap: StringDictionary,
   labelMap: DistributionLabelMap = {}): HTMLDivElement {
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
   const labels = [];

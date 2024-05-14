@@ -93,9 +93,15 @@ export function monomerSeqToMolfile(
     bondCount: bondCount,
   };
 
+  const steabsCollection: number [] = [];
+  let nAtoms = 0;
+
   for (v.i = 0; v.i < LC.seqLength; ++v.i) {
     const monomer = monomersDict.get(monomerSeq[v.i])!;
     addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, LC);
+    //adding stereo atoms to array for further STEABS block generation
+    monomer.stereoAtoms?.forEach((i) => steabsCollection.push(i + nAtoms));
+    nAtoms += monomer.atoms.x.length;
   }
 
   capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, LC);
@@ -117,11 +123,35 @@ export function monomerSeqToMolfile(
   result += C.V3K_BEGIN_BOND_BLOCK;
   result += molfileBondBlock.join('');
   result += C.V3K_END_BOND_BLOCK;
+  if (steabsCollection.length > 0) 
+    result += getCollectionBlock(steabsCollection);
   result += C.V3K_END_CTAB_BLOCK;
   result += C.V3K_END;
 
   // return molfileParts.join('');
   return result;
+}
+
+
+function getCollectionBlock(collection: number[]): string {
+  //one row in STEABS block can be no longer than 80 symbols
+  //maxSymbols = 80 symbols minus ' -\n' (4 symbols)
+  const maxSymbols = 76;
+  const rowsArray = [];
+
+  let newCollectionRow = `M  V30 MDLV30/STEABS ATOMS=(${collection.length}`;
+  for (let i = 0; i < collection.length; i++) {
+    const updatedRow = `${newCollectionRow} ${collection[i]}`;
+    if (updatedRow.length > maxSymbols) {
+      rowsArray.push(`${newCollectionRow} -\n`);
+      newCollectionRow = `M  V30 ${collection[i]}`
+    } else
+      newCollectionRow = updatedRow;
+    //in case last atom was added - close the block
+    if (i === collection.length - 1)
+      rowsArray.push(`${newCollectionRow})\n`);
+  }
+  return `M  V30 BEGIN COLLECTION\n${rowsArray.join('')}M  V30 END COLLECTION\n`;
 }
 
 /** Cap the resulting (after sewing up all the monomers) molfile with 'O'

@@ -9,7 +9,7 @@ with the [Datagrok](https://datagrok.ai) platform.
 is widely used software for ligand-receptor docking 
 that allows researchers to predict the binding interactions between small molecules (ligands) and macromolecule 
 (receptor). 
-The **Autodock-GPU** is a GPU-accelerated version of the Autodock software. 
+The **Autodock-GPU** is a GPU-accelerated version of the Autodock software.
 
 This package also provides a good example of Datagrok integration 
 with external utilities.
@@ -18,9 +18,11 @@ You can find more in the
 
 ## How To
 
+Setting up docking configurations can be challenging, but we've streamlined the process. Usually, someone familiar with the docking tool, like a cheminformatician, manages the complexity by identifying a pocket, preparing a configuration using the desktop Autodock application, naming it, and saving it on a server under the targets folder.
+
 ### Prepare macromolecule (target)
 
-Autodock plugin contains one pre-created target.
+Autodock plugin contains several pre-created [targets](https://github.com/datagrok-ai/public/tree/master/packages/Docking/files/targets).
 To add your own macromolecule to the list of targets,
 prepare the macromolecule using 
 [AutoDock tools](https://ccsb.scripps.edu/mgltools/downloads/).

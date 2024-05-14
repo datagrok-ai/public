@@ -9,7 +9,7 @@ as [in-memory columnar database](../../../develop/under-the-hood/architecture.md
 end-to-end-experience, we took ownership of [data access](../../../datagrok/datagrok.md#access),
 [data governance](../../../datagrok/datagrok.md#access),
 [data exploration](../../../datagrok/datagrok.md#explore),
-[scientific computing](../../../compute/scripting.md),[machine learning and artificial intelligence](../../../datagrok/datagrok.md#explore),
+[scientific computing](../../../compute/scripting/scripting.mdx),[machine learning and artificial intelligence](../../../datagrok/datagrok.md#explore),
 and [collaboration](../../../datagrok/datagrok.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like

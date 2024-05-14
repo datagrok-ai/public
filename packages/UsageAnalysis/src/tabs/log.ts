@@ -18,7 +18,7 @@ export class LogView extends UaView {
     this.name = 'Log';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     grok.dapi.users.list().then(
       (user) => user.map((u) => {
         const d = {

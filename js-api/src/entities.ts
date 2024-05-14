@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -211,6 +211,7 @@ export class UserSession extends Entity {
   get user(): User { return toJs(api.grok_UserSession_Get_User(this.dart)); }
 }
 
+
 /** Represents a function
  * @extends Entity
  * {@link https://datagrok.ai/help/datagrok/functions/function}
@@ -254,7 +255,7 @@ export class Func extends Entity {
   }
 
   /**
-   *  Executes the function with the specified {link parameters}, and returns result.
+   *  Executes the function with the specified {@link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
   async apply(parameters: {[name: string]: any} | any[] = {}): Promise<any> {
@@ -271,12 +272,20 @@ export class Func extends Entity {
     return (await (this.prepare(parameters)).call()).getOutputParamValue();
   }
 
+  /** Executes the function synchronously, and returns the result.
+   *  If the function is asynchronous, throws an exception. */
+  applySync(parameters: {[name: string]: any} = {}): any {
+    return this.prepare(parameters).callSync().getOutputParamValue();
+  }
+
   /** Returns functions with the specified attributes. */
   static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Func[] {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);
   }
 
-  /** Returns functions (including queries and scripts) with the specified attributes. */
+  /**
+   * @deprecated Use find, it's the same now but does not make a server query and synchronous.
+   */
   static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
     let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
@@ -631,8 +640,11 @@ export class Notebook extends Entity {
  * */
 export class TableInfo extends Entity {
   /** @constructs TableInfo */
+  public tags: {[key: string]: any};
+
   constructor(dart: any) {
     super(dart);
+    this.tags = new MapProxy(api.grok_TableInfo_Get_Tags(this.dart), 'tags');
   }
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
@@ -1064,8 +1076,8 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead. 
-   *  Returns properties for a package. 
+   * Deprecated. Use getSettings instead.
+   *  Returns properties for a package.
   */
   getProperties(): Promise<any> {
     return this.getSettings();
@@ -1394,4 +1406,26 @@ export class Schema {
   set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
+}
+
+export class UserReport extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get id(): string {
+    return api.grok_UserReport_Id(this.dart);
+  }
+
+  get isResolved(): boolean {
+    return api.grok_UserReport_IsResolved(this.dart);
+  }
+
+  get jiraTicket(): string {
+    return api.grok_UserReport_JiraTicket(this.dart);
+  }
+
+  get assignee(): User {
+    return toJs(api.grok_UserReport_Assignee(this.dart));
+  }
 }

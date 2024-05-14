@@ -95,8 +95,9 @@ export class PositionInfo {
    * @param {number} pos Position in sequence
    * @param {string} name Name of position ('111A', '111.1', etc)
    * @param {string[]} freqs frequency of monomers in position
-   * @param {number} rowCount Count of elements in column
-   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
+   * @param options sumRowCount - count of elements in column
+   *                sumValueForHeight - sum of all monomer counts for height calculation
+   *                label - displaying position label
    */
   constructor(
     /** Position in sequence */ public readonly pos: number,
@@ -991,14 +992,16 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const dfRowCount = this.dataFrame.rowCount;
 
       for (let jPos = 0; jPos < length; ++jPos) {
-        const pi = this.positions[jPos];
         // Here we want to build lists of values for every monomer in position jPos
         for (let rowI = 0; rowI < dfRowCount; ++rowI) {
           if (dfFilter.get(rowI)) {
-            ++pi.sumRowCount;
-            const seqMList: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-            const cm: string = seqMList.getCanonical(this.startPosition + jPos);
+            const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
+            const om: string = jPos < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
+              this.seqHandler.defaultGapOriginal;
+            const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
+            const pi = this.positions[jPos];
             const pmi = pi.getFreq(cm);
+            ++pi.sumRowCount;
             pmi.value = ++pmi.rowCount;
           }
         }

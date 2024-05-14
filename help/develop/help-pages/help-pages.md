@@ -36,7 +36,7 @@ Once you've finished checking the basics, do the following:
   * Assess the flow of the document when a user starts reading from the beginning. Ensure that the document's structure makes it easy to understand the purpose and topic of the page.
   * Consider users who get to a specific section within the page from another page or a search engine. Evaluate whether there is enough context provided for them to understand both the section contents, and how it relates to the rest of the document.
 
-Lastly, make sure you adhere to our [commit message policy](../advanced/git-policy.mdx#commit-message-policy).
+Lastly, make sure you adhere to our [commit message policy](../dev-process/git-policy.mdx#commit-message-policy).
 
 ## Resources
 

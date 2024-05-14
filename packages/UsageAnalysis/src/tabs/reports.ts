@@ -1,123 +1,207 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {UaView} from './ua';
 import {UaToolbox} from '../ua-toolbox';
-import * as grok from 'datagrok-api/grok';
-import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import * as DG from 'datagrok-api/dg';
-import {DetailedLog} from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
+
 
 const filtersStyle = {
-  columnNames: ['error', 'reporter', 'report_time'],
+  columnNames: ['error', 'reporter', 'assignee', 'time', 'number', 'is_resolved', 'labels'],
 };
 
 export class ReportsView extends UaView {
+  currentFilterGroup: DG.FilterGroup | null;
+  private filters: HTMLDivElement = ui.box();
+  users: { [_: string]: any; } = {};
+
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Reports';
+    this.currentFilterGroup = null;
+    this.filters.style.maxWidth = '250px';
   }
 
-  async initViewers(): Promise<void> {
-    const users: {[_: string]: any} = {};
+  async initViewers(path?: string): Promise<void> {
     (await grok.dapi.users.list()).forEach((user) => {
-      users[user.friendlyName] = {
+      this.users[user.id] = {
         'avatar': user.picture,
         'name': user.friendlyName,
         'data': user,
       };
     });
 
-    const filters = ui.box();
-    filters.style.maxWidth = '250px';
-
-    const reportsViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'User reports',
-      queryName: 'UserReports',
-      createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.grid(t, {
-          'showColumnLabels': false,
-          'showRowHeader': false,
-          'showColumnGridlines': false,
-          'allowRowSelection': false,
-          'allowColumnSelection': false,
-          'allowBlockSelection': false,
-          'showCurrentCellOutline': false,
-          'defaultCellFont': '13px monospace',
-        });
-        filters.append(DG.Viewer.filters(t, filtersStyle).root);
-        viewer.onBeforeDrawContent.subscribe(() => {
-          viewer.columns.setOrder(['report_id', 'reporter', 'report_time', 'description', 'same_errors_count', 'error']);
-          viewer.col('reporter')!.cellType = 'html';
-          viewer.col('reporter')!.width = 30;
-          viewer.col('report_id')!.cellType = 'html';
-          viewer.col('report_id')!.width = 20;
-          viewer.col('report_number')!.visible = false;
-        });
-
-        viewer.onCellPrepare(async function(gc) {
-          if (gc.gridColumn.name === 'report_time') {
-            gc.style.textColor = 0xFFB8BAC0;
-            gc.style.font = '13px Roboto';
+    const grid = ui.wait(async () => {
+      let t: DG.DataFrame;
+      let viewer: DG.Grid;
+      if (path != undefined) {
+        const segments = path.split('/').filter((s) => s != '');
+        if (segments.length > 1) {
+          const reportNumber = parseInt(segments[1]);
+          t = await grok.dapi.reports.getReports(reportNumber);
+          if (t && t.rowCount > 0) {
+            t.currentRowIdx = 0;
+            await this.showPropertyPanel(t);
+            grok.dapi.reports.getReports()
+              .then(async (r: DG.DataFrame) => {
+                r.rows.removeWhere((r) => r.get('number') === reportNumber);
+                const df = t.append(r);
+                const newViewer = DG.Viewer.grid(df);
+                this.updateDf(df, newViewer, this.users);
+                viewer.root.replaceWith(newViewer.root);
+              });
           }
-
-          if (gc.gridColumn.name === 'reporter') {
-            const user = users[gc.cell.value];
-            const img = ui.div();
-            img.style.width = '20px';
-            img.style.height = '20px';
-            img.style.backgroundSize = 'contain';
-            img.style.margin = '5px 0 0 5px';
-            img.style.borderRadius = '100%';
-            if (gc.cell.value != 'Test')
-              img.style.backgroundImage = user.avatar.style.backgroundImage;
-            else
-              img.style.backgroundImage = 'url(/images/entities/grok.png);';
-            img.addEventListener('click', () => {
-              grok.shell.o = user.data;
-            });
-            gc.style.element = ui.tooltip.bind(img, user.name);
-          }
-
-          if (gc.gridColumn.name === 'report_id') {
-            const icon = ui.iconFA('arrow-to-bottom', () => {
-              const indicator = DG.TaskBarProgressIndicator.create('Receiving user report...');
-              //@ts-ignore
-              grok.dapi.admin.getUserReport(gc.cell.value)
-                .then((bytes: any) => DG.Utils.download(`report_${gc.cell.value}.zip`, bytes))
-                .finally(() => indicator.close());
-            });
-            icon.style.marginTop = '7px';
-            gc.style.element = ui.tooltip.bind(icon, 'Download report');
-          }
-        });
-
-        return viewer;
-      },
-      processDataFrame: (t: DG.DataFrame) => {
-        t.onSelectionChanged.subscribe(async () => {
-          await this.showReportContextPanel(t);
-        });
-        t.onCurrentRowChanged.subscribe(async () => {
-          t.selection.setAll(false);
-          t.selection.set(t.currentRowIdx, true);
-        });
-        return t;
-      },
+        }
+      }
+      // @ts-ignore
+      if (!t)
+        t = await grok.dapi.reports.getReports();
+      viewer = DG.Viewer.grid(t);
+      this.updateDf(t, viewer, this.users);
+      return viewer.root;
     });
 
-    reportsViewer.root.classList.add('ui-panel');
-    this.viewers.push(reportsViewer);
     this.root.append(ui.splitH([
-      filters,
-      reportsViewer.root,
+      this.filters,
+      grid,
     ]));
   }
 
-  async showReportContextPanel(table: DG.DataFrame): Promise<void> {
-    if (!table.selection.anyTrue) return;
-    let df = table.clone(table.selection);
-    const reportId = df.getCol('report_id').get(0);
-    if (!reportId) return
-    grok.shell.o = ui.div([await DetailedLog.getAccordion(reportId)]);
+  applyStyle(viewer: DG.Grid) {
+    viewer.columns.setOrder(['is_resolved', 'number', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error', 'error_stack_trace', 'time', 'id']);
+    viewer.col('reporter')!.cellType = 'html';
+    viewer.col('reporter')!.width = 25;
+
+    viewer.col('assignee')!.cellType = 'html';
+    viewer.col('assignee')!.width = 25;
+
+    viewer.col('jira')!.cellType = 'html';
+    viewer.col('is_resolved')!.width = 30;
+
+    viewer.col('id')!.visible = false;
+    viewer.col('error_stack_trace_hash')!.visible = false;
+
+    viewer.col('time')!.format = 'yyyy-MM-dd';
+    viewer.col('time')!.width = 80;
+
+    viewer.col('number')!.width = 35;
+
+    viewer.col('description')!.width = 150;
+    viewer.col('error')!.width = 200;
+    viewer.col('error_stack_trace')!.width = 200;
+  }
+
+  updateDf(t: DG.DataFrame, viewer: DG.Grid, users: { [_: string]: any; }) {
+    if (t.rowCount === 0) return viewer.root
+    viewer.sort(['is_resolved', 'time'], [true, false]);
+    this._scroll(viewer);
+    this.applyStyle(viewer);
+    viewer.onCellPrepare(async function(gc) {
+      if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
+        const user = users[gc.cell.value];
+        const icon = DG.ObjectHandler.forEntity(user.data)?.renderIcon(user.data.dart);
+        if (icon) {
+          icon.style.top = 'calc(50% - 8px)';
+          icon.style.left = 'calc(50% - 8px)';
+          gc.style.element = ui.tooltip.bind(icon, () => {
+            return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
+          });
+        }
+      }
+      if (gc.gridColumn.name === 'jira' && gc.cell.value) {
+        const link = ui.link(gc.cell.value, `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.open(link.href, '_blank');
+        });
+        link.style.position = 'absolute';
+        link.style.top = 'calc(50% - 8px)';
+        link.style.left = '3px';
+        gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+      }
+    });
+    const isAcknowledged = t.getCol('is_resolved');
+    viewer.onCellRender.subscribe((gc) => {
+      if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
+        gc.cell.style.textColor = 0xFFB8BAC0;
+    });
+
+    t.getCol('labels').setTag(DG.Tags.MultiValueSeparator, ',');
+    t.onCurrentRowChanged.subscribe(async (_: any) => await this.showPropertyPanel(t));
+    t.onValuesChanged.subscribe(async () => {
+      viewer.sort(['is_resolved', 'time'], [true, false]);
+      this._scroll(viewer);
+    });
+    grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
+      const idCol = t.getCol('id');
+      const length = idCol.length;
+      for (let i = 0; i < length; i++) {
+        if (idCol.get(i) === r.id) {
+          t.cell(i, 'is_resolved').value = r.isResolved;
+          t.cell(i, 'jira').value = r.jiraTicket;
+          t.cell(i, 'assignee').value = r.assignee?.id;
+          t.fireValuesChanged();
+        }
+      }
+    });
+
+    this.reloadFilter(t);
+  }
+
+  async showPropertyPanel(t: DG.DataFrame):Promise<void> {
+    const currentRow = t.currentRowIdx;
+    if (currentRow === -1) return;
+    const reportId = t.getCol('id').get(currentRow);
+    if (!reportId) return;
+    this.updatePath(t.getCol('number').get(currentRow));
+    const report = await grok.dapi.reports.find(reportId);
+    if (report)
+      grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
+  }
+
+  reloadFilter(table: DG.DataFrame) {
+    this.currentFilterGroup?.detach();
+    while (this.filters.hasChildNodes())
+      this.filters.removeChild(this.filters.lastChild!);
+    if (table) {
+      const filters_ = DG.Viewer.filters(table, filtersStyle);
+      this.currentFilterGroup = new DG.FilterGroup(filters_.dart);
+      this.filters.append(filters_.root);
+    }
+  }
+
+  _scroll(viewer: DG.Grid): void {
+    const segments = window.location.href.split('/');
+    const last = segments[segments.length - 1];
+    if (last !== 'reports' && /^-?\d+$/.test(last)) {
+      const num = parseInt(last);
+      if (num) {
+        setTimeout(() => {
+          const df = viewer.dataFrame;
+          const numbers = df.getCol('number');
+          for (let i = 0; i < numbers.length; i++)
+            if (numbers.get(i) == num) {
+              viewer.scrollToCell('is_resolved', i);
+              df.currentRowIdx = i;
+              break;
+            }
+        }, 200);
+      }
+    }
+  }
+
+  updatePath(reportNumber: number): void {
+    const segments = window.location.href.split('/');
+    const last = segments[segments.length - 1];
+    if (last === 'reports')
+      segments.push(reportNumber.toString());
+    else {
+      if (/^-?\d+$/.test(last))
+        segments[segments.length - 1] = reportNumber.toString();
+      else
+        return;
+    }
+
+    window.history.pushState(
+      null, 'Report ${detailedLog.reportNumber}', segments.join('/'));
   }
 }

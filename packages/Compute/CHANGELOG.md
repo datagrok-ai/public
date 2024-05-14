@@ -1,5 +1,103 @@
 # Compute changelog
 
+## 1.34.0 (2024-05-14)
+
+### Features
+
+- RFV: Removed workaround for tableInput
+- RFV: Added tooltips for inputs
+- HistoryInput: Changed dates to local timezone
+- Added Fitting view
+
+## 1.33.5 (2024-05-09)
+
+### Features
+
+- RFV: Property default value getting both for 1.18.x and 1.19
+
+## 1.33.4 (2024-05-09)
+
+### Features
+
+- Heavyweight imports optimization
+
+## 1.33.3 (2024-05-08)
+
+### Features
+
+- Bundle size optimizations
+
+## 1.33.1 (2024-05-07)
+
+### Features
+
+- Rearranged CSS files
+- RFV: Added isOutdatedOutput subject
+- HistoryInput: Hides incomplete runs
+- HistoryPanel: Added completeness filter
+
+## 1.33.0 (2024-05-06)
+
+- Added CompositionPipeline
+
+## 1.32.4 (2024-05-03)
+
+### Bug fixes
+
+- RFV: Removed workarounds
+
+## 1.32.3 (2024-04-30)
+
+### Bug fixes
+
+- HistoryPanel: Fixed case of duplicated captions
+
+## 1.32.2 (2024-04-29)
+
+### Misc
+
+- Dependencies update
+
+## 1.32.1 (2024-04-29)
+
+### Bug fixes
+
+- RFV: LineChart dynamically resizing
+
+## 1.32.0 (2024-04-18)
+
+### Features
+
+- Added partial save feature for RFV & Wizard
+- Run deletion is now implemented via flag
+- Wizard: annotation and in-code help pages are now both supported
+- History panel: "Params" switch is now hidden if no params exist
+- Wizard: Steps now support customId-s
+
+### Bug fixes
+
+- History panel: Fixed grid keeping its size
+
+## 1.31.0 (2024-04-10)
+
+### Features
+
+- ModelCatalog: Adaptation for BrowseView
+
+## 1.30.1 (2024-04-08)
+
+### Bug fixes
+
+- RFV: Default export properly works with nulls
+
+## 1.30.0 (2024-04-08)
+
+### Features
+
+- HistoryInput refactored: now uses same component as HistoryPanel
+- `mainInputs` tag renamed to `mainParams`
+- Both HistoryInput and HistoryPanel now use `mainParams` to determine visible columns
+
 ## 1.29.1 (2024-04-03)
 
 ### Features

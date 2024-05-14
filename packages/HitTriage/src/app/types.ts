@@ -1,5 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 
+export type AppName = 'Hit Triage' | 'Hit Design';
+
+export type CampaignsType = {
+    'Hit Triage': HitTriageCampaign,
+    'Hit Design': HitDesignCampaign,
+}
+
 export type IDescriptorTree = {
     [key: string]: {
       descriptors: Array<Descriptor>,
@@ -51,8 +58,9 @@ export type HitTriageTemplate = {
     submit?: HitTriageTemplateSubmit,
     campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
-    queryFunctionName?: string;
-    isDataSourceQuery?: boolean;
+    queryFunctionName?: string,
+    isDataSourceQuery?: boolean,
+    layoutViewState?: string,
 }
 
 export const CampaignFieldTypes = {
@@ -123,9 +131,10 @@ export type INewTemplateResult<T> = {
 
 // ##################### HIT DESIGN TYPES #####################
 
-export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> & {stages: string[]};
+export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> &
+    {stages: string[]};
 
-export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'>;
+export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {tilesViewerFormSketch?: string};
 
 export type ComputeFunctions = {
     functions: DG.Func[],

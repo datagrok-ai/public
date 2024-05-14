@@ -7,7 +7,7 @@ Datagrok was built for data scientists, by data scientists. Our goal is to let s
 infrastructure.
 
 Out of the box, Datagrok provides all tools necessary for
-[data ingestion](../../../access/files/files.mdx),
+[data ingestion](../../../access/files/files.md),
 [transformation](../../../transform/transform.md),
 [visualization](../../../visualize/viewers/viewers.md),
 [analysis](use-cases/eda.md),
@@ -40,8 +40,8 @@ interactive dashboards based on the retrieved data, and publish these dashboards
 
 Available hypothesis tests:
 
-* [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test): #{x.TTest}
-* [Kolmogorov–Smirnov test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test): #{x.KSTest}
+* [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test): #\{x.TTest}
+* [Kolmogorov–Smirnov test](https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test): #\{x.KSTest}
 
 Return p-values.
 
@@ -66,7 +66,7 @@ Actions", see "Math" section.
 Performs clustering using k-means algorithm. An interactive visualization lets you see clustering results in real-time,
 which makes the process a lot more intuitive.
 
-### [Missing Value Imputation](../../../transform/missing-values-imputation.md)
+### [Missing Value Imputation](../../../explore/missing-values-imputation.md)
 
 Allows to do fast and simple missing values imputation using k-nearest neighbours algorithm.
 

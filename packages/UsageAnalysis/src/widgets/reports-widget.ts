@@ -1,0 +1,58 @@
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+
+export class ReportsWidget extends DG.Widget {
+  caption: string;
+  order: string;
+
+  constructor() {
+    super(ui.box());
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
+    this.order = super.addProperty('order', DG.TYPE.STRING, '2');
+    this.root.appendChild(ui.waitBox(async () => {
+      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20);
+      const users: {[_: string]: any} = {};
+      (await grok.dapi.users.list()).forEach((user) => {
+        users[user.id] = {
+          'avatar': user.picture,
+          'name': user.friendlyName,
+          'data': user,
+        };
+      });
+      const items = [];
+      for (let i = 0; i < result.rowCount; i++) {
+        // todo: add css instead of inline styles
+        const currentRow = result.row(i);
+        const reporter = users[currentRow.get('reporter')];
+        const clock = ui.iconFA('clock', null, currentRow.get('time'));
+        clock.style.marginRight = '10px';
+        const portrait = ui.tooltip.bind(DG.ObjectHandler.forEntity(reporter.data)?.renderIcon(reporter.data.dart)!, () => {
+          return DG.ObjectHandler.forEntity(reporter.data)?.renderTooltip(reporter.data.dart)!;
+        });
+        portrait.style.marginRight = '10px';
+        // if (currentRow.get('package_owner') === currentUserId)
+        //   text.style.fontWeight = 'bold';
+        const content = ui.divH([clock, portrait, ui.divText(currentRow.get('description'))]);
+        const item = ui.card(content);
+        item.style.overflow = 'visible';
+        item.style.width = '100%';
+        item.style.marginBottom = 'unset';
+        item.style.border = 'none';
+        item.style.marginLeft = 'auto';
+        item.style.padding = '5px';
+        item.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const report = await grok.dapi.reports.find(currentRow.get('id'));
+          if (report)
+            grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
+        });
+        items.push(item);
+      }
+      const d = ui.divV(items);
+      d.style.padding = '10px';
+      d.style.lineHeight = '1';
+      return d;
+    }));
+  }
+}

@@ -33,7 +33,7 @@ category('Dapi: sticky meta', () => {
       }
     }
     if (entityType == undefined) {
-      entityType = DG.EntityType.create('test', 'semtype=test');
+      entityType = DG.EntityType.create('apiTest', 'semtype=test');
       var et = schema.entityTypes;
       et.push(entityType);
       schema.entityTypes = et;

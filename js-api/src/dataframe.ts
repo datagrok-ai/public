@@ -71,17 +71,26 @@ export interface CsvExportOptions {
   /** Whether only selected columns are included. False if not specified. */
   selectedColumnsOnly?: boolean;
 
+  /** Whether only visible columns are included. False if not specified. */
+  visibleColumnsOnly?: boolean;
+
   /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
   filteredRowsOnly?: boolean;
 
   /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
   selectedRowsOnly?: boolean;
 
+  /** Explicitly defined order of rows. Mutually exclusive with [selectedRowsOnly] or [filteredRowsOnly]. */
+  rowIndexes?: number[];
+
   /** Column order */
   columns?: string[];
 
-  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  /** Expands qualified numbers into two columns: `qual(column)` and `column` */
   qualifierAsColumn?: boolean;
+
+  /// Saves MOLBLOCKS as SMILES.
+  moleculesAsSmiles?: boolean;
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
@@ -285,14 +294,25 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format. */
-  toCsv(options?: CsvExportOptions): string {
-    return api.grok_DataFrame_ToCsv(this.dart, options);
+  /** Exports the content to comma-separated-values format.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  toCsv(options?: CsvExportOptions, grid?: Grid): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options, grid?.dart);
+  }
+
+  /** Exports the content to comma-separated-values format asynchronously with converting the molblock columns to smiles if specified.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  async toCsvEx(options?: CsvExportOptions, grid?: Grid): Promise<string> {
+    return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
   }
 
   /** Exports the content to JSON format */
   toJson(): any[] {
-    return Array.from({length: this.rowCount}, (_, idx) => 
+    return Array.from({length: this.rowCount}, (_, idx) =>
       this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
         entry[colName] = this.get(colName, idx);
         return entry;
@@ -624,7 +644,7 @@ export class Column<T = any> {
    * @param length - Column length (should match row count of the data frame )
    *
    * {@link DataFrame.create}
-   * {@see COLUMN_TYPE}
+   * @see COLUMN_TYPE
    */
   static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
@@ -668,7 +688,7 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
   }
 
-  /** Creates a {Column} from the bitset.
+  /** Creates a {@link Column} from the bitset.
    * @param {string} name
    * @param {BitSet} bitset
    * @returns {Column} */
@@ -1372,6 +1392,14 @@ export class RowList {
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
+  get mouseOverRowFunc(): IndexPredicate {
+    return api.grok_RowList_MouseOverRowFunc(this.dart);
+  }
+
+  where(indexPredicate: IndexPredicate) {
+    return _toIterable(api.grok_RowList_Where(this.dart, indexPredicate));
+  }
+
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.
@@ -1550,19 +1578,19 @@ export class Cell {
 export class BitSet {
   public dart: any;
 
-  /** Creates a {BitSet} from the specified Dart object. */
+  /** Creates a {@link BitSet} from the specified Dart object. */
   constructor(dart: any) {
     this.dart = dart;
   }
 
-  /** Creates a {BitSet} from the string representing the bitset.
+  /** Creates a {@link BitSet} from the string representing the bitset.
    * @param {string} zerosOnes - A string containing '1' and '0'.
    * @returns {BitSet} */
   static fromString(zerosOnes: string): BitSet {
     return new BitSet(api.grok_BitSet_FromString(zerosOnes));
   }
 
-  /** Creates a {BitSet} from the ArrayBuffer representing the bitset.
+  /** Creates a {@link BitSet} from the ArrayBuffer representing the bitset.
    * @param {ArrayBuffer} buffer - An array containing 1 and 0.
    * @param {Number} bitLength - count of bits.
    * @returns {BitSet} */
@@ -1572,7 +1600,7 @@ export class BitSet {
     return new BitSet(api.grok_BitSet_FromBytes(buffer, bitLength));
   }
 
-  /** Creates a {BitSet} of the specified length with all bits set to false.
+  /** Creates a {@link BitSet} of the specified length with all bits set to false.
    * @param {number} length - Number of bits.
    * @param {Function} f - when specified, Sets all bits by setting i-th bit to the results of f(i)
    * @returns {BitSet} */
@@ -1735,7 +1763,7 @@ export class BitSet {
     return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
-  /** Copies the content from the other {BitSet}. */
+  /** Copies the content from the other {@link BitSet}. */
   copyFrom(b: BitSet, notify: boolean = true): BitSet {
     api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
@@ -1769,7 +1797,7 @@ export class BitSet {
 }
 
 
-/** Represents basic descriptive statistics calculated for a {Column}.
+/** Represents basic descriptive statistics calculated for a {@link Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
   private readonly dart: any;

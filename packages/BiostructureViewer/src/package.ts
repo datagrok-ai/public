@@ -158,7 +158,8 @@ export async function importPdbqt(fileContent: string, test: boolean): Promise<D
  * //TODO: Support preview .mol2 with Molstar (hangs on sp-after.mol2)
  * //TODO: Fix preview .pqr
  */
-//tags: fileViewer, fileViewer-mmtf, fileViewer-cns, fileViewer-top, fileViewer-prmtop
+//tags: fileViewer
+//meta.fileViewer: mmtf,cns,top,prmtop
 //input: file file
 //output: view result
 export function previewNglStructure(file: any): DG.View {
@@ -168,7 +169,8 @@ export function previewNglStructure(file: any): DG.View {
 /** Shape / surface formats not supported with Molstar are handled with NGL viewer
  * TODO: Support preview .ply with Molstar
  */
-//tags: fileViewer, fileViewer-ply, fileViewer-obj
+//tags: fileViewer
+//meta.fileViewer: ply,obj
 //input: file file
 //output: view v
 export function previewNglSurface(file: any) {
@@ -177,7 +179,8 @@ export function previewNglSurface(file: any) {
 
 // TODO: Support preview .ccp4 with Molstar
 //eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-ccp4
+//tags: fileViewer
+//meta.fileViewer: ccp4
 //input: file file
 //output: view v
 export function previewNglDensity(file: any) {
@@ -186,14 +189,16 @@ export function previewNglDensity(file: any) {
 
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-sd, fileViewer-xyz
+//tags: fileViewer
+//meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz
 //input: file file
 //output: view v
 export function previewBiostructureStructure(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
-//tags: fileViewer, fileViewer-parm7, fileViewer-psf
+//tags: fileViewer
+//meta.fileViewer: parm7,psf
 //input: file file
 //output: view v
 export function previewBiostructureTopology(file: DG.FileInfo): DG.View {
@@ -201,7 +206,8 @@ export function previewBiostructureTopology(file: DG.FileInfo): DG.View {
 }
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-mrc, fileViewer-map
+//tags: fileViewer
+//meta.fileViewer: dsn6,brix,cube,cub,dx,dxbin,xplor,mrc,map
 //input: file file
 //output: view v
 export function previewBiostructureDensity(file: DG.FileInfo): DG.View {
@@ -371,13 +377,6 @@ export async function getPdbHelper(): Promise<IPdbHelper> {
   return PdbHelper.getInstance();
 }
 
-//name: getPdbGridCellRenderer
-//input: object gridCol
-//output: object result
-export function getPdbGridCellRenderer(gridCol: DG.GridColumn): IPdbGridCellRenderer {
-  return PdbGridCellRendererBack.getOrCreate(gridCol);
-}
-
 //name: dockingDemo
 //description:
 export async function dockingDemo() {
@@ -427,7 +426,7 @@ export function addContextMenu(event: DG.EventData): void {
 // demoBio06b
 //name: demoBioDockingConformations
 //meta.demoPath: Bioinformatics | Docking Conformations
-//descriptions: Display ligand poses along the structure
+//description: Display ligand poses along the structure
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
 //meta.demoWait: 3000
 //meta.demoSkip: GROK-15250

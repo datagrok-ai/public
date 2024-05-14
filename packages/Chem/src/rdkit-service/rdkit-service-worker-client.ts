@@ -4,7 +4,7 @@ import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts.js';
-import { SubstructureSearchType } from '../constants.js';
+import {SubstructureSearchType} from '../constants.js';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -20,8 +20,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   initMoleculesStructures = async (molecules: string[]): Promise<number> =>
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules]);
 
-  searchSubstructure = async (query: string, queryMolBlockFailover: string, molecules: string[], searchType: SubstructureSearchType) =>
-    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType]);
+  searchSubstructure =
+    async (query: string, queryMolBlockFailover: string, molecules: string[], searchType: SubstructureSearchType) =>
+      this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType]);
 
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
@@ -40,6 +41,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   mmpGetFragments = async (molecules: string[]) =>
     this.call(WORKER_CALL.MMP_GET_FRAGMENTS, [molecules]);
+
+  mmpLinkFragments = async (cores: string [], fragments: string []) =>
+    this.call(WORKER_CALL.MMP_LINK_FRAGMENTS, [cores, fragments]);
 
   mmpGetMcs = async (molecules: [string, string][]) =>
     this.call(WORKER_CALL.MMP_GET_MCS, [molecules]);

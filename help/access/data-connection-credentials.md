@@ -3,7 +3,7 @@ title: "Secrets managers"
 sidebar_position: 5
 ---
 
-When you [add a data connection](databases/databases.mdx#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the [Datagrok's Credentials Management Service](../govern/security.md#credentials).
+When you [add a data connection](databases/databases.md#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the [Datagrok's Credentials Management Service](../govern/security.md#credentials).
 
 ## Setting up connection with AWS Secrets Manager
 

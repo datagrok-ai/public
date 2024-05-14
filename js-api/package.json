@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.18.1",
+  "version": "1.18.6",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.0.12",
@@ -26,7 +26,6 @@
     "ts-loader": "^8.1.0",
     "source-map-loader": "^4.0.1",
     "tui-jsdoc-template": "^1.2.2",
-    "typedoc": "0.21.x",
     "webpack": "^5.64.1",
     "webpack-cli": "^4.6.0",
     "babel-loader": "^9.1.2",
@@ -38,7 +37,6 @@
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
     "build": "tsc && webpack",
-    "typedoc": "typedoc dg.ts grok.ts ui.ts --readme ../help/develop/js-api.md --disableOutputCheck",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }
 }

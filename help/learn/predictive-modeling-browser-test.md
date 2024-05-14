@@ -28,34 +28,34 @@ them.
   or [group](../govern/group.md) of users.
 * Appropriate [user](../govern/user.md) received a notification and a letter to the mail
 
-1. Open the "General" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "General" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "General" tab is open
 * The correct and actually information for all fields is displayed (Created, Created by, Trained on). Structure of the
   model is also shown here
 
-1. Open the "Details" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Details" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Details" tab is open
 * Display inputs, outputs and using method.
 * If a suitable [table](../datagrok/table.md) is opened, the field "Applicable to" is shown
 
-1. Open the "Performance" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Performance" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Performance" tab is open
 * Indicators of the quality of the model shown here (mse, rmse, r2, auc, etc.)
 * For OpenCPU models, quality graphs are displayed
 
-1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open the "Activity" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * "Activity" tab is open
 * Display information about actual actions with [model](learn.md)
 
 1. Select two models (using ```CTRL``` key)
 
-* Selected models appeared on [Context Panel](../datagrok/navigation.md#context-panel)
+* Selected models appeared on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Click on *"Compare"* action from "Commands" tab on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Click on *"Compare"* action from "Commands" tab on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * New table view "Compare models" added
 * Table shows models in rows, and their quality indicators in columns

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView, Filter} from './ua';
+import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {getTime} from '../utils';
 
@@ -18,7 +18,7 @@ export class FunctionsView extends UaView {
     this.rout = '/Usage';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const functionsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Functions',
@@ -74,7 +74,7 @@ export class FunctionsView extends UaView {
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
+        return DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'function',
           size: 'count',
@@ -88,37 +88,37 @@ export class FunctionsView extends UaView {
           showYSelector: false,
           invertYAxis: true,
         });
-        return viewer;
       },
     });
 
     const grid = DG.Viewer.grid(DG.DataFrame.create(0));
     grid.autoSize(2000, 2000, 1000);
-    const typeAhead = ui.typeAhead('Function name', {source: {local:
-    [...(await DG.Func.findAll()).map((f) => f.name), ...(await grok.dapi.queries.list()).map((q) => q.name)]},
-    minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
-    onSubmit: (_: any, value: any) => {
-      grok.functions.call('UsageAnalysis:FunctionsExecTime', {function: value?.label}).then((df: DG.DataFrame) => {
-        if (df.rowCount === 0) {
-          grid.dataFrame = DG.DataFrame.create(0);
-          return;
-        }
-        const time = df.getCol('time').getRawData();
-        const input = df.getCol('input').toList();
-        const arr = [];
-        let obj: any;
-        for (let i = 0; i < df.rowCount; i++) {
-          obj = JSON.parse(input[i]);
-          obj['time, s'] = time[i];
-          arr.push(obj);
-        }
-        df = DG.DataFrame.fromObjects(arr)!;
-        grid.dataFrame = df;
-        const order = Object.keys(JSON.parse(input[0]));
-        order.unshift('time, s');
-        grid.columns.setOrder(order);
-      });
+    const typeAhead = ui.typeAhead('Function name', {
+      source: {local: DG.Func.find().map((f) => f.name)},
+      minLength: 1, limit: 30, hint: true, autoSelect: true, highlight: true, diacritics: true,
+      onSubmit: (_: any, value: any) => {
+        grok.functions.call('UsageAnalysis:FunctionsExecTime', {function: value?.label}).then((df: DG.DataFrame) => {
+          if (df.rowCount === 0) {
+            grid.dataFrame = DG.DataFrame.create(0);
+            return;
+          }
+          const time = df.getCol('time').getRawData();
+          const input = df.getCol('input').toList();
+          const arr = [];
+          let obj: any;
+          for (let i = 0; i < df.rowCount; i++) {
+            obj = JSON.parse(input[i]);
+            obj['time, s'] = time[i];
+            arr.push(obj);
+          }
+          df = DG.DataFrame.fromObjects(arr)!;
+          grid.dataFrame = df;
+          const order = Object.keys(JSON.parse(input[0]));
+          order.unshift('time, s');
+          grid.columns.setOrder(order);
+        });
     }, debounceRemote: 100});
+
     typeAhead.input.style.width = '300px';
     typeAhead.input.style.marginBottom = '15px';
     this.functionsExecTime.append(ui.divV([typeAhead, grid]));

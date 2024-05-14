@@ -2,20 +2,23 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {
     rules: [
       {test: /\.tsx?$/, loader: 'ts-loader'},
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
