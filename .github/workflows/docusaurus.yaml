@@ -160,7 +160,7 @@ jobs:
           retention-days: 14
       - uses: actions/upload-artifact@v2
         name: Save docusaurus build
-        if: github.ref == 'refs/heads/master' && steps.anchors.outputs.result == "success"
+        if: github.ref == 'refs/heads/master'
         with:
           name: docusaurus
           path: docusaurus/build
