@@ -15,8 +15,6 @@ temp_file="temp.txt"
 grep -e 'Broken link' -e 'Broken anchor' -e 'linking to' $input_file > $temp_file || true
 
 if [ -f "${temp_file}" ]; then
-    echo 'No broken link information found'
-else
     current_line_temp_file="temp_line.txt"
 
     output_file="${2:-output.csv}"
@@ -39,4 +37,6 @@ else
 
     rm "$temp_file" >/dev/null 2>&1
     rm "$current_line_temp_file" >/dev/null 2>&1
+else
+    echo 'No broken link information found'
 fi
