@@ -3,19 +3,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ExternalPluginUI} from '../view/app-ui';
-import {ColoredTextInput} from '../view/utils/colored-input/colored-text-input';
-import {highlightInvalidSubsequence} from '../view/utils/colored-input/input-painters';
-import {codesToSymbolsDictionary} from '../model/data-loading-utils/json-loader';
+import {ExternalPluginUI} from '../apps/common/view/utils';
+import {ColoredTextInput} from '../apps/common/view/components/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from '../apps/common/view/components/colored-input/input-painters';
+import {CODES_TO_SYMBOLS_DICT} from '../apps/common/model/data-loader/json-loader';
 import {MERMADE} from './const';
 
 export async function getExternalAppViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
   const externalPluginData = {
-  [MERMADE.FUNCTION_NAME]: {
+    [MERMADE.FUNCTION_NAME]: {
       tabName: MERMADE.TAB_NAME,
       parameters: getMerMadeParameters()
     },
-  }
+  };
 
   const result: {[tabName: string]: () => DG.View} = {};
 
@@ -30,7 +30,7 @@ export async function getExternalAppViewFactories(): Promise<{[name: string]: ()
 
       result[data.tabName] = () => pluginUI.getView();
     } catch (err) {
-      console.warn(`Plugin ${pluginName} not loaded, reason:`, err)
+      console.warn(`Plugin ${pluginName} not loaded, reason:`, err);
       continue;
     }
   }
@@ -43,6 +43,6 @@ function getMerMadeParameters(): {[name: string]: any} {
 
   return {
     coloredInput: input,
-    codes: codesToSymbolsDictionary
-  }
+    codes: CODES_TO_SYMBOLS_DICT
+  };
 }

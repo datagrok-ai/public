@@ -1,0 +1,53 @@
+{
+  "name": "grokcompute",
+  "friendlyName": "GrokCompute",
+  "version": "1.0.0",
+  "description": "ML functionality from old grok_compute",
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-grokcompute": "webpack && grok publish",
+    "release-grokcompute": "webpack && grok publish --release",
+    "build-grokcompute": "webpack",
+    "build": "webpack",
+    "debug-grokcompute-public": "webpack && grok publish public",
+    "release-grokcompute-public": "webpack && grok publish public --release",
+    "debug-grokcompute-local": "webpack && grok publish local",
+    "release-grokcompute-local": "webpack && grok publish local --release",
+    "debug-grokcompute-localhost": "webpack && grok publish localhost",
+    "release-grokcompute-localhost": "webpack && grok publish localhost --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/GrokCompute"
+  }
+}

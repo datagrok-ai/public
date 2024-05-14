@@ -92,18 +92,18 @@ t.KeepRows(Selected())
 
 ### Table and column names convention
 
-Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
+Symbols '"', '{' and '}' should be replaced as '^^', '\<\[' and ']>'.
 
-You can run any system [action](../../datagrok/concepts/functions/functions.md) by calling it from [console](../../datagrok/navigation/navigation.md#console)
+You can run any system [action](../../datagrok/concepts/functions/functions.md) by calling it from the [**Console**](../../datagrok/navigation/panels/panels.md#console)
 
 ## Try it
 
-Open [console](../../datagrok/navigation/navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
+Open Console by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
 run [query](../../access/access.md#data-query) or job. Every step you take will be recorded, so you can
 re-run it, or use somewhere.
 
 See also:
 
-* [Console](../../datagrok/navigation/navigation.md#console)
+* [Console](../../datagrok/navigation/panels/panels.md#console)
 * [Functions](../../datagrok/concepts/functions/functions.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../compute/scripting/scripting/scripting.mdxx)

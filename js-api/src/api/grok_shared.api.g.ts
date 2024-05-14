@@ -71,6 +71,8 @@ export class DataSourceType {
 
   static S3 = 'S3';
 
+  static SharePoint = 'SharePoint';
+
   static Http = 'HTTP';
 
   static Files = 'Files';

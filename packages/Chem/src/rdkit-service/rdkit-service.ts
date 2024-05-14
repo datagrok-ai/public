@@ -7,10 +7,10 @@ import {IFpResult} from './rdkit-service-worker-similarity';
 import {LockedEntity} from '../utils/locked-entitie';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getRdKitModule} from '../package';
-import { SubstructureSearchType } from '../constants';
-import { tanimotoSimilarity } from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import { getRDKitFpAsUint8Array } from '../chem-searches';
-import {IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
+import {SubstructureSearchType} from '../constants';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {getRDKitFpAsUint8Array} from '../chem-searches';
+import {IMmpFragmentsResult, IRGroupAnalysisResult} from './rdkit-service-worker-substructure';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -192,7 +192,7 @@ export class RdKitService {
   /**
    * Calls _doParallel with pre-defined map function which splits data by number of workers
    * @async
-   * @param {string[]} molecules - list of molecules to split by workers
+   * @param {Array<T>} molecules - list of molecules to split by workers
    * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} workerFunc - function
    * from rdkit service worker client (basicaly action which we need to perform inside worker - getFingerprints,
    * searchSubstructure etc.)
@@ -213,6 +213,41 @@ export class RdKitService {
           molecules.slice(workerIdx * segmentLength, length);
         t.moleculesSegmentsLengths![workerIdx] = segment.length;
         return workerFunc(workerIdx, segment);
+      },
+      reduce,
+    );
+  }
+
+  /**
+   * Calls _doParallel with pre-defined map function which splits data by number of workers
+   * @async
+   * @param {Array<Array<T>>} data - list of molecules to split by workers
+   * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} workerFunc - function
+   * from rdkit service worker client (basicaly action which we need to perform inside worker - getFingerprints,
+   * searchSubstructure etc.)
+   * @param {function (_: TMap[]): TReduce} reduce - function which combines results collected from web workers
+   * into single result
+   * */
+  async _initParallelWorkersArray<TMap, TReduce, T>(data: Array<Array<T>>,
+    workerFunc: (workerIdx: number, dataSegment: Array<Array<T>>) => Promise<TMap>,
+    reduce: (_: TMap[]) => TReduce): Promise<TReduce> {
+    const t = this;
+    const lengthAll = data.length;
+    return this._doParallel(
+      (workerIdx: number, nWorkers: number) => {
+        const length = data[0].length;
+        const segmentLength = Math.floor(length / nWorkers);
+        t.segmentLength = segmentLength;
+        const segmentArray = Array<Array<T>>(lengthAll);
+        for (let i = 0; i < lengthAll; i++) {
+          const segment = workerIdx < (nWorkers - 1) ?
+            data[i].slice(workerIdx * segmentLength, (workerIdx + 1) * segmentLength) :
+            data[i].slice(workerIdx * segmentLength, length);
+          segmentArray[i] = segment;
+        }
+
+        t.moleculesSegmentsLengths![workerIdx] = segmentArray[0].length;
+        return workerFunc(workerIdx, segmentArray);
       },
       reduce,
     );
@@ -325,9 +360,8 @@ export class RdKitService {
           for (let i = 0; i < batch.length; ++i) {
             if (fpResult.fps[i]) {
               const simScore = tanimotoSimilarity(rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
-              if (simScore >= simCutOff) {
+              if (simScore >= simCutOff)
                 finalBitArray.setBit(i, true);
-              }
             }
           }
         } catch (e: any) {
@@ -363,9 +397,8 @@ export class RdKitService {
       if (fpResult.fps[i]) {
         for (let j = 0; j < patternFpUint8Length; ++j) {
           const bitToCompare = superStructSearch ? fpResult.fps[i]![j] : fpRdKit[j];
-          if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare) {
+          if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
             continue checkEl;
-          }
         }
         patternFpFilterBitArray.setFast(i, true);
       }
@@ -418,7 +451,6 @@ export class RdKitService {
     return res;
   }
 
-
   async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation): Promise<string[]> {
     const t = this;
     const res =
@@ -449,7 +481,8 @@ export class RdKitService {
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 
-  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): Promise<IRGroupAnalysisResult> {
+  async getRGroups(molecules: string[], coreMolecule: string, coreIsQMol: boolean, options?: string): 
+    Promise<IRGroupAnalysisResult> {
     /* const t = this;
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       t.parallelWorkers[i].rGroupAnalysis(segment, coreMolecule, coreIsQMol, options),
@@ -490,13 +523,33 @@ export class RdKitService {
       });
   }
 
-  async mmpGetFragments(molecules: string[]): Promise<[string, string][][]> {
+  async mmpGetFragments(molecules: string[]): Promise<IMmpFragmentsResult> {
     const t = this;
+
+    const getResult = (data: IMmpFragmentsResult[]): IMmpFragmentsResult => {
+      return {
+        frags: ([] as [string, string][][]).concat(...data.map(((it) => it.frags))),
+        smiles: ([] as Array<string>).concat(...data.map(((it) => it.smiles))),
+      };
+    };
+
     const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       t.parallelWorkers[i].mmpGetFragments(segment),
-    (data: [string, string][][][]): [string, string][][] => {
-      return ([] as [string, string][][]).concat(...data);
+    (data: IMmpFragmentsResult[]) => {
+      return getResult(data);
     });
+
+    return res;
+  }
+
+  async mmpLinkFragments(cores: string [], fragments: string []): Promise<string[]> {
+    const t = this;
+    const res = await this._initParallelWorkersArray([cores, fragments], (i: number, segment: string[][]) =>
+      t.parallelWorkers[i].mmpLinkFragments(segment[0], segment[1]),
+    (data: string[][]): string[] => {
+      return ([] as string[]).concat(...data);
+    });
+
     return res;
   }
 

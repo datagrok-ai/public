@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView, Filter} from './ua';
+import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {getTime} from '../utils';
 
@@ -18,7 +18,7 @@ export class FunctionsView extends UaView {
     this.rout = '/Usage';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     const functionsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Functions',
@@ -74,7 +74,7 @@ export class FunctionsView extends UaView {
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
+        return DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'function',
           size: 'count',
@@ -88,7 +88,6 @@ export class FunctionsView extends UaView {
           showYSelector: false,
           invertYAxis: true,
         });
-        return viewer;
       },
     });
 

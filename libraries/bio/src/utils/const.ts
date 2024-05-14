@@ -2,6 +2,20 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import '../types/helm';
+import * as org from 'org';
+// Alias helm consts
+import PolymerTypes = org.helm.PolymerTypes;
+import HelmTypes = org.helm.HelmTypes;
+import MonomerTypes = org.helm.MonomerTypes;
+
+export {PolymerTypes, HelmTypes, MonomerTypes};
+
+import HELM_POLYMER_TYPE = org.helm.PolymerTypes;
+import HELM_MONOMER_TYPE = org.helm.MonomerTypes;
+
+export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
+
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
 export const enum HELM_REQUIRED_FIELD {
@@ -19,7 +33,7 @@ export const enum HELM_REQUIRED_FIELD {
 
 // fields of "rgroups" sub-object in HELM library
 export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSMILES',
+  CAP_GROUP_SMILES = 'capGroupSmiles',
   // WARNING: both capitalization variants coexist
   CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES',
   ALTERNATE_ID = 'alternateId',
@@ -47,18 +61,6 @@ export const enum HELM_FIELDS {
   SYMBOL = 'symbol'
 }
 
-// possible values of polymers
-export const enum HELM_POLYMER_TYPE {
-  PEPTIDE = 'PEPTIDE',
-  RNA = 'RNA',
-}
-
-export const enum HELM_MONOMER_TYPE {
-  BACKBONE = 'Backbone',
-  TERMINAL = 'Terminal',
-  BRANCH = 'Branch',
-}
-
 // core fields of HELM library object used in toAtomicLevel function
 export const HELM_CORE_FIELDS = [
   HELM_FIELDS.SYMBOL,
@@ -73,7 +75,7 @@ export const SDF_MONOMER_NAME = 'MonomerName';
 
 // todo: ideally, keys should be expressed via constants
 export const jsonSdfMonomerLibDict = {
-  'monomerType': null,
+  'monomerType': null, // -> Backbone
   'smiles': null,
   'name': 'Name',
   'author': null,

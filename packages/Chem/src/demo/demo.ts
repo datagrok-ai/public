@@ -7,7 +7,7 @@ import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeData
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_importSdf} from '../open-chem/sdf-importer';
-import {_package} from '../package';
+import {_package, mmpAnalysis} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
@@ -183,6 +183,16 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   grok.shell.windows.showHelp = true;
   //@ts-ignore
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
+}
+
+
+export async function _demoMMPA(): Promise<void> {
+  const tv = await openMoleculeDataset('demo_files/matched_molecular_pairs.csv');
+  await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+    tv.dataFrame.clone().columns.remove('smiles'));
+  grok.shell.windows.showHelp = true;
+  //@ts-ignore
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
 }
 
 
@@ -532,7 +542,7 @@ JOIN target_dictionary t on a.tid = t.tid
 JOIN activities act on a.assay_id = act.assay_id
 JOIN compound_structures c on act.molregno = c.molregno
 WHERE t.tid = CAST(@target_id as integer)
-AND c.canonical_smiles @>@substructure::qmol
+AND c.canonical_smiles::mol @>@substructure::qmol
 AND act.type = @activity_type
 LIMIT 50
 --end`;
@@ -730,5 +740,5 @@ export async function _demoScaffoldTree(): Promise<void> {
     tv.loadLayout(layout);
   });
   grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem/#scaffold-tree-analysis');
+  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
 }

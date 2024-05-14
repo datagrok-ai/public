@@ -135,7 +135,11 @@ export async function smoothKNNDistance(
   resultBufferRhos.unmap();
   resultBufferSigmas.unmap();
 
-  device.destroy();
+  distancesBuffer.destroy();
+  bufferSigmas.destroy();
+  bufferRhos.destroy();
+  resultBufferRhos.destroy();
+  resultBufferSigmas.destroy();
 
   return {resultRhos, resultSigmas};
 }

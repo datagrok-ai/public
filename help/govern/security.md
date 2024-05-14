@@ -25,7 +25,7 @@ Authentication and authorization are central parts of the security system.
 
 When an entity is created, by default only the author can access it. In order to share it with other users, you need to
 grant permission. Typically, you would do it by right-clicking on an entity and choosing "Share", which will open
-the [share dialog](../collaborate/sharing.md).
+the [share dialog](../datagrok/navigation/basic-tasks/basic-tasks.md#share).
 
 ## Privileges
 

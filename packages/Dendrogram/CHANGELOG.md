@@ -1,5 +1,10 @@
 # Dendrogram changelog
 
+## 1.2.29 (2024-04-23)
+
+Bump dependencies versions, datagrok-api to 1.18.0, gridext to 1.3.71
+GROK-15153: Fix test Demo.heatMapDemo
+
 ## 1.2.28 (2024-03-30)
 
 ### Features

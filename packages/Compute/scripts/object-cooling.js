@@ -16,8 +16,6 @@
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: Compute:RichFunctionViewEditor
 //meta.features: {"sens-analysis": true, "upload": true}
-//meta.runOnOpen: true
-//meta.runOnInput: true
 //meta.foldedCategories: ["Object properties"]
 //meta.compareCustomizer: Compute:CustomCustomizer
 //meta.uploadFunc: Compute:CustomUploader

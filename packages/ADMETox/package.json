@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/admetox",
   "friendlyName": "ADMETox",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "repository": {
     "type": "git",
@@ -9,7 +9,7 @@
     "directory": "packages/ADMETox"
   },
   "dependencies": {
-    "datagrok-api": "^1.17.0",
+    "datagrok-api": "../../js-api",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "4.1.15"

@@ -92,7 +92,7 @@ This system lets us easily setup access rights for groups of people and subsets 
 
 ## Filtering
 
-You can use these fields to filter groups with [smart search](../explore/search-filter-select/smart-search.md):
+You can use these fields to filter groups with smart search:
 
 | Field       | Description                                        |
 |-------------|----------------------------------------------------|

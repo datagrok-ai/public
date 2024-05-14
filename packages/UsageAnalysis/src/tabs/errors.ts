@@ -4,7 +4,6 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
-import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
   columnNames: ['event_time', 'user', 'error_message', 'is_reported'],
@@ -18,7 +17,7 @@ export class ErrorsView extends UaView {
     this.name = 'Errors';
   }
 
-  async initViewers(): Promise<void> {
+  async initViewers(path?: string): Promise<void> {
     (await grok.dapi.users.list()).forEach((user) => {
       users[user.friendlyName] = {
         'avatar': user.picture,
@@ -50,7 +49,6 @@ export class ErrorsView extends UaView {
           'showRowHeader': false,
           'showColumnGridlines': false,
           'allowRowSelection': false,
-          'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace'
@@ -161,13 +159,13 @@ export class ErrorsView extends UaView {
 
     accordion.addPane('Statistics', () => ui.wait(async () => {
       const detailsButton = ui.button('Details', async () => {
-        const ev = ViewHandler.getView('Reports');
+        const ev = this.uaToolbox.viewHandler.getView('Reports');
         const viewer = ev.viewers[0];
         viewer.reloadViewer({'event_id': eventId});
         if (!viewer.activated)
           viewer.activated = true;
-        ViewHandler.changeTab('Reports');
-        this.uaToolbox.drilldown = ViewHandler.getCurrentView();
+        this.uaToolbox.viewHandler.changeTab('Reports');
+        this.uaToolbox.drilldown = this.uaToolbox.viewHandler.getCurrentView();
       });
       detailsButton.classList.add('ua-details-button');
       const promises: Promise<any>[] = [
@@ -176,18 +174,18 @@ export class ErrorsView extends UaView {
       ];
       const results = await Promise.all(promises);
       let div: HTMLDivElement;
-      const createReportButton = ui.button('Report', async () => {
-        const prog = DG.TaskBarProgressIndicator.create('Reporting...');
-        await grok.dapi.admin.postEventReport(eventId);
-        const ev = ViewHandler.getView('Reports');
-        ev.viewers[0].reloadViewer();
-        while (div.hasChildNodes())
-          div.removeChild(div.lastChild!);
-        div.appendChild(ui.span([1]));
-        div.appendChild(detailsButton);
-        prog.close();
-      });
-      div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : createReportButton]);
+      // const createReportButton = ui.button('Report', async () => {
+      //   const prog = DG.TaskBarProgressIndicator.create('Reporting...');
+      //   await window.grok_Dapi_Admin_Post_Event_Report(this.dart, eventId)(eventId);
+      //   const ev = ViewHandler.getView('Reports');
+      //   ev.viewers[0].reloadViewer();
+      //   while (div.hasChildNodes())
+      //     div.removeChild(div.lastChild!);
+      //   div.appendChild(ui.span([1]));
+      //   div.appendChild(detailsButton);
+      //   prog.close();
+      // });
+      div = ui.divH([ui.span([results[0]]), results[0] > 0 ? detailsButton : null]);
       div.style.alignItems = 'center';
       const map = {'Reports': div, 'Same errors': results[1]};
       return ui.tableFromMap(map);

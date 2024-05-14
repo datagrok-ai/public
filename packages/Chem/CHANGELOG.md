@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.9.2 (2024-04-12)
+
+### Features
+
+* R Group analysis improvements: ability to select 'Only match at R groups', saving R group user settings, small UI improvements
+
 ## 1.9.1 (2024-04-12)
 
 ### Features

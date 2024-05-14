@@ -37,7 +37,7 @@ Sin(PI / 6) * (17 - ${LENGTH}) < 9    // The result is a boolean value
 | `>`      | True if `A` is greater than `B` and false otherwise              | [Greater(A, B)](math-functions.md#greater)    |
 | `<`      | True if `A` is less than `B` and false otherwise                 | [Smaller(A, B)](math-functions.md#smaller)    |
 | `>=`     | True if `A` is greater than or equal to `B`  and false otherwise | [NotSmaller(A, B)](math-functions.md#notsmaller) |
-| `<=`     | True if `A` is less than or equal to `B` and false otherwise     | [NotGreater(A, B)](math-functions.md#notgreater) |
+| `\<=`     | True if `A` is less than or equal to `B` and false otherwise     | [NotGreater(A, B)](math-functions.md#notgreater) |
 | `and`    | Logical conjunction of boolean `A` and `B`                       | [And(A, B)](math-functions.md#and)            |
 | `&&`     | Logical conjunction of boolean `A` and `B`                       | [And(A, B)](math-functions.md#and)            |
 | `or`     | Logical disjunction of boolean `A` and `B`                       | [Or(A, B)](math-functions.md#or)              |

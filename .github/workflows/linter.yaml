@@ -19,7 +19,7 @@ jobs:
   #    if: needs.common-check.outputs.continue == 'true'
   #    steps:
   #      - name: Checkout Code
-  #        uses: actions/checkout@v3
+  #        uses: actions/checkout@v4
   #        with:
   #          # Full git history is needed to get a proper list of changed files within `super-linter`
   #          fetch-depth: 0
@@ -83,18 +83,15 @@ jobs:
           else
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
-      - name: Get changed files
-        uses: tj-actions/changed-files@v37
+      - uses: tj-actions/changed-files@v42
         id: changed-files
         with:
           files: '**/*.{md,mdx}'
           separator: ","
-      - name: markdownlint-cli
-        uses: DavidAnson/markdownlint-cli2-action@v14.0.0
+      - uses: DavidAnson/markdownlint-cli2-action@v16.0.0
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
           globs: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -107,18 +104,15 @@ jobs:
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18'
       - name: Install commitlint dependencies
         run: npm install --location=global @commitlint/config-conventional @commitlint/cli
-      - name: Commitlint
-        uses: wagoid/commitlint-github-action@v5
+      - uses: wagoid/commitlint-github-action@v5
         with:
           configFile: commitlint.config.js
           failOnWarnings: false
@@ -129,12 +123,10 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18'
       # https://github.com/JulienKode/pull-request-name-linter-action/issues/236
@@ -150,8 +142,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Check links in packages

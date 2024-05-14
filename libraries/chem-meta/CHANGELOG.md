@@ -1,6 +1,10 @@
 # chem-meta changelog
 
-## 1.2.4 (2024-03-29)
+## 1.2.5 (2024-04-17)
+
+Port molfile-related constants to chem-meta
+
+## 1.2.4 (2024-04-15)
 
 ### Features
 

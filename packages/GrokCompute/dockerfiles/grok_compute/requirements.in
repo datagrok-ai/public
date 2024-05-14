@@ -1,0 +1,7 @@
+Flask
+werkzeug
+numpy
+pandas
+urllib3
+requests
+scikit-learn

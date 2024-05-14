@@ -2,14 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as org from 'org';
 import $ from 'cash-dom';
-import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
+import {fromEvent, Unsubscribable} from 'rxjs';
 
-import {IHelmWebEditor, IWebEditorApp} from '@datagrok-libraries/bio/src/helm/types';
+import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {helmSubstructureSearch} from '../substructure-search/substructure-search';
@@ -54,7 +55,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       this.logger.warning('TEST: HelmBioFilter.init().sync() waitForElementInDom ready');
       this.updateFilterPanel();
       let webEditorHost: HTMLDivElement | null;
-      let webEditorApp: IWebEditorApp | null;
+      let webEditorApp: org.helm.IWebEditorApp | null;
       // TODO: Unsubscribe 'click' and 'sizeChanged'
       this.viewSubs.push(fromEvent(this._filterPanel, 'click').subscribe(() => {
         webEditorHost = ui.div();

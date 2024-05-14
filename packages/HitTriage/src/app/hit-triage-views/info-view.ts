@@ -165,7 +165,9 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       this.app._fileInputType = camp.type;
       await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
-      this.app.saveCampaign(undefined, false);
+      await this.app.saveCampaign(undefined, false);
+      if (template.layoutViewState && this.app.campaign)
+        this.app.campaign.layout = template.layoutViewState;
     });
 
     cancelPromise.then(() => {

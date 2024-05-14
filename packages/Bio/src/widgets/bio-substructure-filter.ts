@@ -16,7 +16,6 @@ import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macro
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {IHelmWebEditor, IWebEditorApp} from '@datagrok-libraries/bio/src/helm/types';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
@@ -197,7 +196,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 
     this.filterSyncer.sync(logPrefix, async () => {
       if (state.props && this.bioFilter)
-        this.bioFilter.props = state.props;
+        this.bioFilter.props = DG.toJs(state.props ?? {});
     });
   }
 
@@ -274,12 +273,12 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   async awaitRendered(timeout: number = 10000): Promise<void> {
     const callLog = `awaitRendered( ${timeout} )`;
     const logPrefix = `${this.filterToLog()}.${callLog}`;
-    await delay(0);
+    await delay(10);
     await testEvent(this.onRendered, () => {
       this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
     }, () => {
       this.invalidate(callLog);
-    }, timeout, `${logPrefix} ${timeout} timeout`);
+    }, timeout, `${logPrefix} timeout`);
 
     // Rethrow stored syncer error (for test purposes)
     const viewErrors = this.filterSyncer.resetErrors();

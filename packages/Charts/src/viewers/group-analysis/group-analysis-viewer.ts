@@ -151,6 +151,10 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     }
   }
 
+  _testColumns() {
+    return this.dataFrame.columns.length >= 1;
+  }
+
   createAddColumnDialog() {
     const columnInput = ui.columnInput('Column', this.dataFrame, this.dataFrame.columns.byIndex(0));
     columnInput.input.style.width = '100px';

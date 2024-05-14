@@ -5,7 +5,7 @@ title: "Build an application"
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular
 problem. They are written in JavaScript or TypeScript, and use [JS API](../packages/js-api.md) to control the platform, including
 executing database queries, accessing web services, or running
-[scripts written in R or Python](../../compute/scripting.md). Here are some examples of Datagrok applications:
+[scripts written in R or Python](../../compute/scripting/scripting.mdx). Here are some examples of Datagrok applications:
 
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
@@ -38,7 +38,7 @@ app:
 The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages. A
 Datagrok [package](../develop.md#packages) might contain zero, one, or more Datagrok applications. These come along with
 other entities in the package, which the applications may be using, such as [connections](access-data.md#connections),
-[viewers](develop-custom-viewer.md), [scripts](../../compute/scripting.md), etc.
+[viewers](develop-custom-viewer.md), [scripts](../../compute/scripting/scripting.mdx), etc.
 
 Consider a simple example of a webpack-based package with just one trivial app in a `src/package.js`:
 
@@ -91,7 +91,7 @@ application. Let's look at a more UI-rich side of things.
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations
 and controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes), in this
-case it's called a [table view](../../datagrok/navigation/table-view.md). However, essentially a view can contain pretty much
+case it's called a [table view](../../datagrok/navigation/views/table-view.md). However, essentially a view can contain pretty much
 anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either
@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../govern/catalog/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../datagrok/concepts/objects.md#metadata). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../govern/catalog/metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 
 ##### Column tags
 
@@ -499,7 +499,7 @@ When the script is run, here is what happens under the hood:
 
 * The dataframe and all other input parameters are serialized and sent to the Datagrok server
 * The Datagrok server is hosting a so-called [compute virtual machine](../../compute/compute.md) with a ready-to-execute
-  instance of a [Jupyter Kernel](../../compute/scripting.md) for Python, as well as for other supported scripting
+  instance of a [Jupyter Kernel](../../compute/scripting/scripting.mdx) for Python, as well as for other supported scripting
   languages
 * When the request to execute a script arrives to the server along with its parameters, CVM loads scripts' code from its
   storage and runs it with these parameters
@@ -517,11 +517,11 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 
 * [Datagrok architecture](../under-the-hood/architecture.md)
 * [Exercises](../onboarding/exercises.md)
-* [Scripting](../../compute/scripting.md)
+* [Scripting](../../compute/scripting/scripting.mdx)
 
 #### Datagrok functions
 
-You could notice in ["Scripting"](../../compute/scripting.md) and ["Accessing databases"](access-data.md) that many
+You could notice in ["Scripting"](../../compute/scripting/scripting.mdx) and ["Accessing databases"](access-data.md) that many
 entities in Datagrok are callable functions. In fact, everything in Datagrok is a function. This gives powerful
 compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
 
@@ -545,13 +545,13 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../../compute/scripting.md#running-a-script)
+* [Running a script](../../compute/scripting/scripting.mdx#running-a-script)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations
 
 Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
-[Scatter Plot](../../visualize/viewers/scatter-plot.mdx)
+[Scatter Plot](../../visualize/viewers/scatter-plot.md)
 , [Histogram](../../visualize/viewers/histogram.md), Line Chart, Bar Chart, Pie Chart, Trellis, Matrix Plot, 3D Scatter,
 Density Plot, PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlation, Calendar, Table Grid,
 Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are purpose-fit
@@ -601,7 +601,7 @@ and other package entities shared to the group.
 
 *References:*
 
-* [Sharing](../../collaborate/sharing.md)
+* [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
 * [Security](../../govern/security.md)
 * [Authorization](../../govern/authorization.md)
 

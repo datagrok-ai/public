@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import '@datagrok-libraries/bio/src/types/helm';
+
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionBaseEditor, PreprocessFunctionReturnType}
   from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
@@ -55,13 +57,9 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-// import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/ui';
-import {PolyToolCsvLibHandler} from './utils/poly-tool/csv-to-json-monomer-lib-converter';
-import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
@@ -77,7 +75,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {
   ITSNEOptions, IUMAPOptions
 } from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
-import {CyclizedNotationProvider} from './utils/poly-tool/cyclized';
+import {CyclizedNotationProvider} from './utils/cyclized';
+import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 
 export const _package = new BioPackage();
 
@@ -87,8 +86,8 @@ export const _package = new BioPackage();
 //name: getMonomerLibHelper
 //description:
 //output: object result
-export function getMonomerLibHelper(): IMonomerLibHelper {
-  return MonomerLibManager.instance;
+export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
+  return await MonomerLibManager.getInstance();
 }
 
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -105,12 +104,20 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
+let monomerLib: IMonomerLib | null = null;
+
 //tags: init
 export async function initBio() {
-  _package.logger.debug('Bio: initBio(), started');
+  const logPrefix = 'Bio: initBio()';
+  _package.logger.debug(`${logPrefix}, start`);
   const module = await grok.functions.call('Chem:getRdKitModule');
+  const t1: number = window.performance.now();
   await Promise.all([
-    (async () => { await MonomerLibManager.instance.loadLibraries(); })(),
+    (async () => {
+      const monomerLibManager = await MonomerLibManager.getInstance();
+      await monomerLibManager.loadLibraries();
+      monomerLib = monomerLibManager.getBioLib();
+    })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -118,9 +125,10 @@ export async function initBio() {
     })(),
   ]).finally(() => {
     _package.completeInit();
+    const t2: number = window.performance.now();
+    _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
   });
 
-  const monomerLib = MonomerLibManager.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
 
@@ -160,10 +168,16 @@ export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
   return resWidget;
 }
 
+// Keep for backward compatibility
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
-  return MonomerLibManager.instance.getBioLib();
+  return monomerLib!;
+}
+
+// For sync internal use, on initialized package
+export function getMonomerLib(): IMonomerLib | null {
+  return monomerLib!;
 }
 
 //name: getSeqHandler
@@ -572,7 +586,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    await sequenceToMolfile(table, seqCol, nonlinear);
+    const monomerLib = (await getMonomerLibHelper()).getBioLib();
+    await sequenceToMolfile(table, seqCol, nonlinear, monomerLib);
   } finally {
     pi.close();
   }
@@ -683,19 +698,6 @@ export function importBam(fileContent: string): DG.DataFrame [] {
 export function convertDialog() {
   const col = getMacromoleculeColumns()[0];
   convert(col);
-}
-
-//top-menu: Bio | Convert | PolyTool
-//name: polyTool
-//description: Perform cyclization of polymers
-export async function polyTool(): Promise<void> {
-  let dialog: DG.Dialog;
-  try {
-    dialog = await getPolyToolDialog();
-    dialog.show();
-  } catch (err: any) {
-    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
-  }
 }
 
 //name: monomerCellRenderer
@@ -1010,25 +1012,6 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }
 
-//name: polyToolColumnChoice
-//input: dataframe df [Input data table]
-//input: column macroMolecule
-export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
-  _setPeptideColumn(macroMolecule);
-  await grok.data.detectSemanticTypes(df);
-}
-
-//name: createMonomerLibraryForPolyTool
-//input: file file
-export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
-  const fileContent = await file.readAsString();
-  const libHandler = new PolyToolCsvLibHandler(file.fileName, fileContent);
-  const libObject = await libHandler.getJson();
-  const jsonFileName = file.fileName.replace(/\.csv$/, '.json');
-  const jsonFileContent = JSON.stringify(libObject, null, 2);
-  DG.Utils.download(jsonFileName, jsonFileContent);
-}
-
 //name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
@@ -1046,6 +1029,17 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
 export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
   const csv: string = await file.readAsString();
   await detectMacromoleculeProbeDo(csv, colName, probeCount);
+}
+
+//name: getMolFromHelm
+//input: dataframe df
+//input: column helmCol
+//input: bool chiralityEngine
+//output: column result
+export async function getMolFromHelm(
+  df: DG.DataFrame, helmCol: DG.Column<string>, chiralityEngine?: boolean
+): Promise<DG.Column<string>> {
+  return getMolColumnFromHelm(df, helmCol, chiralityEngine);
 }
 
 // -- Custom notation providers --

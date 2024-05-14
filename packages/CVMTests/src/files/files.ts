@@ -39,6 +39,6 @@ category('Files: OpenFile', () => {
     expect(grok.shell.project?.name, project.name);
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter(project.name).first());
-  });
+  }, {timeout: 120000});
 });
 

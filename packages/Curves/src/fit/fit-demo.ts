@@ -4,9 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {IFitChartData, FIT_SEM_TYPE, sigmoid} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {IFitChartData, sigmoid} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import wu from 'wu';
+import {FitConstants} from "./const";
 
 /** Returns random number from the interval */
 function rnd(min: number, max: number): number {
@@ -26,7 +27,9 @@ export function createSigmoidPoints(length: number, step: number, pointsPerX: nu
   for (let num = start, i = 0; num <= end; num += step, i++) {
     for (let j = 0; j < pointsPerX; j++) {
       x[i * pointsPerX + j] = num - start + 0.1;
-      y[i * pointsPerX + j] = sigmoid(params, num);
+      const floatParams = new Float32Array(4);
+      floatParams.set(params);
+      y[i * pointsPerX + j] = sigmoid(floatParams, num);
     }
   }
 
@@ -61,7 +64,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
     const pointsPerX = colIdx === 3 ? 5 : 1;
 
     const jsonColumn = df.columns.addNewString(`json chart ${colIdx}`); // charts as json
-    jsonColumn.semType = FIT_SEM_TYPE;
+    jsonColumn.semType = FitConstants.FIT_SEM_TYPE;
     let charts = colIdx % 2 === 0 ? chartsPerCell : 1;
 
     for (let i = 0; i < rowCount; i++) {

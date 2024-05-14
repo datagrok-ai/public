@@ -16,3 +16,32 @@
     position: absolute;
     height: 28px;
 }
+
+.ml-dim-reduction-column-editor-input-root label {
+    display: none !important;
+}
+
+.ml-dim-reduction-column-editor-input-root input, .ml-dim-reduction-column-editor-input-root select {
+    margin-left: 20px !important;
+}
+
+h3.ml-dim-reduction-column-editor-input-root {
+    margin: 0 !important;
+}
+
+.ml-dim-reduction-column-editor-root, .ml-dim-reduction-column-editor-header-root {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px !important;
+    width: 600px !important;
+}
+
+.ml-dim-reduction-column-editor-column-title {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.ml-dim-reduction-column-editor-header-root > h1:not(:first-child) {
+    margin-left: 20px !important;
+}

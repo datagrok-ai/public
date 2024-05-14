@@ -85,7 +85,8 @@ categories.
 
 ## Radar
 
-Radar charts are used on multivariate data to plot groups of values over several common variables.
+The `Radar` viewer is a visual tool for understanding multivariate data. It plots values across multiple variables, making comparisons easy and aiding in decision-making by revealing patterns.
+
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 
 ![radar](./img/radar.gif)
@@ -137,7 +138,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ## Sunburst
 
-The `Sunburst` viewer is used to display hierarchical data.
+The `Sunburst` viewer is utilized for visualizing hierarchical data.
 
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>

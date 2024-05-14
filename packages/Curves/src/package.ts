@@ -2,12 +2,13 @@
 import * as DG from 'datagrok-api/dg';
 
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
-import {FitChartCellRenderer, TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, substituteZeroes} from './fit/fit-renderer';
+import {FitChartCellRenderer, getChartData, substituteZeroes} from './fit/fit-renderer';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {curveDemo} from './fit/fit-demo';
 import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitConstants} from './fit/const';
 
 
 export const _package = new DG.Package();
@@ -68,7 +69,7 @@ export function addStatisticsColumn(df: DG.DataFrame, colName: string, propName:
       const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
       if (gridCell.cell.value === '')
         return null;
-      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+      const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
       if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
         return null;
@@ -101,7 +102,7 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
       const gridCell = DG.GridCell.fromColumnRow(grid, colName, grid.tableRowToGrid(i));
       if (gridCell.cell.value === '')
         return null;
-      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+      const chartData = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
       if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
         return null;

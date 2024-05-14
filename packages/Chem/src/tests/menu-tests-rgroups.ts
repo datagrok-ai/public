@@ -1,13 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { category, expect, test, before, after } from '@datagrok-libraries/utils/src/test';
-import { _package } from '../package-test';
+import {category, expect, test, before, after} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { readDataframe } from './utils';
-import { findRGroups } from '../scripts-api';
-import { getMCS } from '../utils/most-common-subs';
-import { rGroupsMinilib } from '../analysis/r-group-analysis';
+import {readDataframe} from './utils';
+import {getMCS} from '../utils/most-common-subs';
+import {rGroupsMinilib} from '../analysis/r-group-analysis';
 
 
 category('top menu r-groups', () => {
@@ -17,12 +16,10 @@ category('top menu r-groups', () => {
   let coreEmpty: string;
   let coreMalformed: string;
   const rGroupOpts = {
-    chunkSize: '5',
     matchingStrategy: 'Greedy',
-    alignment: 'MCS',
     includeTargetMolInResults: true,
-    onlyMatchAtRGroups: false
-  }
+    onlyMatchAtRGroups: false,
+  };
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -70,7 +67,7 @@ category('top menu r-groups', () => {
               prefix: 'R',
             }); */
       const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
-      await rGroupsMinilib(df.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts)
+      await rGroupsMinilib(df.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts);
       return;
     }
     /*     const rgroups: DG.DataFrame = await grok.functions.call('Chem:FindRGroups', {
@@ -79,7 +76,8 @@ category('top menu r-groups', () => {
           core: 'c1ccccc1',
           prefix: 'R',
         }); */
-    const rgroups = DG.DataFrame.fromColumns((await rGroupsMinilib(t.col('smiles')!, 'c1ccccc1', false, 0, rGroupOpts)).rGroups);
+    const rgroups = DG.DataFrame.fromColumns((await rGroupsMinilib(t.col('smiles')!,
+      'c1ccccc1', false, 0, rGroupOpts)).rGroups);
     if (!DG.Test.isInBenchmark) {
       expect(rgroups.getCol('R1').get(0), 'O=C(C/N=C(/C1CCCCC1)[*:4])N[*:1]');
       expect(rgroups.getCol('R1').get(1), '[H][*:1]');
@@ -137,19 +135,20 @@ M  END
           prefix: 'R',
         }); */
     await rGroupsMinilib(df.col('molecule')!, core, false, 0, rGroupOpts);
-  }, { timeout: 60000 });
+  }, {timeout: 60000});
 
   test('rgroups.emptyValues', async () => {
     //const res = await findRGroups('smiles', empty, coreEmpty, 'R');
-    const res = DG.DataFrame.fromColumns((await rGroupsMinilib(empty.col('smiles')!, coreEmpty, true, 0, rGroupOpts)).rGroups);
+    const res = DG.DataFrame.fromColumns((await rGroupsMinilib(empty.col('smiles')!, coreEmpty,
+      true, 0, rGroupOpts)).rGroups);
     expect(res.getCol('R1').stats.valueCount, 16);
     expect(res.getCol('R2').stats.valueCount, 16);
-  }, { timeout: 60000 });
+  }, {timeout: 60000});
 
   test('rgroups.emptyInput', async () => {
     //await findRGroups('smiles', empty, '', 'R');
     let exception = false;
-    try{
+    try {
       await rGroupsMinilib(empty.col('smiles')!, '', false, 0, rGroupOpts);
     } catch (e: any) {
       exception = true;
@@ -160,18 +159,19 @@ M  END
 
   test('rgroups.malformedData', async () => {
     //const res = await findRGroups('canonical_smiles', malformed, coreMalformed, 'R');
-    const res = DG.DataFrame.fromColumns((await rGroupsMinilib(malformed.col('smiles')!, coreMalformed, true, 0, rGroupOpts)).rGroups);
+    const res = DG.DataFrame.fromColumns((await rGroupsMinilib(malformed.col('smiles')!,
+      coreMalformed, true, 0, rGroupOpts)).rGroups);
     expect(res.getCol('R1').stats.valueCount, 16);
     expect(res.getCol('R2').stats.valueCount, 16);
-
   });
 
   test('rgroups.malformedInput', async () => {
     //const res = await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
     const malformedInput = malformed.getCol('smiles').get(0);
     let exception = false;
-    try{
-      const res = DG.DataFrame.fromColumns((await rGroupsMinilib(malformed.col('smiles')!, malformedInput, false, 0, rGroupOpts)).rGroups);
+    try {
+      const res = DG.DataFrame.fromColumns((await rGroupsMinilib(malformed.col('smiles')!,
+        malformedInput, false, 0, rGroupOpts)).rGroups);
       expect(res.rowCount, 0);
     } catch (e: any) {
       exception = true;

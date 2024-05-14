@@ -129,7 +129,7 @@ export function canvas(width: number | null = null, height: number | null = null
   return result as HTMLCanvasElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -141,7 +141,7 @@ export function h1(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -153,7 +153,7 @@ export function h2(s: string | Element, options: string | ElementOptions | null 
   return _options(x, options) as HTMLHeadingElement;
 }
 
-/** 
+/**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/typography}
  * @returns {HTMLHeadingElement} */
 export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
@@ -349,7 +349,7 @@ export function div(children: any[] | string | HTMLElement = [], options: string
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/info-bar}
  */
 export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
   let root: HTMLDivElement | null;
@@ -382,7 +382,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 }
 
 /** Div flex-box container that positions child elements vertically.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -391,7 +391,7 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
 }
 
 /** Div flex-box container that positions child elements horizontally.
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox}
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
@@ -454,7 +454,7 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates an html table based on [map]. 
+/** Creates an html table based on [map].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/html-tables}
 */
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
@@ -487,7 +487,7 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
 
-/** Creates a visual element representing list of [items]. 
+/** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
@@ -572,7 +572,7 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog]. 
+/** Creates a [Dialog].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
@@ -1167,7 +1167,7 @@ export class tools {
       childList: true,
       subtree: true,
     });
-    
+
     return new Promise(resolve => {
       if (document.contains(element))
         return resolve(element);
@@ -1177,7 +1177,7 @@ export class tools {
 
   static async resizeFormLabels(element: HTMLElement): Promise<void> {
     if (this.skipResizing(element)) return;
-    
+
     //Default form width
     let minFormWidth = 150;
     let maxFormWidth = 450;
@@ -1327,11 +1327,11 @@ export class tools {
   }
 
   private static applyStyles(tempForm: HTMLElement, labels: number[], inputs: number[], options: number[], minInputWidth:number) {
-    
+
     //Set the min and max width to input label element
     Array.from(tempForm.children).forEach((element) => {
       let label = element.querySelector('label.ui-input-label') as HTMLElement;
-      
+
       if (label == null) return;
 
       label.style.minWidth = String(Math.min(...labels))+'px';
@@ -1350,7 +1350,7 @@ export class tools {
       let maxLabelWidth = labels.length > 0 ? Math.max(...labels) : 0;
       let maxInputWidth = inputs.length > 0 ? Math.max(...inputs) : 0;
       let maxOptionsWidth = options.length > 0 ? Math.max(...options) : 0;
-      
+
       //Max and min form width + 8px label margin
       let maxFormWidth = maxLabelWidth + maxInputWidth + maxOptionsWidth + 8;
       let minFormWidth = maxLabelWidth + minInputWidth + 8;
@@ -1372,7 +1372,7 @@ export class tools {
     let avaliableSpace = currentWidth - maxFormWidth > 0 ? currentWidth - maxFormWidth : 0;
     let inputWidth = 0;
 
-    //If form has avalibable space then adjust min form width to maxFormWidth+128. 
+    //If form has avalibable space then adjust min form width to maxFormWidth+128.
     //Where 128 is space form input-ediotr + input-options if exist.
     if (maxFormWidth < maxLabelWidth+128) {
       if (avaliableSpace != 0){
@@ -1421,7 +1421,7 @@ export class tools {
   private static adjustDialogForm(element: HTMLElement, tempForm:HTMLElement) {
     if (element.classList.contains('d4-dialog-contents') || element.parentElement?.classList.contains('d4-dialog-contents')) {
       element.style.removeProperty('max-width');
-    
+
       const formWidth = Math.ceil(element.getBoundingClientRect().width-24);
       const maxFormWidth = Number(element.getAttribute('data-max-width'));
 
@@ -1436,15 +1436,15 @@ export class tools {
 
         label.style.removeProperty('width')
       });
-    } 
+    }
     else {
       this.adjustForm(element, tempForm);
     }
   }
-  
+
   private static adjustButtonContainer(element: HTMLElement) {
     let buttons = element.querySelector('.ui-input-buttons') as HTMLElement;
-    
+
     if (buttons == null) return;
 
     let label = buttons.querySelector('label') as HTMLElement;
@@ -1476,7 +1476,7 @@ export class tools {
     const currentWidth = element.getBoundingClientRect().width;
     const label = tempForm.querySelector('label.ui-input-label') as HTMLElement;
     const maxLabelWidth = label != null ? parseInt(label.style.maxWidth) : 0;
-    
+
     if (currentWidth > minFormWidth) {
       Array.from(element.children).forEach((field)=>{
         let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
@@ -1507,7 +1507,7 @@ export class tools {
       element.classList.add('ui-form-condensed')
 
     // Add tooltips for radio and multi-choice inputs
-    Array.from(element.children).forEach((field)=>{ 
+    Array.from(element.children).forEach((field)=>{
       let editor = field.querySelector('.ui-input-editor');
       if (editor != null && editor.children.length != 0) {
         Array.from(editor.children).forEach((item) => {
@@ -1524,8 +1524,8 @@ export class tools {
     const fieldsCount = element.querySelectorAll('.ui-input-root').length;
     const formClassName = element.className;
     const minFormWidth = element.getAttribute('data-min-width') != null ? Number(element.getAttribute('data-min-width')) : Math.max(...labels)+minInputWidth;
-    
-    tools.handleResize(element, (currentWidth) => { 
+
+    tools.handleResize(element, (currentWidth) => {
       let shrinkedLabels = 0;
 
       fields.forEach((field, index) => {
@@ -1538,7 +1538,7 @@ export class tools {
         let labelWidth = field.getAttribute('data-label') != null ? Number(field.getAttribute('data-label')) : 0;
         let inputWidth = field.getAttribute('data-input') != null ? Number(field.getAttribute('data-input')) : 0;
         let optionWidth = field.getAttribute('data-options') != null ? Number(field.getAttribute('data-options')) : 0;
-        
+
         //Hide options if current width less than max label width + current input and options width + 8px label margin
         if (currentWidth < Math.max(...labels)+inputWidth+8+optionWidth) {
           if (option != null)
@@ -1575,12 +1575,12 @@ export class tools {
             editor.style.removeProperty('width');
           }
         }
-  
-        //Detect when label become to shrink  
+
+        //Detect when label become to shrink
         if (currentWidth < labelWidth+minInputWidth)
           shrinkedLabels++;
-  
-        //Hide options for condensed form  
+
+        //Hide options for condensed form
         if (element.classList.contains('ui-form-condensed')) {
           if (editor != null) {
             editor.style.maxWidth = 'initial';
@@ -1588,7 +1588,7 @@ export class tools {
           }
 
           if (currentWidth < inputWidth+8+optionWidth) {
-            if (option != null) { 
+            if (option != null) {
               $(option).children().css('display','none');
               $(option).find('.ui-input-options-icon').css('display','flex');
             }
@@ -1609,7 +1609,7 @@ export class tools {
       else
         element.classList.remove('ui-form-condensed');
     });
-    
+
   }
 }
 
@@ -1621,7 +1621,7 @@ export class Tooltip {
     api.grok_Tooltip_Hide();
   }
 
-  /** Associated the specified visual element with the corresponding item. 
+  /** Associated the specified visual element with the corresponding item.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/tooltips/tooltips}
   */
   bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
@@ -1758,6 +1758,21 @@ export class ObjectHandler {
     return this.renderProperties(x);
   }
 
+  /** Converts object to its markup description */
+  toMarkup(x: any): string | null {
+    return null;
+  }
+
+  /** Extract object from parsed markup description */
+  fromMarkup(matches: string[]): any {
+    return null;
+  }
+
+  /** Creates a regexp for detecting markup descriptions of an object */
+  get markupRegexp(): string | null {
+    return null;
+  }
+
   /** Gets called once upon the registration of meta export class. */
   init(): void { }
 
@@ -1767,6 +1782,10 @@ export class ObjectHandler {
     let cellRenderer = meta.getGridCellRenderer();
     if (cellRenderer != null)
       GridCellRenderer.register(cellRenderer);
+    if (meta.markupRegexp != null)
+      api.grok_MarkupHandler_Register(`${meta.markupRegexp}`, `JS object ${meta.type}`, (matches: string[]) => {
+        return meta.renderMarkup(meta.fromMarkup(matches));
+      });
   }
 
   static list(): ObjectHandler[] {
@@ -1829,7 +1848,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/box}
  */
 export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
@@ -1854,8 +1873,8 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
   return c;
 }
 
-/** Div flex-box container that positions child elements vertically. 
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters} 
+/** Div flex-box container that positions child elements vertically.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
@@ -1875,8 +1894,8 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
       const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
       let defaultHeigh = 0;
       let noHeightCount = 0;
-      
-      childs.forEach((element) => { 
+
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height != '') {
             defaultHeigh += Number(element.style.height.replace(/px$/, ''));
@@ -1885,10 +1904,10 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }else{
           element.style.height = '4px';
-        } 
+        }
       });
 
-      childs.forEach((element) => { 
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height == '') {
             let height = (rootHeight-defaultHeigh-($(b).find('.ui-split-v-divider').length*4))/noHeightCount;
@@ -1911,7 +1930,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('height', 4);
         }
       }
-      
+
     });
 
   } else {
@@ -1920,7 +1939,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-/** Div flex-box container that positions child elements horizontally. 
+/** Div flex-box container that positions child elements horizontally.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/splitters}
 */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
@@ -1942,8 +1961,8 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       const childs = Array.from(b.children as HTMLCollectionOf<HTMLElement>);
       let defaultWidth = 0;
       let noWidthCount = 0;
-      
-      childs.forEach((element) => { 
+
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width != '') {
             defaultWidth += Number(element.style.width.replace(/px$/, ''));
@@ -1952,10 +1971,10 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }else{
           element.style.width = '4px';
-        } 
+        }
       });
 
-      childs.forEach((element) => { 
+      childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width == '') {
             let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
@@ -1977,7 +1996,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('width', 4);
         }
       }
-      
+
     });
 
   } else {
@@ -2126,7 +2145,7 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels} 
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/panels}
  */
 export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
@@ -2145,6 +2164,16 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
+export function actionLink(text: string, onClick?: Function, tooltipMessage?: string): HTMLLabelElement {
+  let c = document.createElement('label');
+  c.textContent = text;
+  $(c).addClass('d4-link-action');
+  if (onClick)
+    c.addEventListener('click', (e: MouseEvent) => onClick(e));
+  if (tooltipMessage)
+    tooltip.bind(c, tooltipMessage);
+  return c;
+}
 
 export namespace panels {
   export function infoPanel(x: any): Accordion { return api.grok_InfoPanels_GetAccordion(toDart(x)); }
@@ -2171,7 +2200,7 @@ export namespace forms {
   export function addButtons(form: HTMLElement, children: HTMLButtonElement[] = []) {
     if (!Array.isArray(children))
       children = [children];
-  
+
     if (children == null)
       return;
 
@@ -2180,7 +2209,7 @@ export namespace forms {
     let editor = document.createElement('div');
     $(editor).addClass('ui-input-editor').css('flex-wrap', 'wrap').css('padding', '0');
     $(root).addClass('ui-input-root ui-input-buttons').attr('style', style != null ? style : '');
-    
+
     if ($(form).find('.ui-input-buttons').length != 0) {
         $(form).find('.ui-input-buttons > div.ui-input-editor').prepend(children.map(x => render(x)));
     } else {
@@ -2262,8 +2291,8 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
-/**  
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs} 
+/**
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/breadcrumbs}
  */
 export function breadcrumbs(path: string[]): Breadcrumbs {
   return new Breadcrumbs(path);
@@ -2340,13 +2369,13 @@ export function setDisabled(element: HTMLElement, disabled:boolean, tooltip?: st
 
   let interval = setInterval(()=> {
     let target = element.getBoundingClientRect();
-    
+
     overlay.style.left = String(target.left)+'px';
     overlay.style.top = String(target.top)+'px';
     overlay.style.width = String(target.width)+'px';
     overlay.style.height = String(target.height)+'px';
-    
-    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) { 
+
+    if ($('body').has(element).length == 0 || !element.classList.contains('d4-disabled')) {
       overlay.remove();
       clearInterval(interval);
     }
@@ -2379,7 +2408,7 @@ export namespace tools {
 
 export namespace cards {
 
-  /** Two columns, with picture on the left and details on the right. 
+  /** Two columns, with picture on the left and details on the right.
    * Example: {@link https://public.datagrok.ai/js/samples/ui/components/summary-card}
   */
   export function summary(picture: HTMLElement, details: any[]): HTMLElement {
@@ -2472,7 +2501,7 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-    
+
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
@@ -2484,7 +2513,7 @@ export namespace hints {
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);
-      } 
+      }
     }, 10);
 
     if (clickToClose) {
@@ -2806,7 +2835,7 @@ export namespace css {
     linesCol = 'css-table-col-lines',
     striped = 'css-table-striped'
   }
-  
+
   export enum border {
     all = 'css-border',
     right = 'css-border-right',

@@ -25,11 +25,12 @@ If you start typing text in the field, the filter will show all values that part
 typing words, separating them with a comma, then the filter will show only those values that exactly match each other.
 
 It is also allowed to paste multi-line text from the clipboard into the search field. In this case, the filter will also
-display those values that exactly match each word. To select or deselect only the found values of the category - click
-the checkbox to the left of the search field. Note that other (not displayed) values of the categories do not change
-their choice.
+display those values that exactly match each word. The checkbox on the left of the search field controls weather to select
+filtered out values only. If this checkbox is enabled, upon searching for value(or values), filter will automatically select
+only those values that match the search criteria. In contrary case if the checkbox is disabled, search will only filter out values
+and not select them.
 
-![Filter](../../uploads/gifs/filter-search.gif "Filter")
+![Filter](../../uploads/gifs/filter-checkbox.gif "Filter")
 
 ## Text filter
 
@@ -37,16 +38,16 @@ This filter is used for fuzzy searching for the specified search terms, and appl
 have the "Text" semantic type.
 
 To add a search term, enter it in the search box, and press Enter. Use the checkboxes and the "and/or"
-switch to control search results.
+switch to control search results. And/Or switch is used to control the logical operation between the search terms.
+To control the fuzzynes of the search, use the slider at the bottom of the search box. By default, the fuzzynes value is set to 0, which corresponds to the exact match. The higher the fuzzynes value, the more fuzzy the search will be. All the exact matches from the filter will be highilghted in the column values.
 
-![](../../uploads/viewers/text-filter.gif)
+![](../../uploads/gifs/text-filter.gif)
 
-## Free-text filter
+## Expression filter
 
-Free-text filter lets you enter custom search terms. Typically, search terms
-have a form of `column name` `operation` `value`. The following operations are supported:
+Expression filter lets you create custom search terms for any column. These terms are in the form of `column name` `operation` `value`. The following operations are supported:
 
-* numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `-`, `is null`, `is not null`
+* numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `\<=`, `in`, `not in`, `-`, `is null`, `is not null`
   * `age > 40`
   * `height is null`
 * string columns: `none`, `contains`, `starts with`, `ends with`, `equals`, `!=`, `regex`, `in`, `not in`, `is null`, `is not null`
@@ -59,16 +60,39 @@ have a form of `column name` `operation` `value`. The following operations are s
   * `started `
 * bool columns: `true`, `false`
 
-### Logical conditions
+In the filter, you can choose the column, choose available operation and value. To add expressions you can click the `+` button, or press enter.
+Similarly to the text filter, you can control the logical operation between the expressions by using the `and/or` switch. In case of string columns, exact matches to the query will be highlighted in the column values.
 
-Free-text filter also understands (very basic) logical conditions. Here are some examples:
+![](../../uploads/gifs/expression-filter.gif)
+
+### Free-text filter mode
+
+To switch expression filter to free-text mode, click the `Free text` icon on the filter. In this mode, you can enter custom search terms in a text form. The filter will parse the text and create expressions based on the entered search terms. It is also possible to use logical conditions to combine simple expressions, for example:
+
 * `age > 30 and height > 190`
 * `age > 30 and sex = F`
 
-Unfortunately, at the moment free-text filter does not work with columns that have space in the name. 
-We are working on developing another filter that would let you specify column/operation/value in a more structured form.
+In case if column name contains spaces, you can put the column name inside of escape sequence:
 
-![](img/filters-free-text.gif)
+* `${column name with spaces} contains someString`
+
+![](../../uploads/gifs/free-text-filter.gif)
+
+## Hierarchical filter
+
+Hierarchical filter can be used to organize column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, Sex and name, the hierarchical filter will show the values of the Name column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off.
+
+Hierarchical filter can be added from filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
+
+* To rearrange, add or remove columns, click on the 'tree' icon in the filter, enable needed columns and arrange them in desired order.
+* To navigate around the categories/subcategories, you can use your mouse or up/down arrows.
+* To expand/collapse the categories, click on the `>` icon on the left of the category name or use the right/left arrow buttons.
+* To toggle the category, click on the checkbox on the left of the category name or use the space bar.
+* To enable only one subcategory, double-click or press enter.
+* To select the corresponding category/subcategory, click the corresponding count number (same as in categorical filter).
+* The green and gray indicator circles to the left of category name show the current and mouse over row of the dataframe respectively. 
+
+![](../../uploads/gifs/hierarchical-filter.gif)
 
 ## Column tags
 
@@ -116,5 +140,5 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

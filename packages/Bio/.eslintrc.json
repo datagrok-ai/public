@@ -17,8 +17,8 @@
   "rules": {
     "indent": ["error", 2, {"SwitchCase": 0}],
     "max-len": ["error", 120],
-    "max-params": ["warn", 5],
-    "max-lines-per-function": ["warn", 30],
+    "max-params": ["warn", 7],
+    "max-lines-per-function": ["warn", 100],
     "max-lines": ["warn", 300],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],

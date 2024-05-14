@@ -137,7 +137,9 @@ export async function computeMembershipStrengths(
 
   resultBufferDistances.unmap();
 
-  device.destroy();
+  resultBufferDistances.destroy();
+  knnDistancesBuffer.destroy();
+  membershipStrengthsInfoBuffer.destroy();
 
   return resKnnDistances;
 }

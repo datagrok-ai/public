@@ -4,7 +4,7 @@ title: "Function call"
 
 Function Call is a result of executing a <!--data job
 , -->[data query](../../../access/access.md#data-query),
-[script](../../../compute/scripting.md), or any other [function](functions.md).
+[script](../../../compute/scripting/scripting.mdx), or any other [function](functions.md).
 
 ## Data
 
@@ -30,7 +30,7 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter action runs with [smart search](../../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter action runs with [smart search](../../navigation/views/table-view#search):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

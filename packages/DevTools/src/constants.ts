@@ -97,7 +97,7 @@ await grok.dapi.permissions.revoke(group, entity);`,
   DataFrame: (ent: DG.DataFrame) =>
     `const df = grok.shell.table("${ent.name}");`,
   Column: (ent: DG.Column) =>
-    `const df = grok.shell.table("${ent.dataFrame.name}");
+    `const df = grok.shell.table("${ent.dataFrame?.name}");
 const col = df.col("${ent.name}");`,
   Package: (ent: DG.Package) =>
     `// Find package functions

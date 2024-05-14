@@ -1,6 +1,6 @@
+import {V3K_CONST} from '../formats/molfile-const';
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
-import {V3K_CONST} from '../formats/molfile-v3k-const';
 
 export class MolfileV3KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
@@ -77,7 +77,7 @@ export class MolfileV3KHandler extends MolfileHandlerBase {
   }
 
   static isValidMolfile(molfile: string): boolean {
-    return (molfile.indexOf(V3K_CONST.HEADER) !== -1 &&
+    return (molfile.indexOf(V3K_CONST.TYPE) !== -1 &&
     molfile.indexOf(V3K_CONST.END) !== -1);
   }
 

@@ -7,7 +7,6 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView, UiUtils} from "@datagrok-libraries/compute-utils";
 import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
-import './css/model-card.css';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -82,13 +81,6 @@ function getCookie(name: string): string | undefined{
   return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
-
-//tags: autostart
-//meta.autostartImmediate: true
-export function autostart() {
-
-}
-
 //name: CustomDataUploader
 //input: func func
 //output: object uploadedCalls
@@ -154,7 +146,9 @@ export function init() {
   if (initCompleted)
     return;
 
-  DG.ObjectHandler.register(new ModelHandler());
+  if (!(DG.ObjectHandler.list().find((handler) => handler.type === "Model"))) {
+    DG.ObjectHandler.register(new ModelHandler());
+  }  
   
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;

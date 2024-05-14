@@ -45,7 +45,7 @@ import {createPropPanelElement, createTooltipElement} from './analysis/activity-
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
-import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
+import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
 import {MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
@@ -59,6 +59,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {identifiersWidget} from './widgets/identifiers';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
+  _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -70,8 +71,8 @@ import {getEmbeddingColsNames}
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { drawMoleculeLabels } from './rendering/molecule-label';
-import { getMCS } from './utils/most-common-subs';
+import {drawMoleculeLabels} from './rendering/molecule-label';
+import {getMCS} from './utils/most-common-subs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -132,6 +133,7 @@ export async function initChem(): Promise<void> {
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
+  await loadRGroupUserSettings();
   _renderers = new Map();
 }
 
@@ -158,7 +160,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -467,7 +469,6 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   }
 }
 
-
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
@@ -510,9 +511,9 @@ export async function getFingerprints(
 
   const fpColumn = await chemSearches.chemGetFingerprints(col, fingerprintTypeStr as Fingerprint, false);
   malformedDataWarning(fpColumn, col);
-  return { entries: fpColumn, options: {} };
-
+  return {entries: fpColumn, options: {}};
 }
+
 
 //top-menu: Chem | Analyze | Chemical Space...
 //name: Chem Space
@@ -713,22 +714,17 @@ export function rGroupsAnalysisMenu(): void {
 //input: string molColName
 //input: string core
 //input: string rGroupName
-//input: string rGroupChunkSize
 //input: string rGroupMatchingStrategy
-//input: string rGroupAlignment
-//input: bool visualAnalysis
+//input: string onlyMatchAtRGroups
 //output: object res
 export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string,
-  rGroupName: string, rGroupChunkSize: string, rGroupMatchingStrategy: string,
-  rGroupAlignment: string, visualAnalysis: boolean): Promise<RGroupDecompRes | undefined> {
+  rGroupName: string,rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
   const params: RGroupParams = {
     molColName: molColName,
     core: core,
     rGroupName: rGroupName,
-    rGroupChunkSize: rGroupChunkSize,
     rGroupMatchingStrategy: rGroupMatchingStrategy,
-    rGroupAlignment: rGroupAlignment,
-    visualAnalysis: visualAnalysis,
+    onlyMatchAtRGroups: onlyMatchAtRGroups
   };
   const col = df.col(molColName);
   if (col === null)
@@ -1326,7 +1322,8 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, 
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   return res ?? DG.DataFrame.create();
 }
 
@@ -1342,7 +1339,8 @@ export async function callChemDiversitySearch(
   metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
-  return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
+  return await chemDiversitySearch(col, similarityMetric[metricName], limit,
+    fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
 }
 
 //top-menu: Chem | Calculate | Properties...
@@ -1407,15 +1405,30 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
+
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
 //name:  Matched Molecular Pairs
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
-//input: column_list activities {type:numerical}
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.ColumnList): Promise<void> {
+//input: column_list activities {type: numerical}
+//input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//output: object result
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<MmpAnalysis> {
   const view = grok.shell.tv;
-  const mmp = await MmpAnalysis.init(table, molecules, activities);
+  const mmp = await MmpAnalysis.init({table, molecules, activities, fragmentCutoff});
+
+  //need this workaround with closing dock node since element cannot be docked repeatedly
+  mmp.mmpView.root.classList.add('mmpa');
+  const mmpaElement = view.dockManager.element.getElementsByClassName('mmpa')[0];
+  if (mmpaElement) {
+    const node = view.dockManager.findNode(mmpaElement as HTMLElement);
+    if (node)
+      view.dockManager.close(node);
+  }
+
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+  return mmp;
 }
 
 //name: Scaffold Tree Filter
@@ -1492,6 +1505,13 @@ export async function demoSimilarityDiversitySearch(): Promise<void> {
   await _demoSimilarityDiversitySearch();
 }
 
+//name: Demo Matched Molecular Pairs
+//description: Detect matched molecule pairs calculate the difference in activity values between them
+//meta.demoPath: Cheminformatics | Matched Molecular Pairs
+export async function demoMMPA(): Promise<void> {
+  await _demoMMPA();
+}
+
 
 //name: Demo R Group Analysis
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
@@ -1548,8 +1568,10 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 //input: column molecules {semType: Molecule}
 //input: string targetNotation = "smiles" {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //input: bool overwrite = false
+//input: bool join = true
+//output: column result
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
-  targetNotation: DG.chem.Notation, overwrite = false ): Promise<void> {
+  targetNotation: DG.chem.Notation, overwrite = false, join = true ): Promise<void | DG.Column<string>> {
   const res = await convertNotationForColumn(molecules, targetNotation);
   if (overwrite) {
     for (let i = 0; i < molecules.length; i++)
@@ -1558,6 +1580,8 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
     const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
+    if (!join)
+      return col;
     data.columns.add(col);
   }
 }
@@ -1575,9 +1599,9 @@ export function canonicalize(molecule: string): string {
 //output: object result
 export function validateMolecule(s: string): string | null {
   let logHandle: RDLog | null = null;
-  let mol: RDMol | null = null;;
+  let mol: RDMol | null = null;
   try {
-    logHandle = _rdKitModule.set_log_capture("rdApp.error");
+    logHandle = _rdKitModule.set_log_capture('rdApp.error');
     mol = getMolSafe(s, {}, _rdKitModule, true).mol;
     let logBuffer = logHandle?.get_buffer();
     logHandle?.clear_buffer();

@@ -4,6 +4,9 @@ const mode = 'production';
 const webpack = require('webpack');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},

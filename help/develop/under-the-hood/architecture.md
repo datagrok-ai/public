@@ -81,7 +81,7 @@ creating new data pipelines, models dynamically and building viewers, plugins, a
 ### Compute Engine
 
 To extend already massive functionality, we created a compute engine for performing on-server computations. Compute
-engine lets the user easily [invoke scripts](../../compute/scripting.md) written in languages such as R or Python and
+engine lets the user easily [invoke scripts](../../compute/scripting/scripting.mdx) written in languages such as R or Python and
 expose them to the Datagrok ecosystem as functions. Also, it utilizes a few different backends
 for [predictive modeling](../../learn/learn.md) while providing users the same look and feel. To create
 and share documents that contain live code, equations, visualizations, and narrative text, we added

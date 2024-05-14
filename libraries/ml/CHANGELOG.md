@@ -1,5 +1,25 @@
 # ml changelog
 
+## 6.6.7 (2024-05-09)
+
+* Fix GPU description getting if value is nullish.
+
+## 6.6.6 (2024-05-09)
+
+Disable webGPU input in case if none is available.
+
+## 6.6.5 (2024-04-25)
+
+Add webGPU MCL implementation.
+
+## 6.6.4 (2024-04-23)
+
+Improvements to dimensionality reduction.
+
+## 6.6.3 (2024-04-16)
+
+Dimensionality reduction: Better dialog.
+
 ## 6.6.2 (2024-04-15)
 
 Dimentionality reduction: create table view only in case plotEmbeddings parameter is true

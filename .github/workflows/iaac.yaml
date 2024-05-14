@@ -53,9 +53,12 @@ jobs:
               echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Get changed files
         uses: tj-actions/changed-files@v37
         id: changed-files
@@ -87,10 +90,13 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           token: ${{ secrets.WRITE_TOKEN }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Set up Python
         uses: actions/setup-python@v4
       - name: Run merge script
@@ -154,9 +160,12 @@ jobs:
               echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
       - name: Get changed files
         uses: tj-actions/changed-files@v37
         id: changed-files
@@ -188,13 +197,13 @@ jobs:
   #    if: needs.common-check.outputs.continue == 'true'
   #    name: Checkov
   #    steps:
-  #      - uses: actions/checkout@v3
+  #      - uses: actions/checkout@v4
   #        if: ${{ github.event_name == 'pull_request' }}
   #        name: Checkout PR branch
   #        with:
   #          ref: ${{ github.head_ref }}
   #
-  #      - uses: actions/checkout@v3
+  #      - uses: actions/checkout@v4
   #        if: ${{ github.event_name != 'pull_request' }}
   #        name: Checkout
   #        with:
@@ -227,9 +236,12 @@ jobs:
               echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
           fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
 
       - name: Testing with CFN Lint Command
         uses: scottbrenner/cfn-lint-action@v2
@@ -254,9 +266,12 @@ jobs:
         provider: [ aws ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          sparse-checkout: |
+            help/deploy
+            .github
 
       - uses: hashicorp/setup-terraform@v2
         with:

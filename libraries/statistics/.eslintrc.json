@@ -22,6 +22,7 @@
 		"require-jsdoc": "off",
 		"spaced-comment": "off",
 		"linebreak-style": "off",
+		"brace-style": "off",
 		"curly": [
 			"error",
 			"multi-or-nest"

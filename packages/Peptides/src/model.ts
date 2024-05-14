@@ -60,7 +60,7 @@ export enum VIEWER_TYPE {
   MOST_POTENT_RESIDUES = 'Most Potent Residues',
   LOGO_SUMMARY_TABLE = 'Logo Summary Table',
   DENDROGRAM = 'Dendrogram',
-  CLUSTER_MAX_ACTIVITY = 'Cluster Max Activity',
+  CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
 }
 
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
@@ -905,9 +905,9 @@ export class PeptidesModel {
 
   /**
    * Sets grid properties such
-   * @param {DG.IGridLookSettings} props - Grid properties
+   * @param {DG.IGridSettings} props - Grid properties
    */
-  setGridProperties(props?: DG.IGridLookSettings): void {
+  setGridProperties(props?: DG.IGridSettings): void {
     const sourceGrid = this.analysisView.grid;
     const sourceGridProps = sourceGrid.props;
     sourceGridProps.allowColSelection = props?.allowColSelection ?? false;
@@ -1132,6 +1132,9 @@ export class PeptidesModel {
       activityColumnName: this.settings!.activityColumnName,
       clusterColumnName: potentialClusterCol ?? wu(this.df.columns.categorical).next().value?.name,
       activityTarget: C.ACTIVITY_TARGET.HIGH,
+      connectivityColumnName: this._mclCols.find((colName) => colName.toLowerCase().startsWith('connectivity')),
+      clusterSizeThreshold: 20,
+      activityThreshold: 1000,
     };
     const _clusterMaxActivity = await this.df.plot
       .fromType(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, viewerProperties) as ClusterMaxActivityViewer;

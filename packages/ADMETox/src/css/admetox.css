@@ -20,3 +20,36 @@
 .admetox-bool-input {
   margin-left: -55px;
 }
+
+.admetox-input-form {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 315px;
+}
+
+.admetox-pane-header {
+  display: flex;
+  align-items: center;
+}
+
+.admetox-tree {
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.admetox-tab-content {
+  gap: 10px;
+}
+
+.admetox-descriptor-name {
+  text-align: center;
+  font-weight: bold;
+}
+
+.d4-flex-col.ui-div.admetox-input-form .ui-input-textarea.ui-input-root {
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  flex-shrink: unset!important;
+}
