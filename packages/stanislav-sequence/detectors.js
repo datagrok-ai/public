@@ -12,11 +12,23 @@ class StanislavSequencePackageDetectors extends DG.Package {
     detectNucleotides(col) {
         console.log(col);
         if (col.type == "string" && DG.Detector.sampleCategories(col, (s) => {
-            console.log(s.length === 7);
-            console.log(new RegExp("[A-Z]*").test(s));
-            return s.length === 7 && new RegExp("[A-Z]*").test(s);
+            return new RegExp("^([atcgATCG]| )*$").test(s);
         }, 1)) {
             col.semType = 'dna_nucleotide';
+            return col.semType;
+        }
+        return null;
+    }
+
+    //tags: semTypeDetector
+    //input: column col
+    //output: string semType
+    detectENAID(col) { 
+        console.log(col);
+        if (col.type == "string" && DG.Detector.sampleCategories(col, (s) => {
+            return new RegExp("^[A-Z]{2}[0-9]{6}(.[0-9])?$").test(s);
+        }, 1)) {
+            col.semType = 'EnaID';
             return col.semType;
         }
         return null;
