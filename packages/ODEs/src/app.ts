@@ -8,8 +8,8 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
-//import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+//import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -204,7 +204,11 @@ export class DiffStudio {
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
     this.createEditorView(DEMO_TEMPLATE, true);
-    this.solverView.setRibbonPanels([[this.openIcon, this.saveIcon], [this.exportButton, this.sensAnIcon], [this.helpIcon]]);
+    this.solverView.setRibbonPanels([
+      [this.openIcon, this.saveIcon],
+      [this.exportButton, this.sensAnIcon],
+      [this.helpIcon],
+    ]);
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -563,7 +567,8 @@ export class DiffStudio {
       grok.shell.addView(sView);
     } catch (err) {
       this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}: ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}:
+      ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }
   }; // exportToJS
 
@@ -1049,7 +1054,8 @@ export class DiffStudio {
       await SensitivityAnalysisView.fromEmpty(script);
     } catch (err) {
       this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}: ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
+      ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }
   }
 };

@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.9 (2024-05-15)
+
+Added parameters fitting feature
+
 ## 1.0.8 (2024-04-08)
 
 Added
