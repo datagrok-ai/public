@@ -119,6 +119,13 @@ jobs:
           cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
         continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        name: Save docusaurus build output
+        if: always() && steps.build_summary.outputs.broken_links == 'true'
+        with:
+          name: _docusaurus_build_output
+          path: help/_docusaurus_build.txt
+          retention-days: 14
       - name: Set summary
         id: build_summary
         run: |
@@ -152,9 +159,12 @@ jobs:
               fi
     
               if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
+                  echo ':x: Docusaurus build failed'
+                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
                   exit 1
               else
                   echo ':warning: Ignored docusaurus build warnings'
+                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
               fi
           else
               echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
