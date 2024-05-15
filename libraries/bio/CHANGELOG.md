@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.41.3 (2024-05-15)
+
+Fix cell renderer monomer placer hit test
+
 ## 5.41.2 (2024-05-13)
 
 ### Bug fixes
