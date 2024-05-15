@@ -30,7 +30,7 @@ to use parameters: `true`
 - [Exp](#exp)
 - [Fixed](#fixed)
 - [Floor](#floor)
-- [FormatFloat](#formatFloat)
+- [FormatFloat](#formatfloat)
 - [Greater](#greater)
 - [If](#if)
 - [Ln](#ln)
@@ -53,7 +53,7 @@ to use parameters: `true`
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
-- [RoundFloat](#roundFloat)
+- [RoundFloat](#roundfloat)
 - [Sin](#sin)
 - [Smaller](#smaller)
 - [Sqrt](#sqrt)
@@ -195,7 +195,7 @@ Floor(3.5)     // 3
 Floor(-3.5)    // -4
 ```
 
-## FormatFloat(`x`, `format`) {#formatFloat}
+## FormatFloat(`x`, `format`) {#formatfloat}
 
 Returns the number `x` formatted according to the specified format.
 
@@ -399,7 +399,7 @@ Round(3.5)     // 4
 Round(-3.5)    // -4
 ```
 
-## RoundFloat(`x`, `decimalPlaces`) {#roundFloat}
+## RoundFloat(`x`, `decimalPlaces`) {#roundfloat}
 
 Returns the number rounded up `x` to the number of decimal places specified by `decimalPlaces`.
 
