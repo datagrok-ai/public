@@ -38,8 +38,8 @@ if [ -f "${temp_file}" ]; then
         fi
     done < "$temp_file"
 
-    rm "$temp_file" >/dev/null 2>&1
-    rm "$current_line_temp_file" >/dev/null 2>&1
+    rm -f "$temp_file" >/dev/null 2>&1
+    rm -f "$current_line_temp_file" >/dev/null 2>&1
 else
     echo 'No broken link information found'
 fi
