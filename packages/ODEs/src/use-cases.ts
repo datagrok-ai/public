@@ -135,7 +135,7 @@ ${CONTROL_EXPR.EXPR}:
   C3 = peri / V3
 
 ${CONTROL_EXPR.LOOP}:
-  count = 10 {category: Dosing; min: 1; max: 20} [Number of doses]
+  count = 10 {caption: count; category: Dosing; min: 1; max: 20} [Number of doses]
   depot += dose
 
 ${CONTROL_EXPR.ARG}: t
