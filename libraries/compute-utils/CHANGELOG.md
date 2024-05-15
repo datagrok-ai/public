@@ -1,5 +1,8 @@
 # compute-utils changelog
 
+## 1.34.1 (2024-05-15)
+
+- Fixed imports
 
 ## 1.34.0 (2024-05-14)
 

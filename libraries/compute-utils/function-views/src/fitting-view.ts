@@ -17,7 +17,6 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
-import {ILineChartLookSettings} from 'datagrok-api/dg';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
@@ -1332,7 +1331,7 @@ export class FittingView {
           rawBuf = col.getRawData();
           const expVals = Array<number>(rowCount);
           indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
-          const options: Partial<ILineChartLookSettings> = {
+          const options: Partial<DG.ILineChartLookSettings> = {
             multiAxis: true,
             yGlobalScale: true,
           };
