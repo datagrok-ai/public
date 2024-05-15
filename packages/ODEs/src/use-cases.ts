@@ -177,12 +177,12 @@ ${CONTROL_EXPR.EXPR}:
   rX = mu * X
 
 ${CONTROL_EXPR.ARG}: t, 1-st stage
-  start = 0 {units: h; caption: initial; category: Time} [Start of the process]
-  stage1 = 60 {units: h; caption: 1-st stage; category: Stages duration; min: 40; max: 80} [Duration of the 1-st stage]
-  step = 0.1 {units: h; caption: step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
+  _t0 = 0 {units: h; caption: initial; category: Misc} [Start of the process]
+  _t1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
+  step = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simlulation]
 
 ${CONTROL_EXPR.UPDATE}: 2-nd stage
-  duration = stage2
+  duration = overall - _t1
   S += 70
 
 ${CONTROL_EXPR.INITS}:  
@@ -199,7 +199,7 @@ ${CONTROL_EXPR.OUTPUT}:
   P {caption: acid}
 
 ${CONTROL_EXPR.PARAMS}:
-  stage2 = 60 {units: h; caption: 2-nd stage; category: Stages duration; min: 40; max: 80} [Duration of the 2-nd stage]
+  overall = 100 {units: h; category: Durations; min: 100; max: 140} [Overall duration]
   muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
   alpha = 2.92 {category: Parameters} [Monod type model parameter]
   beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]
@@ -406,7 +406,7 @@ ${CONTROL_EXPR.PARAMS}:
        yO2in = 0.21  {              caption: O2 fraction; category: Parameters;  min: 0.1; max: 0.9}            [Oxygen mole fraction]
            T =  300  {units: K;     caption: temperature; category: Parameters;  min: 250; max: 350}            [System temperature]
            P =    1  {units: atm;   caption: pressure;    category: Parameters;  min: 1;   max: 2}              [Headspace pressure]
-  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 50;  max: 200; step: 10}  [Switch mode time]`;
+  switchTime =  135  {units: min;   caption: switch at;   category: Time;        min: 70;  max: 180; step: 10}  [Switch mode time]`;
 
 /** Initial value problem use cases */
 export enum USE_CASES {
