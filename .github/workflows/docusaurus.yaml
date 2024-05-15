@@ -110,6 +110,11 @@ jobs:
       - name: Build Docusaurus website
         id: build
         run: |
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            echo 'Allow broken links in help for manually run action'
+            sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
+            sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
+          fi
           npm run build > ../help/_docusaurus_build.txt 2>&1
           cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
