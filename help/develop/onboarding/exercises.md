@@ -71,7 +71,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()` from the
   `Functions` pane in the context panel on the left)
-* via the [console](../../datagrok/navigation#console): press `~` key anywhere inside Datagrok, the Console will appear
+* via the [console](../../datagrok/navigation/panels/panels.md#console): press `~` key anywhere inside Datagrok, the Console will appear
   to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will be
   obtained by transformation kebab style of folder name to camel style, or can be specified directly with attribute
   `friendlyName` in `package.json` file.
@@ -322,7 +322,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript
-   API](../../compute/scripting/scripting.mdx#running-a-script).
+   API](../../compute/scripting/getting-started.mdx#run-the-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
@@ -351,7 +351,7 @@ functions.
    :::
 
    To provide scripts as part of a package, use the `scripts` folder. This is one of special directories reserved for
-   specific package content (learn more about [package structure](../../develop#package-structure)).
+   specific package content (learn more about [package structure](../develop.md#package-structure)).
 
 1. Now let's try calling a script via JS API. Add a new function to `src/package.ts`. It should call your Python script
    with specified arguments and return the result of the following expression:
@@ -493,7 +493,7 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
+    (see examples in the article [Parameterized Queries](../../access/databases/databases.md#parameterized-queries)).
 
 ## Exercise 5: Reading files
 

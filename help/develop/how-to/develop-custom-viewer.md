@@ -73,7 +73,7 @@ our [JavaScript API documentation](https://datagrok.ai/js-api/classes/dg.JsViewe
 ### External dependencies
 
 Just like regular `npm` packages, Datagrok packages may have dependencies. Typically you would list them in
-your [package.json](../develop.md#package.json) file and get them locally via `npm install`. For instance, we will use a
+your [package.json](../develop.md#packagejson) file and get them locally via `npm install`. For instance, we will use a
 JavaScript library called [D3](https://d3js.org/) to create a bar chart. In this case, the `dependencies` field will
 look as follows:
 
@@ -85,7 +85,7 @@ look as follows:
 ```
 
 Some libraries, such as [datagrok-api](https://www.npmjs.com/package/datagrok-api), are marked as external modules in a
-package's [webpack configuration](../develop.md#webpack.config.js). This means that they will not be included in a
+package's [webpack configuration](../develop.md#webpackconfigjs). This means that they will not be included in a
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 

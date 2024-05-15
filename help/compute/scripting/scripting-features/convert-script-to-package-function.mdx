@@ -9,12 +9,12 @@ import BrowserWindow from '@site/src/components/browser-window';
 ```
 
 You can convert a script to a package function to:
-- use external libraries in you code,
+- use external libraries in your code,
 - save the script in the version control system (e.g., Git).
 
 Follow these steps to achieve it:
 
-1. Create a TypeScript [package](/help/develop/packages).
+1. Create a TypeScript [package](../../../develop/develop.md#packages).
 
   ```shell
   grok init package_name --ts
@@ -62,13 +62,13 @@ Follow these steps to achieve it:
   Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
   (what you used in the `//name:` annotation, not the file name).
 
-1. Compile and [publish](/help/develop/develop.md#publishing) the package:
+1. Compile and [publish](../../../develop/develop.md#publishing) the package:
 
   ```shell
   npm run build && grok publish your_environment
   ```
 
-  If you want to make your package publicly available, use the `--release` [publishing mode](/help/develop/develop.md#publishing-modes).
+  To make your package publicly available, use the `--release` [publishing mode](../../../develop/develop.md#publishing-modes).
 
   ```shell
   npm run build && grok publish your_environment --release

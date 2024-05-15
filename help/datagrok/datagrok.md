@@ -54,7 +54,7 @@ Automatically generate macros from data transformations and use them on new data
 * Use [500+ available functions](https://public.datagrok.ai/functions?q), or
   write your own in JavaScript, Python, R (or any other language that compiles
   to WASM)
-* Record and apply [macros](navigation/navigation.md#recording-macros), use in pipelines
+* Record and apply [macros](navigation/panels/panels.md#recording-macros), use in pipelines
 * Visually edit [query transformations](../transform/query-transformations.md).
 
 [Learn more about functions](concepts/functions/functions.md).
@@ -82,7 +82,7 @@ and apps. Solve differential equations and run simulations for complex processes
 * [500+ available functions](https://public.datagrok.ai/functions), or write your own in R, Python, or JavaScript
 * [Metadata-annotated](../compute/compute.md#metadata) scripts with [cross-language support](../compute/compute.md#functions-and-cross-language-support)
 * [Scalable](../compute/compute.md#scalable-computations) and 
-[reproducible](../compute/compute.md#reproducible-computations) computations, [model lifecycle management](../compute/compute.md#model-lifecycle)
+[reproducible](../compute/compute.md#reproducible-computations) computations, [model lifecycle management](../compute/compute.md#models)
 * [Auto-generated UI](../compute/compute.md#user-interface).
 
 Learn more about [Compute](../compute/compute.md).

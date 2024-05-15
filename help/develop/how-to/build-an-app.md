@@ -545,7 +545,7 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../../compute/scripting/scripting.mdx#running-a-script)
+* [Running a script](../../compute/scripting/getting-started.mdx#run-the-script)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations

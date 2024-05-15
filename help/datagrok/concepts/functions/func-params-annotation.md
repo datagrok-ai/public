@@ -54,7 +54,7 @@ Some parameters are specific to script language and/or technology:
 
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
-  * `environment`: [script environment](../../../compute/scripting/scripting.mdx#environments) (Conda environment for python, etc)
+  * `environment`: [script environment](../../../compute/scripting/scripting-features/specify-env.mdx) (Conda environment for python, etc)
   * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
 * Script-based info panels
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object

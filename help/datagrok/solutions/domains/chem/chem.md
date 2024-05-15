@@ -295,7 +295,7 @@ To clear the filter, use the checkbox provided. To remove the filter altogether,
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/viewers/viewers.md#filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../datagrok/navigation/views/table-view.md#select-and-filter).
 
 ### Similarity and diversity search
 

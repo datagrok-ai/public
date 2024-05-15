@@ -344,8 +344,8 @@ Use:
 <TabItem value="no-emphasis" label="Don't add emphasis">
 
 * To linked terms 
-  * The **Query Editor** lets you edit queries. To learn more, see [Query Editor](link).
-  * A query is a [function](link). Like other _functions_ in Datagrok,...
+  * The **Query Editor** lets you edit queries. To learn more, see [Query Editor](../../access/databases/databases.md#query-editor).
+  * A query is a [function](../../datagrok/concepts/functions/functions.md). Like other _functions_ in Datagrok,...
 
 </TabItem>
 </Tabs>
