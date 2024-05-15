@@ -35,7 +35,7 @@ The following commands are available from the **Top Menu**:
 
 * **Home**: Opens the **Home Page**
 * **Open local file**: Opens a dialog to upload a file from your local drive
-* **Open text**: Opens a [window to import text](../../../access/files/files.mdx#)
+* **Open text**: Opens a [window to import text](../../../access/files/files.md)
 * **Refresh view**: Refreshes the **Browse** view
 
 You may see view-specific options at the top, such as the **Create new connection** button for [databases](../../../access/databases/databases.md).

@@ -9,7 +9,7 @@ Datagrok provides a single, unified access point for data across an organization
 
 Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](files/files.md) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases/databases.md), or [webservices](open-api.md).
 
-Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md/#reading-files) section in the developers' documentation.
+Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md#reading-files) section in the developers' documentation.
 
 Datagrok also hosts [public datasets](public-datasets.md) that can be used for analysis, testing, and prototyping. These datasets cover various domains, including cheminformatics, clinical trials, and more.
 
@@ -63,7 +63,7 @@ A data connection is an [entity](../datagrok/concepts/objects.md), which means i
 
 For instructions on how to add a supported data source, set credentials, share, and manage it from the UI, see documentation for each data source type.
 
-For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/access-data.md/#connections).
+For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/access-data.md#connections).
 
 For specific details on the configuration required, see each individual connector's documentation page in the Connectors directory.
 
