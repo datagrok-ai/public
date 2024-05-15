@@ -25,8 +25,6 @@ export function hitBounds(bounds: number[], x: number): number | null {
   let midI;
   while (leftI <= rightI) {
     midI = Math.floor((rightI + leftI) / 2);
-    const logVal: {} = {x, leftI, left: bounds[leftI], midI, mid: bounds[midI], rightI, right: bounds[rightI]};
-    console.debug(`bio lib: hitTestBounds(), ${JSON.stringify(logVal)}`);
     if (bounds[midI] <= x && x < bounds[midI + 1])
       return midI;
     else if (x < bounds[midI])
