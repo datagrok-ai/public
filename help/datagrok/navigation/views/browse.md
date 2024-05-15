@@ -99,8 +99,7 @@ When clicking a file, what you see depends on its format and the data inside it.
 * Clicking a spreadsheet file visualizes its data using an interactive
   [spreadsheet viewer](../../../visualize/viewers/grid.md).
 * Clicking an image file shows the image.
-* Molecules or proteins are automatically rendered using [cell
-  renderers](../../../visualize/viewers/grid.md#cell-renderers) and interactive
+* Molecules or proteins are automatically rendered using [cell renderers](../../../visualize/viewers/grid.md#cell-renderers) and interactive
   viewers.
 * Clicking text-based files like Markdown, TXT, and HTML opens a text editor.
 
@@ -129,8 +128,7 @@ entity](#entity-search), such as by name or tag.
 </TabItem>
 <TabItem value="dashboards" label="Dashboards">
 
-Clicking a dashboard shows a fully interactive [Table
-View](../views/table-view.md).
+Clicking a dashboard shows a fully interactive [Table View](../views/table-view.md).
 
 <br/>
 
@@ -218,8 +216,7 @@ You can customize the appearance of the **Home Page** as follows:
   Bar**.
 * Choose which widgets to display, arrange their order, and assign custom names.
   To do this, hover over the widget's top to access its controls. You can close
-  a widget or adjust its settings using the [Context
-  Panel](../panels/panels.md#context-panel). To manage hidden widgets, go to
+  a widget or adjust its settings using the [Context Panel](../panels/panels.md#context-panel). To manage hidden widgets, go to
   **Sidebar** > **Settings** > **Panels**.
 
 :::note developers

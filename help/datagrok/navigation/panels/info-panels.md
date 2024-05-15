@@ -18,8 +18,7 @@ info panes serve a wider range of functions, making use of all Datagrok's
 capabilities, including [scripting](../../../compute/scripting/scripting.mdx),
 [queries](../../../access/access.md#data-query),
 [functions](../../concepts/functions/functions.md),
-[viewers](../../../visualize/viewers/viewers.md), [predictive
-models](../../../learn/learn.md), and so on.
+[viewers](../../../visualize/viewers/viewers.md), [predictive models](../../../learn/learn.md), and so on.
 
 Examples:
 
