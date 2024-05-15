@@ -347,19 +347,35 @@ ${CONTROL_EXPR.ARG}: t
    h = 1     {units: min; caption: Step;    category: Time; min: 0.1; max: 2}     [Time step of simlulation]
 
 ${CONTROL_EXPR.INITS}:  
-  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [FF oxidized]
-  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.1; max: 0.3; step: 0.01}  [KK oxidized]
-  FFred    = 0.1   {units: mmol/L; category: Initial values}                                  [FF reduced]
-  KKred    = 0.1   {units: mmol/L; category: Initial values}                                  [KK reduced]
-  Ffree    = 0     {units: mmol/L; category: Initial values}                                  [F free]
-  Kfree    = 0     {units: mmol/L; category: Initial values}                                  [K free]
-  FKred    = 0     {units: mmol/L; category: Initial values}                                  [FK reduced]
-  FKox     = 0     {units: mmol/L; category: Initial values}                                  [FK oxidized]
-  MEAthiol = 15    {units: mmol/L; category: Initial values}                                  [MEAthiol]
-  CO2      = 0.12  {units: mmol/L; category: Initial values}                                  [Dissolved oxygen]
-  yO2P     = 0.209 {units: atm;    category: Initial values}                                  [Atm headspace]
-  CYST     = 0     {units: mmol/L; category: Initial values}                                  [Cystamine]
-  VL       = 7.2   {units: L;      category: Initial values}                                  [Liquid volume]
+  FFox     = 0.2   {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [FF oxidized]
+  KKox     = 0.2   {units: mmol/L; category: Initial values; min: 0.15; max: 0.25; step: 0.01}  [KK oxidized]
+  FFred    = 0.1   {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [FF reduced]
+  KKred    = 0.1   {units: mmol/L; category: Initial values; min: 0.08; max: 0.12; step: 0.01}  [KK reduced]
+  Ffree    = 0     {units: mmol/L; category: Initial values}                                    [F free]
+  Kfree    = 0     {units: mmol/L; category: Initial values}                                    [K free]
+  FKred    = 0     {units: mmol/L; category: Initial values}                                    [FK reduced]
+  FKox     = 0     {units: mmol/L; category: Initial values}                                    [FK oxidized]
+  MEAthiol = 15    {units: mmol/L; category: Initial values; min: 10;   max: 16}                [MEAthiol]
+  CO2      = 0.12  {units: mmol/L; category: Initial values; min: 0.09; max: 0.15}              [Dissolved oxygen]
+  yO2P     = 0.209 {units: atm;    category: Initial values}                                    [Atm headspace]
+  CYST     = 0     {units: mmol/L; category: Initial values}                                    [Cystamine]
+  VL       = 7.2   {units: L;      category: Initial values}                                    [Liquid volume]
+
+${CONTROL_EXPR.OUTPUT}:
+  t  
+  FFox     {caption: FFox(t)} 
+  KKox     {caption: KKox(t)}
+  FFred    {caption: FFred(t)}
+  KKred    {caption: KKred(t)}
+  Ffree    {caption: Ffree(t)}
+  Kfree    {caption: Kfree(t)}
+  FKred    {caption: FKred(t)}
+  FKox     {caption: FKox(t)}
+  MEAthiol {caption: MEAthiol(t)}
+  CO2      {caption: CO2(t)}
+  yO2P     {caption: yO2P(t)}
+  CYST     {caption: CYST(t)}
+  VL       {caption: VL(t)}
 
 ${CONTROL_EXPR.CONSTS}:
    VLinit = 7.2
