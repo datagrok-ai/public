@@ -28,6 +28,7 @@ export enum HINT {
   OPEN_DS = 'Open model in Diff Studio',
   SAVE = 'Save changes',
   SENS_AN = 'Run sensitivity analysis',
+  FITTING = 'Run fitting inputs',
 };
 
 /** UI titles */
@@ -92,6 +93,7 @@ export enum ERROR_MSG {
   FAILED_TO_SAVE = 'Failed to save model to the file',
   INCORRECT_MODEL = 'Incorrect model',
   SENS_AN_FAILS = 'Sensitivity Analysis fails',
+  FITTING_FAILS = 'Fitting fails',
 };
 
 /** Warning dialog lines */

@@ -8,8 +8,8 @@ import {basicSetup, EditorView} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
-import {SensitivityAnalysisView} from '../../../libraries/compute-utils/function-views/src/sensitivity-analysis-view';
-//import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -131,16 +131,15 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function getLineChartOptions(colNames: string[]): Object {
+function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartLookSettings> {
   const count = colNames.length;
   return {
     xColumnName: colNames[0],
-    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : colNames[0],
+    yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : [colNames[0]],
     showTitle: true,
-    sharex: true,
     multiAxis: count > MAX_LINE_CHART,
-    multiAxisLegendPosition: 'RightTop',
-    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: null,
+    //multiAxisLegendPosition: 'RightTop',
+    segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
   };
 }
@@ -158,7 +157,7 @@ export class DiffStudio {
     this.createEditorView(content, true);
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon],
+      [this.exportButton, this.sensAnIcon, this.fittingIcon],
       [this.helpIcon],
     ]);
     this.toChangePath = true;
@@ -206,7 +205,7 @@ export class DiffStudio {
     this.createEditorView(DEMO_TEMPLATE, true);
     this.solverView.setRibbonPanels([
       [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon],
+      [this.exportButton, this.sensAnIcon, this.fittingIcon],
       [this.helpIcon],
     ]);
     this.toChangePath = false;
@@ -242,7 +241,7 @@ export class DiffStudio {
     let isSaveBtnAdded = false;
 
     const ribbonPnls = browseView!.getRibbonPanels();
-    ribbonPnls.push([this.sensAnIcon]);
+    ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
     browseView!.setRibbonPanels(ribbonPnls);
 
     const addSaveBtnToRibbon = () => {
@@ -309,6 +308,7 @@ export class DiffStudio {
   private helpIcon: HTMLElement;
   private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
+  private fittingIcon: HTMLElement;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -372,6 +372,7 @@ export class DiffStudio {
     this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
     this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
     this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
+    this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
   }; // constructor
 
   /** Create model editor */
@@ -688,6 +689,7 @@ export class DiffStudio {
     this.runPane.header.hidden = !toShow;
     this.exportButton.disabled = !toShow;
     this.sensAnIcon.hidden = !toShow;
+    this.fittingIcon.hidden = !toShow;
   }
 
   /** Clear solution table & viewer */
@@ -874,170 +876,6 @@ export class DiffStudio {
     this.inputsByCategories = inputsByCategories;
   } // getInputsUI
 
-  /** Return form with model inputs */
-  private async getInputsForm2(ivp: IVP): Promise<void> {
-    /** Return options with respect to the model input specification */
-    const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.PropertyOptions = {
-        name: name,
-        defaultValue: modelInput.value,
-        type: DG.TYPE.FLOAT,
-        inputType: INPUT_TYPE.FLOAT,
-      };
-
-      if (modelInput.annot !== null) {
-        let annot = modelInput.annot;
-        let descr: string | undefined = undefined;
-
-        let posOpen = annot.indexOf(BRACKET_OPEN);
-        let posClose = annot.indexOf(BRACKET_CLOSE);
-
-        if (posOpen !== -1) {
-          if (posClose === -1)
-            throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
-
-          descr = annot.slice(posOpen + 1, posClose);
-
-          annot = annot.slice(0, posOpen);
-        }
-
-        posOpen = annot.indexOf(BRACE_OPEN);
-        posClose = annot.indexOf(BRACE_CLOSE);
-
-        if (posOpen >= posClose)
-          throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
-
-        let pos: number;
-        let key: string;
-        let val;
-
-        annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
-          pos = str.indexOf(CONTROL_SEP);
-
-          if (pos === -1)
-            throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
-
-          key = str.slice(0, pos).trim();
-          val = str.slice(pos + 1).trim();
-
-          // @ts-ignore
-          options[key] = strToVal(val);
-        });
-
-        options.description = descr ?? '';
-        options.name = options.caption ?? options.name;
-        options.caption = options.name;
-      }
-
-      if (this.startingInputs) {
-        options.defaultValue = this.startingInputs
-          .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
-        modelInput.value = options.defaultValue;
-      }
-
-      return options;
-    }; // getOptions
-
-    const inputsByCategories = new Map<string, DG.InputBase[]>();
-    inputsByCategories.set(TITLE.MISC, []);
-    let options: DG.PropertyOptions;
-
-    /** Pull input to appropriate category & add tooltip */
-    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
-      const category = options.category;
-
-      if (category === undefined)
-        inputsByCategories.get(TITLE.MISC)?.push(input);
-      else if (inputsByCategories.has(category))
-        inputsByCategories.get(category)!.push(input);
-      else
-        inputsByCategories.set(category, [input]);
-
-      input.setTooltip(options.description!);
-    };
-
-    /** Return line with inputs names & values */
-    const getInputsPath = () => {
-      let line = '';
-
-      inputsByCategories.forEach((inputs, cat) => {
-        if (cat !== TITLE.MISC)
-          inputs.forEach((input) => {line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;});
-      });
-
-      inputsByCategories.get(TITLE.MISC)!.forEach((input) => {
-        line += `${PATH.AND}${input.caption.replace(' ', '')}${PATH.EQ}${input.value}`;
-      });
-
-      return line.slice(1); // we ignore 1-st '&'
-    };
-
-    // Inputs for argument
-    for (const key of ARG_INPUT_KEYS) {
-      //@ts-ignore
-      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null) {
-          //@ts-ignore
-          ivp.arg[key].value = input.value;
-        // await this.solve(ivp, getInputsPath());
-        }
-      });
-
-      categorizeInput(options, input);
-    }
-
-    // Inputs for initial values
-    ivp.inits.forEach((val, key, map) => {
-      options = getOptions(key, val, CONTROL_EXPR.INITS);
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null)
-        ivp.inits.get(key)!.value = input.value;
-        //await this.solve(ivp, getInputsPath());
-      });
-
-      categorizeInput(options, input);
-    });
-
-    // Inputs for parameters
-    if (ivp.params !== null) {
-      ivp.params.forEach((val, key, map) => {
-        options = getOptions(key, val, CONTROL_EXPR.PARAMS);
-        const input = ui.input.forProperty(DG.Property.fromOptions(options));
-        input.onChanged(async () => {
-          if (input.value !== null)
-            ivp.params!.get(key)!.value = input.value;
-            //await this.solve(ivp, getInputsPath());
-        });
-
-        categorizeInput(options, input);
-      });
-    }
-
-    // Inputs for loop
-    if (ivp.loop !== null) {
-      options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP);
-      options.inputType = INPUT_TYPE.INT; // since it's an integer
-      options.type = DG.TYPE.INT; // since it's an integer
-      const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.onChanged(async () => {
-        if (input.value !== null)
-          ivp.loop!.count.value = input.value;
-          //await this.solve(ivp, getInputsPath());
-      });
-
-      categorizeInput(options, input);
-    }
-
-    if (this.toRunWhenFormCreated)
-      await this.solve(ivp, getInputsPath());
-
-    this.inputsByCategories = inputsByCategories;
-  } // getInputsUI
-
-
   /** Run sensitivity analysis */
   private async runSensitivityAnalysis(): Promise<void> {
     try {
@@ -1056,6 +894,27 @@ export class DiffStudio {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
       ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
+  }
+
+  /** Run fitting */
+  private async runFitting(): Promise<void> {
+    try {
+      const ivp = getIVP(this.editorView!.state.doc.toString());
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+      await call.call();
+
+      //@ts-ignore
+      await FittingView.fromEmpty(script);
+    } catch (err) {
+      this.clearSolution();
+      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
+        ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
     }
   }
 };
