@@ -32,7 +32,7 @@ You can also use expressions such as `[${Width}, 270, ${Height}]` to pass row va
 - [ValueCount](#valuecount)
 - [Variance](#variance)
 
-## <a name="avg"></a>Avg(`data`)
+## Avg(`data`) {#avg}
 
 Returns the average (arithmetic mean) of the data.
 
@@ -41,7 +41,7 @@ Avg([1, 2, 3, 4])     // 2.5
 Avg($[Age])           // Average age
 ```
 
-## <a name="kurt"></a>Kurt(`data`)
+## Kurt(`data`) {#kurt}
 
 Returns the kurtosis of the data. Kurtosis characterizes the relative peakedness or flatness of a distribution compared
 with the normal distribution.
@@ -51,7 +51,7 @@ Kurt([1, 2, 3])      // -1.5
 Kurt($[Readings])
 ```
 
-## <a name="max"></a>Max(`data`)
+## Max(`data`) {#max}
 
 Returns the maximum value of the data.
 
@@ -60,7 +60,7 @@ Max([1.5, -2, 1.9])    // 1.9
 Max($[Length])         // Maximum length
 ```
 
-## <a name="med"></a>Med(`data`)
+## Med(`data`) {#med}
 
 Returns the median of the data.
 
@@ -69,7 +69,7 @@ Med([1, 2, 3])         // 2
 Med([$[Dev]])
 ```
 
-## <a name="min"></a>Min(`data`)
+## Min(`data`) {#min}
 
 Returns the minimum value of the data.
 
@@ -78,7 +78,7 @@ Min([1.5, -2, 1.9])    // -2
 Min($[Length])         // Minimum length
 ```
 
-## <a name="missingvaluecount"></a>MissingValueCount(`data`)
+## MissingValueCount(`data`) {#missingvaluecount}
 
 Returns the number of empty (null) elements.
 
@@ -87,7 +87,7 @@ MissingValueCount([10, null, 7])    // 1
 MissingValueCount($[Weight])
 ```
 
-## <a name="q1"></a>Q1(`data`)
+## Q1(`data`) {#q1}
 
 Returns the first quartile of the data.
 
@@ -96,7 +96,7 @@ Q1([7, 2, -3, 4])    // 2
 Q1($[Value])
 ```
 
-## <a name="q2"></a>Q2(`data`)
+## Q2(`data`) {#q2}
 
 Returns the second quartile of the data.
 
@@ -105,7 +105,7 @@ Q2([7, 2, -3, 4])    // 3
 Q2($[Value])
 ```
 
-## <a name="q3"></a>Q3(`data`)
+## Q3(`data`) {#q3}
 
 Returns the third quartile of the data.
 
@@ -114,7 +114,7 @@ Q3([7, 2, -3, 4])   // 7
 Q3($[Value])
 ```
 
-## <a name="skew"></a>Skew(`data`)
+## Skew(`data`) {#skew}
 
 Returns the skewness of the data.
 
@@ -123,7 +123,7 @@ Skew([1, 2, 3])         // 0
 Skew($[Indications])
 ```
 
-## <a name="stdev"></a>StDev(`data`)
+## StDev(`data`) {#stdev}
 
 Returns the standard deviation of the data.
 
@@ -132,7 +132,7 @@ StDev([7, 14, 21])    // 7
 StDev($[Weight])
 ```
 
-## <a name="sum"></a>Sum(`data`)
+## Sum(`data`) {#sum}
 
 Returns the sum of elements.
 
@@ -141,7 +141,7 @@ Sum([-1, 4, 12, 5])    // 20
 Sum($[Price])    //
 ```
 
-## <a name="totalcount"></a>TotalCount(`data`)
+## TotalCount(`data`) {#totalcount}
 
 Returns the total number of elements.
 
@@ -150,7 +150,7 @@ TotalCount([8, null, 1])    // 3
 TotalCount($[Weight])
 ```
 
-## <a name="valuecount"></a>ValueCount(`data`)
+## ValueCount(`data`) {#valuecount}
 
 Returns the number of non-null elements.
 
@@ -159,7 +159,7 @@ ValueCount([8, null, 1])    // 2
 ValueCount($[Weight])
 ```
 
-## <a name="variance"></a>Variance(`data`)
+## Variance(`data`) {#variance}
 
 Returns the variance of elements.
 
