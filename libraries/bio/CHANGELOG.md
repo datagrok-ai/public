@@ -1,5 +1,10 @@
 # bio changelog
 
+## 5.41.4 (2024-05-15)
+
+Move long/many sequence generators to bio lib
+Fix SeqHandler setTags optimizing call getStats
+
 ## 5.41.3 (2024-05-15)
 
 Fix cell renderer monomer placer hit test
