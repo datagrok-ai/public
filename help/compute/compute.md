@@ -515,7 +515,7 @@ let y = x + 3;
 
 Solve an inverse problem: find input conditions leading to specified output constraints. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
 
-1. Press the "Fit inputs" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens.
+1. Click the "Fit inputs" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens.
 
 2. In the `Fit` block, use switchers to specify inputs to be found:
 
@@ -526,13 +526,13 @@ Solve an inverse problem: find input conditions leading to specified output cons
    * Use switchers to specify target outputs
    * Set target value for each selected item
 
-4. Choose `method`. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
+4. Choose `method`. Click <i class="grok-icon fal fa-cog"></i> to specify its settings.
 
 5. Specify the `loss` function type.
 
 6. Set `samples` and `similarity`.
 
-7. Press the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
+7. Click the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing
 
    * loss function values
