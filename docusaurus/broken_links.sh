@@ -31,7 +31,7 @@ if [ -f "${temp_file}" ]; then
             resolved=$(sed -nE "s#.*\(resolved as: ([^ ]+)\)#\1#p" <<<$line)
             echo "\"$(cat $current_line_temp_file)\",\"${link}\",\"${resolved:-$link}\"" >> "$output_file"
         elif [[ $line == *"markdown link couldn't be resolved"* ]]; then
-            link=$(sed -nE "s#Error: Docs markdown link couldn't be resolved: \(([^ ]+)\) in \"([^ ]+)/(help/[^ ]+)\" for version .*#\"\1\",\"\3\",\"\"#p" <<<$line)
+            link=$(sed -nE "s#Error: Docs markdown link couldn't be resolved: \(([^ ]+)\) in \"([^ ]+)/(help/[^ ]+)\" for version .*#\"\3\",\"\1\",\"\"#p" <<<$line)
             echo "$link" >> "$output_file"
         else
             echo "$line" >> "$output_file"
