@@ -21,6 +21,18 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+
+## 2024-05-15 1.18.7
+
+### Improvemets:
+
+* [#2845](https://github.com/datagrok-ai/public/issues/2845): Changing the colors of labels in the properties
+
+### Fixes:
+
+* [#2824](https://github.com/datagrok-ai/public/issues/2824): Creating Dataframe from csv loses qnum precision
+
+
 ## 2024-05-08 1.18.6
 
 ### Fixes:
