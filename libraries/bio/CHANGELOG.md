@@ -1,5 +1,10 @@
 # bio changelog
 
+## 5.41.5 (2024-05-16)
+
+Fix separator splitter to ceil splitter limit
+Add seq generator for various notations
+
 ## 5.41.4 (2024-05-15)
 
 Move long/many sequence generators to bio lib

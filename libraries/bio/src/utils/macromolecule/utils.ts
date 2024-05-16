@@ -151,7 +151,7 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
       const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
       if (limit !== undefined) {
         mRe.lastIndex = 0;
-        mmList = new Array<string>(limit);
+        mmList = new Array<string>(Math.ceil(limit));
 
         let mEa: RegExpExecArray | null = null;
         let mI = 0;
