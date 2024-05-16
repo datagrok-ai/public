@@ -13,6 +13,7 @@ export const MMP_TAB_TRANSFORMATIONS = 'Transformations';
 export const MMP_TAB_FRAGMENTS = 'Fragments';
 export const MMP_TAB_CLIFFS = 'Cliffs';
 export const MMP_TAB_GENERATION = 'Generation';
+export const MMP_TAB_SAVE = 'Save';
 export const MMP_STRUCT_DIFF_FROM_NAME = '~structDiffFrom';
 export const MMP_STRUCT_DIFF_TO_NAME = '~structDiffTo';
 export const MMP_COLOR = 'color';

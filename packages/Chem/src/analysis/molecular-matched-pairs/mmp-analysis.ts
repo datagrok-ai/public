@@ -6,7 +6,8 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
   MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME,
+  MMP_STRUCT_DIFF_TO_NAME, MMP_TAB_SAVE} from './mmp-constants';
 import {MmpRules, MmpInput} from './mmp-constants';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {getMmpFrags, getMmpRules} from './mmp-fragments';
@@ -25,6 +26,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {_package} from '../../package';
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -191,18 +193,23 @@ export class MmpAnalysis {
         createGridDiv('Pairs', this.casesGrid),
       ], {}, true);
     });
-    tabs.addPane(MMP_TAB_FRAGMENTS, () => {
-      return tp.root;
-    });
-    tabs.addPane(MMP_TAB_CLIFFS, () => {
-      return cliffs;
-    });
-    const genTab = tabs.addPane(MMP_TAB_GENERATION, () => {
-      return this.generationsGrid.root;
-    });
+
+    tabs.addPane(MMP_TAB_FRAGMENTS, () => {return tp.root;});
+    tabs.addPane(MMP_TAB_CLIFFS, () => {return cliffs;});
+
+    const genTab = tabs.addPane(MMP_TAB_GENERATION, () => {return this.generationsGrid.root;});
+
     genTab.header.append(addToWorkspaceButton(this.generationsGrid.dataFrame,
       'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
 
+
+    const saveButton = ui.bigButton('SAVE', () => {
+      const filePath = `MMP/mmpBin.d42`;
+      _package.files.writeBinaryDataFrames(filePath,
+        [this.parentTable, this.allPairsGrid.table, this.casesGrid.table, this.generationsGrid.table]);
+    });
+
+    tabs.addPane(MMP_TAB_SAVE, () => {return saveButton;});
     tabs.onTabChanged.subscribe(() => {
       this.currentTab = tabs.currentPane.name;
       if (tabs.currentPane.name == MMP_TAB_TRANSFORMATIONS) {
@@ -257,7 +264,7 @@ export class MmpAnalysis {
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
-    this.calculatedOnGPU = gpuUsed
+    this.calculatedOnGPU = gpuUsed;
 
     //transformations tab setup
     this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
@@ -298,7 +305,7 @@ export class MmpAnalysis {
   }
 
   static async init(mmpInput: MmpInput) {
-    console.profile('MMP');
+    //console.profile('MMP');
     //rdkit module
     const module = getRdKitModule();
     const moleculesArray = mmpInput.molecules.toList();
@@ -328,12 +335,22 @@ export class MmpAnalysis {
 
     const generationsGrid: DG.Grid =
       await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames);
-    console.profileEnd('MMP');
+    //console.profileEnd('MMP');
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
       colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu);
   }
+
+  // static async restore(path: string) {
+  //   const mmpFrames = await _package.files.readBinaryDataFrames(path);
+
+  //   const palette = getPalette(mmpInput.activities.length);
+
+  //   return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
+  //     allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
+  //     colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu);
+  // }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
     const idxParent = this.parentTable.currentRowIdx;

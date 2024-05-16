@@ -23,7 +23,8 @@ export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsRes
   return res;
 }
 
-export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
+export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number):
+  Promise<[MmpRules, number, boolean]> {
   const gpu = await getGPUDevice();
   if (fragsOut.frags.length < 10 || !gpu)
     return getMmpRulesTrivial(fragsOut, fragmentCutoff);
@@ -116,24 +117,24 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], 
   const res: [number, number][][] = new Array(fragsOut.frags.length)
     .fill(null).map((_, i) => new Array(fragsOut.frags[i].length).fill(null).map((_) => [0, 0]));
 
-  let fragmetnCounter = 0;
+  let fragmentCounter = 0;
   const fragmentMap: Record<string, number> = {};
   for (let i = 0; i < fragsOut.frags.length; i++) {
     for (let j = 0; j < fragsOut.frags[i].length; j++) {
       if (!fragmentMap[fragsOut.frags[i][j][0]]) {
-        fragmentMap[fragsOut.frags[i][j][0]] = fragmetnCounter;
-        fragmetnCounter++;
+        fragmentMap[fragsOut.frags[i][j][0]] = fragmentCounter;
+        fragmentCounter++;
       }
       if (!fragmentMap[fragsOut.frags[i][j][1]]) {
-        fragmentMap[fragsOut.frags[i][j][1]] = fragmetnCounter;
-        fragmetnCounter++;
+        fragmentMap[fragsOut.frags[i][j][1]] = fragmentCounter;
+        fragmentCounter++;
       }
       res[i][j][0] = fragmentMap[fragsOut.frags[i][j][0]];
       res[i][j][1] = fragmentMap[fragsOut.frags[i][j][1]];
     }
   }
 
-  const maxFragmentIndex = fragmetnCounter;
+  const maxFragmentIndex = fragmentCounter;
   const fragIdToFragName = new Array<string>(maxFragmentIndex);
   Object.entries(fragmentMap).forEach(([key, val]) => {
     fragIdToFragName[val] = key;
@@ -176,7 +177,8 @@ function getMmpRulesTrivial(fragsOut: IMmpFragmentsResult, fragmentCutoff: numbe
   return [mmpRules, allCasesCounter, false];
 }
 
-async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
+async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number):
+  Promise<[MmpRules, number, boolean]> {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
 
   const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);

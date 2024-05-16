@@ -1297,11 +1297,18 @@ export function addScaffoldTree(): void {
 //input: column molecules { semType: Molecule }
 //input: column_list activities {type: numerical}
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
+//input: bool restore = false
 //output: object result
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): Promise<MmpAnalysis> {
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4, restore: boolean = false): Promise<MmpAnalysis> {
+  let mmp: MmpAnalysis;
   const view = grok.shell.tv;
-  const mmp = await MmpAnalysis.init({table, molecules, activities, fragmentCutoff});
+
+  // if (restore)
+  //   //mmp = await MmpAnalysis.restore('MMP/mmpBin.d42');
+  // else
+  mmp = await MmpAnalysis.init({table, molecules, activities, fragmentCutoff});
+
 
   //need this workaround with closing dock node since element cannot be docked repeatedly
   mmp.mmpView.root.classList.add('mmpa');
@@ -1313,6 +1320,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   }
 
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+
   return mmp;
 }
 
