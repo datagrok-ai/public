@@ -138,7 +138,8 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartLookSetti
     yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : [colNames[0]],
     showTitle: true,
     multiAxis: count > MAX_LINE_CHART,
-    //multiAxisLegendPosition: 'RightTop',
+    // @ts-ignore
+    multiAxisLegendPosition: 'RightTop',
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
   };
