@@ -1,0 +1,9 @@
+em++ -O3 ./convert.cpp -o ./wasmCluster.js \
+-s TOTAL_MEMORY=1073741824 \
+-s MODULARIZE=1 \
+-s WASM=1 \
+-s ALLOW_MEMORY_GROWTH=1 \
+-s EXPORT_NAME="convertCifToPdb" \
+-s "EXPORTED_FUNCTIONS=['_convert', '_malloc', '_free']" \
+-s "EXPORTED_RUNTIME_METHODS=['cwrap', 'ccall']" \
+-s ENVIRONMENT=web,worker
