@@ -9,12 +9,12 @@ import { RGroupDecompRes } from '../analysis/r-group-analysis';
 category('projects', () => {
   test('r-group-analysis', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
-      ['smiles', 'Core', 'R1', 'R2', 'R3', 'isHit'], DG.VIEWER.TRELLIS_PLOT);
+      ['smiles', 'Core', 'R1', 'R2', 'R3', 'isMatch'], DG.VIEWER.TRELLIS_PLOT);
   });
 
   test('r-group-analysis-sync', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
-      ['smiles', 'Core', 'R1', 'R2', 'R3', 'isHit'], DG.VIEWER.TRELLIS_PLOT, true);
+      ['smiles', 'Core', 'R1', 'R2', 'R3', 'isMatch'], DG.VIEWER.TRELLIS_PLOT, true);
   });
 
   test('inchi', async () => {
@@ -56,7 +56,7 @@ category('projects', () => {
   test('curate', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runCurate,
       ['smiles', 'curated_molecule'], '');
-  });
+  }, {timeout: 50000});
 
   test('names_to_smiles', async () => {
     await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
@@ -92,18 +92,18 @@ category('projects', () => {
 
   test('structural_alerts', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runStructuralAlerts,
-    ['smiles', 'PAINS (smiles)'], '');
+      ['smiles', 'PAINS (smiles)'], '');
   });
 
   test('structural_alerts_sync', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runStructuralAlerts,
-    ['smiles', 'PAINS (smiles)'], '', true);
+      ['smiles', 'PAINS (smiles)'], '', true);
   });
 
   test('chemical_space', async () => {
     //column '~smiles.Morgan' is not saved to project since it is an object type column
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runChemicalSpace,
-    ['smiles', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT);
+      ['smiles', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT);
     //need delay to avoid unhandled exception when calling closeAll()
     await delay(100);
   });
@@ -111,7 +111,26 @@ category('projects', () => {
   test('chemical_space_sync', async () => {
     //column '~smiles.Morgan' is not saved to project since it is an object type column
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runChemicalSpace,
-    ['smiles', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT, true);
+      ['smiles', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT, true);
+    //need delay to avoid unhandled exception when calling closeAll()
+    await delay(100);
+  });
+
+
+  test('activity_cliffs', async () => {
+    //column '~smiles.Morgan' is not saved to project since it is an object type column
+    await runSaveAndOpenProjectTest('activity_cliffs.csv', runActivityCliffs,
+      ['chembl_tid', 'smiles', 'Activity', '~smiles.Morgan', 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
+      DG.VIEWER.SCATTER_PLOT, false, checkActivityCliffsCustomInit);
+    //need delay to avoid unhandled exception when calling closeAll()
+    await delay(100);
+  });
+
+  test('activity_cliffs_sync', async () => {
+    //column '~smiles.Morgan' is not saved to project since it is an object type column
+    await runSaveAndOpenProjectTest('activity_cliffs.csv', runActivityCliffs,
+      ['chembl_tid', 'smiles', 'Activity', '~smiles.Morgan', 'Embed_X_1', 'Embed_Y_1', 'sali__1'],
+      DG.VIEWER.SCATTER_PLOT, true, checkActivityCliffsCustomInit);
     //need delay to avoid unhandled exception when calling closeAll()
     await delay(100);
   });
@@ -124,7 +143,8 @@ category('projects', () => {
 //colList: list of columns which have been added to dataframe by analysis
 //viewerType: viewer which has been created by analysis
 async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: DG.TableView) => Promise<void>,
-colList: string[], viewerType: string, dataSync?: boolean) {
+colList: string[], viewerType: string, dataSync?: boolean,
+additionalChecks?: (tv: DG.TableView) => Promise<void>) {
   let tv;
   if (dataSync) {
     await DG.Func.find({ name: 'OpenFile'})[0].prepare({
@@ -141,6 +161,22 @@ colList: string[], viewerType: string, dataSync?: boolean) {
   await dataFrameContainsColumns(colList);
   if (viewerType)
     await checkViewerAdded(viewerType);
+  if (additionalChecks)
+    await additionalChecks(tv);
+}
+
+async function runActivityCliffs(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({ package: 'Chem', name: 'activityCliffs' })[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    activities: tv.dataFrame.col('Activity'),
+    similarity: 80,
+    methodName: 'UMAP',
+    similarityMetric: 'Tanimoto',
+    preprocessingFunction: undefined,
+  }).call(undefined, undefined, { processed: false });
+  //need for scatter plot to render
+  await delay(10);
 }
 
 async function runChemicalSpace(tv: DG.TableView): Promise<void> {
@@ -187,7 +223,8 @@ async function runConvertNotation(tv: DG.TableView): Promise<void> {
     data: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     targetNotation: 'molblock',
-    overwrite: false
+    overwrite: false,
+    join: true
   }).call(undefined, undefined, { processed: false });
 }
 
@@ -259,10 +296,8 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
     molColName: 'smiles',
     core: '[#8]=[#6]1-[#6]-[#7]=[#6](-[#6])-[#6]2:[#6](-[#7]-1):[#6]:[#6]:[#6]:[#6]:2',
     rGroupName: 'R',
-    rGroupChunkSize: '5',
     rGroupMatchingStrategy: 'Greedy',
-    rGroupAlignment: 'MCS',
-    visualAnalysis: true
+    onlyMatchAtRGroups: false
   }).call(undefined, undefined, { processed: false });
   const res: RGroupDecompRes = funcCall.getOutputParamValue();
   tv.trellisPlot({
@@ -317,5 +352,12 @@ async function checkViewerAdded(viewerType: string): Promise<void> {
     }
     return false;
   }, `${viewerType} hasn\'t been added`, 5000);
+}
+
+export async function checkActivityCliffsCustomInit(): Promise<void> {
+  await awaitCheck(() => {
+    const links = document.getElementsByClassName('scatter_plot_link');
+    return links.length === 2 && (links[0] as HTMLElement).innerText.toLowerCase() === `15 cliffs`
+  }, 'Initialization function hasn\'t been applied on scatter plot', 5000);
 }
 

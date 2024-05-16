@@ -243,6 +243,8 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 
   let progressBar;
   try {
+    const coreSmarts = core;
+    core = convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     const labelledRGroups = !!MolfileHandler.getInstance(core)
       .atomTypes.filter((it) => it.startsWith('R')).length && core.includes('M  RGP');
     if (!labelledRGroups && params.onlyMatchAtRGroups)
@@ -250,7 +252,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     'Only match at R groups' parameter to false`));
     const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
     if (coreIsQMol)
-      core = convertMolNotation(core, grok.chem.Notation.MolBlock, grok.chem.Notation.Smarts);
+      core = coreSmarts;
     progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
     //const res = await rGroupsPython(col, core, columnPrefixInput.value, true, onlyMatchAtRGroups);
 

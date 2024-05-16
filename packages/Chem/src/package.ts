@@ -715,7 +715,7 @@ export function rGroupsAnalysisMenu(): void {
 //input: string core
 //input: string rGroupName
 //input: string rGroupMatchingStrategy
-//input: string onlyMatchAtRGroups
+//input: string onlyMatchAtRGroups = false {optional: true}
 //output: object res
 export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string,
   rGroupName: string,rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
@@ -820,7 +820,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
-//input: func preprocessingFunction
+//input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
