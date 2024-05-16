@@ -29,29 +29,40 @@ To run **Diff Studio**:
 * Go to **Apps** and run **Diff Studio**. You will see the default code template with one simple differential equation.
 * Go to **Run** tab and you will get UI for interactive model exploration.
 * Go to **Model** tab, edit formulas or add new ones.
-* Click **F5** or go to **Run** tab to re-run calculations and see updated data.
+* Press **F5** or go to **Run** tab to re-run calculations and see updated data.
 
 ![Run Diff Studio](pics/DiffStudio-run.gif)
 
 ### Loading and saving data
 
-* **To save formulas** in a local file, press the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
-* **To load formulas** from a local file, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
+* **To save formulas** in a local file, click the <i class="fas fa-save"></i> **Save** icon on the ribbon, and find the *ivp*-file in Downloads. You can open and edit this file using any text editor.
+* **To load formulas** from a local file, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon, choose **From file...**
   option and choose a local file to upload.
 * **Drag-n-drop** your *ivp*-file to Datagrok. Diff Studio will open it and load formulas. You can open *ivp*-files stored in the platform.
 
 ### Sensitivity analysis
 
-Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](https://datagrok.ai/help/compute/#sensitivity-analysis) feature. Run it directly from Diff Studio:
+Explore the relationship between inputs and outputs of your model using the [Sensitivity Analysis](compute.md#sensitivity-analysis) feature. Run it directly from Diff Studio:
 
-* Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+* Click <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
 * Apply one of the following methods:
-  * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
-  * [Sobol](https://datagrok.ai/help/compute#sobol)
-  * [Grid](https://datagrok.ai/help/compute#grid)
+  * [Monte Carlo](compute.md#monte-carlo)
+  * [Sobol](compute.md#sobol)
+  * [Grid](compute.md#grid)
 * Analyze model evaluations
 
 ![Run Sens Analysis](pics/DiffStudio-run-sens-analysis.gif)
+
+### Parameter Optimization
+
+Find input conditions leading to specified output constraints using the [Parameter Optimization](compute.md#input-parameter-optimization) feature. Run it directly from Diff Studio:
+
+* Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon
+* Specify inputs to be found (in the `Fit` block) and output constraints (in the `Target` block)
+* Choose `method`, select `loss`, specify `samples` and `similarity`
+* Click <i class="fas fa-play"></i> **Run fitting** icon
+
+![Run fitting](pics/DiffStudio-run-fitting.gif)
 
 ## Creating a custom differential equation model
 
@@ -258,7 +269,7 @@ Specify `min`, `max` and `step` values to get sliders and clickers for the rapid
 
 ## Loading templates and examples
 
-To load a template, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
+To load a template, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
 select **Templates** and choose one of the following templates:
 
 | Template   | Features                                                                                    |
@@ -267,7 +278,7 @@ select **Templates** and choose one of the following templates:
 | `Advanced` | Extra math features: *expressions*, *constants*, *parameters* and *tolerance* specification |
 | `Extended` | The *annotating* feature for extended UI generation                                         |
 
-To load an example, press the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
+To load an example, click the <i class="fas fa-folder-open"></i> **Load...** on the ribbon,
 select **Examples** and choose a one.
 
 ## Examples
@@ -334,8 +345,8 @@ with [viewers](../visualize/viewers/viewers.md) and [compute](compute.md) tools 
 
 You can convert any Diff Studio project to the Datagrok script:
 
-* Press the **JS** button on the top panel
-* Press the **SAVE** button to save generated script
+* Click the **JS** button on the top panel
+* Click the **SAVE** button to save generated script
 
 Find the created Javascript script in the platform `Scripts`.
 
