@@ -597,8 +597,15 @@ export class DiffStudio {
 
       await call.call();
 
-      if (this.solutionViewer)
-        this.solutionViewer.setOptions({segmentColumnName: (ivp.updates !== null) ? STAGE_COL_NAME: null});
+      if (this.solutionViewer) {
+        const options = this.solutionViewer.getOptions().look;
+
+        if (Object.keys(options).includes('segmentColumnName')) {
+          this.solutionViewer.setOptions({
+            segmentColumnName: '',
+          });
+        }
+      }
 
       this.solutionTable = call.outputs[DF_NAME];
       this.solverView.dataFrame = call.outputs[DF_NAME];
@@ -621,6 +628,12 @@ export class DiffStudio {
         );
       } else {
         this.solutionViewer.dataFrame = this.solutionTable;
+
+        if (ivp.updates) {
+          this.solutionViewer.setOptions({
+            segmentColumnName: STAGE_COL_NAME,
+          });
+        }
 
         if (this.toChangeSolutionViewerProps) {
           this.solutionViewer.setOptions(getLineChartOptions(this.solutionTable.columns.names()));
