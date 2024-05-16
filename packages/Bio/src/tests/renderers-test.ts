@@ -8,10 +8,11 @@ import {fromEvent} from 'rxjs';
 import {category, expect, test, delay, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {generateLongSequence, generateManySequences} from '@datagrok-libraries/bio/src/utils/generator';
 
 import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
-import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
+import {performanceTest} from './utils/sequences-generators';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 import {awaitGrid} from './utils';
 import * as C from '../utils/constants';
@@ -23,9 +24,6 @@ category('renderers', () => {
     await performanceTest(generateLongSequence, 'Long sequences');
   });
 
-  test('many sequence performance', async () => {
-    await performanceTest(generateManySequences, 'Many sequences');
-  });
   test('many sequence performance', async () => {
     await performanceTest(generateManySequences, 'Many sequences');
   });

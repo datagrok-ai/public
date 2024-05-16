@@ -214,7 +214,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
       const minMonWidth = seqColTemp.props.separatorWidth + 1 * seqColTemp.props.monomerCharWidth;
-      const splitLimit = w / minMonWidth;
+      const splitLimit = Math.ceil(w / minMonWidth);
       const sh = SeqHandler.forColumn(tableCol);
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];

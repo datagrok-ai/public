@@ -38,6 +38,8 @@ export class MacromoleculeColumnWidget extends DG.Widget {
         fitArea: false,
         // maxHeight: 100,
         // minHeight: 25,
+        positionNames: '', // to ensure position names by default
+        endPositionName: '50', // limit WebLogo for visible monomers
       }) as unknown as WebLogoViewer;
       this.wlViewer.root.style.height = `50px`;
 

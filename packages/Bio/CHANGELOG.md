@@ -1,5 +1,17 @@
 # Bio changelog
 
+## 2.12.19 (2024-05-16)
+
+### Bug fixes
+
+* Fix tests cell renderer monomer placer for default monomer lib
+* Add tests for monomer placer hitBounds
+* Fix cell renderer to limit for visible monomers
+* Fix MacromoleculeColumnWidget to limit WebLogo for visible
+* Fix WebLogo to limit seq splitting on end position specified
+* GROK-15678: Bio: Fix bio-substructure-filter tests on Helm
+* GROK-15293: Fix MSA Dialog error while picking empty value in Sequence
+
 ## 2.12.18 (2024-05-13)
 
 ### Bug fixes
