@@ -10,7 +10,7 @@ end-to-end-experience, we took ownership of [data access](../../../datagrok/data
 [data governance](../../../datagrok/datagrok.md#access),
 [data exploration](../../../datagrok/datagrok.md#explore),
 [scientific computing](../../../compute/scripting/scripting.mdx),[machine learning and artificial intelligence](../../../datagrok/datagrok.md#explore),
-and [collaboration](../../../datagrok/datagrok.md#share).
+and [collaboration](../../../datagrok/navigation/basic-tasks/basic-tasks.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like
 [authentication](../../../govern/authentication.md),

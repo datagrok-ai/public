@@ -50,7 +50,7 @@ The simplest JavaScript package consists of the following files:
 
 In addition to that, it might contain the following folders:
 
-* `environments`: [environment configurations](../compute/scripting/scripting.mdx#environments)
+* `environments`: [environment configurations](../compute/scripting/scripting-features/specify-env.mdx)
   for [scripts](../compute/scripting/scripting.mdx).
   Examples: [Demo]
 * `scripts`: a collection of [scripts](../compute/scripting/scripting.mdx) used for computations.
@@ -127,9 +127,8 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../datagrok/concepts/functions/func-params-annotation.md#header-parameters) are registered as Grok
-[functions](../datagrok/concepts/functions/functions.md)
-. By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
+headers are registered as Grok
+[functions](../datagrok/concepts/functions/functions.md). By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:
 

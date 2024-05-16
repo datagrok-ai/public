@@ -21,6 +21,18 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
 
+
+## 2024-05-15 1.18.7
+
+### Improvemets:
+
+* [#2845](https://github.com/datagrok-ai/public/issues/2845): Changing the colors of labels in the properties
+
+### Fixes:
+
+* [#2824](https://github.com/datagrok-ai/public/issues/2824): Creating Dataframe from csv loses qnum precision
+
+
 ## 2024-05-08 1.18.6
 
 ### Fixes:
@@ -552,7 +564,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 * Improved data streaming, leading to major performance improvements for small queries.
 * Client-side caching of function results, allowing to save time and server capacity when executing immutable functions and queries.
-* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.md#debug-query).
+* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries.
 * Simplified and updated Datagrok local installation, now available with a [one-click script](https://datagrok.ai/help/develop/admin/docker-compose).
 * Self-adjustable viewer layouts that keep viewers usable even in a small window.
 * [Fuzzy text filter](../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.
@@ -957,7 +969,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
   * Implemented the ability to view the column's private tags by clicking the **Show private** button (**Context Pane** > **Details**).
   * Added the capability for users to design their own tooltips specific to each column.
   * Implemented a warning that displays the reason why a read-only cell cannot be edited when a user attempts to start editing it.
-  *  Implemented the ability to specify columns for in-grid [Default Forms](../../visualize/viewers/grid.md#forms) (**Context Menu** > **Add** > **Forms** > **Default HTML**).
+  *  Implemented the ability to specify columns for in-grid [Default Forms](../../visualize/viewers/grid.md#summary-columns) (**Context Menu** > **Add** > **Forms** > **Default HTML**).
   * Improved default scientific format to show two digits after comma.
   * Fixed:
     * The issue where coloring and format changes were resetting unexpectedly upon interacting with filters, if a group tooltip was set
@@ -1778,7 +1790,7 @@ Here are some of the biggest improvements:
 
 * Color coding
   * Scatter plot now has a legend for continuous color coding.
-  * In a grid, you can apply [color coding](../../visualize/viewers/grid.md/#column-color-coding) to the text or
+  * In a grid, you can apply color coding to the text or
     background. This option is available for all linear, categorical, and conditional schemas.
   * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the
     grid. However, if the original column is not color-coded and selected for the color column in the scatter plot, the

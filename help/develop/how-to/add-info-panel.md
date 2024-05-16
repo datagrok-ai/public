@@ -17,7 +17,7 @@ of developing them for Datagrok: either as panel
 [scripts](../../compute/scripting/scripting.mdx) or as JavaScript panel
 [functions](../../datagrok/concepts/functions/functions.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
-is available [here](../../compute/scripting/scripting.mdx#supported-languages)). In this
+is available [here](../../compute/compute.md#functions-and-cross-language-support)). In this
 case, the main difference between the two implementations pertains to where the
 code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.

@@ -147,8 +147,8 @@ Instead of navigating the **Browse** tree, you can search for a specific
 The search allows free-text input. Typing a single string prompts the search
 engine to filter entities by name. You can also search by the entity's metadata,
 like [tags](../../../govern/catalog/tags.md),
-[parameters](../../concepts/objects.md#metadata#parameters), and
-[properties](../../concepts/objects.md#metadata#properties). For example, entering
+[parameters](../../concepts/objects.md#parameters), and
+[properties](../../concepts/objects.md#properties). For example, entering
 `#demo` shows all entities tagged with `#demo`, and `imported < 01/01/2024`
 shows all entities imported before that date. 
 

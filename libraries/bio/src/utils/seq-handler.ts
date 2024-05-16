@@ -129,28 +129,26 @@ export class SeqHandler {
   /** From detectMacromolecule */
   public static setTags(uh: SeqHandler): void {
     const units = uh.column.getTag(DG.TAGS.UNITS) as NOTATION;
-    const stats: SeqColStats = uh.stats;
-    const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
-      if (!uh.column.getTag(TAGS.alphabet) && Object.keys(stats.freq).length === 0)
+      if (!uh.column.getTag(TAGS.alphabet) && Object.keys(uh.stats.freq).length === 0)
         throw new Error('Alphabet is empty and not annotated.');
 
       let aligned = uh.column.getTag(TAGS.aligned);
       if (aligned === null) {
-        aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+        aligned = uh.stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
         uh.column.setTag(TAGS.aligned, aligned);
       }
 
       let alphabet = uh.column.getTag(TAGS.alphabet);
       if (alphabet === null) {
-        alphabet = detectAlphabet(stats.freq, candidateAlphabets);
+        alphabet = detectAlphabet(uh.stats.freq, candidateAlphabets);
         uh.column.setTag(TAGS.alphabet, alphabet);
       }
       if (alphabet === ALPHABET.UN) {
-        const alphabetSize = Object.keys(stats.freq).length;
-        const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+        const alphabetSize = Object.keys(uh.stats.freq).length;
+        const alphabetIsMultichar = Object.keys(uh.stats.freq).some((m) => m.length > 1);
         uh.column.setTag(TAGS.alphabetSize, alphabetSize.toString());
         uh.column.setTag(TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
       }

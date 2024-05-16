@@ -147,7 +147,7 @@ Certain viewers include statistical features:
 
 * Box [plots](../../../visualize/viewers/box-plot.md) show the [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
-* Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#regression-line) with
+* Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#calculations-and-trends) with
   associated equations and color-coding. [Correlation
   plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the

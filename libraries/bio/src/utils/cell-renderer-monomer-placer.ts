@@ -18,6 +18,28 @@ type MonomerPlacerProps = {
   monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
 };
 
+export function hitBounds(bounds: number[], x: number): number | null {
+  let iterationCount: number = 100;
+  let leftI: number = 0;
+  let rightI = bounds.length - 1;
+  let midI;
+  while (leftI <= rightI) {
+    midI = Math.floor((rightI + leftI) / 2);
+    if (bounds[midI] <= x && x < bounds[midI + 1])
+      return midI;
+    else if (x < bounds[midI])
+      rightI = midI - 1;
+    else /* if (bounds[midI + 1] <= x) */
+      leftI = midI + 1;
+
+    if (--iterationCount <= 0) {
+      throw new Error(`Get position for pointer x = ${x} searching has not converged ` +
+        `on ${JSON.stringify(bounds)}. `);
+    }
+  }
+  return null;
+}
+
 export class MonomerPlacer extends CellRendererBackBase<string> {
   private _monomerLengthList: number[][] | null = null;
 
@@ -168,33 +190,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const sh = SeqHandler.forColumn(this.tableCol);
     const seqMonList: string[] = wu(sh.getSplitted(rowIdx).originals).toArray();
     if (seqMonList.length === 0) return null;
-
-    let iterationCount: number = 100;
-    let left: number | null = null;
-    let right = seqMonList.length;
-    let found = false;
-    let mid = 0;
-    if (monomerMaxLengthSumList[0] <= x && x < monomerMaxLengthSumList.slice(-1)[0]) {
-      while (!found) {
-        mid = Math.floor((right + (left ?? 0)) / 2);
-        if (x >= monomerMaxLengthSumList[mid] && x <= monomerMaxLengthSumList[mid + 1]) {
-          left = mid;
-          found = true;
-        } else if (x < monomerMaxLengthSumList[mid])
-          right = mid - 1;
-        else if (x > monomerMaxLengthSumList[mid + 1])
-          left = mid + 1;
-
-        if (left == right)
-          found = true;
-
-        if (--iterationCount <= 0) {
-          throw new Error(`Get position for pointer x = ${x} searching has not converged ` +
-            `on ${JSON.stringify(monomerMaxLengthSumList)}. `);
-        }
-      }
-    }
-    return left;
+    return hitBounds(monomerMaxLengthSumList, x);
   }
 
   public setMonomerLengthLimit(limit: number): void {

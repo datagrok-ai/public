@@ -4,17 +4,17 @@ title: "Conversion functions"
 
 *Function List:*
 
-- [Boolean](#booleanx)
-- [DateParse](#dateparses)
+- [Boolean](#boolean)
+- [DateParse](#dateparse)
 - [ParseQnum](#parseqnum)
 - [Qnum](#qnum)
 - [QnumToString](#qnumtostring)
-- [TimeSpanParse](#timespanparses)
-- [ToString](#tostringx)
+- [TimeSpanParse](#timespanparse)
+- [ToString](#tostring)
 
-## <a name="boolean"></a>Boolean(`x`)
+## Boolean
 
-Represents `x` as a boolean value.
+`Boolean(`x`)`: Represents `x` as a boolean value.
 
 ```javascript
 Boolean(10)         // true
@@ -31,17 +31,17 @@ Boolean(null)       // false
 Boolean("")         // false
 ```
 
-## <a name="dateparse"></a>DateParse(`s`)
+## DateParse
 
-Constructs and returns a date based on string pattern `s`.
+`DateParse(`s`)`: Constructs and returns a date based on string pattern `s`.
 
 ```javascript
 DateParse("20120227T132700")    // 2012-02-27 13:27:00.000
 ```
 
-## <a name="parseqnum"></a>ParseQnum(`s`)
+## ParseQnum
 
-Parses a qualified number from string `s`.
+`ParseQnum(`s`)`: Parses a qualified number from string `s`.
 
 ```javascript
 ParseQnum("10")
@@ -49,9 +49,9 @@ ParseQnum("<10")
 ParseQnum(" > 10")
 ```
 
-## <a name="qnum"></a>Qnum(`x`, `q`)
+## Qnum
 
-Returns a qualified number with value `x` and qualifier `q`.
+`Qnum(`x`, `q`)`: Returns a qualified number with value `x` and qualifier `q`.
 
 ```javascript
 Qnum(1, "=")
@@ -59,25 +59,25 @@ Qnum(2, "<")
 Qnum(3, ">")
 ```
 
-## <a name="qnumtostring"></a>QnumToString(`x`)
+## QnumToString
 
-Converts a qualified number to a string representation.
+`QnumToString(`x`)`: Converts a qualified number to a string representation.
 
 ```javascript
 QnumToString(Qnum(1.5, "<"))  // <1.50
 ```
 
-## <a name="timespanparse"></a>TimeSpanParse(`s`)
+## TimeSpanParse
 
-Constructs and returns a TimeSpan based on string pattern `s`.
+`TimeSpanParse(`s`)`: Constructs and returns a TimeSpan based on string pattern `s`.
 
 ```javascript
 TimeSpanParse("01:00")    //  Creates a time interval of one hour
 ```
 
-## <a name="tostring"></a>ToString(`x`)
+## ToString
 
-Returns a string representation of number `x`.
+`ToString(`x`)`: Returns a string representation of number `x`.
 
 ```javascript
 ToString(3.14)    //  "3.14"

@@ -9,14 +9,23 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {removeGapsFromHelm} from '../utils';
 
-export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
-  const helmString = sh.isHelm() ? seq : sh.getConverter(NOTATION.HELM)(seq);
-  // Remove gap symbols for compatibility with WebEditor
-  const helmString2 = removeGapsFromHelm(helmString);
+export class SeqPropertiesError extends Error {
+  constructor(message?: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
 
+export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
   const host = ui.div([], {style: {width: '0', height: '0'}});
   document.documentElement.appendChild(host);
   try {
+    if (seq.length > 1000)
+      throw new SeqPropertiesError('Too long sequence to calculate molecular properties.');
+
+    const helmString = sh.isHelm() ? seq : sh.getConverter(NOTATION.HELM)(seq);
+    // Remove gap symbols for compatibility with WebEditor
+    const helmString2 = removeGapsFromHelm(helmString);
+
     const editor = new JSDraw2.Editor(host, {viewonly: true});
     editor.setHelm(helmString2);
 
@@ -37,8 +46,15 @@ export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
 
 export function getPropertiesWidget(value: DG.SemanticValue): DG.Widget {
   const sh = SeqHandler.forColumn(value.cell.column);
-  const propDict = getPropertiesDict(value.value, sh);
-  return new DG.Widget(
-    ui.tableFromMap(propDict)
-  );
+  try {
+    const propDict = getPropertiesDict(value.value, sh);
+    return new DG.Widget(
+      ui.tableFromMap(propDict)
+    );
+  } catch (err: any) {
+    if (err instanceof SeqPropertiesError) {
+      return new DG.Widget(ui.divText(err.message));
+    }
+    throw err;
+  }
 }

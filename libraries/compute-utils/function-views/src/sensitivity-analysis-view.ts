@@ -15,7 +15,6 @@ import {combineLatest} from 'rxjs';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
-import {IBarChartLookSettings, ILineChartLookSettings, IScatterPlotLookSettings} from 'datagrok-api/dg';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -1295,7 +1294,7 @@ export class SensitivityAnalysisView {
     return outputsOfInterest;
   }
 
-  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<IScatterPlotLookSettings> {
+  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<DG.IScatterPlotLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnName: colNamesToShow[1],
@@ -1306,7 +1305,7 @@ export class SensitivityAnalysisView {
     };
   }
 
-  private getLineChartOpt(colNamesToShow: string[]): Partial<ILineChartLookSettings> {
+  private getLineChartOpt(colNamesToShow: string[]): Partial<DG.ILineChartLookSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnNames: colNamesToShow.slice(1, Math.min(colNamesToShow.length, 8)),
@@ -1316,7 +1315,7 @@ export class SensitivityAnalysisView {
     };
   }
 
-  private getBarChartOpt(descr: string, split: string, value: string): Partial<IBarChartLookSettings> {
+  private getBarChartOpt(descr: string, split: string, value: string): Partial<DG.IBarChartLookSettings> {
     return {
       description: descr,
       splitColumnName: split,
