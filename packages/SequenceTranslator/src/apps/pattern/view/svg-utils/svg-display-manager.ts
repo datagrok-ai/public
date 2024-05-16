@@ -8,6 +8,7 @@ import {EventBus} from '../../model/event-bus';
 import {NucleotidePatternSVGRenderer} from './svg-renderer';
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
+import {NewNucleotidePatternSVGRenderer} from './new-svg-renderer';
 
 export class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
@@ -16,7 +17,7 @@ export class SvgDisplayManager {
   private constructor(
     private eventBus: EventBus
   ) {
-    eventBus.patternStateChanged$.subscribe(() => this.updateSvgContainer());
+    eventBus.updateSvgContainer$.subscribe(() => this.updateSvgContainer());
     eventBus.svgSaveRequested$.subscribe(() => this.saveSvgAsPng());
   }
 
@@ -33,7 +34,8 @@ export class SvgDisplayManager {
   }
 
   private createSvg(patternConfig: PatternConfiguration) {
-    const renderer = new NucleotidePatternSVGRenderer(patternConfig);
+    // const renderer = new NucleotidePatternSVGRenderer(patternConfig);
+    const renderer = new NewNucleotidePatternSVGRenderer(patternConfig);
     const svg = renderer.renderPattern();
     return svg;
   }
