@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.2.2 (2024-05-16)
+
+Fix seq properties widget, warning for too long seq, test
+
 ## 2.2.1 (2024-05-13)
 
 ### Features

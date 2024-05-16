@@ -15,16 +15,20 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GapOriginals, SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
 import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
+import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+import {getRS} from './utils/dummy-monomer';
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -56,7 +60,7 @@ export async function initHelm(): Promise<void> {
 
       monomerLib.onChanged.subscribe((_) => {
         try {
-          const libSummary = monomerLib!.getSummary();
+          const libSummary = monomerLib!.getSummaryObj();
           const isLibEmpty = Object.keys(libSummary).length == 0;
           const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
             .map(([pt, count]) => `${pt}: ${count}`)
@@ -128,9 +132,8 @@ function rewriteLibraries() {
       } else
         isBroken = true;
 
-      if (!isBroken) {
+      if (!isBroken)
         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
-      }
     });
   });
 
@@ -269,12 +272,6 @@ export function getMolfiles(col: DG.Column): DG.Column {
 export async function getHelmHelper(): Promise<IHelmHelper> {
   return HelmHelper.getInstance();
 }
-
-import {testEvent} from '@datagrok-libraries/utils/src/test';
-import {CellRendererBackAsyncBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
-import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {getRS} from './utils/dummy-monomer';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 //name: measureCellRenderer
 export async function measureCellRenderer(): Promise<void> {
