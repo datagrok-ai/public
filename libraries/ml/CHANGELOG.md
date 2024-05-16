@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.8 (2024-05-16)
+
+Fix inconsistent KNN size in webGPU.
+
 ## 6.6.7 (2024-05-09)
 
 * Fix GPU description getting if value is nullish.
