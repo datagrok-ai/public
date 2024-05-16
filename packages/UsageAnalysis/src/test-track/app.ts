@@ -88,15 +88,14 @@ export class TestTrack extends DG.ViewBase {
 
     //searchInput 
     this.searchInput.onChanged(() => {
-      // this._searchItem();
-      console.log(this.list);
+      // this._searchItem(); 
       if (this.searchInput.value.length > 0) {
-        this.searchTreeItems(this.searchInput.value)
-        searchInvoked = true
+        this.searchTreeItems(this.searchInput.value);
+        searchInvoked = true;
       }
       else if (searchInvoked) {
-        this.closeTreeCategories()
-        searchInvoked = false
+        this.closeTreeCategories();
+        searchInvoked = false;
       }
     });
 
@@ -179,7 +178,7 @@ export class TestTrack extends DG.ViewBase {
     const edit = ui.button(getIcon('edit'), () => this.editTestCase(this.currentNode), 'Edit test case');
     edit.id = 'tt-edit-button';
     edit.disabled = true;
-    this.tree.onSelectedNodeChanged.subscribe((node: any) => {
+    this.tree.onSelectedNodeChanged.subscribe((node) => {
       if (this.currentNode.constructor === DG.TreeViewNode)
         this.currentNode.value.history.style.display = 'none';
       this.currentNode = node;
@@ -236,10 +235,10 @@ export class TestTrack extends DG.ViewBase {
 
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
-      item.classList.remove("hidden");
+      item.classList.remove('hidden');
     }
-    for (let i of categoriesTitles)
-      i.classList.remove("d4-tree-view-tri-expanded");
+    for (const title of categoriesTitles)
+      title.classList.remove('d4-tree-view-tri-expanded');
     for (let i = 0; i < categoriesLists.length; i++) {
       let element = categoriesLists[i] as HTMLElement;
       if (!element.parentElement?.classList.contains('d4-tree-view-root'))
@@ -258,24 +257,23 @@ export class TestTrack extends DG.ViewBase {
 
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
-      const foundFunc = isFitsSearchString(item.textContent?.toString() || "");
-      console.log(item.textContent?.toString());
+      const foundFunc = isFitsSearchString(item.textContent?.toString() || '');
       if (foundFunc) {
-        listToShow.push(item);
+        listToShow[listToShow.length] = (item);
         item.classList.remove('hidden');
       }
       else
         item.classList.add('hidden');
     }
 
-    for (let itemToShow of listToShow) {
+    for (const itemToShow of listToShow) {
       let itemHierarchy: HTMLElement = itemToShow;
       while (!itemHierarchy.classList.contains('d4-tree-view-root')) {
         if (itemHierarchy.classList.contains('d4-tree-view-group')) {
-          let cartegoryToUpdate = itemHierarchy.getElementsByClassName('d4-tree-view-tri')[0];
-          if (cartegoryToUpdate) {
-            cartegoryToUpdate.classList.add('d4-tree-view-tri-expanded');
-            cartegoryToUpdate.parentElement?.classList.remove('hidden');
+          let categoryToUpdate = itemHierarchy.getElementsByClassName('d4-tree-view-tri')[0];
+          if (categoryToUpdate) {
+            categoryToUpdate.classList.add('d4-tree-view-tri-expanded');
+            categoryToUpdate.parentElement?.classList.remove('hidden');
           }
         }
 
