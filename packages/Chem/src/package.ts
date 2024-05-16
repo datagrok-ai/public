@@ -10,7 +10,7 @@ import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
-import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
@@ -41,7 +41,7 @@ import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
 
 //analytical imports
-import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import {ActivityCliffsParams, createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
@@ -758,7 +758,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
     }).show();
 }
 
-//top-menu: Chem | Analyze | Activity Cliffs...
+/* //top-menu: Chem | Analyze | Activity Cliffs...
 //name: Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table [Input data table]
@@ -796,6 +796,78 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
     const size = sp.getOptions().look['sizeColumnName'];
     drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, -1, 100, 105, size);
   };
+  const axesNames = getEmbeddingColsNames(table);
+  if (table.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
+        await runActCliffs();
+        progressBar.close();
+      })
+      .show();
+  } else
+    await runActCliffs();
+} */
+
+
+//top-menu: Chem | Analyze | Activity Cliffs...
+//name: Activity Cliffs2
+//description: Detects pairs of molecules with similar structure and significant difference in any given property
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: column activities {type:numerical}
+//input: double similarity = 80 [Similarity cutoff]
+//input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
+//input: func preprocessingFunction
+//input: object options {optional: true}
+//editor: Chem:ActivityCliffsEditor
+export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
+  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
+  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<void> {
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
+    return;
+  }
+
+  const allowedRowCount = 10000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  if (table.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for activity cliffs is ${allowedRowCount}`);
+    return;
+  }
+
+  const runActCliffs = async (): Promise<void> => {
+    await DG.Func.find({ name: 'activityCliffsTransform' })[0].prepare({
+      table: table,
+      molecules: molecules,
+      activities: activities,
+      similarity: similarity,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      options: JSON.stringify(options),
+    }).call(undefined, undefined, { processed: false });
+
+    const view = grok.shell.getTableView(table.name);
+    view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+      xColumnName: axesNames[0],
+      yColumnName: axesNames[1],
+      color: activities.name,
+      showXSelector: false,
+      showYSelector: false,
+      showSizeSelector: false,
+      showColorSelector: false,
+      markerMinSize: 5,
+      markerMaxSize: 25,
+      title: 'Activity cliffs',
+      initializationFunction: 'activityCliffsInitFunction'
+    }) as DG.ScatterPlotViewer;
+  };
 
   const axesNames = getEmbeddingColsNames(table);
   if (table.rowCount > fastRowCount) {
@@ -809,6 +881,57 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       .show();
   } else
     await runActCliffs();
+}
+
+//name: activityCliffsInitFunction
+//input: viewer v
+export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Promise<void> {
+  const tag = sp.dataFrame.getTag('activityCliffsParams');
+  if (!tag) {
+    grok.shell.error(`Activity cliffs parameters not found in table tags`);
+    return;
+  }
+  const actCliffsParams: ActivityCliffsParams = JSON.parse(tag);
+  const molCol = sp.dataFrame.col(actCliffsParams.molColName)!;
+  const actCol = sp.dataFrame.col(actCliffsParams.actColName)!;
+  const encodedColWithOptions = await getFingerprints(molCol);
+
+  const axesNames = [sp.getOptions().look['xColumnName'], sp.getOptions().look['yColumnName']];
+
+  await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
+    actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
+    {'units': molCol.tags['units']}, createTooltipElement, createPropPanelElement);
+  const size = sp.getOptions().look['sizeColumnName'];
+  drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
+  //to draw the lines fro cliffs
+  sp.render(sp.getInfo()['canvas'].getContext('2d'));
+}
+
+//name: activityCliffsTransform
+//tags: Transform
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: column activities {type:numerical}
+//input: double similarity = 80 [Similarity cutoff]
+//input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
+//input: string options {optional: true}
+export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
+  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
+  options?: string): Promise<void> {
+  const preprocessingFunction = DG.Func.find({ name: 'getFingerprints', package: 'Chem' })[0];
+  const axesNames = getEmbeddingColsNames(table); 
+  await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
+    similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
+  const tagContent: ActivityCliffsParams = {
+    molColName: molecules.name,
+    actColName: activities.name,
+    similarityMetric: similarityMetric,
+    similarity: similarity,
+    options: options ?? {},
+    
+  };
+  table.setTag('activityCliffsParams', JSON.stringify(tagContent));
 }
 
 //top-menu: Chem | Calculate | To InchI...
@@ -1223,7 +1346,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
-    molBlock: molblock, //@ts-ignore
+    molBlock: molblock,
   }, false);
 }
 
