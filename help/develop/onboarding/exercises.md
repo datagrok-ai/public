@@ -914,8 +914,8 @@ dialog-based function which forms such files automatically by a given search inp
 
     ```typescript
     let grid = DG.Viewer.grid(df);
-    let limitInput = ui.intInput('How many rows: ', 100);
-    let queryInput = ui.stringInput('Query: ', 'coronavirus');
+    let limitInput = ui.input.int('How many rows: ', {value: 100});
+    let queryInput = ui.input.string('Query: ', {value: 'coronavirus'});
     let button = ui.button('Preview');
     ui.dialog('Create sequences table')
       .add(ui.splitV([
