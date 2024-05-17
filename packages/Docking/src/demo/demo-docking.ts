@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {BINDING_ENERGY_COL, CACHED_DOCKING, POSE_COL, TARGET_PATH, _package, setPose} from '../utils/constants';
 import { BiostructureData } from '@datagrok-libraries/bio/src/pdb/types';
 import { AutoDockDataType } from '../apps/auto-dock-app';
-import { addColorCoding } from '../package';
+import { addColorCoding, prepareAutoDockData } from '../package';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 async function openMoleculeDataset(name: string): Promise<DG.TableView> {
@@ -22,7 +22,7 @@ export async function _demoDocking(): Promise<void> {
   addColorCoding(grid.columns.byName(BINDING_ENERGY_COL)!);
   grid.sort([BINDING_ENERGY_COL]);
   await grok.data.detectSemanticTypes(table);
-  grid.onCellRender.subscribe((args) => {
+  grid.onCellRender.subscribe((args: any) => {
     grid.setOptions({ 'rowHeight': desirableHeight });
     grid.col(POSE_COL)!.width = desirableWidth;
     grid.col(BINDING_ENERGY_COL)!.width = desirableWidth + 50;
@@ -36,27 +36,18 @@ export async function _demoDocking(): Promise<void> {
   table.col(POSE_COL)!.setTag('docking.role', 'ligand');
   grid.invalidate();
   setPose(POSE_COL);
+
   const autodockResults = DG.DataFrame.fromCsv(await grok.dapi.files.readAsText('System:AppData/Docking/demo_files/autodock_results.csv'));
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  const receptor = targetsFiles.filter(file => file.isFile).find(file => file.name === 'BACE1.pdbqt');
   const receptorData: BiostructureData = {
     binary: false,
     data: (await grok.dapi.files.readAsText('System:AppData/Docking/targets/BACE1/BACE1.pdbqt')),
-    ext: receptor!.extension,
-    options: {name: receptor!.name,},
+    ext: 'pdbqt',
+    options: { name: 'BACE1.pdbqt' },
   };
-  const data: AutoDockDataType = {
-    ligandDf: table,
-    ligandMolColName: 'SMILES',
-    receptor: receptorData,
-    gpfFile: (await grok.dapi.files.readAsText('System:AppData/Docking/targets/BACE1/BACE1.gpf')),
-    confirmationNum: 10,
-    ligandDfString: table.columns.byName('SMILES').toString(),
-  };
+  const data: AutoDockDataType = await prepareAutoDockData('BACE1', table, 'SMILES', 10);
   //@ts-ignore
   CACHED_DOCKING.K.push(data);
   //@ts-ignore
   CACHED_DOCKING.V.push(autodockResults);
-
   table.currentCell = table.cell(0, POSE_COL);
 }
