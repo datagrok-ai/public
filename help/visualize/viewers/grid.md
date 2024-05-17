@@ -303,7 +303,7 @@ In addition, the **Top Menu** provides multiple options for data
 cleaning and transformation. For example, you can
  [add calculated columns](../../transform/add-new-column.md),
 [impute missing values](../../explore/missing-values-imputation.md), 
-[delete duplicates](../../transform/aggregate-rows.md#), and more.
+[delete duplicates](../../transform/aggregate-rows.md), and more.
 
 To learn more about data transformation, visit the 
 [Transform](../../transform/transform.md) section of our documentation.

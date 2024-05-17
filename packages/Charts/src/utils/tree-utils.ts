@@ -7,7 +7,7 @@ export class TreeUtils {
 
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
-      aggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean): treeDataType {
+      aggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): treeDataType {
     const data: treeDataType = {
       name: 'All',
       value: 0,
@@ -124,7 +124,7 @@ export class TreeUtils {
           value: 0,
         };
         const colorCodingType = columns[colIdx].getTag(DG.TAGS.COLOR_CODING_TYPE);
-        if (colorCodingType !== 'Off' && colorCodingType !== null) {
+        if (colorCodingType !== 'Off' && colorCodingType !== null && inherit) {
           node.itemStyle = {
             color: DG.Color.toHtml(columns[colIdx].colors.getColor(i)),
           };
@@ -154,8 +154,8 @@ export class TreeUtils {
     return data;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection?: boolean) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], true, selection);
+  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection?: boolean, inherit?: boolean) {
+    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], true, selection, inherit);
     return tree.children;
   }
 

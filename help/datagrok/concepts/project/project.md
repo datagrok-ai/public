@@ -10,8 +10,7 @@ queries, or scripts. They are essential for organizing, managing, and sharing da
 
 When you work on an
 entity (like a table or a query), your changes to it aren't saved automatically.
-If you close or refresh the browser, all unsaved data will be lost. To save your work, you must manually [upload the modified entity to the
-server](../../navigation/basic-tasks/basic-tasks.md#save). 
+If you close or refresh the browser, all unsaved data will be lost. To save your work, you must manually [upload the modified entity to the server](../../navigation/basic-tasks/basic-tasks.md#save). 
 
 All Datagrok entities are stored in projects. Subject to your privileges, you may choose between saving an entity to its original project, or saving it to your [personal project](#project-hierarchy).
 
@@ -73,8 +72,7 @@ that have been modified. It is located at the top of the **Browse** view, just
 below the **Top Menu**.
 
 Any entity you open from **Browse** or any table you generate by opening a 
-file or running a function like a [database
-query](../../../access/databases/databases.md#running-queries), is
+file or running a function like a [database query](../../../access/databases/databases.md#running-queries), is
 automatically added to the Scratchpad.
 
 To permanently save any newly created or modified entities, click the **SAVE**
@@ -91,8 +89,7 @@ to move entities within the **Scratchpad** and between the projects in the **Bro
 
 ## Searching projects
 
-To find projects using [smart
-search](../../navigation/views/browse.md#entity-search), you can use this metadata:
+To find projects using [smart search](../../navigation/views/browse.md#entity-search), you can use this metadata:
 
 | Field       | Description                            |
 |-------------|----------------------------------------|

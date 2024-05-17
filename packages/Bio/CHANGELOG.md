@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.12.20 (2024-05-16)
+
+### Bug fixes
+
+* Fix monomer tooltip layout
+* Fix monomer name for gaps and any monomer
+
 ## 2.12.19 (2024-05-16)
 
 ### Bug fixes

@@ -12,7 +12,7 @@ if [ ! -f "$input_file" ]; then
 fi
 
 temp_file="temp.txt"
-grep -e 'Broken link' -e 'Broken anchor' -e 'linking to' $input_file > $temp_file || true
+grep -e 'Broken link' -e 'Broken anchor' -e 'linking to' -e "markdown link couldn't be resolved" "$input_file" > $temp_file || true
 
 if [ -f "${temp_file}" ]; then
     current_line_temp_file="temp_line.txt"
@@ -30,13 +30,16 @@ if [ -f "${temp_file}" ]; then
             link=$(sed -nE "s# +-> linking to ([^ ]+) ?#\1#p" <<<$line | sed 's/([^)]*)//g')
             resolved=$(sed -nE "s#.*\(resolved as: ([^ ]+)\)#\1#p" <<<$line)
             echo "\"$(cat $current_line_temp_file)\",\"${link}\",\"${resolved:-$link}\"" >> "$output_file"
+        elif [[ $line == *"markdown link couldn't be resolved"* ]]; then
+            link=$(sed -nE "s#Error: Docs markdown link couldn't be resolved: \(([^ ]+)\) in \"([^ ]+)/(help/[^ ]+)\" for version .*#\"\3\",\"\1\",\"\"#p" <<<$line)
+            echo "$link" >> "$output_file"
         else
             echo "$line" >> "$output_file"
         fi
     done < "$temp_file"
 
-    rm "$temp_file" >/dev/null 2>&1
-    rm "$current_line_temp_file" >/dev/null 2>&1
+    rm -f "$temp_file" >/dev/null 2>&1
+    rm -f "$current_line_temp_file" >/dev/null 2>&1
 else
     echo 'No broken link information found'
 fi

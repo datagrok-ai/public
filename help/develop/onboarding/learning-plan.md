@@ -98,8 +98,7 @@ The goal for today is to set up the environment and learn how to create simple p
    1. [API samples](https://public.datagrok.ai/js)
 
    Developers use these resources on a regular basis, so consider adding them to your bookmarks.
-1. Read our [Contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git
-   policy](../dev-process/git-policy.mdx)
+1. Read our [Contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git policy](../dev-process/git-policy.mdx)
 1. Clone our [public repository](https://github.com/datagrok-ai/public):
 
    ```sh

@@ -321,8 +321,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    comments block and returning a result via a variable.
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
-   functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript
-   API](../../compute/scripting/getting-started.mdx#run-the-script).
+   functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript API](../../compute/scripting/getting-started.mdx#run-the-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
@@ -914,8 +913,8 @@ dialog-based function which forms such files automatically by a given search inp
 
     ```typescript
     let grid = DG.Viewer.grid(df);
-    let limitInput = ui.intInput('How many rows: ', 100);
-    let queryInput = ui.stringInput('Query: ', 'coronavirus');
+    let limitInput = ui.input.int('How many rows: ', {value: 100});
+    let queryInput = ui.input.string('Query: ', {value: 'coronavirus'});
     let button = ui.button('Preview');
     ui.dialog('Create sequences table')
       .add(ui.splitV([

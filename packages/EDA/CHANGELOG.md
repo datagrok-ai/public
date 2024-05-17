@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.25 (2024-05-16)
+
+Fix inconsistent KNN size in webGPU.
+
 ## 1.1.24 (2024-05-09)
 
 * Fix GPU description nullish value.

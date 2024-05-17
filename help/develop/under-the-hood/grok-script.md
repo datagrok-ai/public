@@ -106,4 +106,4 @@ See also:
 
 * [Console](../../datagrok/navigation/panels/panels.md#console)
 * [Functions](../../datagrok/concepts/functions/functions.md)
-* [Scripting](../../compute/scripting/scripting/scripting.mdxx)
+* [Scripting](../../compute/scripting/scripting.mdx)

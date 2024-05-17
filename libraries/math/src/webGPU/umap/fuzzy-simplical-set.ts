@@ -14,7 +14,7 @@ export async function performMatrixOps(
   }
   const unionInfo = await getKnnSparseOpInfo(knnIndexes);
   const numOfEntries = knnIndexes.length;
-  const transposed = await transposeKNN(knnIndexes, knnDistances, unionInfo!);
+  const transposed = await transposeKNN(knnIndexes, knnDistances, unionInfo!, knnDistances[0].length);
   const sourceOffsets = toOffsetForm(new Uint32Array(numOfEntries).fill(knnIndexes[0].length));
   const unionMatrixOffsets = toOffsetForm(unionInfo!.resultUnionSizesArray);
 

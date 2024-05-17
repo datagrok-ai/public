@@ -106,7 +106,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       .getSplitted(gridCell.tableRowIndex!).canonicals;
     if (left !== null && left < seqCList.length) {
       const monomerSymbol: string = seqCList[left];
-      const tooltipElements: HTMLElement[] = [ui.div(monomerSymbol)];
+      const tooltipElements: HTMLElement[] = [];
       let monomerDiv = seqColTemp._monomerStructureMap[monomerSymbol];
       if (!monomerDiv || true) {
         monomerDiv = seqColTemp._monomerStructureMap[monomerSymbol] = (() => {

@@ -9,10 +9,11 @@ import {Observable, Subject} from 'rxjs';
 import {
   IMonomerLib, Monomer, MonomerLibSummaryType, MonomerType, PolymerType, RGroup
 } from '@datagrok-libraries/bio/src/types';
-import {
-  HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP
-} from '@datagrok-libraries/bio/src/utils/const';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import '../../../css/cell-renderer.css';
 
@@ -39,9 +40,18 @@ export class MonomerLib implements IMonomerLib {
     let mSet = this._monomers[polymerType];
     if (!mSet)
       mSet = this._monomers[polymerType] = {};
+
+    let monomerName: string = monomerSymbol;
+    if (monomerSymbol === GapOriginals[NOTATION.HELM])
+      monomerName = 'Gap';
+    else if (polymerType === PolymerTypes.PEPTIDE && monomerSymbol === 'X')
+      monomerName = 'Any';
+    else if (polymerType === PolymerTypes.RNA && monomerSymbol === 'N')
+      monomerName = 'Any';
+
     const m = mSet[monomerSymbol] = {
       [REQ.SYMBOL]: monomerSymbol,
-      [REQ.NAME]: monomerSymbol,
+      [REQ.NAME]: monomerName,
       [REQ.MOLFILE]: '',
       [REQ.AUTHOR]: 'MISSING',
       [REQ.ID]: -1,
@@ -209,37 +219,47 @@ export class MonomerLib implements IMonomerLib {
     const res = ui.div([], {classes: 'ui-form ui-tooltip'});
     const monomer = this.getMonomer(polymerType, monomerSymbol);
     if (monomer) {
-      const label = (s: string) => {
-        return ui.label(s /* span ? */, {classes: 'ui-input-label'});
-      };
-      res.append(ui.div([
-        label('Name'),
-        ui.divText(monomer.name, {classes: 'ui-input-text'})
-      ], {classes: 'ui-input-root'}));
+      // Symbol & Name
+      const symbol = monomer[REQ.SYMBOL];
+      const name = monomer[REQ.NAME];
+      res.append(ui.divH([
+        ui.div([symbol], {style: {fontWeight: 'bolder', textWrap: 'nowrap', marginRight: '6px'}}),
+        ui.div([monomer.name])
+      ], {style: {display: 'flex', flexDirection: 'row', justifyContent: 'left'}}));
 
       // Structure
       const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      let structureEl: HTMLElement;
       if (monomer.molfile) {
-        res.append(ui.div([
-          label('Mol file'),
-          grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions),
-        ], {classes: 'ui-input-root'}));
+        structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
       } else if (monomer.smiles) {
-        res.append(ui.div([
-          label('Smiles'),
+        structureEl = ui.divV([
           grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
-        ], {classes: 'ui-input-root'}));
+          ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
+        ]);
       } else {
         // Unable to get monomer's structure
-        res.append(ui.div([
-          label('No structure')
-        ], {classes: 'ui-input-root'}));
+        structureEl = ui.divText('No structure', {style: {margin: '6px'}});
       }
+      res.append(ui.div(structureEl,
+        {style: {display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '6px'}}));
 
-      res.append(ui.div([
-        label('Source'),
-        ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
-      ], {classes: 'ui-input-root'}));
+      // Source
+      res.append(ui.divText(monomer.lib?.source ?? 'unknown'));
+
+      // const label = (s: string) => {
+      //   return ui.label(s /* span ? */, {classes: 'ui-input-label'});
+      // };
+      // res.append(ui.div([
+      //   label('Name'),
+      //   ui.divText(monomer.name, {classes: 'ui-input-text'})
+      // ], {classes: 'ui-input-root'}));
+      //
+      //
+      // res.append(ui.div([
+      //   label('Source'),
+      //   ui.divText(monomer.lib?.source ?? 'unknown', {classes: 'ui-input-text'}),
+      // ], {classes: 'ui-input-root'}));
     } else {
       res.append(ui.divV([
         ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),

@@ -53,9 +53,7 @@ Some connection parameters have unique characteristics, and it's important to sp
   string` parameter to enter a custom JDBC connection string. Leave all other
   parameter fields empty. You still need to enter credentials.
 * _Credentials_. You have two ways to specify credentials:
-  * Manually. When entered manually, Datagrok stores secrets in a [secure
-   privilege management system](../../govern/security.md#credentials). To
-   specify who can change the connection credentials, click the **Gear** icon
+  * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/security.md#credentials). To specify who can change the connection credentials, click the **Gear** icon
    and select from the **Credential owner** dropdown.
 
   * Use the [Secrets Manager](../data-connection-credentials.md), such as the AWS Secrets Manager.
@@ -548,8 +546,7 @@ To save the query output as a dynamic dashboard, do the following:
     * Save the data as a static snapshot.
     * Store the data as a generation script by toggling the **Data sync**
       control. The query re-executes each time the project is opened. To learn
-      more about dynamic data updates in projects, see [Dynamic
-      data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
+      more about dynamic data updates in projects, see [Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
 1. Click **OK** to upload the project.
 1. [Share](#sharing-query-results) the project with others.
 

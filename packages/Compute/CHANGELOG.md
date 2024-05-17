@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.34.2 (2024-05-17)
+
+- RFV: Added HistoryPanel hide on view closing
+
 ## 1.34.1 (2024-05-15)
 
 - Fixed imports

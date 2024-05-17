@@ -58,6 +58,8 @@ export class Hit {
 export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement[] {
   const arr: HTMLDivElement[] = [];
   for (let i = 0; i < cols.length; i++) {
+    if (cols[i] === null)
+      continue;
     arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
       style: {
         margin: '0 10px 0 0',

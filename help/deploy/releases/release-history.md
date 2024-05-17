@@ -1175,7 +1175,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 
 * Improvements:
   * Introduced a new feature for application developers. Now you can [place hints](https://community.datagrok.ai/t/javascript-api-updates/526/21) for users in the form of indicators, and popups, as well as describe a series of visual components in the wizard.  UI methods now come equipped with interactive hints, similar to those found in tutorials, that can be attached to various elements. With the addition of these methods, application authors are able to incorporate interactive hints in their app code, allowing them to introduce new features to their users, among other things.
-  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../visualize/viewers/filters#column-tags) to learn more.
+  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../visualize/viewers/filters.md#column-tags) to learn more.
   * Provided `typeAhead`, `dropDown` and `breadcrumbs` controls for the platform.
   * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we've made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
   * Added classes for form viewers in the API: `Form` and `FormViewer`.
@@ -1775,14 +1775,14 @@ We've released a new version of the Datagrok platform (1.12.0). This release foc
 and usability and traditionally on platform stability.
 Here are some of the biggest improvements:
 
-* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
+* New [Scaffold Tree](release-history.md#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
   see [Scaffold tree](../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis).
-* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
+* [Dendrogram](release-history.md#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
-* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
+* Brand new [Map](release-history.md#enhancements-in-packages). To learn more,
   see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
-* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and
+* [Peptides](release-history.md#enhancements-in-packages) new features and capabilities, such as custom clustering and
   multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more,
   see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 

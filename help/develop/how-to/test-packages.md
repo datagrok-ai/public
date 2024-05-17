@@ -66,7 +66,7 @@ v.close();
 
 <b>Testing Viewers</b>
 
-The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L451) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L612) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
 
 <details>
 <summary>Example</summary>
@@ -74,6 +74,21 @@ The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/uti
 ```typescript
 const smiles = grok.data.demo.molecules(100);
 await testViewer('Chem Similarity Search', smiles, {detectSemanticTypes: true});
+```
+
+</details>
+
+To test viewers with asynchronous rendering pass optional `awaitViewer` parameter to [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L614) function. `awaitViewer` is a function which takes `DG.Viewer` as an argument and waits for it to be created and rendered. Create any custom behavior to ensure viewer initialization is completed. For instance, wait for some event to be fired or some element to appear in DOM.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+const smiles = grok.data.demo.molecules(100);
+const awaitViewerFunc = async (v: DG.Viewer) => {
+  await awaitCheck(()=> !!v.root.querySelector('.chem-diversity-search'), 'Viewer hasn\'t been created', 1000);
+}
+await testViewer('Chem Diversity Search', smiles, {detectSemanticTypes: true, awaitViewer: awaitViewerFunc});
 ```
 
 </details>
