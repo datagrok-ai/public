@@ -270,6 +270,10 @@ inline string formatString(const string &inputString,const int width=8,
 #include <ostream>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <cstdint>
+#include <cstring>
+#include <vector>
 #include <algorithm>    // for min()
 #include <cerrno>       // for errno
 #include <cstddef>      // for size_t, NULL
@@ -4856,31 +4860,29 @@ int cif2fasta(const string &infile, string &pdbid, const int do_upper,
 }
 
 extern "C" {
-    const char* convert(const char* inputFileContent);
+    uint8_t* convert(const uint8_t* inputFileContent, int length, int* outputLength);
 }
 
 EMSCRIPTEN_KEEPALIVE
-const char* convert(const char* inputFileContent)
-{
+uint8_t* convert(const uint8_t* inputFileContent, int length, int* outputLength) {
     int a, b;
     std::string ccd5 = "map";
     std::vector<std::string> ccd3_vec; // 01 - 99, DRG, INH, LIG 
-    if (ccd5 == "map")
-    {
+
+    if (ccd5 == "map") {
         std::stringstream buf;
-        for (a = 1; a <= 9; a++)
-        {
+        for (a = 1; a <= 9; a++) {
             buf << " 0" << a;
             ccd3_vec.push_back(buf.str());
             buf.str(std::string());
         }
-        for (a = 1; a <= 9; a++)
-            for (b = 0; b <= 9; b++)
-            {
+        for (a = 1; a <= 9; a++) {
+            for (b = 0; b <= 9; b++) {
                 buf << " " << a << b;
                 ccd3_vec.push_back(buf.str());
                 buf.str(std::string());
             }
+        }
         ccd3_vec.push_back("DRG");
         ccd3_vec.push_back("INH");
         ccd3_vec.push_back("LIG");
@@ -4889,21 +4891,17 @@ const char* convert(const char* inputFileContent)
     std::string pdbid = "result";
     std::vector<std::string> outputChain_vec;
 
-    // Assuming BeEM returns a std::string, you need to convert it to const char* for compatibility
-    std::string myString(inputFileContent);
+    // Convert uint8_t* inputFileContent to std::string
+    std::string myString(reinterpret_cast<const char*>(inputFileContent), length);
 
+    // Call BeEM function
+    std::string result = BeEM(myString, pdbid, 0, 0, 0, 1, 99999, 0, "txt", ccd3_vec, outputChain_vec);
 
-    // Return the C-style string representation of myString
-    string result = BeEM(myString, pdbid, 0, 0, 0, 1, 99999, 0, "txt", ccd3_vec, outputChain_vec);
-    const char* finalRes = result.c_str();
-    return finalRes; // Convert result to const char* and return it
+    // Allocate memory for the result as uint8_t array
+    *outputLength = result.size();
+    uint8_t* finalRes = new uint8_t[*outputLength];
+    std::memcpy(finalRes, result.data(), *outputLength);
 
-    /* clean up */
-    /*std::string().swap(infile);
-    std::string().swap(pdbid);
-    std::string().swap(idmap);
-    std::string().swap(ccd5);
-    std::vector<std::string>().swap(ccd3_vec);
-    std::vector<std::string>().swap(outputChain_vec);*/
+    return finalRes;
 }
 /* main END */

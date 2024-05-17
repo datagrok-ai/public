@@ -1,4 +1,4 @@
-em++ -O3 ./convert.cpp -o ./wasmCluster.js \
+em++ -O3 ./convert.cpp -o ./wasmConvert.js \
 -s TOTAL_MEMORY=1073741824 \
 -s MODULARIZE=1 \
 -s WASM=1 \
