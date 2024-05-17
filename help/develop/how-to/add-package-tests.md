@@ -9,8 +9,7 @@ utilizing these mechanisms in the package code.
 ## Adding unit tests
 
 We use a custom test framework that is similar to `Jest`, and it supports
-Datagrok API. To learn more about that, see our [guide for
-packages](https://github.com/datagrok-ai/public/blob/master/packages/GUIDE.MD#tests).
+Datagrok API. To learn more about that, see our [guide for packages](https://github.com/datagrok-ai/public/blob/master/packages/GUIDE.MD#tests).
 
 To add tests for local testing, run the following command:
 
@@ -53,9 +52,7 @@ category('Examples', () => {
 
 Next, make sure to import your test files in `src/package-test.ts`. After that,
 build and publish your package. There are several options to runs the tests:
-[locally using datagrok-tools](test-packages.md#local-testing), via [DG
-console](test-packages.md#running-tests-in-the-platform-console), and via [Test
-manager](test-packages.md#test-manager). All public packages in the
+[locally using datagrok-tools](test-packages.md#local-testing), via [DG console](test-packages.md#running-tests-in-the-platform-console), and via [Test manager](test-packages.md#test-manager). All public packages in the
 [repository](../../collaborate/public-repository.md) are tested using GitHub
 Actions on every commit. There is an option to trigger GitHub Actions
 [manually](test-packages.md#trigger-github-actions-manually), if something goes

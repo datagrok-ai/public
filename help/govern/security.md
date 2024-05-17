@@ -3,7 +3,8 @@ title: "Security"
 ---
 
 Datagrok uses a flexible mechanism for setting up privileges and access rights for
-all [entities](../datagrok/concepts/objects.md), largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)
+all [entities](../datagrok/concepts/objects.md), largely based
+on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)
 . It lets you define [user groups](../govern/group.md) and associate them with permissions for different entities.
 Permission sets are different for each entity type, for instance, a
 "package" entity has "publish" and "edit" privileges, while a "query" entity has "execute" and "
@@ -64,9 +65,9 @@ credentials. For that reason, it makes sense to administer these systems separat
 If a specialized credential vault already stores sensitive credentials for your organization, the Datagrok platform
 should be set up to take advantage of it.
 
-![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png
-"Credentials retrieving process diagram")
-*Credentials retrieving process diagram* ([drawio](https://github.com/datagrok-ai/public/tree/master/help/uploads/security/credentials-fetch-diagram.drawio))
+![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
+*Credentials retrieving process
+diagram* ([drawio](https://github.com/datagrok-ai/public/tree/master/help/uploads/security/credentials-fetch-diagram.drawio))
 
 Working with credentials storage,
 sample: [open at public repository](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js)

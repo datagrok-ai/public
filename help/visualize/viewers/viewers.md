@@ -3,8 +3,7 @@ title: "Supported viewers"
 ---
 
 A _viewer_ is a visual component associated with a
-[table](../../datagrok/concepts/table.md). They are [extremely fast and
-interactive](../../develop/under-the-hood/performance.md#viewers), handling
+[table](../../datagrok/concepts/table.md). They are [extremely fast and interactive](../../develop/under-the-hood/performance.md#viewers), handling
 datasets with tens of millions of rows (or millions of columns).
 
 To learn how to use viewers, including creation, managing properties,

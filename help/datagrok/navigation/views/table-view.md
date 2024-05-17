@@ -34,8 +34,7 @@ The **Table View** also has these UI elements associated with it:
    
 * To switch between **Table Views**, use the **Sidebar**, **Toolbox**, or the
   [Table Manager](../panels/table-manager.md) (<kbd>Alt + T</kbd>).
-* To jump to a specific column, use the [Column
-  Manager](../panels/column-manager.md) (**Status Bar** > **Columns:**).
+* To jump to a specific column, use the [Column Manager](../panels/column-manager.md) (**Status Bar** > **Columns:**).
 * To jump to a specific row, press <kbd>Ctrl+G</kbd>, which opens the **Go to**
   dialog. 
 
@@ -148,16 +147,13 @@ Certain viewers include statistical features:
 * Box [plots](../../../visualize/viewers/box-plot.md) show the [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
 * Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#calculations-and-trends) with
-  associated equations and color-coding. [Correlation
-  plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
+  associated equations and color-coding. [Correlation plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the
   relationship between given variables.
-* The statistics viewer shows key [statistics
-  measures](../../../visualize/viewers/statistics.md#statistical-measures) for
+* The statistics viewer shows key [statistics measures](../../../visualize/viewers/statistics.md#statistical-measures) for
   the selected columns.
 
-To learn about available hypothesis tests, see [Statistical hypothesis
-testing](../../solutions/domains/data-science.md#statistical-hypothesis-testing).
+To learn about available hypothesis tests, see [Statistical hypothesis testing](../../solutions/domains/data-science.md#statistical-hypothesis-testing).
 
 <!--- ChaRPY package is not active now
 
@@ -225,8 +221,7 @@ like any other viewer. To learn more about the filters viewer, see
 #### Viewers as filters
 
 By default, clicking a segment representing multiple rows in viewers, like a
-[bar](../../../visualize/viewers/bar-chart.md) or a [pie
-chart](../../../visualize/viewers/pie-chart.md), selects those rows. However,
+[bar](../../../visualize/viewers/bar-chart.md) or a [pie chart](../../../visualize/viewers/pie-chart.md), selects those rows. However,
 you can set the viewer to filter the underlying table instead. To do this, click
 the **Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** on its
 header and select **On click** > **Filter**. 
@@ -287,8 +282,7 @@ To replace values matching your search, use the [find and replace](../../../tran
 
 Search patterns let you specify conditions in a free text search. Datagrok uses
 the same syntax to search both in tables and externally, such as
-when accessing databases with [parameterized
-queries](../../../access/databases/databases.md#parameterized-queries). 
+when accessing databases with [parameterized queries](../../../access/databases/databases.md#parameterized-queries). 
 
 When searching in tables, you can use conditions with the column
 name (e.g., `age > 21`). However, for external queries, specifying the column

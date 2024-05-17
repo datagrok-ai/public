@@ -43,7 +43,7 @@ using [Datagrok Credentials Management Service](../../../govern/security.md#cred
 are [encrypted and stored securely](../../../govern/security.md#credentials-storage).
 
 In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
-[AWS Secret Manager](../../../access/data-connection-credentials.md#) instead.
+[AWS Secret Manager](../../../access/data-connection-credentials.md) instead.
 
 Once a connection is set up, access to it (either `use` or `edit`) is subject to [user permissions](#user-permissions).
 

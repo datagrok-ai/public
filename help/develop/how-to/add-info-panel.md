@@ -5,9 +5,7 @@ title: "Add an info panel"
 [Info panels](../../datagrok/navigation/panels/info-panels.md) are a powerful tool for bringing
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
-typically appear along with the rest of the information in the [context
-panel](../../datagrok/navigation/navigation/panels/panels.md#context-panel) and [visibility
-conditions](#visibility-conditions) will be re-evaluated whenever the object
+typically appear along with the rest of the information in the [context panel](../../datagrok/navigation/panels/panels.md#context-panel) and [visibility conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
 ## Development
@@ -87,8 +85,7 @@ detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalcat
 hasCats = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3, minSize=(75, 75))) != 0
 ```
 
-Regardless of a script's language, conditions are written in [Grok
-script](../under-the-hood/grok-script.md) syntax.
+Regardless of a script's language, conditions are written in [Grok script](../under-the-hood/grok-script.md) syntax.
 
 ### Functions
 
