@@ -55,7 +55,7 @@ Explore the relationship between inputs and outputs of your model using the [Sen
 
 ### Parameter Optimization
 
-Find input conditions leading to specified output constraints using the [Parameter Optimization](compute.md#input-parameter-optimization) feature. Run it directly from Diff Studio:
+Find input conditions leading to specified output constraints using the [Parameter Optimization](compute.md#input-parameter-optimization) feature. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function). Run it directly from Diff Studio:
 
 * Click <i class="fas fa-chart-line"></i> **Run fitting inputs** icon
 * In the `Fit` block, use switchers to specify inputs to be found:
@@ -65,7 +65,7 @@ Find input conditions leading to specified output constraints using the [Paramet
   * Set dataframe with expected output values (in the table input)
   * Set column with values of the independent variable (in the `argument` field)
 * Specify setting of fitting:
-  * Choose `method` and set [loss function](https://en.wikipedia.org/wiki/Loss_function) type (in the `loss` field)
+  * Choose numerical optimization method (in the `method` field), and set loss function type (in the `loss` field)
   * Specify number of points to be found (in the `samples` field)
   * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
 * Click <i class="fas fa-play"></i> **Run fitting** icon. You will get a [grid](../visualize/viewers/grid) containing
