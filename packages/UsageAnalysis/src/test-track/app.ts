@@ -79,9 +79,8 @@ export class TestTrack extends DG.ViewBase {
   }
 
   init() { 
-    if (this.isInitializing) { 
+    if (this.isInitializing) 
       return;
-    }
 
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
@@ -89,14 +88,14 @@ export class TestTrack extends DG.ViewBase {
     }
     
     this.isInitializing = true; 
-    this.InitTreeView().then(()=>{
+    this.initTreeView().then(()=>{
       this.inited = true;
       this.isInitializing = false; 
     });
   }
 
 
-  private async InitTreeView(): Promise<void> {  
+  private async initTreeView(): Promise<void> {  
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);

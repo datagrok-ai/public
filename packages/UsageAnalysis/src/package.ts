@@ -34,9 +34,9 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
-  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root)) { 
+  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root)) 
     TestTrack.getInstance().init();
-  }
+  
 }
 
 //output: widget result
