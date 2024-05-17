@@ -78,7 +78,7 @@ await testViewer('Chem Similarity Search', smiles, {detectSemanticTypes: true});
 
 </details>
 
-To test viewers with asynchronous rendering pass optional `awaitViewer` parameter to [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L614) function. `awaitViewer` is a function which takes `DG.Viewer` as an argument and waits for it to be created and rendered. Create any custom behaviour to ensure viewer initialization is completed. For instance, wait for some event to be fired or some element to appear in DOM.
+To test viewers with asynchronous rendering pass optional `awaitViewer` parameter to [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L614) function. `awaitViewer` is a function which takes `DG.Viewer` as an argument and waits for it to be created and rendered. Create any custom behavior to ensure viewer initialization is completed. For instance, wait for some event to be fired or some element to appear in DOM.
 
 <details>
 <summary>Example</summary>
