@@ -526,21 +526,20 @@ Solve an inverse problem: find input conditions leading to specified output cons
    * Use switchers to specify target outputs
    * Set target value for each selected item
 
-4. Choose `method`. Click <i class="grok-icon fal fa-cog"></i> to specify its settings.
+4. Specify settings of fitting:
+   * Choose numerical optimization method (in the `method` field). Click <i class="grok-icon fal fa-cog"></i> to specify its settings
+   * Set loss function type (in the `loss` field)
+   * Specify number of points to be found (in the `samples` field)
+   * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
 
-5. Specify the `loss` function type.
+5. Click the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
+[grid](../visualize/viewers/grid) containing
 
-6. Set `samples` and `similarity`.
-
-7. Click the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a
-[grid](https://datagrok.ai/help/visualize/viewers/grid) containing
-
-   * loss function values
-   * fitted inputs
+   * loss function values and fitted inputs
    * viewers visualizing the goodness of fit
-   * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
+   * [line chart](../visualize/viewers/line-chart) showing the loss function minimization
 
-![fitting-run.gif](/pics/fitting-run.gif)
+![fitting-run.gif](pics/fitting-run.gif)
 
 Apply the feature to functions with table outputs as well:
 
@@ -548,20 +547,20 @@ Apply the feature to functions with table outputs as well:
 
 2. Set dataframe column with values of independent variable (in the `argument` choice input)
 
-![fitting-table.gif](/pics/fitting-table.gif)
+![fitting-table.gif](pics/fitting-table.gif)
 
 Open `Context Panel` (F4). You will get the function run corresponding to the selected grid row:
 
-![fitting-context-panel.gif](/pics/fitting-context-panel.gif)
+![fitting-context-panel.gif](pics/fitting-context-panel.gif)
 
 An inverse problem may have several solutions. Specify their expected number in the `samples` field. To filter fitted points, set `similarity`:
 
 * it is the maximum scaled deviation between "similar" points
 * the higher the value, the fewer points will be displayed
 
-![fitting-similarity.gif](/pics/fitting-similarity.gif)
+![fitting-similarity.gif](pics/fitting-similarity.gif)
 
-Apply parameter optimization to any function with the [RichFunctionView](https://datagrok.ai/help/compute/scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
+Apply parameter optimization to any function with the [RichFunctionView](scripting-advanced#running-scripts-with-richfunctionview) editor. Add `meta.features: {"fitting": true}` to enable it:
 
 ```javascript
 //name: Test
