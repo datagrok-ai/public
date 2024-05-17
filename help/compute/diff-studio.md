@@ -64,7 +64,7 @@ Find input conditions leading to specified output constraints using the [Paramet
 * In the `Target` block, specify output constraints:
   * Set dataframe with expected output values (in the table input)
   * Set column with values of the independent variable (in the `argument` field)
-* Specify setting of fitting:
+* Specify settings of fitting:
   * Choose numerical optimization method (in the `method` field), and set loss function type (in the `loss` field)
   * Specify number of points to be found (in the `samples` field)
   * Set the maximum scaled deviation between similar fitted points (in the `similarity` field): the higher the value, the fewer points will be found
