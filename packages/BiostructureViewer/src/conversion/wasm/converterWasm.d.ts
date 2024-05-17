@@ -1,2 +1,2 @@
-export declare function addWasm
+export declare function convertWasm
     (a: string): Promise<string>;

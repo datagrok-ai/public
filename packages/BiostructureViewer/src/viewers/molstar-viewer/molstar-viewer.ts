@@ -42,7 +42,7 @@ import {defaults, molecule3dFileExtensions} from './consts';
 import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
 import {_package} from '../../package';
-import { addWasm } from '../../conversion/wasm/converterWasm';
+import { convertWasm } from '../../conversion/wasm/converterWasm';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -462,21 +462,25 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
-    menu.item('Download', async () => {
-      await this.writeToCif('test');
-    });
+    menu
+      .group('Download')
+      .item('As CIF', async () => await this.writeToFormat('cif'))
+      .item('As PDB', async () => await this.writeToFormat('pdb'));
   }
 
-  async writeToCif(name: string) {
+  async writeToFormat(format: 'cif' | 'pdb') {
+    const fileName = 'file';
     const { structures } = this.viewer!.plugin.managers.structure.hierarchy.current;
     const _s = structures[0];
     const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
-    const cif = to_mmCIF(name, s!);
-    if (typeof(cif) === 'string') {
-      DG.Utils.download(`${name}.cif`, cif);
-      DG.Utils.download(`${name}.pdb`, await addWasm(cif));
+    const cif = to_mmCIF(fileName, s!) as string;
+    
+    if (format === 'cif')
+      DG.Utils.download(`${fileName}.cif`, cif);
+    else if (format === 'pdb') {
+      const pdb = await convertWasm(cif);
+      DG.Utils.download(`${fileName}.pdb`, pdb);
     }
-    to_mmCIF(name, s!);
   }
 
   // -- Data --

@@ -1,6 +1,6 @@
 import { convertCifToPdb } from './wasmConvert.js';
 
-export async function addWasm(inputString) {
+export async function convertWasm(inputString) {
     // Convert input string to Uint8Array
     const inputArray = new TextEncoder().encode(inputString);
 
