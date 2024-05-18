@@ -1252,7 +1252,7 @@ export interface IBoxPlotSettings {
 
   statisticsFont: string;
 
-  borderLineWidth: number;
+  whiskerLineWidth: number;
 
   whiskerWidthRatio: number;
 
@@ -1260,7 +1260,7 @@ export interface IBoxPlotSettings {
 
   axisUseColumnFormat: boolean;
 
-  borderColor: number;
+  whiskerColor: number;
 
   backColor: number;
 
