@@ -547,6 +547,10 @@ export class DataFrame {
   getTableInfo(): TableInfo {
     return toJs(api.grok_DataFrame_Get_TableInfo(this.dart));
   }
+
+  _exportReopen(): DataFrame {
+    return toJs(api.grok_DataFrame_Export_And_Reopen(this.dart));
+  }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
@@ -1065,6 +1069,9 @@ export class BigIntColumn extends Column<BigInt> {
     let v = api.grok_BigIntColumn_GetValue(this.dart, row);
     if (v == null)
       return null;
+
+    // TODO: reuse inner representation for dart bigintcolumn
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt/BigInt
     return BigInt(v);
   }
 
