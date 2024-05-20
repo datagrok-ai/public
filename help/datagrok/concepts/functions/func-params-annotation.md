@@ -229,7 +229,7 @@ SELECT * FROM customers where shipCountry = @shipCountry
 **Filter pattern** allows you to use free-text conditions like "this week" for dates, or ">50" for numbers.
 
 To use search patterns, set the input type to `string`, and set the `pattern` option
-to the type of the column you are filtering. Then, reference the patter in the query
+to the type of the column you are filtering. Then, reference the pattern in the query
 as `@patternName(columnName)`, just like we did here for the "freight" column:
 
 ```
@@ -258,8 +258,8 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 | `num, int, double` | `=`           | `= 100`                      |
 |                    | `>`           | `> 1.02`                     |
 |                    | `>=`          | `>= 4.1`                     |
-|                    | `<`           | `\< 5`                        |
-|                    | `\<=`          | `\<= 2`                       |
+|                    | `<`           | `< 5`                        |
+|                    | `<=`          | `<= 2`                       |
 |                    | `in`          | `in (1, 3, 10.2)`            |
 |                    | `min-max`     | `Range: 1.5-10.0`            |
 | `string`           | `contains`    | `contains ea`                |
@@ -282,7 +282,6 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 
 To learn more, see [search patterns](../../navigation/views/table-view#search-patterns).
 </details>
-
 
 ### Choices
 
@@ -321,7 +320,6 @@ this example:
 
 </div> 
 </details>
-
 
 ### Validation
 

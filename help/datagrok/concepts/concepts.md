@@ -54,13 +54,15 @@ assigning privileges, and retrieving their URL.
 <Tabs>
 <TabItem value="views" label="Views">
 
-A [view](../navigation/views/views.md) is designed for specific
-tasks. For example, when you open a dataframe, it opens a [Table View](../navigation/views/table-view.md) resembling Excel, while the
-[Browse](../navigation/views/browse.md) view, used for navigation and data
-management, resembles Windows File Explorer. Additionally, Datagrok [plugins and apps](../plugins.md) can introduce custom views.
+A [view](../navigation/views/views.md) is a window designed for specific tasks.
+For example:
 
-Each view opens in its own window or tab. This means you can open the same table
-or query in multiple views and work on them independently.  
+* Double-clicking a dataframe opens a [Table
+View](../navigation/views/table-view.md) resembling Excel
+* Double-clicking a query opens the [Query Editor](../../access/databases/databases.md#query-editor)
+* Clicking a **Browse icon** on the **Sidebar** opens [Browse](../navigation/views/browse.md) 
+
+You can open the same object in multiple views and work on each independently.
 
 </TabItem>
 <TabItem value="layouts" label="Layouts">
