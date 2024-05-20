@@ -1,12 +1,11 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
 import wu from 'wu';
 
 import {SeqHandler} from './seq-handler';
 import {MonomerToShortFunc} from './macromolecule';
-import {IMonomerLib} from '../types';
 import {SeqSplittedBase} from './macromolecule/types';
 import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
@@ -41,6 +40,7 @@ export function hitBounds(bounds: number[], x: number): number | null {
 }
 
 export class MonomerPlacer extends CellRendererBackBase<string> {
+  private colWidth: number = 0;
   private _monomerLengthList: number[][] | null = null;
 
   // width of separator symbol
@@ -91,9 +91,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
-  public getCellMonomerLengths(rowIdx: number, width: number): [number[], number[]] {
-    const res: number[] = this.props.seqHandler.isMsa() ? this.getCellMonomerLengthsForSeqMsa(width) :
-      this.getCellMonomerLengthsForSeq(rowIdx, width);
+  public getCellMonomerLengths(rowIdx: number, newWidth: number): [number[], number[]] {
+    if (this.colWidth < newWidth) {
+      this.colWidth = newWidth;
+      this.reset();
+    }
+    const res: number[] = this.props.seqHandler.isMsa() ? this.getCellMonomerLengthsForSeqMsa() :
+      this.getCellMonomerLengthsForSeq(rowIdx);
 
     const resSum: number[] = new Array<number>(res.length + 1);
     resSum[0] = 5; // padding
@@ -102,14 +106,14 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return [res, resSum];
   }
 
-  private getCellMonomerLengthsForSeq(rowIdx: number, width: number): number[] {
+  private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
       this._updated = true;
     }
 
     const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
-    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth);
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
     const seqMonList: SeqSplittedBase = SeqHandler.forColumn(this.tableCol).getSplitted(rowIdx).originals;
     const visibleSeqLength: number = Math.min(maxVisibleSeqLength, seqMonList.length);
 
@@ -125,14 +129,14 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = seqMonWidth;
         seqWidth += seqMonWidth;
-        if (seqWidth > width) break;
+        if (seqWidth > this.colWidth) break;
       }
       this._updated = true;
     }
     return res;
   }
 
-  private getCellMonomerLengthsForSeqMsa(width: number): number[] {
+  private getCellMonomerLengthsForSeqMsa(): number[] {
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(1).fill(null);
       this._updated = true;
@@ -157,7 +161,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     })();
 
     const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
-    const maxVisibleSeqLength: number = Math.ceil(width / minMonWidth);
+    const maxVisibleSeqLength: number = Math.ceil(this.colWidth / minMonWidth);
     for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
       if (this._processedRows.get(seqIdx) && maxVisibleSeqLength <= this._processedMaxVisibleSeqLength)
         continue;
@@ -175,7 +179,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
         seqWidth += seqMonWidth;
-        if (seqWidth >= width) break;
+        if (seqWidth >= this.colWidth) break;
       }
       this._updated = true;
       this._processedMaxVisibleSeqLength = Math.max(this._processedMaxVisibleSeqLength, maxVisibleSeqLength);

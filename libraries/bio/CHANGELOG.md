@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.41.6 (2024-05-20)
+
+Fix monomer placer optimization for column width changed
+
 ## 5.41.5 (2024-05-16)
 
 Fix separator splitter to ceil splitter limit
