@@ -389,7 +389,7 @@ functions.
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
    outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
-   from the function call (refer to the [Scripting](../../compute/scripting/scripting.mdx#running-a-script) article for details).
+   from the function call (refer to the [Scripting](../../compute/scripting/getting-started.md#run-the-script) article for details).
    :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a
