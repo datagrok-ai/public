@@ -1070,8 +1070,6 @@ export class BigIntColumn extends Column<BigInt> {
     if (v == null)
       return null;
 
-    // TODO: reuse inner representation for dart bigintcolumn
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt/BigInt
     return BigInt(v);
   }
 
