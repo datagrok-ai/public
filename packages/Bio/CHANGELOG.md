@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.12.21 (2024-05-20)
+
+Fix cell renderer for column width changed
+
 ## 2.12.20 (2024-05-16)
 
 ### Bug fixes
