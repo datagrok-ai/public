@@ -100,8 +100,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     ```
 
    Note that comments on the top of the function declaration are crucial for running it on the platform. They determine
-   the function name, the input and output types. Essentially, change each character to the complementary one: `A <=> T`
-   , `G <=> C`. Run it and check whether everything works fine.
+   the function name, the input and output types. 
+   
+   Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether everything works fine.
 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only, and to return a
    nucleotide string as well. In order to do that, let's annotate both input and output parameters with the
@@ -133,7 +134,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead iterate
-   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
+   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/dg/classes/Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev` command. When everything is done correctly, the
    `detectors.js` file will get loaded by the platform automatically, and the `detectNucleotides` function will be
@@ -364,7 +365,7 @@ functions.
    case, a namespace corresponds to a package name); the next argument is an object with parameters (make sure that they
    correspond to the input names in the script annotation, e.g., `{ sequence: 'gttctctacc', subsequence: 'acc' }`). You
    can also control the progress indicator during the call (see the API reference for
-   [call](https://datagrok.ai/js-api/classes/dg.Functions#call)).
+   [call](https://datagrok.ai/js-api/dg/classes/Functions#call)).
 
    :::tip
    You can generate such wrapper functions for your scripts and queries by calling the `grok api` command in your
@@ -477,7 +478,7 @@ from our server.
       command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../../develop/how-to/access-data#creating-queries), create the '.sql' file under the `queries` folder, and
+   as instructed [here](../../develop/how-to/access-data#creating-queries) update credentials, create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -540,25 +541,24 @@ from our server.
    //input: string filepath
    //output: dataframe df
    export async function openTable1(filepath: string): Promise<DG.DataFrame> {
-      const df = await grok.data.getDemoTable(filepath);
-      grok.shell.addTableView(df);
-      return df;
+   const df = await grok.data.getDemoTable(filepath);
+   grok.shell.addTableView(df);
+   return df;
    }
-
    //input: string filepath
    //output: dataframe df
    export async function openTable2(filepath: string): Promise<DG.DataFrame> {
-      const df = await grok.data.files.openTable(`Demo:Files/${filepath}`);
-      grok.shell.addTableView(df);
-      return df;
+   const df = await grok.data.files.openTable(`System:/${filepath}`);
+   grok.shell.addTableView(df);
+   return df;
    }
 
    //input: string filepath
    //output: dataframe df
    export async function openTable3(filepath: string): Promise<DG.DataFrame> {
-      const df = await grok.functions.eval(`OpenServerFile("Demo:Files/${filepath}")`)[0];
-      grok.shell.addTableView(df);
-      return df;
+   const df = (await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`)))[0];
+   grok.shell.addTableView(df);
+   return df;
    }
    ```
 
@@ -623,7 +623,8 @@ First, let's explore how scripting viewer works.
    `Data` corresponds to the first button from the top of the Datagrok sidebar. Make sure the table view with the data
    appears.
 1. Activate the top menu from the sidebar, using a `Windows | Menu` switch. 3. In this menu, hit `Add | Scripting
-Viewers | Python | Scatter Plot`.
+Viewers | Add Scripting
+Viewer`.
 1. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 1. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
 1. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`. After checking
@@ -631,6 +632,35 @@ Viewers | Python | Scatter Plot`.
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
 1. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text
    field.
+1. Enter next code to script editor:
+ 
+   ```ts
+   #name: Scatter Plot
+   #language: python
+   #tags: demo, viewers
+   #input: dataframe t
+   #input: column xColumnName {type: numerical}
+   #input: column yColumnName {type: numerical}
+   #input: column colorColumnName {type: numerical}
+   #output: graphics
+
+   import numpy as np
+   import matplotlib.pyplot as plt
+
+   color = t[colorColumnName].values 
+   cmap = plt.cm.Spectral
+   norm = plt.Normalize(vmin = min(color), vmax = max(color))
+
+
+
+   plt.scatter(t[[xColumnName]],t[[yColumnName]], color = cmap(norm(color)), alpha=0.5)
+
+   plt.xlabel(xColumnName)
+   plt.ylabel(yColumnName)
+
+   plt.show() 
+   ```
+
 1. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
     * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
@@ -692,7 +722,8 @@ Viewers | Python | Scatter Plot`.
    //name: fuzzyJoin
    //input: dataframe df1
    //input: dataframe df2
-   //input: int N
+   //input: int N 
+   //output: dataframe result
    ...
    ```
 
@@ -864,7 +895,7 @@ contained in a currently selected grid cell.
    [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/components/accordion.js)
    control to display a sequence in a scrollable fashion. Add a caption to that text area to display an ENA's name for
    this sequence, which also comes in the fasta file. Use a
-   [`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js)
+   [`splitV`](https://datagrok.ai/js-api/ui/functions/splitV)
    control to nicely locate the caption at the top and the text area at the bottom.
 
 `fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a
