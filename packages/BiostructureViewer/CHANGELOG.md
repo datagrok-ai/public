@@ -90,5 +90,5 @@ Fix description for Docking Conformations demo
 * [Biostructure](../../help/visualize/viewers/biostructure) viewer (Mol* based)
 * [NGL](../../help/visualize/viewers/ngl) viewer
 * [Molecule3D](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics/Proteins) cell renderer
-* Biostructure and NGL viewers support [Molecule](../../help/develop/domains/chem) column for ligands
+* Biostructure and NGL viewers support [Molecule](../../help/datagrok/solutions/domains/chem/chem/#exploring-chemical-data) column for ligands
 * File handlers for file [formats supported by Molstar or NGL](../../help/access/files/supported-formats.md)
