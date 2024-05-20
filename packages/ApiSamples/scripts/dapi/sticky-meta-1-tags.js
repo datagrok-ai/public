@@ -3,7 +3,7 @@
 //language: javascript
 
 // uniqueName ensures that created sticky meta configuration will be unique.
-var uniqueName = (prefix) => 'apisamles-' + prefix + '-' + (Math.random() + 1).toString(36).substring(7);
+var uniqueName = (prefix) => 'apisamples-' + prefix + '-' + (Math.random() + 1).toString(36).substring(7);
 
 // In this sample we will attach metadata to experiments
 // They will be identified through strings: [experiment 1, experiment 2, ..., experiment 6].
