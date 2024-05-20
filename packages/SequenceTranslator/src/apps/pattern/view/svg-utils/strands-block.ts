@@ -4,7 +4,7 @@ import {SVG_CIRCLE_SIZES, SVG_ELEMENT_COLORS, SVG_TEXT_FONT_SIZES} from './const
 import {NonLegendBlockBase} from './svg-block-bases';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
-import {getNucleobaseColorFromStyleMap} from './utils';
+import {computeTextColorForNucleobaseLabel, getNucleobaseColorFromStyleMap, getNucleobaseLabelForCircle} from './utils';
 
 const NUMERIC_LABEL_PADDING = 5;
 const SENSE_STRAND_HEIGHT = SVG_TEXT_FONT_SIZES.NUCLEOBASE +
@@ -66,9 +66,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
   }
 
   private getStrandCircleYShift(): number {
-    return this.strand === STRAND.SENSE ?
-      this.yShift + NUMERIC_LABEL_PADDING + SVG_TEXT_FONT_SIZES.COMMENT + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS :
-      this.yShift + SENSE_STRAND_HEIGHT + SENSE_STRAND_PADDING + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
+    return getStrandCircleYShift(this.strand, this.yShift);
   }
 
   private createStrandCircles(): SVGElement[] {
@@ -103,11 +101,33 @@ class SingleStrandBlock extends NonLegendBlockBase {
     nucleotide: string,
     index: number,
     defaultShift: {x: number, y: number}
-  ): SVGElement {
+  ): SVGElement[] {
     const color = getNucleobaseColorFromStyleMap(nucleotide);
     const centerPosition = {...defaultShift, x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER};
 
-    return this.svgElementFactory.createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color);
+    const circle = this.svgElementFactory
+      .createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color);
+
+    const nonModifiedNucleotideLabel = this.createNucleotideLabel();
+
+    return [circle];
+  }
+
+  private getNucleotideCircleCenterPosition(
+    index: number,
+    defaultShift: {x: number, y: number}
+  ): {x: number, y: number} {
+    return {
+      x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER,
+      y: defaultShift.y
+    };
+  }
+
+  private createNucleotideLabel(
+    nucleobase: string
+  ): SVGElement {
+    const text = getNucleobaseLabelForCircle(nucleobase);
+    const color = computeTextColorForNucleobaseLabel(nucleobase);
   }
 
   private getNumericLabelYShift(
@@ -194,4 +214,13 @@ class StrandLabel extends NonLegendBlockBase {
   getContentHeight(): number {
     return this.strandSvgWrapper.getContentHeight();
   }
+}
+
+function getStrandCircleYShift(
+  strand: STRAND,
+  defaultYShift: number
+): number {
+  return strand === STRAND.SENSE ?
+    defaultYShift + NUMERIC_LABEL_PADDING + SVG_TEXT_FONT_SIZES.COMMENT + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS :
+    defaultYShift + SENSE_STRAND_HEIGHT + SENSE_STRAND_PADDING + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS;
 }
