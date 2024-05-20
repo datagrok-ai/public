@@ -57,7 +57,7 @@ assigning privileges, and retrieving their URL.
 A [view](../navigation/views/views.md) is a window designed for specific tasks.
 For example:
 
-* Double-clicking a dataframe opens a [Table View](../navigation/views/table-view.md) resembling Excel
+* Double-clicking a dataframe opens a [Table View](../navigation/views/table-view) resembling Excel
 * Double-clicking a query opens the [Query Editor](../../access/databases/databases.md#query-editor)
 * Clicking a **Browse icon** on the **Sidebar** opens [Browse](../navigation/views/browse.md) 
 
