@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.10 (2024-05-15)
+
+Added the debugging mode
+
 ## 1.0.9 (2024-05-15)
 
 Added parameters fitting feature

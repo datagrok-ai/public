@@ -40,7 +40,7 @@ const MATH_CONSTS = ['PI', 'E'];
 /** Default meta */
 const defaultMetas = `//meta.runOnOpen: true
 //meta.runOnInput: true
-//meta.features: {"sens-analysis": true}`;
+//meta.features: {"sens-analysis": true, "fitting": true}`;
 
 /** Numerical input specification */
 export type Input = {
@@ -139,7 +139,7 @@ enum ERROR_MSG {
   REUSE_NAME = 'Variable reuse (case-insensitive): rename ',
 }
 
-/** Datagrok annatations */
+/** Datagrok annotations */
 enum ANNOT {
   NAME = '//name:',
   DESCR = '//description:',

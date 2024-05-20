@@ -29,7 +29,7 @@ const GROW_COEF = 4.0;
 const ERR_CONTR = 1.89e-4;
 
 // Quantities used in Rosenbrock method (see [3], [4] for more details)
-const EPS = 1.0e-10;		
+const EPS = 1.0e-10;
 const D = 1.0 - Math.sqrt(2.0) / 2.0;
 const E32 = 6.0 + Math.sqrt(2.0);
 
@@ -59,11 +59,12 @@ export type ODEs = {
   initial: number[] | Float32Array | Float64Array | Int32Array,
   func: Func,
   tolerance: number,
-  solutionColNames: string[],  
+  solutionColNames: string[],
 };
 
 /** Returns derivative with respect to t. */
-function tDerivative(t: number, y: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
+function tDerivative(t: number, y: Float64Array, f: Func, eps: number,
+  f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
   const size = y.length;
   f(t, y, f0Buf);
   f(t + eps, y, f1Buf);
@@ -73,8 +74,9 @@ function tDerivative(t: number, y: Float64Array, f: Func, eps: number, f0Buf: Fl
 }
 
 /** Returns Jacobian. */
-function Jacobian(t: number, y: Float64Array, f: Func, eps: number, f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
-  const size = y.length;  
+function jacobian(t: number, y: Float64Array, f: Func, eps: number,
+  f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
+  const size = y.length;
   f(t, y, f0Buf);
 
   for (let j = 0; j < size; ++j) {
@@ -94,13 +96,13 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   const f = odes.func;
 
   // operating variables
-	const t0 = odes.arg.start;
-	const t1 = odes.arg.finish;
-	let h = odes.arg.step;
-	const hDataframe = h;
-	const tolerance = odes.tolerance;
+  const t0 = odes.arg.start;
+  const t1 = odes.arg.finish;
+  let h = odes.arg.step;
+  const hDataframe = h;
+  const tolerance = odes.tolerance;
 
-  /** number of solution dataframe rows */  
+  /** number of solution dataframe rows */
   const rowCount = Math.trunc((t1 - t0) / h) + 1;
 
   /** dimension of the problem */
@@ -116,13 +118,13 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   for (let i = 0; i < dim; ++i)
     yArrs[i] = new Float32Array(rowCount);
 
-  // method routine  
+  // method routine
   let timeDataframe = t0 + hDataframe;
   let t = t0;
   let tPrev = t0;
   let hNext = 0.0;
   let flag = true;
-	let index = 1;
+  let index = 1;
   let errmax = 0;
   let hTemp = 0;
   let tNew = 0;
@@ -133,16 +135,17 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   const I = new Float64Array(dim * dim);
 
   // compute identity matrix
-  for (let i = 0; i < dim; ++i)
+  for (let i = 0; i < dim; ++i) {
     for (let j = 0; j < dim; ++j)
       I[j + i * dim] = (i === j) ? 1 : 0;
+  }
 
   const y = new Float64Array(odes.initial);
-	const yPrev = new Float64Array(odes.initial);
-	const dydt = new Float64Array(dim);
-	const yScale = new Float64Array(dim);  
+  const yPrev = new Float64Array(odes.initial);
+  const dydt = new Float64Array(dim);
+  const yScale = new Float64Array(dim);
   const yTemp = new Float64Array(dim);
-	const yErr = new Float64Array(dim);
+  const yErr = new Float64Array(dim);
 
   const wasmMemory = memAlloc(dimSquared);
   const W = new Float64Array(wasmMemory.buf, wasmMemory.off1, dimSquared);
@@ -161,7 +164,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   const f1Buf = new Float64Array(dim);
   let hd = 0;
   let sum = 0;
-  let h_div_num = 0;
+  let hDivNum = 0;
 
   // 1. SOLUTION AT THE POINT t0
   tArr[0] = t0;
@@ -173,20 +176,20 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
     // compute derivative
     f(t, y, dydt);
 
-		// compute scale vector    
+    // compute scale vector
     for (let i = 0; i < dim; ++i)
-      yScale[i] = abs(y[i]) + h * abs(dydt[i]) + TINY;      
+      yScale[i] = abs(y[i]) + h * abs(dydt[i]) + TINY;
 
     // check end point
-		if (t + h > t1) {
-		  h = t1 - t;
-			flag = false;
-		}
+    if (t + h > t1) {
+      h = t1 - t;
+      flag = false;
+    }
 
     // call of adaptive step modified Rosenbrok triple method
-		// computation of solution (y), time (t) and next step (hNext)
-		while (true) {
-			// one stage of the modified Rosenbrok triple approach
+    // computation of solution (y), time (t) and next step (hNext)
+    while (true) {
+      // one stage of the modified Rosenbrok triple approach
       // hdT = h * d * T(t, y, EPS);
       tDerivative(t, y, f, EPS, f0Buf, f1Buf, hdT);
       hd = h * D;
@@ -197,9 +200,9 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
 
       // f0 = f(t, y);
       f(t, y, f0);
-      
-      // W = I - h * d * J(t, y, EPS);      
-      Jacobian(t, y, f, EPS, f0Buf, f1Buf, W);
+
+      // W = I - h * d * J(t, y, EPS);
+      jacobian(t, y, f, EPS, f0Buf, f1Buf, W);
       for (let i = 0; i < dimSquared; ++i)
         W[i] = I[i] - hd * W[i];
 
@@ -219,14 +222,14 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
         k1[i] = sum;
       }
 
-      h_div_num = 0.5 * h;
+      hDivNum = 0.5 * h;
 
       // yDer = y + 0.5 * h * k1;
       for (let i = 0; i < dim; ++i)
-        yDer[i] = y[i] + h_div_num * k1[i];
-      
+        yDer[i] = y[i] + hDivNum * k1[i];
+
       // f1 = f(t + 0.5 * h, yDer);
-      f(t + h_div_num, yDer, f1);
+      f(t + hDivNum, yDer, f1);
 
       // k2 = invW * (f1 - k1) + k1;
       for (let i = 0; i < dim; ++i)
@@ -262,70 +265,68 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
       }
 
       // yErr = (k1 - 2.0 * k2 + k3) * h / 6;
-      h_div_num = h / 6;
+      hDivNum = h / 6;
 
       for (let i = 0; i < dim; ++i)
-        yErr[i] = (k1[i] - 2.0 * k2[i] + k3[i]) * h_div_num;
+        yErr[i] = (k1[i] - 2.0 * k2[i] + k3[i]) * hDivNum;
 
-			// estimating error
-			errmax = 0;
-			for (let i = 0; i < dim; ++i)
-				errmax = max(errmax, abs(yErr[i] / yScale[i]));
-			errmax /= tolerance;
-			
-			// processing the error obtained
-			if (errmax > 1) {
-				hTemp = SAFETY * h * errmax**PSHRNK;
-				h = max(hTemp, REDUCE_COEF * h);
-				tNew = t + h;
-				if (tNew == t) {
+      // estimating error
+      errmax = 0;
+      for (let i = 0; i < dim; ++i)
+        errmax = max(errmax, abs(yErr[i] / yScale[i]));
+      errmax /= tolerance;
+
+      // processing the error obtained
+      if (errmax > 1) {
+        hTemp = SAFETY * h * errmax**PSHRNK;
+        h = max(hTemp, REDUCE_COEF * h);
+        tNew = t + h;
+        if (tNew == t) {
           memFree(wasmMemory.off1);
           memFree(wasmMemory.off2);
           throw new Error(ERROR_MSG.ROSENBROCK_METHOD_FAILS);
         }
-			}
-			else {
-				if (errmax > ERR_CONTR)
-					hNext = SAFETY * h * errmax**PSGROW;
-				else
-					hNext = GROW_COEF * h;
-				t = t + h;
+      } else {
+        if (errmax > ERR_CONTR)
+          hNext = SAFETY * h * errmax**PSGROW;
+        else
+          hNext = GROW_COEF * h;
+        t = t + h;
 
         for (let i = 0; i < dim; ++i)
           y[i] = yTemp[i];
 
-				break;
-			}
-		} // while (true)
+        break;
+      }
+    } // while (true)
 
     // compute lineraly interpolated results and store them in dataframe
-		while (timeDataframe < t) {
-			let cLeft = (t - timeDataframe) / (t - tPrev);
-			let cRight = 1.0 - cLeft;
+    while (timeDataframe < t) {
+      const cLeft = (t - timeDataframe) / (t - tPrev);
+      const cRight = 1.0 - cLeft;
 
-			tArr[index] = timeDataframe;
+      tArr[index] = timeDataframe;
 
-			for (let j = 0; j < dim; ++j)
-				yArrs[j][index] = cRight * y[j] + cLeft * yPrev[j];
+      for (let j = 0; j < dim; ++j)
+        yArrs[j][index] = cRight * y[j] + cLeft * yPrev[j];
 
-			timeDataframe += hDataframe;
-			++index;
-		}
+      timeDataframe += hDataframe;
+      ++index;
+    }
 
     h = hNext;
-		tPrev = t;
+    tPrev = t;
 
     for (let i = 0; i < dim; ++i)
-		  yPrev[i] = y[i];
-
+      yPrev[i] = y[i];
   } // while (flag)
 
   // 3. solution at the point t1
-	tArr[rowCount - 1] = t1;
+  tArr[rowCount - 1] = t1;
 
-	for (let i = 0; i < dim; ++i)
+  for (let i = 0; i < dim; ++i)
     yArrs[i][rowCount - 1] = y[i];
-  
+
   // 4. Free wasm buffer
   memFree(wasmMemory.off1);
   memFree(wasmMemory.off2);
