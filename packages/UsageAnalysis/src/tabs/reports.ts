@@ -144,6 +144,22 @@ export class ReportsView extends UaView {
       }
     });
 
+    grok.events.onEvent('d4-report-batch-changed').subscribe((data: {[_:string]: any}) => {
+      const affectedIds = new Set(data['affected']);
+      const fields = data['fields'];
+      const idCol = t.getCol('id');
+      const length = idCol.length;
+      for (let i = 0; i < length; i++) {
+        if (affectedIds.has(idCol.get(i))) {
+          t.cell(i, 'is_resolved').value = fields['is_resolved'];
+          t.cell(i, 'assignee').value = fields['assignee_id'];
+          if (fields['label'])
+            t.cell(i, 'labels').value =  `${t.cell(i, 'labels').value},${fields['label']}`;
+        }
+      }
+      t.fireValuesChanged();
+    });
+
     this.reloadFilter(t);
   }
 

@@ -93,7 +93,7 @@ import {Entity} from '../entities'
 export class DockerImage extends Entity {
   constructor(dart: any) { super(dart); };
 
-  static fromJson(map: Map<any, any>): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
+  static fromJson(map: {[index: string]: any}): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
   static STATUS_READY = 'ready';
 
   static STATUS_ERROR = 'error';
