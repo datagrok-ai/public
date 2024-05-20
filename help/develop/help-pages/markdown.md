@@ -443,10 +443,13 @@ Use inline links within your document. Avoid titling links as "here" or "this pa
 
 For documents within the Datagrok help repository, all links should be relative to your Markdown file:
 
-* Link to a `[section in my document](#section-header)`
-* Link to another `[document in the same folder](other-doc.md)`
-* Link to another `[document in a subfolder](subfolder/other-doc.md)`
-* Link to another `[document in a parent folder](../parentFolder/other-doc.md)`
+```
+[section in my document](#section-header)
+[document in the same folder](other-doc.md)
+[document in a subfolder](subfolder/other-doc.md)
+[document in a parent folder](../parentFolder/other-doc.md)
+
+```
 
 ```mdx-code-block
 </TabItem>

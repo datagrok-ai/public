@@ -28,7 +28,7 @@ to enable developing, publishing, discovering, and using scientific applications
     [create](#creating), [deploy](#deployment), [version](#versioning), [share](#sharing), use, validate, update.
 5. Cross-language [Data access](#data-access)
 6. [Metadata](#metadata) used by the [model browser](#model-browser)
-7. Integration options: [REST API](scripting/scripting-features/call-via-rest.mdx), 
+7. Integration options: [REST API](scripting/scripting-features/call-via-rest.md), 
    JS API,
    [embedding as iframe](scripting/scripting-features/embed-as-iframe.mdx)
 8. [Leveraging the platform](#leveraging-the-platform)
@@ -120,7 +120,7 @@ category, description, input type (slider/combo box/etc), and others are also ta
 
 The simple examples are available in the 
 [adding viewers](scripting/scripting-features/add-viewers.mdx)
-section of the [scripting](scripting/getting-started.mdx) tutorial.
+section of the [scripting](scripting/getting-started.md) tutorial.
 
 The [RichFunctionView](scripting/advanced-scripting/advanced-scripting.mdx#enabling-richfunctionview-ui-editor)
 editor allows you to create complex UI with parameter tabs and groups just by adding annotation comments.

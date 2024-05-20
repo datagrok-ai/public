@@ -1,6 +1,7 @@
 ---
 title: "Getting started"
 sidebar_position: 0
+format: 'mdx'
 ---
 
 ```mdx-code-block
@@ -32,7 +33,7 @@ Datagrok provides an extensive JavaScript API, giving you:
 ### Prerequisites
 
 * Sign up and log in to [public server of Datagrok](https://public.datagrok.ai/).
-* Alternatively, set up a [local Datagrok environment](../../../deploy/docker-compose/docker-compose.mdx).
+* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.mdx).
 
 ### Create a script
 
@@ -109,7 +110,7 @@ The template script has the following ones:
 * `description: Hello world script`: The human-readable description.
 * `language: javascript`: The script language. Supported: *R*, *Python*, *Octave*, *Julia*, *JavaScript*.
 
-For more details, refer to the [functions parameter annotation](../../../datagrok/concepts/functions/func-params-annotation).
+For more details, refer to the [functions parameter annotation](../../datagrok/concepts/functions/func-params-annotation).
 
 ### Add inputs
 
@@ -246,9 +247,9 @@ Running this script you will get the following result in **Variables** panel:
 :::tip Pro tip
 
 Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](../../../datagrok/concepts/functions/func-params-annotation.md#validation), [choices](../../datagrok/concepts/functions/func-params-annotation.md#choices),
-and [suggestions](../../../datagrok/concepts/functions/func-params-annotation.md#autocomplete). Validators, choices, and suggestions are
-[functions](../../../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways
+enriched by [validators](../../datagrok/concepts/functions/func-params-annotation.md#validation), [choices](../../datagrok/concepts/functions/func-params-annotation.md#choices),
+and [suggestions](../../datagrok/concepts/functions/func-params-annotation.md#autocomplete). Validators, choices, and suggestions are
+[functions](../../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways
 (database query, script, etc.), and reused.
 
 :::

@@ -1,6 +1,7 @@
 ---
 title: "Scripting features"
 sidebar_position: 1
+format: 'mdx'
 ---
 
 ```mdx-code-block
@@ -50,5 +51,5 @@ Manage environments:
 
 Integrate your scripts:
 
-- [Call via REST](call-via-rest.mdx).
+- [Call via REST](call-via-rest.md)
 - [Embed as iframe](embed-as-iframe.mdx)
