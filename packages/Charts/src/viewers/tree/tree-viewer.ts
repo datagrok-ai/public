@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import { EChartViewer } from '../echart/echart-viewer';
-import { TreeUtils, treeDataType } from '../../utils/tree-utils';
+import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 
 import * as utils from '../../utils/utils';
 
@@ -173,10 +173,10 @@ export class TreeViewer extends EChartViewer {
     this.helpUrl = 'https://datagrok.ai/help/visualize/viewers/tree';
   }
 
-  colorCodeTree(data: treeDataType): void {
+  colorCodeTree(data: TreeDataType): void {
     const min = data['color-meta']['min'];
     const max = data['color-meta']['max'];
-    const setItemStyle = (data: treeDataType) => {
+    const setItemStyle = (data: TreeDataType) => {
       const nodeColor = DG.Color.toRgb(DG.Color.scaleColor(data.color, min, max));
       data.itemStyle = data.itemStyle ?? {};
       data.itemStyle.color = data.itemStyle.color === this.selectionColor ? this.selectionColor : nodeColor;

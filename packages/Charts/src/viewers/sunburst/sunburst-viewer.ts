@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
-import {TreeUtils, treeDataType} from '../../utils/tree-utils';
+import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -203,7 +203,7 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
-  getSeriesData(): treeDataType[] | undefined {
+  getSeriesData(): TreeDataType[] | undefined {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
   }
@@ -276,7 +276,7 @@ export class SunburstViewer extends EChartViewer {
     return {isSmiles, image};
   }
 
-  async handleStructures(data: treeDataType[] | undefined) {
+  async handleStructures(data: TreeDataType[] | undefined) {
     for (const entry of data!) {
       const name = entry.name;
       const { isSmiles, image } = await this.checkAndCreateMoleculeImage(name);
