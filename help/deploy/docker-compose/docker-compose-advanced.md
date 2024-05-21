@@ -1,12 +1,11 @@
 ---
 title: "Local machine: advanced"
 sidebar_position: 1
+format: 'mdx'
 ---
 
-```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-```
 
 This article provides additional options for running Datagrok on your local machine
 using [Docker Compose](https://docs.docker.com/compose/). By following these instructions, you can customize your local
@@ -33,35 +32,27 @@ Minimal hardware requirements: 60 GB of free disk space, 4 CPUs, 8 GB RAM.
 
 1. Get latest Datagrok docker images
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --profile all pull
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --profile all pull
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 2. Run the basic Datagrok stand
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
@@ -77,20 +68,16 @@ Minimal hardware requirements: 60 GB of free disk space, 4 CPUs, 8 GB RAM.
 
    :::
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 3. After the docker compose process is completed, wait for approximately 1 minute for the Datagrok server to spin up.
    Once the server is up and running, open [http://localhost:8080](http://localhost:8080) in your browser
@@ -114,174 +101,136 @@ then reload the page.
 
 If you do not need CVM features, you can run only Datagrok application containers to save space and resources:
 
-```mdx-code-block
 <Tabs groupId="os" queryString>
 <TabItem value="win" label="Windows" default>
-```
 
 ```cmd
 docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
   --profile datagrok --profile db up -d
 ```
 
-```mdx-code-block
 </TabItem>
 <TabItem value="bash" label="MacOS/Linux">
-```
 
 ```shell
 docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
   --profile datagrok --profile db up -d
 ```
 
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 If you need CVM features only, you can run only CVM application containers:
 
-```mdx-code-block
 <Tabs groupId="os" queryString>
 <TabItem value="win" label="Windows" default>
-```
 
 ```cmd
 docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
   --profile cvm up -d
 ```
 
-```mdx-code-block
 </TabItem>
 <TabItem value="bash" label="MacOS/Linux">
-```
 
 ```shell
 docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
   --profile cvm up -d
 ```
 
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 To run Datagrok with exact CVM features, specify them in the command line using the `--profile` flag
 
 - Cheminformatics
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
     --profile datagrok --profile db --profile chem up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
     --profile datagrok --profile db --profile chem up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 - Jupyter notebook
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
     --profile datagrok --profile db --profile jupyter_notebook up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
     --profile datagrok --profile db --profile jupyter_notebook up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 - Scripting
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
     --profile datagrok --profile db --profile scripting up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
     --profile datagrok --profile db --profile scripting up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 - Modeling
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
     --profile datagrok --profile db --profile modeling up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
     --profile datagrok --profile db --profile modeling up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 - Features can be enabled in any combination
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
@@ -294,10 +243,8 @@ To run Datagrok with exact CVM features, specify them in the command line using 
      up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
@@ -310,17 +257,13 @@ To run Datagrok with exact CVM features, specify them in the command line using 
      up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 - Datagrok container is not required to be started for any feature, so you can omit it in run parameters
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
@@ -331,10 +274,8 @@ To run Datagrok with exact CVM features, specify them in the command line using 
      up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
@@ -345,10 +286,8 @@ To run Datagrok with exact CVM features, specify them in the command line using 
      up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 ### Multiple stands
 
@@ -366,10 +305,8 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
    | GROK_CONNECT_VERSION | latest        |
    | GROK_COMPUTE_VERSION | latest        |  
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
     set DATAGROK_VERSION=latest
@@ -378,10 +315,8 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     set GROK_COMPUTE_VERSION=latest
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
     export DATAGROK_VERSION='latest'
@@ -390,15 +325,13 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     export GROK_COMPUTE_VERSION='latest'
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 3. Set environment variables for mapped ports:
 
    | Environment variable                  | Default value |
-      |---------------------------------------|---------------|
+   |---------------------------------------|---------------|
    | DATAGROK_PORT                         | 8080          |
    | DATAGROK_DB_PORT                      | 5432          |
    | DATAGROK_CVM_PORT                     | 8090          |
@@ -415,10 +348,8 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
    To start the second stand properly the values should
    differ from the ports of the existing stands. For example, you can increment every port value by 11.
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    set DATAGROK_PORT=8091
@@ -435,10 +366,8 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
    set DATAGROK_DEMO_POSTGRES_WORLD_PORT=5448
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    export DATAGROK_PORT=8091
@@ -455,98 +384,78 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
    export DATAGROK_DEMO_POSTGRES_WORLD_PORT=5448
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
    stand. The project name in [the standard instructions](#installing-datagrok), which were used for the first stand,
    is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok_2 ^
      --profile all up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok_2 \
      --profile all up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 ### Demo Databases
 
 Datagrok offers demo databases that include sample data.
 To install them locally, run the following command:
 
-```mdx-code-block
 <Tabs groupId="os" queryString>
 <TabItem value="win" label="Windows" default>
-```
 
 ```cmd
 docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok_2 ^
   --profile all --profile demo up -d
 ```
 
-```mdx-code-block
 </TabItem>
 <TabItem value="bash" label="MacOS/Linux">
-```
 
 ```shell
 docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok_2 \
   --profile all --profile demo up -d
 ```
 
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 ## Shutting down Datagrok
 
 To shut down Datagrok use this command:
 
-```mdx-code-block
 <Tabs groupId="os" queryString>
 <TabItem value="win" label="Windows" default>
-```
 
 ```cmd
 docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
   --profile all --profile demo stop
 ```
 
-```mdx-code-block
 </TabItem>
 <TabItem value="bash" label="MacOS/Linux">
-```
 
 ```shell
 docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
   --profile all --profile demo stop
 ```
 
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 All the data is saved in the [Docker volumes](https://docs.docker.com/storage/volumes/).
 
@@ -554,30 +463,24 @@ To reset Datagrok to factory settings and remove all stored data, including all 
 etc.,
 run the following command:
 
-```mdx-code-block
 <Tabs groupId="os" queryString>
 <TabItem value="win" label="Windows" default>
-```
 
 ```cmd
 docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
   --profile all --profile demo down --volumes
 ```
 
-```mdx-code-block
 </TabItem>
 <TabItem value="bash" label="MacOS/Linux">
-```
 
 ```shell
 docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
   --profile all --profile demo down --volumes
 ```
 
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
 ## Troubleshooting
 
@@ -598,66 +501,52 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 
 2. Check containers logs for any possible errors and report the problem if there are any
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
      --profile all --profile demo logs
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo logs
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
    You can also watch the logs of the desired service in real-time.
     - Replace `<service>` with the necessary service name
     - Replace `<number>` with desired log lines to watch or remove `--tail <number>` at all, if you want to see the full log
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
      --profile all --profile demo logs -f --tail <number> <service>
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo logs -f --tail <number> <service>
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 3. Restart Docker compose stand
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
@@ -666,51 +555,41 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo down
-    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+   docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 4. For advanced service troubleshooting, you can access the containers shell.
     - Replace `<service>` with one of the services: db, datagrok, grok_connect, grok_compute, grok_spawner,
       jupyter_notebook, jupyter_kernel_gateway, h2o, etc.
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
      --profile all --profile demo exec <service> /bin/sh
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo exec <service> /bin/sh
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 5. Docker logs might take up all your free disk space. If such a situation has already taken place:
 
@@ -721,10 +600,8 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 
 6. As your last resort, recreate stand completely
 
-   ```mdx-code-block
    <Tabs groupId="os" queryString>
    <TabItem value="win" label="Windows" default>
-   ```
 
    ```cmd
    docker compose -f docker\localhost.docker-compose.yaml --project-name datagrok ^
@@ -735,10 +612,8 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    <TabItem value="bash" label="MacOS/Linux">
-   ```
 
    ```shell
    docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
@@ -749,14 +624,12 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile all --profile demo up -d
    ```
 
-   ```mdx-code-block
    </TabItem>
    </Tabs>
-   ```
 
 ## Useful links
 
-- [Basic local machine deployment](docker-compose.mdx)
+- [Basic local machine deployment](docker-compose.md)
 - [All deployment options](../deploy.md)
 - [Infrastructure overview](../../develop/under-the-hood/infrastructure.md)
 - [Datagrok server configuration options](../configuration.md)

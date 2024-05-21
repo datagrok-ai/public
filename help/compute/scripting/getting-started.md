@@ -33,7 +33,7 @@ Datagrok provides an extensive JavaScript API, giving you:
 ### Prerequisites
 
 * Sign up and log in to [public server of Datagrok](https://public.datagrok.ai/).
-* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.mdx).
+* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.md).
 
 ### Create a script
 

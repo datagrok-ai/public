@@ -518,4 +518,4 @@ The schema has the following tables:
 * [Configuration](../../deploy/configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../dev-process/versioning-policy.md)
-* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.mdx)
+* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.md)

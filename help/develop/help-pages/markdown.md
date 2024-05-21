@@ -15,7 +15,6 @@ keywords:
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-
 ```
 
 This guide has basic information on how to write in MDX-compatible Markdown syntax. It is not intended to be exhaustive. Read the [Docusaurus Markdown features](https://docusaurus.io/docs/next/markdown-features), [Basic Markdown Syntax](https://www.markdownguide.org/basic-syntax), and [Extended Syntax](https://www.markdownguide.org/extended-syntax/) for more details and examples.

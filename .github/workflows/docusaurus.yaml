@@ -2,7 +2,16 @@ name: Docusaurus
 # https://datagrok.ai/help/develop/how-to/help-pages#github-actions-docusaurus-workflow
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force docusaurus deploy with broken linter and broken links?'
+        required: true
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+        default: 'no'
   push:
     paths:
       - 'help/**/*.md'
@@ -47,7 +56,7 @@ jobs:
     name: Lint
     needs: common-check
     runs-on: ubuntu-22.04
-    if: needs.common-check.outputs.continue == 'true' && github.event_name != 'workflow_dispatch'
+    if: needs.common-check.outputs.continue == 'true' && inputs.force == 'no'
     outputs:
       result: ${{ steps.check.outputs.result }}
     steps:
@@ -106,11 +115,11 @@ jobs:
         working-directory: ./js-api
       - run: npm run lint > help/_lint-check-report.md 2>&1
         continue-on-error: true
-        if: github.event_name != 'workflow_dispatch' && needs.lint.outputs.result != 'success'
+        if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
       - name: Build Docusaurus website
         id: build
         run: |
-          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+          if [[ "${{ inputs.force }}" == 'yes' ]]; then
             echo 'Allow broken links in help for manually run action'
             sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
             sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
