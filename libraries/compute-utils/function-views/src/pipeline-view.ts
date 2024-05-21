@@ -630,7 +630,7 @@ export class PipelineView extends FunctionView {
       const newRibbonPanels = [
         [
           ...super.buildRibbonPanels().flat(),
-          ...currentStep && this.helpFiles[currentStep.func.nqName] ? [infoIcon]: [],
+          ...currentStep && this.steps[currentStep.func.nqName].options?.helpUrl ? [infoIcon]: [],
         ],
         ...currentStep ? currentStep.view.buildRibbonPanels(): [],
       ];
