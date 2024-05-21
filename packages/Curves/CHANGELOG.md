@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.4.2 (2024-05-21)
+
+### Features
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Added outlier marker option
+
 ## 1.4.1 (2024-05-21)
 
 ### Features

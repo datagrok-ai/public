@@ -35,6 +35,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "confidenceIntervalColor": "#fbec5d",
       "outlierColor": "#d62728",
       "markerType": "circle",
+      "outlierMarkerType": "outlier",
       "lineStyle": "dashed",
       "errorModel": "proportional",
       "connectDots": false,
@@ -52,7 +53,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "clickToToggle": true,
       "droplines": ["IC50"],
       "points": [
-        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square" },
+        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square", "outlierMarker": "square" },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true, "outlierColor": "#ff7f0e" },
         { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c", "size": 5 },
         // ...
@@ -85,6 +86,7 @@ Each series has its own parameters, such as:
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
 - `outlierColor` - overrides the standardized series outlier color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
+- `outlierMarkerType` - defines the series outlier marker type, which could be `circle`, `outlier`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `errorModel` - defines the series error model, which could be either `constant`, `proportional` or `combined`
 - `connectDots` - defines whether to connect the points with lines or not
@@ -102,6 +104,7 @@ sigmoid function is: `max, tan, IC50, min`.
   - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
   - `color` - overrides the marker color defined in series `pointColor`
   - `marker` - overrides the marker type defined in series `markerType`
+  - `outlierMarker` - overrides the outlier marker type defined in series `outlierMarkerType`
   - `size` - overrides the default marker size
   - `stdev` - when defined, renders an error bar candlestick
 
