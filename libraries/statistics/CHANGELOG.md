@@ -2,6 +2,8 @@
 
 ## 1.3.1 (2024-05-21)
 
+### Features
+
 * [#2797](https://github.com/datagrok-ai/public/issues/2797): Added log-linear fit function
 
 ## 1.3.0 (2024-05-11)

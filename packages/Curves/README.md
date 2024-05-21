@@ -90,7 +90,7 @@ Each series has its own parameters, such as:
 - `connectDots` - defines whether to connect the points with lines or not
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
-- `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
+- `fitFunction` - controls the series fit function, which could be either a sigmoid, linear, log-linear function or a
 [custom-defined function](/README.md#creating-custom-fit-function).
 - `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
 sigmoid function is: `max, tan, IC50, min`.
