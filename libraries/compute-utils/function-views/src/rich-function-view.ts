@@ -1670,7 +1670,7 @@ export class RichFunctionView extends FunctionView {
     if (this.keepOutput())
       return;
 
-    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label).header).hide());
+    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label)?.header).hide());
 
     const firstInputTab = this.tabsElem.panes
       .find((tab) => this.inputTabsLabels.includes(tab.name));
