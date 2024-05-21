@@ -27,7 +27,7 @@ In Datagrok, there are two types of projects:
 Datagrok automatically creates root projects for
 [plugins](../../../develop/how-to/create-package.md) and users:
 * **Plugins**: Each plugin version is a child project under the corresponding
-  root project.../../navigation/basic-tasks/img/project-upload-data-sync.png
+  root project
 * **Users**: Unless you choose an existing project, any entity you create is
   saved to your personal root project, accessible under **My
   stuff** in the **Browse** view (e.g., `jdoe:MyNewDashboard` or `jdoe:MyNewQuery`). 

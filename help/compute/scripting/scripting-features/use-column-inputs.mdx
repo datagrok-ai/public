@@ -49,7 +49,7 @@ to choose a dataframe.
 #tags: demo, dataframe, column_selector
 #input: dataframe table [Data table]
 #input: column id_column [Fill this column with auto-d=generated ID]
-#input: column_list data_columns [Keep this column and drom all others]
+#input: column_list data_columns [Keep this column and drop all others]
 #output: dataframe new_table [New table with additional column]
 
 new_table = table.copy()
@@ -70,7 +70,7 @@ new_table = new_table[ [id_column] + data_columns ]
 //tags: demo, dataframe, column_selector
 //input: dataframe table [Data table]
 //input: column id_column [Fill this column with auto-d=generated ID]
-//input: column_list data_columns [Keep this column and drom all others]
+//input: column_list data_columns [Keep this column and drop all others]
 //output: dataframe new_table [New table with additional column]
 
 const new_table = table.clone();

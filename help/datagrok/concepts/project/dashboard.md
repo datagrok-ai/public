@@ -3,16 +3,14 @@ title: "Dashboards"
 sidebar_position: 2
 ---
 
-For example, dashboards are [projects](project.md) that contain two _entities_:
-the underlying data (a [dataframe](../table.md)) and the visualizations applied
+Dashboards are [projects](project.md) that contain data (a [dataframe](../table.md)) and the visualizations applied
 to it (a [layout](../../../visualize/view-layout.md)). 
 
-
-Use dashboard to visually present data in a pre-specified way. In contrast to
+Use dashboards to visually present data in a pre-specified way. In contrast to
 [table views](../../navigation/views/table-view.md) that excel at
 [exploratory data analysis](../../solutions/domains/use-cases/eda.md),
-[data wrangling](../../../transform/transform.md) and other table-specific tasks, dashboards trade the ability to quickly
-interrogate data in unpredicted ways for delivering the visuals exactly as designed. In particular, here are some
+[data wrangling](../../../transform/transform.md), and other table-specific tasks, dashboards trade the ability to quickly
+interrogate data in unpredicted ways for delivering the visuals precisely as designed. In particular, here are some
 features that are unique to dashboards:
 
 * Visualize data from more than one table at once
@@ -21,16 +19,16 @@ features that are unique to dashboards:
 
 ## Viewers
 
-Use 'Viewers' pane to add viewers to the dashboard. Choose the table using the combo box above the icons.
+Use the 'Viewers' pane to add viewers to the dashboard. Choose the table using the combo box above the icons.
 
 ## Custom elements
 
-Expand 'Elements' pane to add gadgets such as a picture, panel, button, etc.
+Expand the 'Elements' pane to add gadgets such as a picture, panel, button, etc.
 
 ## Custom code
 
-Certain gadgets lets you define code that is executed as a reaction to an event, which is typically triggered by a user.
-For instance, if you set Button's 'OnClick' property to `Info("foo")` script, a "foo" message will be shown when user
+Certain gadgets let you define code that is executed as a reaction to an event, which is typically triggered by a user.
+For instance, if you set Button's 'OnClick' property to `Info("foo")` script, a "foo" message will be shown when a user
 clicks on that button.
 
 ## Form designer
