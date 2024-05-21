@@ -133,9 +133,10 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
           p.outlier ? (p.outlierColor ? DG.Color.fromHtml(p.outlierColor) ? p.outlierColor : series.outlierColor! : series.outlierColor!) :
           (p.color ? DG.Color.fromHtml(p.color) ? p.color : series.pointColor! : series.pointColor!);
         const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
+        const outlierMarker = p.outlierMarker ? p.outlierMarker as DG.MARKER_TYPE : series.outlierMarkerType as DG.MARKER_TYPE;
         const size = !series.connectDots ? p.outlier ? FitConstants.OUTLIER_PX_SIZE * options.ratio! :
           p.size ? p.size : FitConstants.POINT_PX_SIZE * options.ratio! : FitConstants.POINT_PX_SIZE * options.ratio!;
-        DG.Paint.marker(g, !series.connectDots ? p.outlier ? DG.MARKER_TYPE.OUTLIER : marker : marker,
+        DG.Paint.marker(g, !series.connectDots ? p.outlier ? outlierMarker : marker : marker,
           options.viewport.xToScreen(p.x), options.viewport.yToScreen(p.y), color, size);
         if (p.stdev && !p.outlier) {
             g.strokeStyle = color;
