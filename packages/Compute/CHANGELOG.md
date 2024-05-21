@@ -1,5 +1,12 @@
 # Compute changelog
 
+## 1.34.3 (2024-05-21)
+
+### Bug fixes
+
+- RFV: Fixed single-tab output logic
+- Wizard: Fixed double-help case
+
 ## 1.34.2 (2024-05-17)
 
 - RFV: Added HistoryPanel hide on view closing
