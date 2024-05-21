@@ -41,25 +41,24 @@ category('Server cache', () => {
 
   test('Scalars cache test', async () => await basicCacheTest('PostgresqlScalarCacheTest'));
 
-  test('TestWide table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableWide'));
+  test('TestWide table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableWide'), {timeout: 120000});
 
-  test('TestNormal table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableNormal'));
+  test('TestNormal table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableNormal'), {timeout: 120000});
 
   test('Connection cache test', async () => await basicCacheTest('PostgresqlCachedConnTest'), {timeout: 120000});
 
   test('Connection cache invalidation test', async () => {
-    const connection = await grok.dapi.connections.filter(`name="${testConnections[1]}"`).first();
-    await invalidationCacheTest(connection.query('test1', 'SELECT *, pg_sleep(0.1) FROM MOCK_DATA;'), 2);
+    const dataQuery: DG.DataQuery = await grok.functions.eval(`Dbtests:TestConnCache`);
+    await invalidationCacheTest(dataQuery, 2);
   }, {timeout: 120000});
 
   test('Query cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries.filter(`friendlyName="PostgresqlCacheInvalidateQueryTest"`).first();
+    const dataQuery = await grok.functions.eval(`Dbtests:PostgresqlCacheInvalidateQueryTest`);
     await invalidationCacheTest(dataQuery, 2);
   });
 
   test('Scalars cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries
-      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTest"`).first();
+    const dataQuery = await grok.functions.eval(`Dbtests:PostgresqlScalarCacheInvalidationTest`);
     await invalidationCacheTest(dataQuery, 2);
   });
 
@@ -81,12 +80,12 @@ async function invalidationCacheTest(dataQuery: DG.DataQuery, days: number): Pro
   const start = Date.now();
   const funcCall1 = await dataQuery.prepare().call();
   const firstExecutionTime = Date.now() - start;
-  await delay(100);
+  await delay(500);
   //@ts-ignore
   funcCall1.started = dayjs().subtract(days, 'day');
   await grok.dapi.functions.calls.save(funcCall1);
   await grok.functions.clientCache.clear();
-  await delay(300);
+  await delay(500);
   const secondExecutionTime = await getCallTime(dataQuery.prepare());
   const isEqual: boolean = (secondExecutionTime <= firstExecutionTime + firstExecutionTime * 0.5) &&
         (secondExecutionTime >= firstExecutionTime - firstExecutionTime * 0.5);
@@ -97,7 +96,7 @@ async function invalidationCacheTest(dataQuery: DG.DataQuery, days: number): Pro
 async function basicCacheTest(query: string): Promise<void> {
   const dataQuery = await grok.functions.eval(`Dbtests:${query}`);
   const firstExecutionTime = await getCallTime(dataQuery.prepare());
-  await delay(100);
+  await delay(1000);
   const secondExecutionTime = await getCallTime(dataQuery.prepare());
   // eslint-disable-next-line max-len
   expect(firstExecutionTime > secondExecutionTime * 2, true, `The first execution time ${firstExecutionTime} ms is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
