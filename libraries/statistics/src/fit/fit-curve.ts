@@ -80,6 +80,9 @@ const DROPLINES = ['IC50'];
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
+export type FitOutlierMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'outlier' | 'square' | 'star' |
+  'triangle bottom' | 'triangle left' | 'triangle right' | 'triangle top';
+
 export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
 
 export type FitErrorModelType = 'constant' | 'proportional' | 'combined';
@@ -92,6 +95,7 @@ export interface IFitPoint {
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
   outlierColor?: string;   // overrides the outlier color defined in IFitSeriesOptions
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  outlierMarker?: FitOutlierMarkerType; // overrides the outlier marker type defined in IFitSeriesOptions
   size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
   // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
@@ -154,6 +158,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
+  outlierMarkerType?: FitOutlierMarkerType;  // defines the series outlier marker type
   lineStyle?: FitLineStyle;             // defines the series line style
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
@@ -371,6 +376,9 @@ export const fitSeriesProperties: DG.Property[] = [
       friendlyName: 'Confidence Interval'}),
   DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  DG.Property.js('outlierMarkerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'outlier', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
   DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
     choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
