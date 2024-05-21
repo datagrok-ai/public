@@ -47,6 +47,8 @@ import './grid/multi-value-column';
 import './stats/stats';
 // import './bitset/bitset';
 import './valuematcher/valuematcher';
+import './property/property';
+import './widgets/input-form';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
