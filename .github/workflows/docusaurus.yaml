@@ -102,7 +102,7 @@ jobs:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
@@ -242,7 +242,7 @@ jobs:
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
       - name: Prepare Slack Message
-        if: steps.deploy.outcome == 'success'
+        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
         id: slack-user
         shell: bash
         env:
@@ -260,7 +260,7 @@ jobs:
 
       - name: Send to Slack
         id: slack
-        if: steps.deploy.outcome == 'success'
+        if: steps.slack-user.outcome == 'success'
         uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
