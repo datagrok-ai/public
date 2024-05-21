@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.3.2 (2024-05-21)
+
+### Features
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Added outlier marker option
+
 ## 1.3.1 (2024-05-21)
 
 ### Features
