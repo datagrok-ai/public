@@ -92,7 +92,7 @@ def _make_response(data, headers=None):
     return response
 
 
-app.register_blueprint(bp, url_prefix=Settings.application_root)
+app.register_blueprint(bp)
 
 
 if __name__ == '__main__':
