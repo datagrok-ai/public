@@ -172,7 +172,7 @@ category('UI: Choice input', () => {
     expect(selector.item(1)?.textContent, '1');
     expect(selector.item(2)?.textContent, '2');
 
-    expectArray(t.items, ['', '1', '2']);
+    expectArray(t.items, [null, '1', '2']);
   });
 
   test('non-nullable', async () => {
@@ -264,7 +264,7 @@ category('UI: Choice input new', () => {
     expect(selector.item(1)?.textContent, '1');
     expect(selector.item(2)?.textContent, '2');
 
-    expectArray(t.items, ['', '1', '2']);
+    expectArray(t.items, [null, '1', '2']);
   });
 
   test('non-nullable', async () => {
