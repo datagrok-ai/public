@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {before, category, expect, test, after, assure, expectArray, expectTable} from '@datagrok-libraries/utils/src/test';
 
-category('ValueLookup with no nullables', () => {
+category('Widgets: ValueLookup with no nullables', () => {
   let inputs = {} as Record<string, DG.InputBase>;
   let funcCall: DG.FuncCall;
   let form: DG.InputForm;
@@ -38,7 +38,7 @@ category('ValueLookup with no nullables', () => {
   });
 });
 
-category('ValueLookup with with nullables', () => {
+category('Widgets: ValueLookup with with nullables', () => {
   let inputs = {} as Record<string, DG.InputBase>;
   let funcCall: DG.FuncCall;
   let form: DG.InputForm;
@@ -72,7 +72,7 @@ category('ValueLookup with with nullables', () => {
   });
 });
 
-category('InputForm API', () => {
+category('Widgets: InputForm API', () => {
   let inputs = {} as Record<string, DG.InputBase>;
   let funcCall: DG.FuncCall;
   let newFuncCall: DG.FuncCall;
@@ -210,6 +210,101 @@ category('InputForm API', () => {
     expectArray(
       changedInputPropNames, 
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
+    );
+    changeSub.unsubscribe();
+  });
+});
+
+
+category('Widgets: InputForm w/ custom input', () => {
+  let inputs = {} as Record<string, DG.InputBase>;
+  let funcCall: DG.FuncCall;
+  let newFuncCall: DG.FuncCall;
+  let form: DG.InputForm;
+
+  before(async () => {
+    funcCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+  
+    form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
+    inputs = {
+      'stringInput': form.getInput('stringInput') ?? null,
+      'intInput': form.getInput('intInput') ?? null,
+      'doubleInput': form.getInput('doubleInput') ?? null,
+      'boolInput': form.getInput('boolInput') ?? null,
+      'choiceInput': form.getInput('choiceInput') ?? null,
+      'tableInput': form.getInput('tableInput') ?? null,
+    };
+  });
+  
+  // this test shows possible API for custom inputs of DG.InputForm
+  test('replace input by custom', async () => {
+    const customInput = await grok.functions.eval('ApiTests:CustomStringInput');
+    //@ts-ignore
+    form.replaceInput('stringInput', customInput);
+    
+    expect(inputs['stringInput'], 'test');
+    expect(funcCall.inputs['stringInput'], 'test');
+    expect(inputs['stringInput'].root.style.backgroundColor, 'aqua');
+  });
+  
+  test('form to funccall bind', async () => {
+    inputs['stringInput'].value = 'test2';
+
+    expect(inputs['stringInput'].value, 'test2');
+    expect(funcCall.inputs['stringInput'], 'test2');
+  });
+  
+  test('funcall to form bind', async () => {
+    funcCall.inputs['stringInput'] = 'test';
+    
+    expect(inputs['stringInput'].value, 'test');
+  });
+
+  test('form on input change observable', async () => {
+    const changedInputPropNames = [] as string[];
+    const changeSub = form.onInputChanged.subscribe((propName) => {
+      changedInputPropNames.push(propName);
+    });
+
+    inputs['stringInput'].value = 'test2';
+
+    expectArray(
+      changedInputPropNames, 
+      ['stringInput'],
+    );
+    changeSub.unsubscribe();
+  });
+
+  test('source funccall replacement', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
+    expect(inputs['stringInput'].value, 'test');
+  });
+
+  test('form to funccall bind after replace', async () => {
+    inputs['stringInput'].value = 'test2';
+
+    expect(newFuncCall.inputs['stringInput'], 'test2');
+  });
+  
+  test('funccall to form bind after replace', async () => {
+    newFuncCall.inputs['stringInput'] = 'test';
+
+    expect(inputs['stringInput'].value, 'test');
+  });
+
+  test('form on input change observable after replace', async () => {
+    const changedInputPropNames = [] as string[];
+    const changeSub = form.onInputChanged.subscribe((propName) => {
+      changedInputPropNames.push(propName);
+    });
+
+    inputs['stringInput'].value = 'test2';
+
+    expectArray(
+      changedInputPropNames, 
+      ['stringInput'],
     );
     changeSub.unsubscribe();
   });
