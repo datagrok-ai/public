@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.3.4 (2024-05-22)
+
+### Bug fixes
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Rollback from marker to markerType
+
 ## 1.3.3 (2024-05-22)
 
 ### Features
