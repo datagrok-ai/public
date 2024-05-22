@@ -31,11 +31,11 @@ What's more, Datagrok understands the nature of your
   * [Summary columns](../../../../deploy/releases/platform/1-17.md#summary-columns) and sparklines
   * Editable rows, and [_more_](../../../../visualize/viewers/grid.md).
 * [Wrangle data](../../../../transform/transform.md) right from your visualization
-  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../transform/missing-values-imputation.md), find
+  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../explore/missing-values-imputation.md), find
   and treat duplicates and outliers.
 * Use statistical [functions](../../../concepts/functions/functions.md) to perform calculations.
 * Slice and dice data with [50+ interactive viewers](../../../../visualize/viewers/viewers.md). We support all popular
-  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.mdx#regression-line)
+  visualizations (like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#calculations-and-trends)
   or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
   viewers. The viewers also support domain-specific value renderers like molecules on scatterplot axes and points.
 * Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
@@ -66,7 +66,8 @@ Need a specific tool or functionality? Easily [add custom viewers](../../../../d
 <iframe src="https://www.youtube.com/embed/tVwpRB8fikQ?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h3 class="card-title">Coffee Company</h3>
-    <p class="card-text">How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we achieve the following:<br />
+    <p class="card-text">
+    How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we achieve the following:<br />
                          • Retrieve historical data from the Postgres database<br />
                          • Explore, visualize, and clean the dataset<br />
                          • Impute missing values<br />

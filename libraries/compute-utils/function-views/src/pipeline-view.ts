@@ -6,7 +6,7 @@ import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
 import {debounceTime, filter, map, mapTo, startWith, switchMap, tap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE, storageName} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
@@ -17,7 +17,6 @@ import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {createPartialCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
 import {testPipeline} from '../../shared-utils/function-views-testing';
 import {deepCopy} from './shared/utils';
-import dayjs from 'dayjs';
 
 export type StepState = {
   func: DG.Func,
@@ -106,10 +105,13 @@ export class PipelineView extends FunctionView {
     }
 
     if (format === 'Single Excel') {
-      DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+      await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+
+      //@ts-ignore
+      const loadedExcelJS = window.ExcelJS;
 
       const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-      const exportWorkbook = new ExcelJS.Workbook();
+      const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
 
       const generateUniqueName = (wb: ExcelJS.Workbook, initialName: string, step: StepState) => {
         let name = `${getVisibleStepName(step)}>${initialName}`;
@@ -130,7 +132,7 @@ export class PipelineView extends FunctionView {
         const step of Object.values(this.steps)
           .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       ) {
-        const temp = new ExcelJS.Workbook();
+        const temp = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
         this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
         await new Promise((r) => setTimeout(r, 100));
@@ -628,7 +630,7 @@ export class PipelineView extends FunctionView {
       const newRibbonPanels = [
         [
           ...super.buildRibbonPanels().flat(),
-          ...currentStep && this.helpFiles[currentStep.func.nqName] ? [infoIcon]: [],
+          ...currentStep && this.steps[currentStep.func.nqName].options?.helpUrl ? [infoIcon]: [],
         ],
         ...currentStep ? currentStep.view.buildRibbonPanels(): [],
       ];

@@ -135,9 +135,15 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
   }
 
   async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    await delay(10);
-    const res = await helmSubstructureSearch(this.props.substructure, column);
-    return res;
+    const logPrefix = `${this.viewerToLog()}.substructureSearch( column = <${column.name}> )`;
+    _package.logger.debug(`${logPrefix}, start`);
+    try {
+      await delay(10);
+      const res = await helmSubstructureSearch(this.props.substructure, column);
+      return res;
+    } finally {
+      _package.logger.debug(`${logPrefix}, end`);
+    }
   }
 
   // // -- IRenderer --

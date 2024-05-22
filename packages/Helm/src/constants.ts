@@ -12,17 +12,6 @@ export const jsonSdfMonomerLibDict = {
   'symbol': 'MonomerCode'
 };
 
-export type WebEditorMonomer = {
-  /** symbol */ id: string,
-  /** name */ n: string,
-  /** natural analog */ na?: string,
-  /** polymer type */type: string,
-  /** monomer type */ mt: string,
-  /** molfile */ m: string,
-  /** substituents */ at: { [group: string]: string },
-  /** number of substituents */ rs: number
-};
-
 export const SMILES = 'smiles';
 export const RGROUPS = 'rgroups';
 export const MONOMER_SYMBOL = 'symbol';

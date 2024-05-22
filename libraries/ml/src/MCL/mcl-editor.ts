@@ -20,7 +20,8 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
           this.useWebGPUInput.setTooltip(`Use webGPU for MCL calculation (${desc})`);
         } else {
           this.useWebGPUInput.value = false;
-          this.useWebGPUInput.root.style.display = 'none';
+          this.useWebGPUInput.setTooltip('WebGPU is not available');
+          this.useWebGPUInput.enabled = false;
         }
       });
     }

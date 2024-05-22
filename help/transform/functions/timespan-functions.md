@@ -21,7 +21,7 @@ milliseconds in one hour). Time spans include days, hours, minutes, seconds and 
 - [TotalSeconds](#totalseconds)
 - [TotalMilliseconds](#totalmilliseconds)
 
-## <a name="indays"></a>InDays(`ts`)
+## InDays(`ts`) {#indays}
 
 Returns the number of full days in time span `ts`.
 
@@ -29,7 +29,7 @@ Returns the number of full days in time span `ts`.
 InDays(${Duration})
 ```
 
-## <a name="inhours"></a>InHours(`ts`)
+## InHours(`ts`) {#inhours}
 
 Returns the number of full hours days in time span `ts`.
 
@@ -37,7 +37,7 @@ Returns the number of full hours days in time span `ts`.
 InHours(${Duration})
 ```
 
-## <a name="inminutes"></a>InMinutes(`ts`)
+## InMinutes(`ts`) {#inminutes}
 
 Returns the number of full minutes days in time span `ts`.
 
@@ -45,7 +45,7 @@ Returns the number of full minutes days in time span `ts`.
 InMinutes(${Duration})
 ```
 
-## <a name="inseconds"></a>InSeconds(`ts`)
+## InSeconds(`ts`) {#inseconds}
 
 Returns the number of full seconds days in time span `ts`.
 
@@ -53,7 +53,7 @@ Returns the number of full seconds days in time span `ts`.
 InSeconds(${Duration})
 ```
 
-## <a name="inmilliseconds"></a>InMilliseconds(`ts`)
+## InMilliseconds(`ts`) {#inmilliseconds}
 
 Returns the number of milliseconds days in time span `ts`.
 
@@ -61,7 +61,7 @@ Returns the number of milliseconds days in time span `ts`.
 InMilliseconds(${Duration})
 ```
 
-## <a name="timespan"></a>TimeSpan(`days`, `hours`, `minutes`, `seconds`, `milliseconds`)
+## TimeSpan(`days`, `hours`, `minutes`, `seconds`, `milliseconds`) {#timespan}
 
 Creates a TimeSpan from specified parameters.
 
@@ -69,7 +69,7 @@ Creates a TimeSpan from specified parameters.
 TimeSpan(0, 1, 30, 0, 0)    // Time interval of 1.5 hours
 ```
 
-## <a name="timespanparse"></a>TimeSpanParse(`s`)
+## TimeSpanParse(`s`) {#timespanparse}
 
 Constructs and returns a TimeSpan based on string pattern `s`.
 
@@ -77,7 +77,7 @@ Constructs and returns a TimeSpan based on string pattern `s`.
 TimeSpanParse("01:00")    //  Creates a time interval of one hour
 ```
 
-## <a name="totaldays"></a>TotalDays(`ts`)
+## TotalDays(`ts`) {#totaldays}
 
 Returns the number of full and fractional parts of days in the TimeSpan `ts`.
 
@@ -85,7 +85,7 @@ Returns the number of full and fractional parts of days in the TimeSpan `ts`.
 TotalDays(TimeSpan(1, 12, 0, 0, 0))    // Time interval of 1.5 days
 ```
 
-## <a name="totalhours"></a>TotalHours(`ts`)
+## TotalHours(`ts`) {#totalhours}
 
 Returns the number of full and fractional parts of hours in the TimeSpan `ts`.
 
@@ -93,7 +93,7 @@ Returns the number of full and fractional parts of hours in the TimeSpan `ts`.
 TotalHours(TimeSpan(0, 1, 30, 0, 0))    // Time interval of 1.5 hours
 ```
 
-## <a name="totalminutes"></a>TotalMinutes(`ts`)
+## TotalMinutes(`ts`) {#totalminutes}
 
 Returns the number of full and fractional parts of minutes in the TimeSpan `ts`.
 
@@ -101,7 +101,7 @@ Returns the number of full and fractional parts of minutes in the TimeSpan `ts`.
 TotalMinutes(TimeSpan(0, 0, 2, 30, 0))    // Time interval of 2.5 minutes
 ```
 
-## <a name="totalseconds"></a>TotalSeconds(`ts`)
+## TotalSeconds(`ts`) {#totalseconds}
 
 Returns the number of full and fractional parts of seconds in the TimeSpan `ts`.
 
@@ -109,7 +109,7 @@ Returns the number of full and fractional parts of seconds in the TimeSpan `ts`.
 TotalSeconds(TimeSpan(0, 0, 0, 7, 500))    // Time interval of 7.5 seconds
 ```
 
-## <a name="totalmilliseconds"></a>TotalMilliseconds(`ts`)
+## TotalMilliseconds(`ts`) {#totalmilliseconds}
 
 Returns the number of full and fractional parts of milliseconds in the TimeSpan `ts`.
 

@@ -255,7 +255,7 @@ export class Func extends Entity {
   }
 
   /**
-   *  Executes the function with the specified {link parameters}, and returns result.
+   *  Executes the function with the specified {@link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
   async apply(parameters: {[name: string]: any} | any[] = {}): Promise<any> {
@@ -1076,8 +1076,8 @@ export class Package extends Entity {
   }
 
   /**
-   * Deprecated. Use getSettings instead. 
-   *  Returns properties for a package. 
+   * Deprecated. Use getSettings instead.
+   *  Returns properties for a package.
   */
   getProperties(): Promise<any> {
     return this.getSettings();
@@ -1406,4 +1406,26 @@ export class Schema {
   set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
+}
+
+export class UserReport extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get id(): string {
+    return api.grok_UserReport_Id(this.dart);
+  }
+
+  get isResolved(): boolean {
+    return api.grok_UserReport_IsResolved(this.dart);
+  }
+
+  get jiraTicket(): string {
+    return api.grok_UserReport_JiraTicket(this.dart);
+  }
+
+  get assignee(): User {
+    return toJs(api.grok_UserReport_Assignee(this.dart));
+  }
 }

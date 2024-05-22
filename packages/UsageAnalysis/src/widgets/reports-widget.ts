@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {DetailedLog} from "datagrok-api/dg";
 
 export class ReportsWidget extends DG.Widget {
   caption: string;
@@ -11,12 +10,11 @@ export class ReportsWidget extends DG.Widget {
     super(ui.box());
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
-    const currentUserId = DG.User.current().id;
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.DataFrame = await grok.functions.call('UsageAnalysis:ReportsTop20', {'packageOwnerId': currentUserId});
+      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20);
       const users: {[_: string]: any} = {};
       (await grok.dapi.users.list()).forEach((user) => {
-        users[user.friendlyName] = {
+        users[user.id] = {
           'avatar': user.picture,
           'name': user.friendlyName,
           'data': user,
@@ -43,9 +41,11 @@ export class ReportsWidget extends DG.Widget {
         item.style.border = 'none';
         item.style.marginLeft = 'auto';
         item.style.padding = '5px';
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
           e.preventDefault();
-          DetailedLog.showReportProperties(currentRow.get('report_id'), result, i);
+          const report = await grok.dapi.reports.find(currentRow.get('id'));
+          if (report)
+            grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
         });
         items.push(item);
       }

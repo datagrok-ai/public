@@ -75,7 +75,7 @@ A number of command-line utilities for server management. (Work in progress)
 
 ## Client-side settings
 
-[Client-side settings](../../navigation/navigation.md#settings) are specific to the user, and are controlled by the user (
+Client-side settings are specific to the user, and are controlled by the user (
 unless the organization's IT policy overrides it).
 
 ## Server-side settings

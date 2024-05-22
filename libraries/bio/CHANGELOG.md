@@ -1,5 +1,42 @@
 # bio changelog
 
+## 5.41.6 (2024-05-20)
+
+Fix monomer placer optimization for column width changed
+
+## 5.41.5 (2024-05-16)
+
+Fix separator splitter to ceil splitter limit
+Add seq generator for various notations
+
+## 5.41.4 (2024-05-15)
+
+Move long/many sequence generators to bio lib
+Fix SeqHandler setTags optimizing call getStats
+
+## 5.41.3 (2024-05-15)
+
+Fix cell renderer monomer placer hit test
+
+## 5.41.2 (2024-05-13)
+
+### Bug fixes
+
+Fix MonomerLib.getSummary for backward compatibility
+Fix cell renderer async base for sync rendering
+
+## 5.41.1 (2024-05-13)
+
+### Features
+
+* Add types for Helm Web Editor
+
+### Bug fixes
+
+* Unveil cell renderer errors for tests
+* Fix cell renderer for StackOverflow error on long seqs
+* Optimize SeqHandler.getSplitter for split limit (separator)
+
 ## 5.41.0 (2024-05-01)
 
 Optimize cell renderer on async renderer base

@@ -26,10 +26,10 @@ If it's machine-readable, we can work with it!
   databases and file shares (or [create your own](../access/databases/create-custom-connectors.md))
 * Support for [OpenAPI](access/open-api.md) and access to [public datasets](../access/public-datasets.md)
 * [20+ file formats, 30+ molecule structure formats](../access/files/supported-formats.md). Drag-and-drop files to open
-* [Browse relational database schemas](../access/databases/databases.mdx#schema-browser)
-* Create, edit, and debug queries with [visual tools](../access/databases/databases.mdx#working-with-queries)
-* [Annotate queries](../access/databases/databases.mdx#parameterized-queries)
-  and save query results as [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results).
+* [Browse relational database schemas](../access/databases/databases.md#schema-browser)
+* Create, edit, and debug queries with [visual tools](../access/databases/databases.md#working-with-queries)
+* [Annotate queries](../access/databases/databases.md#parameterized-queries)
+  and save query results as [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results).
 
 [Learn more about data access](../access/access.md).
 
@@ -40,7 +40,7 @@ Your data is [FAIR](../govern/catalog/fair.md) and secure.
 * Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
 flexible [authentication](../govern/authentication.md), 
 [secrets managers](../access/data-connection-credentials.md)
-* Centralized [metadata](../govern/catalog/metadata.md)-annotated catalog of
+* Centralized [metadata](concepts/objects.md#metadata)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
 managing data, connections, users, and more
 * Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
@@ -54,7 +54,7 @@ Automatically generate macros from data transformations and use them on new data
 * Use [500+ available functions](https://public.datagrok.ai/functions?q), or
   write your own in JavaScript, Python, R (or any other language that compiles
   to WASM)
-* Record and apply [macros](navigation/navigation.md#recording-macros), use in pipelines
+* Record and apply [macros](navigation/panels/panels.md#recording-macros), use in pipelines
 * Visually edit [query transformations](../transform/query-transformations.md).
 
 [Learn more about functions](concepts/functions/functions.md).
@@ -63,26 +63,26 @@ Automatically generate macros from data transformations and use them on new data
 
 Slice, dice, and visualize your data. Render millions of data points
 interactively and find patterns. Build dynamic dashboards in seconds. Leverage
-[metadata](../govern/catalog/metadata.md) for automated data enrichment and contextual
+[metadata](concepts/objects.md#metadata) for automated data enrichment and contextual
 suggestions.
 
 * [50+ interactive viewers](../visualize/viewers/viewers.md) for synchronized, dynamic dashboards
 * [Integration with visualizations in R, Python, or Julia](../visualize/viewers/scripting-viewer.md)
-* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.mdx#calculations-and-trends),
+* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.md#calculations-and-trends),
   confidence intervals, correlations, and statistics
-* Automatic detection of outliers, [missing values](../transform/missing-values-imputation.md),
+* Automatic detection of outliers, [missing values](../explore/missing-values-imputation.md),
  or incorrect data types
 * Adaptive UI and data-specific suggestions.
 
 #### Compute
 
 Write in any language, annotate, publish, and apply scientific models, methods,
-and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD](link))-->.
+and apps. Solve differential equations and run simulations for complex processes<!--(e.g., for [bioreactors](like) and [PKPD])-->.
 
 * [500+ available functions](https://public.datagrok.ai/functions), or write your own in R, Python, or JavaScript
 * [Metadata-annotated](../compute/compute.md#metadata) scripts with [cross-language support](../compute/compute.md#functions-and-cross-language-support)
 * [Scalable](../compute/compute.md#scalable-computations) and 
-[reproducible](../compute/compute.md#reproducible-computations) computations, [model lifecycle management](../compute/compute.md#model-lifecycle)
+[reproducible](../compute/compute.md#reproducible-computations) computations, [model lifecycle management](../compute/compute.md#models)
 * [Auto-generated UI](../compute/compute.md#user-interface).
 
 Learn more about [Compute](../compute/compute.md).
@@ -135,7 +135,7 @@ for areas like [cheminformatics](solutions/domains/chem/chem.md),
 * Data analysts? Drag and drop your local files to start analyzing. 
 * Data scientists mapping new store locations? [Excellent for strategic planning](https://www.youtube.com/watch?v=tVwpRB8fikQ).
 * Research scientists running complex simulations? [Absolutely](../compute/compute.md).
-* Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results), no coding needed. 
+* Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results), no coding needed. 
 * Developers? Quickly develop and test data-driven applications.   
 
 **Team size**: Datagrok is for individuals and teams of all sizes - from

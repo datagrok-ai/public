@@ -4,8 +4,8 @@ sidebar_position: 0
 ---
 
 The Datagrok platform has a plugin designed for natural language processing. This feature
-can be applied to comfortably work with [files](../../../../access/files/files.mdx) with text content.
-To try it out, import your text files according to the [instructions](../../../../access/files/files.mdx#importing-text)
+can be applied to comfortably work with [files](../../../../access/files/files.md) with text content.
+To try it out, import your text files according to the [instructions](../../../../access/files/files.md#importing-text)
 or use the provided [demo files](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/nlp).
 The rest of the article is dedicated to the main applications of this domain integrated into the platform.
 
@@ -14,7 +14,7 @@ The rest of the article is dedicated to the main applications of this domain int
 It all starts with extracting text. This is a building block for other, more
 complex tasks. Due to the high demand, it is essential to support as many
 popular text file formats as possible. The platform comes with a built-in
-[file browser](../../../../access/files/files.mdx#file-manager) for easy file management.
+[file browser](../../../../access/files/files.md#file-manager) for easy file management.
 The *NLP* package extends it by processing text from `pdf`, `doc`, `docx`, `odt`, and other text formats.
 
 ![Extract text from PDF](./images/nlp-text-extraction.gif)

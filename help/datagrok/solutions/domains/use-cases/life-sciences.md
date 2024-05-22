@@ -25,8 +25,8 @@ efficiently work with as big datasets as possible. It offers two modes:
 * **Remote data**—sometimes, it is impractical or impossible to download the whole dataset, but you still need to work
   with it. In this case, Datagrok offers several solutions that will transparently translate the necessary work to be
   performed on the server-side. Here are some of them:
-  * [DB Exploration](../../../../access/databases/databases.mdx#database-manager) to explore database schemas
-  * [DB Aggregation Editor](../../../../access/databases/databases.mdx#aggregation-editor) to aggregate and pivot on the database side
+  * [DB Exploration](../../../../access/databases/databases.md#database-manager) to explore database schemas
+  * [DB Aggregation Editor](../../../../access/databases/databases.md#aggregation-editor) to aggregate and pivot on the database side
 
 ## Complexity
 
@@ -68,7 +68,7 @@ that can be applied either to the whole dataset or an individual point.
 
 Due to the complexity of scientific data, having the proper metadata associated with it is pivotal for computers (as
 well as people!) to understand it. Datagrok provides a comprehensive
-[metadata management framework](../../../../govern/catalog/metadata.md).
+[metadata management framework](../../../concepts/objects.md#metadata).
 
 We also support [FAIR Principles](../../../../govern/catalog/fair.md) where applicable.
 

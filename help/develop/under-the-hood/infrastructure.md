@@ -368,7 +368,7 @@ Resources(differs based on your needs):
 
 #### Custom package repositories
 
-By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting/scripting.mdx#environments) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
+By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting/scripting-features/specify-env.mdx) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
 
 * To access repositories through proxy set `HTTP_PROXY` and `HTTPS_PROXY` variables 
 * To use custom conda repositories in addition to conda-forge specify `CONDA_CUSTOM_REPOSITORIES`. It takes precedence over conda-forge. Multiple repositories can be specified using space. For example: `CONDA_CUSTOM_REPOSITORIES='http://my-repo/custom/ http://his-repo/special/'`
@@ -518,4 +518,4 @@ The schema has the following tables:
 * [Configuration](../../deploy/configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../dev-process/versioning-policy.md)
-* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.mdx)
+* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.md)

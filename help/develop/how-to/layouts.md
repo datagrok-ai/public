@@ -30,7 +30,7 @@ let layout = grok.shell.v.saveLayout();
 ```
 
 This is quite explicit, there is just one caveat: this method can only be applied to
-[table views](../../datagroknavigation/views/table-view.md). The same holds for its counterpart `loadLayout`
+[table views](../../datagrok/navigation/views/table-view.md). The same holds for its counterpart `loadLayout`
 method that applies a previously saved layout to the given view. Here is an example:
 
 ```js
@@ -130,7 +130,7 @@ See also:
 
 - [Upload data with layouts using the server API](upload-data.md#layout)
 - [View layout](../../visualize/view-layout.md)
-- [Table view](../../datagroknavigation/views/table-view.md)
+- [Table view](../../datagrok/navigation/views/table-view.md)
 - [User data storage](user-data-storage.md)
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)

@@ -17,8 +17,8 @@ The platform has browsers for the following entities:
 
 | Entity Browser                                 | URL                                                                                |
 |------------------------------------------------|------------------------------------------------------------------------------------|
-| [Projects](../../datagrok/concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
-| [Files](../../access/files/files.mdx)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
+| [Projects](../concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
+| [Files](../../access/files/files.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../../compute/scripting/scripting.mdx)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
 | [Functions](../concepts/functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
@@ -35,7 +35,7 @@ The platform has browsers for the following entities:
 
 ## Projects
 
-A [project](../../datagrok/concepts/project/project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
+A [project](../concepts/project/project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
 view, you can pass the name of a specific view to the URL so that you can see it after opening. Links to projects are
 generated according to the following
 rule: `https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}`
@@ -48,7 +48,7 @@ not specified, the first view from the project will open.
 
 ## Files
 
-A [file share](../../access/files/files.mdx) for which the user has access is available by the link. You should
+A [file share](../../access/files/files.md) for which the user has access is available by the link. You should
 specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .
@@ -76,7 +76,7 @@ link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datag
 The link to a [data query](../../access/access.md#data-query), in addition to its name, must also contain the
 corresponding [data connection](../../access/access.md#data-connection) name and the namespace (or several nested namespaces).
 
-[Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
+[Parameterized queries](../../access/databases/databases.md#parameterized-queries) can be executed as well. In this case, query parameters are
 passed directly in the URL. For example:
 
 [https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY](https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY)
@@ -117,4 +117,4 @@ See also:
 
 * [Navigation](navigation.md)
 * [Entities](../concepts/objects.md)
-* [Smart search](../../explore/search-filter-select/smart-search.md)
+

@@ -17,8 +17,9 @@ import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInput
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getObservable, properUpdateIndicator} from './shared/utils';
+import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -691,6 +692,8 @@ export class RichFunctionView extends FunctionView {
 
     const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
 
+    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit inputs');
+
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
@@ -705,6 +708,7 @@ export class RichFunctionView extends FunctionView {
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.isFittingEnabled ? [fitting]: [],
       ...this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
@@ -1172,6 +1176,10 @@ export class RichFunctionView extends FunctionView {
     await SensitivityAnalysis.fromEmpty(this.func);
   }
 
+  private async onFittingLaunch(): Promise<void> {
+    await Optimization.fromEmpty(this.func);
+  }
+
   private renderInputForm(): HTMLElement {
     return this.renderIOForm(SYNC_FIELD.INPUTS);
   }
@@ -1270,7 +1278,7 @@ export class RichFunctionView extends FunctionView {
       const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
       Object.entries(mapping).forEach(([input, key]) => this.setInput(
         input,
-        funcCallInput.chosenRun ? extractValue(key): this.funcCall.inputParams[input].property.defaultValue,
+        funcCallInput.chosenRun ? extractValue(key): getDefaultValue(this.funcCall.inputParams[input].property),
         funcCallInput.chosenRun ? 'restricted': 'user input',
       ));
     });
@@ -1283,11 +1291,9 @@ export class RichFunctionView extends FunctionView {
       return this.inputsOverride[val.property.name];
 
     if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
-      return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
+      return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
-    case DG.TYPE.DATA_FRAME:
-      return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
     case DG.TYPE.FLOAT:
@@ -1384,8 +1390,8 @@ export class RichFunctionView extends FunctionView {
   private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
     const paramName = param.property.name;
 
-    ui.tooltip.bind(t.root, () => {
-      const desc = param.property.description ? `${param.property.description}.`: null;
+    const generateTooltip = () => {
+      const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
 
       const getExplanation = () => {
         if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
@@ -1401,7 +1407,9 @@ export class RichFunctionView extends FunctionView {
           ...desc ? [ui.divText(desc)]: [],
           ...exp ? [ui.divText(exp)]: [],
         ], {style: {'max-width': '300px'}}) : null;
-    });
+    };
+    ui.tooltip.bind(t.captionLabel, generateTooltip);
+    ui.tooltip.bind(t.input, generateTooltip);
   }
 
   private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {
@@ -1461,10 +1469,7 @@ export class RichFunctionView extends FunctionView {
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
-      const defaultValue = newParam.property.propertyType === DG.TYPE.STRING && newParam.property.defaultValue?
-        (newParam.property.defaultValue as string).substring(1, newParam.property.defaultValue.length - 1):
-        newParam.property.defaultValue;
-      const newValue = this.funcCall[field][name] ?? defaultValue ?? null;
+      const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
@@ -1665,7 +1670,7 @@ export class RichFunctionView extends FunctionView {
     if (this.keepOutput())
       return;
 
-    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label).header).hide());
+    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label)?.header).hide());
 
     const firstInputTab = this.tabsElem.panes
       .find((tab) => this.inputTabsLabels.includes(tab.name));

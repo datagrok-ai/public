@@ -1,5 +1,50 @@
 # compute-utils changelog
 
+## 1.34.3 (2024-05-21)
+
+### Bug fixes
+
+- RFV: Fixed single-tab output logic
+- Wizard: Fixed double-help case
+
+## 1.34.2 (2024-05-17)
+
+- RFV: Added HistoryPanel hide on view closing
+
+## 1.34.1 (2024-05-15)
+
+- Fixed imports
+
+## 1.34.0 (2024-05-14)
+
+- Added Fitting view
+
+## 1.33.7 (2024-05-14)
+
+### Features
+
+- RFV: Removed workaround for tableInput
+- RFV: Added tooltips for inputs
+- HistoryInput: Changed dates to local timezone
+
+## 1.33.6 (2024-05-10)
+
+### Features
+
+- Added lodash.cloneDeepWith types
+
+## 1.33.5 (2024-05-09)
+
+### Features
+
+- RFV: Property default value getting both for 1.18.x and 1.19
+
+## 1.33.4 (2024-05-09)
+
+### Features
+
+- Heavyweight imports optimization
+
 ## 1.33.3 (2024-05-08)
 
 ### Features

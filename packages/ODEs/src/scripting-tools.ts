@@ -587,13 +587,13 @@ function getInputSpec(inp: Input): string {
 
 /** Return annotation line specifying viewers */
 function getViewersLine(ivp: IVP): string {
-  const outputColsCount = (ivp.outputs) ? (ivp.outputs.size - 1) : ivp.inits.size;
-  const multiAxis = (outputColsCount > MAX_LINE_CHART) ? 'true' : 'false';
+  const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
+  const multiAxis = (outputColsCount > MAX_LINE_CHART - 1) ? 'true' : 'false';
 
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
   // eslint-disable-next-line max-len
-  return `viewer: Line chart(block: 100, sharex: "true", multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+  return `viewer: Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
 }
 
 /** Generate annotation lines */
@@ -1146,10 +1146,10 @@ function checkCorrectness(ivp: IVP): void {
       throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.INITS}-block)`);
 
     scriptInputs.push(current);
-  })
+  });
 
   // 4.2) parameters
-  if (ivp.params !== null)
+  if (ivp.params !== null) {
     ivp.params.forEach((_, key) => {
       if (key[0] === SERVICE)
         throw new Error(`${ERROR_MSG.SERVICE_START}: check '${key}' in the ${CONTROL_EXPR.PARAMS}-block`);
@@ -1160,6 +1160,6 @@ function checkCorrectness(ivp: IVP): void {
         throw new Error(`${ERROR_MSG.REUSE_NAME} '${key}' (see ${CONTROL_EXPR.PARAMS}-block)`);
 
       scriptInputs.push(current);
-    })
-
+    });
+  }
 } // checkCorrectness

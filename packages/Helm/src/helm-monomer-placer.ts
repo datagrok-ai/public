@@ -8,19 +8,18 @@ import wu from 'wu';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {IEditorMol} from '@datagrok-libraries/bio/src/types/helm-web-editor';
 
 import {getParts, parseHelm} from './utils';
 
 import {_package, getMonomerLib} from './package';
 
 export interface ISeqMonomer {
-  polymerType: string
-  symbol: string,
+  polymerType: org.helm.PolymerType;
+  symbol: string;
 }
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
-  public readonly monomerLib: IMonomerLib;
-
   private _allPartsList: (string[] | null)[];
   private _lengthsList: (number[] | null)[];
   private _editorMolList: (JSDraw2.IEditorMol | null)[];
@@ -34,8 +33,6 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     tableCol: DG.Column<string>
   ) {
     super(gridCol, tableCol, _package.logger);
-    this.monomerLib = getMonomerLib();
-    this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
   }
 
   protected override reset(): void {
@@ -78,19 +75,6 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     }
 
     return [allParts, lengths];
-  }
-
-  getMonomer(monomer: ISeqMonomer): Monomer | null {
-    let res: Monomer | null = null;
-    if (monomer.polymerType)
-      res = this.monomerLib.getMonomer(monomer.polymerType, monomer.symbol);
-    else {
-      for (const polymerType of this.monomerLib.getPolymerTypes()) {
-        res = this.monomerLib.getMonomer(polymerType, monomer.symbol);
-        if (res) break;
-      }
-    }
-    return res;
   }
 
   // -- Handle events --

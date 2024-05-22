@@ -4,7 +4,7 @@ title: "Search patterns"
 
 Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same syntax to
 query in-memory datasets via the [search mechanism](data-search.md), and to query external databases
-with [parameterized queries](../../access/databases/databases.mdx#parameterized-queries). When querying databases, behind the scenes the
+with [parameterized queries](../../access/databases/databases.md#parameterized-queries). When querying databases, behind the scenes the
 platform will parse the free-text query, and then execute a parameterized, safe, provider-specific SQL query on the
 backend.
 
@@ -21,8 +21,8 @@ already specified at the query level.
 | not equals             | != 5       |
 | greater than           | > 5        |
 | greater than or equals | >= 5       |
-| less than              | < 5        |
-| less than or equals    | <= 5       |
+| less than              | \< 5        |
+| less than or equals    | \<= 5       |
 | range (inclusive)      | 10-20      |
 | in                     | in (5, 10) |
 | not in                 | not in (5, 10) |
@@ -92,4 +92,4 @@ String matching is case-insensitive. If the input does not match above-mentioned
 See also:
 
 * [Data search](data-search.md)
-* [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries)
+* [Parameterized queries](../../access/databases/databases.md#parameterized-queries)

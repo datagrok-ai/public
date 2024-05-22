@@ -2,7 +2,16 @@ name: Docusaurus
 # https://datagrok.ai/help/develop/how-to/help-pages#github-actions-docusaurus-workflow
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force docusaurus deploy with broken linter and broken links?'
+        required: true
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+        default: 'no'
   push:
     paths:
       - 'help/**/*.md'
@@ -47,7 +56,7 @@ jobs:
     name: Lint
     needs: common-check
     runs-on: ubuntu-22.04
-    if: needs.common-check.outputs.continue == 'true' && github.event_name != 'workflow_dispatch'
+    if: needs.common-check.outputs.continue == 'true' && inputs.force == 'no'
     outputs:
       result: ${{ steps.check.outputs.result }}
     steps:
@@ -87,66 +96,98 @@ jobs:
             docusaurus/package-lock.json
             js-api/package-lock.json
       - name: Cache Docusaurus
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
-      - name: Install hyperlink
-        if: github.event_name != 'workflow_dispatch'
-        run: npm install -g @untitaker/hyperlink
       - name: Install dependencies
         run: npm install
         working-directory: ./docusaurus
       - name: Install js-api dependencies
         run: npm install
         working-directory: ./js-api
+      - run: npm run lint > help/_lint-check-report.md 2>&1
+        continue-on-error: true
+        if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
       - name: Build Docusaurus website
-        run: npm run build
-        working-directory: ./docusaurus
-      - name: Lint-Fix Markdown
+        id: build
         run: |
-          npm install -g markdownlint-cli2
-          markdownlint-cli2-fix "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
-        continue-on-error: true
-        if: github.event_name != 'workflow_dispatch' && needs.lint.outputs.result != 'success'
-      - name: Check anchors
-        id: anchors
-        working-directory: ./docusaurus
-        if: github.event_name != 'workflow_dispatch'
-        continue-on-error: true
-        run: |
-          hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
-          echo "result=success" >> $GITHUB_OUTPUT
-      - name: Set summary
-        if: github.event_name != 'workflow_dispatch'
-        continue-on-error: true
-        run: |
-          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then
-            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
-          else
-            echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
-            echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#links-and-anchors-check)" >> help/_anchor-check-report.md
-            cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-            cat help/_anchor-check-report.md
-            sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,^(help/.*\.md)$,### \1,g' ${GITHUB_STEP_SUMMARY}
-            sed -i 's,error:,**Error:**,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,(at line [0-9]+),**\1**,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r 's,^(output/help.*\.html)$,### \1,g' ${GITHUB_STEP_SUMMARY}
-            sed -i -r '/^Found [0-9]+ bad links/i ## Errors summary' ${GITHUB_STEP_SUMMARY}
-            sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
-            exit 1
+          if [[ "${{ inputs.force }}" == 'yes' ]]; then
+            echo 'Allow broken links in help for manually run action'
+            sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
+            sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
           fi
-      - uses: actions/upload-artifact@v2
+          npm run build > ../help/_docusaurus_build.txt 2>&1
+          cat ../help/_docusaurus_build.txt
+        working-directory: ./docusaurus
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        name: Save docusaurus build output
+        if: always() && steps.build.outcome != 'skipped'
+        with:
+          name: _docusaurus_build_output
+          path: help/_docusaurus_build.txt
+          retention-days: 14
+      - name: Set summary
+        id: build_summary
+        run: |
+          echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
+
+          bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
+          if [ -f help/_broken_links.csv ]; then
+            line_count=$(wc -l < help/_broken_links.csv)
+          else
+            line_count=0
+          fi
+
+          if [ "$line_count" -gt 1 ] || [[ "${{ steps.build.outcome }}" == "failure" ]] ; then
+              echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
+
+              echo "## Local execution" >> ${GITHUB_STEP_SUMMARY}
+              echo "To test locally run 'npm run build' from docusaurus directory" >> ${GITHUB_STEP_SUMMARY}
+
+              if [ "$line_count" -gt 1 ]; then
+                echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
+                # Add CSV as Markdown table 
+                echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
+                tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+                echo "broken_links=true" >> $GITHUB_OUTPUT
+              else
+                echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
+                cat help/_docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
+                echo ":no_entry_sign: Docusaurus build errors:"
+                cat help/_docusaurus_build.txt
+              fi
+    
+              if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
+                  echo ':x: Docusaurus build failed'
+                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                  exit 1
+              else
+                  echo ':warning: Ignored docusaurus build warnings'
+                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              fi
+          else
+              echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+      - uses: actions/upload-artifact@v4
+        name: Save broken links report
+        if: always() && steps.build_summary.outputs.broken_links == 'true'
+        with:
+          name: broken_links.csv
+          path: help/_broken_links.csv
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        name: Save docusaurus build
+        if: github.ref == 'refs/heads/master'
         with:
           name: docusaurus
           path: docusaurus/build
@@ -162,7 +203,7 @@ jobs:
     runs-on: ubuntu-22.04
     environment: Help
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: docusaurus
           path: docusaurus/build
@@ -201,7 +242,7 @@ jobs:
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
       - name: Prepare Slack Message
-        if: steps.deploy.outcome == 'success'
+        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
         id: slack-user
         shell: bash
         env:
@@ -219,8 +260,8 @@ jobs:
 
       - name: Send to Slack
         id: slack
-        if: steps.deploy.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.24.0
+        if: steps.slack-user.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
           payload: |

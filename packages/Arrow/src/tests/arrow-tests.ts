@@ -1,7 +1,7 @@
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-
+import {default as init} from "parquet-wasm/esm/arrow1";
 import {fromFeather, fromParquet} from "../api/api";
 
 const expectedColumns = ['pclass', 'survived', 'name', 'sex', 'age',
@@ -13,8 +13,9 @@ category('Parquet', () => {
   let dfFromParquet: DG.DataFrame | null;
 
   before(async () => {
+    await init(_package.webRoot + 'dist/arrow1_bg.wasm');
     const bytesParquet = await _package.files.readAsBytes('titanic.parquet');
-    dfFromParquet = await fromParquet(bytesParquet);
+    dfFromParquet = fromParquet(bytesParquet);
   });
 
   test('fromParquet: column names', async () => {
@@ -30,7 +31,11 @@ category('Parquet', () => {
 
   test('fromParquet: number of rows and columns', async () => {
     expect(dfFromParquet?.columns.length, 14);
-    expect(dfFromParquet?.rowCount, 1310);
+    expect(dfFromParquet?.rowCount, 1311);
+  });
+  
+  test('fromParquet: serialization', async () => {
+    expectTable(dfFromParquet!, dfFromParquet?._exportReopen() ?? DG.DataFrame.create());
   });
 });
 
@@ -55,6 +60,10 @@ category('Feather', () => {
 
   test('fromFeather: number of rows and columns', async () => {
     expect(dfFromArrow?.columns.length, 14);
-    expect(dfFromArrow?.rowCount, 1310);
+    expect(dfFromArrow?.rowCount, 1311);
+  });
+
+  test('fromFeather: serialization', async () => {
+    expectTable(dfFromArrow!, dfFromArrow?._exportReopen() ?? DG.DataFrame.create());
   });
 });

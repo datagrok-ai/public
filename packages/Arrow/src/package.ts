@@ -11,7 +11,7 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//tags: autostart
+//tags: init
 export async function parquetInit() {
   await init(_package.webRoot + 'dist/arrow1_bg.wasm');
 }

@@ -619,17 +619,17 @@ export enum PERMISSION {
  * @typedef {string} SimilarityMetric
  * @typedef {string} ColorType
  * @typedef {string} DockType
- * 
+ *
  * @typedef {Object} ElementOptions
  * @property {string} id
  * @property {string} classes
  * @property {Object} style
- * 
+ *
  * @typedef {Object} CsvImportOptions
  * @property {string} delimiter
  * @property {string} decimalSeparator
  * @property {string} thousandSeparator
- * 
+ *
  * @typedef {function(number): boolean} IndexPredicate
  * @typedef {function(String): boolean} StringPredicate
  **/

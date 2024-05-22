@@ -10,7 +10,7 @@ end-to-end-experience, we took ownership of [data access](../../../datagrok/data
 [data governance](../../../datagrok/datagrok.md#access),
 [data exploration](../../../datagrok/datagrok.md#explore),
 [scientific computing](../../../compute/scripting/scripting.mdx),[machine learning and artificial intelligence](../../../datagrok/datagrok.md#explore),
-and [collaboration](../../../datagrok/datagrok.md#share).
+and [collaboration](../../../datagrok/navigation/basic-tasks/basic-tasks.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like
 [authentication](../../../govern/authentication.md),
@@ -83,8 +83,8 @@ platform.  Each test is associated with a separate story, which describes the
 intended objective, actions, and expected outcome of the user. To emulate user
 input, we use Selenium. It also checks the expected result.
 * [**Package tests**](../../../develop/how-to/add-package-tests.md). These tests include
-[unit tests](../../../develop/how-to/add-package-tests.md/#adding-unit-tests) and
-[function tests](../../../develop/how-to/add-package-tests.md/#testing-functions). We provide
+[unit tests](../../../develop/how-to/add-package-tests.md#adding-unit-tests) and
+[function tests](../../../develop/how-to/add-package-tests.md#testing-functions). We provide
 function tests for packages, scripts, and APIs, as they all utilize the
 concept of
 [functions](../../concepts/functions/functions.md).

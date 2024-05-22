@@ -37,7 +37,7 @@ all share the same mechanism and therefore have the same features:
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing function call in
-the [console](../../navigation/panels/panels.md#console)), we get macro recording capability - and unlike Excel, there is no
+the [console](../../navigation/panels/panels.md#console), we get macro recording capability - and unlike Excel, there is no
 need to start recording, simply open `View | Console` to see what had been executed.
 
 This feature is especially useful for data cleansing, where you would visually clean one dataset and get a script that
@@ -58,7 +58,7 @@ public environment.
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../../learn/learn.md#train-model),
 [running an R script](../../../compute/scripting/scripting.mdx), or
-[computing chemical descriptors](../../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
+[computing chemical descriptors](../../solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../../develop/under-the-hood/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.
@@ -73,7 +73,7 @@ corresponding audit record will contain a reference to it.
 
 ## Filtering
 
-You can use these fields to filter functions with [smart search](../../../datagrok/navigation/views/table-view#search):
+You can use these fields to filter functions with [smart search](../../navigation/views/table-view#search-patterns):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

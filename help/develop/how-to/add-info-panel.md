@@ -5,9 +5,7 @@ title: "Add an info panel"
 [Info panels](../../datagrok/navigation/panels/info-panels.md) are a powerful tool for bringing
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
-typically appear along with the rest of the information in the [context
-panel](../../datagrok/navigation/navigation/panels/panels.md#context-panel) and [visibility
-conditions](#visibility-conditions) will be re-evaluated whenever the object
+typically appear along with the rest of the information in the [context panel](../../datagrok/navigation/panels/panels.md#context-panel) and [visibility conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
 ## Development
@@ -17,7 +15,7 @@ of developing them for Datagrok: either as panel
 [scripts](../../compute/scripting/scripting.mdx) or as JavaScript panel
 [functions](../../datagrok/concepts/functions/functions.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
-is available [here](../../compute/scripting/scripting.mdx#supported-languages)). In this
+is available [here](../../compute/compute.md#functions-and-cross-language-support)). In this
 case, the main difference between the two implementations pertains to where the
 code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.
@@ -63,8 +61,7 @@ as an example.
 It is possible to define your own semantic types. To apply a custom detector,
 first define a function that determines the corresponding semantic type in your
 [detectors.js](../develop.md#package-structure) file. Then you can write a
-function for auto-detection, as done in our demo package
-[Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer).
+function for auto-detection<!--, as done in our demo package [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer) -->.
 
 ### Scripts
 
@@ -88,8 +85,7 @@ detector = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalcat
 hasCats = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3, minSize=(75, 75))) != 0
 ```
 
-Regardless of a script's language, conditions are written in [Grok
-script](../under-the-hood/grok-script.md) syntax.
+Regardless of a script's language, conditions are written in [Grok script](../under-the-hood/grok-script.md) syntax.
 
 ### Functions
 
@@ -135,4 +131,4 @@ See also:
 * [JavaScript development](../develop.md)
 * [Scripting](../../compute/scripting/scripting.mdx)
 * [Functions](../../datagrok/concepts/functions/functions.md)
-* [Semantic types](../../catalog/semantic-types.md)
+* [Semantic types](../../govern/catalog/semantic-types.md)

@@ -13,8 +13,7 @@ the comparison, decision-making, and analysis, for example, in [elemental analys
 
 ![Radar viewer](img/radar-viewer.png)
 
-You can use a radar viewer as a standalone chart or as an [inline viewer in
-summary column](grid.md#row-summary-columns) of [grid](grid.md).
+You can use a radar viewer as a standalone chart or as an [inline viewer in summary column](grid.md#summary-columns) of [grid](grid.md).
 
 >Note: To use a radar viewer, install the package
 [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).

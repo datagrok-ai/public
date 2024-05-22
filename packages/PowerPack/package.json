@@ -2,12 +2,9 @@
   "name": "@datagrok/power-pack",
   "friendlyName": "PowerPack",
   "sources": [
-    "css/power-pack.css",
-    "css/viewers-gallery.css",
-    "css/windows-manager.css",
-    "css/formula-lines.css"
+    "css/power-pack.css"
   ],
-  "version": "1.1.5",
+  "version": "1.1.7",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"

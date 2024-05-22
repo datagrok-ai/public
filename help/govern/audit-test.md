@@ -258,7 +258,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 5. Replace `M` value of *"SEX"* to `"Men"`
 
-    * `M` value of *"SEX"* ​​replaced by `"Men"`
+    * `M` value of *"SEX"*   replaced by `"Men"`
 
 6. Open **View | Columns**
 

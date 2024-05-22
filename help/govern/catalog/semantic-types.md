@@ -57,6 +57,6 @@ out [this article](../../develop/how-to/define-semantic-type-detectors.md)
 
 See also:
 
-* [Metadata](metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 * [JavaScript development](../../develop/develop.md)
 * [How to define semantic type detectors](../../develop/how-to/define-semantic-type-detectors.md)

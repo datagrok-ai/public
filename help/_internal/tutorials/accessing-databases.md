@@ -10,7 +10,7 @@ sharing
 
 See also:
 
-* [Data import](../../access/files/files.mdx)
+* [Data import](../../access/files/files.md)
 * [Data connection](../../access/access.md#data-connection)
 * [Data query](../../access/access.md#data-query)
 * [Function call](../../datagrok/functions/function-call.md)

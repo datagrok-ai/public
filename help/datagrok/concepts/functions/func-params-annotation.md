@@ -24,7 +24,9 @@ There are general parameters common to all functions, as well as parameters spec
 general parameters are required, the list of parameters depends on the function
 [type](#parameter-types-and-options), [role](../../../develop/function-roles.md), and so on.
 
-<details> <summary> Simple python script </summary> <div>
+<details> 
+<summary> Simple python script </summary> 
+<div>
 
 ```python
 #language: python
@@ -36,7 +38,8 @@ general parameters are required, the list of parameters depends on the function
 count = table.shape[0] * table.shape[1]
 ```
 
-</div> </details>
+</div> 
+</details>
 
 These are the common parameters for all functions:
 
@@ -51,7 +54,7 @@ Some parameters are specific to script language and/or technology:
 
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
-  * `environment`: [script environment](../../../compute/scripting/scripting.mdx#environments) (Conda environment for python, etc)
+  * `environment`: [script environment](../../../compute/scripting/scripting-features/specify-env.mdx) (Conda environment for python, etc)
   * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
 * Script-based info panels
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
@@ -87,10 +90,10 @@ Let's explore it on the following example:
 
 ```javascript 
 //name: ParameterTestFunction
-//description: Small fucntion to illustrate parameter mapping
+//description: Small function to illustrate parameter mapping
 //language: javascript
-//input: int one=1 {caption: First} [First farameter]
-//input: int two=2 {caption: Second} [First farameter]
+//input: int one=1 {caption: First} [First parameter]
+//input: int two=2 {caption: Second} [Second parameter]
 export function ParameterTestFunctionPkg(two, one) {
     const result = `First:${one}, second:${two}`;
     console.log(result);
@@ -120,7 +123,9 @@ Datagrok supports the following types in all scripting languages:
 
 Some of the options apply to all parameters, while other are type-specific. 
 
-<details> <summary> Reference: list of options applicable to different parameters </summary> <div>
+<details> 
+<summary> Reference: list of options applicable to different parameters </summary> 
+<div>
 
 For all parameters:
 
@@ -171,7 +176,8 @@ For `list` type`
 **Separators** apply only for the TextArea input type. The following example demonstrates how separators work
 for the Postgres-based SQL query:
 
-</div> </details>
+</div> 
+</details>
 
 
 <details>
@@ -223,7 +229,7 @@ SELECT * FROM customers where shipCountry = @shipCountry
 **Filter pattern** allows you to use free-text conditions like "this week" for dates, or ">50" for numbers.
 
 To use search patterns, set the input type to `string`, and set the `pattern` option
-to the type of the column you are filtering. Then, reference the patter in the query
+to the type of the column you are filtering. Then, reference the pattern in the query
 as `@patternName(columnName)`, just like we did here for the "freight" column:
 
 ```
@@ -237,14 +243,15 @@ Different inputs would produce differently structured SQL (also dependent on the
 |-------|--------------------------------------------------------------------|---------------------------------|
 |       | select * from orders <br/> where 1 = 1                             | No input => no filter           |
 | >3    | select * from orders <br/> where freight > 3                       | Using column name to filter     |
-| 10-20 | select * from orders <br/> where (freight >= 10 and freight <= 20) | Have to do multiple comparisons |
+| 10-20 | select * from orders <br/> where (freight >= 10 and freight \<= 20) | Have to do multiple comparisons |
 
 
 In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. 
 The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to
 `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
-<details> <summary> Reference: Supported search patterns </summary>
+<details> 
+<summary> Reference: Supported search patterns </summary>
 
 | Type               | Value         | Description or example       |
 |--------------------|---------------|------------------------------|
@@ -273,9 +280,8 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../../datagrok/navigation/views/table-view#search-patterns).
+To learn more, see [search patterns](../../navigation/views/table-view#search-patterns).
 </details>
-
 
 ### Choices
 
@@ -283,7 +289,9 @@ Use `choices` to make input a combo box, and restrict the selection to the defin
 You can define `choices` using a comma-separated list of values, a name of another function (such as query), 
 or by writing an actual SQL query.
 
-<details> <summary> Example: SQL query: single choice: different ways to specify a list of countries </summary> <div>
+<details> 
+<summary> Example: SQL query: single choice: different ways to specify a list of countries </summary> 
+<div>
 
 ```sql
 --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
@@ -294,9 +302,12 @@ or by writing an actual SQL query.
 
 ![img_2.png](single-choice-input.png)
 
-</div> </details>
+</div> 
+</details>
 
-<details> <summary> Example: SQL query: multiple choice for the "list" input</summary> <div>
+<details> 
+<summary> Example: SQL query: multiple choice for the "list" input</summary> 
+<div>
 
 When `choices` is applied to the `list` parameter, the input becomes a multiple choice, just like in 
 this example:
@@ -307,8 +318,8 @@ this example:
 
 ![img_1.png](multiple-choice-input.png)
 
-</div> </details>
-
+</div> 
+</details>
 
 ### Validation
 
@@ -319,7 +330,7 @@ to assure the validity of the parameters.
 
 The easiest way is to define a `validator` GrokScript expression that gets evaluated when input changes.
 Result `true` or `null` means that the input is valid. `false` or a string error message means that the input is invalid, 
-it gets highlighed and the validation message is shown in the tooltip. Note that the expression can depend not only on the
+it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
 <details>
@@ -402,7 +413,9 @@ the `choices` attribute to a function that returns a dataframe, and set `propaga
 The first column is used as a key in the combo box. When you select it, the input fields are initialized with the 
 values from the corresponding columns (input names and column names have to match).
 
-<details> <summary> Example: Lookup table </summary> <div>
+<details> 
+<summary> Example: Lookup table </summary> 
+<div>
 
 The following example lets you initialize multiple car's parameters based on the model that you select.
 Note that here we use the `OpenFile` function to read a dataframe from the CSV file on a file share; it would
@@ -426,7 +439,8 @@ Hornet Sportabout,18.7,8,360,175,3.15,3.440,17.02,0,0,3,2
 
 ![](default-values-from-file.gif)
 
-</div> </details>
+</div> 
+</details>
 
 ### Referencing other parameters
 
@@ -435,7 +449,9 @@ This is useful when creating queries with hierarchical choices, where each subse
 depends on the previous one. To do this, reference the parameter in another parameter's annotation 
 using the `@` symbol.
 
-<details> <summary> Example: SQL-based hierarchical query </summary> <div>
+<details> 
+<summary> Example: SQL-based hierarchical query </summary> 
+<div>
 
 Let's say we want to build a UI, where you first select a state and then choose a city from
 the corresponding state. All we need to do is to reference the `@state` parameter in the query
@@ -451,7 +467,8 @@ Datagrok does the rest, and turns it into an interactive experience:
 
 ![](dependent-parameters.gif)
 
-</div> </details>
+</div>
+</details>
 
 ### Autocomplete
 
@@ -520,7 +537,8 @@ within one script. You can get your data with a SQL query, run calculations in P
 visualize it interactively in Datagrok - all of that without writing a single line of UI code.
 To learn more, see [Compute](../../../compute/compute.md#data-access).
 
-<details> <summary> Example: JavaScript function that uses SQL query as a function input </summary>
+<details>
+<summary> Example: JavaScript function that uses SQL query as a function input </summary>
 
 
 ```js
@@ -546,31 +564,33 @@ set it to `Radio` to make the input appear as a radio button instead of the comb
 //input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }
 ```
 
-<details> <summary> Reference: Supported input types </summary>
+<details>
+<summary> Reference: Supported input types </summary>
 
 Input types have to match the data types (input types in bold are the default ones
 that you do not have to specify):
 
-| Input type      | Data types  | Example / description                    |
-|-----------------|-------------|------------------------------------------|
-| **Int**         | int         | { min: 0; max: 20; step: 4}              |
-| **BigInt**      | bigint      |                                          |
-| **Float**       | double      | { min: 0; max: 1; step: 0.03 }           |
-| **Bool**        | bool        |                                          |
-| **Text**        | string      |                                          |
-| **Date**        | datetime    |                                          |
-| **MultiChoice** | list        | { choices: \["A", "B"] }                 |
-| **List**        | list        | { inputType: TextArea; separators: ,}    |
-| **Column**      | column      |                                          |
-| Slider          | int, double | { min: 0; max: 20; step: 4}              |
-| Color           | string      |                                          |
-| Radio           | string      | {inputType: Radio; choices: \["A", "B"]} |
-| Molecule        | string      |                                          |
+| Input type      | Data types  | Example / description                     |
+|-----------------|-------------|-------------------------------------------|
+| **Int**         | int         | \{ min: 0; max: 20; step: 4}              |
+| **BigInt**      | bigint      |                                           |
+| **Float**       | double      | \{ min: 0; max: 1; step: 0.03 }           |
+| **Bool**        | bool        |                                           |
+| **Text**        | string      |                                           |
+| **Date**        | datetime    |                                           |
+| **MultiChoice** | list        | \{ choices: \["A", "B"] }                 |
+| **List**        | list        | \{ inputType: TextArea; separators: ,}    |
+| **Column**      | column      |                                           |
+| Slider          | int, double | \{ min: 0; max: 20; step: 4}              |
+| Color           | string      |                                           |
+| Radio           | string      | \{inputType: Radio; choices: \["A", "B"]} |
+| Molecule        | string      |                                           |
 
 </details>
 
 
-<details> <summary> Example: Using "Slider", "Color", and "Radio" input types </summary>
+<details>
+<summary> Example: Using "Slider", "Color", and "Radio" input types </summary>
 ![](input-types.png)
 </details>
 
@@ -586,7 +606,8 @@ Datagrok automatically [detects semantic types](../../../develop/function-roles.
 and you can also specify semantic types of input parameters. In this case, a corresponding input will be
 used, if it is defined. 
 
-<details> <summary> Example: Automatically using the molecular sketcher for the "Molecule" semantic type </summary>
+<details>
+<summary> Example: Automatically using the molecular sketcher for the "Molecule" semantic type </summary>
 
 This is how an input field for the "Molecule" semantic type looks like. When you click
 a molecule, a molecule sketcher pops up.
@@ -601,7 +622,9 @@ a molecule, a molecule sketcher pops up.
 
 ## Examples
 
-<details> <summary> TypeScript function </summary> <div>
+<details>
+<summary> TypeScript function </summary>
+<div>
 
 ```ts
 //name: Len
@@ -613,7 +636,8 @@ export function getLength(s: string): number {
 }
 ```
 
-</div> </details>
+</div>
+</details>
 
 <details>
 <summary> Python script </summary>

@@ -30,7 +30,7 @@ Located at the top right hand-side, the **Context Panel** serves two main functi
 
 * For visual UI components like [viewers](../../../visualize/viewers/viewers.md)
 or [widgets](../../../visualize/widgets.md), it provides
-access to settings. To access settings, click the **Gear** (⚙) icon in the
+access to settings. To access settings, click the **Gear** (<FAIcon icon="fas fa-gear" size="1x" />) icon in the
 top right corner of the visual component.
 * For Datagrok [entities](../../concepts/objects.md) and other data objects
   (e.g., molecules), it shows information and options for your _current object_.
@@ -243,8 +243,7 @@ Each function call is automatically logged in the **Console**, requiring no
 action on your part. This means you can both:
 
 1. Use the **Console** to examine which functions are triggered by particular UI
-events and reproduce these steps in the future. This can be useful for [data
-transformations](../../../transform/recipe-editor.md) and data pipelines. 
+events and reproduce these steps in the future. This can be useful for [data transformations](../../../transform/recipe-editor.md) and data pipelines. 
 1. Directly execute functions on your data from the **Console**, which is especially helpful for
 debugging custom functions within a [package](../../../develop/develop.md#packages).
 

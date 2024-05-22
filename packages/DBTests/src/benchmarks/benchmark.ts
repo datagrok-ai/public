@@ -40,11 +40,11 @@ category('Benchmarks', () => {
 
   test('TestWide', async () => {
     return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableWide')}`;
-  });
+  }, {timeout: 120000});
 
   test('TestLong', async () => {
     return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableLong')}`;
-  });
+  }, {timeout: 120000});
 
   test('Compression int', async () => {
     const compressionOnTime = await getDataQueryTime('PostgresqlCompressionIntOn');

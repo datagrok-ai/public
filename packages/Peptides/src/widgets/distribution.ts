@@ -92,7 +92,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
  * @return - Histogram viewer
  */
 export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
-): DG.Viewer<DG.IHistogramLookSettings> {
+): DG.Viewer<DG.IHistogramSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
@@ -103,7 +103,7 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
     showRangeSlider: false,
     showBinSelector: false,
     backColor: isTooltip ? '#fdffe5' : '#fffff',
-  }) as DG.Viewer<DG.IHistogramLookSettings>;
+  }) as DG.Viewer<DG.IHistogramSettings>;
   hist.root.style.width = 'auto';
   return hist;
 }

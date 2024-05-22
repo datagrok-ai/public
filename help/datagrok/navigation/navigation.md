@@ -15,9 +15,9 @@ import TabItem from '@theme/TabItem';
 ```
 
 Datagrok supports a variety of [data-related tasks](../datagrok.md), with its
-interface adapting to the specific data or task at hand. For example, the interface for
-the analysis of tabular data resembles Excel, the navigation interface resembles
-File Explorer, and apps or plugins can introduce custom interfaces.
+interface adapting to the specific data or task at hand. For example, the
+interface for analyzing tabular data resembles Excel, the navigation interface
+resembles File Explorer, and apps or plugins can introduce custom interfaces.
 
 Yet, despite this variety, the UI consistently includes several key elements:
 
@@ -27,7 +27,7 @@ Yet, despite this variety, the UI consistently includes several key elements:
 <TabItem value="Sidebar" label ="Sidebar" default>
 
 Positioned on the far left, the **Sidebar** provides access to settings,
-commands, favorites, and lets you switch between different windows. It
+commands, and favorites, and lets you switch between different windows. It
 remains fixed in its position no matter where you are on the platform or
 what you work on.
 
@@ -55,10 +55,10 @@ A view may have these elements associated with it:
 
 1. **Toolbox**: Located to the left of the _view_, it provides tools and
    functionalities specific to that view.
-1. **Top Menu**: Typically at the top of the _view_, it provides
+1. **Top Menu**: Often at the top of the _view_, it provides
    view-specific commands.
-1. **Status bar**: The central section is view-specific. For example, for the
-   **Table View**, it shows the table's name, row/column counts, as well as
+1. **Status bar**: The central section is view-specific. For example, in **Table
+   View**, the **Status Bar** shows the table's name, row/column counts, and
    filtered and selected row counts.
 
 <details>
@@ -67,9 +67,9 @@ A view may have these elements associated with it:
 <Tabs>
 <TabItem value="table-view" label="Table View">
 
-The [Table View](link) is used to analyze tabular data.
+The [Table View](../navigation/views/table-view.md) is used to analyze tabular data.
 
-Similar to Excel, the **Top Menu** lets you edit the dataset, format cells, and so on. The **Toolbox** lets you add [viewers](link), apply [layouts](link), refresh dashboards,
+Similar to Excel, the **Top Menu** lets you edit the dataset, format cells, and so on. The **Toolbox** lets you add [viewers](../../visualize/viewers/viewers.md), apply [layouts](../../visualize/view-layout.md), refresh dashboards,
 and more.
 
 ![](img/table-view-marked-up.gif)
@@ -77,14 +77,14 @@ and more.
 </TabItem>
 <TabItem value="browse" label="Browse">
 
-[Browse](link) is used for navigation and data management. From its **Top Menu**, you can open local files, toggle preview, refresh the view, and more.
+[Browse](views/browse.md) is used for navigation and data management. From its **Top Menu**, you can open local files, toggle preview, refresh the view, and more.
 
 ![](img/browse-marked-up.gif)
 
 </TabItem>
 <TabItem value="query-editor" label="Query Editor">
 
-[Query Editor](../../access/databases/databases.mdx#query-editor) is the main
+[Query Editor](../../access/databases/databases.md#query-editor) is the main
 interface for executing database queries. From its **Top Menu**, you can run,
 debug, or save changes to the query. <br/>
 
@@ -104,54 +104,53 @@ debug, or save changes to the query. <br/>
 Located on the far right, panels provide additional windows alongside your main
 _view_ and include:
 
-* [Context Panel](link): Shows information and options for your current
+* [Context Panel](../navigation/panels/panels.md#context-panel): Shows information and options for your current
   object. For example, clicking a molecule shows details
   like its weight or toxicity. Clicking a query shows its SQL code and
   parameters. 
-* [Context Help](link): Shows a help page for your current object.
-* [Console](link): Automatically logs every function call associated
+* [Context Help](../navigation/panels/panels.md#context-help): Shows a help page for your current object.
+* [Console](../navigation/panels/panels.md#console): Automatically logs every function call associated
   with visual data transformations. You can also use it to call functions
   directly.
-* [Variables](link): Used to declare variables in your current view.
+* [Variables](../navigation/panels/panels.md#variables): Used to declare variables in your current view.
 
 By default, only **Context Panel** and **Context Help** are visible. Depending
-on your needs, you can toggle visibility of any panel from the **Status Bar**.
+on your needs, you can toggle the visibility of any panel from the **Status Bar**.
 
 </TabItem>
 <TabItem value="status-bar" label ="Status Bar">
 
-Located at the bottom of the screen, the **Status Bar** has three sections:
+Located at the bottom of the screen, the **Status Bar** has these sections:
 * _Right_: Has icons for global search, toggling panels, and activating presentation mode.
 * _Left_: Shows progress during task execution.
+* _Center_: Is view specific.
 
 </TabItem>
 </Tabs>
 
 ### UI features
 
-Datagrok UI is flexible. For example, you can move or resize panels, float them is separate
-windows, or toggle their visibility.
+Datagrok UI is flexible. For example, you can move or resize panels, float them
+in separate windows, or toggle their visibility.
 
 ![](img/ui-docking.gif)
 
 When you start dragging an object, all potential drop zones are highlighted,
-guiding you on where you can place it.
-
-You can drag-and-drop almost any object. For example, in a **Table
-View**, most viewers and many dialogs can accept columns that are dragged into
-or from them. 
+guiding you where to place it. You can drag and drop almost any object. For
+example, in a **Table View**, most viewers and many dialogs can accept columns
+dragged into or from them. 
 
 ![](img/drag-and-drop-columns.gif)
 
-<!--Expand examples t include other views. Reordering columns by dragging doesn't work?-->
+<!--Expand examples to include other views. Reordering columns by dragging doesn't work?-->
 
-Many of the UI elements are context-driven and adjust dynamically to your
+Many UI elements are context-driven and adjust dynamically to your
 current task or data. For example, when you open a table with molecules, several
 changes happen in the UI:
 
 * A **Top Menu** item labeled **Chem** appears.
 * Context actions now show molecule specific commands like "sketch" or "copy as SMILES".
 * The **Table View** includes a new substructure based filter.
-* Clicking a molecule updates the [Context Panel](link) with molecule-specific info panes.
+* Clicking a molecule updates the [Context Panel](../navigation/panels/panels.md#context-panel) with molecule-specific info panes.
 
 ![Chem dataset exploration](../solutions/domains/chem/img/chem-exploration.png)

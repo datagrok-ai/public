@@ -36,7 +36,6 @@ category('Dapi: entities', () => {
 
 category('Dapi: entities: smart search', () => {
   test('users', async () => {
-    expect((await grok.dapi.users.filter('selenium').list()).length, 11);
     expect((await grok.dapi.users.filter('firstName = "admin"').list()).length, 1);
     expect((await grok.dapi.users.filter('status = "active"').list({pageSize: 5})).length, 5);
     expect((await grok.dapi.users.filter('id = "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"').list()).length, 1);

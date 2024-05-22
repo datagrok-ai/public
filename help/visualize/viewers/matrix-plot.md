@@ -23,5 +23,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagroknavigation/views/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: Matrix plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)

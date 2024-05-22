@@ -4,9 +4,9 @@ sidebar_position: 6
 ---
 
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. This view is a
-good way to provide [project](../../../datagrok/concepts/project/project.md) summary. The content is stored in the [markup](markup.md) format (
+good way to provide [project](../../concepts/project/project.md) summary. The content is stored in the [markup](markup.md) format (
 directly editable in the
-[context panel](link) on the right). That allows to reference pretty much anything in
+[context panel](../panels/panels.md#context-panel) on the right). That allows to reference pretty much anything in
 the platform, including tables, [viewers](../../../visualize/viewers/viewers.md), columns, statistics, metadata, references to
 users,
 and invoking [functions](../../concepts/functions/functions.md).
@@ -33,4 +33,4 @@ quick links to add the following:
 
 See also:
 
-* [Markup](markup.md)
+* [Markup](../../../develop/under-the-hood/markup.md)

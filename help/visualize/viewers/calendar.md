@@ -28,5 +28,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagroknavigation/views/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)

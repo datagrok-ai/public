@@ -91,7 +91,7 @@ application. Let's look at a more UI-rich side of things.
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations
 and controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes), in this
-case it's called a [table view](../../datagroknavigation/views/table-view.md). However, essentially a view can contain pretty much
+case it's called a [table view](../../datagrok/navigation/views/table-view.md). However, essentially a view can contain pretty much
 anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either
@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../govern/catalog/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../datagrok/concepts/objects.md#metadata). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../govern/catalog/metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 
 ##### Column tags
 
@@ -545,13 +545,13 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../../compute/scripting/scripting.mdx#running-a-script)
+* [Running a script](../../compute/scripting/getting-started.md#run-the-script)
 * [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations
 
 Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
-[Scatter Plot](../../visualize/viewers/scatter-plot.mdx)
+[Scatter Plot](../../visualize/viewers/scatter-plot.md)
 , [Histogram](../../visualize/viewers/histogram.md), Line Chart, Bar Chart, Pie Chart, Trellis, Matrix Plot, 3D Scatter,
 Density Plot, PC Plot, Word Cloud, Network, Box Plot, Tree Map, Heat Map, Statistics, Correlation, Calendar, Table Grid,
 Markup, Tiles, Form, Map, Shape, Chord, and Tree. These viewers were crafted for web from scratch, and are purpose-fit
