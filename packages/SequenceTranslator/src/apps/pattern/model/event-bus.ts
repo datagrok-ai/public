@@ -1,10 +1,13 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
 import * as rxjs from 'rxjs';
 import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {
-  GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINI, TERMINUS
+  GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, MAX_SEQUENCE_LENGTH, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINI, TERMINUS
 } from './const';
 import {DataManager} from './data-manager';
 import {
@@ -177,7 +180,8 @@ export class EventBus {
     this._nucleotideSequences$.next(nucleotideSequences);
   }
 
-  updateStrandLength(strand: StrandType, newStrandLength: number): void {
+  //if nucleotideIdx is passed - adding or removing nucleotide in the exact position
+  updateStrandLength(strand: StrandType, newStrandLength: number, nucleotideIdx?: number): void {
     const originalNucleotides = this.getNucleotideSequences()[strand];
     if (originalNucleotides.length === newStrandLength) return;
 
@@ -190,7 +194,7 @@ export class EventBus {
 
     if (originalNucleotides.length > newStrandLength) {
       const {nucleotides, ptoFlags} = StrandEditingUtils.getTruncatedStrandData(
-        originalNucleotides, originalPTOFlags, newStrandLength
+        originalNucleotides, originalPTOFlags, newStrandLength, nucleotideIdx
       );
       this.setNewStrandData(nucleotides, ptoFlags, strand);
       return;
@@ -198,7 +202,7 @@ export class EventBus {
 
     const sequenceBase = this.getSequenceBase();
     const {nucleotides, ptoFlags} = StrandEditingUtils.getExtendedStrandData(
-      originalNucleotides, originalPTOFlags, newStrandLength, sequenceBase
+      originalNucleotides, originalPTOFlags, newStrandLength, sequenceBase, nucleotideIdx
     );
     this.setNewStrandData(nucleotides, ptoFlags, strand);
   }
@@ -401,6 +405,28 @@ export class EventBus {
     const labelledModifications = this.getModificationsWithNumericLabels();
     this.updateModificationsWithNumericLabels(labelledModifications.concat(value));
     this.updateNucleotideSequences(sequences);
+  }
+
+  addNucleotide(strand: StrandType, index: number) {
+    const sequences = this.getNucleotideSequences();
+    if (sequences[strand].length === MAX_SEQUENCE_LENGTH) {
+      grok.shell.warning(`Sequence length must be less than ${MAX_SEQUENCE_LENGTH + 1}`);
+      return;
+    }
+    const labelledModifications = this.getModificationsWithNumericLabels();
+    this.updateModificationsWithNumericLabels(labelledModifications.concat(this.getSequenceBase()));
+    this.updateStrandLength(strand, sequences[strand].length + 1, index);
+  }
+
+  removeNucleotide(strand: StrandType, index: number) {
+    const sequences = this.getNucleotideSequences();
+    if (sequences[strand].length === 1) {
+      grok.shell.warning(`Sequence length must be greater than 0`);
+      return;
+    }
+    const labelledModifications = this.getModificationsWithNumericLabels();
+    this.updateModificationsWithNumericLabels(labelledModifications);
+    this.updateStrandLength(strand, sequences[strand].length - 1, index);
   }
 
   get strandsUpdated$(): rxjs.Observable<void> {

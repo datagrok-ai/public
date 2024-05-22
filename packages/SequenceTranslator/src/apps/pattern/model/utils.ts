@@ -73,19 +73,38 @@ export namespace StrandEditingUtils {
   export function getTruncatedStrandData(
     originalNucleotides: string[],
     originalPTOFlags: boolean[],
-    newStrandLength: number
+    newStrandLength: number,
+    nucleotideIdx?: number
   ): {nucleotides: string[], ptoFlags: boolean[]} {
-    const nucleotides = originalNucleotides.slice(0, newStrandLength);
-    const ptoFlags = originalPTOFlags.slice(0, newStrandLength + 1);
-    return {nucleotides, ptoFlags};
+    //un case nucleotideIdx === 0, we also have to enter if
+    if (nucleotideIdx != undefined) {
+      const nucleotides = originalNucleotides.slice(0);
+      nucleotides.splice(nucleotideIdx, 1);
+      const ptoFlags = originalPTOFlags.slice(0);
+      ptoFlags.splice(nucleotideIdx, 1);      
+      return {nucleotides, ptoFlags};
+    } 
+    return {
+      nucleotides: originalNucleotides.slice(0, newStrandLength),
+      ptoFlags: originalPTOFlags.slice(0, newStrandLength + 1)
+    }
   }
 
   export function getExtendedStrandData(
     originalNucleotides: string[],
     originalPTOFlags: boolean[],
     newStrandLength: number,
-    sequenceBase: string
+    sequenceBase: string,
+    nucleotideIdx?: number
   ): {nucleotides: string[], ptoFlags: boolean[]} {
+    if (nucleotideIdx != undefined) {
+      const nucleotides = originalNucleotides.slice(0);
+      nucleotides.splice(nucleotideIdx + 1, 0, sequenceBase);
+      const ptoFlags = originalPTOFlags.slice(0);
+      ptoFlags.splice(nucleotideIdx + 1, 0, true);      
+      return {nucleotides, ptoFlags};
+    }
+
     const appendedNucleotidesLength = newStrandLength - originalNucleotides.length;
     const nucleotides = originalNucleotides.concat(
       new Array(newStrandLength - originalNucleotides.length).fill(sequenceBase)

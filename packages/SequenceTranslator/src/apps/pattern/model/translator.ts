@@ -61,7 +61,7 @@ function getPhosphorothioateLinkageSymbol(): string {
   return 'ps';
 }
 
-function getModificationsWithPTOLinkages(
+export function getModificationsWithPTOLinkages(
   modifiedNucleotides: string[],
   ptoFlags: boolean[],
   terminalModifications: Record<TERMINUS, string>

@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import {SVGElementFactory} from './svg-element-factory';
 import {isOverhangNucleotide} from '../../model/utils';
 import {STRAND, STRANDS, STRAND_END, STRAND_ENDS, TERMINUS, TERMINI} from '../../model/const';
@@ -10,6 +11,7 @@ import {
   getNucleobaseColorFromStyleMap,
 } from './utils';
 import {PatternSVGDimensionsCalculator} from './dimensions-calculator';
+import { EventBus } from '../../model/event-bus';
 
 export class NucleotidePatternSVGRenderer {
   private config: PatternConfiguration;
@@ -18,13 +20,14 @@ export class NucleotidePatternSVGRenderer {
   private strandElementManager: StrandElementBuilder;
   private legendBuilder: LegendBuilder;
 
-  constructor(patternConfig: PatternConfiguration) {
+  constructor(patternConfig: PatternConfiguration, private eventBus: EventBus) {
     this.setupPatternConfig(patternConfig);
 
     // todo: prefer dependency injection for all these properties
     this.patternDimensionsCalculator = new PatternSVGDimensionsCalculator(this.config);
 
-    this.svgFactory = new SVGElementFactoryWrapper(new SVGElementFactory(), this.config, this.patternDimensionsCalculator);
+    this.svgFactory = new SVGElementFactoryWrapper(new SVGElementFactory(), this.config, this.patternDimensionsCalculator,
+      this.eventBus);
 
     this.strandElementManager = new StrandElementBuilder(this.svgFactory, this.config);
     this.legendBuilder = new LegendBuilder(this.svgFactory, this.config);
@@ -172,7 +175,8 @@ class SVGElementFactoryWrapper {
   constructor(
     private svgElementFactory: SVGElementFactory,
     private config: PatternConfiguration,
-    private dimensionsCalculator: PatternSVGDimensionsCalculator
+    private dimensionsCalculator: PatternSVGDimensionsCalculator,
+    private eventBus: EventBus
   ) { }
 
   createCanvas(): SVGElement {
@@ -211,13 +215,21 @@ class SVGElementFactoryWrapper {
 
   createPhosphorothioateLinkageStar(strand: StrandType, index: number): SVGElement | null {
     const isActive = this.config.phosphorothioateLinkageFlags[strand][index];
-    if (!isActive)
-      return null;
-
     const centerPosition = this.dimensionsCalculator.getCenterPositionOfLinkageStar(index, strand);
     const color = SVG_ELEMENT_COLORS.LINKAGE_STAR;
-    const starElement = this.svgElementFactory.createStarElement(centerPosition, color);
-
+    const starElement = this.svgElementFactory.createStarElement(centerPosition, color, !isActive ? '0.0' : '1.0');
+    const strandIdx = strand === STRAND.SENSE ?
+      this.config.nucleotideSequences[strand].length - index : index;
+    starElement.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      DG.Menu.popup()
+      .item(!isActive ? 'Add PTO' : 'Remove PTO', () => {
+        this.eventBus.setPhosphorothioateLinkageFlag(strand, strandIdx, !isActive);
+      })
+      .show();
+    };
+    
     return starElement;
   }
 
@@ -247,6 +259,21 @@ class SVGElementFactoryWrapper {
     const nucleotideCircle = this.svgElementFactory.createCircleElement(
       nucleotideCirclePosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, getNucleobaseColorFromStyleMap(nucleotide)
     );
+    const strandIdx = strand === STRAND.SENSE ?
+      this.config.nucleotideSequences[strand].length - 1 - indexOfNucleotide : indexOfNucleotide;
+    nucleotideCircle.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      DG.Menu.popup()
+      .item('Remove', () => {
+        this.eventBus.removeNucleotide(strand, strandIdx);
+      })
+      .item('Add', () => {
+        this.eventBus.addNucleotide(strand, strandIdx);
+      })
+      .item('Edit', () => {})
+      .show();
+    };
     return nucleotideCircle;
   }
 
@@ -275,7 +302,7 @@ class SVGElementFactoryWrapper {
   createLinkageStarLegendLabel(isPhosphorothioateLinkageActive: boolean): SVGElement | null {
     const starLabelPosition = this.dimensionsCalculator.getStarLabelPosition();
     const starLabel = isPhosphorothioateLinkageActive ?
-      this.svgElementFactory.createStarElement(starLabelPosition, SVG_ELEMENT_COLORS.LINKAGE_STAR) :
+      this.svgElementFactory.createStarElement(starLabelPosition, SVG_ELEMENT_COLORS.LINKAGE_STAR, '1.0') :
       null;
 
     return starLabel;
@@ -375,7 +402,7 @@ class StrandElementBuilder {
 
 
     const nucleotideNumericLabel = this.svgFactory.createNucleotideNumericLabel(indexOfNucleotide, strand, displayedNucleotideNumber);
-    const nucleotideCircle = this.svgFactory. createNucleotideCircle(indexOfNucleotide, strand);
+    const nucleotideCircle = this.svgFactory.createNucleotideCircle(indexOfNucleotide, strand);
     const nucleotideNameLabel = this.svgFactory. createNucleotideNameLabel(indexOfNucleotide, strand);
 
     const phosphorothioateLinkageStar = this.svgFactory.createPhosphorothioateLinkageStar(strand, indexOfNucleotide);

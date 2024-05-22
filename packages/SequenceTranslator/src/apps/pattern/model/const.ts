@@ -84,11 +84,11 @@ export const EXAMPLE_PATTERN_CONFIG =
     'isAntisenseStrandIncluded': true,
     'nucleotideSequences': {
       'SS': [
-        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
+        'GNA', 'UNA', 'A', 'LNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
         'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA'
       ],
       'AS': [
-        'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
+        'GNA', 'UNA', 'A', 'LNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA',
         'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA', 'RNA'
       ]
     },
@@ -114,7 +114,7 @@ export const EXAMPLE_PATTERN_CONFIG =
     },
     'patternComment': '',
     'nucleotidesWithNumericLabels': [
-      'RNA'
+      'RNA', 'GNA', 'UNA', 'A', 'LNA'
     ]
   },
   'authorID': ''

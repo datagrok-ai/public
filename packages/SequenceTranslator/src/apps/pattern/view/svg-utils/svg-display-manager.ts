@@ -33,7 +33,7 @@ export class SvgDisplayManager {
   }
 
   private createSvg(patternConfig: PatternConfiguration) {
-    const renderer = new NucleotidePatternSVGRenderer(patternConfig);
+    const renderer = new NucleotidePatternSVGRenderer(patternConfig, this.eventBus);
     const svg = renderer.renderPattern();
     return svg;
   }

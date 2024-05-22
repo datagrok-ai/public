@@ -1,7 +1,7 @@
 import {NUCLEOTIDES} from '../../../common/model/const';
 import {STRAND, STRANDS, STRAND_END, STRAND_TO_END_TERMINUS_MAP, STRAND_ENDS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
-import {SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT} from './const';
+import {SVG_CIRCLE_SIZES, SVG_TEXT_FONT_SIZES, NUMERIC_LABEL_POSITION_OFFSET, DEFAULT_FONT_FAMILY, Y_POSITIONS_FOR_STRAND_ELEMENTS, STRAND_END_LABEL_TEXT, Y_POSITION_OFFSET} from './const';
 import {Position, StrandToNumberMap, StrandEndToNumberMap} from '../types';
 import {isOverhangNucleotide} from '../../model/utils';
 
@@ -276,7 +276,7 @@ class NucleotidePositionCalculator {
   getNucleotideCirclePosition(indexOfNucleotide: number, strand: STRAND): Position {
     return {
       x: this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand),
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_CIRCLE,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_CIRCLE + Y_POSITION_OFFSET,
     };
   };
 
@@ -284,7 +284,7 @@ class NucleotidePositionCalculator {
     return {
       // todo: refactor legacy dependency on one-digit parameter
       x: this.computeNucleotideCircleXPositionByStrand(indexOfNucleotide, strand) + NUMERIC_LABEL_POSITION_OFFSET.ONE_DIGIT,
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL + Y_POSITION_OFFSET,
     };
   }
 
@@ -319,7 +319,7 @@ class NucleotidePositionCalculator {
 
     return {
       x: numericLabelXPosition,
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUMERIC_LABEL,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUMERIC_LABEL + Y_POSITION_OFFSET,
     };
   }
 
@@ -350,7 +350,7 @@ class LegendPositionCalculator {
   getLegendCirclePosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
     const centerPosition = {
       x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages),
-      y: this.getLegendVerticalPosition(),
+      y: this.getLegendVerticalPosition() + Y_POSITION_OFFSET,
     };
     return centerPosition;
   }
@@ -358,7 +358,7 @@ class LegendPositionCalculator {
   getLegendTextPosition(index: number, distinctNucleobaseTypes: string[], containsPhosphorothioateLinkages: boolean): Position {
     const legendPosition = {
       x: this.computeLegendCircleXPosition(index, distinctNucleobaseTypes, containsPhosphorothioateLinkages) + SVG_CIRCLE_SIZES.LEGEND_RADIUS + 4,
-      y: this.getLegendTextVerticalPosition(),
+      y: this.getLegendTextVerticalPosition() + Y_POSITION_OFFSET,
     };
     return legendPosition;
   }
@@ -376,14 +376,14 @@ class LegendPositionCalculator {
   getStarLabelPosition(): Position {
     return {
       x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
-      y: this.getLegendVerticalPosition(),
+      y: this.getLegendVerticalPosition() + Y_POSITION_OFFSET,
     };
   }
 
   getPhosphorothioateLinkageLabelPosition(): Position {
     return {
       x: 2 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS - 8,
-      y: this.getLegendTextVerticalPosition(),
+      y: this.getLegendTextVerticalPosition() + Y_POSITION_OFFSET,
     };
   }
 
@@ -413,7 +413,7 @@ class LabelPositionCalculator {
   getTerminusLabelPosition(strand: STRAND, end: STRAND_END): Position {
     return {
       x: this.xPositionOfTerminusModifications[end][strand],
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL + Y_POSITION_OFFSET,
     };
   }
 
@@ -422,7 +422,7 @@ class LabelPositionCalculator {
     return {
       x: xPosition,
       // todo: remove legacy grouping by y positions
-      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL,
+      y: Y_POSITIONS_FOR_STRAND_ELEMENTS[strand].NUCLEOBASE_LABEL + Y_POSITION_OFFSET,
     };
   }
 
@@ -483,7 +483,7 @@ class LinkageStarPositionCalculator {
   getCenterPositionOfLinkageStar(index: number, strand: STRAND): Position {
     return {
       x: this.getXPositionOfLinkageStar(index, strand),
-      y: this.getYPositionOfLinkageStar(strand),
+      y: this.getYPositionOfLinkageStar(strand) + Y_POSITION_OFFSET,
     };
   }
 

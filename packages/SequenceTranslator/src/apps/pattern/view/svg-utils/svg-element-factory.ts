@@ -48,7 +48,7 @@ export class SVGElementFactory {
     return textElement;
   }
 
-  public createStarElement(centerPosition: Position, color: string): SVGPolygonElement {
+  public createStarElement(centerPosition: Position, color: string, opacity: string): SVGPolygonElement {
     const star = this.createElement('polygon') as SVGPolygonElement;
     const points = this.computeStarVertexCoordinates(centerPosition);
     const pointsAttribute = points.map((point) => point.join(',')).join(' ');
@@ -56,6 +56,7 @@ export class SVGElementFactory {
     this.setAttributes(star, {
       points: pointsAttribute,
       fill: color,
+      opacity: opacity
     });
     return star;
   }
