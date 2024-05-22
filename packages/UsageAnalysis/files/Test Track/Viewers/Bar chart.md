@@ -4,7 +4,7 @@
 4. On the **Bar chart** viewer, click the **Gear** icon. The **Property Pane** opens.
 5. Split and coloring:
     1. Go to the **Category** info panel.
-    2. Set Split to `Series`, `Primary Scaffold`
+    2. Set Split to `Series`, `Primary Scaffold Name`
     3. Check/uncheck the checkboxes
     4. Go to the grid. Right-click the Primary Scaffold and select **Color coding > Categorical, Edit.**
     5. Edit the color scheme. Check the bar chart coloring.
