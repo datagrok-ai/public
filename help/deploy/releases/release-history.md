@@ -20,6 +20,19 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-05-22 1.18.8
+
+### Addressed Issues
+
+* (Bug) [#2828](https://github.com/datagrok-ai/public/issues/2828): #2828: DataSync option not present after loading table from Data Query 
+* (Bug) [#2832](https://github.com/datagrok-ai/public/issues/2832): #2832: Tab Name changes when reopening Project 
+* (Improvement) GROK-15681: Projects Management (WIP)
+* (Improvement) [#2831](https://github.com/datagrok-ai/public/issues/2831): #2831: Default open folders in the Browse Menu 
+* (Bug) [#2839](https://github.com/datagrok-ai/public/issues/2839): #2839: Show Help in "Settings \- Windows" remains checked always (WIP)
+* (Bug) [#2840](https://github.com/datagrok-ai/public/issues/2840): #2840: "Global Search" button on bottom-right bar menu doesn't do anything 
+* (Bug) [#2834](https://github.com/datagrok-ai/public/issues/2834): #2834: Loading of DB tables appears to continue forever and never complete 
+
+
 ## 2024-05-15 1.18.7
 
 ### Addressed Issues
