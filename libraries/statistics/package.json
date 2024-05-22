@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Statistics utilities",
   "dependencies": {
     "datagrok-api": "^1.18.0",
