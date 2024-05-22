@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, expectExceptionAsync, expectArray, before} from '@datagrok-libraries/utils/src/test';
@@ -76,5 +77,9 @@ category('Property: Header parsing', () => {
   });
   test('description', async () => {
     expect(func.inputs[10].description, 'My best description');
+  });
+  test('Complex caption', async () => {
+    expect(func.inputs[11].caption, 'MIC O2 P/V exponent');
+    expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
   });
 });

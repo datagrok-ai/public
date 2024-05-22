@@ -12,5 +12,6 @@
 //input: int min_max_test {min: 1; max: 10}
 //input: double format_test = 3.103 {format: #.000}
 //input: string desc_test [My best description]
+//input: string complex_caption_test { caption: MIC O2 P/V exponent; }
 
 
