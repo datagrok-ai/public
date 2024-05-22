@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -161,6 +161,33 @@ category('UI: Inputs', () => {
 }, {clear: false});
 
 category('UI: Choice input', () => {
+  test('nullable', async () => {
+    const t = ui.choiceInput('test', '1', ['1', '2'], null, {nullable: true});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '');
+    expect(selector.item(1)?.textContent, '1');
+    expect(selector.item(2)?.textContent, '2');
+
+    expectArray(t.items, ['', '1', '2']);
+  });
+
+  test('non-nullable', async () => {
+    const t = ui.choiceInput('test', '1', ['1', '2'], null, {nullable: false});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '1');
+    expect(selector.item(1)?.textContent, '2');
+
+    expectArray(t.items, ['1', '2']);
+  });
+
   test('fromFunction', async () => {
     const view = grok.shell.newView();
     const input = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
