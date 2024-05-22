@@ -44,7 +44,7 @@ category('Property: Header parsing', () => {
 
   test('Choices', async () => {
     expectArray(func.inputs[0].choices, ['Standardized', 'Actual']);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15701'});
   test('Default string val', async () => {
     expect(JSON.parse(func.inputs[1].options['default']), 'Default val');
   });
@@ -81,5 +81,5 @@ category('Property: Header parsing', () => {
   test('Complex caption', async () => {
     expect(func.inputs[11].caption, 'MIC O2 P/V exponent');
     expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15768'});
 });

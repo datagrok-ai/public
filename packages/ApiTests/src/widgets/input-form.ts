@@ -28,14 +28,14 @@ category('Widgets: ValueLookup with no nullables', () => {
   test('lookup items', async () => {
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items, 
       ['Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
   
   test('initial values', async () => {
     expect(inputs['model'].value, 'Mazda RX4');
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
 });
 
 category('Widgets: ValueLookup with with nullables', () => {
@@ -62,14 +62,14 @@ category('Widgets: ValueLookup with with nullables', () => {
   test('lookup items', async () => {
     expectArray((inputs['model'] as DG.ChoiceInput<string>).items, 
       ['', 'Mazda RX4', 'Mazda RX4 Wag', 'Datsun 710', 'Hornet 4 Drive', 'Hornet Sportabout']);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
   
   test('initial values', async () => {
     expect(inputs['model'].value, null);
     expect(inputs['mpg'].value, null);
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15792'});
 });
 
 category('Widgets: InputForm fc replacement edge cases', () => {
@@ -98,7 +98,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['mpg'].value, 21);
     expect(inputs['cyl'].value, 6);
     expect(inputs['disp'].value, 160);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741'});
 
   test('source replace w/o value lookup run', async () => {
     const newFuncCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare({
@@ -112,7 +112,7 @@ category('Widgets: InputForm fc replacement edge cases', () => {
     expect(inputs['cyl'].value, null);
     expect(inputs['disp'].value, null);
     expect(inputs['with_choices'].value, '0');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15741'});
 });
 
 category('Widgets: InputForm API', () => {
@@ -189,7 +189,7 @@ category('Widgets: InputForm API', () => {
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
     changeSub.unsubscribe();
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15795'});
 
   test('source funccall replacement', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
@@ -200,7 +200,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['doubleInput'].value, 3.14);
     expect(inputs['boolInput'].value, true);
     expect(inputs['choiceInput'].value, '1');
-    expect(inputs['tableInput'].value, null); // no default value here
+    expect(inputs['tableInput'].value, null); // since there is no default value here
   });
 
   test('form to funccall bind after replace', async () => {
@@ -217,7 +217,7 @@ category('Widgets: InputForm API', () => {
     expect(newFuncCall.inputs['boolInput'], false);
     expect(newFuncCall.inputs['choiceInput'], '2');
     expectTable(newFuncCall.inputs['tableInput'], demog);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-14311'});
   
   test('funccall to form bind after replace', async () => {
     const geo = grok.data.demo.geo(10);
@@ -235,7 +235,7 @@ category('Widgets: InputForm API', () => {
     expect(inputs['boolInput'].value, true);
     expect(inputs['choiceInput'].value, '1');
     expectTable(inputs['tableInput'].value, geo);
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-14311'});
 
   test('form on input change observable after replace', async () => {
     const changedInputPropNames = [] as string[];
@@ -255,7 +255,7 @@ category('Widgets: InputForm API', () => {
       ['stringInput', 'intInput', 'doubleInput', 'boolInput', 'choiceInput', 'tableInput'],
     );
     changeSub.unsubscribe();
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15795'});
 });
 
 
@@ -288,20 +288,20 @@ category('Widgets: InputForm w/ custom input', () => {
     expect(inputs['stringInput'], 'test');
     expect(funcCall.inputs['stringInput'], 'test');
     expect(inputs['stringInput'].root.style.backgroundColor, 'aqua');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
   
   test('form to funccall bind', async () => {
     inputs['stringInput'].value = 'test2';
 
     expect(inputs['stringInput'].value, 'test2');
     expect(funcCall.inputs['stringInput'], 'test2');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
   
   test('funcall to form bind', async () => {
     funcCall.inputs['stringInput'] = 'test';
     
     expect(inputs['stringInput'].value, 'test');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form on input change observable', async () => {
     const changedInputPropNames = [] as string[];
@@ -316,26 +316,26 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
     changeSub.unsubscribe();
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('source funccall replacement', async () => {
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
     form.source = newFuncCall;
 
     expect(inputs['stringInput'].value, 'test');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form to funccall bind after replace', async () => {
     inputs['stringInput'].value = 'test2';
 
     expect(newFuncCall.inputs['stringInput'], 'test2');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
   
   test('funccall to form bind after replace', async () => {
     newFuncCall.inputs['stringInput'] = 'test';
 
     expect(inputs['stringInput'].value, 'test');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form on input change observable after replace', async () => {
     const changedInputPropNames = [] as string[];
@@ -350,5 +350,5 @@ category('Widgets: InputForm w/ custom input', () => {
       ['stringInput'],
     );
     changeSub.unsubscribe();
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 });
