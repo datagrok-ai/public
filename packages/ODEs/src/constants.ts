@@ -23,6 +23,7 @@ export enum CONTROL_EXPR {
     RUN_ON_INPUT = `${META}.runOnInput`,
     OUTPUT = `${CONTROL_TAG}output`,
     COMMENT = `${CONTROL_TAG}comment`,
+    EPS_SCALE = `${CONTROL_TAG}scale`,
 };
 
 /** Loop consts */

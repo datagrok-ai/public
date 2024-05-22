@@ -21,6 +21,7 @@ export const BRACKET_OPEN = '[';
 export const BRACKET_CLOSE = ']';
 export const ANNOT_SEPAR = ';';
 const DEFAULT_TOL = '0.00005';
+const DEFAULT_EPS_SCALE = '1';
 const COLUMNS = `${SERVICE}columns`;
 const COMMENT_SEQ = '//';
 export const STAGE_COL_NAME = `${SERVICE}Stage`;
@@ -104,6 +105,7 @@ export type IVP = {
   consts: Map<string, Input> | null,
   params: Map<string, Input> | null,
   tolerance: string,
+  epsScale: string,
   usedMathFuncs: number[],
   usedMathConsts: number[],
   loop: Loop | null,
@@ -493,6 +495,7 @@ export function getIVP(text: string): IVP {
   let consts: Map<string, Input> | null = null;
   let params: Map<string, Input> | null = null;
   let tolerance = DEFAULT_TOL;
+  let epsScale = DEFAULT_EPS_SCALE;
   let loop: Loop | null = null;
   const updates = [] as Update[];
   const metas = [] as string[];
@@ -536,6 +539,8 @@ export function getIVP(text: string): IVP {
       params = getEqualities(lines, block.begin + 1, block.end);
     } else if (firstLine.startsWith(CONTROL_EXPR.TOL)) { // the 'tolerance' block
       tolerance = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
+    } else if (firstLine.startsWith(CONTROL_EXPR.EPS_SCALE)) { // the 'eps scale' block
+      epsScale = firstLine.slice( firstLine.indexOf(CONTROL_SEP) + 1).trim();
     } else if (firstLine.startsWith(CONTROL_EXPR.LOOP)) { // the 'loop' block
       loop = getLoop(lines, block.begin + 1, block.end);
     } else if (firstLine.startsWith(CONTROL_EXPR.UPDATE)) { // the 'update' block
@@ -564,6 +569,7 @@ export function getIVP(text: string): IVP {
     consts: consts,
     params: params,
     tolerance: tolerance,
+    epsScale: epsScale,
     usedMathFuncs: getUsedMathIds(text, MATH_FUNCS),
     usedMathConsts: getUsedMathIds(text, MATH_CONSTS),
     loop: loop,
@@ -806,6 +812,7 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
 
   // 2.4) final lines of the problem specification
   res.push(`${SCRIPT.SPACE4}tolerance: ${ivp.tolerance},`);
+  res.push(`${SCRIPT.SPACE4}epsScale: ${ivp.epsScale},`);
   res.push(`${SCRIPT.SPACE4}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push('};');
 
@@ -886,6 +893,7 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
 
   // 2.4) final lines of the problem specification
   res.push(`${SCRIPT.SPACE6}tolerance: ${ivp.tolerance},`);
+  res.push(`${SCRIPT.SPACE6}epsScale: ${ivp.epsScale},`);
   res.push(`${SCRIPT.SPACE6}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push(`${SCRIPT.SPACE2}};`);
 
