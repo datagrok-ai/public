@@ -157,8 +157,8 @@ export interface IFitSeriesOptions {
   fitFunction?: string | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
-  markerType?: FitMarkerType;           // defines the series marker type
-  outlierMarkerType?: FitOutlierMarkerType;  // defines the series outlier marker type
+  marker?: FitMarkerType;           // defines the series marker type
+  outlierMarker?: FitOutlierMarkerType;  // defines the series outlier marker type
   lineStyle?: FitLineStyle;             // defines the series line style
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
@@ -374,10 +374,10 @@ export const fitSeriesProperties: DG.Property[] = [
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
       //@ts-ignore
       friendlyName: 'Confidence Interval'}),
-  DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+  DG.Property.js('marker', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  DG.Property.js('outlierMarkerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
+  DG.Property.js('outlierMarker', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'outlier', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
   DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
