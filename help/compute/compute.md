@@ -515,7 +515,27 @@ let y = x + 3;
 
 ### Input parameter optimization
 
-Solve an inverse problem: find input conditions leading to specified output constraints.
+Solve an inverse problem: find input conditions leading to specified output constraints. It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
+
+* Click the "Fit inputs" icon <i class="grok-icon fal fa-chart-line"></i> on the top panel. A view opens
+* Specify inputs to be found in the `Fit` block
+* Set output constraints in the `Target` block
+* In the `Using` block
+  * Choose numerical optimization `method`
+  * Set `loss` function type
+  * Specify number of points to be found (in the `samples` field)
+  * Set the maximum scaled deviation between similar fitted points (in the `similarity` field)
+* Click the "Run" <i class="fas fa-play"></i> icon on the top panel to perform fitting. You will get a [grid](../visualize/viewers/grid) containing
+  * loss function values and fitted inputs
+  * viewers visualizing the goodness of fit
+  * [line chart](../visualize/viewers/line-chart) showing the loss function minimization
+
+![fitting-run.gif](pics/fitting-run.gif)
+
+Learn more
+
+* [Parameter optimization](optimization.md)
+* [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)
 
 ### Miscellaneous
 
