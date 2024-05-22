@@ -9,7 +9,7 @@
 8. Filtering
     1. Go to **Tables** and click the **Filter** icon
     2. Change arbitrary settings on the **Filter Panel** and check the pie chart interaction.
-9. Go to the **Data** info panel and check all the properties.
+9. Go to the **Context Panel** > **Data** section and check all the properties.
 10. Title, Description:
     1. Add a title and a description.
     2. Change their position
