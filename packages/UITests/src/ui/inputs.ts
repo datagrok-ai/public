@@ -341,3 +341,34 @@ category('UI: Choice input new', () => {
     grok.shell.closeAll();
   });
 });
+
+category('UI: Table input new', () => {
+  before(async () => {
+    grok.shell.addTableView(grok.data.demo.demog(10));
+  });
+
+  test('nullable', async () => {
+    const t = ui.input.table('test', {nullable: true});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, '');
+    expect(selector.item(1)?.textContent, 'demog 10');
+  });
+
+  test('non-nullable', async () => {
+    const t = ui.input.table('test', {nullable: false});
+
+    const view = grok.shell.newView();
+    view.append(t);
+
+    const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
+    expect(selector.item(0)?.textContent, 'demog 10');
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});
