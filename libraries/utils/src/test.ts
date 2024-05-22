@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable} from 'rxjs';
-import {testData} from './dataframe-utils';
+import { Observable } from 'rxjs';
+import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
 import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
@@ -24,7 +24,7 @@ const autoTestsCatName = 'Auto Tests';
 const demoCatName = 'Demo';
 const detectorsCatName = 'Detectors';
 const coreCatName = 'Core';
-const wasRegistered: {[key: string]: boolean} = {};
+const wasRegistered: { [key: string]: boolean } = {};
 export let currentCategory: string;
 
 export namespace assure {
@@ -111,14 +111,14 @@ export async function testEventAsync<T>(event: Observable<T>,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
-        handler(args).then(() => {
-          resolve('OK');
-        }).catch((e) => {
-          reject(e);
-        }).finally(() => {
-          sub.unsubscribe();
-          clearTimeout(timeout);
-        });
+      handler(args).then(() => {
+        resolve('OK');
+      }).catch((e) => {
+        reject(e);
+      }).finally(() => {
+        sub.unsubscribe();
+        clearTimeout(timeout);
+      });
     });
     const timeout = setTimeout(() => {
       sub.unsubscribe();
@@ -148,8 +148,8 @@ export function expect(actual: any, expected: any = true, error?: string): void 
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
   if ((actual === Number.POSITIVE_INFINITY && expected === Number.POSITIVE_INFINITY) ||
-      (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
-      (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
+    (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
+    (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
     return;
   const areEqual = Math.abs(actual - expected) < tolerance;
   expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
@@ -250,21 +250,21 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
-      moduleTests[demoCatName] !== undefined ||
-      Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
+    moduleTests[demoCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
-    const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
+    const testFunctions: DG.Func[] = DG.Func.find({ tags: ['dartTest'] });
     for (const f of testFunctions) {
       const arr = f.name.split(/\s*\|\s*/g);
       const name = arr.pop() ?? f.name;
       const cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
       if (moduleTests[cat] === undefined)
-        moduleTests[cat] = {tests: [], clear: true};
+        moduleTests[cat] = { tests: [], clear: true };
       moduleTests[cat].tests.push(new Test(cat, name,
-        async () => await f.apply(), {isAggregated: f.outputs.length > 0, timeout: 300000}));
+        async () => await f.apply(), { isAggregated: f.outputs.length > 0, timeout: 300000 }));
     }
   }
   const moduleAutoTests = [];
@@ -278,7 +278,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if ((tests && Array.isArray(tests) && tests.length)) {
       for (let i = 0; i < tests.length; i++) {
         const res = (tests[i] as string).matchAll(reg);
-        const map: {skip?: string, wait?: number, cat?: string, timeout?: number} = {};
+        const map: { skip?: string, wait?: number, cat?: string, timeout?: number } = {};
         Array.from(res).forEach((arr) => {
           if (arr[0].startsWith('skip')) map['skip'] = arr[1];
           else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
@@ -290,12 +290,12 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, {skipReason: map.skip, timeout: map.timeout});
+        }, { skipReason: map.skip, timeout: map.timeout });
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
           if (moduleTests[cat] === undefined)
-            moduleTests[cat] = {tests: [], clear: true};
+            moduleTests[cat] = { tests: [], clear: true };
           moduleTests[cat].tests.push(test);
         } else
           moduleAutoTests.push(test);
@@ -309,7 +309,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
         await delay(wait ? wait : 2000);
         if (grok.shell.lastError)
           throw new Error(grok.shell.lastError);
-      }, {skipReason: f.options['demoSkip']});
+      }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }
     if (f.hasTag('semTypeDetector')) {
@@ -320,17 +320,17 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           arr.push(res || col.semType);
         }
         expect(arr.filter((i) => i).length, 1);
-      }, {skipReason: f.options['skipTest']});
+      }, { skipReason: f.options['skipTest'] });
       moduleDetectors.push(test);
     }
   }
   wasRegistered[packageId] = true;
   if (moduleAutoTests.length)
-    moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+    moduleTests[autoTestsCatName] = { tests: moduleAutoTests, clear: true };
   if (moduleDemo.length)
-    moduleTests[demoCatName] = {tests: moduleDemo, clear: true};
+    moduleTests[demoCatName] = { tests: moduleDemo, clear: true };
   if (moduleDetectors.length)
-    moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
+    moduleTests[detectorsCatName] = { tests: moduleDetectors, clear: false };
 }
 
 function redefineConsole(): any[] {
@@ -362,11 +362,13 @@ function resetConsole(): void {
 }
 
 export async function runTests(options?:
-  {category?: string, test?: string, testContext?: TestContext, exclude?: string[], verbose?: boolean}) {
+  { category?: string, test?: string, testContext?: TestContext, exclude?: string[], verbose?: boolean }) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_);
-  const results: { category?: string, name?: string, success: boolean,
-                   result: string, ms: number, skipped: boolean }[] = [];
+  const results: {
+    category?: string, name?: string, success: boolean,
+    result: string, ms: number, skipped: boolean
+  }[] = [];
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -410,9 +412,9 @@ export async function runTests(options?:
       // grok.shell.closeAll();
       // DG.Balloon.closeAll();
       if (value.afterStatus)
-        data.push({category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false});
+        data.push({ category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
       if (value.beforeStatus)
-        data.push({category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false});
+        data.push({ category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
       results.push(...data);
     }
   } finally {
@@ -436,17 +438,21 @@ export async function runTests(options?:
     for (const cat of categories) {
       const res = results.filter((r) => r.category === cat);
       const failed_ = res.filter((r) => !r.success).length;
-      const params = {success: failed_ === 0,
+      const params = {
+        success: failed_ === 0,
         passed: res.filter((r) => r.success).length,
         skipped: res.filter((r) => r.skipped).length,
         failed: failed_,
-        type: 'package', packageName, category: cat};
+        type: 'package', packageName, category: cat
+      };
       grok.log.usage(`${packageName}: ${cat}`,
         params, `category-package ${packageName}: ${cat}`);
     }
     if (!options.category) {
-      const params = {success: failed.length === 0, passed: successful, skipped, failed: failed.length,
-        type: 'package', packageName};
+      const params = {
+        success: failed.length === 0, passed: successful, skipped, failed: failed.length,
+        type: 'package', packageName
+      };
       grok.log.usage(packageName, params, `package-package ${packageName}`);
     }
     if (options.testContext.report) {
@@ -458,7 +464,7 @@ export async function runTests(options?:
         failed: failed.length,
         package: package_
       };
-      for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+      for (const r of failed) Object.assign(params, { [`${r.category} | ${r.name}`]: r.result });
       logger.log(description, params, 'package-tested');
     }
   }
@@ -472,7 +478,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
+  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
@@ -482,16 +488,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const start = Date.now();
   try {
     if (skip)
-      r = {success: true, result: skipReason!, ms: 0, skipped: true};
+      r = { success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
-      r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
+      r = { success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
     stdError(x);
-    r = {success: false, result: await getResult(x), ms: 0, skipped: false};
+    r = { success: false, result: await getResult(x), ms: 0, skipped: false };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -513,11 +519,13 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.category = t.category;
   r.name = t.name;
   if (!filter) {
-    let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-      'type': type, packageName, 'category': t.category, 'test': t.name, 'logs': r.logs};
+    let params = {
+      'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
+      'type': type, packageName, 'category': t.category, 'test': t.name, 'logs': r.logs
+    };
     if (r.result.constructor == Object) {
-      const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
-      params = {...params, ...res};
+      const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
+      params = { ...params, ...res };
     }
     grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
       params, `test-${type} ${packageName}: ${t.category}: ${t.name}`);
@@ -548,12 +556,12 @@ export async function awaitCheck(checkHandler: () => boolean,
 }
 
 // Returns test execution result or an error in case of timeout
-async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
+export async function timeout(func: () => Promise<any>, testTimeout: number, timeoutReason: string = 'EXECUTION TIMEOUT'): Promise<any> {
   let timeout: any = null;
   const timeoutPromise = new Promise<any>((_, reject) => {
     timeout = setTimeout(() => {
       // eslint-disable-next-line prefer-promise-reject-errors
-      reject('EXECUTION TIMEOUT');
+      reject(timeoutReason);
     }, testTimeout);
   });
   try {
