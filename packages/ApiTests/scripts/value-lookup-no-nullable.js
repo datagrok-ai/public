@@ -3,4 +3,5 @@
 //input: double mpg
 //input: int cyl
 //input: int disp
+//input: string with_choices { choices: ["1", "2"]}
 //language: javascript

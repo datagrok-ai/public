@@ -72,6 +72,49 @@ category('Widgets: ValueLookup with with nullables', () => {
   });
 });
 
+category('Widgets: InputForm fc replacement edge cases', () => {
+  let inputs = {} as Record<string, DG.InputBase>;
+  let funcCall: DG.FuncCall;
+  let form: DG.InputForm;
+
+  before(async () => {
+    funcCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare();
+  
+    form = await DG.InputForm.forFuncCall(funcCall);
+    inputs = {
+      'model': form.getInput('model') ?? null,
+      'mpg': form.getInput('mpg') ?? null,
+      'cyl': form.getInput('cyl') ?? null,
+      'disp': form.getInput('disp') ?? null,
+    };
+  });
+  
+  test('inputform created', async () => {
+    assure.notNull(form);
+  });
+
+  test('initial values', async () => {
+    expect(inputs['model'].value, 'Mazda RX4');
+    expect(inputs['mpg'].value, 21);
+    expect(inputs['cyl'].value, 6);
+    expect(inputs['disp'].value, 160);
+  });
+
+  test('source replace w/o value lookup run', async () => {
+    const newFuncCall = (await grok.functions.eval('ApiTests:ValueLookup')).prepare({
+      model: 'Mazda RX4',
+      with_choices: '0',
+    });
+    form.source = newFuncCall;
+
+    expect(inputs['model'].value, 'Mazda RX4');
+    expect(inputs['mpg'].value, null);
+    expect(inputs['cyl'].value, null);
+    expect(inputs['disp'].value, null);
+    expect(inputs['with_choices'].value, '0');
+  });
+});
+
 category('Widgets: InputForm API', () => {
   let inputs = {} as Record<string, DG.InputBase>;
   let funcCall: DG.FuncCall;
