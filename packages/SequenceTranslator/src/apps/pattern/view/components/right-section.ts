@@ -11,6 +11,7 @@ import { MAX_SEQUENCE_LENGTH, STRAND, STRANDS, STRAND_LABEL } from '../../model/
 import { NUCLEOTIDES } from '../../../common/model/const';
 import { applyPatternToRawSequence } from '../../model/translator';
 import { TableControlsManager } from './bulk-convert/table-controls';
+import { PatternLoadControlsManager } from './load-block-controls';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -105,7 +106,9 @@ export class PatternAppRightSection {
         this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value)
       });
     this.eventBus.patternLoaded$.subscribe(() => {
-      toggleAntisenseStrand.value = this.eventBus.isAntisenseStrandActive();
+      const loadedValue = this.eventBus.isAntisenseStrandActive();
+      if (toggleAntisenseStrand.value !== loadedValue)
+        toggleAntisenseStrand.value = loadedValue;
     });
     ui.tooltip.bind(toggleAntisenseStrand.root, 'Toggle antisense strand');
     //toggleAntisenseStrand.setTooltip('Toggle antisense strand');
@@ -230,8 +233,17 @@ export class PatternAppRightSection {
 
 
   private createLoadPatternButton(): HTMLElement {
+    const loadControlsManager = new PatternLoadControlsManager(this.eventBus, this.dataManager);
     const loadPatternInput = ui.iconFA('folder-open', () => {
-      //TODO: implementation
+      const savedConfig  = this.eventBus.getPatternConfig();
+      const patternDialog = loadControlsManager.createControls();
+      ui.dialog('Load pattern')
+      .add(patternDialog)
+      .show()
+      .onOK(() => {})
+      .onCancel(() => {
+        loadControlsManager.handlePatternChoice('', savedConfig);
+      })
     });
     loadPatternInput.classList.add('st-load-pattern-button');
     return loadPatternInput;
