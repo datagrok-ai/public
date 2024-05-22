@@ -167,7 +167,7 @@ export class EventBus {
     if (!isActive)
       this.updateStrandLength(STRAND.ANTISENSE, 0);
     else
-      this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.SENSE].length);
+      this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.ANTISENSE].length);
 
     this._isAntisenseStrandActive$.next(isActive);
   }
