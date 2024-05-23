@@ -5,11 +5,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
-import {distinctUntilChanged} from 'rxjs/operators';
+import {distinctUntilChanged, filter} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {Form, Viewer} from '@datagrok-libraries/webcomponents';
+import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents'
 
 export const _package = new DG.Package();
 
@@ -790,4 +792,52 @@ export async function TestCompositionPipeline12() {
   grok.shell.addView(pipeline.makePipelineView());
   await pipeline.init();
   return pipeline;
+}
+
+customElements.define('dg-viewer', Viewer);
+customElements.define('dg-form', Form);
+
+//tags: test
+export async function TestViewerComponent() {
+  const view = new DG.ViewBase();
+  const viewerComponent = document.createElement('dg-viewer') as ViewerT;
+  viewerComponent.setAttribute('name', 'Grid');
+  view.root.insertAdjacentElement('beforeend', viewerComponent);
+  grok.shell.addView(view);
+
+  setTimeout(() => {
+    grok.shell.info('changing test viewer data')
+    viewerComponent.value = grok.data.demo.demog(10);
+  }, 5000);
+
+  setTimeout(() => {
+    grok.shell.info('changing test viewer data')
+    viewerComponent.viewer = grok.data.demo.demog(0).plot.histogram();
+  }, 8000);
+}
+
+//tags: test
+export async function TestFromComponent() {
+  const func: DG.Func = await grok.functions.eval('LibTests:simpleInputs');
+  const fc1 = func.prepare({
+    a: 1,
+    b: 2,
+    c: 3,
+  });
+  const formComponent = document.createElement('dg-form') as FormT;
+  formComponent.funcCall = fc1;
+
+  const view = new DG.ViewBase();
+  view.root.insertAdjacentElement('beforeend', formComponent);
+  grok.shell.addView(view);
+
+  setTimeout(() => {
+    const fc2 = func.prepare({
+      a: 1,
+      b: 2,
+      c: 3,
+    })
+    grok.shell.info('changing source data');
+    formComponent.funcCall = fc2;
+  }, 5000);
 }
