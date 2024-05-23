@@ -11,7 +11,7 @@ export class ReportsWidget extends DG.Widget {
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20);
+      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20, false);
       const users: {[_: string]: any} = {};
       (await grok.dapi.users.list()).forEach((user) => {
         users[user.id] = {

@@ -1432,7 +1432,7 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_Reports_Get(num: Num, limit: Num): Promise<any>;
+  grok_Reports_Get(num: Num, limit: Num, full: Bool): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
   grok_UserReport_Id(report: any): any;
   grok_UserReport_IsResolved(report: any): any;

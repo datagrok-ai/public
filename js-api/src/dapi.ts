@@ -955,8 +955,8 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
 }
 
 export class UserReportsDataSource {
-  getReports(num?: number, limit?: number): Promise<DataFrame> {
-    return api.grok_Reports_Get(num, limit);
+  getReports(num?: number, limit?: number, full: boolean = true): Promise<DataFrame> {
+    return api.grok_Reports_Get(num, limit, full);
   }
 
   find(id: string): Promise<UserReport> {

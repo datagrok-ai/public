@@ -31,33 +31,37 @@ export class ReportsView extends UaView {
     });
 
     const grid = ui.wait(async () => {
-      let t: DG.DataFrame;
-      let viewer: DG.Grid;
-      if (path != undefined) {
-        const segments = path.split('/').filter((s) => s != '');
-        if (segments.length > 1) {
-          const reportNumber = parseInt(segments[1]);
-          t = await grok.dapi.reports.getReports(reportNumber);
-          if (t && t.rowCount > 0) {
-            t.currentRowIdx = 0;
-            await this.showPropertyPanel(t);
-            grok.dapi.reports.getReports()
-              .then(async (r: DG.DataFrame) => {
-                r.rows.removeWhere((r) => r.get('number') === reportNumber);
-                const df = t.append(r);
-                const newViewer = DG.Viewer.grid(df);
-                this.updateDf(df, newViewer, this.users);
-                viewer.root.replaceWith(newViewer.root);
-              });
+      try {
+        let t: DG.DataFrame;
+        let viewer: DG.Grid;
+        if (path != undefined) {
+          const segments = path.split('/').filter((s) => s != '');
+          if (segments.length > 1) {
+            const reportNumber = parseInt(segments[1]);
+            t = await grok.dapi.reports.getReports(reportNumber);
+            if (t && t.rowCount > 0) {
+              t.currentRowIdx = 0;
+              await this.showPropertyPanel(t);
+              grok.dapi.reports.getReports()
+                .then(async (r: DG.DataFrame) => {
+                  r.rows.removeWhere((r) => r.get('number') === reportNumber);
+                  const df = t.append(r);
+                  const newViewer = DG.Viewer.grid(df);
+                  this.updateDf(df, newViewer, this.users);
+                  viewer.root.replaceWith(newViewer.root);
+                });
+            }
           }
         }
+        // @ts-ignore
+        if (!t)
+          t = await grok.dapi.reports.getReports();
+        viewer = DG.Viewer.grid(t);
+        this.updateDf(t, viewer, this.users);
+        return viewer.root;
+      } catch (e) {
+        console.error(e);
       }
-      // @ts-ignore
-      if (!t)
-        t = await grok.dapi.reports.getReports();
-      viewer = DG.Viewer.grid(t);
-      this.updateDf(t, viewer, this.users);
-      return viewer.root;
     });
 
     this.root.append(ui.splitH([
@@ -67,7 +71,7 @@ export class ReportsView extends UaView {
   }
 
   applyStyle(viewer: DG.Grid) {
-    viewer.columns.setOrder(['is_resolved', 'number', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error', 'error_stack_trace', 'time', 'id']);
+    viewer.columns.setOrder(['is_resolved', 'number', 'last_occurrence', 'first_occurrence', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error', 'error_stack_trace', 'time', 'id']);
     viewer.col('reporter')!.cellType = 'html';
     viewer.col('reporter')!.width = 25;
 
@@ -83,6 +87,12 @@ export class ReportsView extends UaView {
     viewer.col('time')!.format = 'yyyy-MM-dd';
     viewer.col('time')!.width = 80;
 
+    viewer.col('last_occurrence')!.format = 'yyyy-MM-dd';
+    viewer.col('last_occurrence')!.width = 80;
+
+    viewer.col('first_occurrence')!.format = 'yyyy-MM-dd';
+    viewer.col('first_occurrence')!.width = 80;
+
     viewer.col('number')!.width = 35;
 
     viewer.col('description')!.width = 150;
@@ -92,7 +102,7 @@ export class ReportsView extends UaView {
 
   updateDf(t: DG.DataFrame, viewer: DG.Grid, users: { [_: string]: any; }) {
     if (t.rowCount === 0) return viewer.root
-    viewer.sort(['is_resolved', 'time'], [true, false]);
+    viewer.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
     this._scroll(viewer);
     this.applyStyle(viewer);
     viewer.onCellPrepare(async function(gc) {
@@ -128,7 +138,7 @@ export class ReportsView extends UaView {
     t.getCol('labels').setTag(DG.Tags.MultiValueSeparator, ',');
     t.onCurrentRowChanged.subscribe(async (_: any) => await this.showPropertyPanel(t));
     t.onValuesChanged.subscribe(async () => {
-      viewer.sort(['is_resolved', 'time'], [true, false]);
+      viewer.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
       this._scroll(viewer);
     });
     grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
@@ -141,6 +151,13 @@ export class ReportsView extends UaView {
           t.cell(i, 'assignee').value = r.assignee?.id;
           t.fireValuesChanged();
         }
+      }
+    });
+
+    grok.events.onEvent('d4-report-deleted').subscribe((id: string) => {
+      t.rows.removeWhere((r) => r.get('id') === id);
+      if (t.rowCount > 0) {
+        t.currentRowIdx = 0;
       }
     });
 
