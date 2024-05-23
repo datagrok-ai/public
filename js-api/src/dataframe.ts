@@ -37,21 +37,10 @@ type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
 
 
-/** Column CSV export options */
-export interface ColumnCsvExportOptions {
-  /** Custom column format to be used */
-  format: string;
-
-  /** Additional options */
-  [index: string]: any;
+/** Column name -> format */
+export interface ColumnsFormatCsvExportOptions {
+  [index: string]: string;
 }
-
-
-/** Column name -> options */
-export interface ColumnsCsvExportOptions {
-  [index: string]: ColumnCsvExportOptions;
-}
-
 
 /** Csv export options to be used in {@link DataFrame.toCsv} */
 export interface CsvExportOptions {
@@ -94,7 +83,7 @@ export interface CsvExportOptions {
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
-  columnOptions?: ColumnsCsvExportOptions;
+  columnFormats?: ColumnsFormatCsvExportOptions;
 }
 
 
