@@ -207,9 +207,10 @@ export function test(args: TestArgs): boolean {
                 df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
-            }).catch(async (e: any) => {
-              const stack = await (<any>window).DG.Logger.translateStackTrace(e.stack);
-              resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
+            }).catch((e: any) => { 
+              const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
+                resolve({ failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: { skip: 0, pass: 0 } });
+              });
             });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
