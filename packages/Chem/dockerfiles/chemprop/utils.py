@@ -11,7 +11,6 @@ class Types(object):
     DATE_TIME = 'datetime'
     LIST = 'list'
 
-
 def call_process(params: list):
     """
     Calls process.
@@ -23,4 +22,3 @@ def call_process(params: list):
     process = subprocess.run(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     log = process.stderr
     return log
-

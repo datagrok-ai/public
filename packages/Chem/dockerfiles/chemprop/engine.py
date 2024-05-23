@@ -9,7 +9,6 @@ import pandas as pd
 from sklearn import metrics
 from utils import Types
 
-
 class Engine(object):
     type = None
     description = None

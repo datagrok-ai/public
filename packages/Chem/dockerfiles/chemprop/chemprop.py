@@ -3,7 +3,6 @@
 from utils import *
 from engine import *
 
-
 class ChemProp(Engine):
     type = 'Chemprop'
     description = '<a target="_blank" href="https://github.com/swansonk14/chemprop">Chemprop: Molecular Property Prediction</a>'
