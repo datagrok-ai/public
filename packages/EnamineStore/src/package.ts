@@ -111,8 +111,8 @@ export function enamineStoreApp(): void {
       data.forEach((it) => {
         const opts: { [key: string]: any } = {
           'id': it['code'],
-          'cat': catalog,
-          'currency': currency,
+          'cat': catalog.value,
+          'currency': currency.value,
         };
         console.log(`************************ Price`);
         console.log(JSON.stringify(it));
