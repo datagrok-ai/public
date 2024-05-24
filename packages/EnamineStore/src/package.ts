@@ -102,7 +102,7 @@ export function enamineStoreApp(): void {
       'type': 'SMARTS',
       'sstype': searchModeToCommandMap[searchMode.value],
       'sim': parseFloat(similarity.value)
-    }, true, 100).then(async (fc) => {
+    }, true).then(async (fc) => {
       const data = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
       //get packs information for each id
       const promises: Promise<DG.FuncCall>[] = [];
@@ -112,7 +112,7 @@ export function enamineStoreApp(): void {
           'cat': catalog.value,
           'cur': currency.value,
         };
-        promises.push(grok.data.callQuery('EnamineStore:Price', opts, true, 100))
+        promises.push(grok.data.callQuery('EnamineStore:Price', opts, true))
       });
       const packs: { [key: string]: EnamineStorePack[] } = {};
       const packsResFuncCalls = await Promise.all(promises);
@@ -203,7 +203,7 @@ export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catal
     'type': 'SMARTS',
     'sstype': searchModeToCommandMap[searchMode]
   };
-  grok.data.callQuery('EnamineStore:Search', options, true, 100).then(async (fc) => {
+  grok.data.callQuery('EnamineStore:Search', options, true).then(async (fc) => {
     compsHost.firstChild?.remove();
     const data = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
     if (data === null) {
@@ -218,7 +218,7 @@ export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catal
         'cat': catalog,
         'cur': currency,
       };
-      promises.push(grok.data.callQuery('EnamineStore:Price', opts, true, 100))
+      promises.push(grok.data.callQuery('EnamineStore:Price', opts, true))
     });
     const packs: {[key: string]: EnamineStorePack[]} = {};
     const packsResFuncCalls = await Promise.all(promises);

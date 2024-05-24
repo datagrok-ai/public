@@ -35,7 +35,7 @@ async function testEnamineSearch(searchMode: SEARCH_MODE, numResults: number) {
     'type': 'SMARTS',
     'sstype': searchType
   };
-  const fc = await grok.data.callQuery('EnamineStore:Search', options, true, 100);
+  const fc = await grok.data.callQuery('EnamineStore:Search', options, true);
   const res = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
   //console.log(JSON.stringify(res));
   expect(res.length, numResults, `Incorrect ${searchType} search results, returned ${numResults}`);
@@ -45,7 +45,7 @@ async function testEnamineSearch(searchMode: SEARCH_MODE, numResults: number) {
     'cat': 'SCR',
     'cur': 'USD',
   };
-  const fcPrice = await grok.data.callQuery('EnamineStore:Price', opts, true, 100);
+  const fcPrice = await grok.data.callQuery('EnamineStore:Price', opts, true);
   const resPrice = JSON.parse(fcPrice.getParamValue('stringResult'))['samples'];
   expect(resPrice.length > 0, true, 'Incorrect price results'); 
 }
