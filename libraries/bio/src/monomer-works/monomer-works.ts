@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib, HelmType, PolymerType} from '../types';
-import {HelmTypes, PolymerTypes} from '../utils/const';
+import {HelmType, PolymerType, HelmTypes, PolymerTypes} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {IMonomerLib} from '../types';
 
 /** Hypothetical interface to convert mol block notation.
  * It should be placed in the chem-meta package, and have an implementation in the Chem package.

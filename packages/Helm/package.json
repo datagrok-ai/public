@@ -8,16 +8,12 @@
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources": [
-    "css/helm.css",
-    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
-    "helm/JSDraw/Scilligence.JSDraw2.Lite.js",
-    "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
-    "helm/JSDraw/Pistoia.HELM.js"
+    "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.41.5",
+    "@datagrok-libraries/bio": "../../libraries/bio",
     "@datagrok-libraries/chem-meta": "^1.2.5",
-    "@datagrok-libraries/utils": "^4.2.2",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.17.4",
     "dayjs": "^1.10.6",
@@ -27,6 +23,8 @@
   "devDependencies": {
     "@datagrok/bio": "^2.12.18",
     "@datagrok/chem": "^1.9.2",
+    "@datagrok/js-draw-lite": "../../../../external/JSDraw.Lite/source/web",
+    "@datagrok/helm-web-editor": "../../../../external/HELMWebEditor/HELM/source",
     "@types/node": "17.0.45",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.11.0",

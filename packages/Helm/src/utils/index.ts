@@ -1,9 +1,8 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as scil from 'scil';
-import * as org from 'org';
-
-import {_package} from '../package';
+import {OrgHelmModule, ScilModule} from '../types';
 
 import {
   RGROUP_CAP_GROUP_NAME,
@@ -15,6 +14,11 @@ import {
   RGROUP_LABEL,
   SDF_MONOMER_NAME
 } from '../constants';
+
+import {_package} from '../package';
+
+declare const scil: ScilModule;
+declare const org: OrgHelmModule;
 
 // Global flag is for replaceAll
 const helmGapStartRe = /\{(\*\.)+/g;

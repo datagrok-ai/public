@@ -2,12 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as JSDraw2 from 'JSDraw2';
-
+import {IEditor} from '@datagrok/js-draw-lite/src/types/jsdraw2';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
+import {JSDraw2Module} from './types';
+
+declare const JSDraw2: JSDraw2Module;
+
 export class HelmWebEditor implements IHelmWebEditor {
-  editor: JSDraw2.Editor;
+  editor: IEditor;
   host: HTMLDivElement;
 
   w = 200;

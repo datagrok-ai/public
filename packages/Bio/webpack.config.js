@@ -4,7 +4,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 
 const mode = process.env.NODE_ENV ?? 'production';
 if (mode !== 'production') {
-  console.warn(`Building Bio in '${mode}' mode.`);
+  console.warn(`Building '${packageName}' in '${mode}' mode.`);
 }
 
 module.exports = {
@@ -45,9 +45,6 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
-    'scil': 'scil',
-    'org': 'org',
-    // 'JSDraw2': 'JSDraw2',
   },
   output: {
     filename: '[name].js',

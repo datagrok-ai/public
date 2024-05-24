@@ -1,6 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+// Do not import anything from JsDrawLite or HelmWebEditor, only to the main Helm package
+// import {JSDraw2ModuleType} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+// import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
+
 import '@datagrok-libraries/bio/src/types/helm';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

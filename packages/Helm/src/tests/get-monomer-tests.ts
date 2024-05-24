@@ -3,16 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import * as org from 'org';
-import * as JSDraw2 from 'JSDraw2';
-import Atom = JSDraw2.Atom;
-import JsAtom = JSDraw2.JsAtom;
 
+import {IAtom, IJsAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType} from '@datagrok/helm-web-editor/src/types/org-helm';
 import {
-  after, before, category, delay, expect, test, expectArray, testEvent, expectFloat
+  after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
 } from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {HelmType, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
+import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -22,8 +20,12 @@ import {
 import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
 import {GetMonomerFunc, getMonomerHandleArgs} from '../utils/get-monomer';
+import {JSDraw2Module, OrgHelmModule} from '../types';
 
 import {_package} from '../package-test';
+
+declare const org: OrgHelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 type TestDataType = { args: { a: any, name?: string }, tgt: any };
 
@@ -69,13 +71,18 @@ category('getMonomer', ()=>{
   let userLibSettings: UserLibSettings;
 
   before(async ()=>{
-    monomerLibHelper = await getMonomerLibHelper();
-    userLibSettings = await getUserLibSettings();
+    await timeout(async () => { monomerLibHelper = await getMonomerLibHelper(); }, 5000,
+      'get monomerLibHelper');
+    await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
+      'get user lib settings for backup');
 
     // Tests 'findMonomers' requires default monomer library loaded
-    await setUserLibSettingsForTests();
-    await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadLibraries(true); // load default libraries for tests
+    await timeout(async () => { await setUserLibSettingsForTests(); }, 5000,
+      'set user lib settings for tests');
+    await timeout(async ()=> { await monomerLibHelper.awaitLoaded(); }, 5000,
+      'await monomerLib to be loaded');
+    await timeout(async () => { await monomerLibHelper.loadLibraries(true); }, 5000,
+      'reload monomerLib with settings for tests'); // load default libraries for tests
   });
 
   after(async ()=>{
@@ -137,7 +144,7 @@ category('getMonomer', ()=>{
     }
 
     for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
-      const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
+      const a: IAtom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
       const [biotype, elem] = getMonomerHandleArgs(a, testData.args.name);
       const tgt = testData.tgt;
 
@@ -163,7 +170,6 @@ category('getMonomer', ()=>{
     /* Tests getMonomer function adding missing monomers. */
     const helmStr = 'PEPTIDE1{[mis1].R.[mis2].T.C.F}$$$$;';
 
-
     expectMonomerLib(monomerLibHelper.getBioLib());
     const editor = new JSDraw2.Editor(ui.div(), {viewonly: true});
     editor.setHelm(helmStr);
@@ -174,11 +180,11 @@ category('getMonomer', ()=>{
   });
 });
 
-function getAtomFromJson(argA: JsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
-  let res: Atom<HelmType> | HelmType;
-  const a = argA as JsAtom<HelmType>;
+function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): IAtom<HelmType> | HelmType {
+  let res: IAtom<HelmType> | HelmType;
+  const a = argA as IJsAtom<HelmType>;
   if (a.T === 'ATOM')
-    res = new JSDraw2.Atom<HelmType>(a.p, a.elem, a.bio);
+    res = new JSDraw2.Atom(a.p, a.elem, a.bio);
   else
     res = argA as HelmType;
   return res;

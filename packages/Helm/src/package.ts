@@ -5,21 +5,21 @@ import * as DG from 'datagrok-api/dg';
 
 // import '@datagrok-libraries/bio/src/types/dojo';
 // import * as dojo from 'DOJO';
-import '@datagrok-libraries/bio/src/types/helm';
-import '@datagrok-libraries/bio/src/types/jsdraw2';
-import * as scil from 'scil';
-import * as org from 'org';
-import * as JSDraw2 from 'JSDraw2';
 
 import $ from 'cash-dom';
 
+import {getJSDrawModules} from '@datagrok/js-draw-lite/src/types';
+import {getHelmWebEditorModules} from '@datagrok/helm-web-editor/src/types';
+import {WebEditorMonomer} from '@datagrok/helm-web-editor/src/types/org-helm';
+
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {HelmCellRenderer} from './cell-renderer';
@@ -29,68 +29,100 @@ import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-
 import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
+import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 let monomerLib: IMonomerLib | null = null;
 
 export const _package = new HelmPackage();
 
+declare const scil: ScilModule;
+declare const JSDraw2: JSDraw2Module;
+declare const org: OrgHelmModule;
+
 //tags: init
 export async function initHelm(): Promise<void> {
-  const logPrefix: string = 'Helm: initHelm()';
+  const logPrefix: string = 'Helm: _package.initHelm()';
   _package.logger.debug(`${logPrefix}, start`);
-  org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
-  await Promise.all([
-    new Promise((resolve, reject) => {
-      // @ts-ignore
-      dojo.ready(function() { resolve(null); });
-    }).then(() => {
-      initHelmPatchDojo();
-    }),
-    (async () => {
-      const libHelper = await getMonomerLibHelper();
-      return libHelper.getBioLib();
-    })()
-  ])
-    .then(([_, lib]: [unknown, IMonomerLib]) => {
-      _package.logger.debug(`${logPrefix}, then(), lib loaded`);
-      monomerLib = lib;
-      rewriteLibraries(); // initHelm()
-      _package.initHelmPatchPistoia(monomerLib, _package.logger);
+  try {
+    const [_, lib]: [void, IMonomerLib] = await Promise.all([
+      Promise.all([
+        new Promise<void>((resolve, reject) => {
+          // @ts-ignore
+          // try { dojo.ready(function() { resolve(null); }); } catch (err: any) { reject(err); }
+          resolve();
+        }),
+        (async () => {
+          _package.logger.debug(`${logPrefix}, dependence loading...`);
+          const t1: number = performance.now();
+          // parentheses are required for destructuring assignment
+          _package.logger.debug(`${logPrefix}, getJSDrawModules() loading ...`);
+          (/*{scil, JSDraw2} = */await getJSDrawModules());
+          _package.logger.debug(`${logPrefix}, getJSDrawModules() loaded`);
 
-      monomerLib.onChanged.subscribe((_) => {
-        try {
-          const libSummary = monomerLib!.getSummaryObj();
-          const isLibEmpty = Object.keys(libSummary).length == 0;
-          const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
-            .map(([pt, count]) => `${pt}: ${count}`)
-            .join(', ');
-          const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
-          _package.logger.debug(`${logPrefixInt}, start, lib: { ${libSummaryLog} }`);
+          _package.logger.debug(`${logPrefix}, getHelmWebEditorModules() loading ...`);
+          (/*{org} = */await getHelmWebEditorModules());
+          _package.logger.debug(`${logPrefix}, getHelmWebEditorModules() loaded`);
 
-          const libSummaryHtml = isLibEmpty ? 'empty' : Object.entries(libSummary)
-            .map(([pt, count]) => `${pt} ${count}`)
-            .join('<br />');
-          const libMsg: string = `Monomer lib updated:<br /> ${libSummaryHtml}`;
-          grok.shell.info(libMsg);
+          _package.logger.debug(`${logPrefix}, patch scil.Utils.alert`);
+          _package.initHelmPatchScilAlert(); // patch immediately
 
-          _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
-          rewriteLibraries(); // initHelm()
-          _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
-        } catch (err: any) {
-          const errMsg = errorToConsole(err);
-          console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
-          // throw err; // Prevent disabling event handler
-        }
-      });
-    })
-    .catch((err: any) => {
-      const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
-      grok.shell.error(`Package \'Helm\' init initHelm() error: ${errMsg}`);
-      const errRes = new Error(errMsg);
-      errRes.stack = err.stack;
-      throw errRes;
+          const t2: number = performance.now();
+          _package.logger.debug(`${logPrefix}, dependence loaded, ET: ${(t2 - t1)} ms`);
+        })()
+      ]).then(() => {
+        _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
+        initHelmPatchDojo();
+
+        // settings
+        org.helm.webeditor.kCaseSensitive = true; // GROK-13880
+      }),
+      (async () => {
+        const libHelper = await getMonomerLibHelper();
+        return libHelper.getBioLib();
+      })()
+    ]);
+
+    _package.logger.debug(`${logPrefix}, then(), lib loaded`);
+    monomerLib = lib;
+    rewriteLibraries(); // initHelm()
+    await _package.initHelmPatchPistoia(monomerLib);
+
+    monomerLib.onChanged.subscribe((_) => {
+      const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
+      try {
+        const libSummary = monomerLib!.getSummaryObj();
+        const isLibEmpty = Object.keys(libSummary).length == 0;
+        const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
+          .map(([pt, count]) => `${pt}: ${count}`)
+          .join(', ');
+        _package.logger.debug(`${logPrefixInt}, start, lib: { ${libSummaryLog} }`);
+
+        const libSummaryHtml = isLibEmpty ? 'empty' : Object.entries(libSummary)
+          .map(([pt, count]) => `${pt} ${count}`)
+          .join('<br />');
+        const libMsg: string = `Monomer lib updated:<br /> ${libSummaryHtml}`;
+        grok.shell.info(libMsg);
+
+        _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
+        rewriteLibraries(); // initHelm() monomerLib.onChanged()
+        _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
+      } catch (err: any) {
+        const errMsg = errorToConsole(err);
+        console.error(`${logPrefixInt} error:\n` + errMsg);
+        // throw err; // Prevent disabling event handler
+      }
     });
+  } catch (err: any) {
+    const [errMsg, errStack] = errInfo(err);
+    // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
+    grok.shell.error(`Package \'Helm\' init error:\n${errMsg}`);
+    const errRes = new Error(`${logPrefix} error:\n  ${errMsg}\n${errStack}`);
+    errRes.stack = errStack;
+    throw errRes;
+  } finally {
+    _package.logger.debug(`${logPrefix}, finally`);
+  }
   _package.logger.debug(`${logPrefix}, end`);
 }
 
@@ -106,7 +138,7 @@ function rewriteLibraries() {
     monomerSymbols.forEach((monomerSymbol) => {
       let isBroken = false;
       const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: org.helm.WebEditorMonomer = {
+      const webEditorMonomer: WebEditorMonomer = {
         id: monomerSymbol,
         m: monomer.molfile,
         n: monomer.name,
@@ -154,6 +186,8 @@ export function getHelmService(): HelmServiceBase {
 //meta.columnTags: quality=Macromolecule, units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
+  const logPrefix = `Helm: _package.getHelmCellRenderer()`;
+  _package.logger.debug(`${logPrefix}, start`);
   // return new HelmCellRenderer(); // old
   return new HelmGridCellRenderer(); // new
 }

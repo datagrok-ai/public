@@ -2,14 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import './helm';
-import * as org from 'org';
-import PolymerType = org.helm.PolymerType;
-import HelmType = org.helm.HelmType;
-import MonomerType = org.helm.MonomerType;
-import WebEditorMonomer = org.helm.WebEditorMonomer;
-
-export {WebEditorMonomer, PolymerType, HelmType, MonomerType};
+import {PolymerType, MonomerType, WebEditorMonomer} from '@datagrok/helm-web-editor/src/types/org-helm';
 
 import {Observable} from 'rxjs';
 

@@ -2,13 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as scil from 'scil';
-import * as org from 'org';
-
+import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
 import {HelmWebEditor} from './helm-web-editor';
+import {OrgHelmModule, ScilModule} from './types';
+
+import {_package} from './package';
+
+declare const scil: ScilModule;
+declare const org: OrgHelmModule;
 
 type HelmHelperWindowType = Window & {
   $helmHelper?: HelmHelper,
@@ -20,9 +24,9 @@ export class HelmHelper implements IHelmHelper {
     return new HelmWebEditor();
   }
 
-  createWebEditorApp(host: HTMLDivElement, helm: string): org.helm.IWebEditorApp {
+  createWebEditorApp(host: HTMLDivElement, helm: string): IWebEditorApp {
     org.helm.webeditor.MolViewer.molscale = 0.8;
-    const webEditorApp: org.helm.IWebEditorApp = new org.helm.webeditor.App(host, {
+    const webEditorApp: IWebEditorApp = new org.helm.webeditor.App(host, {
       showabout: false,
       mexfontsize: '90%',
       mexrnapinontab: true,

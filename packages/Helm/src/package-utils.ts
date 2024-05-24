@@ -2,19 +2,23 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import * as org from 'org';
-import * as scil from 'scil';
-import * as JSDraw2 from 'JSDraw2';
-import Atom = JSDraw2.Atom;
+import type {IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import type {HelmType, IMonomers, IOrgHelmWebEditor} from '@datagrok/helm-web-editor/src/types/org-helm';
 
+import {timeout} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {IMonomerLib, HelmType} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {HelmService} from './utils/helm-service';
 import {GetMonomerFunc, GetMonomerResType, getWebEditorMonomer} from './utils/get-monomer';
+import {OrgHelmModule, ScilModule} from './types';
 
+import {_package} from './package';
+
+declare const scil: ScilModule;
+declare const org: OrgHelmModule;
 
 type HelmWindowType = Window & {
   $helmService?: HelmServiceBase,
@@ -27,11 +31,53 @@ export function _getHelmService(): HelmServiceBase {
   return res;
 }
 
-export function initHelmPatchDojo(): void {
+export async function initHelmPatchDojo(): Promise<void> {
+  const logPrefix = `Helm: _package.initHelmPatchDojo()`;
   // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
   /** get the text width in pixels */
   // @ts-ignore
+  await timeout(async () => {
+    await new Promise<void>((resolve, reject) => {
+      try {
+        let rCount = 0;
+        // @ts-ignore
+        dojo.require('dojo/ready')((...args: any[]) => {
+          _package.logger.debug(`${logPrefix}, dojo.ready(), callback rCount: ${rCount}`);
+          //if (--rCount === 0) {
+          _package.logger.debug(`${logPrefix}, dojo.ready(), callback resolve()`);
+          resolve();
+          //}
+        });
+
+        //@ts-ignore
+        const rList: any[] = [dojo.require('dojox/gfx'), dojo.require('dojox/gfx/svg')];
+        rCount = rList.filter((r) => r === undefined).length;
+        if (rCount === 0) {
+          _package.logger.debug(`${logPrefix}, dojo.require(...) already all`);
+          resolve();
+        }
+      } catch (err: any) {
+        reject(err);
+      }
+    });
+  }, 5000, 'dojox.gfx.svg');
+
+  // await timeout(async ()=>{
+  //   await new Promise<void>((resolve, reject) => {
+  //     try{
+  //
+  //       //@ts-ignore
+  //       if(dojo.require('dojox/gfx')){}
+  //
+  //     } catch (err: any) {
+  //       reject(err);
+  //     }
+  //   });
+  // });
+  _package.logger.debug(`${logPrefix}, patch window.dojox.gfx.svg.Text.prototype.getTextWidth`);
+  // @ts-ignore
   window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
+    // Patched via Datagrok Helm package
     const rawNode = this.rawNode;
     const oldParent = rawNode.parentNode;
     const _measurementNode = rawNode.cloneNode(true);
@@ -57,6 +103,7 @@ export function initHelmPatchDojo(): void {
     oldParent.removeChild(_measurementNode);
     return _width;
   };
+  _package.logger.debug(`${logPrefix}, end`);
 }
 
 export const helmJsonReplacer = (key: string, value: any): any => {
@@ -73,18 +120,24 @@ export class HelmPackage extends DG.Package {
   public getMonomerOriginal: GetMonomerFunc;
   public alertOriginal: (s: string) => void;
 
+  public initHelmPatchScilAlert(): void {
+    const logPrefix: string = 'Helm: initHelmPatchScilAlert()';
+    this.alertOriginal = scil.Utils.alert;
+    scil.Utils.alert = (s: string): void => {
+      this.logger.warning(`${logPrefix}, scil.Utils.alert() s: "${s}".`);
+    };
+  }
+
   /** Patches Pistoia Monomers.getMonomer method to utilize DG Bio monomer Lib */
-  public initHelmPatchPistoia(monomerLib: IMonomerLib, logger: ILogger): void {
+  public async initHelmPatchPistoia(monomerLib: IMonomerLib): Promise<void> {
     const logPrefix: string = 'Helm: initHelmPatchPistoia()';
     const monomers = org.helm.webeditor.Monomers;
 
     this.getMonomerOriginal = monomers.getMonomer.bind(monomers);
     this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
 
-    this.alertOriginal = scil.Utils.alert;
-
     org.helm.webeditor.Monomers.getMonomer = (
-      a: Atom<HelmType> | HelmType, name: string
+      a: IAtom<HelmType> | HelmType, name: string
     ): GetMonomerResType => {
       const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
       try {
@@ -100,17 +153,13 @@ export class HelmPackage extends DG.Package {
         return dgWem; //dgWem;
       } catch (err) {
         const [errMsg, errStack] = errInfo(err);
-        logger.error(`${logPrefixInt}, Error: ${errMsg}`, undefined, errStack);
+        this.logger.error(`${logPrefixInt}, Error: ${errMsg}`, undefined, errStack);
         throw err;
       }
     };
-    scil.Utils.alert = (s: string): void => {
-      logger.warning(`${logPrefix}, scil.Utils.alert() s = 's'.`);
-    };
-
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {
-      constructor(base: org.helm.IMonomers) {
+      constructor(base: IMonomers) {
         return new Proxy(base, {
           get(target: any, p: string | symbol, _receiver: any): any {
             return target[p];
@@ -127,11 +176,11 @@ export class HelmPackage extends DG.Package {
           },
         });
       }
-    }(org.helm.webeditor.Monomers) as org.helm.IMonomers;
+    }(org.helm.webeditor.Monomers) as IMonomers;
 
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor = new class {
-      constructor(base: org.helm.IOrgHelmWebEditor) {
+      constructor(base: IOrgHelmWebEditor) {
         return new Proxy(base, {
           get(target: any, p: string | symbol, _receiver: any): any {
             return target[p];
@@ -145,6 +194,6 @@ export class HelmPackage extends DG.Package {
           },
         });
       }
-    }(org.helm.webeditor) as org.helm.IOrgHelmWebEditor;
+    }(org.helm.webeditor) as IOrgHelmWebEditor;
   }
 }

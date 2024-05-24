@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
+import {IEditorMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -134,7 +134,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const argsX = (e.offsetX - gcb.x) * dpr;
     const argsY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: JSDraw2.IEditorMol | null = aux.mol;
+    const editorMol: IEditorMol | null = aux.mol;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
