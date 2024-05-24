@@ -114,6 +114,9 @@ export function enamineStoreApp(): void {
           'cat': catalog,
           'currency': currency,
         };
+        console.log(`************************ Price`);
+        console.log(JSON.stringify(it));
+        console.log(opts);
         promises.push(grok.data.callQuery('EnamineStore:Price', opts, true, 100))
       });
       const packs: { [key: string]: EnamineStorePack[] } = {};
