@@ -6,9 +6,11 @@ import { UsageWidget } from './widgets/usage-widget';
 import { PackageUsageWidget } from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
-import { ViewHandler } from './view-handler';
-import { TestTrack } from './test-track/app';
-import { ReportsWidget } from "./widgets/reports-widget";
+import {ViewHandler} from './view-handler';
+import {TestTrack} from './test-track/app';
+import {ReportsWidget} from "./widgets/reports-widget";
+import {ReportingApp} from "./reporting/reporting_app";
+
 
 export const _package = new DG.Package();
 
@@ -37,6 +39,26 @@ export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root)) 
     TestTrack.getInstance().init();
   
+}
+
+//name: Reports
+//tags: app
+//meta.url: /reports
+//input: string path {isOptional: true; meta.url: true}
+//input: map params {isOptional: true}
+//output: view v
+export async function reportsApp(path?: string):Promise<DG.ViewBase> {
+  const parent = grok.functions.getCurrentCall();
+  const app = new ReportingApp(parent);
+  await app.init(path);
+  return app.view!;
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
+  await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.by(10));
 }
 
 //output: widget result

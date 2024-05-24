@@ -19,7 +19,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule
 } from "./entities";
 import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout, ViewInfo} from "./views/view";
@@ -180,7 +180,11 @@ export class Dapi {
   }
 
   get reports(): UserReportsDataSource {
-    return new UserReportsDataSource();
+    return new UserReportsDataSource(api.grok_Dapi_User_Reports());
+  }
+
+  get rules(): HttpDataSource<UserReportsRule> {
+    return new UserReportsRulesDataSource(api.grok_Dapi_User_Reports_Rules());
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
@@ -954,13 +958,20 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 }
 
-export class UserReportsDataSource {
-  getReports(num?: number, limit?: number, full: boolean = true): Promise<DataFrame> {
-    return api.grok_Reports_Get(num, limit, full);
+export class UserReportsDataSource extends HttpDataSource<UserReport> {
+  constructor(s: any) {
+    super(s);
   }
 
-  find(id: string): Promise<UserReport> {
-    return api.grok_Reports_Find(id);
+
+  getReports(num?: number): Promise<DataFrame> {
+    return api.grok_Reports_Get(num);
+  }
+}
+
+export class UserReportsRulesDataSource extends HttpDataSource<UserReportsRule> {
+  constructor(s: any) {
+    super(s);
   }
 }
 

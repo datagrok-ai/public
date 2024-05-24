@@ -430,6 +430,10 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
+  appendMerge(t: DataFrame): void {
+    api.grok_DataFrame_Append_Merge(this.dart, t.dart);
+  }
+
   _event(event: string): Observable<any> {
     return __obs(event, this.dart);
   }

@@ -11,29 +11,21 @@ export class ReportsWidget extends DG.Widget {
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.DataFrame = await grok.dapi.reports.getReports(undefined, 20, false);
-      const users: {[_: string]: any} = {};
-      (await grok.dapi.users.list()).forEach((user) => {
-        users[user.id] = {
-          'avatar': user.picture,
-          'name': user.friendlyName,
-          'data': user,
-        };
-      });
+      const result: DG.UserReport[] = await grok.dapi.reports.list({pageNumber: 1, pageSize: 20});
       const items = [];
-      for (let i = 0; i < result.rowCount; i++) {
+      for (let report of result) {
         // todo: add css instead of inline styles
-        const currentRow = result.row(i);
-        const reporter = users[currentRow.get('reporter')];
-        const clock = ui.iconFA('clock', null, currentRow.get('time'));
+        const userHandler = DG.ObjectHandler.forEntity(report.reporter)!;
+        const reportHandler = DG.ObjectHandler.forEntity(report)!;
+        const clock = ui.iconFA('clock', null, report.createdOn.toISOString());
         clock.style.marginRight = '10px';
-        const portrait = ui.tooltip.bind(DG.ObjectHandler.forEntity(reporter.data)?.renderIcon(reporter.data.dart)!, () => {
-          return DG.ObjectHandler.forEntity(reporter.data)?.renderTooltip(reporter.data.dart)!;
+        const portrait = ui.tooltip.bind(userHandler.renderIcon(report.reporter.dart)!, () => {
+          return userHandler.renderTooltip(report.reporter)!;
         });
         portrait.style.marginRight = '10px';
         // if (currentRow.get('package_owner') === currentUserId)
         //   text.style.fontWeight = 'bold';
-        const content = ui.divH([clock, portrait, ui.divText(currentRow.get('description'))]);
+        const content = ui.divH([clock, portrait, ui.divText(report.description)]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';
@@ -43,9 +35,7 @@ export class ReportsWidget extends DG.Widget {
         item.style.padding = '5px';
         item.addEventListener('click', async (e) => {
           e.preventDefault();
-          const report = await grok.dapi.reports.find(currentRow.get('id'));
-          if (report)
-            grok.shell.setCurrentObject(DG.ObjectHandler.forEntity(report)!.renderProperties(report.dart), false);
+          grok.shell.setCurrentObject(reportHandler.renderProperties(report.dart), false);
         });
         items.push(item);
       }

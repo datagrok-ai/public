@@ -83,6 +83,8 @@ export interface IDartApi {
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
+  grok_Dapi_User_Reports(): any;
+  grok_Dapi_User_Reports_Rules(): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -467,6 +469,7 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnType(t: any, column: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_Append_Merge(parent: any, t: any): any;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
@@ -1432,13 +1435,18 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_Reports_Get(num: Num, limit: Num, full: Bool): Promise<any>;
+  grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
   grok_UserReport_Id(report: any): any;
   grok_UserReport_IsResolved(report: any): any;
   grok_UserReport_JiraTicket(report: any): any;
   grok_UserReport_Assignee(report: any): any;
+  grok_UserReport_Reporter(report: any): any;
+  grok_UserReport_Description(report: any): any;
+  grok_UserReport_CreatedOn(report: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
+  grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
+  grok_ReportsRule_Add_Dialog(): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

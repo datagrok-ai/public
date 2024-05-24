@@ -5,8 +5,8 @@ import { before, after, category, test, expect, awaitCheck, delay } from '@datag
 import { ViewHandler } from '../view-handler';
 
 category('App', () => {
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests', 'Reports'];
-  const num = [4, 4, 5, 4, 3, 5, 3];
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
+  const num = [4, 4, 5, 4, 3, 5];
   let handler = new ViewHandler();
 
   before(async () => {
@@ -27,10 +27,7 @@ category('App', () => {
       handler.changeTab(tabs[i]);
       const view = grok.shell.v.root;
       let err: any = undefined;
-      let s = ['Log', 'Errors'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
-      s = tabs[i] === 'Reports' ? '.d4-grid' : s;
-
-      await delay(1000);
+      let s = ['Log'].includes(tabs[i]) ? '.grok-wait + .d4-grid canvas' : 'canvas';
       try {
         await awaitCheck(() => view.querySelectorAll(s).length === num[i], '', 10000);
       } catch (e) {
