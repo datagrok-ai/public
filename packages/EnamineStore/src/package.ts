@@ -105,7 +105,7 @@ export function enamineStoreApp(): void {
     }, true, 100).then(async (fc) => {
       const data = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
       console.log(`************************ App`);
-      console.log(data);
+      console.log(fc.getParamValue('stringResult'));
       //get packs information for each id
       const promises: Promise<DG.FuncCall>[] = [];
       data.forEach((it) => {
