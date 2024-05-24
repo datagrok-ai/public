@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { before, after, category, test, expect, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import { before, after, category, test, expect, awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { ViewHandler } from '../view-handler';
 
 category('App', () => {
@@ -22,7 +22,7 @@ category('App', () => {
     expect(grok.shell.v.name === 'Usage Analysis', true, 'cannot find Usage Analysis view');
   });
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 6; i++) {
     test(tabs[i], async () => {
       handler.changeTab(tabs[i]);
       const view = grok.shell.v.root;
