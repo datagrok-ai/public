@@ -1,8 +1,6 @@
 from chemprop import ChemProp
 
-
 engines = [ChemProp]
-
 
 def get_engine_by_type(type):
     """
@@ -15,7 +13,6 @@ def get_engine_by_type(type):
     if engine is None:
         raise Exception('Unknown modeling engine name')
     return engine()
-
 
 def get_all_engines():
     """

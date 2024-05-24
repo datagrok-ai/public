@@ -5,11 +5,9 @@ import urllib3
 import pandas as pd
 import requests
 
-
 grok_host = ''
 grok_write_token = ''
 grok_user_id = ''
-
 
 def grok_init(host, write_token='', user_id=''):
     """

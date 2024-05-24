@@ -4,9 +4,10 @@ from flask import Blueprint, Flask, request, Response
 import logging
 import sys
 import json
+import os
 
 from modeling import get_all_engines, get_engine_by_type
-
+from settings import Settings
 
 app = Flask('grok_compute')
 handler = logging.StreamHandler(sys.stderr)
@@ -21,13 +22,10 @@ headers_text = {'Content-Type': 'text/plain'}
 headers_app_json = {'Content-Type': 'application/json'}
 headers_app_octet_stream = {'Content-Type': 'application/octet-stream'}
 
-
-
 @bp.route('/modeling/engines', methods=['GET'])
 def modeling_engines():
     engines = get_all_engines()
     return _make_response(json.dumps(engines), headers=headers_app_json)
-
 
 @bp.route('/modeling/train', methods=['POST'])
 def modeling_train():
@@ -50,7 +48,6 @@ def modeling_train():
     except Exception as e:
         return _make_response(str(e)), 400
 
-
 @bp.route('/modeling/predict', methods=['POST'])
 def modeling_predict():
     id = request.args.get('id', '', type=str)
@@ -67,18 +64,15 @@ def modeling_predict():
     except Exception as e:
         return _make_response(str(e)), 400
 
-
 @bp.route('/modeling/models/<id>/<command>', methods=['POST'])
 def modeling_model(id, command):
     # commands: zip, status
     return _make_response(None)
 
-
 @bp.route('/modeling/models', methods=['GET'])
 def modeling_models():
     # All models status
     return _make_response(None)
-
 
 def _make_response(data, headers=None):
     response = Response(data)
@@ -91,9 +85,10 @@ def _make_response(data, headers=None):
         response.headers.update(headers)
     return response
 
-
-app.register_blueprint(bp)
-
+app.register_blueprint(bp, url_prefix=Settings.application_root)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    if Settings.keys is not None:
+        app.run(host=Settings.host, port=Settings.port, ssl_context=Settings.keys, threaded=True)
+    else:
+        app.run(host=Settings.host, port=Settings.port, threaded=True)
