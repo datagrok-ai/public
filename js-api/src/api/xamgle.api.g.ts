@@ -107,7 +107,7 @@ export interface SettingsInterface {
 
   floatingPointNumberFormat: string;
 
-  suppressedPanels: Array<string>;
+  hiddenPanels: Array<string>;
 
   panelOrder: string;
 
