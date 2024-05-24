@@ -5,17 +5,20 @@ module.exports = {
   mode: 'development',
   entry: {
     test: {
-      filename: 'package-test.js', 
-      library: {type: 'var', name: `${packageName}_test`}, 
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
     },
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
   },
   module: {
     rules: [
+      {test: /\.tsx?$/, loader: 'babel-loader', options: {
+	'plugins': ['@vue/babel-plugin-jsx']
+      }},
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
         test: /\.css$/,

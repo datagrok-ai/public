@@ -33,24 +33,23 @@ export class Form extends HTMLElement {
 
   private async init() {
     if (this.initCalled)
-      return
+      return;
     this.initCalled = true;
     // checking if a value has been updated during Form initialization
     const oldSource = this.currentSource;
 
-    this.formInst = await DG.InputForm.forFuncCall(this.currentSource!, { twoWayBinding: true });
+    this.formInst = await DG.InputForm.forFuncCall(this.currentSource!, {twoWayBinding: true});
 
-    if (oldSource !== this.currentSource) {
+    if (oldSource !== this.currentSource)
       this.formInst.source = this.currentSource;
-    }
+
     this.attach();
   }
 
   private attach() {
-    this.innerHTML = ''
+    this.innerHTML = '';
     this.appendChild(this.formInst!.root);
   }
-
 }
 
 export interface FormT extends Form {};

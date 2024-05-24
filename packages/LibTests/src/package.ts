@@ -11,7 +11,10 @@ import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {Form, Viewer} from '@datagrok-libraries/webcomponents';
-import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents'
+import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents';
+import '@datagrok-libraries/webcomponents-vue';
+import { createApp } from 'vue'
+import { SimpleTestApp } from './components/SimpleVueApp';
 
 export const _package = new DG.Package();
 
@@ -840,4 +843,12 @@ export async function TestFromComponent() {
     grok.shell.info('changing source data');
     formComponent.funcCall = fc2;
   }, 5000);
+}
+
+//tags: test
+export async function TestVueComponents() {
+  const view = new DG.ViewBase();
+  const app = createApp(SimpleTestApp);
+  app.mount(view.root);
+  grok.shell.addView(view);
 }
