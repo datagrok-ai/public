@@ -478,7 +478,7 @@ from our server.
       command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../../develop/how-to/access-data#creating-queries) update credentials, create the '.sql' file under the `queries` folder, and
+   as instructed [here](../../develop/how-to/access-data#creating-queries), update credentials, create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -541,24 +541,24 @@ from our server.
    //input: string filepath
    //output: dataframe df
    export async function openTable1(filepath: string): Promise<DG.DataFrame> {
-   const df = await grok.data.getDemoTable(filepath);
-   grok.shell.addTableView(df);
-   return df;
+      const df = await grok.data.getDemoTable(filepath);
+      grok.shell.addTableView(df);
+      return df;
    }
    //input: string filepath
    //output: dataframe df
    export async function openTable2(filepath: string): Promise<DG.DataFrame> {
-   const df = await grok.data.files.openTable(`System:/${filepath}`);
-   grok.shell.addTableView(df);
-   return df;
+      const df = await grok.data.files.openTable(`System:/${filepath}`);
+      grok.shell.addTableView(df);
+      return df;
    }
 
    //input: string filepath
    //output: dataframe df
    export async function openTable3(filepath: string): Promise<DG.DataFrame> {
-   const df = (await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`)))[0];
-   grok.shell.addTableView(df);
-   return df;
+      const df = (await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`)))[0];
+      grok.shell.addTableView(df);
+      return df;
    }
    ```
 
@@ -623,8 +623,7 @@ First, let's explore how scripting viewer works.
    `Data` corresponds to the first button from the top of the Datagrok sidebar. Make sure the table view with the data
    appears.
 1. Activate the top menu from the sidebar, using a `Windows | Menu` switch. 3. In this menu, hit `Add | Scripting
-Viewers | Add Scripting
-Viewer`.
+Viewers | Add Scripting Viewer`.
 1. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 1. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
 1. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`. After checking
@@ -632,7 +631,7 @@ Viewer`.
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
 1. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text
    field.
-1. Enter next code to script editor:
+1. Enter the next code to the script editor:
  
    ```ts
    #name: Scatter Plot
@@ -651,10 +650,7 @@ Viewer`.
    cmap = plt.cm.Spectral
    norm = plt.Normalize(vmin = min(color), vmax = max(color))
 
-
-
    plt.scatter(t[[xColumnName]],t[[yColumnName]], color = cmap(norm(color)), alpha=0.5)
-
    plt.xlabel(xColumnName)
    plt.ylabel(yColumnName)
 
