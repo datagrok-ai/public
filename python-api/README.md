@@ -20,6 +20,10 @@ from datagrok_api import DatagrokClient
 api = DatagrokClient('your token', 'datagrok url')
 ```
 
+## License
+
+See [License.md](https://github.com/datagrok-ai/public/blob/master/LICENSE.md).
+
 ## Examples
 
 The package uses Pandas for representation of tables and dataframes.
