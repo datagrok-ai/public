@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UsageWidget} from './widgets/usage-widget';
-import {PackageUsageWidget} from './widgets/package-usage-widget';
+import { UsageWidget } from './widgets/usage-widget';
+import { PackageUsageWidget } from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
-import {ViewHandler} from './view-handler';
-import {TestTrack} from './test-track/app';
-import {ReportsWidget} from "./widgets/reports-widget";
+import { ViewHandler } from './view-handler';
+import { TestTrack } from './test-track/app';
+import { ReportsWidget } from "./widgets/reports-widget";
 
 export const _package = new DG.Package();
 
@@ -34,8 +34,9 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
-  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
+  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root)) 
     TestTrack.getInstance().init();
+  
 }
 
 //output: widget result
@@ -72,13 +73,12 @@ export function describeCurrentObj(): void {
         try {
           widget = packageUsageWidget(ent).root;
         } catch (e) {
-          widget = ui.divText('Error on loading', {style: {color: 'var(--failure)'}});
+          widget = ui.divText('Error on loading', { style: { color: 'var(--failure)' } });
         }
         return widget;
       }));
       const UAlink = ui.link('', async () => {
-        grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${
-          (await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+        grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
         grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
       }, 'Open Usage Analysis');
       UAlink.style.marginLeft = '3px';
@@ -94,7 +94,7 @@ export function describeCurrentObj(): void {
 //input: string msg {semType: ErrorMessage}
 //output: widget result
 //condition: true
-export function createJiraTicket(msg:string): DG.Widget {
+export function createJiraTicket(msg: string): DG.Widget {
   const root = ui.div();
 
   const summary = ui.stringInput('Summary', '');
