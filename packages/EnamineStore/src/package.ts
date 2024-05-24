@@ -96,12 +96,14 @@ export function enamineStoreApp(): void {
   function update(): void {
     ui.setUpdateIndicator(view.root, true);
     grok.data.callQuery('EnamineStore:Search', {
-      'code': `search_${molecule.value}_${searchModeToCommandMap[searchMode.value]}`,
+      'q': molecule.value,
+      'cat': catalog.value,
       'currency': currency.value,
-      'sim': parseFloat(similarity.value),
-      'mode': catalog.value,
+      'type': 'SMARTS',
+      'sstype': searchModeToCommandMap[searchMode.value],
+      'sim': parseFloat(similarity.value)
     }, true, 100).then(async (fc) => {
-      const data = JSON.parse(fc.getParamValue('stringResult'))['data'] as EnamineStoreSearchResult[];
+      const data = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
 
       //get packs information for each id
       const promises: Promise<DG.FuncCall>[] = [];
