@@ -1,9 +1,8 @@
 import * as grok from 'datagrok-api/grok';
-// eslint-disable-next-line
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
 import type { ViewerT } from '@datagrok-libraries/webcomponents';
 
 declare global {

@@ -26,14 +26,14 @@ export class Viewer<T = any> extends HTMLElement {
     );
 
     const newValueNoViewer$ = newValueForViewer$.pipe(
-      filter(([,viewer]) => !viewer),
+      filter(([, viewer]) => !viewer),
       map(([val]) => val));
 
     const newName$ = this.nameSetted$.pipe(distinctUntilChanged());
 
     const newViewer$ = combineLatest([
       newName$,
-      newValueNoViewer$
+      newValueNoViewer$,
     ]).pipe(
       filter((vals) => vals.every((x) => x)),
     );
@@ -41,15 +41,14 @@ export class Viewer<T = any> extends HTMLElement {
     // creating a new or replacing an existing one
     merge(
       newViewer$,
-      providedViewer$
+      providedViewer$,
     ).pipe(
       switchMap((payload) => {
         if (Array.isArray(payload)) {
           const [name, value] = payload;
           return from(this.createViewer(name!, value!));
-        } else {
+        } else
           return of(payload);
-        }
       }),
       takeUntil(this.destroyed$),
     ).subscribe((viewer) => {
@@ -64,7 +63,7 @@ export class Viewer<T = any> extends HTMLElement {
       filter((vals) => vals.every((x) => x)),
       takeUntil(this.destroyed$),
     ).subscribe(([value, viewer]) => {
-      changingDf = true
+      changingDf = true;
       try {
         viewer!.dataFrame = value!;
       } finally {
@@ -74,11 +73,11 @@ export class Viewer<T = any> extends HTMLElement {
 
     this.viewer$.pipe(
       switchMap((viewer) => viewer ? viewer.onEvent().pipe(filter((ev) => ev.type === 'd4-viewer-detached')) : of()),
-      filter((val) => val && !changingDf)
+      filter((val) => val && !changingDf),
     ).subscribe(() => {
       this.destroyed$.next(true);
       console.log('Viewer webcomponent destroyed');
-    })
+    });
   }
 
 

@@ -13,8 +13,8 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {Form, Viewer} from '@datagrok-libraries/webcomponents';
 import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents';
 import '@datagrok-libraries/webcomponents-vue';
-import { createApp } from 'vue'
-import { SimpleTestApp } from './components/SimpleVueApp';
+import {createApp} from 'vue';
+import {SimpleTestApp} from './components/SimpleVueApp';
 
 export const _package = new DG.Package();
 
@@ -809,12 +809,12 @@ export async function TestViewerComponent() {
   grok.shell.addView(view);
 
   setTimeout(() => {
-    grok.shell.info('changing test viewer data')
+    grok.shell.info('changing test viewer data');
     viewerComponent.value = grok.data.demo.demog(10);
   }, 5000);
 
   setTimeout(() => {
-    grok.shell.info('changing test viewer data')
+    grok.shell.info('changing test viewer data');
     viewerComponent.viewer = grok.data.demo.demog(0).plot.histogram();
   }, 8000);
 }
@@ -839,7 +839,7 @@ export async function TestFromComponent() {
       a: 1,
       b: 2,
       c: 3,
-    })
+    });
     grok.shell.info('changing source data');
     formComponent.funcCall = fc2;
   }, 5000);
