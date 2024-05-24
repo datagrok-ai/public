@@ -112,7 +112,7 @@ export function enamineStoreApp(): void {
         const opts: { [key: string]: any } = {
           'id': it['code'],
           'cat': catalog.value,
-          'currency': currency.value,
+          'cur': currency.value,
         };
         console.log(`************************ Price`);
         console.log(JSON.stringify(it));
