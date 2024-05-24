@@ -1535,7 +1535,7 @@ let container: DG.DockerContainer;
 
 async function getContainer() {
   if (!container)
-    container = await grok.dapi.docker.dockerContainers.filter(_package.name).first();
+    container = await grok.dapi.docker.dockerContainers.filter('chemprop').first();
   if (container.status !== 'started' && container.status !== 'checking')
     await grok.dapi.docker.dockerContainers.run(container.id, true);
   return container;

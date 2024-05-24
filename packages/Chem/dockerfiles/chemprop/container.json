@@ -1,1 +1,1 @@
-{"cpu": 2, "memory": 512, "on_demand":  false, "timeout_minutes":  30}
+{"cpu": 2, "memory": 2048, "on_demand":  false, "timeout_minutes":  30}
