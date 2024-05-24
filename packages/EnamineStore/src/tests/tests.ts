@@ -43,7 +43,7 @@ async function testEnamineSearch(searchMode: SEARCH_MODE, numResults: number) {
     'cat': 'SCR',
     'cur': 'USD',
   };
-  const fcPrice = await grok.data.callQuery('EnamineStore:Price', options, true, 100);
+  const fcPrice = await grok.data.callQuery('EnamineStore:Price', opts, true, 100);
   const resPrice = JSON.parse(fcPrice.getParamValue('stringResult'))['searchResults']['samples'];
   expect(resPrice.length > 0, true, 'Incorrect price results');
 }
