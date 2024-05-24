@@ -8,10 +8,10 @@ category('Enamine Store', () => {
   test('Panel', async () => {
     enamineStorePanel(mol);
   });
-/* 
+ 
   test('App', async () => {
     enamineStoreApp();
-  }); */
+  }); 
 
   test('Similarity Search', async () => {
     await testEnamineSearch(SEARCH_MODE.SIMILAR, 5);
@@ -46,6 +46,6 @@ async function testEnamineSearch(searchMode: SEARCH_MODE, numResults: number) {
     'cur': 'USD',
   };
   const fcPrice = await grok.data.callQuery('EnamineStore:Price', opts, true, 100);
-  const resPrice = JSON.parse(fcPrice.getParamValue('stringResult'))['searchResults']['samples'];
+  const resPrice = JSON.parse(fcPrice.getParamValue('stringResult'))['samples'];
   expect(resPrice.length > 0, true, 'Incorrect price results'); 
 }

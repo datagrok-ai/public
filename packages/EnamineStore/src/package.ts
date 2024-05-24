@@ -104,7 +104,8 @@ export function enamineStoreApp(): void {
       'sim': parseFloat(similarity.value)
     }, true, 100).then(async (fc) => {
       const data = JSON.parse(fc.getParamValue('stringResult'))['searchResults'] as EnamineStoreSearchResult[];
-
+      console.log(`************************ App`);
+      console.log(data);
       //get packs information for each id
       const promises: Promise<DG.FuncCall>[] = [];
       data.forEach((it) => {
