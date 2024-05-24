@@ -538,7 +538,7 @@ export class DataFrame {
   }
 
   _exportReopen(): DataFrame {
-    return toJs(api.grok_DataFrame_Export_And_Reopen(this.dart));
+    return toJs(api.grok_DataFrame_ExportAndReopen(this.dart));
   }
 }
 
