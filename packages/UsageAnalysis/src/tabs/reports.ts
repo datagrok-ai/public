@@ -31,37 +31,33 @@ export class ReportsView extends UaView {
     });
 
     const grid = ui.wait(async () => {
-      try {
-        let t: DG.DataFrame;
-        let viewer: DG.Grid;
-        if (path != undefined) {
-          const segments = path.split('/').filter((s) => s != '');
-          if (segments.length > 1) {
-            const reportNumber = parseInt(segments[1]);
-            t = await grok.dapi.reports.getReports(reportNumber);
-            if (t && t.rowCount > 0) {
-              t.currentRowIdx = 0;
-              await this.showPropertyPanel(t);
-              grok.dapi.reports.getReports()
-                .then(async (r: DG.DataFrame) => {
-                  r.rows.removeWhere((r) => r.get('number') === reportNumber);
-                  const df = t.append(r);
-                  const newViewer = DG.Viewer.grid(df);
-                  this.updateDf(df, newViewer, this.users);
-                  viewer.root.replaceWith(newViewer.root);
-                });
-            }
+      let t: DG.DataFrame;
+      let viewer: DG.Grid;
+      if (path != undefined) {
+        const segments = path.split('/').filter((s) => s != '');
+        if (segments.length > 1) {
+          const reportNumber = parseInt(segments[1]);
+          t = await grok.dapi.reports.getReports(reportNumber);
+          if (t && t.rowCount > 0) {
+            t.currentRowIdx = 0;
+            await this.showPropertyPanel(t);
+            grok.dapi.reports.getReports()
+              .then(async (r: DG.DataFrame) => {
+                r.rows.removeWhere((r) => r.get('number') === reportNumber);
+                const df = t.append(r);
+                const newViewer = DG.Viewer.grid(df);
+                this.updateDf(df, newViewer, this.users);
+                viewer.root.replaceWith(newViewer.root);
+              });
           }
         }
-        // @ts-ignore
-        if (!t)
-          t = await grok.dapi.reports.getReports();
-        viewer = DG.Viewer.grid(t);
-        this.updateDf(t, viewer, this.users);
-        return viewer.root;
-      } catch (e) {
-        console.error(e);
       }
+      // @ts-ignore
+      if (!t)
+        t = await grok.dapi.reports.getReports();
+      viewer = DG.Viewer.grid(t);
+      this.updateDf(t, viewer, this.users);
+      return viewer.root;
     });
 
     this.root.append(ui.splitH([
