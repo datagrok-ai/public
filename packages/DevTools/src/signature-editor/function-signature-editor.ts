@@ -338,6 +338,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';
+  col.width = 68;
 
   paramsGrid.onCellPrepare((gc) => {
     if (gc.gridColumn.name !== '+')
