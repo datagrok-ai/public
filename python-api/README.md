@@ -29,11 +29,8 @@ See [License.md](https://github.com/datagrok-ai/public/blob/master/LICENSE.md).
 The package uses Pandas for representation of tables and dataframes.
 
 ```python
-from datagrok_api import DatagrokClient
 import pandas as pd
 from sklearn.datasets import load_iris
-
-api = DatagrokClient('your token', 'datagrok url')
 
 # Calls a Datagrok function
 # Dataframes, columns and primitive data types are supported
@@ -46,7 +43,7 @@ res = api.download_file('system.demofiles', 'demog.csv')
 print(res.head())
 
 # Uploads iris dataset as a table
-iris_id = api.upload_table('iris', pd.DataFrame(load_iris()['data']))
+iris_id = api.upload_table('iris', pd.DataFrame(load_iris()['data']))['ID']
 
 # Iris also can be uploaded as a file
 # api.upload_file('system.demofiles', 'iris.csv', 'iris.csv')
@@ -56,7 +53,7 @@ res = api.download_table(iris_id)
 print(res.head())
 
 # Creates dashboard from iris table with layout uploaded from file "iris.layout"
-dashboard_id = api.create_dashboard('python-test', iris_id, layout_filename='iris.layout')
+dashboard_id = api.create_dashboard('python-test', iris_id, layout_filename='iris.layout')['ID']
 
 # Shares dashboard with admin
 api.share_dashboard(dashboard_id, 'Test')
