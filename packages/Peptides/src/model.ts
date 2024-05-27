@@ -907,6 +907,7 @@ export class PeptidesModel {
    * Sets grid properties such
    * @param {DG.IGridSettings} props - Grid properties
    */
+  // @ts-ignore TODO: fix after api update
   setGridProperties(props?: DG.IGridSettings): void {
     const sourceGrid = this.analysisView.grid;
     const sourceGridProps = sourceGrid.props;
@@ -1301,7 +1302,7 @@ export class PeptidesModel {
       DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
         gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
         fingerprintType: mclParams!.fingerprintType,
-      }], mclParams!.threshold, mclParams!.maxIterations,
+      }], mclParams!.threshold, mclParams!.maxIterations, false/** TODO, add webgpu controll */, mclParams!.inflation,
     );
     mclAdditionSub.unsubscribe();
     this._mclViewer = mclViewer?.sc ?? null;

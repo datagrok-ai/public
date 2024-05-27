@@ -279,17 +279,20 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     () => onMCLParamsChange('gapOpen', mclGapOpenInput.value));
   const mclGapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, mclParams.gapExtend,
     () => onMCLParamsChange('gapExtend', mclGapExtendInput.value));
-  const mclFingerprintTypesInput = ui.choiceInput('Fingerprint type', mclParams.fingerprintType,
+  const mclFingerprintTypesInput = ui.choiceInput('Fingerprint Type', mclParams.fingerprintType,
     ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
     () => onMCLParamsChange('fingerprintType', mclFingerprintTypesInput.value));
-  const mclThresholdInput = ui.intInput('Similarity threshold', mclParams.threshold ?? 80,
+  const mclThresholdInput = ui.intInput('Similarity Threshold', mclParams.threshold ?? 80,
     () => onMCLParamsChange('threshold', mclThresholdInput.value));
-  const mclMaxIterationsInput = ui.intInput('Max iterations', mclParams.maxIterations ?? 5,
+  const mclMaxIterationsInput = ui.intInput('Max Iterations', mclParams.maxIterations ?? 5,
     () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value));
+  const mclInflationInput = ui.floatInput('Inflation Factor', mclParams.inflation ?? 1.4, () => {
+    onMCLParamsChange('inflation', mclInflationInput.value);
+  });
   correctMCLInputs();
 
   const mclInputs = [mclThresholdInput, mclDistanceFunctionInput, mclFingerprintTypesInput,
-    mclGapOpenInput, mclGapExtendInput, mclMaxIterationsInput];
+    mclGapOpenInput, mclGapExtendInput, mclInflationInput, mclMaxIterationsInput];
 
   accordion.addPane(SETTINGS_PANES.MCL, () => ui.inputs(mclInputs), true);
   inputs[SETTINGS_PANES.MCL] = mclInputs;

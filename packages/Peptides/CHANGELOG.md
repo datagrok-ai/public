@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.18 (2024-05-27)
+
+Add inflation factor to MCL.
+
 ## 1.17.17 (2024-05-06)
 
 Add both annotations to the active peptide selection viewer.
