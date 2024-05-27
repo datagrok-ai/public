@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { defineComponent } from 'vue';
-import type { ViewerT } from '@datagrok-libraries/webcomponents';
+import {defineComponent} from 'vue';
+import type {ViewerT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -20,14 +20,22 @@ export const Viewer = defineComponent({
     value: DG.DataFrame,
     viewer: DG.Viewer,
   },
-  setup(props) {
+  emits: {
+    viewerChanged: (a: DG.Viewer<any>) => a,
+  },
+  setup(props, {emit}) {
+    const viewerChangedCb = (event: any) => {
+      emit('viewerChanged', event.detail);
+    };
     return () => {
-      const viewer = <dg-viewer name={props.name} value={props.value} viewer={props.viewer}></dg-viewer>;
+      const viewer = <dg-viewer
+        name={props.name} value={props.value} viewer={props.viewer} onViewerChanged={viewerChangedCb}>
+      </dg-viewer>;
       return (
         <keep-alive>
           { viewer }
         </keep-alive>
       );
     };
-  }
+  },
 });

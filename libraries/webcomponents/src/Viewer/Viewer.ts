@@ -3,7 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, from, merge, of, combineLatest, Observable, identity, EMPTY} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map, debounceTime, take} from 'rxjs/operators';
+import {
+  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map, debounceTime, take,
+} from 'rxjs/operators';
 
 export class Viewer<T = any> extends HTMLElement {
   private valueSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
@@ -18,11 +20,11 @@ export class Viewer<T = any> extends HTMLElement {
   constructor() {
     super();
 
-    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged(), filter(v => !!v));
+    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged(), filter((v) => !!v));
 
     const latestName$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.type)),
-      this.nameSetted$
+      this.nameSetted$,
     ).pipe(distinctUntilChanged());
 
     const latestValue$ = merge(
@@ -66,6 +68,13 @@ export class Viewer<T = any> extends HTMLElement {
     ).subscribe(([value, viewer]) => {
       if (viewer && value)
         viewer.dataFrame = value;
+    });
+
+    this.viewer$.pipe(
+      distinctUntilChanged(),
+      takeUntil(this.destroyed$),
+    ).subscribe((viewer) => {
+      this.dispatchEvent(new CustomEvent('viewer-changed', {detail: viewer}));
     });
 
     // try to make sure that detached is the last event

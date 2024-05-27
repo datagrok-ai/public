@@ -13,7 +13,8 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {Form, Viewer} from '@datagrok-libraries/webcomponents';
 import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents';
 import {createApp} from 'vue';
-import {SimpleTestApp} from './components/SimpleVueApp';
+import {VueViewerTestApp} from './components/VueViewerTestApp';
+import {VueFormTestApp} from './components/VueFormTestApp';
 
 export const _package = new DG.Package();
 
@@ -871,7 +872,6 @@ export async function TestFromComponent() {
       b: 2,
       c: 3,
     });
-    grok.shell.info('changing source data');
     formComponent.funcCall = fc2;
   });
 
@@ -888,7 +888,15 @@ export async function TestFromComponent() {
 //tags: test
 export async function TestVueViewerComponent() {
   const view = new DG.ViewBase();
-  const app = createApp(SimpleTestApp);
+  const app = createApp(VueViewerTestApp);
+  app.mount(view.root);
+  grok.shell.addView(view);
+}
+
+//tags: test
+export async function TestVueFormComponent() {
+  const view = new DG.ViewBase();
+  const app = createApp(VueFormTestApp);
   app.mount(view.root);
   grok.shell.addView(view);
 }

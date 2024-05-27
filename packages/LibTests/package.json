@@ -13,6 +13,7 @@
     "@datagrok-libraries/utils": "^4.2.3",
     "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
     "@datagrok-libraries/webcomponents-vue": "file:../../libraries/webcomponents-vue",
+    "@vueuse/rxjs": "^10.9.0",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.3",
     "dayjs": "=1.11.10",
@@ -42,7 +43,7 @@
   "scripts": {
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
+    "lint-fix": "eslint src --ext .ts,.tsx --fix",
     "debug-lib-tests": "webpack && grok publish",
     "release-lib-tests": "webpack && grok publish --release",
     "build-lib-tests": "webpack",

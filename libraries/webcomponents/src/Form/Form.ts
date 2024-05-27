@@ -13,7 +13,6 @@ export class Form extends HTMLElement {
   }
 
   connectedCallback() {
-    this.init();
   }
 
   disconnectedCallback() {
@@ -25,30 +24,25 @@ export class Form extends HTMLElement {
 
   set funcCall(fc: DG.FuncCall | undefined) {
     this.currentSource = fc;
-    if (this.formInst)
+    if (!this.currentSource) {
+      this.formInst = undefined;
+      this.attach();
+    } else if (this.formInst)
       this.formInst.source = this.currentSource;
     else
       this.init();
   }
 
   private async init() {
-    if (this.initCalled)
-      return;
-    this.initCalled = true;
-    // checking if a value has been updated during Form initialization
-    const oldSource = this.currentSource;
-
     this.formInst = await DG.InputForm.forFuncCall(this.currentSource!, {twoWayBinding: true});
-
-    if (oldSource !== this.currentSource)
-      this.formInst.source = this.currentSource;
-
     this.attach();
   }
 
   private attach() {
     this.innerHTML = '';
-    this.appendChild(this.formInst!.root);
+    this.dispatchEvent(new CustomEvent('form-changed', {detail: this.formInst}));
+    if (this.formInst)
+      this.appendChild(this.formInst.root);
   }
 }
 
