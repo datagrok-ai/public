@@ -2,6 +2,8 @@
 
 This library can be used for integration with datagrok. It is a python wrapper for public API, that has OpenAPI specification available [here](http://public.datagrok.ai/api/public/api.yaml).
 
+Refer to [Help](http://datagrok.ai/help) for more information.
+
 ## Installation
 
 To install package, use [pip](https://pypi.org/project/pip/).
