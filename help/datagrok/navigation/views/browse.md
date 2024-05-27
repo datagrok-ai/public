@@ -74,7 +74,7 @@ the change.
 :::caution
 
 **My stuff** and **Namespaces** are _projects_. Moving entities between projects 
-impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/project.md#moving-entities).
+impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/project.md#moving-entities-between-projects).
 
 :::
 
