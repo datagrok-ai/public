@@ -1533,7 +1533,7 @@ export function validateMolecule(s: string): string | null {
 
 let container: DG.DockerContainer;
 
-async function getContainer() {
+export async function getContainer() {
   if (!container)
     container = await grok.dapi.docker.dockerContainers.filter('chemprop').first();
   if (container.status !== 'started' && container.status !== 'checking')
@@ -1561,8 +1561,9 @@ export async function getAllModelingEngines(): Promise<object> {
 //input: string predict
 //input: map parameterValues
 //output: blob result
-export async function trainModel(id: string, type: string, tableServerUrl: string, tableToken: string,
-                                 predict: string, parameterValues: {[_: string]: any}): Promise<Uint8Array> {
+export async function trainModel(
+  id: string, type: string, tableServerUrl: string, tableToken: string, predict: string, parameterValues: {[_: string]: any}
+): Promise<Uint8Array> {
   const container = await getContainer();
   const uriParams = new URLSearchParams({
     'id': id,

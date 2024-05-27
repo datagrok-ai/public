@@ -1,12 +1,15 @@
 import io
+from io import StringIO
 import zipfile
 from flask import Blueprint, Flask, request, Response
 import logging
 import sys
 import json
 import os
+import pandas as pd
 
 from modeling import get_all_engines, get_engine_by_type
+from chemprop import ChemProp
 from settings import Settings
 
 app = Flask('grok_compute')
@@ -48,6 +51,35 @@ def modeling_train():
     except Exception as e:
         return _make_response(str(e)), 400
 
+@bp.route('/modeling/train_chemprop', methods=['POST'])
+def modeling_train_chemprop():
+    id = request.args.get('id', '', type=str)
+    type = request.args.get('type', '', type=str)
+    table_str = request.args.get('table', '', type=str)
+    table = pd.read_csv(StringIO(table_str))
+    predict = request.args.get('predict', '', type=str)
+    parameter_values = json.loads(request.data)
+    engine = get_engine_by_type(type)
+    chemprop = ChemProp()
+    try:
+        model_blob, log = chemprop.train_impl(id, table, predict, parameter_values)
+        performance = engine.estimate_performance_impl(id, model_blob, table, predict,
+                                                     True) if model_blob == '' else self.estimate_performance_impl(id,
+                                                                                                                   model_blob,
+                                                                                                                   table,
+                                                                                                                   predict,
+                                                                                                                   False)
+        buffer = io.BytesIO()
+        archive = zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED)
+        archive.writestr('blob.bin', model_blob)
+        archive.writestr('log.txt', log)
+        archive.writestr('performance.json', json.dumps(performance))
+        archive.close()
+        return _make_response(buffer.getvalue(), headers=headers_app_octet_stream), 201
+    except Exception as e:
+        return _make_response(str(e)), 400
+
+
 @bp.route('/modeling/predict', methods=['POST'])
 def modeling_predict():
     id = request.args.get('id', '', type=str)
@@ -59,6 +91,19 @@ def modeling_predict():
         prediction = engine.predict(id, request.data, table_server_url, table_token)
         # TODO Return column list
         # TODO Add converter Pandas dataframe -> ColumnList or DataFrame
+        return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
+                              headers=headers_app_json), 201
+    except Exception as e:
+        return _make_response(str(e)), 400
+
+@bp.route('/modeling/predict_chemprop', methods=['POST'])
+def modeling_predict_chemprop():
+    id = request.args.get('id', '', type=str)
+    table_str = request.args.get('table', '', type=str)
+    table = pd.read_csv(StringIO(table_str))
+    chemprop = ChemProp()
+    try: 
+        prediction = chemprop.predict_impl(id, request.data, table)
         return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
                               headers=headers_app_json), 201
     except Exception as e:
