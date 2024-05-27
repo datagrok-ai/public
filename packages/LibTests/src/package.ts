@@ -5,14 +5,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
-import {distinctUntilChanged, filter} from 'rxjs/operators';
+import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {Form, Viewer} from '@datagrok-libraries/webcomponents';
 import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents';
-import '@datagrok-libraries/webcomponents-vue';
 import {createApp} from 'vue';
 import {SimpleTestApp} from './components/SimpleVueApp';
 
@@ -804,19 +803,49 @@ customElements.define('dg-form', Form);
 export async function TestViewerComponent() {
   const view = new DG.ViewBase();
   const viewerComponent = document.createElement('dg-viewer') as ViewerT;
-  viewerComponent.setAttribute('name', 'Grid');
+
+  const setSrcBtn = ui.button('Set source', () => {
+    viewerComponent.value = grok.data.demo.demog();
+  });
+
+  const remSrcBtn = ui.button('Remove source', () => {
+    viewerComponent.value = undefined;
+  });
+
+  const setViewerTypeBtn1 = ui.button('Line chart', () => {
+    viewerComponent.name = 'Line chart';
+  });
+  const setViewerTypeBtn2 = ui.button('Grid', () => {
+    viewerComponent.name = 'Grid';
+  });
+
+  const setViewerTypeBtn3 = ui.button('Remove type', () => {
+    viewerComponent.name = undefined;
+  });
+
+  const changeViewerBtn1 = ui.button('Provide histogram', () => {
+    viewerComponent.viewer = grok.data.demo.demog().plot.histogram();
+  });
+
+  const changeViewerBtn2 = ui.button('Provide barchart', () => {
+    viewerComponent.viewer = grok.data.demo.demog().plot.bar();
+  });
+
+  const changeViewerBtn3 = ui.button('Provide empty', () => {
+    viewerComponent.viewer = undefined;
+  });
+
+  view.root.insertAdjacentElement('beforeend', setSrcBtn);
+  view.root.insertAdjacentElement('beforeend', remSrcBtn);
+  view.root.insertAdjacentElement('beforeend', setViewerTypeBtn1);
+  view.root.insertAdjacentElement('beforeend', setViewerTypeBtn2);
+  view.root.insertAdjacentElement('beforeend', setViewerTypeBtn3);
+  view.root.insertAdjacentElement('beforeend', changeViewerBtn1);
+  view.root.insertAdjacentElement('beforeend', changeViewerBtn2);
+  view.root.insertAdjacentElement('beforeend', changeViewerBtn3);
   view.root.insertAdjacentElement('beforeend', viewerComponent);
+
   grok.shell.addView(view);
-
-  setTimeout(() => {
-    grok.shell.info('changing test viewer data');
-    viewerComponent.value = grok.data.demo.demog(10);
-  }, 5000);
-
-  setTimeout(() => {
-    grok.shell.info('changing test viewer data');
-    viewerComponent.viewer = grok.data.demo.demog(0).plot.histogram();
-  }, 8000);
 }
 
 //tags: test
@@ -846,7 +875,7 @@ export async function TestFromComponent() {
 }
 
 //tags: test
-export async function TestVueComponents() {
+export async function TestVueViewerComponent() {
   const view = new DG.ViewBase();
   const app = createApp(SimpleTestApp);
   app.mount(view.root);
