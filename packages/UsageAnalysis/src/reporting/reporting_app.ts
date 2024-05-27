@@ -1,12 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as interfaces from "datagrok-api/src/interfaces/d4";
 
 export class ReportingApp {
   table?: DG.DataFrame;
   view?: DG.TableView;
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
+  currentFilter?: DG.Viewer<interfaces.IFiltersSettings>;
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
@@ -48,6 +50,7 @@ export class ReportingApp {
         const reports = await grok.dapi.reports.getReports();
         reports.rows.removeWhere((r) => r.get('number') === reportNumber);
         this.table?.appendMerge(reports);
+        this.refreshFilter();
       }
     }, 300);
   }
@@ -60,7 +63,7 @@ export class ReportingApp {
     table.getCol('first_occurrence').setTag('friendlyName', 'first');
     table.getCol('description').semType = 'Text';
     table.getCol('error_stack_trace').semType = 'Text';
-    this._scroll(grid);
+    // this._scroll(grid);
     this.applyStyle(grid);
     grid.onCellPrepare(async (gc) => {
       if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -133,9 +136,15 @@ export class ReportingApp {
       }
       table.fireValuesChanged();
     });
-    this.view?.addViewer(DG.Viewer.filters(table, {
+    this.refreshFilter();
+  }
+
+  refreshFilter() {
+    this.currentFilter?.close();
+    this.currentFilter = DG.Viewer.filters(this.table!, {
       columnNames: ['date', 'labels', 'description', 'error_stack_trace', 'assignee', 'reporter'],
-    }));
+    });
+    this.view?.addViewer(this.currentFilter);
   }
 
   applyStyle(viewer: DG.Grid) {
@@ -192,25 +201,5 @@ export class ReportingApp {
 
     window.history.pushState(
       null, 'Report ${detailedLog.reportNumber}', segments.join('/'));
-  }
-
-  _scroll(viewer: DG.Grid): void {
-    const segments = window.location.href.split('/');
-    const last = segments[segments.length - 1];
-    if (last !== 'reports' && /^-?\d+$/.test(last)) {
-      const num = parseInt(last);
-      if (num) {
-        setTimeout(() => {
-          const df = viewer.dataFrame;
-          const numbers = df.getCol('number');
-          for (let i = 0; i < numbers.length; i++)
-            if (numbers.get(i) == num) {
-              viewer.scrollToCell('date', i);
-              df.currentRowIdx = i;
-              break;
-            }
-        }, 200);
-      }
-    }
   }
 }

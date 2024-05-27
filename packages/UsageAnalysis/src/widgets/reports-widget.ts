@@ -11,7 +11,7 @@ export class ReportsWidget extends DG.Widget {
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.UserReport[] = await grok.dapi.reports.list({pageNumber: 1, pageSize: 20});
+      const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').list({pageNumber: 1, pageSize: 20});
       const items = [];
       for (let report of result) {
         // todo: add css instead of inline styles
@@ -23,8 +23,6 @@ export class ReportsWidget extends DG.Widget {
           return userHandler.renderTooltip(report.reporter)!;
         });
         portrait.style.marginRight = '10px';
-        // if (currentRow.get('package_owner') === currentUserId)
-        //   text.style.fontWeight = 'bold';
         const content = ui.divH([clock, portrait, ui.divText(report.description)]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
