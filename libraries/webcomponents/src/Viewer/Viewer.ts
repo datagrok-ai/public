@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, from, merge, of, combineLatest, Observable, identity, EMPTY} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map, debounceTime} from 'rxjs/operators';
+import {distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map, debounceTime, take} from 'rxjs/operators';
 
 export class Viewer<T = any> extends HTMLElement {
   private valueSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
@@ -18,21 +18,17 @@ export class Viewer<T = any> extends HTMLElement {
   constructor() {
     super();
 
-    const providedViewer$ = this.viewerSetted$.pipe(distinctUntilChanged());
-
-    const providedValue$ = this.valueSetted$.pipe(distinctUntilChanged());
-
-    const providedName$ = this.nameSetted$.pipe(distinctUntilChanged());
+    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged(), filter(v => !!v));
 
     const latestName$ = merge(
-      this.viewer$.pipe(distinctUntilChanged(), filter(v => !!v), map((viewer) => viewer?.type)),
-      providedName$
+      latestViewer$.pipe(map((viewer) => viewer?.type)),
+      this.nameSetted$
     ).pipe(distinctUntilChanged());
 
     const latestValue$ = merge(
-      this.viewer$.pipe(distinctUntilChanged(), filter(v => !!v), map((viewer) => viewer?.dataFrame)),
+      latestViewer$.pipe(map((viewer) => viewer?.dataFrame)),
       this.getViewerEventObservable('d4-data-frame-changed').pipe(map((ev) => ev.data.args.newValue as DG.DataFrame)),
-      providedValue$,
+      this.valueSetted$,
     ).pipe(distinctUntilChanged());
 
     const latestParams$ = combineLatest([
@@ -42,7 +38,7 @@ export class Viewer<T = any> extends HTMLElement {
 
     merge(
       latestParams$,
-      providedViewer$,
+      this.viewerSetted$,
     ).pipe(
       switchMap((payload) => {
         if (Array.isArray(payload)) {
@@ -64,7 +60,7 @@ export class Viewer<T = any> extends HTMLElement {
       this.changeAttachedViewer(viewer as DG.Viewer<T>);
     });
 
-    providedValue$.pipe(
+    this.valueSetted$.pipe(
       withLatestFrom(this.viewer$),
       takeUntil(this.destroyed$),
     ).subscribe(([value, viewer]) => {
@@ -73,11 +69,11 @@ export class Viewer<T = any> extends HTMLElement {
     });
 
     // try to make sure that detached is the last event
-    const detached$ = this.getViewerEventObservable().pipe(
+    this.getViewerEventObservable().pipe(
       debounceTime(1000),
       filter((ev) => ev.type === 'd4-viewer-detached'),
-    );
-    detached$.subscribe(() => {
+      take(1),
+    ).subscribe(() => {
       this.destroyed$.next(true);
     });
   }

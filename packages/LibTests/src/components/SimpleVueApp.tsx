@@ -17,7 +17,7 @@ export const SimpleTestApp = defineComponent({
     const df = shallowRef<DG.DataFrame | undefined>(undefined);
     const name = ref<string | undefined>(undefined);
     let i = 0;
-    const datasets = [grok.data.demo.demog(), grok.data.demo.doseResponse(), grok.data.demo.geo(), grok.data.demo.geo()];
+    const datasets = [grok.data.demo.demog(), grok.data.demo.doseResponse(), grok.data.demo.geo()];
     function changeData() {
       df.value = datasets[i];
       i++;

@@ -804,8 +804,11 @@ export async function TestViewerComponent() {
   const view = new DG.ViewBase();
   const viewerComponent = document.createElement('dg-viewer') as ViewerT;
 
-  const setSrcBtn = ui.button('Set source', () => {
+  const setSrcBtn1 = ui.button('Set source demog', () => {
     viewerComponent.value = grok.data.demo.demog();
+  });
+  const setSrcBtn2 = ui.button('Set source doseResponse', () => {
+    viewerComponent.value = grok.data.demo.doseResponse();
   });
 
   const remSrcBtn = ui.button('Remove source', () => {
@@ -835,7 +838,8 @@ export async function TestViewerComponent() {
     viewerComponent.viewer = undefined;
   });
 
-  view.root.insertAdjacentElement('beforeend', setSrcBtn);
+  view.root.insertAdjacentElement('beforeend', setSrcBtn1);
+  view.root.insertAdjacentElement('beforeend', setSrcBtn2);
   view.root.insertAdjacentElement('beforeend', remSrcBtn);
   view.root.insertAdjacentElement('beforeend', setViewerTypeBtn1);
   view.root.insertAdjacentElement('beforeend', setViewerTypeBtn2);
@@ -860,10 +864,8 @@ export async function TestFromComponent() {
   formComponent.funcCall = fc1;
 
   const view = new DG.ViewBase();
-  view.root.insertAdjacentElement('beforeend', formComponent);
-  grok.shell.addView(view);
 
-  setTimeout(() => {
+  const replaceFnBtn = ui.button('Replace funcall', () => {
     const fc2 = func.prepare({
       a: 1,
       b: 2,
@@ -871,7 +873,16 @@ export async function TestFromComponent() {
     });
     grok.shell.info('changing source data');
     formComponent.funcCall = fc2;
-  }, 5000);
+  });
+
+  const showFormFcInputsBtn = ui.button('Log funcall inputs', () => {
+    console.log(Object.entries(formComponent.funcCall!.inputs));
+  });
+
+  view.root.insertAdjacentElement('beforeend', showFormFcInputsBtn);
+  view.root.insertAdjacentElement('beforeend', replaceFnBtn);
+  view.root.insertAdjacentElement('beforeend', formComponent);
+  grok.shell.addView(view);
 }
 
 //tags: test
