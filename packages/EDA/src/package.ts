@@ -189,7 +189,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
           df: params.table, cols: params.columns, metrics: params.distanceMetrics,
           weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
           preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
-          useWebGPU: params.useWebGPU,
+          useWebGPU: params.useWebGPU, inflate: params.inflateFactor,
         }).call(true);
       }).show();
   } catch (err: any) {
@@ -214,13 +214,14 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: int threshold = 80
 //input: int maxIterations = 10
 //input: bool useWebGPU = false
+//input: double inflate = 2
 //editor: EDA: GetMCLEditor
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
-  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false,
+  preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false, inflate: number = 0,
 ): Promise< DG.ScatterPlotViewer | undefined> {
   const res = (await markovCluster(df, cols, metrics, weights,
-    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU));
+    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate));
   return res?.sc;
 }
 
