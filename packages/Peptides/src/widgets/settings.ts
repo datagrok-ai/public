@@ -36,22 +36,23 @@ export enum COLUMNS_INPUTS {
   AGGREGATION = 'Aggregation',
 }
 export enum SEQUENCE_SPACE_INPUTS {
-  DISTANCE_FUNCTION = 'Distance function',
-  GAP_OPEN = 'Gap open penalty',
-  GAP_EXTEND = 'Gap extend penalty',
-  CLUSTER_EMBEDDINGS = 'Cluster embeddings',
+  DISTANCE_FUNCTION = 'Distance Function',
+  GAP_OPEN = 'Gap Open Penalty',
+  GAP_EXTEND = 'Gap Extend Penalty',
+  CLUSTER_EMBEDDINGS = 'Cluster Embeddings',
   EPSILON = 'Epsilon',
-  MIN_PTS = 'Minimum points',
-  FINGERPRINT_TYPE = 'Fingerprint type',
+  MIN_PTS = 'Minimum Points',
+  FINGERPRINT_TYPE = 'Fingerprint Type',
 }
 
 export enum MCL_INPUTS {
-  DISTANCE_FUNCTION = 'Distance function',
-  GAP_OPEN = 'Gap open penalty',
-  GAP_EXTEND = 'Gap extend penalty',
-  FINGERPRINT_TYPE = 'Fingerprint type',
-  THRESHOLD = 'Similarity threshold',
-  MAX_ITERATIONS = 'Max iterations',
+  DISTANCE_FUNCTION = 'Distance Function',
+  GAP_OPEN = 'Gap Open Penalty',
+  GAP_EXTEND = 'Gap Extend Penalty',
+  FINGERPRINT_TYPE = 'Fingerprint Type',
+  THRESHOLD = 'Similarity Threshold',
+  INFLATION = 'Inflation Factor',
+  MAX_ITERATIONS = 'Max Iterations',
 }
 
 
@@ -214,7 +215,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const distanceFunctionInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION, seqSpaceParams.distanceF,
     [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
     () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value));
-  distanceFunctionInput.setTooltip('Distance function');
+  distanceFunctionInput.setTooltip('Distance function for sequences');
   const gapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, seqSpaceParams.gapOpen,
     () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value));
   const gapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, seqSpaceParams.gapExtend,
@@ -230,7 +231,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts,
     () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
   minPtsInput.setTooltip('Minimum number of points in a cluster');
-  const fingerprintTypesInput = ui.choiceInput('Fingerprint type', seqSpaceParams.fingerprintType,
+  const fingerprintTypesInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.FINGERPRINT_TYPE, seqSpaceParams.fingerprintType,
     ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
     () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
   function correctSeqSpaceInputs(): void {
@@ -272,21 +273,21 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       mclDistanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
   }
 
-  const mclDistanceFunctionInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION, mclParams.distanceF,
+  const mclDistanceFunctionInput = ui.choiceInput(MCL_INPUTS.DISTANCE_FUNCTION, mclParams.distanceF,
     [distFNames.NEEDLEMANN_WUNSCH, distFNames.MONOMER_CHEMICAL_DISTANCE, distFNames.HAMMING, distFNames.LEVENSHTEIN],
     () => onMCLParamsChange('distanceF', mclDistanceFunctionInput.value));
-  const mclGapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, mclParams.gapOpen,
+  const mclGapOpenInput = ui.floatInput(MCL_INPUTS.GAP_OPEN, mclParams.gapOpen,
     () => onMCLParamsChange('gapOpen', mclGapOpenInput.value));
-  const mclGapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, mclParams.gapExtend,
+  const mclGapExtendInput = ui.floatInput(MCL_INPUTS.GAP_EXTEND, mclParams.gapExtend,
     () => onMCLParamsChange('gapExtend', mclGapExtendInput.value));
-  const mclFingerprintTypesInput = ui.choiceInput('Fingerprint Type', mclParams.fingerprintType,
+  const mclFingerprintTypesInput = ui.choiceInput(MCL_INPUTS.FINGERPRINT_TYPE, mclParams.fingerprintType,
     ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
     () => onMCLParamsChange('fingerprintType', mclFingerprintTypesInput.value));
-  const mclThresholdInput = ui.intInput('Similarity Threshold', mclParams.threshold ?? 80,
+  const mclThresholdInput = ui.intInput(MCL_INPUTS.THRESHOLD, mclParams.threshold ?? 80,
     () => onMCLParamsChange('threshold', mclThresholdInput.value));
-  const mclMaxIterationsInput = ui.intInput('Max Iterations', mclParams.maxIterations ?? 5,
+  const mclMaxIterationsInput = ui.intInput(MCL_INPUTS.MAX_ITERATIONS, mclParams.maxIterations ?? 5,
     () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value));
-  const mclInflationInput = ui.floatInput('Inflation Factor', mclParams.inflation ?? 1.4, () => {
+  const mclInflationInput = ui.floatInput(MCL_INPUTS.INFLATION, mclParams.inflation ?? 1.4, () => {
     onMCLParamsChange('inflation', mclInflationInput.value);
   });
   correctMCLInputs();
