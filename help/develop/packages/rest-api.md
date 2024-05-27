@@ -23,29 +23,28 @@ API key can be accessed from the user profile under **API Key** link. User profi
 ## Files
 Datagrok files are stored under connectors. File is identified by it's path. Accessing connectors is described [here](#identifiers).
 
-### Endpoints
-
+**Endpoints**
 * `GET /public/v1/files/{connector}/{path}` – Download a file from a specified connector by its path.
 * `POST /public/v1/files/{connector}/{path}` – Upload a file to a specified connector under a given path. If file already exists, replace it's content. 
 
 ## Tables
 Datagrok Rest API supports managing tables, including downloading and uploading tables. Table identifiers are described [here](#identifiers).
 
-### Endpoints
+**Endpoints**
 * `GET /public/v1/tables/{table}` – Download a table from Datagrok in CSV format.
 * `POST /public/v1/tables/{table}` – Upload a table to Datagrok. If table already exists, replace it's data. If table name specifies project, add uploaded table to a project.
 
 ## Dashboards
 This section includes endpoints to manage dashboards in Datagrok, such as creating dashboards and sharing them with specific groups. To learn more about identifiers of dashboards, groups, users and tables, refer to [this section](#identifiers).
 
-### Endpoints
+**Endpoints**
 * `POST /public/v1/dashboards/{name}/{table_ids}` – Create a new dashboard containing specified tables. Supports upload of [project layout](../how-to/layouts.md#project-layouts) in the request body.
 * `GET /public/v1/dashboards/{id}/shares{?groups,access}` – Share access to a dashboard with specified groups or users.
 
 ## Functions
 Datagrok Rest API allows you to invoke function calls within Datagrok with specified parameters.
 
-### Endpoints
+**Endpoints**
 
 * `POST /public/v1/{name}/call` – Invoke a function with specified parameters, passed in a JSON body. 
 
