@@ -28,6 +28,7 @@ import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
+import {CsvImportOptions} from "./const";
 
 const api: IDartApi = <any>window;
 
@@ -1053,8 +1054,13 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
-  async readCsv(file: FileInfo | string): Promise<DataFrame> {
-    return DataFrame.fromCsv(await this.readAsText(file));
+  /** Reads CSV as DataFrame.
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
+   * @param {FileInfo | string} file
+   * @param {CsvImportOptions} options
+   * @returns {Promise<DataFrame>} */
+  async readCsv(file: FileInfo | string, options?: CsvImportOptions): Promise<DataFrame> {
+    return DataFrame.fromCsv(await this.readAsText(file), options);
   }
 
   /** Reads a file as bytes.
