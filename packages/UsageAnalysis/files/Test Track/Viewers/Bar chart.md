@@ -11,7 +11,7 @@
     6. Save to Layout. Check
 6. Check aggregation functions
 7. Selection
-    1. Go to the grid and select the first 50 columns. The selection should be reflected on bar chart
+    1. Go to the grid and select the first 300 rows. The selection should be reflected on bar chart
     2. Go to the Property Pane > Selection. Toggle the **Show selected rows** checkbox.
     3. Click the bar chart and check the selection in grid.
 8. Filtering
@@ -20,7 +20,7 @@
 9. Go to the **Data** info panel and check all the properties, including the following:
     1. Tables switching (SPGI-linked1, SPGI-linked2, SPGI)
     2. **Row Source** with different options
-    3. Set **Filter** to `${CAST Idea ID} < 636500` , set color coding by Chemical Space Y, and arbitrarily change other options.
+    3. Set **Filter** to `${CAST Idea ID} < 636500`, set color coding by Chemical Space Y, and arbitrarily change other options.
     4. Save to Layout. Check
     5. Set **On click** to **Filter**. Check filtering (to cancel filtering click the bar chart)
 10. Title, Description:
