@@ -9,7 +9,7 @@ import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Te
 
 export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_APPLICABILITY_VALUE = 0.5;
+export let DEFAULT_APPLICABILITY_VALUE = 0.41;
 export let properties: any;
 
 async function getAdmetoxContainer() {
@@ -149,6 +149,11 @@ export async function getQueryParams(): Promise<string> {
       .map((model: Model) => model.name).join(',');
 }
 
+function generateNumber(): number {
+  return Math.round(Math.random() * 10) / 10;
+}
+
+
 function createPieSettings(columnNames: string[], properties: any, probabilities: { [key: string]: number[] }): any {
   const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
   let sectors: any[] = [];
@@ -167,7 +172,6 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
         let { min, max } = model;
         if (model.properties) {
           const directionProperty = model.properties.find((prop: any) => prop.property.name === 'direction');
-          weightProperty = model.properties.find((prop: any) => prop.property.name === 'weight');
           if (directionProperty && directionProperty.object.direction === 'Lower is better')
             [min, max] = [max, min];
         }
@@ -176,7 +180,7 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
           name: modelName,
           lowThreshold: min,
           highThreshold: max,
-          weight: weightProperty.object.weight,
+          weight: generateNumber(),
           applicability: DEFAULT_APPLICABILITY_VALUE,
           probabilities: Object.entries(probabilities)
             .filter(([key, value]) => key.includes(modelName))
@@ -295,7 +299,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   addCustomTooltip(viewTable.name);
 }
 
-async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
+/*async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
   const view = grok.shell.tableView(semValue.cell.dataFrame.name);
   const gridCol = view.grid.col(semValue.cell.column.name);
   const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
@@ -320,7 +324,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
   container.appendChild(canvas);
   return container;
-}
+}*/
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
@@ -358,7 +362,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     }, false);
   }
 
-  const result = ui.div();
+  /*const result = ui.div();
   acc.addPane('Summary', () => {
     result.append(ui.loader());
     try {
@@ -372,7 +376,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       console.error(error);
     }
     return result;
-  }, false);
+  }, false);*/
 
 
   return acc;
