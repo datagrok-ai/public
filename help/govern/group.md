@@ -11,7 +11,7 @@ organization hierarchy and implementing role-based [security](security.md).
 Example: **User 1** is member of **Group 1**. **User 2** and **User 3** are also members of **Group 1**, because they're
 members of **Group 2**, which have membership in **Group 1**:
 
-![Group members and memberships](groups.png)
+![Group members and memberships](img/groups.png)
 
 In addition to that, there are some actions that are applicable to user groups:
 
@@ -58,13 +58,13 @@ specific link, for example, after watching a demo.
 
  >Note: Only the group administrator can create an invitation link.
 
-![Granting membership via URL](group-membership.gif)
+![Granting membership via URL](img/group-membership.gif)
 
 ## Groups as roles
 
 Authorization system is based on user groups. There are one group called "All users", that contains all users by default
 and unlimited quantity of other groups:
-![group all users](group-all-users.png)
+![group all users](img/group-all-users.png)
 All groups can be a member of any other group, but circular membership is forbidden. Each user has a personal security
 group, which called by the name of the user, so it can be added to any other security group.
 

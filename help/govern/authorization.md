@@ -22,6 +22,6 @@ be nested, so all group members get permission, that were set to a parent group.
 See also:
 
 * [Entities](../datagrok/concepts/objects.md)
-* [Groups](../govern/group.md)
+* [Groups](group.md)
 * [Authentication](authentication.md)
 * [Security](security.md)
