@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.41.8 (2024-05-29)
+
+Fix TAGS, ALPHABET enum
+
 ## 5.41.7 (2024-05-28)
 
 ### Bug fixes
