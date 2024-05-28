@@ -128,6 +128,7 @@ export enum INFO {
   UPDATE = 'update model feature',
   OUTPUT = 'output specification',
   COMMENT = 'block with comments',
+  SOLVER = 'solver options',
 };
 
 /** Demo app help info */

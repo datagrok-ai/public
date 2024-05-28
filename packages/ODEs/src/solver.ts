@@ -47,6 +47,12 @@ const max = (x: number, y: number) => (x > y) ? x : y;
 /** Right-hand side of IVP */
 type Func = (t: number, y: Float64Array, output: Float64Array) => void;
 
+/** */
+export type SolverOptions = {
+  maxTime: number,
+  scale: number,
+};
+
 /** Initial Value Problem (IVP) type */
 export type ODEs = {
   name: string,
@@ -59,7 +65,7 @@ export type ODEs = {
   initial: number[] | Float32Array | Float64Array | Int32Array,
   func: Func,
   tolerance: number,
-  epsScale: number,
+  solverOptions: Partial<SolverOptions>,
   solutionColNames: string[],
 };
 
@@ -75,7 +81,7 @@ function tDerivative(t: number, y: Float64Array, f: Func, eps: number,
 }
 
 /** Returns Jacobian. */
-function jacobian(t: number, y: Float64Array, f: Func, eps: number, epsScale: number,
+function jacobian(t: number, y: Float64Array, f: Func, eps: number,
   f0Buf: Float64Array, f1Buf: Float64Array, output: Float64Array): void {
   const size = y.length;
   f(t, y, f0Buf);
@@ -85,7 +91,7 @@ function jacobian(t: number, y: Float64Array, f: Func, eps: number, epsScale: nu
     f(t, y, f1Buf);
 
     for (let i = 0; i < size; ++i)
-      output[j + i * size] = (f1Buf[i] - f0Buf[i]) / (eps * epsScale);
+      output[j + i * size] = (f1Buf[i] - f0Buf[i]) / eps;
 
     y[j] -= eps;
   }
@@ -102,7 +108,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
   let h = odes.arg.step;
   const hDataframe = h;
   const tolerance = odes.tolerance;
-  const epsScale = odes.epsScale;
+  const scale = odes.solverOptions.scale ?? 1;
 
   /** number of solution dataframe rows */
   const rowCount = Math.trunc((t1 - t0) / h) + 1;
@@ -194,7 +200,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
       // one stage of the modified Rosenbrok triple approach
       // hdT = h * d * T(t, y, EPS);
       tDerivative(t, y, f, EPS, f0Buf, f1Buf, hdT);
-      hd = h * D;
+      hd = h * D / scale;
       for (let i = 0; i < dim; ++i)
         hdT[i] *= hd;
 
@@ -204,7 +210,7 @@ export function solveODEs(odes: ODEs): DG.DataFrame {
       f(t, y, f0);
 
       // W = I - h * d * J(t, y, EPS);
-      jacobian(t, y, f, EPS, epsScale, f0Buf, f1Buf, W);
+      jacobian(t, y, f, EPS, f0Buf, f1Buf, W);
       for (let i = 0; i < dimSquared; ++i)
         W[i] = I[i] - hd * W[i];
 
