@@ -64,7 +64,7 @@ def modeling_train_chemprop():
     try:
         model_blob, log = chemprop.train_impl(id, table, predict, parameter_values)
         performance = engine.estimate_performance_impl(id, model_blob, table, predict,
-                                                     True) if model_blob == '' else self.estimate_performance_impl(id,
+                                                     True) if model_blob == '' else chemprop.estimate_performance_impl(id,
                                                                                                                    model_blob,
                                                                                                                    table,
                                                                                                                    predict,
