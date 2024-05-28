@@ -1,5 +1,7 @@
-import {STRAND, STRANDS} from '../../model/const';
+import {NUCLEOTIDES} from '../../../common/model/const';
+import {STRAND, STRANDS, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
+import {isOverhangNucleotide} from '../../model/utils';
 import {SVG_CIRCLE_SIZES, SVG_ELEMENT_COLORS, SVG_TEXT_FONT_SIZES} from './const';
 import {NonLegendBlockBase} from './svg-block-bases';
 import {SVGElementFactory} from './svg-element-factory';
@@ -10,6 +12,9 @@ const NUMERIC_LABEL_PADDING = 5;
 const SENSE_STRAND_HEIGHT = SVG_TEXT_FONT_SIZES.NUCLEOBASE +
   NUMERIC_LABEL_PADDING + SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
 const SENSE_STRAND_PADDING = 10;
+const LEFT_LABEL_WIDTH = 55;
+const SENSE_STRAND_HORIZONTAL_SHIFT = SENSE_STRAND_PADDING + LEFT_LABEL_WIDTH;
+const RIGHT_LABEL_WIDTH = 20;
 
 export class StrandsBlock extends NonLegendBlockBase {
   private strands: NonLegendBlockBase[];
@@ -32,7 +37,11 @@ export class StrandsBlock extends NonLegendBlockBase {
   }
 
   get svgElements(): SVGElement[] {
-    return this.strands.map((strand) => strand.svgElements).flat();
+    const elements = [
+      ...this.strands,
+      ...this.labels
+    ].map((block) => block.svgElements).flat();
+    return elements;
   }
 
   getContentWidth(): number {
@@ -48,6 +57,7 @@ export class StrandsBlock extends NonLegendBlockBase {
 
 class SingleStrandBlock extends NonLegendBlockBase {
   private _svgElements: SVGElement[];
+  private nucleotideNumericLabels: (number | null)[];
   constructor(
     protected svgElementFactory: SVGElementFactory,
     protected config: PatternConfiguration,
@@ -55,10 +65,31 @@ class SingleStrandBlock extends NonLegendBlockBase {
     private strand: STRAND
   ) {
     super(svgElementFactory, config, yShift);
+
+    // WARNING: should be computed before creating circles
+    this.nucleotideNumericLabels = this.computeNucleotideNumericLabels();
+
+    if (this.strand === STRAND.ANTISENSE) {
+      this.config.phosphorothioateLinkageFlags[this.strand].reverse();
+      this.config.nucleotideSequences[this.strand].reverse();
+      this.nucleotideNumericLabels.reverse();
+    }
+
     this._svgElements = [
       this.createStrandCircles(),
       this.createPTOLinkageStars(),
     ].flat();
+  }
+
+  private computeNucleotideNumericLabels(): (number | null)[] {
+    let index = 0;
+    const nucleotides = this.config.nucleotideSequences[this.strand];
+    const indices = nucleotides.map((nucleotide) => {
+      if (isOverhangNucleotide(nucleotide)) return null;
+      index++;
+      return index;
+    });
+    return indices;
   }
 
   get svgElements(): SVGElement[] {
@@ -71,12 +102,11 @@ class SingleStrandBlock extends NonLegendBlockBase {
 
   private createStrandCircles(): SVGElement[] {
     const defaultShift = {
-      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS + SENSE_STRAND_PADDING,
+      x: SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS + SENSE_STRAND_HORIZONTAL_SHIFT,
       y: this.getStrandCircleYShift()
     };
 
     const nucleotides = this.config.nucleotideSequences[this.strand];
-    if (this.strand === STRAND.ANTISENSE) nucleotides.reverse();
 
     const elements = nucleotides
       .map((nucleotide, index) => this.createNucleotideElementGroup(nucleotide, index, defaultShift)).flat();
@@ -89,28 +119,27 @@ class SingleStrandBlock extends NonLegendBlockBase {
     index: number,
     defaultShift: {x: number, y: number}
   ): SVGElement[] {
-    const circle = this.createNucleotideCircle(nucleotide, index, defaultShift);
+    const circleElements = this.createNucleotideCircleElements(nucleotide, index, defaultShift);
     const numericLabel = this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
-      this.createNucleotideNumericLabel(index, defaultShift) :
-      null;
+      this.createNucleotideNumericLabel(index, defaultShift) : null;
 
-    return [circle, numericLabel].filter((element) => element !== null) as SVGElement[];
+    return [...circleElements, numericLabel].filter((element) => element !== null) as SVGElement[];
   }
 
-  private createNucleotideCircle(
+  private createNucleotideCircleElements(
     nucleotide: string,
     index: number,
     defaultShift: {x: number, y: number}
-  ): SVGElement[] {
+  ): (SVGElement | null)[] {
     const color = getNucleobaseColorFromStyleMap(nucleotide);
     const centerPosition = {...defaultShift, x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER};
 
     const circle = this.svgElementFactory
       .createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color);
 
-    const nonModifiedNucleotideLabel = this.createNucleotideLabel();
+    const nonModifiedNucleotideLetterLabel = this.createNucleotideLetterLabel(index, defaultShift, nucleotide);
 
-    return [circle];
+    return [circle, nonModifiedNucleotideLetterLabel];
   }
 
   private getNucleotideCircleCenterPosition(
@@ -123,11 +152,38 @@ class SingleStrandBlock extends NonLegendBlockBase {
     };
   }
 
-  private createNucleotideLabel(
+  private createNucleotideLetterLabel(
+    index: number,
+    defaultShift: {x: number, y: number},
     nucleobase: string
-  ): SVGElement {
+  ): SVGElement | null {
+    if (!NUCLEOTIDES.includes(nucleobase))
+      return null;
+
     const text = getNucleobaseLabelForCircle(nucleobase);
     const color = computeTextColorForNucleobaseLabel(nucleobase);
+    // position at the very center of the circle
+    const position = this.getPositionForNucleotideLabel(index, defaultShift);
+    return this.svgElementFactory.createTextElement(
+      text,
+      position,
+      SVG_TEXT_FONT_SIZES.NUCLEOBASE,
+      color
+    );
+  }
+
+  /** Returns the position for the letter with its center being at the center of the circle */
+  private getPositionForNucleotideLabel(
+    index: number,
+    defaultShift: {x: number, y: number}
+  ): {x: number, y: number} {
+    const circleCenter = this.getNucleotideCircleCenterPosition(index, defaultShift);
+    const textDimensions = TextDimensionsCalculator.getTextDimensions('A', SVG_TEXT_FONT_SIZES.NUCLEOBASE);
+    return {
+      x: circleCenter.x - textDimensions.width / 2,
+      // the coefficient 1/3 is fine-tuned to make the text look centered
+      y: circleCenter.y + textDimensions.height / 3
+    };
   }
 
   private getNumericLabelYShift(
@@ -141,9 +197,11 @@ class SingleStrandBlock extends NonLegendBlockBase {
   private createNucleotideNumericLabel(
     index: number,
     defaultShift: {x: number, y: number}
-  ): SVGElement {
-    const label = (index + 1).toString();
-    const width = TextDimensionsCalculator.getTextDimensions(label, SVG_TEXT_FONT_SIZES.COMMENT).width;
+  ): SVGElement | null {
+    const label = this.nucleotideNumericLabels[index];
+    if (label === null) return null;
+
+    const width = TextDimensionsCalculator.getTextDimensions(label.toString(), SVG_TEXT_FONT_SIZES.COMMENT).width;
 
     const position = {
       x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER - width / 2,
@@ -151,7 +209,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
     };
 
     return this.svgElementFactory.createTextElement(
-      label,
+      label.toString(),
       position,
       SVG_TEXT_FONT_SIZES.COMMENT,
       SVG_ELEMENT_COLORS.TEXT
@@ -160,7 +218,6 @@ class SingleStrandBlock extends NonLegendBlockBase {
 
   private createPTOLinkageStars(): SVGElement[] {
     const ptoFlags = this.config.phosphorothioateLinkageFlags[this.strand];
-    if (this.strand === STRAND.ANTISENSE) ptoFlags.reverse();
 
     const yShift = this.getStrandCircleYShift() + SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS * 0.8;
 
@@ -169,7 +226,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
         if (!ptoFlag) return null;
 
         const centerPosition = {
-          x: SENSE_STRAND_PADDING + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER,
+          x: SENSE_STRAND_HORIZONTAL_SHIFT + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER,
           y: yShift
         };
 
@@ -183,7 +240,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
 
   getContentWidth(): number {
     const numberOfMonomers = this.config.nucleotideSequences[this.strand].length;
-    return numberOfMonomers * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER + 2 * SENSE_STRAND_PADDING;
+    return numberOfMonomers * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER;
   }
 
   getContentHeight(): number {
@@ -192,6 +249,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
 }
 
 class StrandLabel extends NonLegendBlockBase {
+  private _svgElements: SVGElement[];
   constructor(
     protected svgElementFactory: SVGElementFactory,
     protected config: PatternConfiguration,
@@ -200,15 +258,66 @@ class StrandLabel extends NonLegendBlockBase {
     private strandSvgWrapper: SingleStrandBlock
   ) {
     super(svgElementFactory, config, yShift);
-    this.strandSvgWrapper.shiftElements({x: 50, y: 0});
+    this._svgElements = this.createSVGElements();
+    // this.strandSvgWrapper.shiftElements({x: this.getLeftLabelWidth(), y: 0});
+  }
+
+  private createSVGElements(): SVGElement[] {
+    const elements = [
+      this.createLeftLabel(),
+      this.createRightLabel()
+    ];
+    return elements;
+  }
+
+  private getLeftLabelWidth(): number {
+    return LEFT_LABEL_WIDTH;
+  }
+
+  private getRightLabelWidth(): number {
+    return RIGHT_LABEL_WIDTH;
+  }
+
+  private createLeftLabel(): SVGTextElement {
+    const terminus = this.strand === STRAND.SENSE ? TERMINUS.FIVE_PRIME : TERMINUS.THREE_PRIME;
+    const text = `${this.strand}: ${terminus}  `;
+    const textDimensions = TextDimensionsCalculator.getTextDimensions(text, SVG_TEXT_FONT_SIZES.NUCLEOBASE);
+    const position = {
+      x: SENSE_STRAND_PADDING,
+      y: getStrandCircleYShift(this.strand, this.yShift) + textDimensions.height / 3
+    };
+
+    return this.svgElementFactory.createTextElement(
+      text,
+      position,
+      SVG_TEXT_FONT_SIZES.NUCLEOBASE,
+      SVG_ELEMENT_COLORS.TEXT
+    );
+  }
+
+  private createRightLabel(): SVGTextElement {
+    const terminus = this.strand === STRAND.SENSE ? TERMINUS.THREE_PRIME : TERMINUS.FIVE_PRIME;
+    const text = `  ${terminus}`;
+    const textDimensions = TextDimensionsCalculator.getTextDimensions(text, SVG_TEXT_FONT_SIZES.NUCLEOBASE);
+    const position = {
+      x: SENSE_STRAND_HORIZONTAL_SHIFT + this.strandSvgWrapper.getContentWidth() + 5,
+      y: getStrandCircleYShift(this.strand, this.yShift) + textDimensions.height / 3
+    };
+
+    return this.svgElementFactory.createTextElement(
+      text,
+      position,
+      SVG_TEXT_FONT_SIZES.NUCLEOBASE,
+      SVG_ELEMENT_COLORS.TEXT
+    );
   }
 
   get svgElements(): SVGElement[] {
-    return [];
+    return this._svgElements;
   }
 
   getContentWidth(): number {
-    return this.strandSvgWrapper.getContentWidth();
+    return this.strandSvgWrapper.getContentWidth() + this.getLeftLabelWidth() + this.getRightLabelWidth() + SENSE_STRAND_PADDING;
   }
 
   getContentHeight(): number {
