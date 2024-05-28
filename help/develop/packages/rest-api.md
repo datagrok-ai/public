@@ -7,7 +7,7 @@ Datagrok REST API allows external integrations with the platform. It supports op
 
 There is also a [Python library](https://github.com/datagrok-ai/public/tree/master/python-api) that simplifies work with REST API.
 
-## Authorization
+## Configuration
 
 To interact with Datagrok REST API, you need to include an API key in the request headers. The API key must be prefixed with "Bearer ". It results in the following header:
 
@@ -18,6 +18,8 @@ Authorization: Bearer YOUR_API_KEY
 API key can be accessed from the user profile under **API Key** link. User profile is located under profile picture in left side panel.
 
 ![](./api-key.png)
+
+For API Url use Datagrok's URL followed by `/api`: For example, for `public.datagrok.ai` the required Url will be `https://public.datagrok.ai/api`.
 
 
 ## Files
@@ -35,11 +37,11 @@ Datagrok Rest API supports managing tables, including downloading and uploading 
 * `POST /public/v1/tables/{table}` – Upload a table to Datagrok. If table already exists, replace it's data. If table name specifies project, add uploaded table to a project.
 
 ## Dashboards
-This section includes endpoints to manage dashboards in Datagrok, such as creating dashboards and sharing them with specific groups. To learn more about identifiers of dashboards, groups, users and tables, refer to [this section](#identifiers).
+This section includes endpoints to manage [dashboards](../../datagrok/concepts/project/dashboard) in Datagrok, such as creating dashboards and sharing them with specific groups. To learn more about identifiers of dashboards and tables, refer to [this section](#identifiers).
 
 **Endpoints**
 * `POST /public/v1/dashboards/{name}/{table_ids}` – Create a new dashboard containing specified tables. Supports upload of [project layout](../how-to/layouts.md#project-layouts) in the request body.
-* `GET /public/v1/dashboards/{id}/shares{?groups,access}` – Share access to a dashboard with specified groups or users.
+* `GET /public/v1/dashboards/{id}/shares{?groups,access}` – Share access to a dashboard with specified groups or users by their names.
 
 ## Functions
 Datagrok Rest API allows you to invoke function calls within Datagrok with specified parameters.
