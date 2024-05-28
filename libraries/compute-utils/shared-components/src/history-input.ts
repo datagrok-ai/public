@@ -264,8 +264,8 @@ export class HistoryInputJSON extends HistoryInputBase<string | null> {
 
   set value(jsonVal: string | null) {
     this.setValue(null);
-    this.stringValue = jsonVal ? JSON.parse(jsonVal).visualValue: 'No run is chosen';
+    this.stringValue = jsonVal && jsonVal !== 'undefined' ? JSON.parse(jsonVal).visualValue: 'No run is chosen';
     // Recovering initial GUID here
-    this.chosenRunId = jsonVal ? JSON.parse(jsonVal).id.join('-'): '';
+    this.chosenRunId = jsonVal && jsonVal !== 'undefined' ? JSON.parse(jsonVal).id.join('-'): '';
   }
 }

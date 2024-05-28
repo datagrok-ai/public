@@ -163,6 +163,8 @@ export const injectLockStates = (input: FuncCallInput) => {
 export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.InputBase) => {
   const prop = val.property;
 
+  if (prop.choices) t.root.style.removeProperty('max-width');
+
   $(t.root).css({
     'width': `calc(${prop.options['block'] ?? '100'}% - ${prop.options['block'] ? '2': '0'}px)`,
     'box-sizing': 'border-box',

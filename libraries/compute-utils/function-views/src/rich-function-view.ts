@@ -124,9 +124,19 @@ export class RichFunctionView extends FunctionView {
     super(initValue, options);
   }
 
+  protected defaultForm!: DG.InputForm;
+  protected async loadDefaultForm() {
+    this.defaultForm = await DG.InputForm.forFuncCall(this.funcCall, {twoWayBinding: true});
+
+    this.funcCallReplaced.subscribe(() => {
+      this.defaultForm.source = this.funcCall;
+    });
+  }
+
   protected async onFuncCallReady() {
     await this.loadInputsOverrides();
     await this.loadInputsValidators();
+    await this.loadDefaultForm();
     await super.onFuncCallReady();
 
     const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
@@ -385,22 +395,22 @@ export class RichFunctionView extends FunctionView {
     const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
     const inputElements = ([
       ...Array.from(inputForm.childNodes),
-      ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-    ]);
+      ...this.isUploadMode.value ? Array.from(outputForm.childNodes): [],
+    ]) as HTMLElement[];
 
-    ui.tools.handleResize(inputBlock, () => {
-      if ($(inputBlock).width() < 300) {
-        $(inputForm).addClass('ui-form-condensed');
-        $(outputForm).addClass('ui-form-condensed');
-        $(controlsWrapper).addClass('ui-form-condensed');
-        inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
-      } else {
-        $(inputForm).removeClass('ui-form-condensed');
-        $(outputForm).removeClass('ui-form-condensed');
-        $(controlsWrapper).removeClass('ui-form-condensed');
-        inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
-      }
-    });
+    // ui.tools.handleResize(inputBlock, () => {
+    //   if ($(inputBlock).width() < 300) {
+    //     $(inputForm).addClass('ui-form-condensed');
+    //     $(outputForm).addClass('ui-form-condensed');
+    //     $(controlsWrapper).addClass('ui-form-condensed');
+    //     inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
+    //   } else {
+    //     $(inputForm).removeClass('ui-form-condensed');
+    //     $(outputForm).removeClass('ui-form-condensed');
+    //     $(controlsWrapper).removeClass('ui-form-condensed');
+    //     // inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
+    //   }
+    // });
 
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
@@ -410,8 +420,6 @@ export class RichFunctionView extends FunctionView {
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
-
-    inputBlock.style.maxWidth = '360px';
 
     return out;
   }
@@ -1192,8 +1200,8 @@ export class RichFunctionView extends FunctionView {
       'padding-right': '12px',
       'padding-top': '0px',
       'padding-left': '0px',
-      'max-width': '100%',
       'gap': '4px',
+      'max-width': 'min-content',
     });
 
     let prevCategory = 'Misc';
@@ -1203,14 +1211,14 @@ export class RichFunctionView extends FunctionView {
       .forEach((val) => {
         const prop = val.property;
         this.beforeInputPropertyRender.next(prop);
-        const input = this.getInputForVal(val);
+        const {input, isDefault} = this.getInputForVal(val);
         if (!input) {
           prevCategory = prop.category;
           return;
         }
         this.inputsMap[val.property.name] = input;
         if (field === SYNC_FIELD.INPUTS) {
-          this.syncInput(val, input, field);
+          this.syncInput(val, input, field, isDefault);
           this.checkForMapping(val, input);
           if (!this.runningOnInput)
             this.disableInputsOnRun(val.property.name, input);
@@ -1285,24 +1293,24 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(paramSub);
   }
 
-  private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
+  private getInputForVal(val: DG.FuncCallParam): {input: InputVariants | null, isDefault: boolean} {
     const prop = val.property;
     if (this.inputsOverride[val.property.name])
-      return this.inputsOverride[val.property.name];
+      return {input: this.inputsOverride[val.property.name], isDefault: false};
 
     if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
       return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
     case FILE_INPUT_TYPE:
-      return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+      return {input: UiUtils.fileInput(prop.caption ?? prop.name, null, null, null), isDefault: false};
     case DG.TYPE.FLOAT:
-      const floatInput = ui.input.forProperty(prop);
+      const floatInput = this.defaultForm.getInput(prop.name);
       const format = prop.options.format;
       if (format) floatInput.format = format;
-      return floatInput;
+      return {input: floatInput, isDefault: true};
     default:
-      return ui.input.forProperty(prop);
+      return {input: this.defaultForm.getInput(prop.name), isDefault: true};
     }
   }
 
@@ -1462,18 +1470,23 @@ export class RichFunctionView extends FunctionView {
     tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
   }
 
-  private syncInput(val: DG.FuncCallParam, t: InputVariants, field: SyncFields) {
+  private syncInput(
+    val: DG.FuncCallParam,
+    t: InputVariants,
+    field: SyncFields,
+    isDefaultInput: boolean,
+  ) {
     const name = val.name;
-
-    let stopUIUpdates = false;
 
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
       const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
-      t.notify = false;
-      t.value = newValue;
-      t.notify = true;
-      this.funcCall[field][name] = newValue;
+      if (!isDefaultInput) {
+        t.notify = false;
+        t.value = newValue;
+        t.notify = true;
+        this.funcCall[field][name] = newValue;
+      }
       this.setInputLockState(t, name, newValue, this.getInputLockState(name));
     });
     this.subs.push(sub1);
@@ -1487,11 +1500,11 @@ export class RichFunctionView extends FunctionView {
     ).subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
       // don't update UI if an update is triggered by UI
-      if (!stopUIUpdates) {
-        t.notify = false;
-        t.value = newValue;
-        t.notify = true;
-      }
+      // if (!stopUIUpdates) {
+      //   t.notify = false;
+      //   t.value = newValue;
+      //   t.notify = true;
+      // }
       if (field === SYNC_FIELD.INPUTS) {
         this.isHistorical.next(false);
 
@@ -1524,15 +1537,15 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(sub3);
 
-    const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
-      try {
-        stopUIUpdates = true;
-        this.funcCall[field][val.name] = t.value;
-      } finally {
-        stopUIUpdates = false;
-      }
-    });
-    this.subs.push(sub4);
+    // const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+    //   try {
+    //     stopUIUpdates = true;
+    //     this.funcCall[field][val.name] = t.value;
+    //   } finally {
+    //     stopUIUpdates = false;
+    //   }
+    // });
+    // this.subs.push(sub4);
   }
 
   public isRunnable() {

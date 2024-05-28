@@ -48,6 +48,11 @@
     margin-right: 0px!important;
 }
 
+.rfv-form {
+    padding-right: 12px;
+    max-width: min-content;
+}
+
 .rfv-form .ui-form .rfv-buttons > .ui-input-editor {
     gap: 5px;
     justify-content: flex-end;
