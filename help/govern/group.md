@@ -3,7 +3,7 @@ title: "User group"
 ---
 
 Datagrok has a flexible mechanism for grouping users together:
-![Group members and memberships](./groups.gif "Group members and memberships")
+![Group members and memberships](img/groups.gif "Group members and memberships")
 
 A user can belong to more than one group. A group can be included in another group, which is useful for both reflecting
 organization hierarchy and implementing role-based [security](security.md).
