@@ -75,15 +75,15 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  if (args['skip-build']) {
-    if (args['skip-publish'])
-      test();
-    else
-      publish(test);
+  if (args['skip-publish'] || args.package) {
+    test()
   } else {
-    build(args['skip-publish'] ? test : () => publish(test));
+    if (args['skip-build']) {
+      publish(test);
+    } else {
+      build(() => publish(test));
+    }
   }
-
 
   function build(callback: Function): void {
     exec('npm run build', (err, stdout, stderr) => {
