@@ -58,7 +58,8 @@
     "source-map-loader": "^4.0.1",
     "wu": "latest",
     "@webgpu/types": "^0.1.40",
-    "ngl": "latest"
+    "ngl": "latest",
+    "jszip": "3.10.1"
   },
   "devDependencies": {
     "@types/wu": "latest",
