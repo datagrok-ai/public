@@ -29,7 +29,6 @@ dist/
 .idea/codeStyles/
 
 # Emitted *.js files
-*.js
-*.d.ts
-*.d.ts.map
-test-console-output.log
+src/**/*.js
+src/**/*.d.ts
+src/**/*.d.ts.map

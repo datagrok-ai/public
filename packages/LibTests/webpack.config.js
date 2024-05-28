@@ -2,7 +2,7 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
-  mode: 'development',
+  mode: 'production',
   entry: {
     test: {
       filename: 'package-test.js',
@@ -25,21 +25,22 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
-        test: /\.js$/,
+        test: /\.(js|mjs|jsx|ts|tsx)$/,
         enforce: 'pre',
         use: ['source-map-loader'],
-        exclude: /node_modules/,
       },
     ],
   },
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
+    'DG': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
+    'rxjs.operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
@@ -53,4 +54,8 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
   },
+  optimization: {
+    usedExports: true,
+    concatenateModules: false,
+  }
 };
