@@ -42,6 +42,7 @@ class DatagrokClient:
         pandas.DataFrame
             Dataframe with table data
         '''
+        name = name.replace(':', '.')
         endpoint = f"/public/v1/tables/{name}"
         response = self._request('GET', endpoint, content_type="text/plain")
         return pd.read_csv(StringIO(response.text))
@@ -63,6 +64,7 @@ class DatagrokClient:
         object
             set of identifiers for the uploaded table
         '''
+        name = name.replace(':', '.')
         endpoint = f"/public/v1/tables/{name}"
         csv_data = dataframe.to_csv(index=False)
         response = self._request('POST', endpoint, content_type="text/csv", data=csv_data)
@@ -85,6 +87,7 @@ class DatagrokClient:
             If requested file is csv, returns corresponding pd.Datafrme.
             Otherwise returns list of bytes with file content.
         '''
+        connector = connector.replace(':', '.')
         endpoint = f"/public/v1/files/{connector}/{path}"
         response = self._request('GET', endpoint, content_type="application/octet-stream")
         if path.endswith('.csv'):
@@ -104,6 +107,7 @@ class DatagrokClient:
         file_path: str
             Path to local file that needs to be uploaded
         '''
+        connector = connector.replace(':', '.')
         endpoint = f"/public/v1/files/{connector}/{path}"
         with open(file_path, 'rb') as file:
             self._request('POST', endpoint, content_type="application/octet-stream", data=file)
@@ -121,6 +125,7 @@ class DatagrokClient:
         access: str
             Either 'View' or 'Edit'
         '''
+        id = id.replace(':', '.')
         endpoint = f"/public/v1/dashboards/{id}/shares"
         params = {
             'groups': groups,
@@ -146,6 +151,8 @@ class DatagrokClient:
         object
             Identifiers of a project.
         '''
+        name = name.replace(':', '.')
+        table_ids = table_ids.replace(':', '.')
         endpoint = f"/public/v1/dashboards/{name}/{table_ids}"
         if layout_filename:
             with open(layout_filename, 'r') as layout_file:
@@ -171,6 +178,7 @@ class DatagrokClient:
         object
             Result of invocation: either a single value or a list or outputs.
         '''
+        name = name.replace(':', '.')
         endpoint = f"/public/v1/{name}/call"
         response = self._request('POST', endpoint, json=invocation_parameters, content_type="application/json")
         return response.json()
@@ -181,4 +189,7 @@ class DatagrokClient:
         headers["Content-Type"] = content_type
         response = requests.request(method, url, headers=headers, **kwargs)
         response.raise_for_status()
+        content = response.content.decode()
+        if 'ApiError' in content:
+            raise Exception(content)
         return response
