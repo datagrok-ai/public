@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.22 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15525: MSA: Add check unsuitable data to avoid running MSA with them
+
 ## 2.12.21 (2024-05-20)
 
 Fix cell renderer for column width changed
