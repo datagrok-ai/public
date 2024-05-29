@@ -6,5 +6,5 @@
 #output: file fileOutput
 #output: blob blobOutput
 
-fileOutput = fileInput
-blobOutput = blobInput
+fileOutput = fileInput;
+blobOutput = blobInput;

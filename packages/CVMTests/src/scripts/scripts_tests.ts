@@ -190,6 +190,12 @@ for (const lang of langs) {
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
     }, {timeout: 120000});
   });
+
+  category('Stdout', () => {
+    test('Console printing', async () => {
+      await grok.functions.call('CVMTests:OctaveStdout', {'result': grok.data.demo.demog(1000)});
+    }, {timeout: 60000});
+  });
 }
 
 category('Scripts: Client cache test', () => {
