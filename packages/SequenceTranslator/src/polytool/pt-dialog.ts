@@ -91,7 +91,6 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
         const helmString = helmInput.getHelmString();
         const helmSelections = helmInput.getHelmSelections();
         const lib = '';
-        const 
       } catch (err: any) {
 
       } finally {
