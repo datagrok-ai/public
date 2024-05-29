@@ -92,7 +92,7 @@ const userErrorsChartStyle: Partial<ILineChartSettings> = {
   'showAggrSelectors': false,
   'showSplitSelector': false,
   'showYAxis': false,
-  'legendVisibility': 'Never',
+  'legendVisibility': DG.VisibilityMode.Never,
   'showMarkers': 'Never',
   'autoLayout': false,
 };
