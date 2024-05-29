@@ -8,9 +8,9 @@
     "email": "amuzychyna@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.2.5",
+  "version": "4.2.6",
   "description": "Common utilities",
-  "dependencies": {
+  "dependencies": { 
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.17.4",
     "fast-sha256": "^1.3.0",
