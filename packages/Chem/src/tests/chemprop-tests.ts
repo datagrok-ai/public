@@ -6,8 +6,6 @@ import {_package, getContainer, getAllModelingEngines} from '../package';
 import {readDataframe} from './utils';
 import JSZip from 'jszip';
 
-const MODEL_ID = 'fb70afc9219181b09fa9f444112ba79e9f22d031c3f3e105ffd029feed1f4a8b';
-
 category('chemprop', () => {
   let container: DG.DockerContainer;
   let binBlob: Uint8Array;
@@ -27,7 +25,7 @@ category('chemprop', () => {
   test('trainModel', async () => {
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
-    const modelBlob = await trainModel(MODEL_ID, tableForPrediction.toCsv(), 'molregno', parameterValues);
+    const modelBlob = await trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues);
 
     const zip = new JSZip();
     const archive = await zip.loadAsync(modelBlob);
@@ -39,25 +37,26 @@ category('chemprop', () => {
 
   test('applyModel', async () => {
     const smilesColumn = table.columns.byName('canonical_smiles');
-    const column = await applyModel(MODEL_ID, binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv());
+    const column = await applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv());
         
     expect(column.length, 29);
   });
 });
 
-async function trainModel(id: string, table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
+export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
   const container = await getContainer();
-  const uriParams = new URLSearchParams({
-    'id': id,
-    'type': 'Chemprop',
-    'table': table,
-    'predict': predict
-  });
+  
+  const body = {
+    type: 'Chemprop',
+    table: table,
+    predict: predict,
+    parameters: parameterValues
+  };
 
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/train_chemprop?' + uriParams, {
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/train_chemprop', {
     method: 'POST',
-    body: JSON.stringify(parameterValues),
-    headers: {'Content-Type': 'application/json'}
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
   });
 
   if (response.status !== 201)
@@ -65,18 +64,18 @@ async function trainModel(id: string, table: string, predict: string, parameterV
   return new Uint8Array(await response.arrayBuffer());
 }
 
-export async function applyModel(id: string, modelBlob: Uint8Array, table: string): Promise<DG.Column> {
+export async function applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
   const container = await getContainer();
-  const uriParams = new URLSearchParams({
-    'id': id,
-    'type': 'Chemprop',
-    'table': table
-  });
 
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/predict_chemprop?' + uriParams, {
+  const body = {
+    modelBlob: Array.from(modelBlob),
+    table: table
+  };
+
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/predict_chemprop', {
     method: 'POST',
-    body: modelBlob,
-    headers: {'Content-Type': 'application/octet-stream'}
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
   });
 
   if (response.status !== 201)
@@ -85,6 +84,7 @@ export async function applyModel(id: string, modelBlob: Uint8Array, table: strin
   const data = await response.json();
   return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
 }
+
 
 function getParameterValues() {
   return {

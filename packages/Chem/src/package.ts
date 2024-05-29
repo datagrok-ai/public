@@ -75,6 +75,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {drawMoleculeLabels} from './rendering/molecule-label';
 import {getMCS} from './utils/most-common-subs';
 import { toDart } from 'datagrok-api/dg';
+import { applyModelChemprop, trainModelChemprop } from './tests/chemprop-tests';
+import JSZip from 'jszip';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1605,6 +1607,99 @@ export async function applyModel(id: string, type: string, modelBlob: Uint8Array
   const data = await response.json();
   const column = DG.Column.fromStrings('outcome', Array.from(data['outcome'], (v: any, _) => v?.toString()));
   return [toDart(column)];
+}
+
+//name: trainChemprop
+//description: To be added
+//meta.mlname: Chemprop
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: string dataset_type = 'regression' {category: General; choices: ['regression', 'classification']} [Type of dataset, e.g. classification or regression. This determines the loss function used during training.]
+//input: int log_frequency = 10 {category: General} [The number of batches between each logging of the training loss]
+//input: string metric = 'rmse' {category: General; choices: ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy']} [Metric to use during evaluation.]
+//input: int multiclass_num_classes = 3 {category: General} [Number of classes when running multiclass classification]
+//input: bool no_cache = false {category: General} [Turn off caching mol2graph computation]
+//input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
+//input: int seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets.]
+//input: bool show_individual_scores = false {category: General} [Show all scores for individual targets, not just average, at the end]
+//input: list split_sizes = [0.8, 0.1, 0.1] {category: General} [Split proportions for train/validation/test sets]
+//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined']} [Method of splitting the data into train/val/test]
+//input: bool test = false {category: General} [Whether to skip training and only test the model]
+//input: bool use_compound_names = false {category: General} [Use when test data file contains compound names in addition to SMILES strings]
+//input: string activation = 'ReLU' {category: Model; choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU']} [Activation function]
+//input: bool atom_messages = false {category: Model} [Use messages on atoms instead of messages on bonds]
+//input: bool bias = false {category: Model} [Whether to add bias to linear layers]
+//input: int ensemble_size = 1 {category: Model} [Number of models in ensemble]
+//input: int hidden_size = 300 {category: Model} [Dimensionality of hidden layers in MPN]
+//input: int depth = 3 {category: Model} [Number of message passing step]
+//input: double dropout = 0.0 {category: Model} [Dropout probability]
+//input: bool undirected = false {category: Model} [Undirected edges (always sum the two relevant bond vectors)]
+//input: int ffn_hidden_size = 300 {category: Model} [Hidden dim for higher-capacity FFN (defaults to hidden_size)]
+//input: int ffn_num_layers = 2 {category: Model} [Number of layers in FFN after MPN encoding]
+//input: int epochs = 30 {category: Training} [Number of epochs to run]
+//input: int batch_size = 50 {category: Training} [Batch size]
+//input: double warmup_epochs = 2.0 {category: Training} [Number of epochs during which learning rate increases linearly from init_lr to max_lr. Afterwards, learning rate decreases exponentially from max_lr to final_lr.]
+//input: double init_lr = 0.0001 {category: Training} [Initial learning rate]
+//input: double max_lr = 0.001 {category: Training} [Maximum learning rate]
+//input: double final_lr = 0.0001 {category: Training} [Final learning rate]
+//input: bool no_features_scaling = false {category: Training} [Turn off scaling of features]
+//output: dynamic model
+export async function trainChemprop(
+  df: DG.DataFrame, predict_column: string, dataset_type: string, log_frequency: number, metric: string, multiclass_num_classes: number,
+  no_cache: boolean, num_folds: number, seed: number, show_individual_scores: boolean, split_sizes: any, split_type: string, test: boolean,
+  use_compound_names: boolean, activation: string, atom_messages: boolean, bias: boolean, ensemble_size: number, hidden_size: number,
+  depth: number, dropout: number, undirected: boolean, ffn_hidden_size: number, ffn_num_layers: number, epochs: number, batch_size: number,
+  warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_features_scaling: boolean
+): Promise<Uint8Array> {
+  const parameterValues = {
+    'dataset_type': dataset_type,
+    'log_frequency': log_frequency,
+    'metric': metric,
+    'multiclass_num_classes': multiclass_num_classes,
+    'no_cache': no_cache,
+    'activation': activation,
+    'atom_messages': atom_messages,
+    'batch_size': batch_size,
+    'bias': bias,
+    'depth': depth,
+    'dropout': dropout,
+    'ensemble_size': ensemble_size,
+    'epochs': epochs,
+    'ffn_hidden_size': ffn_hidden_size,
+    'ffn_num_layers': ffn_num_layers,
+    'final_lr': final_lr,
+    'hidden_size': hidden_size,
+    'init_lr': init_lr,
+    'max_lr': max_lr,
+    'no_features_scaling': no_features_scaling,
+    'num_folds': num_folds,
+    'seed': seed,
+    'show_individual_scores': show_individual_scores,
+    'split_sizes': split_sizes,
+    'split_type': split_type,
+    'test': test,
+    'undirected': undirected,
+    'use_compound_names': use_compound_names,
+    'warmup_epochs': warmup_epochs
+  };
+  const modelBlob = await trainModelChemprop(df.toCsv(), predict_column, parameterValues);
+  const zip = new JSZip();
+  const archive = await zip.loadAsync(modelBlob);
+  const file = archive.file('blob.bin');
+  const binBlob = await file?.async('uint8array')!;
+  return binBlob;
+}
+
+//name: applyChemprop
+//meta.mlname: Chemprop
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe data_out
+export async function applyChemprop(df: DG.DataFrame, model: Uint8Array) {
+  const column = await applyModelChemprop(model, df.toCsv());
+  return DG.DataFrame.fromColumns([column]);
 }
 
 export {getMCS};
