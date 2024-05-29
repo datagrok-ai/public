@@ -16,7 +16,7 @@
     "@datagrok-libraries/ml": "^6.6.5",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "latest",
-    "datagrok-api": "1.18.6",
+    "datagrok-api": "^1.18.6",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.16",
     "js-base64": "^3.7.5",
