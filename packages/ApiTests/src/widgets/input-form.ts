@@ -156,18 +156,18 @@ category('Widgets: InputForm API', () => {
   test('funcall to form bind', async () => {
     const geo = grok.data.demo.geo(10);
 
-    funcCall.inputs['stringInput'] = 'test';
-    funcCall.inputs['intInput'] = 3;
-    funcCall.inputs['doubleInput'] = 3.14;
-    funcCall.inputs['boolInput'] = true;
-    funcCall.inputs['choiceInput'] = '1';
+    funcCall.inputs['stringInput'] = 'test2';
+    funcCall.inputs['intInput'] = 4;
+    funcCall.inputs['doubleInput'] = 4.14;
+    funcCall.inputs['boolInput'] = false;
+    funcCall.inputs['choiceInput'] = '2';
     funcCall.inputs['tableInput'] = geo;
 
-    expect(inputs['stringInput'].value, 'test');
-    expect(inputs['intInput'].value, 3);
-    expect(inputs['doubleInput'].value, 3.14);
-    expect(inputs['boolInput'].value, true);
-    expect(inputs['choiceInput'].value, '1');
+    expect(inputs['stringInput'].value, 'test2');
+    expect(inputs['intInput'].value, 4);
+    expect(inputs['doubleInput'].value, 4.14);
+    expect(inputs['boolInput'].value, false);
+    expect(inputs['choiceInput'].value, '2');
     expectTable(inputs['tableInput'].value, geo);
   });
 
@@ -204,6 +204,9 @@ category('Widgets: InputForm API', () => {
   });
 
   test('form to funccall bind after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     inputs['stringInput'].value = 'test2';
     inputs['intInput'].value = 4;
     inputs['doubleInput'].value = 4.14;
@@ -220,6 +223,9 @@ category('Widgets: InputForm API', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-14311'});
   
   test('funccall to form bind after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     const geo = grok.data.demo.geo(10);
 
     newFuncCall.inputs['stringInput'] = 'test';
@@ -238,6 +244,9 @@ category('Widgets: InputForm API', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-14311'});
 
   test('form on input change observable after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     const changedInputPropNames = [] as string[];
     const changeSub = form.onInputChanged.subscribe((propName) => {
       changedInputPropNames.push(propName);
@@ -277,15 +286,15 @@ category('Widgets: InputForm w/ custom input', () => {
       'choiceInput': form.getInput('choiceInput') ?? null,
       'tableInput': form.getInput('tableInput') ?? null,
     };
-  });
-  
-  // this test shows possible API for custom inputs of DG.InputForm
-  test('replace input by custom', async () => {
+
     const customInput = await grok.functions.eval('ApiTests:CustomStringInput');
     //@ts-ignore
     form.replaceInput('stringInput', customInput);
-    
-    expect(inputs['stringInput'], 'test');
+  });
+  
+  // this test shows possible API for custom inputs of DG.InputForm
+  test('replace input by custom', async () => {    
+    expect(inputs['stringInput'].value, 'test');
     expect(funcCall.inputs['stringInput'], 'test');
     expect(inputs['stringInput'].root.style.backgroundColor, 'aqua');
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
@@ -298,9 +307,9 @@ category('Widgets: InputForm w/ custom input', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
   
   test('funcall to form bind', async () => {
-    funcCall.inputs['stringInput'] = 'test';
+    funcCall.inputs['stringInput'] = 'test2';
     
-    expect(inputs['stringInput'].value, 'test');
+    expect(inputs['stringInput'].value, 'test2');
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form on input change observable', async () => {
@@ -326,18 +335,27 @@ category('Widgets: InputForm w/ custom input', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form to funccall bind after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     inputs['stringInput'].value = 'test2';
 
     expect(newFuncCall.inputs['stringInput'], 'test2');
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
   
   test('funccall to form bind after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     newFuncCall.inputs['stringInput'] = 'test';
 
     expect(inputs['stringInput'].value, 'test');
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 
   test('form on input change observable after replace', async () => {
+    newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form.source = newFuncCall;
+
     const changedInputPropNames = [] as string[];
     const changeSub = form.onInputChanged.subscribe((propName) => {
       changedInputPropNames.push(propName);

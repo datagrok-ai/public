@@ -47,14 +47,17 @@ export class SimplePolymer {
     const monomerList: string[] = [];
     const monomerTypeList: HELM_MONOMER_TYPE[] = [];
     monomerGroups.forEach((monomerGroup) => {
-      const splitted = monomerGroup.split(/\(|\)/)
-        .map((el) => el.replace(/[\[\]]/g, ''));
-      monomerList.push(...splitted);
+      // const splitted = monomerGroup.split(/\(|\)/).map((el) => el.replace(/[\[\]]/g, ''));
+      // monomerList.push(...splitted);
       // WARNING: only the groups of the form r(A)p, as in RNA, are supported
-      const monomerTypes = splitted.map(
-        (_, idx) => (idx % 2 === 0) ? HELM_MONOMER_TYPE.BACKBONE : HELM_MONOMER_TYPE.BRANCH
-      );
-      monomerTypeList.push(...monomerTypes);
+
+      monomerList.push(monomerGroup);
+      // const monomerTypes = splitted.map(
+      //   (_, idx) => (idx % 2 === 0) ? HELM_MONOMER_TYPE.BACKBONE : HELM_MONOMER_TYPE.BRANCH
+      // );
+
+      // monomerTypeList.push(...monomerTypes);
+      monomerTypeList.push(HELM_MONOMER_TYPE.BACKBONE);
     });
     return {monomers: monomerList, monomerTypes: monomerTypeList};
   }

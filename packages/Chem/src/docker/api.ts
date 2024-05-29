@@ -9,7 +9,7 @@ let descriptorsCached: object[];
 
 async function getContainer() {
   if (!chemContainer)
-    chemContainer = await grok.dapi.docker.dockerContainers.filter(_package.name).first();
+    chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
   if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
     await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
   return chemContainer;

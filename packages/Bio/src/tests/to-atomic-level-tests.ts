@@ -100,6 +100,7 @@ category('toAtomicLevel', async () => {
     fastaDna = 'fastaDna',
     fastaRna = 'fastaRna',
     fastaPt = 'fastaPt',
+    fastaUn = 'fastaUn',
 
     separatorDna = 'separatorDna',
     separatorRna = 'separatorRna',
@@ -122,6 +123,10 @@ UUCAACUUCAAC`,
 FWPHEYFWPHEY
 YNRQWYVYNRQWYV
 MKPSEYVMKPSEYV`,
+    [csvTests.fastaUn]: `seq
+[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
+[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`,
     [csvTests.separatorDna]: `seq
 A/C/G/T/C/A/C/G/T/C
 C/A/G/T/G/T/C/A/G/T/G/T
@@ -167,6 +172,10 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
 
   test('fastaPt', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.fastaPt), 'seq', monomerLibHelper);
+  });
+
+  test('fastaUn', async () => {
+    await _testToAtomicLevel(await readCsv(csvTests.fastaUn), 'seq', monomerLibHelper);
   });
 
   test('separatorDna', async () => {

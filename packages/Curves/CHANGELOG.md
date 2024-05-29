@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.4.3 (2024-05-23)
+
+### Bug fixes
+
+* [#2855](https://github.com/datagrok-ai/public/issues/2855): Changed labels (Marker Type -> Marker and Outlier Marker Type -> Outlier Marker)
+
 ## 1.4.2 (2024-05-21)
 
 ### Features

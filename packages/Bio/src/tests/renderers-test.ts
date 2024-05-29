@@ -48,13 +48,17 @@ category('renderers', () => {
     await _testAfterConvert();
   });
 
+  test('afterConvertToHelm', async () => {
+    await _testAfterConvertToHelm();
+  });
+
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
   });
 
   test('scatterPlotTooltip', async () => {
     await _testScatterPlotTooltip();
-  }, {skipReason: 'GROK-15679'});
+  });
 
   async function _rendererMacromoleculeFasta() {
     const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.csv');
@@ -162,7 +166,7 @@ category('renderers', () => {
     const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
-    const srcCol: DG.Column = df.col('sequence')!;
+    const srcCol: DG.Column = df.getCol('sequence')!;
     const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcCol});
     if (semType)
       srcCol.semType = semType;
@@ -180,6 +184,19 @@ category('renderers', () => {
 
     // check tgtCol with SeqHandler constructor
     const _sh: SeqHandler = SeqHandler.forColumn(tgtCol);
+  }
+
+  async function _testAfterConvertToHelm() {
+    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/FASTA_PT.csv');
+    const view = grok.shell.addTableView(df);
+    await awaitGrid(view.grid);
+
+    const srcCol = df.getCol('sequence');
+    const sh = SeqHandler.forColumn(srcCol);
+    const tgtCol = sh.convert(NOTATION.HELM);
+    df.columns.add(tgtCol);
+    await awaitGrid(view.grid);
+    expect(tgtCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
   }
 
   async function _selectRendererBySemType() {

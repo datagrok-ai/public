@@ -54,3 +54,19 @@ clicks on that button.
 * Click-and-drag to select multiple objects at once.
 
 TODO: This feature is not working yet --->
+
+
+## Resources
+
+YouTube videos:
+
+<div class="help-video-list" style={{display:"flex","flex-wrap":"wrap",}}>
+
+<div class="card" style={{width:"512px",}}>
+<iframe src="https://www.youtube.com/embed/TtVjvxMj9Ds?si=8J08Iqbigx2RtR9T" title="YouTube video player" width="512" height="288" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+  <div class="card-body">
+    <h2 class="card-title">Dynamic Dashboards</h2>
+    <p class="card-text">Building dynamic dashboards using database queries</p>
+  </div>
+</div>
+</div>

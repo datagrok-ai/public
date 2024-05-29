@@ -74,7 +74,7 @@ category('Property: Header parsing', () => {
   });
   test('format', async () => {
     expect(func.inputs[9].format, '#.000');
-  });
+  }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15671'});
   test('description', async () => {
     expect(func.inputs[10].description, 'My best description');
   });

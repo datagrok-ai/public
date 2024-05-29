@@ -10,7 +10,6 @@ import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
 import {TestsView, filters} from './tabs/tests';
-import {ReportsView} from "./tabs/reports";
 import {ErrorsView} from "./tabs/errors"
 
 export class ViewHandler {
@@ -26,7 +25,7 @@ export class ViewHandler {
     this.view.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct(this);
     toolbox.filters.root.after(filters);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView, ReportsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView, ErrorsView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       this.view.addView(currentView.name, () => {

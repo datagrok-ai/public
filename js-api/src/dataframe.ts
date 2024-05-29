@@ -37,21 +37,10 @@ type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
 
 
-/** Column CSV export options */
-export interface ColumnCsvExportOptions {
-  /** Custom column format to be used */
-  format: string;
-
-  /** Additional options */
-  [index: string]: any;
+/** Column name -> format */
+export interface ColumnsFormatCsvExportOptions {
+  [index: string]: string;
 }
-
-
-/** Column name -> options */
-export interface ColumnsCsvExportOptions {
-  [index: string]: ColumnCsvExportOptions;
-}
-
 
 /** Csv export options to be used in {@link DataFrame.toCsv} */
 export interface CsvExportOptions {
@@ -94,7 +83,7 @@ export interface CsvExportOptions {
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
-  columnOptions?: ColumnsCsvExportOptions;
+  columnFormats?: ColumnsFormatCsvExportOptions;
 }
 
 
@@ -441,6 +430,10 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
+  appendMerge(t: DataFrame): void {
+    api.grok_DataFrame_Append_Merge(this.dart, t.dart);
+  }
+
   _event(event: string): Observable<any> {
     return __obs(event, this.dart);
   }
@@ -549,7 +542,7 @@ export class DataFrame {
   }
 
   _exportReopen(): DataFrame {
-    return toJs(api.grok_DataFrame_Export_And_Reopen(this.dart));
+    return toJs(api.grok_DataFrame_ExportAndReopen(this.dart));
   }
 }
 

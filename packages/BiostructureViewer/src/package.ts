@@ -159,7 +159,7 @@ export async function importPdbqt(fileContent: string, test: boolean): Promise<D
  * //TODO: Fix preview .pqr
  */
 //tags: fileViewer
-//meta.fileViewer: mmtf,cns,top,prmtop
+//meta.fileViewer: mmtf,cns,top,prmtop,pqr
 //input: file file
 //output: view result
 export function previewNglStructure(file: any): DG.View {

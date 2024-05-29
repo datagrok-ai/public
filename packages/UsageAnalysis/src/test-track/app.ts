@@ -39,6 +39,7 @@ export class TestTrack extends DG.ViewBase {
   private static instance: TestTrack;
   tree: DG.TreeViewGroup;
   inited: boolean = false;
+  isInitializing: boolean = false;
   testCaseDiv: HTMLDivElement;
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
   map: { [key: string]: (Category | TestCase) } = {};
@@ -78,11 +79,24 @@ export class TestTrack extends DG.ViewBase {
     this.start = start;
   }
 
-  async init() {
+  init() { 
+    if (this.isInitializing) 
+      return;
+
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
       return;
     }
+    
+    this.isInitializing = true; 
+    this.initTreeView().then(()=>{
+      this.inited = true;
+      this.isInitializing = false; 
+    });
+  }
+
+
+  private async initTreeView(): Promise<void> {  
 
     let searchInvoked = false
 
@@ -224,10 +238,11 @@ export class TestTrack extends DG.ViewBase {
     this.append(ribbon);
     this.append(this.tree.root);
     this.root.style.padding = '0';
-    grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
-    this.inited = true;
-  }
-
+    grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3); 
+    
+    this.isInitializing = false; 
+  } 
+  
   private closeTreeCategories() {
     const categoriesLists = this.tree.root.getElementsByClassName('d4-tree-view-group-host');
     const categoriesTitles = this.tree.root.getElementsByClassName('d4-tree-view-tri');
@@ -518,7 +533,8 @@ export class TestTrack extends DG.ViewBase {
     const oldRoot = this.root;
     ui.setUpdateIndicator(oldRoot);
     TestTrack.instance = new TestTrack(this.testingName);
-    TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
+    TestTrack.getInstance().init();
+    grok.shell.dockManager.close(oldRoot);
   }
 
   getReason(reason: string): HTMLElement {

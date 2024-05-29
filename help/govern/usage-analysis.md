@@ -56,12 +56,12 @@ that this is an internal tool for developers.
 When an action does something on a server that modifies the server's state in any way, in addition to the log file it
 gets recorded in the audit. This is what you see under the "Activity" tab in the context panel.
 
-![usage-analysis-pp-activity](usage-analysis-pp-activity.png)
+![usage-analysis-pp-activity](img/usage-analysis-pp-activity.png)
 
 By default, each [script](../compute/scripting/scripting.mdx) execution gets logged, along with the parameter values. High-level
 overview of the usage is available under the "Usage" tag:
 
-![usage-analysis-pp-usage](usage-analysis-pp-usage.png)
+![usage-analysis-pp-usage](img/usage-analysis-pp-usage.png)
 
 ## Usage Analysis application
 
@@ -73,19 +73,19 @@ our [public git repository](https://github.com/datagrok-ai/public/tree/master/pa
 
 Usage Analysis app designed to provide you with comprehensive statistics and insights into the usage patterns on Datagrok platform. With Usage Analysis, you can unlock a wealth of information to better understand how users interact with platform and make data-driven decisions to enhance user experience and optimize performance. It consists of four main tabs:
 
-<b>1. Overview Tab: A Holistic View of Platform Usage</b>
+**1. Overview Tab: A Holistic View of Platform Usage**
 
 The Overview tab serves as the central hub for understanding the overall usage trends on platform. Through intuitive graphs, you can explore the number of unique users over time, track the distribution of users across different packages, and visualize user activity levels. This bird's-eye view of platform usage gives you a quick snapshot of how Datagrok is performing and evolving.
 
-<b>2. Packages Tab: Uncover User Activity by Packages</b>
+**2. Packages Tab: Uncover User Activity by Packages**
 
 The Packages tab delves deeper into the specifics of user activity, providing you with a scatterplot that reveals how different packages are being utilized. By analyzing the distribution of user activity across packages, you can identify which packages are most popular and which ones may require further attention.
 
-<b>3. Functions Tab: Explore User Interaction with Platform Functions</b>
+**3. Functions Tab: Explore User Interaction with Platform Functions**
 
 Understanding how users engage with specific functions on our platform is crucial for refining the user experience. The Functions tab presents a dynamic scatter plot that visualizes the frequency and patterns of function usage by users. By analyzing this data, you can identify the most frequently used functions, identify areas of high or low user engagement, and tailor Datagrok's functionalities accordingly.
 
-<b>4. Events Tab: Delve into Platform Events</b>
+**4. Events Tab: Delve into Platform Events**
 
 The Events tab provides two insightful charts that offer deeper insights into platform events. The first chart showcases the sources of events, enabling you to identify where the majority of activities originate. This knowledge can help allocate resources effectively and focus on areas that drive the most engagement. The second chart showcases the events specific to individual users, allowing you to track their activity history and understand their usage patterns better.
 
@@ -93,16 +93,16 @@ The Events tab provides two insightful charts that offer deeper insights into pl
 
 To empower you with precise and tailored insights, Usage Analysis offers global filters. These filters allow you to narrow down the statistics based on a specific date range, user groups, or packages. By applying these filters, you can segment the data and gain granular insights that are most relevant to your analysis. This level of customization ensures that you can focus on the aspects that matter most to you.
 
-<img alt="UA App filters" src={require('./ua-filters.gif').default} width="800px"/>
+![UA App filters](img/ua-filters.gif)
 
 ### Interactive Charts: Uncover Deeper Insights
 
 Our interactive charts take data exploration to the next level. By simply clicking on a dot within a scatterplot or selecting a category on a bar chart, you can unlock more detailed information. The context panel dynamically displays relevant data, allowing you to gain deeper insights into user behavior and make informed decisions.
 
-<img alt="UA App context panel" src={require('./ua-context-panel.gif').default} width="800px"/>
+![UA App context panel](img/ua-context-panel.gif)
 
 ### Drilldown: A Seamless Journey through Platform Analytics
 
 Drilldown feature allow you to effortlessly explore deeper insights across different tabs. With the click of a Details button in the context panel, seamlessly transition from one tab to another, gaining more specific information about selected data points. Whether you want to dive into the functions behind package activity or investigate detailed event sources, our drilldown feature provides a fluid and intuitive analytical journey, empowering you to extract even more valuable insights.
 
-<img alt="UA App drilldown" src={require('./ua-drilldown.gif').default} width="800px"/>
+![UA App drilldown](img/ua-drilldown.gif)

@@ -79,6 +79,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
   }
 
   private createSCViewer(): DG.ScatterPlotViewer | null {
+    // @ts-ignore TODO: fix after api update
     const scatterPlotProps: Partial<DG.IScatterPlotSettings> & Options = {
       showXAxis: true,
       showYAxis: true,

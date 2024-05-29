@@ -1,5 +1,11 @@
 # KetcherSketcher changelog
 
+## 2.1.8 (2024-05-28)
+
+### Bug fixes
+
+* Fixed setting smarts into sketcher (had to remove saving user settings)
+
 ## 2.1.7 (2024-02-21)
 
 ### Features

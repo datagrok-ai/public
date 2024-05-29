@@ -344,7 +344,7 @@ class Preview {
         showContextMenu: false,
         axesFollowFilter: false,
         axisFont: '11px Arial',
-        legendVisibility: 'Never',
+        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
     else
@@ -365,7 +365,7 @@ class Preview {
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
         axisFont: '11px Arial',
-        legendVisibility: 'Never',
+        legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
 

@@ -384,8 +384,11 @@ export async function runTests(options?:
       categories.push(key);
       const skipped = value.tests?.every((t) => t.options?.skipReason);
       try {
-        if (value.before && !skipped)
-          await value.before();
+        if (value.before && !skipped) {
+          await timeout(async () => {
+            await value.before!();
+          }, 100000, `before ${options.category}: timeout error`);
+        }
       } catch (x: any) {
         value.beforeStatus = await getResult(x);
       }
@@ -403,8 +406,11 @@ export async function runTests(options?:
       }
       const data = res.filter((d) => d.result != 'skipped');
       try {
-        if (value.after && !skipped)
-          await value.after();
+        if (value.after && !skipped) { 
+          await timeout(async () => {
+            await value.after!();
+          }, 100000, `After ${options.category}: timeout error`);
+        }
       } catch (x: any) {
         value.afterStatus = await getResult(x);
       }

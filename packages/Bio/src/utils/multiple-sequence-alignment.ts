@@ -1,5 +1,8 @@
-/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import wu from 'wu';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {ALIGNMENT, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -8,8 +11,16 @@ import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 import {kalignVersion} from './constants';
+
 const fastaInputFilename = 'input.fa';
 const fastaOutputFilename = 'result.fasta';
+
+export class MsaWarning extends Error {
+  constructor(
+    public readonly element: HTMLElement, options?: ErrorOptions) {
+    super(element.innerText, options);
+  }
+}
 
 /**
  * Converts array of sequences into simple fasta string.
@@ -57,6 +68,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
     (fastaSequences[clusterCategoryIdx] ??= []).push(sequences[rowIdx]);
     (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIdx);
   }
+  checkForSingleSeqClusters(clusterIndexes, clustersColCategories);
 
   const CLI = await new Aioli([
     'base/1.0.0',
@@ -78,8 +90,10 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
     console.warn(output);
 
     const buf = await CLI.cat(fastaOutputFilename);
-    if (!buf)
-      throw new Error(`kalign output no result`);
+    if (!buf) {
+      const errStr = parseKalignError(output, 1);
+      throw new Error(errStr);
+    }
 
     const ffh = new FastaFileHandler(buf);
     const aligned = ffh.sequencesArray; // array of sequences extracted from FASTA
@@ -113,5 +127,38 @@ export async function testMSAEnoughMemory(col: DG.Column<string>): Promise<void>
     } catch (error) {
       console.log(`runKalign failed on ${i} with '${error}'`);
     }
+  }
+}
+
+function parseKalignError(out: string, limit?: number): string {
+  const errLineList: string[] = [];
+  const errLineRe = /^.+ERROR : (.+)$/gm;
+  let ma: RegExpExecArray | null;
+  while ((ma = errLineRe.exec(out)) != null && (limit === undefined || errLineList.length < limit)) {
+    //
+    errLineList.push(ma[1]);
+  }
+  return errLineList.join('\n');
+}
+
+/** */
+export function checkForSingleSeqClusters(clusterIndexes: number[][], clustersColCategories: string[]): void {
+  const singleSeqClusterIdxList = clusterIndexes
+    .map<[number[], number]>((idxs: number[], clusterI: number) => { return [idxs, clusterI]; })
+    .filter(([idxs, _clusterIdx]) => idxs.length == 1)
+    .map(([_idxs, clusterIdx]) => clusterIdx);
+  if (singleSeqClusterIdxList.length > 0) {
+    const errEl = ui.div([
+      ui.divText(`MSA analysis is not available on single sequence clusters ` +
+        `#${singleSeqClusterIdxList.length}:`),
+      ...wu(singleSeqClusterIdxList).take(3)
+        .map((clusterIdx) => {
+          let clusterName = clustersColCategories[clusterIdx];
+          if (clusterName.length > 25) clusterName = clusterName.slice(0, 25) + '...';
+          return ui.divText(`"${clusterName}"${clusterIdx < singleSeqClusterIdxList.length - 1 ? ', ' : '.'}`);
+        }).toArray(),
+      ...singleSeqClusterIdxList.length > 3 ? [ui.divText('...')] : []
+    ]);
+    throw new MsaWarning(errEl);
   }
 }

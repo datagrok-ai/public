@@ -87,7 +87,7 @@ export async function app(): Promise<void> {
 //condition: true
 export async function samplesPanel(smiles: string): Promise<DG.Widget> {
   if (DG.chem.isMolBlock(smiles))
-    smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles)
+    smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
   await getApiToken();
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
@@ -148,9 +148,8 @@ export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catal
       const smilesCol: DG.Column<string> = table.getCol('smiles');
 
       let similarityResult: DG.DataFrame | null = null;
-      if (searchMode === SEARCH_MODE.SIMILAR) {
-        similarityResult = await grok.chem.findSimilar(smilesCol, smiles, { limit: 20, cutoff: 0.8 });
-      }
+      if (searchMode === SEARCH_MODE.SIMILAR)
+        similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
 
       for (let i = 0; i < Math.min((similarityResult ?? table).rowCount, 20); i++) {
         const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
@@ -252,7 +251,7 @@ function pricesDataToTable(items: Price[]): DG.DataFrame {
 //description: Gets access token
 async function getApiToken(): Promise<string> {
   if (token === null) {
-    const t = await grok.data.query('Chemspace:AuthToken', null, true, 100);
+    const t = await grok.data.query('Chemspace:AuthToken', null, true);
     token = t.get('access_token', 0) as string;
   }
   return token;

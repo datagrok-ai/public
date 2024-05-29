@@ -1,5 +1,9 @@
 # DrugBank changelog
 
+## 1.0.17 (2024-05-28)
+
+Update of @datagrok-libraries/utils
+
 ## 1.0.16 (2023-06-27)
 
 This release focuses on improving package usability.

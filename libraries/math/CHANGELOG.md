@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.9 (2024-05-27)
+
+Add inflation factor to MCL
+
 ## 1.1.8 (2024-05-16)
 
 Fix inconsistent KNN size in webGPU.

@@ -49,7 +49,8 @@ import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-c
 import {demoBio03UI} from './demo/bio03-atomic-level';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
-import {MsaWarning, multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import {MsaWarning} from './utils/multiple-sequence-alignment';
+import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
 import {WebLogoApp} from './apps/web-logo-app';
 import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
@@ -560,7 +561,8 @@ export async function helmPreprocessingFunction(
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column,
   methodName: DimReductionMethods, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   plotEmbeddings: boolean, preprocessingFunction?: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options,
-  clusterEmbeddings?: boolean): Promise<DG.ScatterPlotViewer | undefined> {
+  clusterEmbeddings?: boolean
+): Promise<DG.ScatterPlotViewer | undefined> {
   if (!checkInputColumnUI(molecules, 'Sequence Space'))
     return;
   if (!preprocessingFunction)
@@ -600,12 +602,15 @@ export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonl
 export function multipleSequenceAlignmentDialog(): void {
   multipleSequenceAlignmentUI()
     .catch((err: any) => {
-      const [errMsg, _errStack] = errInfo(err);
+      const [errMsg, errStack] = errInfo(err);
       if (err instanceof MsaWarning) {
+        grok.shell.warning((err as MsaWarning).element);
         _package.logger.warning(errMsg);
         return;
       }
-      throw err;
+      grok.shell.error(errMsg);
+      _package.logger.error(errMsg, undefined, errStack);
+      // throw err; // This error throw is not handled
     });
 }
 

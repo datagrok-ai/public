@@ -396,7 +396,7 @@ export class SeqHandler {
       if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, tgtSeparator);
     }
-    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'sequence'); // cell.renderer
+    newColumn.setTag(DG.TAGS.CELL_RENDERER, tgtNotation === NOTATION.HELM ? 'helm' : 'sequence'); // cell.renderer
 
     const srcAligned = col.getTag(TAGS.aligned);
     if (srcAligned)

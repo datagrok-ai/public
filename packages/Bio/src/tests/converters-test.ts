@@ -2,13 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-
-import {ConverterFunc} from './types';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
-// import {mmSemType} from '../const';
-// import {importFasta} from '../package';
+import {ConverterFunc} from './types';
+
 
 category('converters', () => {
   enum Samples {
@@ -116,6 +114,8 @@ RNA1{p.p.r(C)p.r(A)p.p.r(G)p.r(U)p.r(G)p.r(U)p.r(C)p.r(A)p.p.r(G)p.r(U)p.r(G)p.r
 RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p.p}$$$$`,
   };
 
+  const bioTagsSet = new Set<string>(Object.values(bioTAGS));
+
   /** Also detects semantic types
    * @param {string} key
    * @return {Promise<DG.DataFrame>}
@@ -152,7 +152,19 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const _sh: SeqHandler = SeqHandler.forColumn(resCol);
+    const srcSh: SeqHandler = SeqHandler.forColumn(srcCol);
+    const resSh: SeqHandler = SeqHandler.forColumn(resCol);
+    for (const [tagName, tgtTagValue] of Object.entries(tgtCol.tags)) {
+      if (
+        !bioTagsSet.has(tagName) ||
+        (srcSh.notation === NOTATION.HELM && [bioTAGS.alphabet, bioTAGS.alphabetIsMultichar].includes(tagName as bioTAGS)) ||
+        (resSh.notation === NOTATION.HELM && [bioTAGS.alphabet, bioTAGS.alphabetIsMultichar].includes(tagName as bioTAGS))
+      ) continue;
+
+      const resTagValue = resCol.getTag(tagName);
+      expect(resTagValue, tgtTagValue,
+        `Tag '${tagName}' expected value '${tgtTagValue}' is not equal to actual '${resTagValue}'.`);
+    }
   }
 
   // FASTA tests

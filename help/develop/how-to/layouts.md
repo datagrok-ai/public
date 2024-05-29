@@ -11,11 +11,12 @@ or [programmatically](manipulate-viewers.md).
 
 Table of contents:
 
-- [Creating Layouts](#creating-layouts)
+- [Creating layouts](#creating-layouts)
 - [Saving and searching](#saving-and-searching)
-- [Applying Layouts to new data](#applying-layouts-to-new-data)
-- [Storing Metadata in Layouts](#storing-metadata)
-- [Using the REST API](#saving-data-with-layouts-using-the-rest-api)
+- [Applying layouts to new data](#applying-layouts-to-new-data)
+- [Storing metadata](#storing-metadata)
+- [Project layouts](#project-layouts)
+- [Saving data with layouts using the REST API](#saving-data-with-layouts-using-the-rest-api)
 
 ## Creating layouts
 
@@ -135,8 +136,12 @@ See also:
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)
 
+## Project layouts
+
+Project layout is a combination of layouts for views stored in the project. It can be accessed manually from right-click in **Browse** > **_Path to table_** > **Export layout**. 
+
 ## Saving data with layouts using the REST API
 
 To create a dashboard consisting of a dataset that resides externally, and a pre-created layout
 (common case for visualizing a dataset created as a result of a data pipeline), use
-the [data upload API](upload-data.md).
+the [data upload API](../packages/rest-api.md).

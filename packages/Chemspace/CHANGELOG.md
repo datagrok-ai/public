@@ -1,5 +1,11 @@
 # Chemspace changelog
 
+## 1.0.4 (2024-05-23)
+
+### Bug fixes
+
+* package complience to contemporary platform version
+
 ## 1.0.3 (2023-12-19)
 
 ### Bug fixes

@@ -18,10 +18,10 @@ let convertDialogSubs: Subscription[] = [];
  * @param {DG.column} col Column with 'Macromolecule' semantic type
  */
 export function convert(col?: DG.Column): void {
-  let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
-  if (!tgtCol)
+  let srcCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
+  if (!srcCol)
     throw new Error('No column with Macromolecule semantic type found');
-  let converterSh = SeqHandler.forColumn(tgtCol);
+  let converterSh = SeqHandler.forColumn(srcCol);
   let currentNotation: NOTATION = converterSh.notation;
   const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
@@ -41,12 +41,12 @@ export function convert(col?: DG.Column): void {
   ];
   const toggleColumn = (newCol: DG.Column) => {
     if (newCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
-      targetColumnInput.value = tgtCol;
+      targetColumnInput.value = srcCol;
       return;
     }
 
-    tgtCol = newCol;
-    converterSh = SeqHandler.forColumn(tgtCol);
+    srcCol = newCol;
+    converterSh = SeqHandler.forColumn(srcCol);
     currentNotation = converterSh.notation;
     if (currentNotation === NOTATION.HELM)
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
@@ -63,7 +63,7 @@ export function convert(col?: DG.Column): void {
     ]));
   };
 
-  const targetColumnInput = ui.columnInput('Column', grok.shell.t, tgtCol, toggleColumn);
+  const targetColumnInput = ui.columnInput('Column', grok.shell.t, srcCol, toggleColumn);
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);
@@ -96,9 +96,9 @@ export function convert(col?: DG.Column): void {
       ]))
       .onOK(async () => {
         const targetNotation = targetNotationInput.value as NOTATION;
-        const separator: string | undefined = separatorInput.value ?? undefined;
+        const separator: string | undefined = targetNotation === NOTATION.SEPARATOR ? separatorInput.value! : undefined;
 
-        await convertDo(tgtCol, targetNotation, separator);
+        await convertDo(srcCol, targetNotation, separator);
       })
       .show({x: 350, y: 100});
 

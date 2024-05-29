@@ -16,7 +16,7 @@ export const enum ALIGNMENT {
   SEQ = 'SEQ',
 }
 
-export const enum ALPHABET {
+export enum ALPHABET {
   DNA = 'DNA',
   RNA = 'RNA',
   PT = 'PT',
@@ -24,7 +24,7 @@ export const enum ALPHABET {
   UN = 'UN',
 }
 
-export const enum TAGS {
+export enum TAGS {
   aligned = 'aligned',
   alphabet = 'alphabet',
   alphabetSize = '.alphabetSize',

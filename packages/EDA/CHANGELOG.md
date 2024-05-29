@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.25 (2024-05-27)
+
+Add inflation factor to MCL
+
 ## 1.1.25 (2024-05-16)
 
 Fix inconsistent KNN size in webGPU.

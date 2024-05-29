@@ -376,10 +376,14 @@ export const fitSeriesProperties: DG.Property[] = [
       friendlyName: 'Confidence Interval'}),
   DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
-      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Marker'}),
   DG.Property.js('outlierMarkerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'outlier', 'square', 'star',
-      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Outlier Marker'}),
   DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
     choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
   DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',

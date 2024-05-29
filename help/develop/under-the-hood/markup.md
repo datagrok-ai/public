@@ -21,8 +21,8 @@ To embed an expression, use: `#{expression}`
 
 | Description         | Expression                                                   | Output                     |
 |---------------------|--------------------------------------------------------------|----------------------------|
-| Any entity          | x.User.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"         | Andrew                     |
-| Function            | x.Func.MissingValuesImputation                               | MissingValuesImputation    |
+| Any entity          | x.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"         | Andrew                     |
+| Function            | x.MissingValuesImputation                               | MissingValuesImputation    |
 | Aggregations        | t.aggr.sum($AGE)                                             | 267266.00                  |
 | Date                | date                                                         | 2018-03-07 22:53:01.423700 |
 | Table name          | t.name                                                       | demog                      |
@@ -50,7 +50,7 @@ Shows any platform entity.
 Format:
 
 ```
-x.<type>.<id>."<name>"
+x.<id>."<name>"
 ```
 
 ### Function
@@ -60,12 +60,13 @@ Shows function.
 Format:
 
 ```
-x.Func.<name>.<option>
+x.<name>.<option>
 ```
 
 Options:
 
 * **run** - runs action by click.
+* **link** - renders as a link to function that runs action by click.
 
 ### Aggregations
 

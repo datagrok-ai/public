@@ -38,6 +38,7 @@ export interface PeptidesSettings {
 
 export class MCLSettings {
   maxIterations: number = 5;
+  inflation: number = 1.4;
   threshold: number = 80;
   distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
   gapOpen: number = 1;

@@ -15,7 +15,7 @@ instructions. They can be categorized into two types: handled exceptions and unh
 Handled exceptions are managed by the platform itself. Such exceptions are displayed in the special red message boxes.
 They can be reported by hovering the mouse cursor over the message box and clicking 'Report' icon.
 
-![Reporting of handled exception](handled_exception.gif)
+![Reporting of handled exception](img/handled_exception.gif)
 
 ### Unhandled exceptions
 
@@ -23,7 +23,7 @@ These are exceptions that are not processed by the platform and are of particula
 because they are caused by errors in the Datagrok code. Exceptions of such a type are shown in
 right-side panel under the **Settings** and can be reported by clicking on the exclamation mark icon.
 
-![Reporting of unhandled exception](unhandled_exception.png)
+![Reporting of unhandled exception](img/unhandled_exception.png)
 
 ## Report dialog
 
@@ -32,7 +32,7 @@ interacted in the last few minutes. The dialog can be submitted as it is or some
 User also can add opened tables to the report using **Data** tab. Also, only particular information can be included, 
 but the title, rows and columns count will be added by default when the table is selected.
 
-![Report dialog](report_data_tab.png)
+![Report dialog](img/report_data_tab.png)
 
 ### Submitting report
 

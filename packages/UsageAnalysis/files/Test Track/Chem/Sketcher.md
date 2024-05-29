@@ -5,7 +5,7 @@
 9. In the hamburger menu, check the content in **Recent** and **Favorites**.
 10. In the hamburger menu, click **Copy as SMILES**.
 11. Go to the molecular input field and press CTRL+V.
-12. In the hamburger menu, click **Copy as MOLBLOC**.
+12. In the hamburger menu, click **Copy as MOLBLOCK**.
 13. Go to the molecular input field and press CTRL+V.
 14. Repeat steps 3-13 for all available sketcher types for selection from hamburger menu
 
