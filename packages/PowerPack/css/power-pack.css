@@ -403,3 +403,10 @@ body.dartium .power-pack-widgets-host.ui-div {
 .windows-manager-statusbar .windows-manager-toggle {
     width: 28px;
 }
+
+
+/* Stretch editor to fit inside its containing div */
+.cm-editor {
+    height: 100%;
+    width: 100%;
+}

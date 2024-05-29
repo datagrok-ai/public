@@ -25,7 +25,13 @@ category('Dialogs', () => {
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
         dlg.inputName!.value = columnName;
-        dlg.inputExpression!.value = expression;
+        //dlg.inputExpression!.value = expression;
+        dlg.codeMirror!.dispatch({changes: {
+          from: 0,
+          to: dlg.codeMirror!.state.doc.length,
+          insert: expression
+        }});
+        await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === expression);
         dlg.uiDialog!.getButton('OK').click();
         try {
           await awaitCheck(() => df.columns.contains(columnName));

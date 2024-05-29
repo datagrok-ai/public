@@ -2,6 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { EditorState } from '@codemirror/state'
+import { EditorView, lineNumbers } from '@codemirror/view'
+import { basicSetup } from 'codemirror'
+import {gutter, GutterMarker} from '@codemirror/view';
+import {Completion, CompletionContext, CompletionResult, autocompletion} from "@codemirror/autocomplete"
 
 /**
  * Class AddNewColumnDialog is a useful method to add a new column to the table
@@ -11,6 +16,12 @@ import * as DG from 'datagrok-api/dg';
  * formulas, functions and other columns to create a new column and immediately
  * see the preview result.
  */
+let coreFunctionsNames: string[] = [];
+let coreFunctionsParams: string[] = [];
+let packageFunctionsNames: {[key: string]: string[]} = {};
+let packageFunctionsParams: {[key: string]: string[]} = {};
+let packageNames: string[] = [];
+let columnNames: string[] = [];
 export class AddNewColumnDialog {
   addColumnTitle: string = 'Add New Column';
   editColumnTitle: string = 'Edit Column Formula';
@@ -49,11 +60,13 @@ export class AddNewColumnDialog {
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
-  inputExpression?: DG.InputBase;
+  //inputExpression?: DG.InputBase;
   uiPreview?: HTMLDivElement;
   uiColumns?: HTMLDivElement;
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
+  codeMirror?: EditorView;
+  codeMirrorDiv?: HTMLDivElement;
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -80,13 +93,16 @@ export class AddNewColumnDialog {
 
     this.inputName = this.initInputName();
     this.inputType = this.initInputType();
-    this.inputExpression = this.initInputExpression();
+    //this.inputExpression = this.initInputExpression();
+    const codeMirrorRes = this.initCodeMirror();
+    this.codeMirror = codeMirrorRes.codeMirror;
+    this.codeMirrorDiv = codeMirrorRes.coreMirrorDiv;
 
     // Not necessary, but if the Dialog knows about inputs, then it can implement extra-logic:
     this.uiDialog
       .add(this.inputName)
       .add(this.inputType)
-      .add(this.inputExpression);
+     // .add(this.inputExpression);
 
     this.uiDialog
       .add(await this.initUiLayout())
@@ -99,15 +115,43 @@ export class AddNewColumnDialog {
     );
 
     this.prepareForSeleniumTests();
+    await this.updatePreview(this.codeMirror!.state.doc.toString());
+    this.prepareFunctionsListForAutocomplete();
+    
+  }
 
-    await this.updatePreview();
+  prepareFunctionsListForAutocomplete() {
+    const allFunctionsList = DG.Func.find();
+    coreFunctionsNames = [];
+    coreFunctionsParams = [];
+    packageFunctionsNames = {};
+    packageFunctionsParams = {};
+    packageNames = [];
+    columnNames = [];
+    for (const func of allFunctionsList) {
+      const paramsStr = func.inputs.map((it) => `${it.name}:${it.propertyType}`).join(', ');
+      try {
+        const packageName = func.package.name;
+        if (!packageFunctionsNames[packageName]) {
+          packageFunctionsNames[packageName] = [];
+          packageFunctionsParams[packageName] = [];
+        }
+        packageFunctionsNames[packageName].push(func.name);
+        packageFunctionsParams[packageName].push(paramsStr);
+      } catch { //in case of core functions calling func.package throws an exception
+        coreFunctionsNames.push(func.name);
+        coreFunctionsParams.push(paramsStr);
+      }
+    }
+    packageNames = Object.keys(packageFunctionsNames);
+    columnNames = this.sourceDf!.columns.names();
   }
 
   /** Prepares form inputs for Selenium tests by given them unique names. */
   prepareForSeleniumTests() {
     (this.inputName!.input as HTMLInputElement).name = 'input-Add-New-Column---Name';
     (this.inputType!.input as HTMLInputElement).name = 'input-Add-New-Column---Type';
-    (this.inputExpression!.input as HTMLInputElement).name = 'input-Add-New-Column---Expression';
+   // (this.inputExpression!.input as HTMLInputElement).name = 'input-Add-New-Column---Expression';
     this.uiDialog!.getButton('OK').name = 'button-Add-New-Column---OK';
     this.uiDialog!.getButton('CANCEL').name = 'button-Add-New-Column---CANCEL';
   }
@@ -122,7 +166,7 @@ export class AddNewColumnDialog {
     return Object.fromEntries([
       [this.placeholderName, this.inputName!.value],
       [this.placeholderType, typeForHistory],
-      [this.placeholderExpression, this.inputExpression!.value],
+      [this.placeholderExpression, this.codeMirror!.state.doc.toString()],
     ]);
   }
 
@@ -130,13 +174,18 @@ export class AddNewColumnDialog {
   loadInputHistory(history: any): void {
     this.inputName!.value = history[this.placeholderName];
     this.inputType!.value = history[this.placeholderType];
-    this.inputExpression!.value = history[this.placeholderExpression];
+    this.codeMirror!.dispatch({changes: {
+      from: 0,
+      to: this.codeMirror!.state.doc.length,
+      insert: history[this.placeholderExpression]
+    }});
+    //this.inputExpression!.value = history[this.placeholderExpression];
   }
 
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
     const control = ui.stringInput('', '');
-    control.onInput(async () => await this.updatePreview());
+    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['name']);
 
     const input = control.input as HTMLInputElement;
@@ -156,7 +205,7 @@ export class AddNewColumnDialog {
 
     const control = ui.choiceInput('', this.call ?
       this.call.getParamValue('type') : defaultChoise, this.supportedTypes);
-    control.onInput(async () => await this.updatePreview());
+    control.onInput(async () => await this.updatePreview(this.codeMirror!.state.doc.toString()));
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;
@@ -167,33 +216,116 @@ export class AddNewColumnDialog {
     return control;
   }
 
-  /** Creates and initializes the "Expression" input field. */
-  initInputExpression(): DG.InputBase {
-    const control = ui.textInput('', '', async () => {
-      // The first characters of the Expression become the default name of the new column:
-      (this.inputName!.input as HTMLInputElement).placeholder =
-          ((!control.value || (control.value.length > this.maxAutoNameLength)) ?
-            this.placeholderName :
-            control.value).trim();
-      await this.updatePreview();
-    });
-    control.setTooltip(this.tooltips['expression']);
+  // /** Creates and initializes the "Expression" input field. */
+  // initInputExpression(): DG.InputBase {
+  //   const control = ui.textInput('', '', async () => {
+  //     // The first characters of the Expression become the default name of the new column:
+  //     (this.inputName!.input as HTMLInputElement).placeholder =
+  //         ((!control.value || (control.value.length > this.maxAutoNameLength)) ?
+  //           this.placeholderName :
+  //           control.value).trim();
+  //     await this.updatePreview(this.codeMirror!.state.doc.toString());
+  //   });
+  //   control.setTooltip(this.tooltips['expression']);
 
-    const input = control.input as HTMLInputElement;
-    input.classList.add('ui-input-addnewcolumn-expression');
-    input.placeholder = this.placeholderExpression;
-    if (this.call)
-      input.value = this.call.getParamValue('expression');
+  //   const input = control.input as HTMLInputElement;
+  //   input.classList.add('ui-input-addnewcolumn-expression');
+  //   input.placeholder = this.placeholderExpression;
+  //   if (this.call)
+  //     input.value = this.call.getParamValue('expression');
 
+  //   // Columns and functions can be drag-n-dropped into the Expression field:
+  //   ui.makeDroppable(input, {
+  //     acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
+  //     doDrop: (dragObject, _) => this.insertIntoExpression(dragObject),
+  //   });
+
+  //   ui.tools.initFormulaAccelerators(control, this.sourceDf!);
+
+  //   return control;
+  // }
+
+  initCodeMirror(): {codeMirror: EditorView, coreMirrorDiv: HTMLDivElement} {
+    const editorDiv = ui.div('', { style: { height: '140px' } });
+    let errorMsg = '';
+    editorDiv.onclick = () => {
+      cm.focus();
+    }
     // Columns and functions can be drag-n-dropped into the Expression field:
-    ui.makeDroppable(input, {
+    ui.makeDroppable(editorDiv, {
       acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
-      doDrop: (dragObject, _) => this.insertIntoExpression(dragObject),
+      doDrop: (dragObject, _) => {
+        cm.focus();
+        this.insertIntoCodeMirror(dragObject, cm);
+      },
     });
 
-    ui.tools.initFormulaAccelerators(control, this.sourceDf!);
+    const errorMarker = new class extends GutterMarker {
+      toDOM() {
+        const el = document.createElement('span');
+        el.innerText = "⬤";
+        el.style.color = 'red';
+        el.style.paddingRight = '5px';
+        ui.tooltip.bind(el, errorMsg);
+        return el;
+      }
+    };
 
-    return control;
+    const errorGutter = gutter({
+      lineMarker(view, line) {
+        errorMsg = '';
+        const regex = /\${(\w*)}/g;
+        const matchesAll = [...view.state.doc.toString().matchAll(regex)];
+        const unmatchedCols: string[] = [];
+        if (matchesAll.length) {
+          for(const match of matchesAll)
+            if(!columnNames.includes(match[1]))
+              unmatchedCols.push(match[1]);
+        }
+        if (unmatchedCols.length)
+          errorMsg = unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
+            `Column ${unmatchedCols[0]} is missing`;
+        
+        return errorMsg ? errorMarker : null;
+      },
+      initialSpacer: () => errorMarker,
+    });
+
+    const autocomplete = autocompletion({
+      activateOnTyping: true,
+      override: [this.myCompletions],
+    });
+
+    const cm = new EditorView({
+      parent: editorDiv,
+      state: EditorState.create({
+        doc: '',
+        extensions: [
+          basicSetup,
+          lineNumbers(),
+          errorGutter,
+          EditorView.lineWrapping,
+          autocomplete,
+          EditorView.updateListener.of(async () => {
+            const cmValue = cm.state.doc.toString();
+            (this.inputName!.input as HTMLInputElement).placeholder =
+              ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
+            await this.updatePreview(cmValue);
+          }),
+        ],
+      }),
+    });
+
+    if (this.call)
+      this.codeMirror!.dispatch({changes: {
+        from: 0,
+        to: this.codeMirror!.state.doc.length,
+        insert: this.call.getParamValue('expression')
+      }});
+
+    //ui.tools.initFormulaAccelerators(control, this.sourceDf!); ????????????????????
+
+    return {codeMirror: cm, coreMirrorDiv: editorDiv};
   }
 
   /** Creates and initializes the Preview Grid. */
@@ -271,7 +403,7 @@ export class AddNewColumnDialog {
               ui.block([this.inputName!.root], {style: {width: '65%'}}),
               ui.block([this.inputType!.root], {style: {width: '35%'}}),
             ]),
-            ui.block([this.inputExpression!.root]),
+            ui.block([this.codeMirrorDiv!]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], {style: Object.assign({}, {paddingRight: '20px', flexDirection: 'column'}, flexStyle)}),
 
@@ -288,16 +420,16 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(): Promise<void> {
+  async updatePreview(expression: string): Promise<void> {
     // Making the Column List for the Preview Grid:
-    const columnIds = this.findUniqueColumnNamesInExpression();
+    const columnIds = this.findUniqueColumnNamesInExpression(expression);
     const colName = this.getResultColumnName();
     columnIds.push(colName);
 
     const type = this.getSelectedType()[0];
     // Making the Preview Grid:
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
-      name: colName, expression: this.inputExpression!.value, type: type});
+      name: colName, expression: expression, type: type});
     await call.call(false, undefined, {processed: true, report: false});
     /*    await this.previwDf!.columns.addNewCalculated(
         colName,
@@ -313,8 +445,9 @@ export class AddNewColumnDialog {
   }
 
   /** Finds all unique column names used in the Expression input field. */
-  findUniqueColumnNamesInExpression(): string[] {
-    const names = this.inputExpression!.value.match(this.colNamePattern) as string[];
+  findUniqueColumnNamesInExpression(expression: string): string[] {
+    const expr = expression;
+    const names = expr.match(this.colNamePattern) as string[];
 
     if (!names)
       return [];
@@ -327,24 +460,46 @@ export class AddNewColumnDialog {
       .filter((v) => lcSourceColumnNames.includes(v.toLowerCase())); // Selecting only real column names.
   }
 
-  /** Inserts drag-n-dropping object into the Expression input field. */
-  insertIntoExpression(x: any): void {
-    let snippet: string = '';
+  // /** Inserts drag-n-dropping object into the Expression input field. */
+  // insertIntoExpression(x: any): void {
+  //   let snippet: string = '';
 
-    if (this.typeOf(x, DG.Column))
-      snippet = `\${${x.name}}`;
-    else if (this.typeOf(x, DG.Func))
-      snippet = `${x.name}()`;
-    else
-      return;
+  //   if (this.typeOf(x, DG.Column))
+  //     snippet = `\${${x.name}}`;
+  //   else if (this.typeOf(x, DG.Func))
+  //     snippet = `${x.name}()`;
+  //   else
+  //     return;
 
-    const input = this.inputExpression!.input as HTMLInputElement;
-    const text = input.value;
-    const cursorPos = input.selectionStart!;
-    input.value = text.slice(0, cursorPos) + snippet + text.slice(cursorPos);
+  //   const input = this.inputExpression!.input as HTMLInputElement;
+  //   const text = input.value;
+  //   const cursorPos = input.selectionStart!;
+  //   input.value = text.slice(0, cursorPos) + snippet + text.slice(cursorPos);
 
-    this.inputExpression!.fireChanged();
-  }
+  //   this.inputExpression!.fireChanged();
+  // }
+
+    /** Inserts drag-n-dropping object into the Expression input field. */
+    insertIntoCodeMirror(x: any, cm: EditorView): void {
+      let snippet: string = '';
+  
+      if (this.typeOf(x, DG.Column))
+        snippet = `\${${x.name}}`;
+      else if (this.typeOf(x, DG.Func)) {
+        const paramsStr = (x as DG.Func).inputs.map((it) => `${it.name}:${it.propertyType}`).join(', ');
+        snippet = `${x.name}(${paramsStr})`;
+      }
+      else
+        return;
+      const value = cm.state.doc.toString();
+      const cursorPos = cm.state.selection.main.head;
+      const newValue = value.slice(0, cursorPos) + snippet + value.slice(cursorPos);
+      cm.dispatch({changes: {
+        from: 0,
+        to: cm.state.doc.length,
+        insert: newValue
+      }})
+    }
 
   /** Creates new unique Column Name. */
   getResultColumnName(): string {
@@ -407,14 +562,14 @@ export class AddNewColumnDialog {
   async addNewColumnAction(): Promise<void> {
     if (this.edit) {
       this.call!.setParamValue('name', this.inputName!.value);
-      this.call!.setParamValue('expression', this.inputExpression!.value);
+      this.call!.setParamValue('expression', this.codeMirror!.state.doc.toString());
       this.call!.setParamValue('type', this.getSelectedType()[0]);
       this.call!.setParamValue('treatAsString', this.getSelectedType()[1]);
       await this.call!.call();
     } else {
       await this.sourceDf!.columns.addNewCalculated(
         this.getResultColumnName(),
-          this.inputExpression!.value.trim(),
+          this.codeMirror!.state.doc.toString().trim(),
           ...this.getSelectedType(),
       );
     }
@@ -429,4 +584,39 @@ export class AddNewColumnDialog {
   open(): void {
     this.uiDialog!.show({resizable: true});
   }
+
+
+  myCompletions(context: CompletionContext): CompletionResult | null {
+    let word = context.matchBefore(/[\w|:|$]*/);
+    if (!word || word?.from === word?.to && !context.explicit)
+      return null;
+    let options: Completion[] = [];
+    let index = word!.from;
+    let filter = true;
+    if (word.text.includes(':')) {
+      const colonIdx = word.text.indexOf(":");
+      const packName = word.text.substring(0, word.text.indexOf(":"));
+      if (packageFunctionsNames[packName])
+        packageFunctionsNames[packName].forEach((name: string, idx: number) => {
+          options.push({ label: name, type: "variable", apply: `${name}(${packageFunctionsParams[packName][idx]})` })
+      });
+      index = word!.from + colonIdx + 1;
+      filter = !word.text.endsWith(':');
+    } else if (word.text.includes('$')) {
+      columnNames.forEach((name: string) => options.push({ label: name, type: "variable", apply: `{${name}}` }));
+      index = word!.from + word.text.indexOf("$") + 1;
+      filter = !word.text.endsWith('$');
+    } else
+      coreFunctionsNames.concat(packageNames)
+        .forEach((name: string, idx: number) => options.push({ label: name, type: "variable",
+          apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[idx]})`: name,
+          detail: idx < coreFunctionsNames.length ? '' : 'package'}));;
+    return {
+      from: index,
+      options: options,
+      filter: filter
+    }
+  }
 }
+
+
