@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.3.0 (2024-05-29)
+
+### Features
+
+* PolyTool: algorithm facilitated, json files are used as rules
+
 ## 1.2.9 (2024-03-30)
 
 ### Features
