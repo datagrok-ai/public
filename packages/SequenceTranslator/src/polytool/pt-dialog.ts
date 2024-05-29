@@ -7,7 +7,7 @@ import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
 import {addTransformedColumn} from './pt-conversion';
 
 import {handleError} from './utils';
-import {getLibrariesList, HelmInput} from './pt-enumeration';
+import {getLibrariesList, HelmInput, getEnumeration} from './pt-enumeration';
 
 const PT_ERROR_DATAFRAME = 'No dataframe with macromolecule columns open';
 const PT_WARNING_COLUMN = 'No marcomolecule column chosen!';
@@ -86,11 +86,20 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
 
   const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
     .add(div)
-    .onOK(() => {
+    .onOK(async () => {
       try {
         const helmString = helmInput.getHelmString();
         const helmSelections = helmInput.getHelmSelections();
-        const lib = '';
+        if (helmString === undefined || helmString === '') {
+          grok.shell.warning('PolyTool: no molecule was provided');
+        } else if (helmSelections === undefined || helmSelections.length < 1) {
+          grok.shell.warning('PolyTool: no selection was provided');
+        } else {
+          const molecules = await getEnumeration(helmString, helmSelections, screenLibrary.value!);
+          const molCol = DG.Column.fromStrings('Enumerated', molecules);
+          const df = DG.DataFrame.fromColumns([molCol]);
+          grok.shell.addTableView(df);
+        }
       } catch (err: any) {
 
       } finally {

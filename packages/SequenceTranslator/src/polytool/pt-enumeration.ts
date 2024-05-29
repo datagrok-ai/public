@@ -11,16 +11,31 @@ import {Unsubscribable, fromEvent} from 'rxjs';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {IMonomerLibFileManager, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
+import {Chain} from './pt-conversion';
+
+const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
 const PT_HELM_EXAMPLE = 'PEPTIDE1{[R].[F].[T].[G].[H].[F].[G].[A].[A].[Y].[P].[E].[NH2]}$$$$';
 
 export async function getLibrariesList(): Promise<string[]> {
-  const monomerLib: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-
-  const monomerFileManager: IMonomerLibFileManager = await monomerLib.getFileManager();
-
+  const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+  const monomerFileManager: IMonomerLibFileManager = await monomerLibHelper.getFileManager();
   return monomerFileManager.getValidLibraryPaths();
 }
 
+export async function getEnumeration(helmString: string, helmSelections: number[], screenLibrary: string):
+  Promise<string[]> {
+  const variableMonomers = await getAvaialableMonomers(screenLibrary);
+  const chain: Chain = Chain.fromHelm(helmString);
+  const size = helmSelections.length*variableMonomers.length;
+  const enumerations = new Array<string>(size);
+
+  for (let i = 0; i < helmSelections.length; i++) {
+    for (let j = 0; j < variableMonomers.length; j++)
+      enumerations[i*variableMonomers.length + j] = chain.getHelmChanged(helmSelections[i], variableMonomers[j]);
+  }
+
+  return enumerations;
+}
 
 export class HelmInput {
   webEditorHost: HTMLDivElement | null;
@@ -101,4 +116,11 @@ export class HelmInput {
     const title = ui.divText('Macromolecule');
     return ui.divH([title, this.editor.host]);
   }
+}
+
+async function getAvaialableMonomers(screenLibrary: string): Promise<string[]> {
+  const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
+  const monomerLib = await monomerLibHelper.readLibrary(LIB_PATH, screenLibrary);
+  //NOTICE: works with Peptides only
+  return monomerLib.getMonomerSymbolsByType('PEPTIDE');
 }

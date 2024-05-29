@@ -15,21 +15,68 @@ function addCommonTags(col: DG.Column): void {
   col.setTag('alphabet', ALPHABET.PT);
 }
 
-class Chain {
+export class Chain {
   linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[];
   monomers: string[][];
 
-  constructor(sequence: string, rules: Rules) {
+  constructor(
+    monomers: string[][],
+    linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[]) {
+    this.linkages = linkages;
+    this.monomers = monomers;
+  }
+
+  static fromHelm(helm: string) {
+    const fragmentation = helm.split('$');
+    const rawFragments = fragmentation[0].split('|');
+    const rawLinkages = fragmentation[1].split('|');
+
+    const monomers = new Array<Array<string>>(rawFragments.length);
+    const linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[] = [];
+
+    //HELM parsing
+    for (let i = 0; i < rawFragments.length; i++) {
+      const idxStart = rawFragments[i].indexOf('{');
+      const idxEnd = rawFragments[i].indexOf('}');
+
+      monomers[i] = rawFragments[i].slice(idxStart + 1, idxEnd).split('.');
+    }
+
+    //HELM parsing
+    for (let i = 0; i < rawLinkages.length; i++) {
+      if (rawLinkages[i] !== '' && rawLinkages[i] !== 'V2.0') {
+        const rawData = rawLinkages[i].split(',');
+        const seq1 = (rawData[0].replace('PEPTIDE', '') as unknown as number) - 1;
+        const seq2 = (rawData[1].replace('PEPTIDE', '') as unknown as number) - 1;
+        const rawDataConnctions = rawData[2].split('-');
+        const rawDataConnction1 = rawDataConnctions[0].split(':');
+        const rawDataConnction2 = rawDataConnctions[1].split(':');
+
+        linkages.push({
+          fChain: seq1,
+          sChain: seq2,
+          fMonomer: rawDataConnction1[0] as unknown as number,
+          sMonomer: rawDataConnction2[0] as unknown as number,
+          fR: rawDataConnction1[1].replace('R', '') as unknown as number,
+          sR: rawDataConnction2[1].replace('R', '') as unknown as number,
+        });
+      }
+    }
+
+    return new Chain(monomers, linkages);
+  }
+
+  static fromNotation(sequence: string, rules: Rules) {
     const heterodimerCode = rules.heterodimerCode;
     const homodimerCode = rules.homodimerCode;
     const mainFragments: string[] = [];
 
-    this.linkages = [];
+    const linkages: {fChain: number, sChain: number, fMonomer:number, sMonomer:number, fR:number, sR:number}[] = [];
 
     //NOTICE: this works only with simple single heterodimers
     const heterodimeric = heterodimerCode !== null? sequence.split(`(${rules.heterodimerCode!})`) : '';
     if (heterodimerCode !== null && heterodimeric.length > 1) {
-      this.linkages.push({fChain: 0, sChain: 1, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
+      linkages.push({fChain: 0, sChain: 1, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
       mainFragments.push(heterodimeric[1].replaceAll('{', '').replaceAll('}', ''));
       mainFragments.push(heterodimeric[2].replaceAll('{', '').replaceAll('}', ''));
     } else {
@@ -41,7 +88,7 @@ class Chain {
       if (homodimerCode !== null && mainFragments[i].includes(`(${homodimerCode!})`)) {
         const idxSequence = mainFragments.length;
 
-        this.linkages.push({fChain: i, sChain: idxSequence, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
+        linkages.push({fChain: i, sChain: idxSequence, fMonomer: 1, sMonomer: 1, fR: 1, sR: 1});
         const rawDimer = mainFragments[i].replace(`(${homodimerCode!})`, '');
         const idx = rawDimer.indexOf('{');
         const linker = rawDimer.slice(0, idx);
@@ -52,7 +99,7 @@ class Chain {
       }
     }
 
-    this.monomers = new Array<Array<string>>(mainFragments.length);
+    const monomers = new Array<Array<string>>(mainFragments.length);
 
     for (let i = 0; i < mainFragments.length; i++) {
       const rawMonomers = mainFragments[i].split('-');
@@ -65,7 +112,7 @@ class Chain {
         monomersReady[j] = `[${monomersCycled[j]}]`;
 
       for (let j = 0; j < allPos1.length; j++) {
-        this.linkages.push({
+        linkages.push({
           fChain: i,
           sChain: i,
           fMonomer: allPos1[j],
@@ -75,8 +122,37 @@ class Chain {
         });
       }
 
-      this.monomers[i] = monomersReady;
+      monomers[i] = monomersReady;
     }
+
+    return new Chain(monomers, linkages);
+  }
+
+  getHelmChanged(changeNumber: number, monomer: string): string {
+    //TODO: make more efficient
+    let counter = 0;
+    let idx1 = 0;
+    let idx2 = 0;
+    loop1:
+    for (let i = 0; i < this.monomers.length; i++) {
+      loop2:
+      for (let j = 0; j < this.monomers[i].length; j++) {
+        if (counter == changeNumber) {
+          idx1 = i;
+          idx2 = j;
+          break loop1;
+        }
+        counter++;
+      }
+    }
+
+    const previous = this.monomers[idx1][idx2];
+
+    this.monomers[idx1][idx2] = `[${monomer}]`;
+    const res = this.getHelm();
+    this.monomers[idx1][idx2] = previous;
+
+    return res;
   }
 
   getHelm(): string {
@@ -109,7 +185,7 @@ class Chain {
     return helm;
   }
 
-  protected getLinkedPositions(monomers: string[], rules: RuleLink[]): [number, number][] {
+  protected static getLinkedPositions(monomers: string[], rules: RuleLink[]): [number, number][] {
     const result: [number, number][] = new Array<[number, number]>(rules.length);
 
     for (let i = 0; i < rules.length; i++) {
@@ -161,7 +237,7 @@ class Chain {
     return result;
   }
 
-  protected getAllCycles(rules: RuleLink[], monomers: string [], positions: [number, number][]) :
+  protected static getAllCycles(rules: RuleLink[], monomers: string [], positions: [number, number][]) :
   [string [], number [], number [], number [], number []] {
     const allPos1: number [] = [];
     const allPos2: number [] = [];
@@ -192,7 +268,7 @@ class Chain {
 function getHelms(sequences: string[], rules: Rules): string[] {
   const helms = new Array<string>(sequences.length);
   for (let i = 0; i < sequences.length; i++) {
-    const chain = new Chain(sequences[i], rules);
+    const chain = Chain.fromNotation(sequences[i], rules);
     helms[i] = chain.getHelm();
   }
 

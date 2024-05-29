@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.3.1 (2024-05-29)
+
+### Bug fixes
+
+* PolyTool: refinement
+
 ## 1.3.0 (2024-05-29)
 
 ### Features
