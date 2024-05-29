@@ -1,5 +1,6 @@
 import DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -15,9 +16,10 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 //polytool specific
-import {getPolyToolDialog} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog, getPolyToolEnumerationDialog} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
+
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
@@ -146,18 +148,31 @@ async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   return view;
 }
 
-//top-menu: Bio | Convert | PolyTool
-//name: polyTool
+//top-menu: Bio | Convert | PolyTool-Convert
+//name: polyToolConvert
 //description: Perform cyclization of polymers
-export async function polyTool(): Promise<void> {
+export async function polyToolConvert(): Promise<void> {
   let dialog: DG.Dialog;
   try {
-    dialog = await getPolyToolDialog();
+    dialog = await getPolyToolConversionDialog();
     dialog.show();
   } catch (err: any) {
-    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
+    grok.shell.warning('To run PolyTool Conversion, open a dataframe with macromolecules');
   }
 }
+
+// //top-menu: Bio | Convert | PolyTool-Enumerate
+// //name: polyToolEnumerate
+// //description: Perform cyclization of polymers
+// export async function polyToolEnumerate(): Promise<void> {
+//   let dialog: DG.Dialog;
+//   try {
+//     dialog = await getPolyToolEnumerationDialog();
+//     dialog.show();
+//   } catch (err: any) {
+//     grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
+//   }
+// }
 
 //name: polyToolColumnChoice
 //input: dataframe df [Input data table]
