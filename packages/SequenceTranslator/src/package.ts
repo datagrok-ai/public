@@ -14,7 +14,8 @@ import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
-import {getPolyToolDialog} from './polytool/ui';
+//polytool specific
+import {getPolyToolDialog} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 
