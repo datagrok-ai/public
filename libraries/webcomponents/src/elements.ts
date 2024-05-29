@@ -4,7 +4,6 @@ export class DGButton extends HTMLButtonElement {
     super();
     this.classList.add('ui-btn', 'ui-btn-ok');
   }
-
 }
 
 export interface DGButtonT extends DGButton {};

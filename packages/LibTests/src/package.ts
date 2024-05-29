@@ -885,9 +885,9 @@ export async function TestFromComponent() {
 
 //tags: test
 export async function TestElements() {
-  const bnt = document.createElement('button', { is: 'dg-button' }) ;
+  const bnt = document.createElement('button', {is: 'dg-button'});
   bnt.textContent = 'Click me';
-  const bigBtn = document.createElement('button', { is: 'dg-big-button' });
+  const bigBtn = document.createElement('button', {is: 'dg-big-button'});
   bigBtn.textContent = 'Click me';
   const view = new DG.ViewBase();
   view.root.insertAdjacentElement('beforeend', bnt);

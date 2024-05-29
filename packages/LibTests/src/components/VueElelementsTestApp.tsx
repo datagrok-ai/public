@@ -17,5 +17,5 @@ export const VueElementsTestApp = defineComponent({
         </div>
       </keep-alive>
     );
-  }
-})
+  },
+});
