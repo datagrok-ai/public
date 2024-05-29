@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Viewer} from '@datagrok-libraries/webcomponents-vue/dist';
+import {Viewer} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, shallowRef, ref} from 'vue';
 import {from, useSubscription} from '@vueuse/rxjs';
 

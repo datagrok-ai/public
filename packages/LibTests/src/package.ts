@@ -10,11 +10,11 @@ import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {Form, Viewer} from '@datagrok-libraries/webcomponents/dist';
-import type {ViewerT, FormT} from '@datagrok-libraries/webcomponents/dist';
+import type {ViewerT, FormT, DGButtonT, DGBigButtonT} from '@datagrok-libraries/webcomponents/src';
 import {createApp} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
+import {VueElementsTestApp} from './components/VueElelementsTestApp';
 
 export const _package = new DG.Package();
 
@@ -797,8 +797,6 @@ export async function TestCompositionPipeline12() {
   return pipeline;
 }
 
-customElements.define('dg-viewer', Viewer);
-customElements.define('dg-form', Form);
 
 //tags: test
 export async function TestViewerComponent() {
@@ -886,6 +884,18 @@ export async function TestFromComponent() {
 }
 
 //tags: test
+export async function TestElements() {
+  const bnt = document.createElement('button', { is: 'dg-button' }) ;
+  bnt.textContent = 'Click me';
+  const bigBtn = document.createElement('button', { is: 'dg-big-button' });
+  bigBtn.textContent = 'Click me';
+  const view = new DG.ViewBase();
+  view.root.insertAdjacentElement('beforeend', bnt);
+  view.root.insertAdjacentElement('beforeend', bigBtn);
+  grok.shell.addView(view);
+}
+
+//tags: test
 export async function TestVueViewerComponent() {
   const view = new DG.ViewBase();
   const app = createApp(VueViewerTestApp);
@@ -897,6 +907,15 @@ export async function TestVueViewerComponent() {
 export async function TestVueFormComponent() {
   const view = new DG.ViewBase();
   const app = createApp(VueFormTestApp);
+  app.mount(view.root);
+  grok.shell.addView(view);
+}
+
+
+//tags: test
+export async function TestVueElements() {
+  const view = new DG.ViewBase();
+  const app = createApp(VueElementsTestApp);
   app.mount(view.root);
   grok.shell.addView(view);
 }

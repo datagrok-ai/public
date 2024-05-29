@@ -16,17 +16,13 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
-    "source-map-loader": "^5.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "typescript": "latest"
   },
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "webpack",
+    "build": "tsc",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

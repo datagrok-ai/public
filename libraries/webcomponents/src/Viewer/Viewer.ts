@@ -14,7 +14,6 @@ export class Viewer<T = any> extends HTMLElement {
 
   private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
 
-  private isConnected$ = new BehaviorSubject<boolean>(false);
   private destroyed$ = new Subject<boolean>();
 
   constructor() {
@@ -88,11 +87,9 @@ export class Viewer<T = any> extends HTMLElement {
   }
 
   connectedCallback() {
-    this.isConnected$.next(true);
   }
 
   disconnectedCallback() {
-    this.isConnected$.next(false);
   }
 
   get viewer() {

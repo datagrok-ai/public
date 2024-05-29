@@ -6,7 +6,6 @@ import * as DG from 'datagrok-api/dg';
 export class Form extends HTMLElement {
   private formInst?: DG.InputForm;
   private currentSource?: DG.FuncCall;
-  private initCalled = false;
 
   constructor() {
     super();
