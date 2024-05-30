@@ -101,7 +101,7 @@ You can access audit logs in a number of ways:
      * **Activity**: This [info pane](../../datagrok/navigation/panels/info-panels.md) shows server-side activity for the current entity over the past seven days
      * **Usage**: This info pane shows a high-level overview of server-side usage for the current entity in the last seven days
 * From the [Console](../../datagrok/navigation/panels/panels.md#console)
-* From a Datagrok app, [Usage Analysis](../usage-analysis.md)
+* From a Datagrok app, [Usage Analysis](usage-analysis.md)
 * Using external providers like Amazon CloudWatch
 
 ### Exporting logs to Amazon CloudWatch
