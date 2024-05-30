@@ -29,6 +29,7 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 //tags: app
 //output: view v
 export async function oligoToolkitApp(): Promise<DG.ViewBase> {
+  console.log(1);
   await initSequenceTranslatorLibData();
   const externalViewFactories = await getExternalAppViewFactories();
   if (!externalViewFactories)
