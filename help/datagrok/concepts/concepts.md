@@ -89,7 +89,7 @@ queries, or scripts. For example, [dashboards](project/dashboard.md) are project
 
 Projects are essential for organizing, managing, and sharing data assets. The
 [Browse](../navigation/views/browse.md) view organizes projects in a tree
-that governs [entity privileges](../../govern/authorization.md).
+that governs [entity privileges](../../govern/access-control/access-control.md#authorization).
 
 </TabItem>
 </Tabs>

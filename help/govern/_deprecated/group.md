@@ -6,12 +6,12 @@ Datagrok has a flexible mechanism for grouping users together:
 ![Group members and memberships](img/groups.gif "Group members and memberships")
 
 A user can belong to more than one group. A group can be included in another group, which is useful for both reflecting
-organization hierarchy and implementing role-based [security](security.md).
+organization hierarchy and implementing role-based security.
 
 Example: **User 1** is member of **Group 1**. **User 2** and **User 3** are also members of **Group 1**, because they're
 members of **Group 2**, which have membership in **Group 1**:
 
-![Group members and memberships](img/groups.png)
+![Group members and memberships](../img/groups.png)
 
 In addition to that, there are some actions that are applicable to user groups:
 
@@ -33,7 +33,7 @@ If user is the only admin in group, he / she can't leave group or revoke his / h
 
 To request a membership, right-click on a group and choose "Request membership". A request will be sent
 to [group admin](group.md#group-admin). Once it is approved or declined, a notification will appear in the
-[notification panel](user.md#profile). [Audit record](audit.md) is created for both request and a resolution.
+[notification panel](user.md#profile). [Audit record](aud../audit/audit.mds created for both request and a resolution.
 
 ## Granting membership via URL
 
@@ -58,18 +58,18 @@ specific link, for example, after watching a demo.
 
  >Note: Only the group administrator can create an invitation link.
 
-![Granting membership via URL](img/group-membership.gif)
+![Granting membership via URL](../img/group-membership.gif)
 
 ## Groups as roles
 
 Authorization system is based on user groups. There are one group called "All users", that contains all users by default
 and unlimited quantity of other groups:
-![group all users](img/group-all-users.png)
+![group all users](../img/group-all-users.png)
 All groups can be a member of any other group, but circular membership is forbidden. Each user has a personal security
 group, which called by the name of the user, so it can be added to any other security group.
 
 A [user group](group.md) might have a number of rules associated with it. A rule applies to all members of the group and
-grants a privilege to a list of [entities](../datagrok/concepts/objects.md) of the specified type that pass a
+grants a privilege to a list of [entities](../../datagrok/concepts/objects.md) of the specified type that pass a
 [specified filter](#defining-entities-for-a-rule). You can think of a group with defined privileges as a 'role'.
 
 ## Defining entities for a rule
@@ -103,7 +103,7 @@ You can use these fields to filter groups with smart search:
 | children    | GroupRelation object (see below)                   |
 | createdOn   |                                                    |
 | updatedOn   |                                                    |
-| user        | [User](user.md) object: User, if group is personal |
+| user        | _User_ object: User, if group is personal |
 
 ### Grouprelation
 
@@ -113,7 +113,4 @@ You can use these fields to filter groups with smart search:
 | parent      | Group object                                       |
 | child       | Group object                                       |
 
-See also:
 
-* [Users](user.md)
-* [Security](security.md)

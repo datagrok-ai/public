@@ -2,7 +2,7 @@
 title: "Manage credentials"
 ---
 
-[Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
+[Security credentials](../../govern/access-control/access-control.md#credentials-management-system#credentials) are used to gain access to external resources. For example,
 database connections typically require a pair of login and password, whereas web services normally expect a token or an
 access key. You can associate such data with two types of [entities](../../datagrok/concepts/objects.md) within the
 platform: [packages](../develop.md#packages)
@@ -104,7 +104,7 @@ There are many ways to specify credentials for a database connection, namely:
 
 See also:
 
-* [Security](../../govern/security.md#credentials)
+* [Security](../../govern/access-control/access-control.md#credentials-management-system#credentials)
 * [How to access data](access-data.md)
 * [Packages](../develop.md)
 * [Data connection](../../access/access.md#data-connection)

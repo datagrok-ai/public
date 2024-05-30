@@ -32,5 +32,5 @@ Datagrok does not keep your password anywhere, after your log in.
 See also:
 
 * [Authorization](authorization.md)
-* [Security](security.md)
-* [Configure authentication](../deploy/complete-setup/configure-auth.md)
+* [Security](access-control/access-control.md)
+* [Configure authentication](../../deploy/complete-setup/configure-auth.md.md)

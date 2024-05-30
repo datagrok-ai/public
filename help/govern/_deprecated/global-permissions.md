@@ -16,5 +16,5 @@ The following operations require global permissions:
 
 See also:
 
-* [Group](../govern/group.md)
+* [Group](group.md)
 * [User](user.md)

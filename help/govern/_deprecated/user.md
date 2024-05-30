@@ -27,18 +27,18 @@ User profile view contains summary information about a particular user. To open 
 right top corner in order to open your profile page. To open a profile page of another user, right-click on the name,
 and select "Details". User profile contains several panes.
 
-**Summary** pane contains important messages retrieved from the [audit](audit.md). Additionally, there are
-links for changing your password, obtaining [developer key](../develop/develop.md#publishing), API key, and logging out
+**Summary** pane contains important messages retrieved from the [audit](../audit/audit.md). Additionally, there are
+links for changing your password, obtaining [developer key](../../develop/develop.md#publishing), API key, and logging out
 of the platform.
 
 **Notifications** are messages that were pushed to you as a result of someone else's activity. This section
-uses [audit](audit.md) as a data source.
+uses [audit](../audit/audit.md) as a data source.
 
 **Chats** pane contains chats that you have participated in. It is also possible to start a new chat from there.
 
 **Activity** pane lists user actions recorded in the platform, with the most recent actions on top. It
-uses [audit](audit.md) as a data source. Note that the activity is interactive, i.e. by clicking on
-highlighted entities their properties will appear in the [context panel](../datagrok/navigation/panels/panels.md#context-panel).
+uses [audit](../audit/audit.md) as a data source. Note that the activity is interactive, i.e. by clicking on
+highlighted entities their properties will appear in the [context panel](../../datagrok/navigation/panels/panels.md#context-panel).
 
 **Favorites** contains your favorite objects. To add something to favorites, click on it, and then click on the "star"
 icon on the right in the context panel. Not every object can be added to favorites, currently the list is limited to
@@ -46,10 +46,3 @@ connections, queries, projects, and functions.
 
 **Projects**, **Connections**, **Queries**, **Models**, **Scripts**, **Jobs**, and **Notebooks**
 contain corresponding entities that were created or used by you.
-
-See also:
-
-* [Group](group.md)
-* [Audit](audit.md)
-* [Authentication](authentication.md)
-* [Security](security.md)

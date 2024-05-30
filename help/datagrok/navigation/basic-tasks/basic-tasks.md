@@ -95,10 +95,10 @@ When you upload a table with a generation script, you can activate the **Data sy
 ## Share
 
 You can share Datagrok [entities](../../concepts/objects.md) with other users or
-[groups](../../../govern/group.md). When you share an entity, you grant a
-[privilege](../../../govern/authorization.md) (typically, _view_ or _edit_) to others.
+[groups](../../../govern/access-control/users-and-groups#groups). When you share an entity, you grant a
+[privilege](../../../govern/access-control/access-control.md#authorization) (typically, _view_ or _edit_) to others.
 To learn how to manage groups and privileges, see
-[Security](../../../govern/security.md).
+[Security](../../../govern/access-control/access-control.md#credentials-management-system).
 
 You can share _entities_ in two ways:
 
@@ -125,6 +125,15 @@ To share an entity using context actions:
    1. To notify via Datagrok, enter a user or group name. The recipients will receive an in-app notification.
    1. To skip notification, clear the **Send notification** checkbox.
 1. Click **OK** to share. The shared item appears in the recipient's [Browse view](../views/browse.md).
+
+:::note
+
+You can share an entity with an email address that doesn't yet have a Datagrok
+account. In such cases, Datagrok creates a 'quasi' user account. To access the
+shared entity, the recipient will need to register and activate their account
+using the specified email address.
+
+:::
 
 ## Download
 

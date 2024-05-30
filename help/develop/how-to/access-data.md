@@ -80,7 +80,7 @@ When providing a connection string, you don't need to pass other parameters.
 
 Parameters carrying sensitive data (such as **Login**/**Password** or **Access Key**/**Secret Key**) are handled in a special way.
 
-Datagrok has a [built-in credentials management system](../../govern/security.md#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string.
+Datagrok has a [built-in credentials management system](../../govern/access-control/access-control.md#credentials-management-system#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string.
 
 <details>
 <summary> Example: Specifying credentials for a data connection </summary>

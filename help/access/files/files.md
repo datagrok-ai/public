@@ -54,7 +54,7 @@ specify them correctly:
 * _Credentials_. You can specify credentials manually or using the 
 [Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS Secrets Manager. 
 When entered manually, Datagrok stores secrets in a 
-[secure privilege management system](../../govern/security.md#credentials). 
+[secure privilege management system](../../govern/access-control/access-control.md#credentials-management-system#credentials). 
 To specify who can change the connection credentials, click the **Gear** icon 
 and select from the **Credential owner** dropdown.
 

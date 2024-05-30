@@ -3,15 +3,15 @@ title: "Security"
 ---
 
 Datagrok uses a flexible mechanism for setting up privileges and access rights for
-all [entities](../datagrok/concepts/objects.md), largely based
+all [entities](../../datagrok/concepts/objects.md), largely based
 on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)
-. It lets you define [user groups](../govern/group.md) and associate them with permissions for different entities.
+. It lets you define [user groups](group.md) and associate them with permissions for different entities.
 Permission sets are different for each entity type, for instance, a
 "package" entity has "publish" and "edit" privileges, while a "query" entity has "execute" and "
 edit" privileges. To fully control access to external resources, groups can also be associated with
 [credentials](#credentials) to access these resources.
 
-Every entity has associated permissions that can be granted to a [user](user.md) or to a [group](../govern/group.md).
+Every entity has associated permissions that can be granted to a [user](user.md) or to ../group.mdn/group.md).
 Groups have a hierarchical structure, so any group or user can be added to another group. For convenience, a "personal"
 group gets automatically created for every user in a system.
 
@@ -26,12 +26,12 @@ Authentication and authorization are central parts of the security system.
 
 When an entity is created, by default only the author can access it. In order to share it with other users, you need to
 grant permission. Typically, you would do it by right-clicking on an entity and choosing "Share", which will open
-the [share dialog](../datagrok/navigation/basic-tasks/basic-tasks.md#share).
+the [share dialog](../../datagrok/navigation/basic-tasks/basic-tasks.md#share).
 
 ## Privileges
 
 Granting permissions to groups rather than to users simplifies security administration. Permission sets assigned to a
-group are inherited by all members of the group. [Groups can be nested](./group.md#examples), however, circular
+group are inherited by all members of the group. [Groups can be nested](group.md#examples), however, circular
 membership is forbidden.
 
 ![Role-based model](../uploads/security/role-based-model.png "Role-based model")
@@ -84,7 +84,7 @@ key-value pairs.
 
 See also:
 
-* [Entities](../datagrok/concepts/objects.md)
+* [Entities](../../datagrok/concepts/objects.md)
 * [Groups](group.md)
 * [Authentication](authentication.md)
 * [Authorization](authorization.md)

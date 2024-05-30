@@ -101,7 +101,7 @@ info panes are displayed accordingly.
 
 You can control access to specific types of info panes based on user attributes
 such as roles, groups, etc. This condition can be set directly within the script
-or externally through [global permissions](../../../govern/global-permissions.md).
+or externally through [global permissions](../../../govern/access-control/users-and-groups.md#managing-groups).
 
 <details>
 <summary>Code snippet</summary>
