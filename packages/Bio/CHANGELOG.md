@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.12.23 (2024-05-30)
+
+### Bug fixes
+
+* to Atomic level: fix the issue with isotopes
+
 ## 2.12.22 (2024-05-28)
 
 ### Bug fixes
