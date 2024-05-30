@@ -80,7 +80,7 @@ Datagrok components are:
 * [Datlas](#datlas) - Datagrok application server
 * [Database](#database)
 * [Persistent file storage](#storage)
-* [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system#credentials). Can be installed as a separate service in
+* [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system). Can be installed as a separate service in
   separate container with a separate database.
 * [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
 * Nginx server
