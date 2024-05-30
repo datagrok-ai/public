@@ -35,12 +35,12 @@ the [Authentication](../../../govern/access-control/access-control.md#authentica
 
 ## Credentials
 
-[Security credentials](../../../govern/access-control/access-control.md#credentials-management-system#credentials) are used to gain access to external resources. For example,
+[Security credentials](../../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,
 database connections typically requires a pair of login and password.
 
 Data connection credentials are managed
-using [Datagrok Credentials Management Service](../../../govern/access-control/access-control.md#credentials-management-system#credentials). All credentials
-are [encrypted and stored securely](../../../govern/access-control/access-control.md#credentials-management-system#credentials-storage).
+using [Datagrok Credentials Management Service](../../../govern/access-control/access-control.md#credentials-management-system). All credentials
+are [encrypted and stored securely](../../../govern/access-control/access-control.md#credentials-storage).
 
 In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
 [AWS Secret Manager](../../../govern/access-control/data-connection-credentials.md) instead.

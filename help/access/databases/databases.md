@@ -53,7 +53,7 @@ Some connection parameters have unique characteristics, and it's important to sp
   string` parameter to enter a custom JDBC connection string. Leave all other
   parameter fields empty. You still need to enter credentials.
 * _Credentials_. You have two ways to specify credentials:
-  * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/access-control/access-control.md#credentials-management-system#credentials). To specify who can change the connection credentials, click the **Gear** icon
+  * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/access-control/access-control.md#credentials-management-system). To specify who can change the connection credentials, click the **Gear** icon
    and select from the **Credential owner** dropdown.
 
   * Use the [Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS Secrets Manager.
@@ -598,7 +598,7 @@ To share:
 2. In the **Share** dialog, enter a user or a group that needs access and set
    corresponding permissions. These privileges can be given to users or to
    [groups](../../govern/access-control/users-and-groups#groups). For more information on the access privilege
-   model, see [Privileges](../../govern/access-control/access-control.md#credentials-management-system#privileges).
+   model, see [Permissions](../../govern/access-control/access-control.md#permissions).
 3. Optional. Add a description in the provided text field. If you don't want to
    notify the recipients, clear the **Send notification** checkbox. :::note
 

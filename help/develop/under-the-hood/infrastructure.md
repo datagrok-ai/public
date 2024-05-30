@@ -9,7 +9,7 @@ Datagrok server installation consists of two big blocks:
   * [Datlas](#datlas) - Datagrok application server
   * [Database](#database)
   * [Persistent file storage](#storage)
-  * [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system#credentials)
+  * [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system)
   * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
 * [Compute](#compute-components)
