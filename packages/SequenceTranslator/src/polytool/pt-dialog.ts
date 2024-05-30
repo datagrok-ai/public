@@ -77,7 +77,9 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
   const helmInput = await HelmInput.init();
 
   const libList = await getLibrariesList();
-  const screenLibrary = ui.choiceInput('library to use', null, libList);
+  const screenLibrary = ui.choiceInput('Library to use', null, libList);
+
+  screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
 
   const div = ui.div([
     helmInput.getDiv(),

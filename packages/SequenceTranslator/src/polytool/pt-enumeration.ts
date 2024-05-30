@@ -8,7 +8,6 @@ import '@datagrok-libraries/bio/src/types/jsdraw2';
 import * as org from 'org';
 import $ from 'cash-dom';
 import {Unsubscribable, fromEvent} from 'rxjs';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {IMonomerLibFileManager, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {Chain} from './pt-conversion';
@@ -59,7 +58,7 @@ export class HelmInput {
     subs.push(fromEvent<MouseEvent>(editor.host, 'click').subscribe(() => {
       this.webEditorHost = ui.div();
       //TODO: use not hh, but anything from editor.getHelm(true)
-      this.webEditorApp = helmHelper.createWebEditorApp(this.webEditorHost, PT_HELM_EXAMPLE);
+      this.webEditorApp = helmHelper.createWebEditorApp(this.webEditorHost, this.getHelmString());
       const dlg = ui.dialog({showHeader: false, showFooter: true})
         .add(this.webEditorHost!)
         .onOK(() => {
@@ -97,8 +96,9 @@ export class HelmInput {
     const helmHelper = await getHelmHelper();
 
     const editor = helmHelper.createHelmWebEditor();
-    editor.host.style.width = '300px';
-    editor.host.style.height = '60px';
+    editor.host.style.width = '200px';
+    editor.host.style.height = '100px';
+    editor.host.style.paddingLeft = '40px';
     editor.editor.setHelm(PT_HELM_EXAMPLE);
 
     return new HelmInput(helmHelper, editor);
@@ -113,8 +113,9 @@ export class HelmInput {
   }
 
   getDiv(): HTMLDivElement {
-    const title = ui.divText('Macromolecule');
-    return ui.divH([title, this.editor.host]);
+    const title = ui.divText('Macromolecule', {style: {paddingTop: '43px', color: 'var(--grey-4)'}});
+
+    return ui.divH([title, this.editor.host], {style: {paddingLeft: '48px'}});
   }
 }
 

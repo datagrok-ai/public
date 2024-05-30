@@ -161,18 +161,18 @@ export async function polyToolConvert(): Promise<void> {
   }
 }
 
-// //top-menu: Bio | Convert | PolyTool-Enumerate
-// //name: polyToolEnumerate
-// //description: Perform cyclization of polymers
-// export async function polyToolEnumerate(): Promise<void> {
-//   let dialog: DG.Dialog;
-//   try {
-//     dialog = await getPolyToolEnumerationDialog();
-//     dialog.show();
-//   } catch (err: any) {
-//     grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
-//   }
-// }
+//top-menu: Bio | Convert | PolyTool-Enumerate
+//name: polyToolEnumerate
+//description: Perform cyclization of polymers
+export async function polyToolEnumerate(): Promise<void> {
+  let dialog: DG.Dialog;
+  try {
+    dialog = await getPolyToolEnumerationDialog();
+    dialog.show();
+  } catch (err: any) {
+    grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
+  }
+}
 
 //name: polyToolColumnChoice
 //input: dataframe df [Input data table]
