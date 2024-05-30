@@ -15,13 +15,13 @@ import {ODEs, max, abs, SAFETY, PSHRNK, PSGROW, REDUCE_COEF, GROW_COEF,
 const GAMMA = 0.78867513459481287;
 
 const GAMMA_21 = -2.3660254037844388;
-const GAMMA_21_SCLAED = GAMMA / GAMMA_21;
+const GAMMA_21_SCALED = GAMMA_21 / GAMMA;
 const GAMMA_2 = GAMMA_21 + GAMMA;
 
 const GAMMA_31 = -0.86791218280355165;
-const GAMMA_31_SCLAED = GAMMA_31 / GAMMA;
+const GAMMA_31_SCALED = GAMMA_31 / GAMMA;
 const GAMMA_32 = -0.87306695894642317;
-const GAMMA_32_SCLAED = GAMMA_32 / GAMMA;
+const GAMMA_32_SCALED = GAMMA_32 / GAMMA;
 const GAMMA_3 = GAMMA_31 + GAMMA_32 + GAMMA;
 
 const ALPHA_21 = 2.3660254037844388;
@@ -75,12 +75,12 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
   let timeDataframe = t0 + hDataframe;
   let t = t0;
   let tPrev = t0;
-  let hNext = 0.0;
   let flag = true;
   let index = 1;
   let errmax = 0;
   let hTemp = 0;
   let tNew = 0;
+  let hNext = 0.0;
 
   // 0 BUFFERS & TEMP STRUCTURES
 
@@ -104,20 +104,18 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
   const W = new Float64Array(wasmMemory.buf, wasmMemory.off1, dimSquared);
   const invW = new Float64Array(wasmMemory.buf, wasmMemory.off1, dimSquared);
 
-  const f0 = new Float64Array(dim);
   const k1 = new Float64Array(dim);
-  const f1 = new Float64Array(dim);
   const k2 = new Float64Array(dim);
-  const f2 = new Float64Array(dim);
   const k3 = new Float64Array(dim);
-  const yDer = new Float64Array(dim);
-  const hdT = new Float64Array(dim);
+  const HT = new Float64Array(dim);
 
   const f0Buf = new Float64Array(dim);
   const f1Buf = new Float64Array(dim);
-  const hd = 0;
   let sum = 0;
-  let hDivNum = 0;
+
+  let hByGamma = 0;
+  const fBuf = new Float64Array(dim);
+  const kBuf = new Float64Array(dim);
 
   // 1. SOLUTION AT THE POINT t0
   tArr[0] = t0;
@@ -139,89 +137,92 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       flag = false;
     }
 
-    // call of adaptive step modified Rosenbrok triple method
+    // call of adaptive step the ROS3Pw [1] method
     // computation of solution (y), time (t) and next step (hNext)
     while (true) {
-      // one stage of the modified Rosenbrok triple approach
-      // hdT = h * d * T(t, y, EPS);
-      tDerivative(t, y, f, EPS, f0Buf, f1Buf, hdT);
-      //hd = h * D / scale;
-      for (let i = 0; i < dim; ++i)
-        hdT[i] *= hd;
+      hByGamma = h * GAMMA;
 
-      // The main computations
+      // one stage of the ROS3Pw method
 
-      // f0 = f(t, y);
-      f(t, y, f0);
-
-      // W = I - h * d * J(t, y, EPS);
+      // 1) Jacobian & dF/dt matrices
       jacobian(t, y, f, EPS, f0Buf, f1Buf, W);
-      for (let i = 0; i < dimSquared; ++i)
-        W[i] = I[i] - hd * W[i];
+      tDerivative(t, y, f, EPS, f0Buf, f1Buf, HT);
 
-      // invW = W.inverse();
+      // 2) W & inverse W
+      for (let i = 0; i < dimSquared; ++i)
+        W[i] = I[i] - hByGamma * W[i];
+
       inverseMatrix(W, dim, invW);
 
-      // k1 = invW * (f0 + hdT);
+      // 3) Scale dF/dt: HT = j * T
       for (let i = 0; i < dim; ++i)
-        f0Buf[i] = f0[i] + hdT[i];
+        HT[i] *= h;
 
+      // 4) F1 = F(t, y)  <-- Fbuf
+      f(t, y, fBuf);
+
+      // 5) k1 = W_inv * (F1 + gamma * HT)
       for (let i = 0; i < dim; ++i) {
         sum = 0;
 
         for (let j = 0; j < dim; ++j)
-          sum += invW[j + i * dim] * f0Buf[j];
+          sum += invW[j + i * dim] * (fBuf[j] + GAMMA * HT[j]);
 
         k1[i] = sum;
       }
 
-      hDivNum = 0.5 * h;
-
-      // yDer = y + 0.5 * h * k1;
+      // 6) F2 = F(t + alpha2 * h, y + alpha21 * k1)   <-- Fbuf
       for (let i = 0; i < dim; ++i)
-        yDer[i] = y[i] + hDivNum * k1[i];
+        kBuf[i] = y[i] + ALPHA_21 * h * k1[i];
 
-      // f1 = f(t + 0.5 * h, yDer);
-      f(t + hDivNum, yDer, f1);
+      f(t + ALPHA_2 * h, kBuf, fBuf);
 
-      // k2 = invW * (f1 - k1) + k1;
+      // 7) kBuf = gamma21 / gamma * k1
       for (let i = 0; i < dim; ++i)
-        f1Buf[i] = f1[i] - k1[i];
+        kBuf[i] = GAMMA_21_SCALED * k1[i];
 
-      for (let i = 0; i < dim; ++i) {
-        sum = k1[i];
-
-        for (let j = 0; j < dim; ++j)
-          sum += invW[j + i * dim] * f1Buf[j];
-
-        k2[i] = sum;
-      }
-
-      // yOut = y + k2 * h; <--> yTemp
-      for (let i = 0; i < dim; ++i)
-        yTemp[i] = y[i] + h * k2[i];
-
-      // f2 = f(t + h, yOut);
-      f(t + h, yTemp, f2);
-
-      // k3 = invW * (f2 - e32 * (k2 - f1) - 2.0 * (k1 - f0) + hdT);
-      for (let i = 0; i < dim; ++i)
-        f1Buf[i] = f2[i] - 2 * (k2[i] - f1[i]) - 2.0 * (k1[i] - f0[i]) + hdT[i];
-
+      // 8) k2 = W_inv * [Fbuf + kBuf + gamma2 * HT] - kBuf
       for (let i = 0; i < dim; ++i) {
         sum = 0;
 
         for (let j = 0; j < dim; ++j)
-          sum += invW[j + i * dim] * f1Buf[j];
+          sum += invW[j + i * dim] * (fBuf[j] + kBuf[j] + GAMMA_2 * HT[j]);
 
-        k3[i] = sum;
+        k2[i] = sum - kBuf[i];
       }
 
-      // yErr = (k1 - 2.0 * k2 + k3) * h / 6;
-      hDivNum = h / 6;
-
+      // 9) F3 = F(t + alpha3 * h, y + h * (alpha31 * k1 + alpha32 * k2))  <-- Fbuf
       for (let i = 0; i < dim; ++i)
-        yErr[i] = (k1[i] - 2.0 * k2[i] + k3[i]) * hDivNum;
+        kBuf[i] = y[i] + h * (ALPHA_31 * k1[i] + ALPHA_32 * k2[i]);
+
+      f(t + ALPHA_3 * h, kBuf, fBuf);
+
+      // 10) kBuf = gamma31 / gamma * k1 + gamma32 / gamma * k2
+      for (let i = 0; i < dim; ++i)
+        kBuf[i] = GAMMA_31_SCALED * k1[i] + GAMMA_32_SCALED * k2[i];
+
+      // 11) k3 = W_inv * (F3 + kBuf + gamma3 * HT) - kBuf
+      for (let i = 0; i < dim; ++i) {
+        sum = 0;
+
+        for (let j = 0; j < dim; ++j)
+          sum += invW[j + i * dim] * (fBuf[j] + kBuf[j] + GAMMA_3 * HT[j]);
+
+        k3[i] = sum - kBuf[i];
+      }
+
+      // 12) yNext = y + h * (b1 * k1 + b2 * k2 + b3 * k3)   <-- yTemp
+      for (let i = 0; i < dim; ++i)
+        yTemp[i] = y[i] + h * (B_1 * k1[i] + B_2 * k2[i] + B_3 * k3[i]);
+
+      // 13) yErr = h * (r1 * k1 + r2 * k2 + r3 * k3)
+      for (let i = 0; i < dim; ++i)
+        yErr[i] = h * (R_1 * k1[i] + R_2 * k2[i] + R_3 * k3[i]);
+
+      console.log(yTemp);
+      console.log(yErr);
+      console.log(h);
+      console.log('============================');
 
       // estimating error
       errmax = 0;
@@ -253,6 +254,8 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       }
     } // while (true)
 
+    throw new Error('Aborted!');
+
     // compute lineraly interpolated results and store them in dataframe
     while (timeDataframe < t) {
       const cLeft = (t - timeDataframe) / (t - tPrev);
@@ -267,7 +270,6 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       ++index;
     }
 
-    h = hNext;
     tPrev = t;
 
     for (let i = 0; i < dim; ++i)
@@ -289,4 +291,4 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
   solutionDf.name = odes.name;
 
   return solutionDf;
-} // solveODEs
+} // ros3pw
