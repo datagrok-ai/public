@@ -51,6 +51,16 @@ export class ReportingApp {
         reports.rows.removeWhere((r) => r.get('number') === reportNumber);
         this.table?.appendMerge(reports);
         this.refreshFilter();
+        setTimeout(async () => {
+          await this.showPropertyPanel(this.table!);
+          const length = this.table!.rowCount;
+          for (let i = 0; i < length; i++) {
+            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+              this.view?.grid.scrollToCell('date', i);
+              break;
+            }
+          }
+        }, 200);
       }
     }, 300);
   }
@@ -155,6 +165,7 @@ export class ReportingApp {
     viewer.col('assignee')!.cellType = 'html';
 
     viewer.col('jira')!.cellType = 'html';
+    viewer.col('jira')!.width = 35;
 
     viewer.col('id')!.visible = false;
     viewer.col('error_stack_trace_hash')!.visible = false;
