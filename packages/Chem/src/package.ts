@@ -1490,12 +1490,15 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<string>,
   targetNotation: DG.chem.Notation, overwrite = false, join = true ): Promise<void | DG.Column<string>> {
   const res = await convertNotationForColumn(molecules, targetNotation);
+  const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
+    targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
   if (overwrite) {
     for (let i = 0; i < molecules.length; i++)
       molecules.set(i, res[i], false);
+    molecules.tags[DG.TAGS.UNITS] = units;
   } else {
     const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
-    col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+    col.tags[DG.TAGS.UNITS] = units;
     col.semType = DG.SEMTYPE.MOLECULE;
     if (!join)
       return col;
