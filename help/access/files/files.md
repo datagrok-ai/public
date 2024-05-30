@@ -52,7 +52,7 @@ specify them correctly:
 * _Directory path_. When connecting to the root directory, leave the **Dir**
   field empty. Otherwise, enter a directory path.
 * _Credentials_. You can specify credentials manually or using the 
-[Secrets Manager](../data-connection-credentials.md), such as the AWS Secrets Manager. 
+[Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS Secrets Manager. 
 When entered manually, Datagrok stores secrets in a 
 [secure privilege management system](../../govern/security.md#credentials). 
 To specify who can change the connection credentials, click the **Gear** icon 

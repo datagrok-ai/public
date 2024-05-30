@@ -1,9 +1,10 @@
 ---
 title: "Secrets managers"
-sidebar_position: 5
+format: mdx
+sidebar_position: 2
 ---
 
-When you [add a data connection](databases/databases.md#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the [Datagrok's Credentials Management Service](../govern/security.md#credentials).
+When you [add a data connection](../../access/databases/databases.md#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the Datagrok's [credentials management systems](access-control.md#credentials-management-system).
 
 ## Setting up connection with AWS Secrets Manager
 
@@ -23,7 +24,7 @@ To use the AWS Secrets Manager in a database connection, follow these steps:
   1. In the dialog under the **Data Source**, select **AWS** from the list of options.
   1. Paste the secret key and access key in the fields provided, name the connection, and fill in other connection parameters as appropriate.
 
-   <!--![Create connection to AWS Secret Manager](connect-to-aws.png)-->
+   <!--![Create connection to AWS Secret Manager](../img/connect-to-aws.png)-->
 
   1. Click **TEST** to test the connection, then click **OK** to save it. If the connection fails, verify your secrets details.
 * _Step 2_. Create a connection that will use the AWS Secrets Manager.
@@ -31,7 +32,7 @@ To use the AWS Secrets Manager in a database connection, follow these steps:
   1. In the **Add new connection** dialog, under **Credentials**, select the name of the connection that you created in Step 1.
   1. Enter the Secret Name and other connection parameters in the fields provided.
 
-  <!--![Add new Data connection](data-connection-secret-p02.png)-->
+  <!--![Add new Data connection](../img/data-connection-secret-p02.png)-->
 
   :::note
 
@@ -43,4 +44,4 @@ To use the AWS Secrets Manager in a database connection, follow these steps:
 
 For more information about using the AWS Secrets Manager, see the [Amazon Web Services Secrets Manager User Guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html).
 
-<img alt="Use the AWS Secrets Manager in a database connection" src={require('./credentials.gif').default} width="800px"/>
+![](../img/credentials.gif)
