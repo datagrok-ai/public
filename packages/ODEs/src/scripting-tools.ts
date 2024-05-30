@@ -32,7 +32,7 @@ const INCEPTION = 'Inception';
 const PACKAGE_NAME = 'DiffStudio';
 
 /** Numerical solver function */
-const SOLVER_FUNC = 'solve';
+const SOLVER_FUNC = 'solveEquations';
 
 /** Elementary math tools */
 const MATH_FUNCS = ['pow', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp', 'log', 'sinh', 'cosh', 'tanh'];
@@ -169,7 +169,7 @@ enum SCRIPT {
   ODE = 'let odes = {',
   SOLVER_COM = '// solve the problem',
   SOLVER = `const solver = await grok.functions.eval('${PACKAGE_NAME}:${SOLVER_FUNC}');`,
-  PREPARE = 'let call = solver.prepare({problem: odes});',
+  PREPARE = 'let call = solver.prepare({problem: odes, options: opts});',
   CALL = 'await call.call();',
   OUTPUT = `let ${DF_NAME} = call.getParamValue('${DF_NAME}');`,
   SPACE2 = '  ',
@@ -814,9 +814,13 @@ function getScriptMainBodyBasic(ivp: IVP): string[] {
 
   // 2.4) final lines of the problem specification
   res.push(`${SCRIPT.SPACE4}tolerance: ${ivp.tolerance},`);
-  res.push(`${SCRIPT.SPACE6}solverOptions: ${ivp.solverSettings.replaceAll(ANNOT_SEPAR, COMMA)},`);
+  //res.push(`${SCRIPT.SPACE6}solverOptions: ${ivp.solverSettings.replaceAll(ANNOT_SEPAR, COMMA)},`);
   res.push(`${SCRIPT.SPACE4}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push('};');
+
+  // 2.5) solver options
+  res.push('');
+  res.push(`let opts = ${ivp.solverSettings.replaceAll(';', ',')};`);
 
   // 3. Math functions
   if (ivp.usedMathFuncs.length > 0) {
@@ -895,9 +899,13 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
 
   // 2.4) final lines of the problem specification
   res.push(`${SCRIPT.SPACE6}tolerance: ${ivp.tolerance},`);
-  res.push(`${SCRIPT.SPACE6}solverOptions: ${ivp.solverSettings.replaceAll(ANNOT_SEPAR, COMMA)},`);
+  //res.push(`${SCRIPT.SPACE6}solverOptions: ${ivp.solverSettings.replaceAll(ANNOT_SEPAR, COMMA)},`);
   res.push(`${SCRIPT.SPACE6}solutionColNames: [${names.map((key) => `'${key}'`).join(', ')}]`);
   res.push(`${SCRIPT.SPACE2}};`);
+
+  // 2.5) solver options
+  res.push('');
+  res.push(`let opts = ${ivp.solverSettings.replaceAll(';', ',')};`);
 
   // 3. Math functions
   if (ivp.usedMathFuncs.length > 0) {

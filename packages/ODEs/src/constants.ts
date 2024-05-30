@@ -41,7 +41,7 @@ export enum UPDATE {
   DURATION = '_duration',
 };
 
-/** Rnages of the solver options */
+/** Ranges of the solver options */
 export const SOLVER_OPTIONS_RANGES = new Map([
   ['maxTime', {min: 1, max: 10000}],
   ['scale', {min: 0.5, max: 1}],
