@@ -156,7 +156,7 @@ To customize which events are logged and how they are handled, you have these op
 
 1. Configure logging settings: For any user or group, add or remove logged
    events from the default set
-1. Create custom logging events and make other customizations using [JS API](#customize-logging-via-javascript-api)
+1. Create custom logging events and make other customizations using [JS API](#customizing-logging-via-javascript-api)
 
 ### Changing settings for default logs
 
