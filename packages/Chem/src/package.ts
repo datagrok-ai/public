@@ -813,7 +813,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 
 
 //top-menu: Chem | Analyze | Activity Cliffs...
-//name: Activity Cliffs2
+//name: Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}

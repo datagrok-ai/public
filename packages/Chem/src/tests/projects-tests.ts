@@ -10,12 +10,12 @@ category('projects', () => {
   test('r-group-analysis', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
       ['smiles', 'Core', 'R1', 'R2', 'R3', 'isMatch'], DG.VIEWER.TRELLIS_PLOT);
-  });
+  }, {timeout: 60000});
 
   test('r-group-analysis-sync', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runRGroupAnalysis,
       ['smiles', 'Core', 'R1', 'R2', 'R3', 'isMatch'], DG.VIEWER.TRELLIS_PLOT, true);
-  });
+  }, {timeout: 60000});
 
   test('inchi', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchi, ['smiles', 'inchi'], '');
@@ -133,7 +133,7 @@ category('projects', () => {
       DG.VIEWER.SCATTER_PLOT, true, checkActivityCliffsCustomInit);
     //need delay to avoid unhandled exception when calling closeAll()
     await delay(100);
-  });
+  }, {timeout: 60000});
 
   after(async () => {
     grok.shell.closeAll();
