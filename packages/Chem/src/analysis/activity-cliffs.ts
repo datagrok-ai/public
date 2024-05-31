@@ -15,7 +15,7 @@ const cashedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
 
 export type ActivityCliffsParams = {
   molColName: string,
-  actColName: string,
+  activityColName: string,
   similarityMetric: BitArrayMetrics,
   similarity: number,
   options: any

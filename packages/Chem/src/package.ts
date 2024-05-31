@@ -893,7 +893,7 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
   }
   const actCliffsParams: ActivityCliffsParams = JSON.parse(tag);
   const molCol = sp.dataFrame.col(actCliffsParams.molColName)!;
-  const actCol = sp.dataFrame.col(actCliffsParams.actColName)!;
+  const actCol = sp.dataFrame.col(actCliffsParams.activityColName)!;
   const encodedColWithOptions = await getFingerprints(molCol);
 
   const axesNames = [sp.getOptions().look['xColumnName'], sp.getOptions().look['yColumnName']];
@@ -925,7 +925,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
     similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
   const tagContent: ActivityCliffsParams = {
     molColName: molecules.name,
-    actColName: activities.name,
+    activityColName: activities.name,
     similarityMetric: similarityMetric,
     similarity: similarity,
     options: options ?? {},
