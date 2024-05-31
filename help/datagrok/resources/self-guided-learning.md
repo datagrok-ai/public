@@ -7,16 +7,19 @@ sidebar_position: 1
 To get you started, we've prepared the following resources:
 
 * **Help pages**: Read on a topic
-* **Demo app**: [Run an app](https://public.datagrok.ai/browse/tutorials.demoapp) to interactively explore features
+* **Demo app**: [Run an app](https://public.datagrok.ai/browse/tutorials.demoapp) to interactively explore Datagrok features and capabilities
 * **Interactive tutorials**: Complete at [public.datagrok.ai](https://public.datagrok.ai) or your corporate instance (requires the [Tutorials package](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)).
 * **Webinars and short product demos**: Watch on youtube
-* **Demo datasets**: See what else you can do: drag and drop your dataset or use ours (**Browse > Files > Demo Files**)
+* **Demo datasets**: See what else you can do: drag and drop your dataset or use ours (**Sidebar > Browse (<FAIcon icon="fa-solid fa-compass"/>) > Files > Demo Files**)
 
 ## Orient yourself
 
 <h5>Read</h5>
 
 1. [User interface](../navigation/navigation.md)
+1. [Views](../navigation/views/views.md)
+1. [Context Panel](../navigation/panels/panels.md#context-panel)
+1. [Context Help](../navigation/panels/panels.md#context-help)
 1. [Browse](../navigation/views/browse.md)
 1. [Projects](../concepts/project/project.md)
 1. [Key concepts](../concepts/concepts.md)

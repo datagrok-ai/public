@@ -6,6 +6,8 @@ sidebar_position: 1
 Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
 are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 
+Dataframes are visualized using the [grid](../../visualize/viewers/grid.md) viewer.
+
 ## Column
 
 Dataframes consist of columns. In addition to the data type, a column can be

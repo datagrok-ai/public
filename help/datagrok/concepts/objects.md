@@ -83,11 +83,7 @@ particular entity types. Common properties include:
 
 ## Search
 
-Search criteria can be combined using 'and' or 'or' operands:
-
-* `#demo or #chem`
-
-[Learn more about search patterns](../navigation/views/table-view.md#search)
+You can use metadata to [search for entities](../navigation/views/table-view.md#search)
 
 See also:
 

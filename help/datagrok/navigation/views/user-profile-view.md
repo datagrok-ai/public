@@ -28,7 +28,7 @@ The **User Profile View** consists of several views that you can navigate using 
 1. **Chats**: Contains the chats you have participated in. You can also start a
    new [chat](../../../collaborate/chat.md) from here.
 1. **Favorites**: Shows your favorite [objects](../../concepts/objects.md).
-   [Learn how to add an object to favorites](browse.md#favorites).
+   [Learn how to add an object to favorites](../basic-tasks/basic-tasks.md#favorites).
 1. **Activity**: Lists user actions on the platform, with the most recent
    actions appearing on top. To get details about an object you've interacted
    with, click it and explore the details in the [Context Panel](../panels/panels.md#context-panel).
