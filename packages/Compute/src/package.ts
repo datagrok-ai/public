@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {RichFunctionView, UiUtils} from "@datagrok-libraries/compute-utils";
+import {RichFunctionView, UiUtils, PipelineView} from "@datagrok-libraries/compute-utils";
 import { ValidationInfo, makeAdvice, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 
@@ -321,4 +321,8 @@ export function ObjectCoolingSelector(params: any) {
     'Previous run',
     'ObjectCooling',
   );
+}
+
+export function pipelineViewExport() {
+  return PipelineView;
 }
