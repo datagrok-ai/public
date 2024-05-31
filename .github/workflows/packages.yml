@@ -566,7 +566,7 @@ jobs:
 
       - name: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: ../../tools/bin/grok check
+        run: grok check
         id: check
         working-directory: packages/${{ matrix.package }}
 
