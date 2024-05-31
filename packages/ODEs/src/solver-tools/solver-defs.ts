@@ -30,6 +30,9 @@ export const abs = (x: number) => (x > 0) ? x : -x;
 /** The max function */
 export const max = (x: number, y: number) => (x > y) ? x : y;
 
+/** The max function */
+export const min = (x: number, y: number) => (x < y) ? x : y;
+
 /** Routine constants of adaptive step method */
 export const SAFETY = 0.9;
 export const PSHRNK = -0.25;

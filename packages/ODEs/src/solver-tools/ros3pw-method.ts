@@ -219,11 +219,6 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       for (let i = 0; i < dim; ++i)
         yErr[i] = h * (R_1 * k1[i] + R_2 * k2[i] + R_3 * k3[i]);
 
-      console.log(yTemp);
-      console.log(yErr);
-      console.log(h);
-      console.log('============================');
-
       // estimating error
       errmax = 0;
       for (let i = 0; i < dim; ++i)
@@ -254,8 +249,6 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       }
     } // while (true)
 
-    throw new Error('Aborted!');
-
     // compute lineraly interpolated results and store them in dataframe
     while (timeDataframe < t) {
       const cLeft = (t - timeDataframe) / (t - tPrev);
@@ -270,6 +263,7 @@ export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
       ++index;
     }
 
+    h = hNext;
     tPrev = t;
 
     for (let i = 0; i < dim; ++i)
