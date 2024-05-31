@@ -333,7 +333,7 @@ export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     const table = smiles.cell.dataFrame.clone();
     table.rows.removeWhereIdx((idx) => idx !== 0);
 
-    const data = await prepareAutoDockData(target.value, table, smiles.cell.column.name, conformations.value!);
+    const data = await prepareAutoDockData(target.value!, table, smiles.cell.column.name, conformations.value!);
 
     const app = new AutoDockApp();
     const autodockResults = await app.init(data);

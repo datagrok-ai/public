@@ -4,4 +4,4 @@
 #input: int x
 #output: int y
 
-y = 2 * x
+y = 2 * x;

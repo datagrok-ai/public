@@ -40,9 +40,9 @@ You can use these fields to filter tables with smart search:
 | colCount    |                                  |
 | createdOn   |                                  |
 | updatedOn   |                                  |
-| author      | [User](../../govern/user.md) object |
-| starredBy   | [User](../../govern/user.md) object |
-| commentedBy | [User](../../govern/user.md) object |
+| author      | [User](../../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../../govern/access-control/users-and-groups#users) object |
 
 See also:
 

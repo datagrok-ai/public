@@ -1,13 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
-import {PatternConfiguration, StrandType} from '../../model/types';
 import {EventBus} from '../../model/event-bus';
-import {NucleotidePatternSVGRenderer} from './svg-renderer';
+import {PatternConfiguration} from '../../model/types';
 //@ts-ignore
 import * as svgExport from 'save-svg-as-png';
+import {NucleotidePatternSVGRenderer} from './svg-renderer';
 
 export class SvgDisplayManager {
   private svgDisplayDiv = ui.div([]);
@@ -16,7 +14,7 @@ export class SvgDisplayManager {
   private constructor(
     private eventBus: EventBus
   ) {
-    eventBus.patternStateChanged$.subscribe(() => this.updateSvgContainer());
+    eventBus.updateSvgContainer$.subscribe(() => this.updateSvgContainer());
     eventBus.svgSaveRequested$.subscribe(() => this.saveSvgAsPng());
   }
 

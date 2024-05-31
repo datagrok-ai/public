@@ -195,7 +195,7 @@ export class PatternLoadControlsManager {
     this.subscriptions.add(
       this.eventBus.patternLoaded$.subscribe(() => {
         const patternName = this.eventBus.getPatternName();
-        if (!choiceInput.value?.includes(patternName))
+        if (choiceInput.value !== patternName)
           choiceInput.value = this.getPatternName(patternList);
       })
     );
@@ -204,7 +204,9 @@ export class PatternLoadControlsManager {
   }
 
   private getPatternName(patternList: string[]): string {
-    return patternList.find((patternName) => patternName.includes(this.eventBus.getPatternName())) ?? patternList[0];
+    return patternList.find(
+      (patternName) => patternName === this.eventBus.getPatternName()
+    ) ?? patternList[0];
   }
 
   private createDeletePatternButton(): HTMLButtonElement {

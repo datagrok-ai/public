@@ -7,7 +7,7 @@ const router = process.env.DOCUSAURUS_ROUTER;
 const config = {
     title: 'Datagrok',
     tagline: 'Datagrok: Swiss Army Knife for Data',
-    url: 'https://datagrok.ai',
+    url: 'http://localhost:8080',
     baseUrl: '/',
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'throw',

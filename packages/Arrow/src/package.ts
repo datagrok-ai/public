@@ -1,19 +1,19 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {default as init} from "parquet-wasm/esm/arrow1";
+import {default as init} from "parquet-wasm";
 import {fromFeather as _fromFeather, toFeather as _toFeather, fromParquet as _fromParquet, toParquet as _toParquet} from "./api/api";
 
 export const _package = new DG.Package();
 
 //name: info
-export function info() {
+export function info() {``
   grok.shell.info(_package.webRoot);
 }
 
-//tags: init
+//tags: autostart
 export async function parquetInit() {
-  await init(_package.webRoot + 'dist/arrow1_bg.wasm');
+  await init(_package.webRoot + 'dist/parquet_wasm_bg.wasm');
 }
 
 //name: toFeather

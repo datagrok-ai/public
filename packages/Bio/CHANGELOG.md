@@ -1,5 +1,20 @@
 # Bio changelog
 
+## 2.12.23 (2024-05-30)
+
+### Bug fixes
+
+* to Atomic level: fix the issue with isotopes
+
+## 2.12.22 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15525: MSA: Add check unsuitable data to avoid running MSA with them
+* GROK-15796: Bio: Fix cell renderer for convert to Helm
+* GROK-15798: Bio: Fix To Atomic Level for units FASTA and alphabet UN
+* Fix converter MSA to fasta invalid tags, fix tests
+
 ## 2.12.21 (2024-05-20)
 
 Fix cell renderer for column width changed

@@ -1,5 +1,19 @@
 # bio changelog
 
+## 5.41.9 (2024-05-29)
+
+Fix Monomer type
+
+## 5.41.8 (2024-05-29)
+
+Fix TAGS, ALPHABET enum
+
+## 5.41.7 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15796: Bio: Fix to Helm cell renderer for convert to Helm
+
 ## 5.41.6 (2024-05-20)
 
 Fix monomer placer optimization for column width changed

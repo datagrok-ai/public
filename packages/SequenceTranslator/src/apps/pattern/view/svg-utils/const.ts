@@ -1,5 +1,7 @@
 import {STRAND, TERMINUS, STRAND_END} from '../../model/const';
 
+export const LEGEND_PADDING = 10;
+
 export const enum LUMINANCE_COEFFICIENTS {
   RED = 0.299,
   GREEN = 0.587,
@@ -21,7 +23,7 @@ export const enum SVG_CIRCLE_SIZES {
 
 export const enum SVG_TEXT_FONT_SIZES {
   NUCLEOBASE = 17,
-  COMMENT = 14,
+  COMMENT = 15,
 };
 
 export const enum SVG_ELEMENT_COLORS {
@@ -63,3 +65,15 @@ export const Y_POSITIONS_FOR_STRAND_ELEMENTS = {
     NUCLEOBASE_LABEL: 7 * SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS,
   }
 };
+
+export const MIN_WIDTH = 200;
+
+export const TITLE_SHIFT = 10;
+
+export const enum FONT_SIZE {
+  TITLE = 17,
+  LEGEND = 14,
+  NUCLEOBASE = 17,
+  COMMENT = 14,
+}
+

@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 import { colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status } from './utils';
 import { _package } from '../package';
@@ -28,7 +29,7 @@ interface Options {
   order?: number;
 }
 
-interface OldStatusInfo {
+interface StatusInfo {
   'User': DG.User;
   'Date': any;
   'Version': string;
@@ -39,6 +40,7 @@ export class TestTrack extends DG.ViewBase {
   private static instance: TestTrack;
   tree: DG.TreeViewGroup;
   inited: boolean = false;
+  isInitializing: boolean = false;
   testCaseDiv: HTMLDivElement;
   currentNode: DG.TreeViewNode | DG.TreeViewGroup;
   map: { [key: string]: (Category | TestCase) } = {};
@@ -78,11 +80,24 @@ export class TestTrack extends DG.ViewBase {
     this.start = start;
   }
 
-  async init() {
+  init() {
+    if (this.isInitializing)
+      return;
+
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
       return;
     }
+
+    this.isInitializing = true;
+    this.initTreeView().then(() => {
+      this.inited = true;
+      this.isInitializing = false;
+    });
+  }
+
+
+  private async initTreeView(): Promise<void> {
 
     let searchInvoked = false
 
@@ -110,15 +125,27 @@ export class TestTrack extends DG.ViewBase {
       { id: `${this.version}_${this.start}_${this.uid}` });
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
       { version: this.version, uid: this.uid, start: this.start });
-    for (const row of history.rows) {
-      const path = row.get('path');
-      const status: Status = row.get('status');
-      const reason: string = row.get('reason');
-      this.map[path] = {
-        name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: status ? ui.div(getStatusIcon(status)) : ui.div(), reason: ui.div(this.getReason(reason), 'tt-reason')
-      };
-    }
+
+    grok.dapi.users.find(this.uid).then((user) => {
+      for (const row of history.rows) {
+        const path = row.get('path');
+        const status: Status = row.get('status');
+        const reason: string = row.get('reason');
+        const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
+        this.map[path] = {
+          name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
+          icon: icon, reason: ui.div(this.getReason(reason), 'tt-reason')
+        };
+        const map: StatusInfo = {
+          'User': user,
+          'Date': row.get('date'),
+          'Version': this.version,
+        };
+        if (reason)
+          map['Reason'] = this.getReason(reason);
+        ui.tooltip.bind(icon, () => ui.tableFromMap(map));
+      }
+    });
     const files = await filesP;
     const p: Promise<void>[] = [];
     for (const file of files) {
@@ -205,7 +232,7 @@ export class TestTrack extends DG.ViewBase {
           const icon = getStatusIcon(row.get('status'));
           node.value.history.append(icon);
           const user = await grok.dapi.users.find(row.get('uid'));
-          const map: OldStatusInfo = {
+          const map: StatusInfo = {
             'User': user,
             'Date': row.get('date'),
             'Version': row.get('version'),
@@ -225,7 +252,8 @@ export class TestTrack extends DG.ViewBase {
     this.append(this.tree.root);
     this.root.style.padding = '0';
     grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
-    this.inited = true;
+
+    this.isInitializing = false;
   }
 
   private closeTreeCategories() {
@@ -465,6 +493,18 @@ export class TestTrack extends DG.ViewBase {
     };
     grok.log.usage(value.path, params, `test-manual ${value.path}`);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
+
+    grok.dapi.users.find(params['uid']).then((user) => {
+      const map: StatusInfo = {
+        'User': user,
+        'Date': dayjs(),
+        'Version': params['version'],
+      };
+
+      if (value.reason)
+        map['Reason'] = value.reason;
+      ui.tooltip.bind(icon, () => ui.tableFromMap(map));
+    });
   }
 
   changeNodeReason(node: DG.TreeViewNode, reason: string, status: Status): void {
@@ -518,7 +558,8 @@ export class TestTrack extends DG.ViewBase {
     const oldRoot = this.root;
     ui.setUpdateIndicator(oldRoot);
     TestTrack.instance = new TestTrack(this.testingName);
-    TestTrack.getInstance().init().then(() => grok.shell.dockManager.close(oldRoot));
+    TestTrack.getInstance().init();
+    grok.shell.dockManager.close(oldRoot);
   }
 
   getReason(reason: string): HTMLElement {

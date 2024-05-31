@@ -1,0 +1,15 @@
+name: myenv
+channels:
+  - conda-forge
+dependencies:
+  - python>=3
+  - rdkit
+  - numpy
+  - pandas
+  - Flask
+  - chemprop==1.6.1
+  - werkzeug
+  - urllib3
+  - requests
+  - scikit-learn
+  - pyyaml

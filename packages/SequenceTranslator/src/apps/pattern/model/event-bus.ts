@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import * as rxjs from 'rxjs';
-import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
+import {debounceTime, throttleTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {
   GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, MAX_SEQUENCE_LENGTH, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINI, TERMINUS
@@ -502,6 +502,12 @@ export class EventBus {
 
   getSelectedIdColumn(): string | null {
     return this._selectedIdColumn.getValue();
+  }
+
+  get updateSvgContainer$(): rxjs.Observable<void> {
+    return this.patternStateChanged$.pipe(
+      debounceTime(100)
+    );
   }
 }
 

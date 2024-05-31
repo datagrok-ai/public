@@ -1413,10 +1413,6 @@ export class UserReport extends Entity {
     super(dart);
   }
 
-  get id(): string {
-    return api.grok_UserReport_Id(this.dart);
-  }
-
   get isResolved(): boolean {
     return api.grok_UserReport_IsResolved(this.dart);
   }
@@ -1427,5 +1423,27 @@ export class UserReport extends Entity {
 
   get assignee(): User {
     return toJs(api.grok_UserReport_Assignee(this.dart));
+  }
+
+  get reporter(): User {
+    return toJs(api.grok_UserReport_Reporter(this.dart));
+  }
+
+  get description(): string {
+    return toJs(api.grok_UserReport_Description(this.dart));
+  }
+
+  get createdOn(): dayjs.Dayjs {
+    return dayjs(api.grok_UserReport_CreatedOn(this.dart));
+  }
+}
+
+export class UserReportsRule extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async showAddDialog(): Promise<void> {
+    await api.grok_ReportsRule_Add_Dialog();
   }
 }

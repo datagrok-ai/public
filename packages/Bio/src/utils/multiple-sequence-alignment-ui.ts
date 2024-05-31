@@ -7,7 +7,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
-import {runKalign} from './multiple-sequence-alignment';
+import {MsaWarning, runKalign} from './multiple-sequence-alignment';
 import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
 import {multipleSequenceAlginmentUIOptions} from './types';
@@ -17,12 +17,6 @@ import {awaitContainerStart} from './docker';
 import {_package} from '../package';
 
 import '../../css/msa.css';
-
-export class MsaWarning extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-  }
-}
 
 export async function multipleSequenceAlignmentUI(
   options: multipleSequenceAlginmentUIOptions = {},
@@ -37,9 +31,9 @@ export async function multipleSequenceAlignmentUI(
     const table = options.col?.dataFrame ?? grok.shell.t;
     const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
-      const errMsg: string = `Multiple sequence analysis requires a dataset with a macromolecule column.`;
+      const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
       grok.shell.warning(errMsg);
-      reject(new MsaWarning(errMsg));
+      reject(new MsaWarning(ui.divText(errMsg)));
       return; // Prevents creating the MSA dialog
     }
 
@@ -145,8 +139,6 @@ async function onDialogOk(
 
     resolve(msaCol);
   } catch (err: any) {
-    const errMsg: string = err instanceof Error ? err.message : err.toString();
-    grok.shell.error(errMsg);
     reject(err);
   } finally {
     pi.close();

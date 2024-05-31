@@ -37,7 +37,7 @@ category('UI: Tags', () => {
         return /[0-9]+ \/ [0-9]+/g.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
       return false;
     }, 'cannot load projects', 3000);
-    const search = grok.shell.v.root.querySelector('.ui-input-editor') as HTMLInputElement;
+    const search = grok.shell.v.root.querySelector('.grok-gallery-search-bar .ui-input-root .ui-input-editor') as HTMLInputElement;
     search.value = '#demo';
     search.dispatchEvent(new Event('input'));
     const regex = new RegExp(`[0-9]+ / ${prapi}`, 'g');
@@ -63,7 +63,7 @@ category('UI: Tags', () => {
   test('tag.add', async () => {
     await testTags(DG.Project.create(), grok.dapi.projects, 'project');
     await testTags(DG.DataConnection.create('apitests', {
-      dataSource: '',
+      dataSource: 'Files',
       server: '',
       db: '',
     }), grok.dapi.connections, 'connection');

@@ -192,6 +192,12 @@ for (const lang of langs) {
   });
 }
 
+category('Stdout', () => {
+  test('Console printing', async () => {
+    await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
+  }, {timeout: 60000});
+});
+
 category('Scripts: Client cache test', () => {
   before(async () => {
     await grok.functions.clientCache.start();

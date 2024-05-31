@@ -232,7 +232,7 @@ const filtersStyle = {
 const historyStyle = {
   'xColumnName': 'date',
   'splitColumnName': 'status',
-  'legendVisibility': 'Never',
+  'legendVisibility': DG.VisibilityMode.Never,
   // 'aggrType': 'count',
   'innerChartMarginTop': 0,
   'innerChartMarginBottom': 0,
