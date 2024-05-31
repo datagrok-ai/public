@@ -114,16 +114,13 @@ export async function initTests() {
   }
   for (const cat of Object.keys(categories))
     category('Providers: ' + cat, () => {
-      const set: Set<string> = new Set();
       for (const conn of categories[cat]) {
-        const name = set.has(conn.friendlyName) ? `${conn.friendlyName}_${conn.id}` : conn.friendlyName;
-        set.add(name);
-        _test(name, async () => {
+        if (!conn.friendlyName) continue;
+        _test(conn.friendlyName, async () => {
           const res = await conn.test();
           if (res !== 'ok')
             throw new Error(res);
         });
       }
-      set.clear();
     });
 }
