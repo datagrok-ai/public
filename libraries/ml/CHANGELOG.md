@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.10 (2024-05-27)
+
+Activity cliffs: ability to use with layouts and progects
+
 ## 6.6.9 (2024-05-27)
 
 Add inflation factor to MCL
