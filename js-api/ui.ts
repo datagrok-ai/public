@@ -1687,6 +1687,11 @@ export class ObjectHandler {
     throw 'Not defined.';
   }
 
+  /** URL of help page for the object that this meta handles. */
+  get helpUrl(): string | null {
+    return null;
+  }
+
   get name(): string { return `${this.type} handler`; }
 
   toString(): string { return this.name; }
