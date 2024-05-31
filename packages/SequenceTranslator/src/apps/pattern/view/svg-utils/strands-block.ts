@@ -3,7 +3,7 @@ import {STRAND, STRANDS, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
 import {isOverhangNucleotide} from '../../model/utils';
 import {SVG_CIRCLE_SIZES, SVG_ELEMENT_COLORS, SVG_TEXT_FONT_SIZES} from './const';
-import {SVGBlockBase} from './svg-block-bases';
+import {SVGBlockBase} from './svg-block-base';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 import {computeTextColorForNucleobaseLabel, getNucleobaseColorFromStyleMap, getNucleobaseLabelForCircle} from './utils';

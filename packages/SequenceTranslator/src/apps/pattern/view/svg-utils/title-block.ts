@@ -1,7 +1,7 @@
 import {STRAND} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
 import {FONT_SIZE} from './const';
-import {SVGBlockBase} from './svg-block-bases';
+import {SVGBlockBase} from './svg-block-base';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 

@@ -1,5 +1,7 @@
 import {STRAND, TERMINUS, STRAND_END} from '../../model/const';
 
+export const LEGEND_PADDING = 10;
+
 export const enum LUMINANCE_COEFFICIENTS {
   RED = 0.299,
   GREEN = 0.587,
