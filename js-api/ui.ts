@@ -590,9 +590,11 @@ export function bind(item: any, element: HTMLElement, options?: {contextMenu: bo
  * @param {Element} element
  * @param {Element} anchor
  * @param {boolean} vertical
+ * @param {number} dx
+ * @param {number} dy
  * @returns {Element}. */
-export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false): Element {
-  return api.grok_UI_ShowPopup(element, anchor, vertical);
+export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false, dx: number = 0, dy: number = 0): Element {
+  return api.grok_UI_ShowPopup(element, anchor, vertical, dx, dy);
 }
 
 /**
