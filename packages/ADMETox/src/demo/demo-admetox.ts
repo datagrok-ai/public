@@ -13,4 +13,5 @@ export async function _demoAdmetox(): Promise<void> {
   const layoutString = await grok.dapi.files.readAsText('System:AppData/Admetox/demo_files/demo.layout');
   const layout = DG.ViewLayout.fromJson(layoutString);
   tv.loadLayout(layout);
+  grok.shell.windows.showContextPanel = false;
 }
