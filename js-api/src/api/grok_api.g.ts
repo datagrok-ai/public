@@ -26,8 +26,8 @@ export interface IDartApi {
   grok_Set_CurrentObject(x: any, freeze: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
-  grok_Get_LastError(): any;
-  grok_Set_LastError(s: String): any;
+  grok_Get_LastError(): Promise<any>;
+  grok_Clear_LastError(): any;
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
