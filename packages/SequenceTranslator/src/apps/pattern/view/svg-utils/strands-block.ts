@@ -3,7 +3,7 @@ import {STRAND, STRANDS, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
 import {isOverhangNucleotide} from '../../model/utils';
 import {SVG_CIRCLE_SIZES, SVG_ELEMENT_COLORS, SVG_TEXT_FONT_SIZES} from './const';
-import {NonLegendBlockBase} from './svg-block-bases';
+import {SVGBlockBase} from './svg-block-bases';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 import {computeTextColorForNucleobaseLabel, getNucleobaseColorFromStyleMap, getNucleobaseLabelForCircle} from './utils';
@@ -16,9 +16,9 @@ const LEFT_LABEL_WIDTH = 55;
 const SENSE_STRAND_HORIZONTAL_SHIFT = SENSE_STRAND_PADDING + LEFT_LABEL_WIDTH;
 const RIGHT_LABEL_WIDTH = 20;
 
-export class StrandsBlock extends NonLegendBlockBase {
-  private strands: NonLegendBlockBase[];
-  private labels: NonLegendBlockBase[];
+export class StrandsBlock extends SVGBlockBase {
+  private strands: SVGBlockBase[];
+  private labels: SVGBlockBase[];
   constructor(
     svgElementFactory: SVGElementFactory,
     config: PatternConfiguration,
@@ -55,7 +55,7 @@ export class StrandsBlock extends NonLegendBlockBase {
   }
 }
 
-class SingleStrandBlock extends NonLegendBlockBase {
+class SingleStrandBlock extends SVGBlockBase {
   private _svgElements: SVGElement[];
   private nucleotideNumericLabels: (number | null)[];
   constructor(
@@ -248,7 +248,7 @@ class SingleStrandBlock extends NonLegendBlockBase {
   }
 }
 
-class StrandLabel extends NonLegendBlockBase {
+class StrandLabel extends SVGBlockBase {
   private _svgElements: SVGElement[];
   constructor(
     protected svgElementFactory: SVGElementFactory,

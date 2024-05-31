@@ -2,7 +2,7 @@ import {PatternConfiguration} from '../../model/types';
 import {SVGElementFactory} from './svg-element-factory';
 
 /** Horizontal block within SVG: title, strands, legend  */
-export abstract class SVGBlockRendererBase {
+export abstract class SVGBlockBase {
   // protected svgElements: SVGElement[] = [];
   constructor(
     protected svgElementFactory: SVGElementFactory,
@@ -24,10 +24,7 @@ export abstract class SVGBlockRendererBase {
       element.setAttribute('transform', `${transform} ${newTransform}`);
     });
   }
-}
 
-/**  For width defining blocks, like title and strands */
-export abstract class NonLegendBlockBase extends SVGBlockRendererBase {
   adjustContentWithinGlobalContainer(globalWidth: number): void {
     const contentWidth = this.getContentWidth();
     if (contentWidth < globalWidth) {
@@ -38,4 +35,3 @@ export abstract class NonLegendBlockBase extends SVGBlockRendererBase {
 
   abstract getContentWidth(): number;
 }
-

@@ -1,11 +1,13 @@
 import {STRAND} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
 import {FONT_SIZE} from './const';
-import {NonLegendBlockBase} from './svg-block-bases';
+import {SVGBlockBase} from './svg-block-bases';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 
-export class TitleBlock extends NonLegendBlockBase {
+const TITLE_LEFT_PADDING = 15;
+
+export class TitleBlock extends SVGBlockBase {
   private titleText: string;
   private _svgElements: SVGElement[] = [];
   constructor(
@@ -25,7 +27,7 @@ export class TitleBlock extends NonLegendBlockBase {
   private getTitle(): SVGElement {
     return this.svgElementFactory.createTextElement(
       this.titleText,
-      {x: 0, y: this.yShift + FONT_SIZE.TITLE},
+      {x: TITLE_LEFT_PADDING, y: this.yShift + FONT_SIZE.TITLE},
       FONT_SIZE.TITLE,
       'black'
     );
