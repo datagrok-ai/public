@@ -47,7 +47,7 @@ export class LegendBlock extends SVGBlockBase {
     };
 
     const circle = name.includes('linkage') ?
-      this.svgElementFactory.createStarElement(circlePosition, SVG_ELEMENT_COLORS.LINKAGE_STAR) :
+      this.svgElementFactory.createStarElement(circlePosition, SVG_ELEMENT_COLORS.LINKAGE_STAR, '1.0') :
       this.svgElementFactory
         .createCircleElement(circlePosition, SVG_CIRCLE_SIZES.LEGEND_RADIUS, getNucleobaseColorFromStyleMap(name));
     const paddedCircleWidth = 2 * SVG_CIRCLE_SIZES.LEGEND_RADIUS;

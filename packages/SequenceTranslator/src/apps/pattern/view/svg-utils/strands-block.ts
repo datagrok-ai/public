@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import {NUCLEOTIDES} from '../../../common/model/const';
 import {STRAND, STRANDS, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
@@ -7,6 +8,7 @@ import {SVGBlockBase} from './svg-block-base';
 import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 import {computeTextColorForNucleobaseLabel, getNucleobaseColorFromStyleMap, getNucleobaseLabelForCircle} from './utils';
+import { EventBus } from '../../model/event-bus';
 
 const NUMERIC_LABEL_PADDING = 5;
 const SENSE_STRAND_HEIGHT = SVG_TEXT_FONT_SIZES.NUCLEOBASE +
@@ -22,13 +24,14 @@ export class StrandsBlock extends SVGBlockBase {
   constructor(
     svgElementFactory: SVGElementFactory,
     config: PatternConfiguration,
-    yShift: number
+    yShift: number,
+    eventBus: EventBus,
   ) {
     super(svgElementFactory, config, yShift);
     const strandTypes = STRANDS.filter((strandType) => config.nucleotideSequences[strandType].length > 0);
 
     this.strands = strandTypes
-      .map((strand) => new SingleStrandBlock(this.svgElementFactory, config, yShift, strand));
+      .map((strand) => new SingleStrandBlock(this.svgElementFactory, config, yShift, strand, eventBus));
 
     this.labels = strandTypes.map(
       (strandType, idx) =>
@@ -62,7 +65,8 @@ class SingleStrandBlock extends SVGBlockBase {
     protected svgElementFactory: SVGElementFactory,
     protected config: PatternConfiguration,
     protected yShift: number,
-    private strand: STRAND
+    private strand: STRAND,
+    private eventBus: EventBus,
   ) {
     super(svgElementFactory, config, yShift);
 
@@ -136,6 +140,22 @@ class SingleStrandBlock extends SVGBlockBase {
 
     const circle = this.svgElementFactory
       .createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color);
+
+    const strandIdx = this.strand === STRAND.ANTISENSE ?
+      this.config.nucleotideSequences[this.strand].length - 1 - index : index;
+      circle.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      DG.Menu.popup()
+        .item('Remove', () => {
+          this.eventBus.removeNucleotide(this.strand, strandIdx);
+        })
+        .item('Add', () => {
+          this.eventBus.addNucleotide(this.strand, strandIdx);
+        })
+        .item('Edit', () => { })
+        .show();
+    };
 
     const nonModifiedNucleotideLetterLabel = this.createNucleotideLetterLabel(index, defaultShift, nucleotide);
 
@@ -223,7 +243,6 @@ class SingleStrandBlock extends SVGBlockBase {
 
     const elements = ptoFlags
       .map((ptoFlag, index) => {
-        if (!ptoFlag) return null;
 
         const centerPosition = {
           x: SENSE_STRAND_HORIZONTAL_SHIFT + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER,
@@ -231,7 +250,21 @@ class SingleStrandBlock extends SVGBlockBase {
         };
 
         const color = SVG_ELEMENT_COLORS.LINKAGE_STAR;
-        return this.svgElementFactory.createStarElement(centerPosition, color);
+
+        const starElement = this.svgElementFactory.createStarElement(centerPosition, color, !ptoFlag ? '0.0' : '1.0');
+        const strandIdx = this.strand === STRAND.ANTISENSE ?
+          this.config.nucleotideSequences[this.strand].length - index : index;
+        starElement.onclick = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          DG.Menu.popup()
+            .item(!ptoFlag ? 'Add PTO' : 'Remove PTO', () => {
+              this.eventBus.setPhosphorothioateLinkageFlag(this.strand, strandIdx, !ptoFlag);
+            })
+            .show();
+        };
+        
+        return starElement;
       })
       .filter((element) => element !== null) as SVGElement[];
 

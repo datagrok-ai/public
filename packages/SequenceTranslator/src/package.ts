@@ -1,4 +1,4 @@
-import DG from 'datagrok-api/dg';
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {loadJsonData} from './apps/common/model/data-loader/json-loader';
