@@ -126,6 +126,6 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Drag the range controls to filter.<br>
     To learn more about filters, complete our <b>Filters</b> tutorial.`);
 
-    await this.action('Interact with filters', combineLatest([this.t.onSelectionChanged, this.t.onFilterChanged]));
+    await this.action('Interact with filters by changing their values. After that select rows of your interest', combineLatest([this.t.onSelectionChanged, this.t.onFilterChanged]));
   }
 }
