@@ -5,10 +5,9 @@ import * as grok from 'datagrok-api/grok';
 // import {JSDraw2ModuleType} from '@datagrok/js-draw-lite/src/types/jsdraw2';
 // import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
 
-import '@datagrok-libraries/bio/src/types/helm';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
-import './tests/helm-tests.ts';
+import './tests/helm-tests';
 import './tests/findMonomers-tests';
 import './tests/helm-service-tests';
 import './tests/renderers-tests';

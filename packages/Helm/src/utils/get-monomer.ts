@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import {HelmType, HelmTypes, WebEditorMonomer} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {HelmType, HelmTypes, IOrgWebEditorMonomer} from '@datagrok/js-draw-lite/src/types/org';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
@@ -24,7 +24,7 @@ const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
 const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 
-export type GetMonomerResType = WebEditorMonomer | null;
+export type GetMonomerResType = IOrgWebEditorMonomer | null;
 
 export type GetMonomerFunc = (a: IAtom<HelmType> | HelmType, name: string | undefined) => GetMonomerResType;
 type GetMonomerOverridingFunc = (
@@ -76,7 +76,7 @@ export function getMonomerHandleArgs(
 export function getWebEditorMonomer(
   monomerLib: IMonomerLib,
   a: IAtom<HelmType> | HelmType, argName: string,
-): WebEditorMonomer | null {
+): IOrgWebEditorMonomer | null {
   const [biotype, elem] = getMonomerHandleArgs(a, argName);
   const pt = helmTypeToPolymerType(biotype);
 
@@ -94,7 +94,7 @@ export function getWebEditorMonomer(
     m = monomerLib.addMissingMonomer(pt, elem);
 
   /** Get or create {@link org,helm.WebEditorMonomer} */
-  let resWem: WebEditorMonomer | undefined = m.wem;
+  let resWem: IOrgWebEditorMonomer | undefined = m.wem;
   if (!resWem) {
     if (elem === '*')
       resWem = m.wem = new GapWebEditorMonomer(biotype, elem);

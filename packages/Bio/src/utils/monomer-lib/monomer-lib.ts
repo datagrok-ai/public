@@ -6,10 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {
-  IMonomerLib, Monomer, MonomerLibSummaryType, MonomerType, PolymerType, RGroup
-} from '@datagrok-libraries/bio/src/types';
-import {PolymerTypes} from '@datagrok-libraries/bio/src/utils/const';
+import {PolymerTypes, PolymerType, MonomerType} from '@datagrok/js-draw-lite/src/types/org';
+
+import {IMonomerLib, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
 import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';

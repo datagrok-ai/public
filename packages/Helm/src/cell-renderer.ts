@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {IEditorMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
+import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -49,7 +51,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const editorMol: IEditorMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      const editorMol: IMol<HelmType> | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
       if (editorMol)

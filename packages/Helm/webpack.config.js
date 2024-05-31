@@ -1,11 +1,16 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const FileManagerPlugin = require('filemanager-webpack-plugin');
+
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production') {
+  console.warn(`Building '${packageName}' in '${mode}' mode.`);
+}
+
 module.exports = {
-  cache: {
-    type: 'filesystem',
-  },
-  mode: 'development',
+  ...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  mode: mode,
   entry: {
     package: './src/package.ts',
     test: {
@@ -28,7 +33,18 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: /node_modules/},
     ],
   },
-  devtool: 'source-map',
+  plugins: [new FileManagerPlugin({
+    events: {
+      onStart: {
+        // D:\HOME\atanas\Datagrok\core\external\HELMWebEditor\HELM\source
+        copy: [{
+          source: '../../../../external/HELMWebEditor/HELM/source/dist/package.js',
+          destination: './vendor/helm-web-editor.js',
+        }],
+      },
+    },
+  })],
+  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

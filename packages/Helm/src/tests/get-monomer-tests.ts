@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
+import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
 import {IAtom, IJsAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import {HelmType} from '@datagrok/helm-web-editor/src/types/org-helm';
+
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
 } from '@datagrok-libraries/utils/src/test';

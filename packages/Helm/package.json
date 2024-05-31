@@ -8,6 +8,8 @@
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources": [
+    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js",
+    "vendor/helm-web-editor.js",
     "css/helm.css"
   ],
   "dependencies": {
@@ -15,7 +17,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.5",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.17.4",
+    "datagrok-api": "1.18.6",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"
@@ -23,14 +25,15 @@
   "devDependencies": {
     "@datagrok/bio": "^2.12.18",
     "@datagrok/chem": "^1.9.2",
-    "@datagrok/js-draw-lite": "../../../../external/JSDraw.Lite/source/web",
     "@datagrok/helm-web-editor": "../../../../external/HELMWebEditor/HELM/source",
+    "@datagrok/js-draw-lite": "../../../../external/JSDraw.Lite/source/web",
     "@types/node": "17.0.45",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
+    "filemanager-webpack-plugin": "^8.0.0",
     "path": "^0.12.7",
     "source-map-loader": "^4.0.1",
     "ts-loader": "^9.2.6",

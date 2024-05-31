@@ -5,7 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 
+import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
 import {IEditor} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -21,7 +23,7 @@ declare const JSDraw2: JSDraw2Module;
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private editor!: IEditor;
+  private editor!: IEditor<HelmType>;
   private image: HTMLImageElement | null = null;
 
   constructor() {

@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {PolymerTypes, MonomerTypes} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {MonomerTypes, PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
 
 import HELM_POLYMER_TYPE = PolymerTypes;
 import HELM_MONOMER_TYPE = MonomerTypes;

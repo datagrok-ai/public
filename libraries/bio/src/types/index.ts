@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PolymerType, MonomerType, WebEditorMonomer} from '@datagrok/helm-web-editor/src/types/org-helm';
-
 import {Observable} from 'rxjs';
+
+import {IOrgWebEditorMonomer, MonomerType, PolymerType} from '@datagrok/js-draw-lite/src/types/org';
 
 import {
   HELM_REQUIRED_FIELD as REQ,
@@ -35,7 +35,7 @@ export type Monomer = {
   [OPT.META]?: { [property: string]: any },
 
   lib?: IMonomerLib,
-  wem?: WebEditorMonomer,
+  wem?: IOrgWebEditorMonomer,
 };
 
 export type MonomerLibSummaryType = { [polymerType: string]: number };

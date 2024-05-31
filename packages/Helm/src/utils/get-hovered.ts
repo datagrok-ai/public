@@ -2,14 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {IEditorMol, IEditorMolAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import {PolymerType} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {IMol, IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType, PolymerType} from '@datagrok/js-draw-lite/src/types/org';
+
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import {HelmMonomerPlacer, ISeqMonomer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
-  argsX: number, argsY: number, gridCell: DG.GridCell, mol: IEditorMol
+  argsX: number, argsY: number, gridCell: DG.GridCell, mol: IMol<HelmType>
 ): ISeqMonomer | null {
   let hoveredSeqMonomer: ISeqMonomer | null = null;
 
@@ -83,7 +84,7 @@ export function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
-function getSeqMonomerFromHelmAtom(atom: IEditorMolAtom): ISeqMonomer {
+function getSeqMonomerFromHelmAtom(atom: IAtom): ISeqMonomer {
   const polymerType = helmTypeToPolymerType(atom.bio.type);
   return {symbol: atom.elem, polymerType: polymerType};
 }

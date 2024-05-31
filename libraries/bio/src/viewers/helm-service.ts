@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IEditorMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
 
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
 
@@ -16,7 +17,7 @@ export class HelmProps extends PropsBase {
 }
 
 export type HelmAux = {
-  /** The molecule made of atoms (monomers) and bonds */ mol: IEditorMol,
+  /** The molecule made of atoms (monomers) and bonds */ mol: IMol<HelmType>,
   /** SVG bounding box */ bBox: DG.Rect,
   /** Cell box {0, 0, w, h} */ cBox: DG.Rect,
 }

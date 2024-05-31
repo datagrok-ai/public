@@ -9,8 +9,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {getJSDrawModules} from '@datagrok/js-draw-lite/src/types';
-import {getHelmWebEditorModules} from '@datagrok/helm-web-editor/src/types';
-import {WebEditorMonomer} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {IOrgWebEditorMonomer} from '@datagrok/js-draw-lite/src/types/org';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -35,9 +34,17 @@ let monomerLib: IMonomerLib | null = null;
 
 export const _package = new HelmPackage();
 
+/*
+  Loading modules:
+  Through Helm/package.json/sources section
+    dojo from ajax.googleapis.com
+    HELMWebEditor
+      JSDraw.Lite is embedded into HELMWebEditor bundle (dist/package.js)
+ */
 declare const scil: ScilModule;
 declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
+declare const helmWebEditorInitPromise: Promise<void>;
 
 //tags: init
 export async function initHelm(): Promise<void> {
@@ -55,14 +62,13 @@ export async function initHelm(): Promise<void> {
         (async () => {
           _package.logger.debug(`${logPrefix}, dependence loading...`);
           const t1: number = performance.now();
-          // parentheses are required for destructuring assignment
-          _package.logger.debug(`${logPrefix}, getJSDrawModules() loading ...`);
-          (/*{scil, JSDraw2} = */await getJSDrawModules());
-          _package.logger.debug(`${logPrefix}, getJSDrawModules() loaded`);
 
-          _package.logger.debug(`${logPrefix}, getHelmWebEditorModules() loading ...`);
-          (/*{org} = */await getHelmWebEditorModules());
-          _package.logger.debug(`${logPrefix}, getHelmWebEditorModules() loaded`);
+          _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
+          await initHelmPatchDojo();
+          _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
+
+          await helmWebEditorInitPromise;
+          org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
           _package.logger.debug(`${logPrefix}, patch scil.Utils.alert`);
           _package.initHelmPatchScilAlert(); // patch immediately
@@ -71,11 +77,8 @@ export async function initHelm(): Promise<void> {
           _package.logger.debug(`${logPrefix}, dependence loaded, ET: ${(t2 - t1)} ms`);
         })()
       ]).then(() => {
-        _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
-        initHelmPatchDojo();
 
         // settings
-        org.helm.webeditor.kCaseSensitive = true; // GROK-13880
       }),
       (async () => {
         const libHelper = await getMonomerLibHelper();
@@ -138,7 +141,7 @@ function rewriteLibraries() {
     monomerSymbols.forEach((monomerSymbol) => {
       let isBroken = false;
       const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: WebEditorMonomer = {
+      const webEditorMonomer: IOrgWebEditorMonomer = {
         id: monomerSymbol,
         m: monomer.molfile,
         n: monomer.name,
@@ -146,7 +149,7 @@ function rewriteLibraries() {
         rs: monomer.rgroups.length,
         type: monomer.polymerType,
         mt: monomer.monomerType,
-        at: {}
+        at: {},
       };
 
       if (monomer.rgroups.length > 0) {

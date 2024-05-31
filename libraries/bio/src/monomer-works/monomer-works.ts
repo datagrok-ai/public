@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType, PolymerType, HelmTypes, PolymerTypes} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
 import {IMonomerLib} from '../types';
 
 /** Hypothetical interface to convert mol block notation.

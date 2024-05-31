@@ -4,7 +4,9 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {IEditorMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
+import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -134,7 +136,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const argsX = (e.offsetX - gcb.x) * dpr;
     const argsY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: IEditorMol | null = aux.mol;
+    const editorMol: IMol<HelmType> | null = aux.mol;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
