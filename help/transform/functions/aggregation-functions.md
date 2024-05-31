@@ -3,7 +3,7 @@ title: "Aggregation functions"
 ---
 
 The same set of aggregation functions is used across the whole platform in different context
-(["Aggregate Rows" dialog](../aggregate-rows.md), transformations, [markup](../../datagrok/navigation/markup.md))
+(["Aggregate Rows" dialog](../aggregate-rows.md), transformations, [markup](../../develop/under-the-hood/markup.md))
 
 ## Common
 

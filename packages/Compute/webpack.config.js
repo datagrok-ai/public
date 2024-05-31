@@ -1,9 +1,6 @@
 const path = require('path');
 
 module.exports = {
-  cache: {
-    type: 'filesystem',
-  },
   mode: 'development',
   entry: {
     package: './src/package.ts',
@@ -37,6 +34,7 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
+    'exceljs': 'ExcelJS'
   },
   output: {
     filename: '[name].js',

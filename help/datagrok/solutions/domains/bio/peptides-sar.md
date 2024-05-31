@@ -42,7 +42,7 @@ The monomer-position viewer can work in two modes: Mutation Cliffs and Invariant
 
 The default table view contains a set of columns corresponding to the positions of sequences and a scaled activity
 column. The table contains hidden columns from the original data. Users can show, hide and reorder columns in the
-table view. Read more about column actions [here](../../../../visualize/viewers/grid.md#resizing-and-reordering).
+table view. Read more about column actions [here](../../../../visualize/viewers/grid.md#show-hide-or-reorder-columns).
 
 ![Table view](img/table-view.png)
 
@@ -51,7 +51,7 @@ table view. Read more about column actions [here](../../../../visualize/viewers/
 The position columns contain monomers and render them according to amino acid residues classification highlighting
 hydrophobic/hydrophilic regions. You can hover over the monomer cells and the tooltip with its structure will pop up.
 The structure for non-natural amino acid residues is provided with a monomer library. More about the monomer library
-can be found [here](../bio/bio.md#managing-monomer-libraries).
+can be found [here](../bio/bio.md#manage-monomer-libraries).
 
 ![Monomer structure](img/monomer-structure-tooltip.png)
 
@@ -65,7 +65,7 @@ the sequences, and additional metrics.
 ![Monomer-Position tooltip](img/statistics-tooltip.png)
 
 Click on the monomer to select the rows that contain a given monomer at a given position. More about selection with
-viewers can be found [here](https://datagrok.ai/help/visualize/viewers/#selection). The selected monomer-position will
+viewers can be found [here](../../../navigation/views/table-view.md#select-and-filter). The selected monomer-position will
 be highlighted in composition analysis, in the monomer-position viewer and the most potent residues viewer.
 
 ## Monomer-Position viewer
@@ -87,7 +87,7 @@ configure the maximum number of mutations or the minimum activity difference bet
 ![Mutation-Cliffs mode](img/mutation-cliffs-mode.png)
 
 Choose the target column and category in viewer properties to calculate the mutation cliffs for that target.
-Learn more about viewer properties [here](../../../../visualize/viewers/viewers.md#properties).
+Learn more about viewer properties [here](../../../../datagrok/navigation/views/table-view.md#viewer-properties).
 
 ### Invariant Map mode
 
@@ -183,4 +183,4 @@ gap open and gat extend penalties, whether to perform clustering on sequence emb
 # Analysis sharing
 
 You can easily save and share Peptide analysis with Datagrok projects. Learn more about Datagrok project saving and
-sharing [here](../../../../collaborate/project.md).
+sharing [here](../../../concepts/project/project.md).

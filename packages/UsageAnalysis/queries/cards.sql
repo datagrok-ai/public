@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: UniqueUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -47,7 +47,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: string date {pattern: datetime}
 --input: list groups
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: NewUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
@@ -78,7 +78,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: string date {pattern: datetime}
 --input: list groups
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: SessionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
@@ -113,7 +113,7 @@ select (select count(distinct res.eid) as count1 from res where period = 1),
 --input: string date {pattern: datetime}
 --input: list groups
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test1: ViewsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
@@ -146,7 +146,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: ConnectionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -183,7 +183,7 @@ select (select count(distinct res.cid) as count1 from res where period = 1),
 --input: list groups
 --input: list packages
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: QueriesCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -217,7 +217,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --name: TestsCount
 --meta.cache: all
 --input: datetime date
---meta.cache.invalidateOn: 0 0 0 * *
+--meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 with res as (select
 distinct on (e.description, date)

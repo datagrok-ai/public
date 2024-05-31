@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, merge} from 'rxjs';
 import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
@@ -64,7 +64,8 @@ export abstract class FunctionView extends DG.ViewBase {
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
-    } = {historyEnabled: true, isTabbed: false},
+      skipInit?: boolean
+    } = {historyEnabled: true, isTabbed: false, skipInit: false},
   ) {
     super();
     this.box = true;
@@ -74,9 +75,11 @@ export abstract class FunctionView extends DG.ViewBase {
       this.parentCall = initValue;
 
     this.parentView = this.parentCall?.parentCall?.aux?.['view'];
-    this.basePath = `/${this.parentCall.func.name}`;
+    if (this.parentCall?.func?.name)
+      this.basePath = `/${this.parentCall.func.name}`;
 
-    this.init();
+    if (!options.skipInit)
+      this.init();
   }
 
   /**
@@ -395,7 +398,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
-    let isHistoryBlockOpened = false;
+    let wasHistoryBlockOpened = false;
 
     this.subs.push(
       newHistoryBlock.onCompactModeChanged.subscribe((newValue) => {
@@ -430,9 +433,20 @@ export abstract class FunctionView extends DG.ViewBase {
             this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${editedCall.options['title'] ?? dateStarted}`;
         }
       }),
+      grok.events.onViewRemoving.subscribe((event) => {
+        const closedView = event.args.view as DG.ViewBase;
+        if (closedView == this) {
+          const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
+          if (historyPanel) {
+            grok.shell.dockManager.close(historyPanel);
+            wasHistoryBlockOpened = true;
+          } else
+            wasHistoryBlockOpened = false;
+        }
+      }),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v == this) {
-          if (isHistoryBlockOpened) {
+          if (wasHistoryBlockOpened) {
             if (this.historyBlock?.compactMode)
               grok.shell.dockManager.dock(this.historyRoot, 'right', null, 'History', 0.3);
             else
@@ -442,9 +456,9 @@ export abstract class FunctionView extends DG.ViewBase {
           const historyPanel = grok.shell.dockManager.findNode(this.historyRoot);
           if (historyPanel) {
             grok.shell.dockManager.close(historyPanel);
-            isHistoryBlockOpened = true;
+            wasHistoryBlockOpened = true;
           } else
-            isHistoryBlockOpened = false;
+            wasHistoryBlockOpened = false;
         }
       }),
     );
@@ -807,7 +821,7 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected async executeTest(spec: any, updateMode = false) {
-    await testFunctionView(spec, this, {updateMode});
+    await testFunctionView(spec, this, {updateMode, interactive: true});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);
@@ -925,5 +939,9 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get hasUploadMode() {
     return this.getFeature('upload', false);
+  }
+
+  protected get isFittingEnabled() {
+    return this.getFeature('fitting', false);
   }
 }

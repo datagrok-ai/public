@@ -3,17 +3,23 @@ import * as ui from 'datagrok-api/ui';
 
 import {
   fitSeries,
-  getColumnChartOptions,
   getSeriesStatistics,
   getSeriesFitFunction,
-  getDataFrameChartOptions,
   LogOptions,
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties, substituteZeroes} from './fit-renderer';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {
+  getChartData,
+  getColumnChartOptions,
+  getDataFrameChartOptions,
+  isColorValid,
+  mergeProperties,
+  substituteZeroes
+} from './fit-renderer';
 import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
+import {FitConstants} from './const';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -50,8 +56,10 @@ export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOpt
       if (series.parameters[2] > 0)
         series.parameters[2] = Math.log10(series.parameters[2]);
   }
-  else 
-    series.parameters = fitSeries(series, fitFunction, chartLogOptions).parameters;
+  else {
+    const params = fitSeries(series, fitFunction, chartLogOptions).parameters;
+    series.parameters = [...params];
+  }
 
   const seriesStatistics = getSeriesStatistics(series, fitFunction, chartLogOptions);
   return seriesStatistics;
@@ -67,22 +75,29 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     const seriesStats = calculateSeriesStats(chartData.series![i], chartLogOptions);
     rSquaredValues[j] = seriesStats.rSquared!;
     aucValues[j] = seriesStats.auc!;
-    interceptXValues[j] = seriesStats.interceptX;
-    interceptYValues[j] = seriesStats.interceptY;
-    slopeValues[j] = seriesStats.slope;
+    interceptXValues[j] = seriesStats.interceptX!;
+    interceptYValues[j] = seriesStats.interceptY!;
+    slopeValues[j] = seriesStats.slope!;
     topValues[j] = seriesStats.top!;
     bottomValues[j] = seriesStats.bottom!;
     j++;
   }
 
   return {
-    rSquared: DG.Stats.fromValues(rSquaredValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    auc: DG.Stats.fromValues(aucValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptX: DG.Stats.fromValues(interceptXValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptY: DG.Stats.fromValues(interceptYValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    slope: DG.Stats.fromValues(slopeValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    top: DG.Stats.fromValues(topValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    bottom: DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
+    rSquared: rSquaredValues.some((elem) => elem === undefined || elem === null) ? undefined:
+      DG.Stats.fromValues(rSquaredValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    auc: aucValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(aucValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptX: interceptXValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(interceptXValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptY: interceptYValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(interceptYValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    slope: slopeValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(slopeValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    top: topValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(topValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    bottom: bottomValues.some((elem) => elem === undefined || elem === null) ? undefined :
+      DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
   };
 }
 
@@ -106,11 +121,11 @@ function convertJnJColumnToJSON(column: DG.Column): void {
     const chartData: IFitChartData = convertXMLToIFitChartData(value);
     column.set(i, JSON.stringify(chartData));
   }
-  column.setTag(TAG_FIT_CHART_FORMAT, '');
+  column.setTag(FitConstants.TAG_FIT_CHART_FORMAT, '');
 }
 
 function detectSettings(df: DG.DataFrame): void {
-  const fitColumns = df.columns.bySemTypeAll(FIT_SEM_TYPE);
+  const fitColumns = df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
   for (let i = 0; i < fitColumns.length; i++) {
     fitChartDataProperties.map((prop) => {
       fitColumns[i].temp[`${CHART_OPTIONS}-custom-${prop.name}`] = false;
@@ -118,7 +133,7 @@ function detectSettings(df: DG.DataFrame): void {
     fitSeriesProperties.map((prop) => {
       fitColumns[i].temp[`${SERIES_OPTIONS}-custom-${prop.name}`] = false;
     });
-    if (fitColumns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX)
+    if (fitColumns[i].getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX)
       convertJnJColumnToJSON(fitColumns[i]);
 
     for (let j = 0; j < fitColumns[i].length; j++) {
@@ -163,11 +178,11 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
   else {
     let columns: DG.Column[];
     if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
-      gridCell.cell.dataFrame.tags[TAG_FIT] = JSON.stringify(chartOptions);
-      columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FIT_SEM_TYPE);
+      gridCell.cell.dataFrame.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+      columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
     }
     else {
-      gridCell.cell.column.tags[TAG_FIT] = JSON.stringify(chartOptions);
+      gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
       columns = [gridCell.cell.column];
     }
     
@@ -176,7 +191,7 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
         const columnChartOptions = getColumnChartOptions(columns[i]);
         options === CHART_OPTIONS ? delete columnChartOptions.chartOptions![propertyName as keyof IFitChartOptions] :
           delete columnChartOptions.seriesOptions![propertyName as keyof IFitSeriesOptions];
-        columns[i].tags[TAG_FIT] = JSON.stringify(columnChartOptions);
+        columns[i].tags[FitConstants.TAG_FIT] = JSON.stringify(columnChartOptions);
       }
       if (columns[i].temp[`${options}-custom-${propertyName}`] === false) continue;
 
@@ -217,7 +232,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   }
 
   isApplicable(x: any): boolean {
-    return x instanceof DG.GridCell && x.cellType === FIT_CELL_TYPE;
+    return x instanceof DG.GridCell && x.cellType === FitConstants.FIT_CELL_TYPE;
   }
   
   // TODO: add aspect ratio for the cell

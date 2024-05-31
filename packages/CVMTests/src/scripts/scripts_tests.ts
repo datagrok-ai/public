@@ -38,7 +38,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {timeout: 60000});
+    }, {timeout: 120000});
 
     test('Datetime input/output', async () => {
       const currentTime = dayjs();
@@ -76,7 +76,8 @@ for (const lang of langs) {
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
         expect(!result || result.length === 0, false);
       });
-
+    }
+    if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
         if (lang !== 'R') {
@@ -181,7 +182,7 @@ for (const lang of langs) {
       const calls = [];
 
       for (let i = 0; i < iterations; i++)
-        calls.push(getScriptTime(`CVMTests:${lang}SingleDf`, {'df': TEST_DATAFRAME_1}));
+        calls.push(getScriptTime(`CVMTests:${lang}SingleDf`, {'df': grok.data.demo.demog(10000)}));
 
       const results = await Promise.all(calls);
       const sum = results.reduce((p, c) => p + c, 0);
@@ -190,6 +191,12 @@ for (const lang of langs) {
     }, {timeout: 120000});
   });
 }
+
+category('Stdout', () => {
+  test('Console printing', async () => {
+    await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
+  }, {timeout: 60000});
+});
 
 category('Scripts: Client cache test', () => {
   before(async () => {

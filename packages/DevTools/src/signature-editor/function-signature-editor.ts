@@ -338,6 +338,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';
+  col.width = 68;
 
   paramsGrid.onCellPrepare((gc) => {
     if (gc.gridColumn.name !== '+')
@@ -384,28 +385,32 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const propsForm = functionPropsForm();
 
-  const addParamBtn = (rowIdx: number) => ui.button(
-    [
-      ui.div(ui.icons.add(() => {
-      }, 'Add the param'), { style: { 'text-align': 'center', 'margin': '6px'} }),
-    ],
-    () => {
-      const newParam = {
-        [FUNC_PARAM_FIELDS.DIRECTION]: DIRECTION.INPUT,
-        [FUNC_PARAM_FIELDS.NAME]: 'newParam',
-        [FUNC_PARAM_FIELDS.TYPE]: DG.TYPE.BOOL,
-        [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: false,
-        [FUNC_PARAM_FIELDS.DESCRIPTION]: '',
-        [FUNC_PARAM_FIELDS.CATEGORY]: '',
-      };
+  const addParamBtn = (rowIdx: number) => {
+    const btn = ui.button(
+      [
+        ui.div(ui.icons.add(() => {
+        }, 'Add the param'), { style: { 'text-align': 'center', 'margin': '6px'} }),
+      ],
+      () => {
+        const newParam = {
+          [FUNC_PARAM_FIELDS.DIRECTION]: DIRECTION.INPUT,
+          [FUNC_PARAM_FIELDS.NAME]: 'newParam',
+          [FUNC_PARAM_FIELDS.TYPE]: DG.TYPE.BOOL,
+          [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: false,
+          [FUNC_PARAM_FIELDS.DESCRIPTION]: '',
+          [FUNC_PARAM_FIELDS.CATEGORY]: '',
+        };
 
-      const t = DG.Property.create(newParam.name, newParam.propertyType, (x: any) => x, (x: any, v) => x = v);
-      t.options.direction = newParam.direction;
-      t.description = newParam.description;
-      functionParamsCopy.splice(rowIdx + 1, 0, t);
-      functionParamsState.next(functionParamsCopy);
-    },
-  );
+        const t = DG.Property.create(newParam.name, newParam.propertyType, (x: any) => x, (x: any, v) => x = v);
+        t.options.direction = newParam.direction;
+        t.description = newParam.description;
+        functionParamsCopy.splice(rowIdx + 1, 0, t);
+        functionParamsState.next(functionParamsCopy);
+      },
+    );
+    btn.style.margin = 'initial';
+    return btn;
+  };
 
   const editorTabs = ui.tabControl({
     'PROPERTIES': propsForm,

@@ -4,16 +4,36 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {category, test} from '@datagrok-libraries/utils/src/test';
-import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {MonomerPlacer, hitBounds} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-
-import {MonomerLibManager} from '../utils/monomer-lib/lib-manager';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {_package} from '../package-test';
 
 category('renderers: monomerPlacer', () => {
+  let libHelper: IMonomerLibHelper;
+  let libSettings: UserLibSettings;
+
+  before(async () => {
+    libHelper = await getMonomerLibHelper();
+    libSettings = await getUserLibSettings();
+
+    await setUserLibSettingsForTests();
+    await libHelper.awaitLoaded();
+    await libHelper.loadLibraries(true);
+  });
+
+  after(async () => {
+    await setUserLibSettings(libSettings);
+    await libHelper.loadLibraries(true);
+  });
+
   const tests = {
     splitter: {
       /**
@@ -45,7 +65,7 @@ category('renderers: monomerPlacer', () => {
         'id1,m1-M-m3-mon4-mon5-N-T-MON8-N9\n' +
         'id2,m1-mon2-m3-mon4-mon5-Num--MON8-N9\n' +
         'id3,\n' + // empty
-        'id4,mon1-M-mon3-mon4-mon5---MON8-N9\n',
+        'id4,mon1-M-mon3-mon4-mon5---MON8-N9\n', // [ 5, 38, 71, 104, 137, 170, 203, 236, 269, 295 ]
       testList: [
         {src: {row: 0, x: -1}, tgt: {pos: null}},
         {src: {row: 1, x: 0}, tgt: {pos: null}},
@@ -54,12 +74,12 @@ category('renderers: monomerPlacer', () => {
         {src: {row: 1, x: 5}, tgt: {pos: 0}},
         {src: {row: 1, x: 37}, tgt: {pos: 0}},
         {src: {row: 1, x: 38}, tgt: {pos: 1}},
-        {src: {row: 1, x: 170}, tgt: {pos: 4}},
+        {src: {row: 1, x: 170}, tgt: {pos: 5}},
         {src: {row: 1, x: 200}, tgt: {pos: 5}},
         {src: {row: 2, x: 20}, tgt: {pos: null}}, // empty value
-        {src: {row: 3, x: 170}, tgt: {pos: 4}},
+        {src: {row: 3, x: 170}, tgt: {pos: 5}},
         {src: {row: 3, x: 200}, tgt: {pos: 5}},
-        {src: {row: 3, x: 282}, tgt: {pos: null}},
+        {src: {row: 3, x: 297}, tgt: {pos: null}},
       ]
     },
     fastaMsa: {
@@ -88,6 +108,8 @@ id3,QHIRE--LT
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`getPosition-${testName}`, async () => {
+      const libHelper = await getMonomerLibHelper();
+      const monomerLib = libHelper.getBioLib();
       const df: DG.DataFrame = DG.DataFrame.fromCsv(testData.csv);
       await grok.data.detectSemanticTypes(df);
       const seqCol: DG.Column = df.getCol('seq');
@@ -103,25 +125,50 @@ id3,QHIRE--LT
           separatorWidth: sepWidth,
           monomerToShort: monomerToShort,
           monomerLengthLimit: monLength,
-          monomerLib: MonomerLibManager.instance.getBioLib(),
         };
       });
 
+      const width: number = 10000;
       const testList = testData.testList;
       // simulate rendering
       for (let rowI: number = 0; rowI < seqCol.length; ++rowI)
-        colTemp.getCellMonomerLengths(rowI);
+        colTemp.getCellMonomerLengths(rowI, 10000);
 
       const errorList: string[] = [];
       for (const [test, _testI] of wu.enumerate(testList)) {
-        const res = {pos: colTemp.getPosition(test.src.row, test.src.x)};
+        const res = {pos: colTemp.getPosition(test.src.row, test.src.x, width)};
         if (test.tgt.pos != res.pos) {
           errorList.push(`Test src ${JSON.stringify(test.src)} expected tgt ${JSON.stringify(test.tgt)},` +
             ` but get ${JSON.stringify({res})}`);
         }
       }
       if (errorList.length > 0)
-        throw new Error('Test failed error(s):\n' + errorList.join(', n'));
+        throw new Error('Test failed error(s):\n' + errorList.join(', \n'));
+    });
+  }
+});
+
+category('renderers: monomerPlacer', () => {
+  const boundsTestData = {
+    bounds: [10, 20, 30, 40, 50, 60],
+    tests: {
+      left: {x: 3, tgt: null},
+      c0left: {x: 10, tgt: 0},
+      c0mid: {x: 12, tgt: 0},
+      c0right: {x: 19, tgt: 0},
+      c1left: {x: 20, tgt: 1},
+      c2right: {x: 39, tgt: 2},
+      c4left: {x: 50, tgt: 4},
+      c4right: {x: 59, tgt: 4},
+      max: {x: 60, tgt: null},
+      right: {x: 65, tgt: null},
+    }
+  };
+
+  for (const [testName, testData] of Object.entries(boundsTestData.tests)) {
+    test('hitBounds-' + testName, async () => {
+      const res = hitBounds(boundsTestData.bounds, testData.x);
+      expect(res, testData.tgt);
     });
   }
 });

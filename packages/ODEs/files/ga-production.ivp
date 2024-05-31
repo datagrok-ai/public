@@ -12,12 +12,12 @@
   rX = mu * X
 
 #argument: t, 1-st stage
-  start = 0 {units: h; caption: initial; category: Time} [Start of the process]
-  stage1 = 60 {units: h; caption: 1-st stage; category: Stages duration; min: 40; max: 80} [Duration of the 1-st stage]
-  step = 0.1 {units: h; caption: step; category: Time; min: 0.01; max: 1} [Time step of simlulation]
+  start = 0 {units: h; caption: initial; category: Misc} [Start of the process]
+  stage1 = 60 {units: h; caption: 1-st stage; category: Durations; min: 20; max: 80} [Duration of the 1-st stage]
+  step = 0.1 {units: h; caption: step; category: Misc; min: 0.01; max: 1} [Time step of simlulation]
 
 #update: 2-nd stage
-  duration = stage2
+  duration = overall - _t1
   S += 70
 
 #inits:  
@@ -26,7 +26,7 @@
   O = 7 {units: kg/m^3; caption: oxygen; category: Initial concentrations; min: 1; max: 10} [Dissolved oxygen]
   P = 0 {units: kg/m^3; caption: acid; category: Initial concentrations; min: 0; max: 0.1} [Gluconic acid]
 
-#outputs:
+#output:
   t {caption: time}
   X {caption: biomass}
   S {caption: glucose}
@@ -34,17 +34,17 @@
   P {caption: acid}
 
 #parameters:
-  stage2 = 60 {units: h; caption: 2-nd stage; category: Stages duration; min: 40; max: 80} [Duration of the 2-nd stage]  
+  overall = 100 {units: h; category: Durations; min: 100; max: 140} [Overall duration]
   muM = 0.668 {units: 1/h; category: Parameters} [Monod type model parameter]
   alpha = 2.92 {category: Parameters} [Monod type model parameter]
   beta = 0.131 {units: 1/h; category: Parameters} [Monod type model parameter]
   gamma = 2.12 {category: Parameters} [Monod type model parameter]
   lambda = 0.232 {units: 1/h; category: Parameters} [Monod type model parameter]
   delta = 0.278 {category: Parameters} [Monod type model parameter]
-  phi = 4.87E-3 {units: 1/h; category: Parameters} [Monod type model parameter]
-  Ks = 1.309E2 {units: g/L; category: Parameters} [Monod type model parameter]
-  Ko = 3.63E-4 {units: g/L; category: Parameters} [Monod type model parameter]
-  Kla = 1.7E-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
+  phi = 4.87e-3 {units: 1/h; category: Parameters} [Monod type model parameter]
+  Ks = 1.309e2 {units: g/L; category: Parameters} [Monod type model parameter]
+  Ko = 3.63e-4 {units: g/L; category: Parameters} [Monod type model parameter]
+  Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m^3; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-#tolerance: 1E-9
+#tolerance: 1e-9

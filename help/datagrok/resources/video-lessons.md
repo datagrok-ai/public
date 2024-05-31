@@ -1,6 +1,6 @@
 ---
 title: "Video lessons"
-sidebar position: 5
+sidebar position: 6
 ---
 
 Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) for more videos.
@@ -27,7 +27,8 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 <iframe src="https://www.youtube.com/embed/k1NVdTRpYOM?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Cheminformatics overview</h2>
-    <p class="card-text">This is an overview of the cheminformatics capabilities available in the Datagrok platform. During the interactive sessions, we will do the following:<br />
+    <p class="card-text">
+    This is an overview of the cheminformatics capabilities available in the Datagrok platform. During the interactive sessions, we will do the following:<br />
                          • import molecules in the SMILES format<br />
                          • take a closer look at the molecule-specific info panels, including 3D structure, SDF, toxicity prediction, drug likeness, CHEMBL substructure and similarity, identifier conversion, PubChem integration, predictive models, as well as using community-produced scripts as context info panels<br />
                          • sketch new molecules<br />
@@ -48,7 +49,8 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 <iframe src="https://www.youtube.com/embed/YJmSvh3_uCM?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Database Exploration</h2>
-    <p class="card-text">We will learn how to create and share database connections, and interactively explore database content using a number of tools:
+    <p class="card-text">
+    We will learn how to create and share database connections, and interactively explore database content using a number of tools:
                          • Context panel - for quick browsing
                          • Aggregation editor - for interactive aggregation and pivoting
                          • Schema browser
@@ -85,7 +87,8 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 <iframe src="https://www.youtube.com/embed/tVwpRB8fikQ?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Coffee Company</h2>
-    <p class="card-text">How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we will achieve the following:<br />
+    <p class="card-text">
+    How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we will achieve the following:<br />
                          • retrieve historical data from the Postgres database<br />
                          • explore, visualize, and clean it<br />
                          • impute missing values<br />
@@ -102,7 +105,8 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 <iframe src="https://www.youtube.com/embed/dlbK2Zo-eng?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Joining tables</h2>
-    <p class="card-text">In this video, we will join two tables by key columns, using different join types.
+    <p class="card-text">
+    In this video, we will join two tables by key columns, using different join types.
                          <a href="https://datagrok.ai/help/dialogs/join-tables"> Learn more </a>
     </p>
   </div>
@@ -112,8 +116,9 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
 <iframe src="https://www.youtube.com/embed/rUHFwO1iQUg?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
     <h2 class="card-title">Comparing tables</h2>
-    <p class="card-text">Compare data snapshots using the Table Comparer tool.
-                         <a href="https://datagrok.ai/help/dialogs/compare-tables"> Learn more </a>
+    <p class="card-text">
+    Compare data snapshots using the Table Comparer tool.
+    <a href="https://datagrok.ai/help/dialogs/compare-tables"> Learn more </a>
     </p>
   </div>
 </div>

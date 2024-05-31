@@ -4,7 +4,6 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
-import {ViewHandler} from "../view-handler";
 
 const filtersStyle = {
   columnNames: ['event_time', 'user', 'error_message', 'is_reported'],
@@ -50,7 +49,6 @@ export class ErrorsView extends UaView {
           'showRowHeader': false,
           'showColumnGridlines': false,
           'allowRowSelection': false,
-          'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace'
@@ -161,13 +159,13 @@ export class ErrorsView extends UaView {
 
     accordion.addPane('Statistics', () => ui.wait(async () => {
       const detailsButton = ui.button('Details', async () => {
-        const ev = ViewHandler.getView('Reports');
+        const ev = this.uaToolbox.viewHandler.getView('Reports');
         const viewer = ev.viewers[0];
         viewer.reloadViewer({'event_id': eventId});
         if (!viewer.activated)
           viewer.activated = true;
-        ViewHandler.changeTab('Reports');
-        this.uaToolbox.drilldown = ViewHandler.getCurrentView();
+        this.uaToolbox.viewHandler.changeTab('Reports');
+        this.uaToolbox.drilldown = this.uaToolbox.viewHandler.getCurrentView();
       });
       detailsButton.classList.add('ua-details-button');
       const promises: Promise<any>[] = [

@@ -14,7 +14,7 @@ or [viewers](how-to/manipulate-viewers.md),
 applying [predictive models](../learn/learn.md), and
 even [building custom apps](../develop/how-to/build-an-app.md).
 
-There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
+There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting/scripting.mdx), use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications,
 use the packaging mechanism, which is the focus of this article.
 
@@ -28,7 +28,7 @@ package might contain different things:
 
 * JavaScript [functions](../datagrok/concepts/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
-* [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
+* [Scripts](../compute/scripting/scripting.mdx) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
 * [Tables](../access/files/supported-formats.md#tabular-formats), files, and other objects
 
@@ -50,10 +50,10 @@ The simplest JavaScript package consists of the following files:
 
 In addition to that, it might contain the following folders:
 
-* `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md).
+* `environments`: [environment configurations](../compute/scripting/scripting-features/specify-env.mdx)
+  for [scripts](../compute/scripting/scripting.mdx).
   Examples: [Demo]
-* `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
+* `scripts`: a collection of [scripts](../compute/scripting/scripting.mdx) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
@@ -127,9 +127,8 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../datagrok/concepts/functions/func-params-annotation.md#header-parameters) are registered as Grok
-[functions](../datagrok/concepts/functions/functions.md)
-. By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
+headers are registered as Grok
+[functions](../datagrok/concepts/functions/functions.md). By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:
 
@@ -365,7 +364,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose/docker-compose.mdx)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose/docker-compose.md)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)
@@ -408,7 +407,7 @@ grok publish <url> -k <dev-key>
 
 ### Sharing
 
-Just like other entities on the platform, packages are subject to [privileges](../govern/security.md#privileges). When
+Just like other entities on the platform, packages are subject to [privileges](../govern/access-control/access-control.md#permissions). When
 sharing with users and groups of users, you can specify the rights (for viewing and editing) and choose if you want to
 notify the person in question. These privileges can be managed not only from the user interface, but also directly from
 the package. To do that, you should specify the eligible user groups in the `package.json` file:
@@ -482,7 +481,7 @@ section of the source tree by its decapitalized name.
 ### Source-based packages
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
-`api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints.
+`api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints.
 
 ### Troubleshooting debugging
 
@@ -548,7 +547,7 @@ Also, you can connect with fellow developers on either
 See also:
 
 * [Grok API](packages/js-api.md)
-* [Scripting](../compute/scripting.md)
+* [Scripting](../compute/scripting/scripting.mdx)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 

@@ -71,7 +71,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()` from the
   `Functions` pane in the context panel on the left)
-* via the [console](../../datagrok/navigation#console): press `~` key anywhere inside Datagrok, the Console will appear
+* via the [console](../../datagrok/navigation/panels/panels.md#console): press `~` key anywhere inside Datagrok, the Console will appear
   to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will be
   obtained by transformation kebab style of folder name to camel style, or can be specified directly with attribute
   `friendlyName` in `package.json` file.
@@ -100,8 +100,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     ```
 
    Note that comments on the top of the function declaration are crucial for running it on the platform. They determine
-   the function name, the input and output types. Essentially, change each character to the complementary one: `A <=> T`
-   , `G <=> C`. Run it and check whether everything works fine.
+   the function name, the input and output types. 
+   
+   Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether everything works fine.
 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only, and to return a
    nucleotide string as well. In order to do that, let's annotate both input and output parameters with the
@@ -133,7 +134,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead iterate
-   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
+   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/dg/classes/Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev` command. When everything is done correctly, the
    `detectors.js` file will get loaded by the platform automatically, and the `detectNucleotides` function will be
@@ -183,7 +184,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting/scripting.mdx), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -321,8 +322,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    comments block and returning a result via a variable.
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
-   functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript
-   API](../../compute/scripting.md#running-a-script).
+   functions in Datagrok. It's also possible to call them in a uniform fashion [using our JavaScript API](../../compute/scripting/getting-started.md#run-the-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
@@ -351,7 +351,7 @@ functions.
    :::
 
    To provide scripts as part of a package, use the `scripts` folder. This is one of special directories reserved for
-   specific package content (learn more about [package structure](../../develop#package-structure)).
+   specific package content (learn more about [package structure](../develop.md#package-structure)).
 
 1. Now let's try calling a script via JS API. Add a new function to `src/package.ts`. It should call your Python script
    with specified arguments and return the result of the following expression:
@@ -365,7 +365,7 @@ functions.
    case, a namespace corresponds to a package name); the next argument is an object with parameters (make sure that they
    correspond to the input names in the script annotation, e.g., `{ sequence: 'gttctctacc', subsequence: 'acc' }`). You
    can also control the progress indicator during the call (see the API reference for
-   [call](https://datagrok.ai/js-api/classes/dg.Functions#call)).
+   [call](https://datagrok.ai/js-api/dg/classes/Functions#call)).
 
    :::tip
    You can generate such wrapper functions for your scripts and queries by calling the `grok api` command in your
@@ -390,7 +390,7 @@ functions.
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
    outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
-   from the function call (refer to the [Scripting](../../compute/scripting.md#running-a-script) article for details).
+   from the function call (refer to the [Scripting](../../compute/scripting/getting-started.md#run-the-script) article for details).
    :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a
@@ -478,7 +478,7 @@ from our server.
       command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../../develop/how-to/access-data#creating-queries), create the '.sql' file under the `queries` folder, and
+   as instructed [here](../../develop/how-to/access-data#creating-queries), update credentials, create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -493,7 +493,7 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
+    (see examples in the article [Parameterized Queries](../../access/databases/databases.md#parameterized-queries)).
 
 ## Exercise 5: Reading files
 
@@ -516,7 +516,7 @@ from our server.
 
    There are several methods you can use to open a table. For demo files, the simplest way is
    [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
-   `Demo:Files` [file share](../../access/files/files.mdx), you can use
+   `Demo:Files` [file share](../../access/files/files.md), you can use
    [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
    `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
@@ -545,11 +545,10 @@ from our server.
       grok.shell.addTableView(df);
       return df;
    }
-
    //input: string filepath
    //output: dataframe df
    export async function openTable2(filepath: string): Promise<DG.DataFrame> {
-      const df = await grok.data.files.openTable(`Demo:Files/${filepath}`);
+      const df = await grok.data.files.openTable(`System:/${filepath}`);
       grok.shell.addTableView(df);
       return df;
    }
@@ -557,7 +556,7 @@ from our server.
    //input: string filepath
    //output: dataframe df
    export async function openTable3(filepath: string): Promise<DG.DataFrame> {
-      const df = await grok.functions.eval(`OpenServerFile("Demo:Files/${filepath}")`)[0];
+      const df = (await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`)))[0];
       grok.shell.addTableView(df);
       return df;
    }
@@ -567,12 +566,10 @@ from our server.
    </details>
 
 1. Now let's see how to load external files by URL. Run a code snippet:
-   <https://public.datagrok.ai/js/samples/data-access/external/stock-prices>. We will see another application of  the
+   [stock-prices](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). We will see another application of  the
    `grok.data.loadTable` method in one of the next steps.
-1. Create a folder `files` in your package. Download the demographics dataset
-   <https://public.datagrok.ai/f/System.DemoFiles/demog.csv> and
-   <https://public.datagrok.ai/f/System.DemoFiles/cars.csv>. Add these files to the new folder. Also, put several files
-   with another extension there, e.g. <https://public.datagrok.ai/files/system.demofiles/chem/mol/aspirin.mol>.
+1. Create a folder `files` in your package. Download the [demographics dataset](https://public.datagrok.ai/f/System.DemoFiles/demog.csv) and [cars dataset](https://public.datagrok.ai/f/System.DemoFiles/cars.csv). Add these files to the new folder. Also, put several files
+   with another extension there, e.g. [aspirin mol file](https://public.datagrok.ai/files/system.demofiles/chem/mol/aspirin.mol).
 1. Write a function that works with files distributed with your package. It should add all *tables* from the `files`
    folder to the workspace:
 
@@ -626,7 +623,7 @@ First, let's explore how scripting viewer works.
    `Data` corresponds to the first button from the top of the Datagrok sidebar. Make sure the table view with the data
    appears.
 1. Activate the top menu from the sidebar, using a `Windows | Menu` switch. 3. In this menu, hit `Add | Scripting
-Viewers | Python | Scatter Plot`.
+Viewers | Add Scripting Viewer`.
 1. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
 1. Proceed to the viewer properties by hitting on the gear icon in the viewer's title.
 1. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE` for `Color`. After checking
@@ -634,6 +631,32 @@ Viewers | Python | Scatter Plot`.
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
 1. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..." icon in the text
    field.
+1. Enter the next code to the script editor:
+ 
+   ```ts
+   #name: Scatter Plot
+   #language: python
+   #tags: demo, viewers
+   #input: dataframe t
+   #input: column xColumnName {type: numerical}
+   #input: column yColumnName {type: numerical}
+   #input: column colorColumnName {type: numerical}
+   #output: graphics
+
+   import numpy as np
+   import matplotlib.pyplot as plt
+
+   color = t[colorColumnName].values 
+   cmap = plt.cm.Spectral
+   norm = plt.Normalize(vmin = min(color), vmax = max(color))
+
+   plt.scatter(t[[xColumnName]],t[[yColumnName]], color = cmap(norm(color)), alpha=0.5)
+   plt.xlabel(xColumnName)
+   plt.ylabel(yColumnName)
+
+   plt.show() 
+   ```
+
 1. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
     * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
@@ -661,45 +684,60 @@ Viewers | Python | Scatter Plot`.
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#exercise-1-semantic-types).
 
-*You will learn:* how to join and union dataframes using the knowledge of semantic types, and display the result.
+*You will learn:* how to apply test-driven development (TDD), how to join and union dataframes using the knowledge of semantic types, and display the result.
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including the package called
    `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the exercise
    ["Semantic Types"](#exercise-1-semantic-types).
-2. Add a function to the package as follows:
+2. Your task will be to implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+
+   * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
+   * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
+   * creates a dataframe `df` out of `df1` and `df2` in the following way:
+      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
+        operation for dataframes, as in SQL; use the dataframe's
+        [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
+      * a new column `Counts` appears in `df`, which contains:
+         * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length
+           `N` in *all* the sequences of `col2`
+         * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
+           dataframes; use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
+           , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on a
+           newly created column
+   * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
+
+   To make this, you will first need to write a test for the function ([Test packages](https://datagrok.ai/help/develop/how-to/test-packages)).
+   Create a new file `fuzzy-join-test.ts` in the `tests` folder of your package. Write a test that creates two dataframes
+   with the columns with dna_nucleotide semantic type, appends the dataframes and calculates the `Counts` column. The test
+   should check the existence of the appended columns and the `Counts` column, as well as its values. After the test is written,
+   run it to make sure it fails.
+
+3. Add a function to the package as follows:
 
    ```javascript
    //name: fuzzyJoin
    //input: dataframe df1
    //input: dataframe df2
-   //input: int N
+   //input: int N 
+   //output: dataframe result
    ...
    ```
 
-3. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+4. Implement the `fuzzyJoin` function.
 
-    * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
-    * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
-    * creates a dataframe `df` out of `df1` and `df2` in the following way:
-      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
-        operation for dataframes, as in SQL; use the dataframe's
-        [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
-      * a new column `Counts` appears in `df`, which contains:
-        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length
-          `N` in *all* the sequences of `col2`
-        * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
-          dataframes; use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
-          , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on a
-          newly created column
-    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
-
-4. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
+5. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
    on the Datagrok server, in this one we locally build the package before sending it. In addition, webpack output helps
    find some syntactic errors in JavaScript.
-5. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the package's
-   `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
-   ![exercises-transforming-dataframes](exercises-transforming-dataframes.png)
-6. Read more about joining dataframes through the case reviewed at our
+6. Launch the platform and run the test to check if you implemented the function correctly. If the test fails, fix the
+   function and run the test again until it passes.
+7. After the test passes, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
+   package's `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
+
+   ![exercises-transforming-dataframes](exercises-transforming-dataframes.png).
+
+If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
+of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
+8. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables).
 
@@ -853,7 +891,7 @@ contained in a currently selected grid cell.
    [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/components/accordion.js)
    control to display a sequence in a scrollable fashion. Add a caption to that text area to display an ENA's name for
    this sequence, which also comes in the fasta file. Use a
-   [`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js)
+   [`splitV`](https://datagrok.ai/js-api/ui/functions/splitV)
    control to nicely locate the caption at the top and the text area at the bottom.
 
 `fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a
@@ -902,8 +940,8 @@ dialog-based function which forms such files automatically by a given search inp
 
     ```typescript
     let grid = DG.Viewer.grid(df);
-    let limitInput = ui.intInput('How many rows: ', 100);
-    let queryInput = ui.stringInput('Query: ', 'coronavirus');
+    let limitInput = ui.input.int('How many rows: ', {value: 100});
+    let queryInput = ui.input.string('Query: ', {value: 'coronavirus'});
     let button = ui.button('Preview');
     ui.dialog('Create sequences table')
       .add(ui.splitV([

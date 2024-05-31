@@ -1,0 +1,37 @@
+<!-- markdownlint-disable first-line-h1 -->
+
+import {LayoutHeader, LayoutBody} from '@site/src/components/careers/index.jsx';
+import LeadSoftwareEngineer from './lead-software-engineer.mdx';
+import TechnicalProjectManager from './technical-project-manager.mdx';
+import ProductOnboardingManager from './product-onboarding-manager.mdx';
+import ScientificApplicationDeveloper from './scientific-application-developer.mdx';
+import MiddleFullStackEngineer from './middle-full-stack-engineer.mdx';
+import JuniorSoftwareEnginner from './junior-software-engineer.mdx';
+import SeniorSoftwareEnginner from './senior-software-engineer.mdx';
+import FrontEndFullStackDeveloper from './front-end-full-stack-developer.mdx';
+import DataEngineerDevOps from './data-engineer-devops.mdx';
+import EngineeringManager from './engineering-manager.mdx';
+import JuniorQASDETEngineer from './juniour-qa-sdet-engineer.mdx';
+import DevOpsEngineer from './devops.mdx';
+
+export const meta = {
+    title: 'Open roles',
+    description: 'Your next big career move. Join us and unlock your potential.',
+    video: {
+        link: 'https://www.youtube.com/embed/AxiY2xhudwE',
+        description: 'Check out the video from our CEO, Andrew Skalkin, to learn about the company, product, and what it’s like to work here'
+    }
+}
+
+<LayoutHeader meta={meta}/>
+
+<div className="row py-5">
+    <JuniorQASDETEngineer/>
+    <LeadSoftwareEngineer/>
+    <ScientificApplicationDeveloper/>
+    <MiddleFullStackEngineer/>
+    <SeniorSoftwareEnginner/>
+    <DataEngineerDevOps/>
+    <EngineeringManager/>
+    <DevOpsEngineer/>
+</div>

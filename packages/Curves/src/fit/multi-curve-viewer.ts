@@ -2,12 +2,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {CellRenderViewer} from './cell-render-viewer';
-import {FitChartCellRenderer, INFLATE_SIZE, mergeChartOptions, mergeSeries} from './fit-renderer';
+import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
-import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
+import {FitConstants} from './const';
 
 
 const ERROR_CLASS = 'd4-viewer-error';
@@ -30,7 +31,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   constructor() {
     super(new FitChartCellRenderer());
 
-    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FIT_SEM_TYPE});
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
@@ -72,12 +73,15 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     if (this.curvesColumnNames?.length === 0)
       return;
     this.rows.length = 0;
+    let selectionStart = -1;
     if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
       this.rows.push(this.dataFrame.currentRowIdx);
     if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx !== -1)
       this.rows.push(this.dataFrame.mouseOverRowIdx);
-    if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1)
+    if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1) {
+      selectionStart = this.rows.length;
       this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+    }
 
     this.data = new FitChartData();
     const grid = this.tableView?.grid!;
@@ -91,10 +95,15 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
           continue;
         const cellCurves = getChartData(gridCell);
         cellCurves.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
-        if (cellCurves.chartOptions !== undefined && cellCurves.chartOptions !== null)
-          chartOptions[chartOptions.length] = cellCurves.chartOptions;
-        if (mergeCellSeries)
-          cellCurves.series = [mergeSeries(cellCurves.series!)!];
+        const currentChartOptions = cellCurves.chartOptions;
+        if (currentChartOptions !== undefined && currentChartOptions !== null)
+          chartOptions[chartOptions.length] = currentChartOptions;
+        if (mergeCellSeries) {
+          const mergedSeries = mergeSeries(cellCurves.series!)!;
+          if (currentChartOptions?.title !== undefined && currentChartOptions?.title !== '')
+            mergedSeries.name = currentChartOptions?.title;
+          cellCurves.series = [mergedSeries];
+        }
         series.push(...cellCurves.series!);
       }
       if (this.mergeColumnSeries)
@@ -113,6 +122,10 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
         series.showPoints = '';
         series.lineStyle = 'solid';
       }
+      if (this.data.series?.length! > 10 && this.data.series?.length! < 100 && i >= selectionStart) {
+        const color = DG.Color.fromHtml(series.fitLineColor);
+        series.fitLineColor = `rgba(${DG.Color.r(color)}, ${DG.Color.g(color)}, ${DG.Color.b(color)}, 0.2)`;
+      }
     });
   }
 
@@ -130,7 +143,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
   onTableAttached(): void {
     const grid = this.tableView?.grid!;
-    const fitCol = this.dataFrame.columns.bySemType(FIT_SEM_TYPE);
+    const fitCol = this.dataFrame.columns.bySemType(FitConstants.FIT_SEM_TYPE);
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 
@@ -161,6 +174,6 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       return;
     }
     this._removeErrorMessage();
-    this.renderer.renderCurves(g, 0, 0, this.canvas.width, this.canvas.height, this.data);
+    this.renderer.renderCurves(g, new DG.Rect(0, 0, this.canvas.width, this.canvas.height).inflate(FitConstants.INFLATE_SIZE, FitConstants.INFLATE_SIZE), this.data);
   }
 }

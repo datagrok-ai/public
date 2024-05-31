@@ -233,6 +233,14 @@ export class TimelinesViewer extends EChartViewer {
     }, <Indexable>{});
   }
 
+  _testColumns() {
+    const columns = this.dataFrame.columns.toList();
+    const strColumns = columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING)
+      .sort((a, b) => a.categories.length - b.categories.length);
+    const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
+    return (strColumns!.length >= 1 && numColumns!.length >= 1);
+  }
+
   onTableAttached(): void {
     this.init();
 

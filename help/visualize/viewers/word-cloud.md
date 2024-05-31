@@ -45,4 +45,4 @@ can use it to filter other viewers.
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)

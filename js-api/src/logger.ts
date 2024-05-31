@@ -33,7 +33,7 @@ export class Logger {
     return new Logger(undefined, {staticLogger: true});
   }
 
-  static translateStackTrace(stackTrace: string): string {
+  static translateStackTrace(stackTrace: string): Promise<string> {
      return api.grok_Log_TranslateStackTrace(stackTrace);
   }
 
@@ -131,12 +131,6 @@ export class PackageLogger extends Logger {
     //@ts-ignore
     msg.params['packageName'] = this.package.name;
     super._log(msg);
-  }
-}
-
-export class DetailedLog {
-  static showReportProperties(reportId: string, df: DataFrame, index: number): void {
-    api.grok_DetailedLog_Get_Accordion(reportId, toDart(df), index);
   }
 }
 

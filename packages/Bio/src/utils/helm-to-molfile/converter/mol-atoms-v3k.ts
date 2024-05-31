@@ -34,5 +34,14 @@ export class MolfileAtomsV3K extends MolfileAtoms {
       }).replace(rGroupsRegex, '');
     });
   }
+
+  replaceRGroupSymbolByElement(atomIdx: number, newElementSymbol: string): void {
+    super.replaceRGroupSymbolByElement(atomIdx, newElementSymbol);
+    // rdkit can generate (out of thin air) masses for r groups, so we need to remove them as well.
+    //they are at the end of the line after coordinates and other data
+    const lineInfo = this.rawAtomLines[atomIdx].substring(3).split(' ');
+    if (lineInfo.length > 7)
+      this.rawAtomLines[atomIdx] = `M  ${lineInfo.slice(0, 7).join(' ')}`;
+  }
 }
 

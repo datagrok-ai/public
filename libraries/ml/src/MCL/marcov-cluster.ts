@@ -40,7 +40,9 @@ export class MCLSparseReducer {
     if (this._options.maxIterations === 0)
       return this.transform(sparseMatrix, nRows);
 
-    const mclRes = await markovClusterWebGPU(sparseMatrix, nRows, this._options.maxIterations);
+    const mclRes = await markovClusterWebGPU(
+      sparseMatrix, nRows, this._options.maxIterations, this._options.inflateFactor
+    );
     const sparseObject = this.csrToSparseObject(mclRes, nRows);
     const {clusters, is, js} = this.assignClusters(sparseObject, nRows);
     this.correctClusters(clusters);

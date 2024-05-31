@@ -18,16 +18,16 @@ The table schema is a data model (table-columns)
 
 1. Click on "demog" table on schema
 
-* "demog" table selected on [Context Panel](../../datagrok/navigation.md#context-panel)
+* "demog" table selected on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Select both tables with mouse button pressed
 
-* Both tables are selected on [Context Panel](../../datagrok/navigation.md#context-panel)
+* Both tables are selected on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 * All actions concern both tables
 
 1. Click on the "Sex" column in "demog" table on schema
 
-* "Sex" column open on [Context Panel](../../datagrok/navigation.md#context-panel)
+* "Sex" column open on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Call context menu for table on schema
 

@@ -21,7 +21,7 @@ SELECT * FROM Test_Normal;
 --output: datetime date
 --meta.cache: server
 --meta.batchMode: true
-SELECT pg_sleep(3);
+SELECT pg_sleep(5);
 --batch
 SELECT max(some_number) as max_value,
        (SELECT count(*) FROM MOCK_DATA) as count,
@@ -107,4 +107,9 @@ select * from mock_json_data limit 5000;
 --name: NotCachedHeavy
 --connection: PostgreSQLDBTests
 select * from mock_json_data limit 5000;
+--end
+
+--name: TestConnCache
+--connection: PostgreSQLDBTestsCached
+SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --end

@@ -4,7 +4,7 @@ title: "Custom machine learning models"
 
 Datagrok supports three ML engines out of the box: H2O, Caret, Chemprop. In addition, the platform allows users to build
 their own customizable ML models. This capability provides full access and control to algorithms available in ML
-libraries in any of the [supported languages](../compute/scripting.md#supported-languages). The users may construct and
+libraries in any of the [supported languages](../compute/compute.md#functions-and-cross-language-support). The users may construct and
 configure any chosen model in their custom data pipeline.
 
 Custom model functionality is implemented as a two-step process using train and apply functions. Train function is used

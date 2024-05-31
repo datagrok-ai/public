@@ -75,8 +75,8 @@ Example for R Caret engine:
 * Apply model
 
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**)
-or as suggested models in table properties in [Toolbox](../datagrok/navigation/navigation.md#toolbox)
-or [Context Panel](../datagrok/navigation/navigation.md#context-panel).
+or as suggested models in table properties in **Toolbox**
+or [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 
 ## Outputs
 
@@ -122,7 +122,7 @@ presented as a data table, a report, an interactive visualization, or something 
 Datagrok platform was specifically designed with that in mind. In addition to traditional model deployment techniques
 such as table and reports, Datagrok offers a unique way of distributing predictive model results via
 the [data augmentation](../explore/data-augmentation/data-augmentation.md)
-and [info panels](../explore/data-augmentation/info-panels.md#predicting-molecule-solubility).
+and [info panels](../datagrok/navigation/panels/info-panels.md).
 
 ### Videos
 

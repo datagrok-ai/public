@@ -10,27 +10,27 @@ Hybrid EState-VSA descriptors (like the MOE VSA descriptors)
 
 | Descriptor   | Description                                   |
 |--------------|-----------------------------------------------|
-| EState_VSA1  | EState VSA Descriptor 1 (-inf < x < -0.39)    |
-| EState_VSA10 | EState VSA Descriptor 10 ( 9.17 <= x < 15.00) |
-| EState_VSA11 | EState VSA Descriptor 11 ( 15.00 <= x < inf)  |
-| EState_VSA2  | EState VSA Descriptor 2 ( -0.39 <= x < 0.29)  |
-| EState_VSA3  | EState VSA Descriptor 3 ( 0.29 <= x < 0.72)   |
-| EState_VSA4  | EState VSA Descriptor 4 ( 0.72 <= x < 1.17)   |
-| EState_VSA5  | EState VSA Descriptor 5 ( 1.17 <= x < 1.54)   |
-| EState_VSA6  | EState VSA Descriptor 6 ( 1.54 <= x < 1.81)   |
-| EState_VSA7  | EState VSA Descriptor 7 ( 1.81 <= x < 2.05)   |
-| EState_VSA8  | EState VSA Descriptor 8 ( 2.05 <= x < 4.69)   |
-| EState_VSA9  | EState VSA Descriptor 9 ( 4.69 <= x < 9.17)   |
-| VSA_EState1  | VSA EState Descriptor 1 (-inf < x < 4.78)     |
-| VSA_EState10 | VSA EState Descriptor 10 ( 11.00 <= x < inf)  |
-| VSA_EState2  | VSA EState Descriptor 2 ( 4.78 <= x < 5.00)   |
-| VSA_EState3  | VSA EState Descriptor 3 ( 5.00 <= x < 5.41)   |
-| VSA_EState4  | VSA EState Descriptor 4 ( 5.41 <= x < 5.74)   |
-| VSA_EState5  | VSA EState Descriptor 5 ( 5.74 <= x < 6.00)   |
-| VSA_EState6  | VSA EState Descriptor 6 ( 6.00 <= x < 6.07)   |
-| VSA_EState7  | VSA EState Descriptor 7 ( 6.07 <= x < 6.45)   |
-| VSA_EState8  | VSA EState Descriptor 8 ( 6.45 <= x < 7.00)   |
-| VSA_EState9  | VSA EState Descriptor 9 ( 7.00 <= x < 11.00)  |
+| EState_VSA1  | EState VSA Descriptor 1 (-inf \< x \< -0.39)    |
+| EState_VSA10 | EState VSA Descriptor 10 ( 9.17 \<= x \< 15.00) |
+| EState_VSA11 | EState VSA Descriptor 11 ( 15.00 \<= x \< inf)  |
+| EState_VSA2  | EState VSA Descriptor 2 ( -0.39 \<= x \< 0.29)  |
+| EState_VSA3  | EState VSA Descriptor 3 ( 0.29 \<= x \< 0.72)   |
+| EState_VSA4  | EState VSA Descriptor 4 ( 0.72 \<= x \< 1.17)   |
+| EState_VSA5  | EState VSA Descriptor 5 ( 1.17 \<= x \< 1.54)   |
+| EState_VSA6  | EState VSA Descriptor 6 ( 1.54 \<= x \< 1.81)   |
+| EState_VSA7  | EState VSA Descriptor 7 ( 1.81 \<= x \< 2.05)   |
+| EState_VSA8  | EState VSA Descriptor 8 ( 2.05 \<= x \< 4.69)   |
+| EState_VSA9  | EState VSA Descriptor 9 ( 4.69 \<= x \< 9.17)   |
+| VSA_EState1  | VSA EState Descriptor 1 (-inf \< x \< 4.78)     |
+| VSA_EState10 | VSA EState Descriptor 10 ( 11.00 \<= x \< inf)  |
+| VSA_EState2  | VSA EState Descriptor 2 ( 4.78 \<= x \< 5.00)   |
+| VSA_EState3  | VSA EState Descriptor 3 ( 5.00 \<= x \< 5.41)   |
+| VSA_EState4  | VSA EState Descriptor 4 ( 5.41 \<= x \< 5.74)   |
+| VSA_EState5  | VSA EState Descriptor 5 ( 5.74 \<= x \< 6.00)   |
+| VSA_EState6  | VSA EState Descriptor 6 ( 6.00 \<= x \< 6.07)   |
+| VSA_EState7  | VSA EState Descriptor 7 ( 6.07 \<= x \< 6.45)   |
+| VSA_EState8  | VSA EState Descriptor 8 ( 6.45 \<= x \< 7.00)   |
+| VSA_EState9  | VSA EState Descriptor 9 ( 7.00 \<= x \< 11.00)  |
 
 ## QED
 
@@ -101,42 +101,42 @@ MOE-like approximate molecular surface area descriptors
 | Descriptor  | Description                                                |
 |-------------|------------------------------------------------------------|
 | LabuteASA   | Labute's Approximate Surface Area (ASA from MOE)           |
-| PEOE_VSA1   | MOE Charge VSA Descriptor 1 (-inf < x < -0.30)             |
-| PEOE_VSA10  | MOE Charge VSA Descriptor 10 ( 0.10 <= x < 0.15)           |
-| PEOE_VSA11  | MOE Charge VSA Descriptor 11 ( 0.15 <= x < 0.20)           |
-| PEOE_VSA12  | MOE Charge VSA Descriptor 12 ( 0.20 <= x < 0.25)           |
-| PEOE_VSA13  | MOE Charge VSA Descriptor 13 ( 0.25 <= x < 0.30)           |
-| PEOE_VSA14  | MOE Charge VSA Descriptor 14 ( 0.30 <= x < inf)            |
-| PEOE_VSA2   | MOE Charge VSA Descriptor 2 (-0.30 <= x < -0.25)           |
-| PEOE_VSA3   | MOE Charge VSA Descriptor 3 (-0.25 <= x < -0.20)           |
-| PEOE_VSA4   | MOE Charge VSA Descriptor 4 (-0.20 <= x < -0.15)           |
-| PEOE_VSA5   | MOE Charge VSA Descriptor 5 (-0.15 <= x < -0.10)           |
-| PEOE_VSA6   | MOE Charge VSA Descriptor 6 (-0.10 <= x < -0.05)           |
-| PEOE_VSA7   | MOE Charge VSA Descriptor 7 (-0.05 <= x < 0.00)            |
-| PEOE_VSA8   | MOE Charge VSA Descriptor 8 ( 0.00 <= x < 0.05)            |
-| PEOE_VSA9   | MOE Charge VSA Descriptor 9 ( 0.05 <= x < 0.10)            |
-| SMR_VSA1    | MOE MR VSA Descriptor 1 (-inf < x < 1.29)                  |
-| SMR_VSA10   | MOE MR VSA Descriptor 10 ( 4.00 <= x < inf)                |
-| SMR_VSA2    | MOE MR VSA Descriptor 2 ( 1.29 <= x < 1.82)                |
-| SMR_VSA3    | MOE MR VSA Descriptor 3 ( 1.82 <= x < 2.24)                |
-| SMR_VSA4    | MOE MR VSA Descriptor 4 ( 2.24 <= x < 2.45)                |
-| SMR_VSA5    | MOE MR VSA Descriptor 5 ( 2.45 <= x < 2.75)                |
-| SMR_VSA6    | MOE MR VSA Descriptor 6 ( 2.75 <= x < 3.05)                |
-| SMR_VSA7    | MOE MR VSA Descriptor 7 ( 3.05 <= x < 3.63)                |
-| SMR_VSA8    | MOE MR VSA Descriptor 8 ( 3.63 <= x < 3.80)                |
-| SMR_VSA9    | MOE MR VSA Descriptor 9 ( 3.80 <= x < 4.00)                |
-| SlogP_VSA1  | MOE logP VSA Descriptor 1 (-inf < x < -0.40)               |
-| SlogP_VSA10 | MOE logP VSA Descriptor 10 ( 0.40 <= x < 0.50)             |
-| SlogP_VSA11 | MOE logP VSA Descriptor 11 ( 0.50 <= x < 0.60)             |
-| SlogP_VSA12 | MOE logP VSA Descriptor 12 ( 0.60 <= x < inf)              |
-| SlogP_VSA2  | MOE logP VSA Descriptor 2 (-0.40 <= x < -0.20)             |
-| SlogP_VSA3  | MOE logP VSA Descriptor 3 (-0.20 <= x < 0.00)              |
-| SlogP_VSA4  | MOE logP VSA Descriptor 4 ( 0.00 <= x < 0.10)              |
-| SlogP_VSA5  | MOE logP VSA Descriptor 5 ( 0.10 <= x < 0.15)              |
-| SlogP_VSA6  | MOE logP VSA Descriptor 6 ( 0.15 <= x < 0.20)              |
-| SlogP_VSA7  | MOE logP VSA Descriptor 7 ( 0.20 <= x < 0.25)              |
-| SlogP_VSA8  | MOE logP VSA Descriptor 8 ( 0.25 <= x < 0.30)              |
-| SlogP_VSA9  | MOE logP VSA Descriptor 9 ( 0.30 <= x < 0.40)              |
+| PEOE_VSA1   | MOE Charge VSA Descriptor 1 (-inf \< x \< -0.30)             |
+| PEOE_VSA10  | MOE Charge VSA Descriptor 10 ( 0.10 \<= x \< 0.15)           |
+| PEOE_VSA11  | MOE Charge VSA Descriptor 11 ( 0.15 \<= x \< 0.20)           |
+| PEOE_VSA12  | MOE Charge VSA Descriptor 12 ( 0.20 \<= x \< 0.25)           |
+| PEOE_VSA13  | MOE Charge VSA Descriptor 13 ( 0.25 \<= x \< 0.30)           |
+| PEOE_VSA14  | MOE Charge VSA Descriptor 14 ( 0.30 \<= x \< inf)            |
+| PEOE_VSA2   | MOE Charge VSA Descriptor 2 (-0.30 \<= x \< -0.25)           |
+| PEOE_VSA3   | MOE Charge VSA Descriptor 3 (-0.25 \<= x \< -0.20)           |
+| PEOE_VSA4   | MOE Charge VSA Descriptor 4 (-0.20 \<= x \< -0.15)           |
+| PEOE_VSA5   | MOE Charge VSA Descriptor 5 (-0.15 \<= x \< -0.10)           |
+| PEOE_VSA6   | MOE Charge VSA Descriptor 6 (-0.10 \<= x \< -0.05)           |
+| PEOE_VSA7   | MOE Charge VSA Descriptor 7 (-0.05 \<= x \< 0.00)            |
+| PEOE_VSA8   | MOE Charge VSA Descriptor 8 ( 0.00 \<= x \< 0.05)            |
+| PEOE_VSA9   | MOE Charge VSA Descriptor 9 ( 0.05 \<= x \< 0.10)            |
+| SMR_VSA1    | MOE MR VSA Descriptor 1 (-inf \< x \< 1.29)                  |
+| SMR_VSA10   | MOE MR VSA Descriptor 10 ( 4.00 \<= x \< inf)                |
+| SMR_VSA2    | MOE MR VSA Descriptor 2 ( 1.29 \<= x \< 1.82)                |
+| SMR_VSA3    | MOE MR VSA Descriptor 3 ( 1.82 \<= x \< 2.24)                |
+| SMR_VSA4    | MOE MR VSA Descriptor 4 ( 2.24 \<= x \< 2.45)                |
+| SMR_VSA5    | MOE MR VSA Descriptor 5 ( 2.45 \<= x \< 2.75)                |
+| SMR_VSA6    | MOE MR VSA Descriptor 6 ( 2.75 \<= x \< 3.05)                |
+| SMR_VSA7    | MOE MR VSA Descriptor 7 ( 3.05 \<= x \< 3.63)                |
+| SMR_VSA8    | MOE MR VSA Descriptor 8 ( 3.63 \<= x \< 3.80)                |
+| SMR_VSA9    | MOE MR VSA Descriptor 9 ( 3.80 \<= x \< 4.00)                |
+| SlogP_VSA1  | MOE logP VSA Descriptor 1 (-inf \< x \< -0.40)               |
+| SlogP_VSA10 | MOE logP VSA Descriptor 10 ( 0.40 \<= x \< 0.50)             |
+| SlogP_VSA11 | MOE logP VSA Descriptor 11 ( 0.50 \<= x \< 0.60)             |
+| SlogP_VSA12 | MOE logP VSA Descriptor 12 ( 0.60 \<= x \< inf)              |
+| SlogP_VSA2  | MOE logP VSA Descriptor 2 (-0.40 \<= x \< -0.20)             |
+| SlogP_VSA3  | MOE logP VSA Descriptor 3 (-0.20 \<= x \< 0.00)              |
+| SlogP_VSA4  | MOE logP VSA Descriptor 4 ( 0.00 \<= x \< 0.10)              |
+| SlogP_VSA5  | MOE logP VSA Descriptor 5 ( 0.10 \<= x \< 0.15)              |
+| SlogP_VSA6  | MOE logP VSA Descriptor 6 ( 0.15 \<= x \< 0.20)              |
+| SlogP_VSA7  | MOE logP VSA Descriptor 7 ( 0.20 \<= x \< 0.25)              |
+| SlogP_VSA8  | MOE logP VSA Descriptor 8 ( 0.25 \<= x \< 0.30)              |
+| SlogP_VSA9  | MOE logP VSA Descriptor 9 ( 0.30 \<= x \< 0.40)              |
 | TPSA        | The polar surface area of a molecule based upon fragments. |
 
 ## Descriptors3D

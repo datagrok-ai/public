@@ -4,7 +4,7 @@
 # Tests: Community forum
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as
-[queries](../access/access.md#data-query) or [projects](../collaborate/project.md). In the latter case, entity owner will get
+[queries](../access/access.md#data-query) or [projects](../datagrok/concepts/project/project.md). In the latter case, entity owner will get
 notified that someone asked for help.
 
 ## Testing scenarios
@@ -20,7 +20,7 @@ notified that someone asked for help.
 * Topic has not been created yet at this point
 * Warning about empty subject
 
-1. Click on "Link content" button. Add [project](../collaborate/project.md)
+1. Click on "Link content" button. Add [project](../datagrok/concepts/project/project.md)
    and [table](../datagrok/table.md) from popup menu to tread
 
 1. Create new topic with "Test_sub" subject
@@ -28,15 +28,15 @@ notified that someone asked for help.
 * New topic created successfully
 * "Test_sub" topic appeared in the "Chats" tab for current user
 
-1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation.md#context-panel) for
+1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel) for
    current
-   [user](../govern/user.md)
+   [user](../govern/access-control/users-and-groups#users)
 
 * Reply added to topic.
 * Open topic from "Forums" window to see a new answer.
 
-1. Drag the objects ([table](../datagrok/table.md), [project](../collaborate/project.md)
-   , [use](../govern/user.md), etc)
+1. Drag the objects ([table](../datagrok/table.md), [project](../datagrok/concepts/project/project.md)
+   , [use](../govern/access-control/users-and-groups#users), etc)
    to answer field.
 
 * Objects are added to the comments successfully.

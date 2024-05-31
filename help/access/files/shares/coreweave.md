@@ -4,7 +4,7 @@ title: "CoreWeave"
 
 Provides access to the
 [CoreWeave](https://docs.coreweave.com/storage/object-storage) as
-[file share](../../files/files.mdx).
+[file share](../files.md).
 
 ## Connection parameters
 
@@ -27,5 +27,5 @@ Provides access to the
 
 See also:
 
-* [File shares](../files.mdx)
+* [File shares](../files.md)
 * [CoreWeave](https://docs.coreweave.com/storage/object-storage)

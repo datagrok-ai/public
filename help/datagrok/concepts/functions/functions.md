@@ -12,7 +12,7 @@ that can be executed within the platform is a function. Here are some examples o
 * Deleting a column from the table
 * Sending an email
 * Applying [predictive model](../../../learn/learn.md) to a dataset
-* Calculating molecule properties via a [Python script](../../../compute/scripting.md)
+* Calculating molecule properties via a [Python script](../../../compute/scripting/scripting.mdx)
 * Showing a dialog.
 
 All of the above-mentioned functions are quite different in terms of what and how they do - some of them execute on the
@@ -20,12 +20,12 @@ server and others in the browser, some of them perform scientific computation wh
 all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed
-  from [console](../../navigation/navigation.md#console), or as part of a bigger script
+  from [console](../../navigation/panels/panels.md#console), or as part of a bigger script
 * Findable - open `Help | Functions` to search
 * Introspectable - programmatically find out function parameter's metadata
 * Secure - A function can have privileges associated with it. For instance, you might want the
   "ApproveExpense" function be available only to people belonging to the "
-  Managers" [group](../../../govern/group.md).
+  Managers" [group](../../../govern/access-control/users-and-groups#groups).
 * Auditable - find out who and when executed a particular function, and which parameters were used
 * Ability to get a table with all parameters used for a particular function
 * Runnable - dynamically generated UI for editing parameter values
@@ -37,7 +37,7 @@ all share the same mechanism and therefore have the same features:
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing function call in
-the [console](../../navigation/navigation.md#console)), we get macro recording capability - and unlike Excel, there is no
+the [console](../../navigation/panels/panels.md#console), we get macro recording capability - and unlike Excel, there is no
 need to start recording, simply open `View | Console` to see what had been executed.
 
 This feature is especially useful for data cleansing, where you would visually clean one dataset and get a script that
@@ -47,7 +47,7 @@ share it with your team.
 When enabled, a history of all changes made to the table is saved automatically, so that users will later be able to
 figure out how that particular table was produced, or to reproduce the process on a new table with the structure similar
 to the original one. To access it, open table's 'History' pane on
-the [context panel](../../navigation/navigation.md#context-panel).
+the [context panel](../../navigation/panels/panels.md#context-panel).
 
 ## Data flow
 
@@ -57,8 +57,8 @@ public environment.
 
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../../learn/learn.md#train-model),
-[running an R script](../../../compute/scripting.md), or
-[computing chemical descriptors](../../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
+[running an R script](../../../compute/scripting/scripting.mdx), or
+[computing chemical descriptors](../../solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../../develop/under-the-hood/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.
@@ -66,14 +66,14 @@ Neither inputs nor outputs can be accessed by functions executed by other users.
 server, where the data is stored or processed. All traffic between client and server
 is [TLS-encrypted](https://en.wikipedia.org/wiki/Transport_Layer_Security).
 
-Most of the actions performed by users are logged for the usage analysis and [audit](../../../govern/audit.md) purposes.
+Most of the actions performed by users are logged for the usage analysis and [audit](../../../govern/audit/audit.md) purposes.
 For logging, only the metadata associated with the parameters (such as table and column names) will be additionally
 stored in the database. Additionally, if a table passed as a parameter is already residing on a server, the
 corresponding audit record will contain a reference to it.
 
 ## Filtering
 
-You can use these fields to filter functions with [smart search](../../../explore/search-filter-select/smart-search.md):
+You can use these fields to filter functions with [smart search](../../navigation/views/table-view#search-patterns):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
@@ -82,10 +82,10 @@ You can use these fields to filter functions with [smart search](../../../explor
 | runs        | list of [FuncCall](function-call.md) object |
 | createdOn   |                                             |
 | updatedOn   |                                             |
-| author      | [User](../../../govern/user.md) object         |
-| starredBy   | [User](../../../govern/user.md) object         |
-| commentedBy | [User](../../../govern/user.md) object         |
-| usedBy      | [User](../../../govern/user.md) object         |
+| author      | [User](../../../govern/access-control/users-and-groups#users) object         |
+| starredBy   | [User](../../../govern/access-control/users-and-groups#users) object         |
+| commentedBy | [User](../../../govern/access-control/users-and-groups#users) object         |
+| usedBy      | [User](../../../govern/access-control/users-and-groups#users) object         |
 
 ## Videos
 
@@ -93,5 +93,5 @@ You can use these fields to filter functions with [smart search](../../../explor
 
 See also:
 
-* [Console](../../navigation/navigation.md#console)
-* [Scripting](../../../compute/scripting.md)
+* [Console](../../navigation/panels/panels.md#console)
+* [Scripting](../../../compute/scripting/scripting.mdx)

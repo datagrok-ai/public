@@ -3,7 +3,7 @@
 
 # Tests: Data source
 
-[User](../govern/user.md) in system can connect to data from different sources.
+[User](../govern/access-control/users-and-groups#users) in system can connect to data from different sources.
 
 ## Testing scenarios
 
@@ -22,17 +22,17 @@
 * Patten "dataSource = {data_source_name}" is entered in browser search bar
 
 1. Open a list of [connections](access.md#data-connection)
-   on [Context Panel](../datagrok/navigation.md#context-panel)
+   on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Open a list of Jobs on Context Panel
 
-1. Open a list of Job Runs on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of Job Runs on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * Job Runs list is open. Display start time, status and name of Job
 
-1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
-1. Open a list of Query Runs on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of Query Runs on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 * Query Runs list is open. Display start time, status and name
 

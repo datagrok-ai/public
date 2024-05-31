@@ -273,12 +273,12 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   async awaitRendered(timeout: number = 10000): Promise<void> {
     const callLog = `awaitRendered( ${timeout} )`;
     const logPrefix = `${this.filterToLog()}.${callLog}`;
-    await delay(0);
+    await delay(10);
     await testEvent(this.onRendered, () => {
       this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
     }, () => {
       this.invalidate(callLog);
-    }, timeout, `${logPrefix} ${timeout} timeout`);
+    }, timeout, `${logPrefix} timeout`);
 
     // Rethrow stored syncer error (for test purposes)
     const viewErrors = this.filterSyncer.resetErrors();

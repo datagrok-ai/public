@@ -17,7 +17,6 @@ import {
   IFitSeries,
   fitSeriesProperties,
   fitChartDataProperties,
-  TAG_FIT,
   FitParamBounds,
   IFitChartOptions,
   FitErrorModelType,
@@ -46,16 +45,6 @@ export function createDefaultChartData(): IFitChartData {
     chartOptions: createFromProperties(fitChartDataProperties),
     seriesOptions: createFromProperties(fitSeriesProperties),
   };
-}
-
-/** Returns existing, or creates new dataframe default chart options. */
-export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
-  return JSON.parse(df.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
-}
-
-/** Returns existing, or creates new column default chart options. */
-export function getColumnChartOptions(column: DG.Column): IFitChartData {
-  return JSON.parse(column.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
 }
 
 /** Returns points arrays from {@link IFitPoint} array */
@@ -164,7 +153,9 @@ export function getSeriesFitFunction(series: IFitSeries): FitFunction {
 
 /** Returns a curve function, either using the pre-computed parameters or by fitting on-the-fly */
 export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) => number {
-  return getFittedCurve(fitFunc.y, series.parameters!);
+  const params = new Float32Array(series.parameters?.length!);
+  params.set(series.parameters!);
+  return getFittedCurve(fitFunc.y, params);
 }
 
 /** Fits the series data according to the series fitting settings */
@@ -184,9 +175,13 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
     y: series.points.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)} :
     {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
       y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-  if (!series.parameters)
-    series.parameters = fitSeries(series, fitFunc).parameters;
-  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05,
+  if (!series.parameters) {
+    const params = fitSeries(series, fitFunc).parameters;
+    series.parameters = [...params];
+  }
+  const params = new Float32Array(series.parameters?.length!);
+  params.set(series.parameters!);
+  return getCurveConfidenceIntervals(data, params, fitFunc.y, 0.05,
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
@@ -194,7 +189,11 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitStatistics {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
     y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-  if (!series.parameters)
-    series.parameters = fitSeries(series, fitFunc).parameters;
-  return getStatistics(data, series.parameters, fitFunc.y, true);
+  if (!series.parameters) {
+    const params = fitSeries(series, fitFunc).parameters;
+    series.parameters = [...params];
+  }
+  const params = new Float32Array(series.parameters?.length!);
+  params.set(series.parameters!);
+  return getStatistics(data, params, fitFunc.y, true);
 }

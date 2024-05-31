@@ -4,7 +4,7 @@ Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [
 
 * Go to **Apps** and run **Diff Studio**
 * Enter formulas or modify template
-* Click **F5** or go to **Run** tab
+* Press **F5** or go to **Run** tab
 
 The solver takes a set of the differential equations in a declarative form, and creates a UI that solves the equations, visualizes the results, and lets you change parameters on the fly.
 
@@ -17,27 +17,30 @@ Datagrok provides intuitive tools for the rapid solving ODEs.
   * Go to **Run** tab to launch computations
 * Modify a template:
   * Edit formulas or add new ones
-  * Click **F5** or go to **Run** tab
+  * Press **F5** or go to **Run** tab
   * Cahnge inputs and explore your model
 * Use an advanced template:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **Templates > Advanced...**
-  * Modify formulas and click **F5**
+  * Modify formulas and press **F5**
 * Save formulas in a local file:
-  * Press <i class="fas fa-save"></i> **Save** icon on the top panel  
+  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel  
   * Find the *ivp*-file in Downloads, modify it using any text editor
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
 * Load equations from a local file:
-  * Press <i class="fas fa-folder-open"></i> **Open** icon on the top panel
+  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
   * Select **From file...**
   * Select a file with formulas
 * Explore model:
-  * Press <i class="fas fa-analytics"></i> **Run sensitivity analysis** icon
+  * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
   * Analyze the relationship between inputs and outputs using one of the following methods:
     * [Monte Carlo](https://datagrok.ai/help/compute#monte-carlo)
     * [Sobol](https://datagrok.ai/help/compute#sobol)
     * [Grid](https://datagrok.ai/help/compute#grid)
+* Fit parameters:
+  * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
+  * Find input conditions leading to specified output constraints
 
 ## Create model from template
 
@@ -176,5 +179,6 @@ Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-s
 See also
 
 * [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
+* [Parameter optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
 * [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
 * [Scripting](https://datagrok.ai/help/compute/scripting)

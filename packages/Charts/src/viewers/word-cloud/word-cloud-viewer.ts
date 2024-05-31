@@ -62,8 +62,10 @@ export class WordCloudViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
-  testColumns() {
-    return (this.strColumns.length >= 1);
+  _testColumns() {
+    const columns = this.dataFrame.columns.toList();
+    const strCols = columns.filter((col) => col.type === DG.TYPE.STRING);
+    return strCols.length >= 1;
   }
 
   onTableAttached() {
@@ -76,7 +78,7 @@ export class WordCloudViewer extends DG.JsViewer {
     const columns = this.dataFrame.columns.toList();
     this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
 
-    if (this.testColumns()) {
+    if (this._testColumns()) {
       this.strColumnName = this.strColumns.reduce((prev, curr) =>
         prev.categories.length < curr.categories.length ? prev : curr).name;
     }
@@ -86,7 +88,7 @@ export class WordCloudViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
-    if (this.initialized && this.testColumns()) {
+    if (this.initialized && this._testColumns()) {
       if (property.name === 'columnColumnName')
         this.strColumnName = property.get(this);
 
@@ -99,7 +101,7 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   render() {
-    if (!this.testColumns()) {
+    if (!this._testColumns()) {
       this.root.innerText = 'Not enough data to produce the result.';
       return;
     }

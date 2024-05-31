@@ -1,10 +1,16 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {V3K_CONST} from '@datagrok-libraries/chem-meta/src/formats/molfile-const';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+
 import {Helm} from './helm';
 import {MonomerWrapper} from './monomer-wrapper';
 
 export class Polymer {
-  constructor(helmString: string, private rdKitModule: RDModule) {
+  constructor(
+    helmString: string,
+    private readonly rdKitModule: RDModule,
+    private readonly monomerLib: IMonomerLib
+  ) {
     this.helm = new Helm(helmString);
   }
 
@@ -14,9 +20,10 @@ export class Polymer {
   addMonomer(
     monomerSymbol: string,
     monomerIdx: number,
-    shift: {x: number, y: number},
+    shift: { x: number, y: number },
   ): void {
-    const monomerWrapper = new MonomerWrapper(monomerSymbol, monomerIdx, this.helm, shift, this.rdKitModule);
+    const monomerWrapper = new MonomerWrapper(
+      monomerSymbol, monomerIdx, this.helm, shift, this.rdKitModule, this.monomerLib);
 
     this.monomerWrappers.push(monomerWrapper);
   }

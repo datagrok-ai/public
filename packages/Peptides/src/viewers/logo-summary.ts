@@ -569,7 +569,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     grid.props.rowHeight = 55;
 
     const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
-    const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramLookSettings>>();
+    // @ts-ignore TODO: fix after api update
+    const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramSettings>>();
     const maxSequenceLen = this.positionColumns.length;
     const webLogoGridCol = grid.columns.byName(C.LST_COLUMN_NAMES.WEB_LOGO)!;
     webLogoGridCol.cellType = 'html';
@@ -628,6 +629,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
               });
             webLogoCache.set(currentRowIdx, viewer);
           }
+          viewer.root.style.height = `${height}px`;
           gridCell.element = viewer.root;
           gridCellArgs.preventDefault();
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {

@@ -9,7 +9,7 @@ Datagrok server installation consists of two big blocks:
   * [Datlas](#datlas) - Datagrok application server
   * [Database](#database)
   * [Persistent file storage](#storage)
-  * [Credentials Management Service](../../govern/security.md#credentials)
+  * [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system)
   * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
 * [Compute](#compute-components)
@@ -41,7 +41,7 @@ administration tasks could be performed via the web interface as well.
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
-[authentication](../../govern/authentication.md) methods. Regarding Datagrok infrastructure it can be easily done. For
+[authentication](../../govern/access-control/access-control.md#authentication) methods. Regarding Datagrok infrastructure it can be easily done. For
 more information check [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
 page.
 
@@ -80,7 +80,7 @@ Datagrok components are:
 * [Datlas](#datlas) - Datagrok application server
 * [Database](#database)
 * [Persistent file storage](#storage)
-* [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
+* [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system). Can be installed as a separate service in
   separate container with a separate database.
 * [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
 * Nginx server
@@ -351,7 +351,7 @@ Grok Helper exposes API for the following features:
 
 ### Jupyter Kernel Gateway
 
-[Jupyter Kernel Gateway](https://github.com/jupyter/kernel_gateway) provides the [scripting feature](../../compute/scripting.md) for the platform. It
+[Jupyter Kernel Gateway](https://github.com/jupyter/kernel_gateway) provides the [scripting feature](../../compute/scripting/scripting.mdx) for the platform. It
 includes standard libraries for development.
 
 Available languages are: Python, R, JS, Octave, Julia.
@@ -368,7 +368,7 @@ Resources(differs based on your needs):
 
 #### Custom package repositories
 
-By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting.md#environments) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
+By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting/scripting-features/specify-env.mdx) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
 
 * To access repositories through proxy set `HTTP_PROXY` and `HTTPS_PROXY` variables 
 * To use custom conda repositories in addition to conda-forge specify `CONDA_CUSTOM_REPOSITORIES`. It takes precedence over conda-forge. Multiple repositories can be specified using space. For example: `CONDA_CUSTOM_REPOSITORIES='http://my-repo/custom/ http://his-repo/special/'`
@@ -518,4 +518,4 @@ The schema has the following tables:
 * [Configuration](../../deploy/configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../dev-process/versioning-policy.md)
-* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.mdx)
+* [Try Datagrok locally](../../deploy/docker-compose/docker-compose.md)

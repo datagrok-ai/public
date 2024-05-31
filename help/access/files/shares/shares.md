@@ -22,5 +22,5 @@ with their specific parameters are the following:
 See also:
 
 * [Supported connectors](../../databases/connectors/connectors.md)
-* [Databases](../../databases/databases.mdx)
-* [File shares](../files.mdx)
+* [Databases](../../databases/databases.md)
+* [File shares](../files.md)

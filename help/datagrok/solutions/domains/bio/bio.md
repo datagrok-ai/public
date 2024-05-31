@@ -46,7 +46,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
-  * Customizable [info panes](../../../../explore/data-augmentation/info-panels.md) with information about macromolecules and context actions.
+  * Customizable [info panes](../../../../datagrok/navigation/panels/info-panels.md) with information about macromolecules and context actions.
   * [Sequence editing](#sketching-and-editing), [search, and filtering](#searching-and-filtering).
   * Sequence analysis
     * [Sequence composition](#sequence-composition)
@@ -58,11 +58,11 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
     * A fit-for-purpose application for [SAR analysis for peptides](#sar-for-peptides)
   * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)
-  * Ability to add or customize any functionality using [scripts](../../../../compute/scripting.md) in Python, R, Matlab, and other supported languages.
+  * Ability to add or customize any functionality using [scripts](../../../../compute/scripting/scripting.mdx) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
 * [Enterprise-grade platform](../../../solutions/enterprise/enterprise-evaluation-faq.md) for efficient data access and management.
 
@@ -180,7 +180,7 @@ an interconnected system ideal for exploratory data analysis.
 Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/web-logo.md), 3D structure viewers
 ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)),
 and [sequence tree viewers](../../../../visualize/viewers/dendrogram.md). Examples of general-purpose viewers that
-can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.mdx),
+can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md),
 a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),
 a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md),
 and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
@@ -298,7 +298,7 @@ To search a dataset for matching sequences, do the following:
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/viewers/viewers.md#filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../navigation/views/table-view.md#select-and-filter).
 
 ## Manage monomer libraries
 
@@ -308,7 +308,7 @@ The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/ma
 
 To include monomers from a library, click on a checkbox next to its name.
 
-To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.mdx#connecting-to-file-storage).
+To add a new monomer library file, click **ADD** button. All monomer library files are validated against the standard HELM [JSON schema](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/tests/libraries/HELMmonomerSchema.json) and must fully conform to it. The added files will be stored under `AppData/Bio/monomer-libraries` in [file shares](../../../../access/files/files.md#connecting-to-file-storage).
 
 ## Sequence analysis
 
@@ -333,18 +333,52 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 ### Sequence space
 
 Sequence space visualizes a collection of sequences in 2D such that similar sequences are placed close to each other
-(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), distance functions). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.mdx).
+(geekspeak: [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), [UMAP](https://umap-learn.readthedocs.io/en/latest/), [distance functions](https://www.sciencedirect.com/science/article/pii/S0888613X07000382)). This allows to identify clusters of similar sequences, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 Sequence space analysis is particularly useful for separating groups of sequences with common motifs, such as different variants of complementarity-determining regions (CDRs) for antibodies.
 
-![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results-800.png)
+![Results of Sequence space run on the sample peptides data](../../../../compute/seq-space.gif)
 
 <details>
 <summary> How to use </summary>
 
-1. Go to the **Top Menu** and select **Bio** > **Sequence Space...** This opens a **Sequence Space** parameter dialog.
-1. In the dialog, select the column with sequences and set the parameters such as the distance metric (Tanimoto, Asymmetric, Cosine, Sokal) and the algorithm you want to use. To change default settings for the selected algorithm, click the **Gear** icon next to the **Method name** control.
-1. Click **OK**. A scatterplot is added to the view.
+Go to the **Top Menu** and select **Bio** > **Analyse** > **Sequence Space...** This opens a **Sequence Space** parameter dialog.
+
+The dialog has the following inputs:
+
+* **Table**: The table containing the column of sequences.
+* **Column**: The column containing the sequences.
+* **Encoding function**: The encoding function that will be used for pre-processing of sequences. For non-helm notation sequences, only one encoding function is available, that will encode them in single charachter form and calculate the substitution matrix for each individual monomer. For [Helm](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) sequences, apart from prior function, another one is offered that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each macromolecule to calculate distance matrix. The `Encode sequences` function has 3 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+    * Gap open penalty: The penalty for opening a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorythm).
+    * Gap extend penalty: The penalty for extending a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorythm).
+    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix.
+* **Method**: The dimensionality reduction method that will be used. The options are:
+    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+
+    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
+
+* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances. The options are:
+    * Needleman-Wunsch: [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) is a dynamic programming algorithm that performs a global alignment on two sequences. It is commonly used in bioinformatics to align protein or nucleotide sequences.
+    * Hamming: [Hamming distance](https://en.wikipedia.org/wiki/Hamming_distance) is a metric for comparing two macromolecules of same length. Hamming distance is the number of positions in which the two monomers are different.
+    * Monomer chemical distance: Similar to Hamming distance, but instead of penalizing the missmatch of monomers with -1, the penalty will be based on the chemical distance between the two monomers. The chemical distance is calculated using the [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) of the monomers.
+    * Levenshtein: [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) is a string metric for measuring the difference between two sequences. Informally, the Levenshtein distance between two sequences is the minimum number of single-monomer edits (insertions, deletions or substitutions) required to change one sequence into the other.
+* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
+* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
+    * **None**: No postprocessing will be applied.
+    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+
+**WebGPU (experimental)**
+
+WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Needleman-Wunsch, Levenstain, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+
+Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
+* Go to settings and find display settings
+* Go to Graphics settings.
+* In the list of apps, make sure that your browser is set to use high performance GPU.
 
 </details>
 
@@ -558,7 +592,7 @@ To learn more and how to use, see the [OligoToolkit](oligo-toolkit.md) page.
 
 Datagrok is a highly flexible platform that can be tailored to meet your specific needs and requirements.
 With its comprehensive set of [functions](../../../../develop/function-roles.md) and
-[scripting capabilities](../../../../compute/scripting.md),
+[scripting capabilities](../../../../compute/scripting/scripting.mdx),
 you can customize and enhance any aspect of the platform to suit your biological data needs.
 
 For instance, you can add new data formats,

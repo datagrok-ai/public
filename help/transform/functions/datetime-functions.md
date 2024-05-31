@@ -25,7 +25,7 @@ title: "Date and Time functions"
 - [Weeknum](#weeknum)
 - [Year](#year)
 
-## <a name="date"></a>Date(`year`, `month`, `day`)
+## Date(`year`, `month`, `day`) {#date}
 
 Returns a date composed of the specified `year`, `month` and `day`.
 
@@ -33,7 +33,7 @@ Returns a date composed of the specified `year`, `month` and `day`.
 Date(2002, 3, 15)
 ```
 
-## <a name="dateadd"></a>DateAdd(`dt`, `ts`)
+## DateAdd(`dt`, `ts`) {#dateadd}
 
 Returns the date `dt` with the time span `ts` appended to it.
 
@@ -41,7 +41,7 @@ Returns the date `dt` with the time span `ts` appended to it.
 DateAdd(${StartDate}, ${Duration})
 ```
 
-## <a name="datediff"></a>DateDiff(`dt1`, `dt2`)
+## DateDiff(`dt1`, `dt2`) {#datediff}
 
 Returns the difference (time span) between two dates `dt1` and `dt2`.
 
@@ -49,7 +49,7 @@ Returns the difference (time span) between two dates `dt1` and `dt2`.
 DateDiff(${FirstDate}, ${SecondDate})
 ```
 
-## <a name="datenow"></a>DateNow()
+## DateNow() {#datenow}
 
 Returns the current date.
 
@@ -57,7 +57,7 @@ Returns the current date.
 DateAdd(DateNow(), ${Duration})
 ```
 
-## <a name="dateparse"></a>DateParse(`s`)
+## DateParse(`s`) {#dateparse}
 
 Constructs and returns a date based on string pattern `s`.
 
@@ -65,7 +65,7 @@ Constructs and returns a date based on string pattern `s`.
 DateParse("20120227T132700")    // 2012-02-27 13:27:00.000
 ```
 
-## <a name="datetime"></a>DateTime(`year`, `month`, `day`, `hours`, `minutes`, `seconds`, `milliseconds`)
+## DateTime(`year`, `month`, `day`, `hours`, `minutes`, `seconds`, `milliseconds`) {#datetime}
 
 Returns a date composed of the specified parameters.
 
@@ -73,7 +73,7 @@ Returns a date composed of the specified parameters.
 DateTime(2002, 3, 15, 23, 59, 45, 999)
 ```
 
-## <a name="dayofmonth"></a>DayOfMonth(`dt`)
+## DayOfMonth(`dt`) {#dayofmonth}
 
 Returns the day of the month for the date `dt`.
 
@@ -81,7 +81,7 @@ Returns the day of the month for the date `dt`.
 DayOfMonth(Date(2021, 6, 14))    // 14
 ```
 
-## <a name="dayofweek"></a>DayOfWeek(`dt`)
+## DayOfWeek(`dt`) {#dayofweek}
 
 Returns the day of the week for the date `dt`. The days of the week are numbered from 1 to 7.
 
@@ -89,7 +89,7 @@ Returns the day of the week for the date `dt`. The days of the week are numbered
 DayOfWeek(Date(2020, 12, 31))    // 4
 ```
 
-## <a name="dayofyear"></a>DayOfYear(`dt`)
+## DayOfYear(`dt`) {#dayofyear}
 
 Returns the day of the year for the date `dt`.
 
@@ -97,7 +97,7 @@ Returns the day of the year for the date `dt`.
 DayOfYear(Date(2021, 2, 25))    // 56 (31 + 25)
 ```
 
-## <a name="hour"></a>Hour(`dt`)
+## Hour(`dt`) {#hour}
 
 Returns the hour of the date `dt`.
 
@@ -105,7 +105,7 @@ Returns the hour of the date `dt`.
 Hour(DateTime(2002, 3, 15, 23, 59, 45, 999))    // 23
 ```
 
-## <a name="millisecond"></a>Millisecond(`dt`)
+## Millisecond(`dt`) {#millisecond}
 
 Returns the millisecond of the date `dt`.
 
@@ -113,7 +113,7 @@ Returns the millisecond of the date `dt`.
 Millisecond(DateTime(2002, 3, 15, 23, 59, 45, 999))    // 999
 ```
 
-## <a name="minute"></a>Minute(`dt`)
+## Minute(`dt`) {#minute}
 
 Returns the minute of the date `dt`.
 
@@ -121,7 +121,7 @@ Returns the minute of the date `dt`.
 Minute(DateTime(2002, 3, 15, 23, 59, 45, 999))    // 59
 ```
 
-## <a name="month"></a>Month(`dt`)
+## Month(`dt`) {#month}
 
 Returns the month of the date `dt`.
 
@@ -129,7 +129,7 @@ Returns the month of the date `dt`.
 Month(DateTime(2002, 3, 15, 23, 59, 45, 999))    // 3
 ```
 
-## <a name="quarter"></a>Quarter(`dt`)
+## Quarter(`dt`) {#quarter}
 
 Returns the quarter of the date `dt`.
 
@@ -137,7 +137,7 @@ Returns the quarter of the date `dt`.
 Quarter(Date(2002, 3, 15))    // 1
 ```
 
-## <a name="second"></a>Second(`dt`)
+## Second(`dt`) {#second}
 
 Returns the second of the date `dt`.
 
@@ -145,7 +145,7 @@ Returns the second of the date `dt`.
 Second(DateTime(2002, 3, 15, 23, 59, 45, 999))    // 45
 ```
 
-## <a name="time"></a>Time(`hours`, `minutes`, `seconds`, `milliseconds`)
+## Time(`hours`, `minutes`, `seconds`, `milliseconds`) {#time}
 
 Returns a time composed of the specified parameters.
 
@@ -155,7 +155,7 @@ The time is actually a DateTime with a special insignificant date `0001-01-01`.
 Time(23, 59, 45, 999)    // 0001-01-01 23:59:45.999
 ```
 
-## <a name="timeparse"></a>TimeParse(`s`)
+## TimeParse(`s`) {#timeparse}
 
 Constructs and returns a time based on string pattern `s`.
 
@@ -165,7 +165,7 @@ The time is actually a DateTime with a special insignificant date `0001-01-01`.
 TimeParse("13:27")    // 0001-01-01 13:27:00.000
 ```
 
-## <a name="today"></a>Today()
+## Today() {#today}
 
 Returns today's date.
 
@@ -173,7 +173,7 @@ Returns today's date.
 Today()    // On January 1, 2021, would return the value 01-01-2021 00:00:00.000
 ```
 
-## <a name="weeknum"></a>Weeknum(`dt`)
+## Weeknum(`dt`) {#weeknum}
 
 Returns the week number of the date `dt`.
 
@@ -181,7 +181,7 @@ Returns the week number of the date `dt`.
 Weeknum(Date(2021, 2, 3))    // 5
 ```
 
-## <a name="year"></a>Year(`dt`)
+## Year(`dt`) {#year}
 
 Returns the year of the date `dt`.
 

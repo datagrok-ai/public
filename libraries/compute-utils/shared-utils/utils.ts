@@ -3,12 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
+import {getStarted} from '../function-views/src/shared/utils';
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
   const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
@@ -166,10 +167,6 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
     'width': `calc(${prop.options['block'] ?? '100'}% - ${prop.options['block'] ? '2': '0'}px)`,
     'box-sizing': 'border-box',
   });
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-    if (prop.options['units']) t.addPostfix(prop.options['units']);
 };
 
 export const injectInputBaseValidation = (t: DG.InputBase) => {
@@ -239,9 +236,11 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
 export const plotToSheet =
   async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
     columnForImage: number, rowForImage: number = 0) => {
-    DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+    //@ts-ignore
+    const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
 
-    const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+    const canvas = await loadedHtml2canvas(plot as HTMLElement, {logging: false});
     const dataUrl = canvas.toDataURL('image/png');
 
     const imageId = exportWb.addImage({

@@ -953,16 +953,26 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       // region updatePositions
 
-      const dfFilter = this.getFilter();
-      const maxLength: number = dfFilter.trueCount === 0 ? this.seqHandler!.maxLength :
-        wu.count(0).take(this.seqHandler!.length).map((rowIdx) => {
-          const mList = this.seqHandler!.getSplitted(rowIdx);
-          return dfFilter.get(rowIdx) && !!mList ? mList.length : 0;
-        }).reduce((max, l) => Math.max(max, l), 0);
-
       /** positionNames and positionLabel can be set up through the column's tags only */
       const positionNamesTxt = this.seqCol.getTag(bioTAGS.positionNames);
       const positionLabelsTxt = this.seqCol.getTag(bioTAGS.positionLabels);
+
+      // WebLogo in the column tooltip / widget is limited, speed up for long sequences
+      let splitLimit: number | undefined = undefined;
+      if (!positionNamesTxt && this.endPositionName && /\d+/.test(this.endPositionName))
+        splitLimit = Number(this.endPositionName);
+      else if (positionNamesTxt && this.endPositionName) {
+        splitLimit = positionNamesTxt.split(positionSeparator).indexOf(this.endPositionName);
+        splitLimit = splitLimit !== -1 ? splitLimit : undefined;
+      }
+
+      const dfFilter = this.getFilter();
+      const maxLength: number = dfFilter.trueCount === 0 ? this.seqHandler!.maxLength :
+        wu.count(0).take(this.seqHandler!.length).map((rowIdx) => {
+          const mList = this.seqHandler!.getSplitted(rowIdx, splitLimit);
+          return dfFilter.get(rowIdx) && !!mList ? mList.length : 0;
+        }).reduce((max, l) => Math.max(max, l), 0);
+
       this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
         [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
       this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :

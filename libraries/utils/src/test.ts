@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Observable} from 'rxjs';
-import {testData} from './dataframe-utils';
+import { Observable } from 'rxjs';
+import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
+import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
@@ -23,7 +24,7 @@ const autoTestsCatName = 'Auto Tests';
 const demoCatName = 'Demo';
 const detectorsCatName = 'Detectors';
 const coreCatName = 'Core';
-const wasRegistered: {[key: string]: boolean} = {};
+const wasRegistered: { [key: string]: boolean } = {};
 export let currentCategory: string;
 
 export namespace assure {
@@ -91,10 +92,33 @@ export async function testEvent<T>(event: Observable<T>,
         resolve('OK');
       } catch (e) {
         reject(e);
+      } finally {
+        sub.unsubscribe();
+        clearTimeout(timeout);
       }
-      // Do not clearTimeout or event sub if handler fails
+    });
+    const timeout = setTimeout(() => {
       sub.unsubscribe();
-      clearTimeout(timeout);
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject(reason);
+    }, ms);
+    trigger();
+  });
+}
+
+export async function testEventAsync<T>(event: Observable<T>,
+  handler: (args: T) => Promise<void>, trigger: () => void, ms: number = 0, reason: string = `timeout`
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const sub = event.subscribe((args: T) => {
+      handler(args).then(() => {
+        resolve('OK');
+      }).catch((e) => {
+        reject(e);
+      }).finally(() => {
+        sub.unsubscribe();
+        clearTimeout(timeout);
+      });
     });
     const timeout = setTimeout(() => {
       sub.unsubscribe();
@@ -124,8 +148,8 @@ export function expect(actual: any, expected: any = true, error?: string): void 
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
   if ((actual === Number.POSITIVE_INFINITY && expected === Number.POSITIVE_INFINITY) ||
-      (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
-      (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
+    (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
+    (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
     return;
   const areEqual = Math.abs(actual - expected) < tolerance;
   expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
@@ -226,21 +250,21 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
-      moduleTests[demoCatName] !== undefined ||
-      Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
+    moduleTests[demoCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
-    const testFunctions: DG.Func[] = DG.Func.find({tags: ['dartTest']});
+    const testFunctions: DG.Func[] = DG.Func.find({ tags: ['dartTest'] });
     for (const f of testFunctions) {
       const arr = f.name.split(/\s*\|\s*/g);
       const name = arr.pop() ?? f.name;
       const cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
       if (moduleTests[cat] === undefined)
-        moduleTests[cat] = {tests: [], clear: true};
+        moduleTests[cat] = { tests: [], clear: true };
       moduleTests[cat].tests.push(new Test(cat, name,
-        async () => await f.apply(), {isAggregated: f.outputs.length > 0, timeout: 300000}));
+        async () => await f.apply(), { isAggregated: f.outputs.length > 0, timeout: 300000 }));
     }
   }
   const moduleAutoTests = [];
@@ -254,7 +278,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if ((tests && Array.isArray(tests) && tests.length)) {
       for (let i = 0; i < tests.length; i++) {
         const res = (tests[i] as string).matchAll(reg);
-        const map: {skip?: string, wait?: number, cat?: string, timeout?: number} = {};
+        const map: { skip?: string, wait?: number, cat?: string, timeout?: number } = {};
         Array.from(res).forEach((arr) => {
           if (arr[0].startsWith('skip')) map['skip'] = arr[1];
           else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
@@ -266,12 +290,12 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, {skipReason: map.skip, timeout: map.timeout});
+        }, { skipReason: map.skip, timeout: map.timeout });
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
           if (moduleTests[cat] === undefined)
-            moduleTests[cat] = {tests: [], clear: true};
+            moduleTests[cat] = { tests: [], clear: true };
           moduleTests[cat].tests.push(test);
         } else
           moduleAutoTests.push(test);
@@ -285,7 +309,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
         await delay(wait ? wait : 2000);
         if (grok.shell.lastError)
           throw new Error(grok.shell.lastError);
-      }, {skipReason: f.options['demoSkip']});
+      }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }
     if (f.hasTag('semTypeDetector')) {
@@ -296,17 +320,17 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           arr.push(res || col.semType);
         }
         expect(arr.filter((i) => i).length, 1);
-      }, {skipReason: f.options['skipTest']});
+      }, { skipReason: f.options['skipTest'] });
       moduleDetectors.push(test);
     }
   }
   wasRegistered[packageId] = true;
   if (moduleAutoTests.length)
-    moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+    moduleTests[autoTestsCatName] = { tests: moduleAutoTests, clear: true };
   if (moduleDemo.length)
-    moduleTests[demoCatName] = {tests: moduleDemo, clear: true};
+    moduleTests[demoCatName] = { tests: moduleDemo, clear: true };
   if (moduleDetectors.length)
-    moduleTests[detectorsCatName] = {tests: moduleDetectors, clear: false};
+    moduleTests[detectorsCatName] = { tests: moduleDetectors, clear: false };
 }
 
 function redefineConsole(): any[] {
@@ -338,11 +362,13 @@ function resetConsole(): void {
 }
 
 export async function runTests(options?:
-  {category?: string, test?: string, testContext?: TestContext, exclude?: string[], verbose?: boolean}) {
+  { category?: string, test?: string, testContext?: TestContext, exclude?: string[], verbose?: boolean }) {
   const package_ = grok.functions.getCurrentCall()?.func?.package;
   await initAutoTests(package_);
-  const results: { category?: string, name?: string, success: boolean,
-                   result: string, ms: number, skipped: boolean }[] = [];
+  const results: {
+    category?: string, name?: string, success: boolean,
+    result: string, ms: number, skipped: boolean
+  }[] = [];
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -358,10 +384,13 @@ export async function runTests(options?:
       categories.push(key);
       const skipped = value.tests?.every((t) => t.options?.skipReason);
       try {
-        if (value.before && !skipped)
-          await value.before();
+        if (value.before && !skipped) {
+          await timeout(async () => {
+            await value.before!();
+          }, 100000, `before ${options.category}: timeout error`);
+        }
       } catch (x: any) {
-        value.beforeStatus = getResult(x);
+        value.beforeStatus = await getResult(x);
       }
       const t = value.tests ?? [];
       const res = [];
@@ -377,18 +406,21 @@ export async function runTests(options?:
       }
       const data = res.filter((d) => d.result != 'skipped');
       try {
-        if (value.after && !skipped)
-          await value.after();
+        if (value.after && !skipped) { 
+          await timeout(async () => {
+            await value.after!();
+          }, 100000, `After ${options.category}: timeout error`);
+        }
       } catch (x: any) {
-        value.afterStatus = getResult(x);
+        value.afterStatus = await getResult(x);
       }
       // Clear after category
       // grok.shell.closeAll();
       // DG.Balloon.closeAll();
       if (value.afterStatus)
-        data.push({category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false});
+        data.push({ category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
       if (value.beforeStatus)
-        data.push({category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false});
+        data.push({ category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
       results.push(...data);
     }
   } finally {
@@ -412,17 +444,21 @@ export async function runTests(options?:
     for (const cat of categories) {
       const res = results.filter((r) => r.category === cat);
       const failed_ = res.filter((r) => !r.success).length;
-      const params = {success: failed_ === 0,
+      const params = {
+        success: failed_ === 0,
         passed: res.filter((r) => r.success).length,
         skipped: res.filter((r) => r.skipped).length,
         failed: failed_,
-        type: 'package', packageName, category: cat};
+        type: 'package', packageName, category: cat
+      };
       grok.log.usage(`${packageName}: ${cat}`,
         params, `category-package ${packageName}: ${cat}`);
     }
     if (!options.category) {
-      const params = {success: failed.length === 0, passed: successful, skipped, failed: failed.length,
-        type: 'package', packageName};
+      const params = {
+        success: failed.length === 0, passed: successful, skipped, failed: failed.length,
+        type: 'package', packageName
+      };
       grok.log.usage(packageName, params, `package-package ${packageName}`);
     }
     if (options.testContext.report) {
@@ -434,21 +470,21 @@ export async function runTests(options?:
         failed: failed.length,
         package: package_
       };
-      for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+      for (const r of failed) Object.assign(params, { [`${r.category} | ${r.name}`]: r.result });
       logger.log(description, params, 'package-tested');
     }
   }
   return results;
 }
 
-function getResult(x: any) {
-  return `${x.toString()}\n${x.stack ? DG.Logger.translateStackTrace(x.stack) : ''}`;
+async function getResult(x: any): Promise<string> {
+  return `${x.toString()}\n${x.stack ? (await DG.Logger.translateStackTrace(x.stack)) : ''}`;
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  categoryTimeout?: number, packageName?: string, verbose?: boolean) {
+  categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: {category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string};
+  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
@@ -458,15 +494,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const start = Date.now();
   try {
     if (skip)
-      r = {success: true, result: skipReason!, ms: 0, skipped: true};
+      r = { success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
-      r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
+      r = { success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
-    r = {success: false, result: getResult(x), ms: 0, skipped: false};
+    stdError(x);
+    r = { success: false, result: await getResult(x), ms: 0, skipped: false };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -488,11 +525,13 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.category = t.category;
   r.name = t.name;
   if (!filter) {
-    let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-      'type': type, packageName, 'category': t.category, 'test': t.name, 'logs': r.logs};
+    let params = {
+      'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
+      'type': type, packageName, 'category': t.category, 'test': t.name, 'logs': r.logs
+    };
     if (r.result.constructor == Object) {
-      const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
-      params = {...params, ...res};
+      const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
+      params = { ...params, ...res };
     }
     grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
       params, `test-${type} ${packageName}: ${t.category}: ${t.name}`);
@@ -523,12 +562,12 @@ export async function awaitCheck(checkHandler: () => boolean,
 }
 
 // Returns test execution result or an error in case of timeout
-async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
+export async function timeout(func: () => Promise<any>, testTimeout: number, timeoutReason: string = 'EXECUTION TIMEOUT'): Promise<any> {
   let timeout: any = null;
   const timeoutPromise = new Promise<any>((_, reject) => {
     timeout = setTimeout(() => {
       // eslint-disable-next-line prefer-promise-reject-errors
-      reject('EXECUTION TIMEOUT');
+      reject(timeoutReason);
     }, testTimeout);
   });
   try {
@@ -588,90 +627,54 @@ export async function testViewer(v: string, df: DG.DataFrame, options?: {
   detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
   packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
 }): Promise<void> {
-  const createViewer = async (tv: DG.TableView, v: string, packageName?: string): Promise<DG.Viewer> => {
-    let res: DG.Viewer;
-    if (packageName) {
-      res = await tv.dataFrame.plot.fromType(v) as DG.Viewer;
-      tv.dockManager.dock(res);
-    } else
-      res = tv.addViewer(v);
-    return res;
-  };
 
-  if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
-  let tv = grok.shell.addTableView(df);
-  const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  // const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
-  //   ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
-  const selector = ['div.ui-box' /* root */, 'canvas', 'svg', 'img', 'input', 'h1', 'a', '.d4-viewer-error']
-    .map((selTag) => `${viewerName} ${selTag}`).join(', ');
-  const res = [];
+  const packageName = options?.packageName ?? '';
+  if (options?.detectSemanticTypes)
+    await grok.data.detectSemanticTypes(df);
+  const tv = grok.shell.addTableView(df);
+
   try {
-    let viewer = await createViewer(tv, v, options?.packageName);
-    await awaitCheck(() => document.querySelector(selector) !== null,
-      'cannot load viewer', 3000);
-    const tag = document.querySelector(selector)?.tagName;
-    res.push(Array.from(tv.viewers).length);
-    if (!options?.readOnly) {
-      Array.from(df.row(0).cells).forEach((c:any) => c.value = null);
-      const num = df.rowCount < 20 ? Math.floor(df.rowCount / 2) : 10;
-      df.rows.select((row: DG.Row) => row.idx >= 0 && row.idx < num);
-      await delay(50);
-      for (let i = num; i < num * 2; i++) df.filter.set(i, false);
-      await delay(50);
-      df.currentRowIdx = 1;
-      const df1 = df.clone();
-      df.columns.names().slice(0, Math.ceil(df.columns.length / 2)).forEach((c: any) => df.columns.remove(c));
-      await delay(100);
-      tv.dataFrame = df1;
-    }
-    let optns: { [p: string]: any };
-    try {
-      optns = viewer.getOptions(true).look;
-    } catch (err: any) {
-      throw new Error(`Viewer's .getOptions() error.`, {cause: err});
-    }
-    let props: DG.Property[];
-    try {
-      props = viewer.getProperties();
-    } catch (err: any) {
-      throw new Error(`Viewer's .getProperties() error.`, {cause: err});
-    }
-    const newProps: Record<string, string | boolean> = {};
-    Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
-    props.filter((p: DG.Property) => p.choices !== null)
-      .forEach((p: DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
-    viewer.setOptions(newProps);
-    await delay(300);
-    const layout = tv.saveLayout();
-    const oldProps = viewer.getOptions().look;
-    tv.resetLayout();
-    res.push(Array.from(tv.viewers).length);
-    tv.loadLayout(layout);
-    const selector1 = `${viewerName} ${tag}`;
-    await awaitCheck(() => document.querySelector(selector1) !== null,
-      'cannot load viewer from layout', 3000);
-    res.push(Array.from(tv.viewers).length);
-    viewer = Array.from(tv.viewers).find((v: any) => v.type !== 'Grid')!;
-    expectArray(res, [2, 1, 2]);
-    expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
-    if (options?.arbitraryDfTest !== false) {
-      if (options?.awaitViewer) await options.awaitViewer(viewer);
-      grok.shell.closeAll();
+    //1. Open, do nothing and close
+    await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded);
+    //in case viewer with async rendering - wait for render to complete
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);
 
-      await delay(100);
-      tv = grok.shell.addTableView(catDF);
-      try {
-        viewer = await createViewer(tv, v, options?.packageName);
-      } catch (e) {
-        grok.shell.closeAll();
-        DG.Balloon.closeAll();
-        return;
-      }
-      await awaitCheck(() => document.querySelector(selector) !== null,
-        'cannot load viewer on arbitrary dataset', 3000);
+    //2. Open viewer, run selection, filter, etc. and close
+    if (!options?.readOnly) {
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, selectFilterChangeCurrent);
+      if (options?.awaitViewer)
+        await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, selectFilterChangeCurrent, options!.awaitViewer);
     }
-    if (options?.awaitViewer) await options.awaitViewer(viewer);
+
+    //2. Open viewer, change options, save layout and close
+    let propsAndLayout: { layout: any, savedProps: any } | null = null;
+    propsAndLayout = await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, changeOptionsSaveLayout);
+    if (options?.awaitViewer)
+      propsAndLayout = await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded,
+        changeOptionsSaveLayout, options!.awaitViewer)
+
+    //3. Load layout
+    await testViewerInternal(tv, v, packageName, grok.events.onViewLayoutApplied, loadLayout, undefined, propsAndLayout?.layout,
+      { savedProps: propsAndLayout?.savedProps });
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewLayoutApplied, loadLayout, options!.awaitViewer,
+        propsAndLayout?.layout, { savedProps: propsAndLayout?.savedProps });
+
+    //4. Open viewer on arbitary dataset
+    if (options?.arbitraryDfTest !== false) {
+      tv.dataFrame = catDF;
+      await delay(50);
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded);
+      if (options?.awaitViewer)
+        await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, undefined, options!.awaitViewer);
+    }
+
+    //5. Call postponed filtering
+    await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, filterAsync);
+    if (options?.awaitViewer)
+      await testViewerInternal(tv, v, packageName, grok.events.onViewerAdded, filterAsync, options!.awaitViewer);
+
   } finally {
     // closeAll() is handling by common test workflow
     // grok.shell.closeAll();

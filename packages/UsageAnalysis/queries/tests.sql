@@ -51,8 +51,8 @@ order by e.event_time desc
 --name: TestsToday
 --input: datetime date
 --connection: System:Datagrok
---meta.cache1: all
---meta.cache.invalidateOn1: 0 0 0 * *
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
 select
 distinct on (e.description)
 t.id::text as id,
@@ -61,7 +61,7 @@ v7.value as test,
 v8.value as category,
 case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
 v2.value as result,
-v3.value::int as ms,
+case when v3.value != 'null' then v3.value::int else null end as ms,
 e.event_time as date,
 v5.value as type,
 v9.value as version
@@ -82,8 +82,8 @@ order by e.description, e.event_time desc
 
 --name: TestsMonth
 --connection: System:Datagrok
---meta.cache1: all
---meta.cache.invalidateOn1: 0 0 0 * *
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
 with ress as (select
 e.description, e.event_time,
 e.event_time::date as date,

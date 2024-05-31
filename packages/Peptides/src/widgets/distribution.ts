@@ -91,8 +91,10 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
  * @param isTooltip - Is histogram for tooltip
  * @return - Histogram viewer
  */
-export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
-): DG.Viewer<DG.IHistogramLookSettings> {
+export function getActivityDistribution(
+  table: DG.DataFrame, isTooltip: boolean = false,
+  // @ts-ignore TODO: fix after api update
+): DG.Viewer<DG.IHistogramSettings> {
   const hist = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY,
@@ -103,7 +105,8 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
     showRangeSlider: false,
     showBinSelector: false,
     backColor: isTooltip ? '#fdffe5' : '#fffff',
-  }) as DG.Viewer<DG.IHistogramLookSettings>;
+    // @ts-ignore TODO: fix after api update
+  }) as DG.Viewer<DG.IHistogramSettings>;
   hist.root.style.width = 'auto';
   return hist;
 }

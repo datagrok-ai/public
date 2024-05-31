@@ -47,10 +47,6 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func,
   clusterEmbeddings?: boolean): Promise<DG.Viewer | undefined> {
-  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
-    return;
-  }
   if (!preprocessingFunction)
     preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   options ??= {};

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
@@ -54,5 +54,5 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CVMTests"
   },
-  "skipCI": true
+  "skipCI": false
 }

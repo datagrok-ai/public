@@ -37,7 +37,7 @@ the syntax `${columnName}`.
 - [ToUpperCase](#touppercase)
 - [Trim](#trim)
 
-## <a name="add"></a>Add(`s1`, `s2`)
+## Add(`s1`, `s2`) {#add}
 
 Append the string `s2` at the end of the string `s1` and returns the result obtained.
 
@@ -45,7 +45,7 @@ Append the string `s2` at the end of the string `s1` and returns the result obta
 Add("Police", "man")    // "Policeman"
 ```
 
-## <a name="contains"></a>Contains(`s`, `sub`)
+## Contains(`s`, `sub`) {#contains}
 
 Checks if the string `s` contains a match of `sub`.
 
@@ -54,7 +54,7 @@ Contains("Stormy Weather", "Sunny")      // false
 Contains("Stormy Weather", "Weather")    // true
 ```
 
-## <a name="endswith"></a>EndsWith(`s`, `postfix`)
+## EndsWith(`s`, `postfix`) {#endswith}
 
 Checks if the string `s` ends with a match of `postfix`.
 
@@ -63,7 +63,7 @@ EndsWith("White Christmas", "White")        // false
 EndsWith("White Christmas", "Christmas")    // true
 ```
 
-## <a name="eq"></a>Eq(`s1`, `s2`)
+## Eq(`s1`, `s2`) {#eq}
 
 Returns true if the string `s1` equal to `s2` and false otherwise.
 
@@ -71,7 +71,7 @@ Returns true if the string `s1` equal to `s2` and false otherwise.
 Eq("Sky", "Sky")    // true
 ```
 
-## <a name="isempty"></a>IsEmpty(`s`)
+## IsEmpty(`s`) {#isempty}
 
 Returns true if the string `s` is empty or null, and false otherwise.
 
@@ -81,7 +81,7 @@ IsEmpty(null)       // true
 IsEmpty("Green")    // false
 ```
 
-## <a name="isnotempty"></a>IsNotEmpty(`s`)
+## IsNotEmpty(`s`) {#isnotempty}
 
 Returns true if the string `s` is not empty and not null, and false otherwise.
 
@@ -91,7 +91,7 @@ IsNotEmpty(null)       // false
 IsNotEmpty("Green")    // true
 ```
 
-## <a name="length"></a>Length(`s`)
+## Length(`s`) {#length}
 
 Returns the length of the string `s`.
 
@@ -99,7 +99,7 @@ Returns the length of the string `s`.
 Length("Text")    // 4
 ```
 
-## <a name="noteq"></a>NotEq(`x`, `y`)
+## NotEq(`x`, `y`) {#noteq}
 
 Returns false if the string `s1` equal to `s2` and true otherwise.
 
@@ -107,7 +107,7 @@ Returns false if the string `s1` equal to `s2` and true otherwise.
 NotEq("Sky", "Sky")    // false
 ```
 
-## <a name="padleft"></a>PadLeft(`s`, `width`, `padding`)
+## PadLeft(`s`, `width`, `padding`) {#padleft}
 
 Pads the string `s` with the `padding` symbol on the left if `s` is shorter than `width`.
 
@@ -116,7 +116,7 @@ PadLeft("x", 3, "-")       // "--x"
 PadLeft("123", 3, "-")     // "123"
 ```
 
-## <a name="padright"></a>PadRight(`s`, `width`, `padding`)
+## PadRight(`s`, `width`, `padding`) {#padright}
 
 Pads the string `s` with the `padding` symbol on the right if `s` is shorter than `width`.
 
@@ -125,7 +125,7 @@ PadRight("x", 3, "-")       // "x--"
 PadRight("123", 3, "-")     // "123"
 ```
 
-## <a name="parsefloat"></a>ParseFloat(`s`)
+## ParseFloat(`s`) {#parsefloat}
 
 Parse `s` as a, possibly signed, real literal and return its value.
 
@@ -134,7 +134,7 @@ ParseFloat("2025")      // -2025
 ParseFloat("-012.78")   // -12.78
 ```
 
-## <a name="parseint"></a>ParseInt(`s`)
+## ParseInt(`s`) {#parseint}
 
 Parse `s` as a, possibly signed, integer literal and return its value.
 
@@ -143,7 +143,7 @@ ParseInt("2025")    // 2025
 ParseInt("-012")    // -12
 ```
 
-## <a name="regexpcontains"></a>RegExpContains(`s`, `pattern`)
+## RegExpContains(`s`, `pattern`) {#regexpcontains}
 
 Checks if the string `s` contains a string matches a regular expression `pattern`.
 
@@ -152,7 +152,7 @@ RegExpContains("Stormy Weather", "Sunny")      // false
 RegExpContains("name@gmail.com", "(\W|^)[\w.\-]{0,25}@(hotmail|gmail)\.com(\W|$)")    // true
 ```
 
-## <a name="regexpextract"></a>RegExpExtract(`s`, `pattern`, `n`)
+## RegExpExtract(`s`, `pattern`, `n`) {#regexpextract}
 
 Returns the `n`-th part of a string `s` that matches a regular expression `pattern`.
 
@@ -161,7 +161,7 @@ RegExpExtract("Hello World!", "l+", 0)    // "ll"
 RegExpExtract("Hello World!", "l+", 1)    // "l"
 ```
 
-## <a name="rexpreplace"></a>RegExpReplace(`s`, `pattern`, `sub`)
+## RegExpReplace(`s`, `pattern`, `sub`) {#rexpreplace}
 
 Returns the string after replacing a substring `sub` in string `s` according to a regular expression `pattern`.
 
@@ -169,7 +169,7 @@ Returns the string after replacing a substring `sub` in string `s` according to 
 RegExpReplace("Hello World!", "l+", "LL")    // "HeLLo WorLLd!"
 ```
 
-## <a name="replaceall"></a>ReplaceAll(`s`, `from`, `replace`)
+## ReplaceAll(`s`, `from`, `replace`) {#replaceall}
 
 Replaces all substrings in string `s` that match `from` with `replace` and returns the result obtained.
 
@@ -179,7 +179,7 @@ ReplaceAll("Every", "", ".")                 // ".E.v.e.r.y."
 ReplaceAll("moto", "o", "")                  // "mt"
 ```
 
-## <a name="splitstring"></a>SplitString(`s`, `separator`, `i`)
+## SplitString(`s`, `separator`, `i`) {#splitstring}
 
 Splits the string `s` at matches of `separator` and returns the `i`-th of the substring between the matches.
 
@@ -189,7 +189,7 @@ SplitString("Born to Be Wild", "to", 1)    // " Be Wild"
 SplitString("a,b,c,d", ",", 0)             // "a"
 ```
 
-## <a name="startswith"></a>StartsWith(`s`, `prefix`)
+## StartsWith(`s`, `prefix`) {#startswith}
 
 Checks if the string `s` starts with a match of `prefix`.
 
@@ -198,7 +198,7 @@ StartsWith("White Christmas", "White")        // true
 StartsWith("White Christmas", "Christmas")    // false
 ```
 
-## <a name="strfind"></a>StrFind(`s`, `sub`)
+## StrFind(`s`, `sub`) {#strfind}
 
 Returns the index of the first occurrence of the string `sub` in the string `s`.
 
@@ -211,7 +211,7 @@ StrFind("Hello world!", "Car")    // -1
 StrFind("", "Moon")               // -1
 ```
 
-## <a name="strleft"></a>StrLeft(`s`, `count`)
+## StrLeft(`s`, `count`) {#strleft}
 
 Returns the first `count` characters of the string `s`.
 
@@ -228,7 +228,7 @@ StrLeft("Daddy", -3)     // "Da"
 StrLeft("Daddy", -8))    // ""
 ```
 
-## <a name="strright"></a>StrRight(`s`, `count`)
+## StrRight(`s`, `count`) {#strright}
 
 Returns the last `count` characters of the string `s`.
 
@@ -245,7 +245,7 @@ StrRight("Daddy", -3)     // "dy"
 StrRight("Daddy", -8))    // ""
 ```
 
-## <a name="strrepeat"></a>StrRepeat(`s`, `n`)
+## StrRepeat(`s`, `n`) {#strrepeat}
 
 Returns a string consisting of `n` repetitions of string `s`.
 
@@ -253,7 +253,7 @@ Returns a string consisting of `n` repetitions of string `s`.
 StrRepeat("Chain", 2)    // "ChainChain"
 ```
 
-## <a name="substring"></a>Substring(`s`, `start`, `end`)
+## Substring(`s`, `start`, `end`) {#substring}
 
 Returns the substring of the string `s` from `start` index, inclusive, to `end`, exclusive.
 
@@ -261,7 +261,7 @@ Returns the substring of the string `s` from `start` index, inclusive, to `end`,
 Substring("Alfa Romeo", 5, 10)    // "Romeo"
 ```
 
-## <a name="tolowercase"></a>ToLowerCase(`s`)
+## ToLowerCase(`s`) {#tolowercase}
 
 Converts all characters in this string `s` to lower case and returns the result obtained.
 
@@ -269,7 +269,7 @@ Converts all characters in this string `s` to lower case and returns the result 
 ToLowerCase("ALPHABET")    // "alphabet"
 ```
 
-## <a name="touppercase"></a>ToUpperCase(`s`)
+## ToUpperCase(`s`) {#touppercase}
 
 Converts all characters in this string `s` to upper case and returns the result obtained.
 
@@ -277,7 +277,7 @@ Converts all characters in this string `s` to upper case and returns the result 
 ToUpperCase("alphabet")    // "ALPHABET"
 ```
 
-## <a name="trim"></a>Trim(`s`)
+## Trim(`s`) {#trim}
 
 Returns the string without any leading and trailing whitespace of the string `s`.
 
