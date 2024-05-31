@@ -1,4 +1,4 @@
-/* The ROS3Pw method implementation
+/* The ROS3PRw method implementation
 
    References:
      [1] https://doi.org/10.1016/j.cam.2015.03.010 */
@@ -11,7 +11,7 @@ import {inverseMatrix, memAlloc, memFree} from '../../wasm/matrix-operations-api
 import {ODEs, max, abs, SAFETY, PSHRNK, PSGROW, REDUCE_COEF, GROW_COEF,
   ERR_CONTR, TINY, EPS, tDerivative, jacobian, ERROR_MSG} from './solver-defs';
 
-// The method specific constants
+// The method specific constants (see Table 2 [1])
 const GAMMA = 0.78867513459481287;
 
 const GAMMA_21 = -2.3660254037844388;
@@ -44,7 +44,7 @@ const R_3 = B_3 - B_HAT_3;
 
 
 /** Solve initial value problem using the ROS3Pw method [5]. */
-export function ros3pw(odes: ODEs, callBack?: any): DG.DataFrame {
+export function ros3prw(odes: ODEs, callBack?: any): DG.DataFrame {
   /** right-hand side of the IVP solved */
   const f = odes.func;
 

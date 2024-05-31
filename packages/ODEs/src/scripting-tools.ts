@@ -905,7 +905,7 @@ function getScriptFunc(ivp: IVP, funcParamsNames: string): string[] {
 
   // 2.5) solver options
   res.push('');
-  res.push(`let opts = ${ivp.solverSettings.replaceAll(';', ',')};`);
+  res.push(`${SCRIPT.SPACE2}let opts = ${ivp.solverSettings.replaceAll(';', ',')};`);
 
   // 3. Math functions
   if (ivp.usedMathFuncs.length > 0) {
