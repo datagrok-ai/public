@@ -211,7 +211,7 @@ export function mrt(odes: ODEs, callBack?: any): DG.DataFrame {
         if (tNew == t) {
           memFree(wasmMemory.off1);
           memFree(wasmMemory.off2);
-          throw new Error(ERROR_MSG.ROSENBROCK_METHOD_FAILS);
+          throw new Error(ERROR_MSG.MRT_FAILS);
         }
       } else {
         if (errmax > ERR_CONTR)
