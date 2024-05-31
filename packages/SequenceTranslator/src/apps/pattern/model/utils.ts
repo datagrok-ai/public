@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
 import {NucleotideSequences} from './types';
+import { STRAND } from './const';
 
 
 export function isOverhangNucleotide(nucleotide: string): boolean {
@@ -10,9 +11,14 @@ export function isOverhangNucleotide(nucleotide: string): boolean {
 }
 
 
-export function getUniqueNucleotides(sequences: NucleotideSequences): string[] {
-  const nucleotides = Object.values(sequences).flat();
-  return getUniqueSortedStrings(nucleotides);
+export function getUniqueNucleotides(sequences: NucleotideSequences, isAsActive: boolean): string[] {
+  let totalNucleotides: string[] = [];
+  for (const key of Object.keys(sequences)) {
+    if (key === STRAND.ANTISENSE && !isAsActive)
+      continue;
+    totalNucleotides = totalNucleotides.concat(sequences[key as STRAND])
+  }
+  return getUniqueSortedStrings(totalNucleotides);
 }
 
 

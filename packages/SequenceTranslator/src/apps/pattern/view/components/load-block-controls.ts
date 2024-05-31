@@ -77,7 +77,7 @@ export class PatternLoadControlsManager {
   }
 
   private createTypeAhead(source: string[], df: DG.DataFrame): HTMLElement {
-    const typeAhead = ui.typeAhead('Patterns', {
+    const typeAhead = ui.typeAhead('Search pattern', {
       source: {
         local: source
       },
@@ -88,11 +88,15 @@ export class PatternLoadControlsManager {
       highlight: true, 
       diacritics: true,
       onSubmit: (event, value) => {
-        df.rows.filter((row) => row.pattern === value);
-        df.currentRowIdx = df.filter.findNext(0, true);
+        df.rows.filter((row) => row.pattern === value?.label);
+        df.currentRowIdx = df.filter.findNext(-1, true);
       },
       debounceRemote: 100
     });
+    typeAhead.onChanged(() => {
+      if(typeAhead.value === '')
+        df.filter.setAll(true);
+    })
     return typeAhead.root;
   }
 
@@ -110,7 +114,7 @@ export class PatternLoadControlsManager {
   }
 
   private createPatternsGridWithTypeAhead(): HTMLElement {
-    const patternNameCol = 'Pattern';
+    const patternNameCol = 'pattern';
     const currentUserPatterns = this.isCurrentUserSelected();
     const patternList = currentUserPatterns ?
     this.dataManager.getCurrentUserPatternNames().filter((it) => it !== this.dataManager.getDefaultPatternName()) :
@@ -209,12 +213,12 @@ export class PatternLoadControlsManager {
     ) ?? patternList[0];
   }
 
-  private createDeletePatternButton(): HTMLButtonElement {
+  createDeletePatternButton(): HTMLButtonElement {
     const button = ui.button(
       ui.iconFA('trash-alt'),
       () => {
         if (this.eventBus.getPatternName() === this.dataManager.getDefaultPatternName()) {
-          grok.shell.warning('Cannot delete example pattern');
+          grok.shell.warning('Cannot delete not saved pattern');
           return;
         }
         this.showDeletePatternDialog();

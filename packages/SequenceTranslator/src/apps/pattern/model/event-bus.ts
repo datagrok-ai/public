@@ -95,7 +95,7 @@ export class EventBus {
 
   private updateUniqueNucleotides(): void {
     const sequences = this._nucleotideSequences$.getValue();
-    const uniqueNucleotides = getUniqueNucleotides(sequences);
+    const uniqueNucleotides = getUniqueNucleotides(sequences, this.isAntisenseStrandActive());
     this._uniqueNucleotides$.next(uniqueNucleotides);
   }
 
@@ -164,12 +164,13 @@ export class EventBus {
   }
 
   toggleAntisenseStrand(isActive: boolean) {
-    if (!isActive)
-      this.updateStrandLength(STRAND.ANTISENSE, 0);
-    else
-      this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.ANTISENSE].length);
-
+    // if (!isActive) {
+    //   this.updateNucleotideSequences(this.getNucleotideSequences());
+    // }
+    // else
+    //   this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.ANTISENSE].length);
     this._isAntisenseStrandActive$.next(isActive);
+    this.updateNucleotideSequences(this.getNucleotideSequences());
   }
 
   getNucleotideSequences(): NucleotideSequences {

@@ -15,12 +15,14 @@ import { PatternLoadControlsManager } from './load-block-controls';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
+  private loadControlsManager: PatternLoadControlsManager;
 
   constructor(
     private eventBus: EventBus,
     private dataManager: DataManager,
   ) {
     this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
+    this.loadControlsManager = new PatternLoadControlsManager(this.eventBus, this.dataManager);
   };
 
   getLayout(): HTMLDivElement {
@@ -58,6 +60,7 @@ export class PatternAppRightSection {
       this.createSavePatternButton(),
       this.createDownloadPngButton(),
       this.createShareLinkButton(),
+      this.loadControlsManager.createDeletePatternButton(),
     ], {style: {gap: '12px', marginTop: '12px', justifyContent: 'end'}});
   }
 
@@ -91,7 +94,9 @@ export class PatternAppRightSection {
     })
 
     this.eventBus.antisenseStrandToggled$.subscribe((active: boolean) => {
-      $(strandLengthInputs[STRAND.ANTISENSE].root).toggle(active);
+      const display = !active ? 'none' : 'flex';
+      strandLengthInputs[STRAND.ANTISENSE].root.style.display = display;
+   //   $(strandLengthInputs[STRAND.ANTISENSE].root).toggle(active);
     });
 
     return ui.divV([
@@ -233,16 +238,15 @@ export class PatternAppRightSection {
 
 
   private createLoadPatternButton(): HTMLElement {
-    const loadControlsManager = new PatternLoadControlsManager(this.eventBus, this.dataManager);
     const loadPatternInput = ui.iconFA('folder-open', () => {
       const savedConfig  = this.eventBus.getPatternConfig();
-      const patternDialog = loadControlsManager.createControls();
+      const patternDialog = this.loadControlsManager.createControls();
       ui.dialog('Load pattern')
       .add(patternDialog)
       .show()
       .onOK(() => {})
       .onCancel(() => {
-        loadControlsManager.handlePatternChoice('', savedConfig);
+        this.loadControlsManager.handlePatternChoice('', savedConfig);
       })
     });
     loadPatternInput.classList.add('st-load-pattern-button');

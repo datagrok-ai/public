@@ -97,6 +97,8 @@ class SingleStrandBlock extends SVGBlockBase {
   }
 
   get svgElements(): SVGElement[] {
+    if (this.strand === STRAND.ANTISENSE && !this.config.isAntisenseStrandIncluded)
+      return [];
     return this._svgElements;
   }
 
@@ -126,7 +128,7 @@ class SingleStrandBlock extends SVGBlockBase {
     const circleElements = this.createNucleotideCircleElements(nucleotide, index, defaultShift);
     const numericLabel = this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
       this.createNucleotideNumericLabel(index, defaultShift) : null;
-
+    
     return [...circleElements, numericLabel].filter((element) => element !== null) as SVGElement[];
   }
 
@@ -277,6 +279,8 @@ class SingleStrandBlock extends SVGBlockBase {
   }
 
   getContentHeight(): number {
+    if (this.strand === STRAND.ANTISENSE && !this.config.isAntisenseStrandIncluded)
+      return 0;
     return SENSE_STRAND_HEIGHT + SENSE_STRAND_PADDING;
   }
 }
@@ -346,6 +350,8 @@ class StrandLabel extends SVGBlockBase {
   }
 
   get svgElements(): SVGElement[] {
+    if (this.strand === STRAND.ANTISENSE && !this.config.isAntisenseStrandIncluded)
+      return [];
     return this._svgElements;
   }
 
