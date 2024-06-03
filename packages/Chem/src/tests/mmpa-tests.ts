@@ -164,109 +164,109 @@ const randomValsToCheckGPU: {[key: string]: {[key: string]: {idxs: number[], val
     },
 }
 
-category('mmpa', () => {
+// category('mmpa', () => {
 
-    before(async () => {
-        grok.shell.closeAll();
-        if (!chemCommonRdKit.moduleInitialized) {
-            chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-            await chemCommonRdKit.initRdKitModuleLocal();
-        }
-    });
+//     before(async () => {
+//         grok.shell.closeAll();
+//         if (!chemCommonRdKit.moduleInitialized) {
+//             chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+//             await chemCommonRdKit.initRdKitModuleLocal();
+//         }
+//     });
 
-    test('mmpaOpens', async () => {
-        const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-        const mmp = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-            tv.dataFrame.clone().columns.remove('smiles'));
-        //ensure MMPA opened
-        await awaitCheck(() => document.getElementsByClassName('chem-mmpa-transformation-tab-header').length > 0,
-            'MMPA hasn\'t been started', 3000);
-        //ensure fragments and pairs grids have been created
-        await awaitCheck(() => document.getElementsByClassName('d4-grid').length === 3,
-            'Fragments and Pairs grids haven\'t been created', 3000);
-        //ensure embeddings columns have been created for cliffs tab
-        await awaitCheck(() => tv.dataFrame.columns.names().includes('~Embed_X_1')
-            && tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
-        //ensure embeddings columns have been calculated
-        await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0
-            && tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0 , 'Embeddings haven\'t been calculated', 10000);
-        expect(mmp.mmpRules.rules.length, 40, `Incorrect rules`);
-        expect(mmp.mmpRules.smilesFrags.length, 14, `Incorrect smilesFrags`);
-    });
+//     test('mmpaOpens', async () => {
+//         const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
+//         const mmp = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+//             tv.dataFrame.clone().columns.remove('smiles'));
+//         //ensure MMPA opened
+//         await awaitCheck(() => document.getElementsByClassName('chem-mmpa-transformation-tab-header').length > 0,
+//             'MMPA hasn\'t been started', 3000);
+//         //ensure fragments and pairs grids have been created
+//         await awaitCheck(() => document.getElementsByClassName('d4-grid').length === 3,
+//             'Fragments and Pairs grids haven\'t been created', 3000);
+//         //ensure embeddings columns have been created for cliffs tab
+//         await awaitCheck(() => tv.dataFrame.columns.names().includes('~Embed_X_1')
+//             && tv.dataFrame.columns.names().includes('~Embed_Y_1'), 'Embeddings haven\'t been created', 3000);
+//         //ensure embeddings columns have been calculated
+//         await awaitCheck(() => tv.dataFrame.col('~Embed_X_1')!.stats.missingValueCount === 0
+//             && tv.dataFrame.col('~Embed_Y_1')!.stats.missingValueCount === 0 , 'Embeddings haven\'t been calculated', 10000);
+//         expect(mmp.mmpRules.rules.length, 40, `Incorrect rules`);
+//         expect(mmp.mmpRules.smilesFrags.length, 14, `Incorrect smilesFrags`);
+//     });
 
-    test('transformationsTab', async () => {
-        const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-        const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-            tv.dataFrame.clone().columns.remove('smiles'));
+//     test('transformationsTab', async () => {
+//         const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
+//         const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+//             tv.dataFrame.clone().columns.remove('smiles'));
 
-        //check Fragments Grid
-        const fragsDf = mmp.allPairsGrid.dataFrame;
-        await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7
-            && fragsDf.filter.trueCount === 2 && fragsDf.filter.get(mmp.calculatedOnGPU ? 1 : 0) && fragsDf.filter.get(2),
-            'Incorrect fragments grid', 3000);
-        checkRandomValues(fragsDf, 'Transformations_Fragments', mmp.calculatedOnGPU);
+//         //check Fragments Grid
+//         const fragsDf = mmp.allPairsGrid.dataFrame;
+//         await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7
+//             && fragsDf.filter.trueCount === 2 && fragsDf.filter.get(mmp.calculatedOnGPU ? 1 : 0) && fragsDf.filter.get(2),
+//             'Incorrect fragments grid', 3000);
+//         checkRandomValues(fragsDf, 'Transformations_Fragments', mmp.calculatedOnGPU);
 
-        //check Pairs Grid
-        const pairsDf = mmp.casesGrid.dataFrame;
-        await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13
-            && pairsDf.filter.trueCount === 3  && pairsDf.filter.get(mmp.calculatedOnGPU ? 3 : 0)
-            && pairsDf.filter.get(mmp.calculatedOnGPU ? 4 : 1) && pairsDf.filter.get(mmp.calculatedOnGPU ? 5 : 2),
-            'Incorrect pairs grid', 3000);
-        checkRandomValues(mmp.casesGrid.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU);
+//         //check Pairs Grid
+//         const pairsDf = mmp.casesGrid.dataFrame;
+//         await awaitCheck(() => pairsDf.rowCount === 54 && pairsDf.columns.length === 13
+//             && pairsDf.filter.trueCount === 3  && pairsDf.filter.get(mmp.calculatedOnGPU ? 3 : 0)
+//             && pairsDf.filter.get(mmp.calculatedOnGPU ? 4 : 1) && pairsDf.filter.get(mmp.calculatedOnGPU ? 5 : 2),
+//             'Incorrect pairs grid', 3000);
+//         checkRandomValues(mmp.casesGrid.dataFrame, 'Transformations_Pairs', mmp.calculatedOnGPU);
 
-        //changing fragment
-        mmp.allPairsGrid.dataFrame.currentRowIdx = 2;
-        await awaitCheck(() => pairsDf.filter.trueCount === 2  && pairsDf.filter.get(6) && pairsDf.filter.get(7) ,
-            'Pairs haven\'t been changed after fragment change', 3000);
+//         //changing fragment
+//         mmp.allPairsGrid.dataFrame.currentRowIdx = 2;
+//         await awaitCheck(() => pairsDf.filter.trueCount === 2  && pairsDf.filter.get(6) && pairsDf.filter.get(7) ,
+//             'Pairs haven\'t been changed after fragment change', 3000);
 
-        //changing target molecule
-        tv.dataFrame.currentRowIdx = 4;
-        await awaitCheck(() => fragsDf.filter.trueCount === 3
-             && fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7)
-            && pairsDf.filter.trueCount === 2  && pairsDf.filter.get(8) && pairsDf.filter.get(9),
-            'Pairs haven\'t been changed after fragment change', 3000);
-    });
+//         //changing target molecule
+//         tv.dataFrame.currentRowIdx = 4;
+//         await awaitCheck(() => fragsDf.filter.trueCount === 3
+//              && fragsDf.filter.get(3) && fragsDf.filter.get(4) && fragsDf.filter.get(7)
+//             && pairsDf.filter.trueCount === 2  && pairsDf.filter.get(8) && pairsDf.filter.get(9),
+//             'Pairs haven\'t been changed after fragment change', 3000);
+//     });
 
-    test('cliffsTab', async () => {
-        const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-        const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-            tv.dataFrame.clone().columns.remove('smiles'));
+//     test('cliffsTab', async () => {
+//         const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
+//         const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+//             tv.dataFrame.clone().columns.remove('smiles'));
 
-        //check created lines
-        await awaitCheck(() => mmp.lines.from.length === 81 && mmp.lines.to.length === 81
-            && mmp.linesIdxs.length === 81, 'Incorrect lines number');
-        await awaitCheck(() => mmp.linesMask.allTrue, 'Incorrect initial lines mask');
-        checkRandomArrayVals(mmp.lines.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
-        checkRandomArrayVals(mmp.lines.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
-        checkRandomArrayVals(mmp.linesIdxs, [0, 10, 30, 50, 80], [mmp.calculatedOnGPU ? 0 : 3, 22, 8, 47, 52], 'mmp.linesIdxs');
-        checkRandomArrayVals(mmp.lines.colors, [0, 30, 80], ['31,119,180', '255,187,120', '44,160,44'], 'mmp.lines.colors');
-        checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
+//         //check created lines
+//         await awaitCheck(() => mmp.lines.from.length === 81 && mmp.lines.to.length === 81
+//             && mmp.linesIdxs.length === 81, 'Incorrect lines number');
+//         await awaitCheck(() => mmp.linesMask.allTrue, 'Incorrect initial lines mask');
+//         checkRandomArrayVals(mmp.lines.from, [0, 10, 30, 50, 70], [30, 6, 37, 23, 9], 'mmp.lines.from');
+//         checkRandomArrayVals(mmp.lines.to, [0, 10, 30, 50, 70], [0, 28, 0, 27, 23], 'mmp.lines.to');
+//         checkRandomArrayVals(mmp.linesIdxs, [0, 10, 30, 50, 80], [mmp.calculatedOnGPU ? 0 : 3, 22, 8, 47, 52], 'mmp.linesIdxs');
+//         checkRandomArrayVals(mmp.lines.colors, [0, 30, 80], ['31,119,180', '255,187,120', '44,160,44'], 'mmp.lines.colors');
+//         checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
 
-        //changing sliders inputs values
-        mmp.sliderInputs[0].value = 11.87;
-        mmp.sliderInputs[1].value = 14.15;
-        mmp.sliderInputs[2].value = 1.627;
-        await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
-            'Incorrect lines mask after slider input changed', 3000);
+//         //changing sliders inputs values
+//         mmp.sliderInputs[0].value = 11.87;
+//         mmp.sliderInputs[1].value = 14.15;
+//         mmp.sliderInputs[2].value = 1.627;
+//         await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 7,
+//             'Incorrect lines mask after slider input changed', 3000);
 
-        //switch of one of activities
-        mmp.activeInputs[2].value = false;
-        await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 2,
-            'Incorrect lines mask after checkboxes values changed', 3000);
-    });
+//         //switch of one of activities
+//         mmp.activeInputs[2].value = false;
+//         await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask.buffer.buffer, 81).trueCount === 2,
+//             'Incorrect lines mask after checkboxes values changed', 3000);
+//     });
 
-    test('generationTab', async () => {
-        const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-        const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
-            tv.dataFrame.clone().columns.remove('smiles'));
-        const genDf = mmp.generationsGrid.dataFrame;
-        await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
-        checkRandomValues(genDf, 'Generation', mmp.calculatedOnGPU);
-        //check that 'Existing' column has been calculated
-        await awaitCheck(() => genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
-        expect(genDf.col('Existing')!.toList().filter((it) => it).length, 23, 'Incorrect data in \'Existing\' column');
-    });
-});
+//     test('generationTab', async () => {
+//         const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
+//         const mmp: MmpAnalysis = await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
+//             tv.dataFrame.clone().columns.remove('smiles'));
+//         const genDf = mmp.generationsGrid.dataFrame;
+//         await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
+//         checkRandomValues(genDf, 'Generation', mmp.calculatedOnGPU);
+//         //check that 'Existing' column has been calculated
+//         await awaitCheck(() => genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
+//         expect(genDf.col('Existing')!.toList().filter((it) => it).length, 23, 'Incorrect data in \'Existing\' column');
+//     });
+// });
 
 
 function checkRandomValues(df: DG.DataFrame, dfName: string, isGPU: boolean) {

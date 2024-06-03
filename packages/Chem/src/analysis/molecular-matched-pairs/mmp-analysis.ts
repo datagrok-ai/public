@@ -25,6 +25,75 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import $ from 'cash-dom';
+
+export class MatchedMolecularPairsViewer extends DG.JsViewer {
+  static TYPE: string = 'MMP';
+  //mmp: MmpAnalysis;
+
+  //caption: string;
+  molecules: string | null = null;
+  moleculesCol: DG.Column | null = null;
+  activities: string[] | null = null;
+  activitiesCols: DG.ColumnList | null = null;
+  fragmentCutoff: number | null;
+
+
+  constructor() {
+    super();
+
+    // // properties
+    this.molecules = this.string('molecules');
+    this.activities = this.stringList('activities');
+    this.fragmentCutoff = this.float('fragmentCutoff');
+
+    // this.fragmentCutoff = this.addProperty('fragmentCutoff', DG.TYPE.FLOAT, 'Table summary');
+    // this.subs.push(this.dataFrame.onSelectionChanged.subscribe((_) => this.render()));
+    // this.caption = this.addProperty('caption', DG.TYPE.STRING, 'Table summary');
+
+    //this.render();
+  }
+
+  onTableAttached() {
+    // this.molecules = this.string('molecules');
+    // this.moleculesCol = this.dataFrame.columns.byName(this.molecules);
+    // this.activities = this.addProperty('activities', DG.TYPE.STRING_LIST, 'Table summary');
+    // this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
+    // this.fragmentCutoff = this.addProperty('fragmentCutoff', DG.TYPE.FLOAT, 'Table summary');
+    // this.subs.push(this.dataFrame.onSelectionChanged.subscribe((_) => this.render()));
+  }
+
+  onPropertyChanged(property: DG.Property | null): void {
+    console.log(property!.name);
+    super.onPropertyChanged(property);
+    if (property?.name === 'molecules')
+      this.moleculesCol = this.dataFrame.col(property!.get(this));
+    if (property?.name === 'activities')
+      this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
+    if (this.molecules && this.activities && this.fragmentCutoff) {
+      this.render();
+      return;
+    }
+  }
+
+  async render() {
+    $(this.root).empty();
+    if (this.dataFrame) {
+      const mmp = await MmpAnalysis.init(
+        {table: this.dataFrame,
+          molecules: this.moleculesCol!,
+          activities: this.activitiesCols!,
+          fragmentCutoff: this.fragmentCutoff!,
+        });
+
+
+      this.root.appendChild(mmp.mmpView.root);
+
+      // this.root.appendChild(ui.h2(this.dataFrame.selection.trueCount + ' selected'));
+      // this.root.appendChild(ui.h2(this.dataFrame.filter.trueCount + ' filtered'));
+    }
+  }
+}
 
 export class MmpAnalysis {
   parentTable: DG.DataFrame;
@@ -257,7 +326,7 @@ export class MmpAnalysis {
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
-    this.calculatedOnGPU = gpuUsed
+    this.calculatedOnGPU = gpuUsed;
 
     //transformations tab setup
     this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
