@@ -27,7 +27,7 @@ mechanisms and having built-in collaboration features, we drastically reduce tha
 
 ## Data provenance
 
-[Data provenance](../../../govern/data-provenance.md) is the ability to fully understand everything that the result depends
+[Data provenance](../../../govern/audit/data-provenance.md) is the ability to fully understand everything that the result depends
 upon.
 
 ## Data pipelines

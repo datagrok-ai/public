@@ -81,4 +81,4 @@ unless the organization's IT policy overrides it).
 ## Server-side settings
 
 [Server settings](../../../deploy/settings-server.md) are controlled by the
-platform's [administrators](../../../govern/security.md).
+platform's [administrators](../../../govern/access-control/users-and-groups.md).

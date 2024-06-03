@@ -3,7 +3,7 @@
 
 # Tests: Data source
 
-[User](../govern/user.md) in system can connect to data from different sources.
+[User](../govern/access-control/users-and-groups#users) in system can connect to data from different sources.
 
 ## Testing scenarios
 
