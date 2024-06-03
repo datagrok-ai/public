@@ -4,13 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, from, merge, of, combineLatest, Observable, identity, EMPTY} from 'rxjs';
 import {
-  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map, debounceTime, take,
+  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map
 } from 'rxjs/operators';
 
 export class Viewer<T = any> extends HTMLElement {
-  private valueSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
   private viewerSetted$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
-  private nameSetted$ = new BehaviorSubject<string | undefined>(undefined);
+  private dfSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
+  private typeSetted$ = new BehaviorSubject<string | undefined>(undefined);
 
   private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
 
@@ -21,20 +21,20 @@ export class Viewer<T = any> extends HTMLElement {
 
     const latestViewer$ = this.viewer$.pipe(distinctUntilChanged(), filter((v) => !!v));
 
-    const latestName$ = merge(
+    const latestType$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.type)),
-      this.nameSetted$,
+      this.typeSetted$,
     ).pipe(distinctUntilChanged());
 
-    const latestValue$ = merge(
+    const latestDf$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.dataFrame)),
       this.getViewerEventObservable('d4-data-frame-changed').pipe(map((ev) => ev.data.args.newValue as DG.DataFrame)),
-      this.valueSetted$,
+      this.dfSetted$,
     ).pipe(distinctUntilChanged());
 
     const latestParams$ = combineLatest([
-      latestName$,
-      latestValue$,
+      latestType$,
+      latestDf$,
     ] as const);
 
     merge(
@@ -43,10 +43,10 @@ export class Viewer<T = any> extends HTMLElement {
     ).pipe(
       switchMap((payload) => {
         if (Array.isArray(payload)) {
-          const [name, value] = payload;
-          if (name && value) {
-            if (this.viewer?.type !== name || !this.viewer)
-              return from(this.createViewer(name, value));
+          const [type, df] = payload;
+          if (type && df) {
+            if (this.viewer?.type !== type || !this.viewer)
+              return from(this.createViewer(type, df));
             else
               return EMPTY;
           } else
@@ -61,12 +61,12 @@ export class Viewer<T = any> extends HTMLElement {
       this.changeAttachedViewer(viewer as DG.Viewer<T>);
     });
 
-    this.valueSetted$.pipe(
+    this.dfSetted$.pipe(
       withLatestFrom(this.viewer$),
       takeUntil(this.destroyed$),
-    ).subscribe(([value, viewer]) => {
-      if (viewer && value)
-        viewer.dataFrame = value;
+    ).subscribe(([df, viewer]) => {
+      if (viewer && df)
+        viewer.dataFrame = df;
     });
 
     this.viewer$.pipe(
@@ -74,15 +74,6 @@ export class Viewer<T = any> extends HTMLElement {
       takeUntil(this.destroyed$),
     ).subscribe((viewer) => {
       this.dispatchEvent(new CustomEvent('viewer-changed', {detail: viewer}));
-    });
-
-    // try to make sure that detached is the last event
-    this.getViewerEventObservable().pipe(
-      debounceTime(1000),
-      filter((ev) => ev.type === 'd4-viewer-detached'),
-      take(1),
-    ).subscribe(() => {
-      this.destroyed$.next(true);
     });
   }
 
@@ -100,20 +91,20 @@ export class Viewer<T = any> extends HTMLElement {
     this.viewerSetted$.next(viewer);
   }
 
-  get value() {
-    return this.viewer$.value?.dataFrame ?? this.valueSetted$.value;
+  get dataFrame() {
+    return this.viewer$.value?.dataFrame ?? this.dfSetted$.value;
   }
 
-  set value(df: DG.DataFrame | undefined) {
-    this.valueSetted$.next(df);
+  set dataFrame(df: DG.DataFrame | undefined) {
+    this.dfSetted$.next(df);
   }
 
-  get name() {
-    return this.viewer$.value?.type ?? this.nameSetted$.value;
+  get type() {
+    return this.viewer$.value?.type ?? this.typeSetted$.value;
   }
 
-  set name(name: string | undefined) {
-    this.nameSetted$.next(name);
+  set type(type: string | undefined) {
+    this.typeSetted$.next(type);
   }
 
   public getViewerEventObservable<P = any>(eventType?: string): Observable<P> {
@@ -125,13 +116,13 @@ export class Viewer<T = any> extends HTMLElement {
     );
   }
 
-  private async createViewer(name: string, df: DG.DataFrame) {
-    const viewer = await df.plot.fromType(name) as DG.Viewer<T>;
+  private async createViewer(type: string, df: DG.DataFrame) {
+    const viewer = await df.plot.fromType(type) as DG.Viewer<T>;
     return viewer;
   }
 
   private changeAttachedViewer(viewer?: DG.Viewer<T>) {
-    this.innerHTML = '';
+    ui.empty(this);
     this.viewer$.next(viewer);
     if (viewer)
       this.appendChild(viewer.root);

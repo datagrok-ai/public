@@ -16,7 +16,7 @@ export const VueViewerTestApp = defineComponent({
   },
   setup() {
     const df = shallowRef<DG.DataFrame | undefined>(undefined);
-    const name = ref<string | undefined>(undefined);
+    const type = ref<string | undefined>(undefined);
     const viewer = shallowRef<DG.Viewer | undefined>(undefined);
 
     let i = 0;
@@ -29,7 +29,7 @@ export const VueViewerTestApp = defineComponent({
     let j = 0;
     const types = ['Grid', 'Histogram', 'Line chart', 'Scatter plot'];
     const changeType = () => {
-      name.value = types[j];
+      type.value = types[j];
       j++;
       j%=types.length;
     };
@@ -38,7 +38,7 @@ export const VueViewerTestApp = defineComponent({
       <div style={{width: '100%', height: '100%'}}>
         <button onClick={changeData}>change data</button>
         <button onClick={changeType}>change type</button>
-        <Viewer name={name.value} value={df.value} onViewerChanged={(v) => viewer.value = v}></Viewer>
+        <Viewer type={type.value} dataFrame={df.value} onViewerChanged={(v) => viewer.value = v}></Viewer>
       </div>
     );
   },

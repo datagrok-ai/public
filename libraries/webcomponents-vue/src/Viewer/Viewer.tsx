@@ -16,8 +16,8 @@ declare global {
 export const Viewer = defineComponent({
   name: 'Viewer',
   props: {
-    name: String,
-    value: DG.DataFrame,
+    type: String,
+    dataFrame: DG.DataFrame,
     viewer: DG.Viewer,
   },
   emits: {
@@ -29,7 +29,7 @@ export const Viewer = defineComponent({
     };
     return () => {
       const viewer = <dg-viewer
-        name={props.name} value={props.value} viewer={props.viewer} onViewerChanged={viewerChangedCb}>
+        type={props.type} dataFrame={props.dataFrame} viewer={props.viewer} onViewerChanged={viewerChangedCb}>
       </dg-viewer>;
       return (
         <keep-alive>

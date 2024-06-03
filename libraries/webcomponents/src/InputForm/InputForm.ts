@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export class Form extends HTMLElement {
+export class InputForm extends HTMLElement {
   private formInst?: DG.InputForm;
   private currentSource?: DG.FuncCall;
 
@@ -38,11 +38,11 @@ export class Form extends HTMLElement {
   }
 
   private attach() {
-    this.innerHTML = '';
+    ui.empty(this);
     this.dispatchEvent(new CustomEvent('form-changed', {detail: this.formInst}));
     if (this.formInst)
       this.appendChild(this.formInst.root);
   }
 }
 
-export interface FormT extends Form {};
+export interface InputFormT extends InputForm {};

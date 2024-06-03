@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Form} from '@datagrok-libraries/webcomponents-vue/src';
+import {InputForm} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, shallowRef, ref, onMounted} from 'vue';
 
 export const VueFormTestApp = defineComponent({
@@ -45,7 +45,7 @@ export const VueFormTestApp = defineComponent({
         <button onClick={logFuncCall}>log funccall inputs</button>
         <button onClick={changeFuncCall}>change funcall</button>
         <button onClick={removeFuncCall}>remove funcall</button>
-        <Form funcCall={fc.value}></Form>
+        <InputForm funcCall={fc.value}></InputForm>
       </div>
     );
   },

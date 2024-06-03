@@ -10,7 +10,7 @@ import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import type {ViewerT, FormT, DGButtonT, DGBigButtonT} from '@datagrok-libraries/webcomponents/src';
+import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {createApp} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
@@ -804,25 +804,25 @@ export async function TestViewerComponent() {
   const viewerComponent = document.createElement('dg-viewer') as ViewerT;
 
   const setSrcBtn1 = ui.button('Set source demog', () => {
-    viewerComponent.value = grok.data.demo.demog();
+    viewerComponent.dataFrame = grok.data.demo.demog();
   });
   const setSrcBtn2 = ui.button('Set source doseResponse', () => {
-    viewerComponent.value = grok.data.demo.doseResponse();
+    viewerComponent.dataFrame = grok.data.demo.doseResponse();
   });
 
   const remSrcBtn = ui.button('Remove source', () => {
-    viewerComponent.value = undefined;
+    viewerComponent.dataFrame = undefined;
   });
 
   const setViewerTypeBtn1 = ui.button('Line chart', () => {
-    viewerComponent.name = 'Line chart';
+    viewerComponent.type = 'Line chart';
   });
   const setViewerTypeBtn2 = ui.button('Grid', () => {
-    viewerComponent.name = 'Grid';
+    viewerComponent.type = 'Grid';
   });
 
   const setViewerTypeBtn3 = ui.button('Remove type', () => {
-    viewerComponent.name = undefined;
+    viewerComponent.type = undefined;
   });
 
   const changeViewerBtn1 = ui.button('Provide histogram', () => {
@@ -859,7 +859,7 @@ export async function TestFromComponent() {
     b: 2,
     c: 3,
   });
-  const formComponent = document.createElement('dg-form') as FormT;
+  const formComponent = document.createElement('dg-input-form') as InputFormT;
   formComponent.funcCall = fc1;
 
   const view = new DG.ViewBase();
