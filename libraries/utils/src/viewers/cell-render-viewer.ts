@@ -1,9 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {FitChartCellRenderer} from './fit-renderer';
 
-
-/*export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCellRenderer> extends DG.JsViewer {
+export class CellRenderViewer<TRenderer extends DG.GridCellRenderer = DG.GridCellRenderer> extends DG.JsViewer {
   canvas: HTMLCanvasElement = ui.canvas();
   renderer: TRenderer;
   gridCell?: DG.GridCell;
@@ -23,14 +21,14 @@ import {FitChartCellRenderer} from './fit-renderer';
       this.canvas.height = h;
       this.render();
     });
-  
+
     this.canvas.onmousemove = (e: MouseEvent) => this.renderer.onMouseMove(this.gridCell!, e);
     this.canvas.onmouseenter = (e: MouseEvent) => this.renderer.onMouseEnter(this.gridCell!, e);
     this.canvas.onmouseleave = (e: MouseEvent) => this.renderer.onMouseLeave(this.gridCell!, e);
   }
 
-  static fromGridCell(gridCell: DG.GridCell): CellRenderViewer {
-    const viewer = new CellRenderViewer(new FitChartCellRenderer());
+  static fromGridCell(gridCell: DG.GridCell, renderer: DG.GridCellRenderer): CellRenderViewer {
+    const viewer = new CellRenderViewer(renderer);
     viewer.gridCell = gridCell;
     viewer.render();
     return viewer;
@@ -46,4 +44,4 @@ import {FitChartCellRenderer} from './fit-renderer';
     this.renderer.renderInternal(g, 0, 0, this.canvas.width, this.canvas.height,
       this.gridCell.dart, this.gridCellStyle);
   }
-}*/
+}

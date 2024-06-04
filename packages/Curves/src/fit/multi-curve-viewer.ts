@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {CellRenderViewer} from './cell-render-viewer';
+import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
 import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
