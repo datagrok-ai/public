@@ -8,7 +8,7 @@ import * as svgExport from 'save-svg-as-png';
 import {NucleotidePatternSVGRenderer} from './svg-renderer';
 
 export class SvgDisplayManager {
-  private svgDisplayDiv = ui.div([]);
+  private svgDisplayDiv = ui.div([], {style: {position: 'relative', minHeight: '300px'}});
   private svgElement: SVGElement;
 
   private constructor(
@@ -26,14 +26,16 @@ export class SvgDisplayManager {
   private updateSvgContainer(): void {
     $(this.svgDisplayDiv).empty();
     const patternConfig = this.eventBus.getPatternConfig();
-    this.svgElement = this.createSvg(patternConfig);
+    const {svg, divs} = this.createSvg(patternConfig);
+    this.svgElement = svg;
     this.svgDisplayDiv.append(this.svgElement);
+    this.svgDisplayDiv.append(...divs);
   }
 
-  private createSvg(patternConfig: PatternConfiguration) {
+  private createSvg(patternConfig: PatternConfiguration): {svg: SVGElement, divs: HTMLElement[]} {
     const renderer = new NucleotidePatternSVGRenderer(patternConfig, this.eventBus);
-    const svg = renderer.renderPattern();
-    return svg;
+    const {svg, divs} = renderer.renderPattern();
+    return {svg, divs};
   }
 
   private saveSvgAsPng(): void {

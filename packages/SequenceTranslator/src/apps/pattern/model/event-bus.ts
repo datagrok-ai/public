@@ -55,6 +55,8 @@ export class EventBus {
   private _selectedStrandColumn = new rxjs.BehaviorSubject<{[strand: string]: string | null} | null>(null);
   private _selectedIdColumn = new rxjs.BehaviorSubject<string | null>(null);
 
+  private _modificationLablesVisible$: rxjs.BehaviorSubject<boolean>;
+
 
   constructor(
     private dataManager: DataManager,
@@ -127,6 +129,9 @@ export class EventBus {
     this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(
       initialPattern[G.IS_ANTISENSE_STRAND_INCLUDED]
     );
+    this._modificationLablesVisible$ = new rxjs.BehaviorSubject(
+      initialPattern[G.MODIFICATION_LABELS_VISIBLE]
+    );
     this._nucleotideSequences$ = new rxjs.BehaviorSubject(
       initialPattern[G.NUCLEOTIDE_SEQUENCES]
     );
@@ -159,6 +164,14 @@ export class EventBus {
     return this._isAntisenseStrandActive$.asObservable();
   }
 
+  get modificationLablesToggled$(): rxjs.Observable<boolean> {
+    return this._modificationLablesVisible$.asObservable();
+  }
+
+  modificationLablesVisible(): boolean {
+    return this._modificationLablesVisible$.getValue();
+  }
+
   isAntisenseStrandActive(): boolean {
     return this._isAntisenseStrandActive$.getValue();
   }
@@ -171,6 +184,10 @@ export class EventBus {
     //   this.updateStrandLength(STRAND.ANTISENSE, this.getNucleotideSequences()[STRAND.ANTISENSE].length);
     this._isAntisenseStrandActive$.next(isActive);
     this.updateNucleotideSequences(this.getNucleotideSequences());
+  }
+
+  togglemodificationLables(visible: boolean) {
+    this._modificationLablesVisible$.next(visible);
   }
 
   getNucleotideSequences(): NucleotideSequences {
@@ -323,6 +340,7 @@ export class EventBus {
     const observable = rxjs.merge(
       this._patternName$.pipe(debounceTime(300), map(() => {})),
       this._isAntisenseStrandActive$,
+      this._modificationLablesVisible$,
       this._nucleotideSequences$,
       this._phosphorothioateLinkageFlags,
       this._terminalModifications,
@@ -369,6 +387,7 @@ export class EventBus {
   setPatternConfig(patternConfiguration: PatternConfiguration) {
     this._patternName$.next(patternConfiguration[L.PATTERN_NAME]);
     this._isAntisenseStrandActive$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
+    this._modificationLablesVisible$.next(patternConfiguration[G.MODIFICATION_LABELS_VISIBLE]);
     this._nucleotideSequences$.next(patternConfiguration[G.NUCLEOTIDE_SEQUENCES]);
     this._phosphorothioateLinkageFlags.next(patternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]);
     this._terminalModifications.next(patternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]);
@@ -386,6 +405,7 @@ export class EventBus {
     return {
       [L.PATTERN_NAME]: this.getPatternName(),
       [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntisenseStrandActive(),
+      [G.MODIFICATION_LABELS_VISIBLE]: this.modificationLablesVisible(),
       [G.NUCLEOTIDE_SEQUENCES]: this.getNucleotideSequences(),
       [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: this.getPhosphorothioateLinkageFlags(),
       [G.STRAND_TERMINUS_MODIFICATIONS]: this.getTerminalModifications(),

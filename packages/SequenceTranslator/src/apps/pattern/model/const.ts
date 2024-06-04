@@ -46,6 +46,7 @@ export namespace GRAPH_SETTINGS_KEYS {
   export const NUCLEOTIDE_SEQUENCES = 'nucleotideSequences';
   export const PHOSPHOROTHIOATE_LINKAGE_FLAGS = 'phosphorothioateLinkageFlags';
   export const STRAND_TERMINUS_MODIFICATIONS = 'strandTerminusModifications';
+  export const MODIFICATION_LABELS_VISIBLE = 'modificationLabelsVisible';
 }
 
 export namespace LEGEND_SETTINGS_KEYS {

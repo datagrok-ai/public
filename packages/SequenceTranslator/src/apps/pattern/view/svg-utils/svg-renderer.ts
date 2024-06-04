@@ -23,12 +23,12 @@ export class NucleotidePatternSVGRenderer {
     heightShift += this.title.getContentHeight();
 
     this.strands = new StrandsBlock(this.svgElementFactory, config, heightShift, eventBus);
-    heightShift += this.strands.getContentHeight() + LEGEND_PADDING;
+    heightShift += this.strands.getContentHeight();
 
-    this.legend = new LegendBlock(this.svgElementFactory, config, heightShift);
+    this.legend = new LegendBlock(this.svgElementFactory, config, heightShift, eventBus);
   }
 
-  renderPattern(): SVGElement {
+  renderPattern(): {svg: SVGElement, divs: HTMLElement[]} {
     const width = this.getGlobalWidth();
     const height = this.getGlobalHeight();
     const canvas = this.svgElementFactory.createCanvas(width, height);
@@ -36,7 +36,7 @@ export class NucleotidePatternSVGRenderer {
     const elements = [this.title, this.strands, this.legend].map((block) => block.svgElements).flat();
     canvas.append(...elements);
 
-    return canvas;
+    return {svg: canvas, divs: this.legend.divElements};
   }
 
   private getGlobalWidth(): number {

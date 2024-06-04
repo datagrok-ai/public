@@ -17,6 +17,7 @@ export type StrandTerminusModifications = Record<StrandType, Record<TerminalType
 
 export type PatternGraphSettings = {
   [G.IS_ANTISENSE_STRAND_INCLUDED]: boolean,
+  [G.MODIFICATION_LABELS_VISIBLE]: boolean,
   [G.NUCLEOTIDE_SEQUENCES]: NucleotideSequences,
   [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: PhosphorothioateLinkageFlags,
   [G.STRAND_TERMINUS_MODIFICATIONS]: StrandTerminusModifications,

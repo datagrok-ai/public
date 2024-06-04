@@ -29,7 +29,7 @@ export class PatternAppRightSection {
     const pattenNameInput = this.createPatternNameInput();
     const commentInput = this.createPatternCommentInput();
     const loadPatternButton = this.createLoadPatternButton();
-    const numericLabelTogglesContainer = new NumericLabelVisibilityControls(this.eventBus).getContainer();
+    //const numericLabelTogglesContainer = new NumericLabelVisibilityControls(this.eventBus).getContainer();
     const downloadAndEditControls = this.generateDownloadControls();
     // const translationExamplesContainer = new TranslationExamplesBlock(
     //   this.eventBus, this.dataManager
@@ -39,11 +39,18 @@ export class PatternAppRightSection {
     const translationAcc = this.createTranslationAccordion();
     const setSequenceBasis = this.createSetSequenceBasisLink();
     const setAllPtoCheckbox = this.createAllPtoActivationInput();
+    const modificationLabelsToggle = this.createModificationLabelsToggle();
     const layout = ui.panel([
       ui.divH([pattenNameInput, loadPatternButton, commentInput], 'st-pattern-name-comment-form'),
-      ui.divH([toggleAS, lengthInputs, ui.divV([this.svgDisplay, downloadAndEditControls])], 'st-pattern-div'),
-      numericLabelTogglesContainer,
-      ui.divH([setSequenceBasis, setAllPtoCheckbox], 'st-set-all-div'),
+      ui.divH([
+        ui.divV([
+          ui.divH([toggleAS, lengthInputs], {style: {justifyContent: 'flex-end', minHeight: '211px'}}),
+          ui.divV([setAllPtoCheckbox, modificationLabelsToggle, setSequenceBasis], 'st-strand-actions-div')
+        ], {style: {paddingRight: '10px', minHeight: '335px'}}),
+        ui.divV([downloadAndEditControls, this.svgDisplay])],
+        'st-pattern-div'),
+      //numericLabelTogglesContainer,
+      //ui.divH([setSequenceBasis, setAllPtoCheckbox], 'st-set-all-div'),
       translationAcc,
       // ui.h1('Additional modifications'),
       // ui.form([
@@ -105,10 +112,24 @@ export class PatternAppRightSection {
     ], 'st-strands-lengths-div');
   }
 
+  private createModificationLabelsToggle(): HTMLElement {
+    const modificationLabels = ui.boolInput('Modification labels', 
+    this.eventBus.modificationLablesVisible(), () => {
+      this.eventBus.togglemodificationLables(modificationLabels.value!);
+    });
+    this.eventBus.patternLoaded$.subscribe(() => {
+      const loadedValue = this.eventBus.modificationLablesVisible();
+      if (modificationLabels.value !== loadedValue)
+        modificationLabels.value = loadedValue;
+    });
+    ui.tooltip.bind(modificationLabels.captionLabel, 'Toggle modification labels');
+    return modificationLabels.root;
+  }
+
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(``,
       this.eventBus.isAntisenseStrandActive(), () => {
-        this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value)
+        this.eventBus.toggleAntisenseStrand(toggleAntisenseStrand.value);
       });
     this.eventBus.patternLoaded$.subscribe(() => {
       const loadedValue = this.eventBus.isAntisenseStrandActive();
@@ -207,7 +228,8 @@ export class PatternAppRightSection {
         })
     });
     setAllMonomers.classList.remove('d4-link-external');
-    return ui.div(setAllMonomers);
+    setAllMonomers.classList.add('st-set-all-monomers');
+    return setAllMonomers;
   }
 
   private createAllPtoActivationInput(): HTMLElement {

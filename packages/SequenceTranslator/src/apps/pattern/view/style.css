@@ -9,8 +9,7 @@
 }
 
 .st-strands-lengths-div {
-  padding-right: 10px;
-  padding-top: 50px;
+  padding-top: 140px;
   gap: 15px;
 }
 
@@ -20,15 +19,15 @@
 
 .st-toogle-as-input {
   padding-right: 5px;
-  padding-top: 105px;
+  padding-top: 196px;
 }
 
 .st-pattern-div {
-  height: 180px;
+
 }
 
 .st-pattern-name-comment-form {
-  padding-bottom: 40px;
+  
 }
 
 .st-load-pattern-button {
@@ -42,7 +41,7 @@
 }
 
 .st-numeric-label {
-  padding-top: 30px;
+
 }
 
 .st-translate-accordion {
@@ -59,5 +58,15 @@
 }
 
 .st-all-pto-checkbox {
-  padding-left: 20px;
+
+}
+
+.st-strand-actions-div {
+  align-items: end;
+  padding-top: 15px;
+}
+
+.st-set-all-monomers {
+  padding-top: 8px;
+  padding-bottom: 8px
 }

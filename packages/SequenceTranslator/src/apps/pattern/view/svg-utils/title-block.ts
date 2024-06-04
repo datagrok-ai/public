@@ -29,7 +29,9 @@ export class TitleBlock extends SVGBlockBase {
       this.titleText,
       {x: TITLE_LEFT_PADDING, y: this.yShift + FONT_SIZE.TITLE},
       FONT_SIZE.TITLE,
-      'black'
+      'black',
+      'normal',
+      'default'
     );
   }
 
