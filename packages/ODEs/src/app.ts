@@ -19,7 +19,7 @@ import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
-import {CallbackAction} from './solver-tools/solver-defs';
+import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 
 import './css/app-styles.css';
 
@@ -559,14 +559,9 @@ export class DiffStudio {
   private async exportToJS(): Promise<void> {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-
-      // try to call computations - correctness check
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-      await call.call();
-
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
@@ -904,14 +899,9 @@ export class DiffStudio {
   private async runSensitivityAnalysis(): Promise<void> {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-
-      // try to call computations - correctness check
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-      await call.call();
-
       //@ts-ignore
       await SensitivityAnalysisView.fromEmpty(script);
     } catch (err) {
@@ -925,20 +915,35 @@ export class DiffStudio {
   private async runFitting(): Promise<void> {
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
+      await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
-
-      // try to call computations - correctness check
-      const params = getScriptParams(ivp);
-      const call = script.prepare(params);
-      await call.call();
-
       //@ts-ignore
       await FittingView.fromEmpty(script);
     } catch (err) {
       this.clearSolution();
       grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
         ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+    }
+  }
+
+  /** Try to solve IVP */
+  private async tryToSolve(ivp: IVP): Promise<void> {
+    const optionsBuf = ivp.solverSettings;
+    ivp.solverSettings = DEFAULT_OPTIONS.SCRIPTING;
+
+    try {
+      const scriptText = getScriptLines(ivp, true, true).join('\n');
+      ivp.solverSettings = optionsBuf;
+      const script = DG.Script.create(scriptText);
+
+      // try to call computations - correctness check
+      const params = getScriptParams(ivp);
+      const call = script.prepare(params);
+      await call.call();
+    } catch (err) {
+      if (!(err instanceof CallbackAction))
+        throw new Error((err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE);
     }
   }
 };

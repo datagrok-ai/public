@@ -86,3 +86,8 @@ export class CallbackAction extends Error {
     super(msg);
   }
 }
+
+/** Default options of the solver */
+export enum DEFAULT_OPTIONS {
+  SCRIPTING = '{maxIterations: 1}',
+}
