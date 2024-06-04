@@ -34,7 +34,7 @@ const ToolMarkup = () => {
         var selectorToCompare2 = document.getElementById("selector2");
         var compareResultsBlock = document.getElementById("compareResultsBlock");
 
-        var filesUrl = "http://localhost:3000/versions/";
+        var filesUrl = "/versions/";
         var versionsFile = "versions.json";
 
         var showBreakingChanges = false;
