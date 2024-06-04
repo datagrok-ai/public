@@ -2,15 +2,19 @@
 
 import {SolverOptions} from '../solver-defs';
 import {Callback} from './callback-base';
-import {TerminatorCallback} from './terminator-callback';
+import {TimeCheckerCallback} from './time-checker-callback';
+import {IterCheckerCallback} from './iter-checker-callback';
 
 /** Get callback corresponding to the options */
 export function getCallback(options?: Partial<SolverOptions>): Callback | undefined {
   if (options === undefined)
     return undefined;
 
+  if (options.maxIterations !== undefined)
+    return new IterCheckerCallback(options.maxIterations);
+
   if (options.maxTimeMs !== undefined)
-    return new TerminatorCallback(options.maxTimeMs);
+    return new TimeCheckerCallback(options.maxTimeMs);
 
   return undefined;
 }

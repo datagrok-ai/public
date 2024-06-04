@@ -1,10 +1,8 @@
-// Time of computations checher callback
-
 import {Callback} from './callback-base';
 import {CallbackAction} from '../solver-defs';
 
 /** This callback terminates computations if the maximum calculation time is exceeded */
-export class TerminatorCallback extends Callback {
+export class TimeCheckerCallback extends Callback {
   private maxTime = 0;
   private startingTime = 0;
 
