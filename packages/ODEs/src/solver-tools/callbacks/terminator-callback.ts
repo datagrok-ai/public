@@ -1,0 +1,21 @@
+// Time of computations checher callback
+
+import {Callback} from './callback-base';
+import {CallbackAction} from '../solver-defs';
+
+/** This callback terminates computations if the maximum calculation time is exceeded */
+export class TerminatorCallback extends Callback {
+  private maxTime = 0;
+  private startingTime = 0;
+
+  constructor(maxTime: number) {
+    super();
+    this.maxTime = maxTime;
+    this.startingTime = performance.now();
+  }
+
+  public onIterationStart(): void {
+    if (performance.now() - this.startingTime > this.maxTime)
+      throw new CallbackAction(`Max computation time exceeded (${this.maxTime} ms)`);
+  }
+}

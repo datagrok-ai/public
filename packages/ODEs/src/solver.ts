@@ -16,8 +16,6 @@ export const solveDefault = (odes: ODEs): DG.DataFrame => ros34prw(odes);
 
 /** Customizable solver of initial value problem. */
 export function solveIVP(odes: ODEs, options?: Partial<SolverOptions>): DG.DataFrame {
-  console.log(options);
-  options.maxTimeMs = 20;
   return ros34prw(odes, getCallback(options));
 }
 

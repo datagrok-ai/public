@@ -19,6 +19,7 @@ import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
+import {CallbackAction} from './solver-tools/solver-defs';
 
 import './css/app-styles.css';
 
@@ -645,9 +646,13 @@ export class DiffStudio {
       this.isSolvingSuccess = true;
       this.runPane.header.hidden = false;
     } catch (error) {
-      this.clearSolution();
-      this.isSolvingSuccess = false;
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      if (error instanceof CallbackAction)
+        grok.shell.warning(error.message);
+      else {
+        this.clearSolution();
+        this.isSolvingSuccess = false;
+        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }; // solve
 
@@ -694,8 +699,12 @@ export class DiffStudio {
       } else
         this.tabControl.currentPane = this.modelPane;
     } catch (error) {
-      this.clearSolution();
-      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.UI_ISSUE);
+      if (error instanceof CallbackAction)
+        grok.shell.warning(error.message);
+      else {
+        this.clearSolution();
+        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }; // runSolving
 

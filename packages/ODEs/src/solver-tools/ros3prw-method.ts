@@ -275,6 +275,10 @@ export function ros3prw(odes: ODEs, callback?: Callback): DG.DataFrame {
       yPrev[i] = y[i];
   } // while (flag)
 
+  // perform final callback actions
+  if (callback)
+    callback.onComputationsCompleted();
+
   // 3. solution at the point t1
   tArr[rowCount - 1] = t1;
 

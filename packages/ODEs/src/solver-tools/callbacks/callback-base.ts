@@ -1,11 +1,8 @@
 // Solver's callback base
 
+/** Solver callback */
 export class Callback {
-  private count = 1;
   constructor() {};
-
-  public onIterationStart(): void {
-    console.log(`Call No. ${this.count}`);
-    this.count++;
-  }
+  public onIterationStart(): void {}
+  public onComputationsCompleted(): void {}
 };

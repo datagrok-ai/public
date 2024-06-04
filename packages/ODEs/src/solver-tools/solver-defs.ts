@@ -79,3 +79,10 @@ export enum ERROR_MSG {
   MRT_FAILS = 'The modified Rosenbrock triple method fails',
   ROS3PW_FAILS = 'The ROS3Pw method fails',
 };
+
+/** Callback action */
+export class CallbackAction extends Error {
+  constructor(msg: string) {
+    super(msg);
+  }
+}
