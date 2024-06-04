@@ -5,7 +5,8 @@ type Func = (t: number, y: Float64Array, output: Float64Array) => void;
 
 /** Solver optional settings */
 export type SolverOptions = {
-  maxTime: number,
+  maxIterations: number,
+  maxTimeMs: number,
   scale: number,
 };
 

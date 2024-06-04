@@ -10,6 +10,7 @@ import * as DG from 'datagrok-api/dg';
 import {inverseMatrix, memAlloc, memFree} from '../../wasm/matrix-operations-api';
 import {ODEs, max, abs, SAFETY, PSHRNK, PSGROW, REDUCE_COEF, GROW_COEF,
   ERR_CONTR, TINY, EPS, tDerivative, jacobian, ERROR_MSG} from './solver-defs';
+import {Callback} from './callbacks/callback-base';
 
 // The method specific constants (see Table 3 [1]):
 const GAMMA = 0.435866521508459;
@@ -61,7 +62,7 @@ const R_4 = B_4 - B_HAT_4;
 
 
 /** Solve initial value problem using the ROS3Pw method [5]. */
-export function ros34prw(odes: ODEs, callBack?: any): DG.DataFrame {
+export function ros34prw(odes: ODEs, callback?: Callback): DG.DataFrame {
   /** right-hand side of the IVP solved */
   const f = odes.func;
 
@@ -144,6 +145,10 @@ export function ros34prw(odes: ODEs, callBack?: any): DG.DataFrame {
   while (flag) {
     // compute derivative
     f(t, y, dydt);
+
+    // check whether to go on computations
+    if (callback)
+      callback.onIterationStart();
 
     // compute scale vector
     for (let i = 0; i < dim; ++i)

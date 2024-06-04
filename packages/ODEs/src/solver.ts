@@ -8,13 +8,18 @@ import {ODEs, SolverOptions} from './solver-tools/solver-defs';
 import {mrt} from './solver-tools/mrt-method';
 import {ros3prw} from './solver-tools/ros3prw-method';
 import {ros34prw} from './solver-tools/ros34prw-method';
+import {getCallback} from './solver-tools/callbacks/callback-tools';
 import {error} from './utils';
 
 /** Default solver of initial value problem. */
 export const solveDefault = (odes: ODEs): DG.DataFrame => ros34prw(odes);
 
 /** Customizable solver of initial value problem. */
-export const solveIVP = (odes: ODEs, options?: Partial<SolverOptions>): DG.DataFrame => ros34prw(odes, options);
+export function solveIVP(odes: ODEs, options?: Partial<SolverOptions>): DG.DataFrame {
+  console.log(options);
+  options.maxTimeMs = 20;
+  return ros34prw(odes, getCallback(options));
+}
 
 /** Solve initial value problem and check performance of the Rosenbrok methods: MRT, ROS3PRw & ROS34PRw.
 

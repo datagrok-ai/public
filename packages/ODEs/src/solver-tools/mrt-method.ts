@@ -12,13 +12,14 @@ import * as DG from 'datagrok-api/dg';
 import {inverseMatrix, memAlloc, memFree} from '../../wasm/matrix-operations-api';
 import {ODEs, max, abs, SAFETY, PSHRNK, PSGROW, REDUCE_COEF, GROW_COEF,
   ERR_CONTR, TINY, EPS, tDerivative, jacobian, ERROR_MSG} from './solver-defs';
+import {Callback} from './callbacks/callback-base';
 
 // Quantities used in Rosenbrock method (see [1], [2] for more details)
 const D = 1.0 - Math.sqrt(2.0) / 2.0;
 const E32 = 6.0 + Math.sqrt(2.0);
 
 /** Solve initial value problem the modified Rosenbrock triple (MRT) method [1, 2] */
-export function mrt(odes: ODEs, callBack?: any): DG.DataFrame {
+export function mrt(odes: ODEs, callback?: Callback): DG.DataFrame {
   /** right-hand side of the IVP solved */
   const f = odes.func;
 
@@ -102,6 +103,10 @@ export function mrt(odes: ODEs, callBack?: any): DG.DataFrame {
   while (flag) {
     // compute derivative
     f(t, y, dydt);
+
+    // check whether to go on computations
+    if (callback)
+      callback.onIterationStart();
 
     // compute scale vector
     for (let i = 0; i < dim; ++i)
