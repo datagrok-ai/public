@@ -75,20 +75,16 @@ export class LegendBlock extends SVGBlockBase {
     const textPosition = {y: this.yShift, x: xShift};
 
     const textElement = this.svgElementFactory
-      .createTextElement(name, textPosition, SVG_TEXT_FONT_SIZES.COMMENT, SVG_ELEMENT_COLORS.TEXT, 'normal', 'default');
+      .createTextElement(name, textPosition, SVG_TEXT_FONT_SIZES.COMMENT, SVG_ELEMENT_COLORS.TEXT, 'normal', '1.0', 'default');
     const textWidth = TextDimensionsCalculator.getTextDimensions(name, SVG_TEXT_FONT_SIZES.COMMENT).width;
 
     const numericLabelPosition = {
       x: xShift + textWidth,
-      y: this.yShift - SVG_CIRCLE_SIZES.LEGEND_RADIUS * 4 + 1
+      y: this.yShift - SVG_CIRCLE_SIZES.LEGEND_RADIUS * 4
     };
     const numericLableVisible = this.eventBus.getModificationsWithNumericLabels().includes(name);
     const numericLabel = createNumericLabel ? ui.boolInput('', numericLableVisible, () => {
-      const labelledNucleotides = this.eventBus.getModificationsWithNumericLabels();
-      //const hasNumericLabel = labelledNucleotides.includes(name);
-      const newArray = !numericLableVisible ? labelledNucleotides.concat(name) :
-        labelledNucleotides.filter((n) => n !== name);
-      this.eventBus.updateModificationsWithNumericLabels(newArray);
+      this.eventBus.toggleNumericLabels(numericLableVisible, name);
     }).root : ui.div();
     numericLabel.style.position = 'absolute';
     numericLabel.style.top = numericLabelPosition.y.toString() + 'px';

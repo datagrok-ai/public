@@ -36,7 +36,7 @@ export class SVGElementFactory {
   }
 
   createTextElement(textContent: string, position: Position, fontSize: number, color: string, weight: string,
-    cursor: string, rotate?: string): SVGTextElement {
+    opacity: string, cursor: string, rotate?: string): SVGTextElement {
     const textElement = this.createElement('text') as SVGTextElement;
     this.setAttributes(textElement, {
       'x': position.x,
@@ -45,7 +45,8 @@ export class SVGElementFactory {
       'font-weight': weight,
       'font-family': 'Arial',
       'fill': color,
-      'cursor': cursor
+      'cursor': cursor,
+      'opacity': opacity
     });
      if (rotate) {
       textElement.style.transform = rotate;

@@ -186,6 +186,13 @@ export class EventBus {
     this.updateNucleotideSequences(this.getNucleotideSequences());
   }
 
+  toggleNumericLabels(visible: boolean, nucleotide: string) {
+    const labelledNucleotides = this.getModificationsWithNumericLabels();
+    const newArray = !visible ? labelledNucleotides.concat(nucleotide) :
+      labelledNucleotides.filter((n) => n !== nucleotide);
+    this.updateModificationsWithNumericLabels(newArray);
+  }
+
   togglemodificationLables(visible: boolean) {
     this._modificationLablesVisible$.next(visible);
   }

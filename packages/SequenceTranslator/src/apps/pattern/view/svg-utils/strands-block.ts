@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {NUCLEOTIDES} from '../../../common/model/const';
 import {STRAND, STRANDS, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
@@ -63,6 +64,7 @@ export class StrandsBlock extends SVGBlockBase {
 class SingleStrandBlock extends SVGBlockBase {
   private _svgElements: SVGElement[];
   private nucleotideNumericLabels: (number | null)[];
+  private nucleotidesWithoutOverhangs: string[];
   constructor(
     protected svgElementFactory: SVGElementFactory,
     protected config: PatternConfiguration,
@@ -72,6 +74,9 @@ class SingleStrandBlock extends SVGBlockBase {
   ) {
     super(svgElementFactory, config, yShift);
 
+    const uniqueNucleotideBases = this.eventBus.getUniqueNucleotides();
+    this.nucleotidesWithoutOverhangs = uniqueNucleotideBases.filter((n) => !isOverhangNucleotide(n));
+    
     // WARNING: should be computed before creating circles
     this.nucleotideNumericLabels = this.computeNucleotideNumericLabels();
 
@@ -128,8 +133,10 @@ class SingleStrandBlock extends SVGBlockBase {
     defaultShift: {x: number, y: number}
   ): SVGElement[] {
     const circleElements = this.createNucleotideCircleElements(nucleotide, index, defaultShift);
-    const numericLabel = this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
-      this.createNucleotideNumericLabel(index, defaultShift) : null;
+    const numericLabel = this.nucleotidesWithoutOverhangs.includes(nucleotide) ?
+      this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
+        this.createNucleotideNumericLabel(index, defaultShift, true) :
+          this.createNucleotideNumericLabel(index, defaultShift) :null;
 
     const modificationLabel = this.config.modificationLabelsVisible ?
       this.createNucleotideModificationLabel(nucleotide, index, defaultShift) : null;
@@ -197,6 +204,7 @@ class SingleStrandBlock extends SVGBlockBase {
       SVG_TEXT_FONT_SIZES.NUCLEOBASE,
       color,
       'normal',
+      '1.0',
       'default'
     );
   }
@@ -234,7 +242,8 @@ class SingleStrandBlock extends SVGBlockBase {
 
   private createNucleotideNumericLabel(
     index: number,
-    defaultShift: {x: number, y: number}
+    defaultShift: {x: number, y: number},
+    visible?: boolean
   ): SVGElement | null {
     const label = this.nucleotideNumericLabels[index];
     if (label === null) return null;
@@ -246,14 +255,25 @@ class SingleStrandBlock extends SVGBlockBase {
       y: this.getNumericLabelYShift(defaultShift)
     };
 
-    return this.svgElementFactory.createTextElement(
+    const element = this.svgElementFactory.createTextElement(
       label.toString(),
       position,
       SVG_TEXT_FONT_SIZES.COMMENT,
       SVG_ELEMENT_COLORS.TEXT,
       'normal',
-      'default'
+      visible ? '1.0' : '0.0',
+      'pointer'
     );
+
+   // ui.tooltip.bind(element as unknown as HTMLElement, `Remove numeric labels`);
+    element.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const nucleotide = this.config.nucleotideSequences[this.strand][index];
+      this.eventBus.toggleNumericLabels(!!visible, nucleotide);
+    };
+
+    return element;
   }
 
   private createNucleotideModificationLabel(
@@ -287,6 +307,7 @@ class SingleStrandBlock extends SVGBlockBase {
       SVG_TEXT_FONT_SIZES.MODIFICATION_LABEL,
       SVG_ELEMENT_COLORS.MODIFICATION_LABEL,
       'normal',
+      '1.0',
       'default',
       'rotate(-90deg)'
     );
@@ -387,6 +408,7 @@ class StrandLabel extends SVGBlockBase {
       SVG_TEXT_FONT_SIZES.NUCLEOBASE,
       SVG_ELEMENT_COLORS.TEXT,
       'normal',
+      '1.0',
       'default'
     );
   }
@@ -406,6 +428,7 @@ class StrandLabel extends SVGBlockBase {
       SVG_TEXT_FONT_SIZES.NUCLEOBASE,
       SVG_ELEMENT_COLORS.TEXT,
       'normal',
+      '1.0',
       'default'
     );
   }

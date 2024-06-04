@@ -31,6 +31,7 @@ export class TitleBlock extends SVGBlockBase {
       FONT_SIZE.TITLE,
       'black',
       'normal',
+      '1.0',
       'default'
     );
   }
