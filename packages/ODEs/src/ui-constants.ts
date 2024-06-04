@@ -180,3 +180,11 @@ export enum TIMEOUT {
   PREVIEW_RUN_SOLVING = 1100,
   APP_RUN_SOLVING = 1100,
 };
+
+/** Numerical methods names */
+export enum METHOD {
+  MRT = 'mrt',
+  ROS3PRw = 'ros3prw',
+  ROS34PRw = 'ros34prw',
+};
+

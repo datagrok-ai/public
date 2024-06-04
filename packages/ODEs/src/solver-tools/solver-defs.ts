@@ -7,7 +7,7 @@ type Func = (t: number, y: Float64Array, output: Float64Array) => void;
 export type SolverOptions = {
   maxIterations: number,
   maxTimeMs: number,
-  scale: number,
+  method: string,
 };
 
 /** Initial Value Problem (IVP) type */
