@@ -64,8 +64,9 @@ export class Shell {
   }
 
   /** Last error state */
-  get lastError(): string { return api.grok_Get_LastError(); }
-  set lastError(s: string) { api.grok_Set_LastError(s); }
+  get lastError(): Promise<string|undefined> { return api.grok_Get_LastError(); }
+
+  clearLastError(): void { api.grok_Clear_LastError(); }
 
   /** Current user */
   get user(): User {
@@ -74,7 +75,11 @@ export class Shell {
 
   /** Current object (rendered in the context panel) */
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
-  set o(x: any) { api.grok_Set_CurrentObject(toDart(x)); }
+  set o(x: any) { this.setCurrentObject(x, true); }
+
+  setCurrentObject(x: any, freeze: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze);
+  }
 
   /** Current viewer */
   get viewer(): Viewer { return toJs(api.grok_Get_CurrentViewer(), false); }

@@ -1,5 +1,50 @@
 # Bio changelog
 
+## 2.12.23 (2024-05-30)
+
+### Bug fixes
+
+* to Atomic level: fix the issue with isotopes
+
+## 2.12.22 (2024-05-28)
+
+### Bug fixes
+
+* GROK-15525: MSA: Add check unsuitable data to avoid running MSA with them
+* GROK-15796: Bio: Fix cell renderer for convert to Helm
+* GROK-15798: Bio: Fix To Atomic Level for units FASTA and alphabet UN
+* Fix converter MSA to fasta invalid tags, fix tests
+
+## 2.12.21 (2024-05-20)
+
+Fix cell renderer for column width changed
+
+## 2.12.20 (2024-05-16)
+
+### Bug fixes
+
+* Fix monomer tooltip layout
+* Fix monomer name for gaps and any monomer
+
+## 2.12.19 (2024-05-16)
+
+### Bug fixes
+
+* Fix tests cell renderer monomer placer for default monomer lib
+* Add tests for monomer placer hitBounds
+* Fix cell renderer to limit for visible monomers
+* Fix MacromoleculeColumnWidget to limit WebLogo for visible
+* Fix WebLogo to limit seq splitting on end position specified
+* GROK-15678: Bio: Fix bio-substructure-filter tests on Helm
+* GROK-15293: Fix MSA Dialog error while picking empty value in Sequence
+
+## 2.12.18 (2024-05-13)
+
+### Bug fixes
+
+Bio: Fix MonomerLibManager composition with files and events
+Bio: Unveil cell renderer errors for tests
+
 ## 2.12.17 (2024-05-01)
 
 ### Features
@@ -29,13 +74,13 @@ Bio: Fix cell renderer for scatter plot, add test
 
 ## 2.12.12 (2024-04-15)
 
-### Features 
+### Features
 
 * Polytool: working with molV3000
 
 ## 2.12.11 (2024-04-12)
 
-### Features 
+### Features
 
 * Add displaying a monomer's origin lib
 

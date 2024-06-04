@@ -33,12 +33,12 @@ supports specifying the columns to run against, and [search patterns](../datagro
 1. Click on ```Ok``` button for execute dialog
 
 * "SITEID" column values which were equal to 1 replaced by 1000
-* Only filtered values ​​are changed for which ```Age = [35, 45]```
-* Only values ​​for first ten rows are replaced which were selected
+* Only filtered values   are changed for which ```Age = [35, 45]```
+* Only values   for first ten rows are replaced which were selected
 
 1. Remove all rows filters and selections.
 
-* Make sure that values ​​that were not selected and not filtered are not changed. ("SITEID"
+* Make sure that values   that were not selected and not filtered are not changed. ("SITEID"
   column values remained 1)
 
 1. Open [Find and Replace](find-and-replace-test.md) dialog
@@ -55,11 +55,11 @@ supports specifying the columns to run against, and [search patterns](../datagro
 
 1. Click on ```Ok``` button for execute dialog
 
-* Values ​​in "RACE" column have not replaced
+* Values   in "RACE" column have not replaced
 
 1. Repeat 12-18 steps. In step 14, enter ```Asian``` to "Find what" field
 
-* Values ```Asian``` ​​in "RACE" column have replaced by values ```test```
+* Values ```Asian```   in "RACE" column have replaced by values ```test```
 
 1. Open [Find and Replace](find-and-replace-test.md) dialog
 
@@ -75,11 +75,11 @@ supports specifying the columns to run against, and [search patterns](../datagro
 
 1. Click on ```Ok``` button for execute dialog
 
-* Values ​​in "DIS_POP" column have not replaced
+* Values   in "DIS_POP" column have not replaced
 
 1. Repeat 20-26 steps. In step 22, enter ```RA``` to "Find what" field
 
-* Values ```RA``` ​​in "DIS_POP" column have replaced by values ```test```
+* Values ```RA```   in "DIS_POP" column have replaced by values ```test```
 
 1. Open [Find and Replace](find-and-replace-test.md) dialog
 
@@ -93,31 +93,27 @@ supports specifying the columns to run against, and [search patterns](../datagro
 
 1. Click on ```Ok``` button for execute dialog
 
-* Values ​​in ```F```  "SEX" column have replaced by values ```test```
+* Values   in ```F```  "SEX" column have replaced by values ```test```
 * Filter has been applied to rows with replaced values.
 
-1. Open [Find and Replace](find-and-replace-test.md) dialog
+1. Open **Find and Replace** dialog (<kbd>Ctrl+H</kbd>)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for numerical values (*">"*, *"<"*
-   . *"<="*, *">="*, *"range"*) in "Find what" field
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for numerical values (*">"*, *"<"*
+   . *"\<="*, *">="*, *"range"*) in "Find what" field
 
-* Numerical values ​​found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* Numerical values   found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for string values (*"starts with"*, *"
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for string values (*"starts with"*, *"
    ends with"*. *"contains"*, *"regex"*)
 
-* String values ​​found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* String values found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
 
-1. Use search [patterns](../explore/data-search-patterns.md)  for datetime values (eg, *"1990-1991"*
+1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns) for datetime values (eg, *"1990-1991"*
    , *"June 1990"*. *"Oct 17, 1990"*, *"before 10/17/1990"*, *"after 10/17/1990"*, *"today"*, "this week", *"regex"*, *"
    yesterday"* and etc. )
 
-* Datetime values ​​found correspond to the entered [pattern](../explore/data-search-patterns.md)
+* Datetime values   found correspond to the entered [pattern](.../datagrok/navigation/views/table-view.md#search-patterns)
 
 1. Test non-functional modules (help, navigation, UI, UX)
 
 * Non-functional modules work correctly and are intuitive
-
-See also:
-
-* [Find and replace](find-and-replace.md)

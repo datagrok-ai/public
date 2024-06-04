@@ -212,5 +212,5 @@ A [molecular fingerprinter](../../datagrok/solutions/domains/chem/fingerprints.m
 
 See also:
 
-* [Metadata](metadata.md)
+* [Metadata](../../datagrok/concepts/objects.md#metadata)
 * [JS API: metadata](https://public.datagrok.ai/js/samples/data-frame/metadata)

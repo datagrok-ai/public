@@ -1,100 +1,119 @@
 ---
-title: "Project"
+title: "Projects"
+format: mdx
 ---
 
-Project is a collection of entities along with the applied visualizations. Projects are used to group and share data and
-other assets with other users. One of the most common applications of projects are dashboards that consist of tables (
-with either static or dynamic data), and visualizations applied to them.
+Projects act like folders that contain various [entities](../objects.md), such as tables,
+queries, or scripts. For example, [dashboards](dashboard.md) are projects that have two types of entities: [tables](../table.md) and [layouts](../../../visualize/view-layout.md). 
 
-## Uploading a project
+Projects are essential for organizing, managing, and sharing data.
 
-Creating a project is easy. After getting the data of interest in the scratchpad project in [Browse](../../navigation/views/browse.md),
-click on the `UPLOAD` button. After the project gets uploaded to the server, a separate window pops us asking you whom
-to share the project with. By default, it is only accessible by you, you have to share it in order for others to use it.
+## Project hierarchy
 
-Or, if you are editing an existing project, click `SAVE` to save your changes.
+In Datagrok, there are two types of projects:
 
-Use `Share` context action to edit access permissions. Sharing a project will automatically share all entities and data
-inside.
+* **Root projects**: Act as the primary _namespace_ and can include child
+  projects.
+* **Child projects**: Exist under root projects and are prefixed with the name
+  of the root project they belong to. For example, the name `Demo:CoffeeCompany` indicates
+  that `CoffeeCompany` is a child project under the root project `Demo`. Child projects inherit [privileges](../../../govern/access-control/access-control.md#permissions) from the root project.
 
-### Dynamic data
+Datagrok automatically creates root projects for
+[plugins](../../../develop/how-to/create-package.md) and users:
+* **Plugins**: Each plugin version is a child project under the corresponding
+  root project.
+* **Users**: Unless you choose an existing project, any entity you create is
+  saved to your personal root project, accessible under **My
+  stuff** in the **Browse** view (e.g., `jdoe:MyNewDashboard` or `jdoe:MyNewQuery`). 
 
-Whenever a table is created by executing a [function](../functions/functions.md)
-(such as a [database query](../../../access/access.md#data-query)), this information gets stored with the table as a "generation
-script". This serves multiple purposes:
+## Creating and managing projects
 
-* Provides data lineage
-* On-demand data refreshing (Table toolbox, "Query" panel, `REFRESH` button)
-* Enables publishing dashboards with the dynamic data
+[Browse](../../navigation/views/browse.md) organizes projects in a tree
+that governs their hierarchy. You can create your own hierarchy under **Namespaces**: 
 
-In the "Upload project" dialog, a "Data sync" option appears next to the tables that have a generation script defined.
-This option determines whether the data should be stored as a static snapshot, or as a generation script. In the latter
-case, the function will be re-executed whenever the project is opened.
+* **Root projects**: Right-click **Namespaces**, select **Create
+Namespace...**, and name your project in the dialog that opens.
+* **Child projects**: right-click an existing project, select
+  **Create Child Namespace...**, and name your project in the dialog that opens.
 
-![project-upload-data-sync](project-upload-data-sync.png)
+You can create as many root and child projects as you like. 
 
-## Project types
+You can change the project's type in the [Context Panel](../../navigation/panels/panels.md#context-panel) under
+**Namespaces**. Changing a project from child to root moves it to the top
+level of the **Namespaces** directory and updates the names of all entities in
+it.
 
-Projects are organized in a tree structure. Rights on particular [entities](../objects.md) are inherited based on this
-hierarchy. There are two main types of projects: _root_ and _regular_. Root projects can contain one or more non-root
-projects, for example, the link `Demo:CoffeeCompany`
-indicates that the `CoffeeCompany` project is part of the root project `Demo`. Any link to an entity on the platform
-starts with the root project. And since an entity can have only one canonic address, other related projects will
-reference the link rather than the entity itself. This fact becomes important in the context of regular projects. As the
-name suggests, they are the most common ones
-(that's what users create by default). Entities from such a project belong to the higher-level namespace, which means
-they are tied to the root project. To find out where an entity comes from, see `Links` in the `Details` tab of the
-context panel.
+To perform an action on a project, find it in the **Browse** tree and right-click it. This opens the context menu with commands like share, delete, rename, and so on.
 
-Root projects are automatically created for users and packages. When the user uploads a project, it gets saved to their
-namespace. However, the existing entities will be available in the user's project via link. As for packages, each
-version has its own project, which allows sharing packages on a version level.
+## Saving entities to projects
 
-## Project gallery
+When you save an entity, you always save it to a project. All newly created
+entities are saved to your personal root project, visible under **My stuff** on
+the **Browse** tree.
 
-Browse projects that are available to you.
+If you modify an existing entity project (such as changing its layout), you have these
+options:
 
-Click on the context menu to the left of the search box to control sort order, as well as access your recent searches.
+1. Save changes to the original project.
+1. Create a new project to save the modified entity.
 
-Controls:
+The options depend on your needs and privileges.
 
-|              |                        |
-|--------------|------------------------|
-| Click        | Show in context panel |
-| Right click  | Context menu           |
-| Double click | Open                   |
+[Learn how to save entities to projects](../../navigation/basic-tasks/basic-tasks.md#save).
 
-## Filtering
+## Moving entities between projects
 
-The following fields could be used to filter projects with smart search:
+If you have the necessary privileges, you can move entities between projects by
+dragging them to a different location in the **Browse** tree. Valid locations are highlighted with a dotted border. Moving entities
+impacts their hierarchy, names, and privileges.
 
-| Field        | Description                                 |
-|--------------|---------------------------------------------|
-| name         |                                             |
-| description  |                                             |
-| createdOn    |                                             |
-| updatedOn    |                                             |
-| author       | [User](../../../govern/user.md) object            |
-| starredBy    | [User](../../../govern/user.md) object            |
-| commentedBy  | [User](../../../govern/user.md) object            |
-| usedBy       | [User](../../../govern/user.md) object            |
+![](../../navigation//views/img/namespaces-drag-and-drop.gif)
 
-## Resources
+When moving entities, you have these options:
 
-YouTube videos:
+1. **Clone**:
+   * This action creates a copy of the entity in the new project. The entity in the original project remains unaffected.
+1. **Move**:
+   * The entity is moved to the new project, is automatically renamed, and adopts the permissions of the new project.
+   * A view-only copy of the moved entity is created in the original project. This view-only copy is linked to the entity in the new project.
+   * Any changes made to the entity in the new project are automatically reflected in the linked copy.
+1. **Link**:
+   * This action creates a view-only copy of the entity in the new project. This copy is linked to the entity in the original project.
+   * Any changes made to the entity in the original project are automatically reflected in the linked copy.
 
-<div class="help-video-list" style={{display:"flex","flex-wrap":"wrap",}}>
+Linked entities are visually distinguished by a **Link** (<FAIcon icon="fa-solid fa-link" size="1x"/>) **icon**. You cannot edit linked entities directly, but you can clone them.
 
-<div class="card" style={{width:"512px",}}>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TtVjvxMj9Ds?si=8J08Iqbigx2RtR9T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-  <div class="card-body">
-    <h2 class="card-title">Dynamic Dashboards</h2>
-    <p class="card-text">Building dynamic dashboards using database queries</p>
-    </div>
-</div>
-</div>
+## Removing entities from projects
 
-### See also:
+To remove an entity from a project:
 
-* [Create a project](create-project.md)
-* [Build dynamic dashboards](../../../access/databases/databases.mdx#creating-dynamic-dashboards-for-query-results)
+1. Locate the entity you want to remove in the **Browse** tree.
+1. Right-click the entity to open the context menu.
+1. Select **Remove from project** from the context menu. A dialog opens.
+1. In the dialog, click **OK**. The entity is removed from the project.
+
+:::danger
+
+Don't to use the **Delete...** command to remove entities from projects. If you choose the **Delete...** command, it will permanently delete the entity from the server for all users and projects. This action cannot be undone.
+
+:::
+
+## Searching projects
+
+To find projects using [smart search](../../navigation/views/browse.md#entity-search), you can use this metadata:
+
+| Field       | Description                            |
+|-------------|----------------------------------------|
+| name        |                                        |
+| description |                                        |
+| ID          |                                        |
+| createdOn   |                                        |
+| updatedOn   |                                        |
+| author      | [User](../../../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../../../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../../../govern/access-control/users-and-groups#users) object |
+| usedBy      | [User](../../../govern/access-control/users-and-groups#users) object |
+
+## See also
+
+* [Browse](../../navigation/views/browse.md)

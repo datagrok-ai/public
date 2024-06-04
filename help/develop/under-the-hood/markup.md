@@ -3,11 +3,10 @@ title: "Markup"
 sidebar_position: 4
 ---
 
-Datagrok Markup is a lightweight scripting language used in both the [Flex
-View](views/views.md#flex-view) and [Markup
-viewer](../visualize/supported-viewers.md). Using Markup, you can combine text
+Datagrok Markup is a lightweight scripting language used in both the Flex
+View and [Markup viewer](../../visualize/viewers/markup.md). Using Markup, you can combine text
 narrative, calculations, and Datagrok UI elements like
-[viewers](../../visualize/supported-viewers.md) or
+[viewers](../../visualize/viewers/viewers.md) or
 [widgets](../../visualize/widgets.md) within a single view.
 
 Unlike traditional programming languages, Markup is intuitive and does not
@@ -20,27 +19,27 @@ To embed an expression, use: `#{expression}`
 <details>
 <summary>Supported expressions</summary>
 
-| Description         | Expression                                                 | Output                     |
-|---------------------|------------------------------------------------------------|----------------------------|
-| Any entity          | x.User.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"       | Andrew                     |
-| Function            | x.Func.MissingValuesImputation                             | MissingValuesImputation    |
-| Aggregations        | t.aggr.sum($AGE)                                           | 267266.00                  |
-| Date                | date                                                       | 2018-03-07 22:53:01.423700 |
-| Table name          | t.name                                                     | demog                      |
-| Table tag           | t.tags\[source.file\]                                      | demog.xlsx                 |
-| Row count           | t.rowCount                                                 | 5850                       |
-| Selected rows count | t.selection.trueCount                                      | 55                         |
-| Filtered rows count | t.filter.trueCount                                         | 5850                       |
-| Current filters     | t.rows.filters                                             |                            |
-| Current row         | t.currentRow                                               | 12                         |
-| Current column      | t.currentCol                                               | USUBJID                    |
-| Current cell        | t.currentCell                                              | X0273T21000400001          |
-| Current row value   | t.row\[USUBJID\]                                           | X0273T21000200001          |
-| Color               | color(AGE)                                                 | #e5e5ff                    |
-| Formula             | formula(${AGE} * 2)                                        | 116                        |
-| Value editor        | t.editor\[USUBJID\]                                        |                            |
-| Statistics          | t.stats.avg(AGE)                                           | 45.69                      |
-| Chart               | chart{"type":"Histogram","look":{"valueColumnName":"AGE"}} |                            |
+| Description         | Expression                                                   | Output                     |
+|---------------------|--------------------------------------------------------------|----------------------------|
+| Any entity          | x.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"         | Andrew                     |
+| Function            | x.MissingValuesImputation                               | MissingValuesImputation    |
+| Aggregations        | t.aggr.sum($AGE)                                             | 267266.00                  |
+| Date                | date                                                         | 2018-03-07 22:53:01.423700 |
+| Table name          | t.name                                                       | demog                      |
+| Table tag           | t.tags\[source.file\]                                        | demog.xlsx                 |
+| Row count           | t.rowCount                                                   | 5850                       |
+| Selected rows count | t.selection.trueCount                                        | 55                         |
+| Filtered rows count | t.filter.trueCount                                           | 5850                       |
+| Current filters     | t.rows.filters                                               |                            |
+| Current row         | t.currentRow                                                 | 12                         |
+| Current column      | t.currentCol                                                 | USUBJID                    |
+| Current cell        | t.currentCell                                                | X0273T21000400001          |
+| Current row value   | t.row\[USUBJID\]                                             | X0273T21000200001          |
+| Color               | color(AGE)                                                   | #e5e5ff                    |
+| Formula             | formula($\{AGE} * 2)                                         | 116                        |
+| Value editor        | t.editor\[USUBJID\]                                          |                            |
+| Statistics          | t.stats.avg(AGE)                                             | 45.69                      |
+| Chart               | chart\{"type":"Histogram","look":\{"valueColumnName":"AGE"}} |                            |
 
 </details>
 
@@ -51,7 +50,7 @@ Shows any platform entity.
 Format:
 
 ```
-x.<type>.<id>."<name>"
+x.<id>."<name>"
 ```
 
 ### Function
@@ -61,12 +60,13 @@ Shows function.
 Format:
 
 ```
-x.Func.<name>.<option>
+x.<name>.<option>
 ```
 
 Options:
 
 * **run** - runs action by click.
+* **link** - renders as a link to function that runs action by click.
 
 ### Aggregations
 
@@ -311,4 +311,4 @@ Chart types:
 
 See also:
 
-* [Markup viewer](../../../visualize/viewers/markup.md)
+* [Markup viewer](../../visualize/viewers/markup.md)

@@ -6,6 +6,8 @@ keywords:
  - Console
  - Variables
  - Macros
+format: mdx
+sidebar_position: 1
 ---
 
 ```mdx-code-block
@@ -22,7 +24,7 @@ Panels are supplementary windows alongside your main _view_ such as:
 
 Depending on your needs, you can toggle visibility of any panel from the
 **Status Bar**. To save your panel display preferences, go to **Sidebar** >
-**Settings** > **Windows**.
+**Settings** (<FAIcon icon="fa-solid fa-gear"/>) > **Windows**.
 
 ## Context Panel
 
@@ -30,7 +32,7 @@ Located at the top right hand-side, the **Context Panel** serves two main functi
 
 * For visual UI components like [viewers](../../../visualize/viewers/viewers.md)
 or [widgets](../../../visualize/widgets.md), it provides
-access to settings. To access settings, click the **Gear** (⚙) icon in the
+access to settings. To access settings, click the **Gear** (<FAIcon icon="fas fa-gear" size="1x" />) icon in the
 top right corner of the visual component.
 * For Datagrok [entities](../../concepts/objects.md) and other data objects
   (e.g., molecules), it shows information and options for your _current object_.
@@ -106,8 +108,7 @@ dynamically to show details about your substructure.
 </details>
 
 The **Context Panel** stores a history of viewed objects and your favorites,
-allowing you to quickly revisit past items or retrieve information on favorites without
-needing to navigate or click through them again. To do so, use the navigation icons on the panel's header.
+allowing you to quickly revisit past items or favorites. To access past items or favorites, use the icons on the panel's header.
 
 You can create a static copy of the **Context Panel** for the current object by
 clicking the **Clone and detach** icon on the **Context Panel**'s header. This
@@ -243,8 +244,7 @@ Each function call is automatically logged in the **Console**, requiring no
 action on your part. This means you can both:
 
 1. Use the **Console** to examine which functions are triggered by particular UI
-events and reproduce these steps in the future. This can be useful for [data
-transformations](../../../transform/recipe-editor.md) and data pipelines. 
+events and reproduce these steps in the future. This can be useful for [data transformations](../../../transform/recipe-editor.md) and data pipelines. 
 1. Directly execute functions on your data from the **Console**, which is especially helpful for
 debugging custom functions within a [package](../../../develop/develop.md#packages).
 

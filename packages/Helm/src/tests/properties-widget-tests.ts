@@ -9,8 +9,9 @@ import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
 
-import {getPropertiesDict} from '../widgets/properties-widget';
+import {getPropertiesDict, SeqPropertiesError} from '../widgets/properties-widget';
 
 const enum MolProps {
   formula = 'formula',
@@ -85,6 +86,22 @@ category('properties-widget', () => {
       testPropertiesDict(testData.seq, testData.units, testData.separator, testData.alphabet, testData.res);
     });
   }
+
+  test('too-long', async () => {
+    const colList = generateLongSequence();
+    const df = DG.DataFrame.fromColumns(colList);
+    const col = df.getCol('MSA');
+
+    const sh = SeqHandler.forColumn(col);
+    let errCatched = true;
+    try {
+      const _actPropDict = getPropertiesDict(col.get(0), sh);
+      const k = 11;
+    } catch (err: any) {
+      if (err instanceof SeqPropertiesError) errCatched = true;
+    }
+    expect(errCatched, true);
+  });
 });
 
 function testPropertiesDict(
@@ -95,7 +112,7 @@ function testPropertiesDict(
   col.setTag(DG.TAGS.UNITS, units);
   if (separator) col.setTag(bioTAGS.separator, separator);
   if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
-  const uh = SeqHandler.forColumn(col);
-  const actPropDict = getPropertiesDict(seq, uh);
+  const sh = SeqHandler.forColumn(col);
+  const actPropDict = getPropertiesDict(seq, sh);
   expectObject(actPropDict, expPropDict);
 }

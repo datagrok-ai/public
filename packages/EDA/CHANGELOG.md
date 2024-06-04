@@ -1,5 +1,22 @@
 # EDA changelog
 
+## 1.1.25 (2024-05-27)
+
+Add inflation factor to MCL
+
+## 1.1.25 (2024-05-16)
+
+Fix inconsistent KNN size in webGPU.
+
+## 1.1.24 (2024-05-09)
+
+* Fix GPU description nullish value.
+
+## 1.1.23 (2024-05-09)
+
+* Disable webGPU input in case if none is available.
+* Improvements to GPU device handling
+
 ## 1.1.22 (2024-04-25)
 
 Add support for webGPU MCL in full (sparse matrix and expansion/normalization operators)

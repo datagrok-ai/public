@@ -165,7 +165,7 @@ class TranslatorAppLayout {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.setTag(DG.TAGS.UNITS, units);
-      const seqHandler = SeqHandler.forColumn(translatedColumn);
+      const seqHandler = SeqHandler.forColumn(translatedColumn as DG.Column<string>);
       const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
         SeqHandler.setUnitsToHelmColumn;
       setUnits(seqHandler);

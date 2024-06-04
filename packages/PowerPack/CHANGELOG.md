@@ -1,5 +1,10 @@
 # PowerPack changelog
 
+## 1.1.7 (2024-05-14)
+
+* Startup speed improvements
+* Home page: Search: support for recognized entities
+
 ## 1.1.5 (2023-11-28)
 
 ### Bug Fixes

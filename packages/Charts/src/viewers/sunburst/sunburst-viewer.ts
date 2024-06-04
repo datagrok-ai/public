@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
-import {TreeUtils, treeDataType} from '../../utils/tree-utils';
+import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -22,6 +22,7 @@ export class SunburstViewer extends EChartViewer {
   hierarchyLevel: number;
   onClick: onClickOptions;
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
+  inheritFromGrid: boolean;
 
   constructor() {
     super();
@@ -31,6 +32,7 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
+    this.inheritFromGrid = this.bool('inheritFromGrid', true, {category: 'Color'});
 
     this.option = {
       animation: false,
@@ -175,7 +177,7 @@ export class SunburstViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
-    if (p?.name === 'hierarchyColumnNames')
+    if (p?.name === 'hierarchyColumnNames' || p?.name === 'inheritFromGrid')
       this.render();
     if (p?.name === 'table') {
       this.updateTable();
@@ -201,9 +203,9 @@ export class SunburstViewer extends EChartViewer {
     this.render();
   }
 
-  getSeriesData(): treeDataType[] | undefined {
+  getSeriesData(): TreeDataType[] | undefined {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource);
+    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
@@ -274,7 +276,7 @@ export class SunburstViewer extends EChartViewer {
     return {isSmiles, image};
   }
 
-  async handleStructures(data: treeDataType[] | undefined) {
+  async handleStructures(data: TreeDataType[] | undefined) {
     for (const entry of data!) {
       const name = entry.name;
       const { isSmiles, image } = await this.checkAndCreateMoleculeImage(name);

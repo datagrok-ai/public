@@ -147,7 +147,21 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
     if (!seq)
       return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
-      const mmList: string[] = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
+      let mmList: string[];
+      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
+      if (limit !== undefined) {
+        mRe.lastIndex = 0;
+        mmList = new Array<string>(Math.ceil(limit));
+
+        let mEa: RegExpExecArray | null = null;
+        let mI = 0;
+        while ((mEa = mRe.exec(seq)) !== null && mI < limit) {
+          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
+        }
+        mmList.splice(mI);
+      } else
+        mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
+
       return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.SEPARATOR]);
     }
   };

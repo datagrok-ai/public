@@ -10,7 +10,7 @@ To store data for Datagrok, we recommend using scalable and highly reliable solu
 
 ## Local deployment
 
-[Local deployment](docker-compose/docker-compose.mdx) is a quick way to see Datagrok in action using [Docker Compose](https://docs.docker.com/compose/). You can use it for local evaluation and development.
+[Local deployment](docker-compose/docker-compose.md) is a quick way to see Datagrok in action using [Docker Compose](https://docs.docker.com/compose/). You can use it for local evaluation and development.
 
 <!-- ### Deploy script
 

@@ -171,8 +171,8 @@ TBD: Add Alt+ I +R/C to add new row or column
 
 :::tip tips
 
-Some tools, like the [Table Manager](../navigation/table-manager.md) or 
-[Column Manager](../navigation/column-manager.md), are based on the
+Some tools, like the [Table Manager](panels/table-manager.md) or 
+[Column Manager](panels/column-manager.md), are based on the
 [grid](../../visualize/viewers/grid.md). Consequently, grid shortcuts 
 also apply to the corresponding elements within these tools (e.g., rows).
 

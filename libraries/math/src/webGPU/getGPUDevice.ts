@@ -47,6 +47,14 @@ export async function getGPUAdapterDescription() {
       return null;
   }
   const info = await gpuAdapter.requestAdapterInfo();
-  return info.description;
+  if (!info) return null;
+
+  const outString = replaceEmptyString(
+    info.description, replaceEmptyString(info.vendor, 'No GPU description available'));
+  return outString;
+}
+
+function replaceEmptyString(str: string, replacement: string) {
+  return !str || str == '' ? replacement : str;
 }
 

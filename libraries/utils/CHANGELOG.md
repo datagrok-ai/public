@@ -1,5 +1,24 @@
 # utils changelog
 
+## 4.2.6 (2023-05-29)
+
+### Features
+
+* Added timeouts for before/after
+* Timeout function was updated to async method
+
+## 4.2.5 (2024-05-13)
+
+### Bug fixes
+
+* Forms viewer: catching exceptions when creating inputs for types
+
+## 4.2.4 (2024-05-09)
+
+### Features
+
+* Ability to test viewers with async rendering
+
 ## 4.2.3 (2024-05-06)
 
 ### Features

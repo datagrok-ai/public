@@ -1,6 +1,6 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
@@ -85,4 +85,14 @@ export function dummyDataFrameFunction(table: DG.DataFrame) {
 //output: int b
 export async function testIntAsync(a: number): Promise<number> {
   return new Promise((r) => r(a + 10));
+}
+
+//name: CustomStringInput
+//input: object params
+//output: object input
+export function CustomStringInput(params: any) {
+  const defaultInput = ui.stringInput('Custom input', '');
+  defaultInput.root.style.backgroundColor = 'aqua';
+  defaultInput.input.style.backgroundColor = 'aqua';
+  return defaultInput;
 }

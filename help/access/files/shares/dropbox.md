@@ -2,7 +2,7 @@
 title: "Dropbox"
 ---
 
-Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](files.md).
+Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](../files.md).
 
 ## Connection parameters
 
@@ -21,5 +21,5 @@ Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](fi
 
 See also:
 
-* [File shares](../files.mdx)
+* [File shares](../files.md)
 * [Dropbox](https://www.dropbox.com)

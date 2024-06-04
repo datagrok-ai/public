@@ -57,6 +57,7 @@ export class MmpAnalysis {
   sliderInputs: DG.InputBase[];
   colorInputs: DG.InputBase[];
   activeInputs: DG.InputBase[];
+  calculatedOnGPU;
 
   private setupTransformationTab(): void {
     this.transformationsMask.setAll(true);
@@ -241,7 +242,7 @@ export class MmpAnalysis {
     sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
     colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
-    rdkitModule: RDModule) {
+    rdkitModule: RDModule, gpuUsed: boolean) {
     this.rdkitModule = rdkitModule;
 
     this.parentTable = mmpInput.table;
@@ -256,6 +257,7 @@ export class MmpAnalysis {
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
     this.linesIdxs = linesIdxs;
+    this.calculatedOnGPU = gpuUsed
 
     //transformations tab setup
     this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
@@ -296,21 +298,19 @@ export class MmpAnalysis {
   }
 
   static async init(mmpInput: MmpInput) {
+    console.profile('MMP');
     //rdkit module
     const module = getRdKitModule();
+    const moleculesArray = mmpInput.molecules.toList();
 
     //initial calculations
-    const t1 = performance.now();
-    const frags = await getMmpFrags(mmpInput.molecules);
-    const t2 = performance.now();
-    const [mmpRules, allCasesNumber] = await getMmpRules(frags, mmpInput.fragmentCutoff);
-    const t3 = performance.now();
-    console.log(`Call to fragments took ${t2 - t1} milliseconds`);
-    console.log(`Call to rules took ${t3 - t2} milliseconds`);
+    const fragsOut = await getMmpFrags(moleculesArray);
+    const [mmpRules, allCasesNumber, gpu] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
     const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
-    const {maxActs, diffs, activityMeanNames, linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
+    const {maxActs, diffs, meanDiffs, activityMeanNames,
+      linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
       getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
@@ -327,11 +327,12 @@ export class MmpAnalysis {
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      getGenerations(mmpInput, frags, allPairsGrid, activityMeanNames, module);
+      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames);
+    console.profileEnd('MMP');
 
     return new MmpAnalysis(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
-      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module);
+      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu);
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {

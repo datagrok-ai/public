@@ -49,7 +49,6 @@ export class ErrorsView extends UaView {
           'showRowHeader': false,
           'showColumnGridlines': false,
           'allowRowSelection': false,
-          'allowColumnSelection': false,
           'allowBlockSelection': false,
           'showCurrentCellOutline': false,
           'defaultCellFont': '13px monospace'

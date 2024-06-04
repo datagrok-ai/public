@@ -1,5 +1,12 @@
 # Sequence Translator changelog
 
+## 1.3.0 (2024-03-30)
+
+### Features
+
+* PolyTool: algorithm of conversion facilitated, json files are used as rules
+* PolyTool: enumeration feature (demo) added
+
 ## 1.2.9 (2024-03-30)
 
 ### Features

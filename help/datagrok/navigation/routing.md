@@ -18,15 +18,15 @@ The platform has browsers for the following entities:
 | Entity Browser                                 | URL                                                                                |
 |------------------------------------------------|------------------------------------------------------------------------------------|
 | [Projects](../concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
-| [Files](../../access/files/files.mdx)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
+| [Files](../../access/files/files.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../../compute/scripting/scripting.mdx)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
 | [Functions](../concepts/functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
 | [Applications](../../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
 | [Models](../../learn/learn.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
 | [Notebooks](../../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
-| [Users](../../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
-| [Groups](../../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
+| [Users](../../govern/access-control/users-and-groups#users)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
+| [Groups](../../govern/access-control/users-and-groups#groups)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
 | [Connections](../../access/access.md#data-connection)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
 | Jobs                | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
 | [Packages](../../develop/develop.md)              | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |
@@ -48,7 +48,7 @@ not specified, the first view from the project will open.
 
 ## Files
 
-A [file share](../../access/files/files.mdx) for which the user has access is available by the link. You should
+A [file share](../../access/files/files.md) for which the user has access is available by the link. You should
 specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .
@@ -76,7 +76,7 @@ link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datag
 The link to a [data query](../../access/access.md#data-query), in addition to its name, must also contain the
 corresponding [data connection](../../access/access.md#data-connection) name and the namespace (or several nested namespaces).
 
-[Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
+[Parameterized queries](../../access/databases/databases.md#parameterized-queries) can be executed as well. In this case, query parameters are
 passed directly in the URL. For example:
 
 [https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY](https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY)

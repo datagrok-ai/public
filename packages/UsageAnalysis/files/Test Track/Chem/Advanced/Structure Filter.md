@@ -47,7 +47,6 @@ Open SPGI.csv
 
 ***
 
-[#2536](https://github.com/datagrok-ai/public/issues/2536) 
 Chem: Substructure Filter: Not terminated on filter disable:
 1. Open tests/smi10K.csv dataset or other dataset with more than 10K structures
 2. Open filter panel and start the structure search.
@@ -57,7 +56,6 @@ Expected result: search is terminated.
 
 ***
 
-[#2473](https://github.com/datagrok-ai/public/issues/2473) Structure filter: 'current value > use as filter' breaks filtering in some cases:
 1. Open SPGI.
 2. Open filters and make sure some structure column is added to the filter panel.
 3. Add another view with the same table (e.g. clone current view).

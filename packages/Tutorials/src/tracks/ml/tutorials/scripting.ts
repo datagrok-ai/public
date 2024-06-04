@@ -79,7 +79,7 @@ export class ScriptingTutorial extends Tutorial {
     const doc = editor.getDoc();
     const scriptBodyIndex = doc.getValue().split('\n').findIndex((line: string) => !line.startsWith('#'));
     doc.replaceRange('\n', { line: scriptBodyIndex - 1 });
-    const lastLineIndex = doc.lineCount();
+    const lastLineIndex = doc.lineCount() - 1;
     const newOutputParam = '#output: dataframe clone';
     const newOutputParamDef = 'clone = table';
 

@@ -173,7 +173,7 @@ The following commands are the most common:
 |            |                                                                                                                                                                                             |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Properties | Show viewer properties in the [context panel](../navigation/panels/panels.md#context-panel)                                                                                        |
-| Reset View | Reset zoom level. Applies for: [Scatter plot](../../visualize/viewers/scatter-plot.mdx), [Line chart](../../visualize/viewers/line-chart.md), [Bar chart](../../visualize/viewers/bar-chart.md), [3D scatter plot](../../visualize/viewers/3d-scatter-plot.md), and [Box plot](../../visualize/viewers/box-plot.md) |
+| Reset View | Reset zoom level. Applies for: [Scatter plot](../../visualize/viewers/scatter-plot.md), [Line chart](../../visualize/viewers/line-chart.md), [Bar chart](../../visualize/viewers/bar-chart.md), [3D scatter plot](../../visualize/viewers/3d-scatter-plot.md), and [Box plot](../../visualize/viewers/box-plot.md) |
 
 General commands are available under the **General** submenu:
 
@@ -265,7 +265,7 @@ To help users analyze their data in depth, our visualizations include a number o
 
 * Box plots show [p-value](../../visualize/viewers/box-plot.md#t-test), which allows to determine whether the findings are statistically
   significant
-* Scatter plots can display a [regression line](../../visualize/viewers/scatter-plot.mdx#regression-line) along with its equation;
+* Scatter plots can display a [regression line](../../visualize/viewers/scatter-plot.md#regression-line) along with its equation;
   moreover, it is possible to plot multiple regression lines by encoding categories with color
 * The values of Pearson's correlation coefficient computed for [correlation plots](../../visualize/viewers/correlation-plot.md) are
   highlighted, which makes it easy to trace the strength of relationship between given variables

@@ -41,13 +41,13 @@ To add a search term, enter it in the search box, and press Enter. Use the check
 switch to control search results. And/Or switch is used to control the logical operation between the search terms.
 To control the fuzzynes of the search, use the slider at the bottom of the search box. By default, the fuzzynes value is set to 0, which corresponds to the exact match. The higher the fuzzynes value, the more fuzzy the search will be. All the exact matches from the filter will be highilghted in the column values.
 
-![](../../uploads/gifs/text-filter.gif)
+![Text Filter](../../uploads/gifs/text-filter.gif)
 
 ## Expression filter
 
 Expression filter lets you create custom search terms for any column. These terms are in the form of `column name` `operation` `value`. The following operations are supported:
 
-* numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `-`, `is null`, `is not null`
+* numerical columns: `none`, `=`, `!=`, `>`, `<`, `>=`, `\<=`, `in`, `not in`, `-`, `is null`, `is not null`
   * `age > 40`
   * `height is null`
 * string columns: `none`, `contains`, `starts with`, `ends with`, `equals`, `!=`, `regex`, `in`, `not in`, `is null`, `is not null`
@@ -63,7 +63,7 @@ Expression filter lets you create custom search terms for any column. These term
 In the filter, you can choose the column, choose available operation and value. To add expressions you can click the `+` button, or press enter.
 Similarly to the text filter, you can control the logical operation between the expressions by using the `and/or` switch. In case of string columns, exact matches to the query will be highlighted in the column values.
 
-![](../../uploads/gifs/expression-filter.gif)
+![Expression Filter](../../uploads/gifs/expression-filter.gif)
 
 ### Free-text filter mode
 
@@ -76,7 +76,7 @@ In case if column name contains spaces, you can put the column name inside of es
 
 * `${column name with spaces} contains someString`
 
-![](../../uploads/gifs/free-text-filter.gif)
+![Free-Text Filter](../../uploads/gifs/free-text-filter.gif)
 
 ## Hierarchical filter
 
@@ -92,7 +92,21 @@ Hierarchical filter can be added from filters hamburger menu. After the filter i
 * To select the corresponding category/subcategory, click the corresponding count number (same as in categorical filter).
 * The green and gray indicator circles to the left of category name show the current and mouse over row of the dataframe respectively. 
 
-![](../../uploads/gifs/hierarchical-filter.gif)
+![Hierarchical Filter](../../uploads/gifs/hierarchical-filter.gif)
+
+## Combined boolean filter
+
+Combined boolean filter (or Flags filter) combines multiple boolean filters into one. It can be very versatile in cases where there are many boolean columns and individual filters overcrowd the filter panel. When first opening the filters panel, if dataframe contains multiple boolean columns, the combined boolean filter will be automatically created instead of separate filters for each column. Each row of the filter corresponds to a column, and contains two checkboxes, corresponding to the true and false values respectively. Applied filters can be combined using logical 'and' or 'or' operations. Like categorical filter, Flags filter includes all interactivity features, such as mouse over highlighting, selection, current row indicator, etc.
+
+* If both checkboxes are checked in a row, the filter for that row is considered to be inactive. In this case, the value indicator of the row will show the ammount of true values in the column.
+* To toggle the filter for particular row, click on the corresponding checkbox.
+* To toggle the logical operation between the filters, click on the 'and/or' switch.
+* To select the filtered values (true or false) for corresponding column, click the corresponding count number (same as in categorical filter).
+* To navigate around the filter columns, you can use your mouse or up/down/left/right arrows.
+* The green and gray indicator circles to the left of the row show the current and mouse over row of the dataframe respectively.
+* If multiple boolean columns are added to the dataframe (for example by [Categorize](../../transform/categorize-data.md)), the combined boolean filter will be automatically created.
+
+![Boolean Filter](../../uploads/gifs/bool-combined.gif)
 
 ## Column tags
 

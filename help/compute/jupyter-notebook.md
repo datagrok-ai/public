@@ -3,10 +3,10 @@ title: "Jupyter Notebook"
 ---
 
 The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live
-code, equations, visualizations and narrative text. Uses include: data cleaning and transformation, numerical
+code, equations, visualizations, and narrative text. Uses include data cleaning and transformation, numerical
 simulation, statistical modeling, data visualization, machine learning, and much more.
 
-Datagrok allows to create, edit, import, link and apply Notebooks into tables.
+Datagrok lets you create, edit, import, link, and apply Notebooks into tables.
 
 ![Jupyter Notebook](../uploads/gifs/jupyter-notebooks.gif "Jupyter Notebook")
 
@@ -15,9 +15,9 @@ Datagrok allows to create, edit, import, link and apply Notebooks into tables.
 Creating a new notebook is very easy. There are several ways to do this:
 
 1. Click `Functions | Notebooks | New Notebook`
-2. Run #{x.CmdNewNotebook} from the [Console](/help/datagrok/navigation/panels/panels.md#console)
+2. Run #\{x.CmdNewNotebook} from the [Console](../datagrok/navigation/panels/panels.md#console)
 3. Select one or more tables and click `Actions | Open in Notebooks` on
-   the [Context Panel](/help/datagrok/navigation/panels/panels.md#context-panel).
+   the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
 
 If you want to link a notebook to one or more tables, please use the third method.
 
@@ -52,12 +52,12 @@ Optionally: R, Julia and JavaScript.
 ## Environments
 
 Each script can be run in an isolated environment, with predefined packages configuration, same as for
-[Script Environments](scripting/scripting.mdx#environments). The environment can be specified in the notebook properties.
+[Script Environments](scripting/under-the-hood.mdx#environment-isolation). The environment can be specified in the notebook properties.
 
 ## Importing notebooks
 
 To import a notebook, just drag-and-drop the corresponding `.ipynb` file to the platform or use
-[import](/help/access/files/files.mdx).
+[import](../access/files/files.md).
 
 ## Videos
 

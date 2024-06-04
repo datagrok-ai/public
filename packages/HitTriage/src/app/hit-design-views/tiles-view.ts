@@ -39,11 +39,20 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
        let isInitialized = true;
        if (!this.v || this.v.isDetached) {
          isInitialized = false;
+         if (sketchState) {
+           // after saving, some columns might be removed in the meantime, so we need to update the
+           //sketch state and remove them so that the viewer can be initialized correctly.
+           if (sketchState.elementStates && (sketchState.elementStates.length ?? 0) > 0) {
+             sketchState.elementStates = sketchState.elementStates.filter((elementState: any) =>
+               elementState?.viewerSettings?.column && this.app.dataFrame!.col(elementState.viewerSettings.column),
+             );
+           }
+         }
          this.v = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, this.app.dataFrame!,
            {lanesColumnName: TileCategoriesColName, lanes: this.app.template?.stages ?? [],
-             ...(sketchState ? {sketchState} : {})});
+             ...((sketchState?.elementStates?.length ?? 0) > 0 ? {sketchState} : {})});
          const opts = this.v.getOptions();
-         sketchState && (opts.look.sketchState = sketchState);
+         opts.look.sketchState = (sketchState?.elementStates?.length ?? 0) > 0 ? sketchState : null;
 
          this.v.setOptions(opts);
          this.v.copyViewersLook(this.v); // hacky way to apply sketch state

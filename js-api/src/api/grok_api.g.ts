@@ -23,11 +23,11 @@ export interface IDartApi {
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
-  grok_Set_CurrentObject(x: any): any;
+  grok_Set_CurrentObject(x: any, freeze: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
-  grok_Get_LastError(): any;
-  grok_Set_LastError(s: String): any;
+  grok_Get_LastError(): Promise<any>;
+  grok_Clear_LastError(): any;
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
@@ -83,6 +83,8 @@ export interface IDartApi {
   grok_Dapi_LogTypes(): any;
   grok_Dapi_DockerImages(): any;
   grok_Dapi_DockerContainers(): any;
+  grok_Dapi_User_Reports(): any;
+  grok_Dapi_User_Reports_Rules(): any;
   grok_DataSource_Find(s: any, id: String): Promise<any>;
   grok_DataSource_Save(s: any, e: any): Promise<any>;
   grok_DataSource_Delete(s: any, e: any): Promise<any>;
@@ -187,6 +189,7 @@ export interface IDartApi {
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
+  grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
   grok_CardView_Set_SearchValue(v: any, s: String): any;
@@ -466,11 +469,13 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnType(t: any, column: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_Append_Merge(parent: any, t: any): any;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
+  grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;
   grok_Map_Set(map: any, key: any, value: any): any;
   grok_Map_Delete(map: any, key: any): any;
@@ -1283,7 +1288,7 @@ export interface IDartApi {
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
-  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool): any;
+  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool, dx: Num, dy: Num): any;
   grok_UI_Markdown(x: String): any;
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;
@@ -1298,8 +1303,6 @@ export interface IDartApi {
   grok_ML_Cluster(table: any, features: any, clusters: any): Promise<any>;
   grok_ML_PCA(table: any, features: any, components: any, center: any, scale: any): Promise<any>;
   grok_ML_RandomData(table: any, distribution: String, params: any, seed: any): Promise<any>;
-  grok_Chem_Descriptors(table: any, column: String, descriptors: any): Promise<any>;
-  grok_Chem_DescriptorsTree(): Promise<any>;
   grok_Chem_Sketcher(handler: any, smiles: String): any;
   grok_Notebook_Get_Environment(n: any): any;
   grok_Notebook_Set_Environment(n: any, e: String): any;
@@ -1432,7 +1435,18 @@ export interface IDartApi {
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
-  grok_DetailedLog_Get_Accordion(reportId: String, df: any, index: Num): any;
+  grok_Reports_Get(num: Num): Promise<any>;
+  grok_Reports_Find(id: String): Promise<any>;
+  grok_UserReport_Id(report: any): any;
+  grok_UserReport_IsResolved(report: any): any;
+  grok_UserReport_JiraTicket(report: any): any;
+  grok_UserReport_Assignee(report: any): any;
+  grok_UserReport_Reporter(report: any): any;
+  grok_UserReport_Description(report: any): any;
+  grok_UserReport_CreatedOn(report: any): any;
+  grok_Get_StackTrace_Hash(stackTrace: String): any;
+  grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
+  grok_ReportsRule_Add_Dialog(): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

@@ -24,11 +24,11 @@ Field color-coding and format are picked up from the corresponding grid, if poss
 
 The following keyboard shortcuts work only when the form is in both read-only and presentation modes:
 
-|                           |                        |
-|---------------------------|------------------------|
-| <, left or up             | Previous row           |
-| > , right or down          | Next row               |
-| Space                     | Toggle selected state  |
+|                   |                        |
+|-------------------|------------------------|
+| \<, left or up    | Previous row           |
+| > , right or down | Next row               |
+| Space             | Toggle selected state  |
 
 ![Form](../../uploads/gifs/form.gif "form")
 

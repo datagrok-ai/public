@@ -15,7 +15,6 @@ keywords:
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-
 ```
 
 This guide has basic information on how to write in MDX-compatible Markdown syntax. It is not intended to be exhaustive. Read the [Docusaurus Markdown features](https://docusaurus.io/docs/next/markdown-features), [Basic Markdown Syntax](https://www.markdownguide.org/basic-syntax), and [Extended Syntax](https://www.markdownguide.org/extended-syntax/) for more details and examples.
@@ -344,8 +343,8 @@ Use:
 <TabItem value="no-emphasis" label="Don't add emphasis">
 
 * To linked terms 
-  * The **Query Editor** lets you edit queries. To learn more, see [Query Editor](link).
-  * A query is a [function](link). Like other _functions_ in Datagrok,...
+  * The **Query Editor** lets you edit queries. To learn more, see [Query Editor](../../access/databases/databases.md#query-editor).
+  * A query is a [function](../../datagrok/concepts/functions/functions.md). Like other _functions_ in Datagrok,...
 
 </TabItem>
 </Tabs>
@@ -443,10 +442,13 @@ Use inline links within your document. Avoid titling links as "here" or "this pa
 
 For documents within the Datagrok help repository, all links should be relative to your Markdown file:
 
-* Link to a `[section in my document](#section-header)`
-* Link to another `[document in the same folder](other-doc.md)`
-* Link to another `[document in a subfolder](subfolder/other-doc.md)`
-* Link to another `[document in a parent folder](../parentFolder/other-doc.md)`
+```
+[section in my document](#section-header)
+[document in the same folder](other-doc.md)
+[document in a subfolder](subfolder/other-doc.md)
+[document in a parent folder](../parentFolder/other-doc.md)
+
+```
 
 ```mdx-code-block
 </TabItem>

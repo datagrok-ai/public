@@ -8,7 +8,7 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COLNAME_PAIRS, MMP_COL_PAIRNUM, MM
   MMP_COLOR,
   columnsDescriptions} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
-import {createColumnWithDescription} from './mmp-generations';
+import {createColWithDescription} from './mmp-generations';
 
 function calculateActivityDiffs(mmpInput: MmpInput,
   mmpRules: MmpRules, variates: number, allCasesNumber: number) :
@@ -145,8 +145,8 @@ function createLines(variates: number, activityPairsIdxs: BitArray[],
 
 function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
   occasions: Int32Array, activities: DG.ColumnList, meanDiffs: Float32Array[]) : [string[], DG.Grid] {
-  const fromCol = createColumnWithDescription('string', MMP_COLNAME_FROM, fromFrag);
-  const toCol = createColumnWithDescription('string', MMP_COLNAME_TO, toFrag);
+  const fromCol = createColWithDescription('string', MMP_COLNAME_FROM, fromFrag);
+  const toCol = createColWithDescription('string', MMP_COLNAME_TO, toFrag);
   const occasionsCol = DG.Column.fromInt32Array(MMP_COLNAME_PAIRS, occasions);
   occasionsCol.setTag('description', columnsDescriptions[MMP_COLNAME_PAIRS]);
   fromCol.semType = DG.SEMTYPE.MOLECULE;
@@ -178,8 +178,8 @@ function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
 function getCasesGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
   molNumFrom: Int32Array, molNumTo: Int32Array, pairsFromSmiles: string[],
   pairsToSmiles: string[], ruleNum: Int32Array, activities: DG.ColumnList, diffs: Float32Array[]) : DG.Grid {
-  const pairsFromCol = createColumnWithDescription('string', MMP_COLNAME_FROM, molFrom);
-  const pairsToCol = createColumnWithDescription('string', MMP_COLNAME_TO, molTo);
+  const pairsFromCol = createColWithDescription('string', MMP_COLNAME_FROM, molFrom);
+  const pairsToCol = createColWithDescription('string', MMP_COLNAME_TO, molTo);
   const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, molFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, molFrom.length);
   const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
@@ -215,6 +215,7 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
   allCasesNumber: number, palette: PaletteCodes): {
   maxActs: number[],
   diffs: Array<Float32Array>,
+  meanDiffs: Array<Float32Array>,
   activityMeanNames: Array<string>,
   linesIdxs: Uint32Array,
   allPairsGrid: DG.Grid,
@@ -235,7 +236,7 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
   const lines =
     createLines(variates, activityDiffs.activityPairsIdxs, activityDiffs.molNumFrom, activityDiffs.molNumTo, palette);
 
-  return {maxActs: activityDiffs.maxActs, diffs: activityDiffs.diffs,
+  return {maxActs: activityDiffs.maxActs, diffs: activityDiffs.diffs, meanDiffs: activityDiffs.meanDiffs,
     activityMeanNames, linesIdxs: lines.linesIdxs, allPairsGrid, casesGrid,
     lines: lines.lines, linesActivityCorrespondance: lines.linesActivityCorrespondance};
 }

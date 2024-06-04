@@ -1,0 +1,24 @@
+.greyColor {
+  color:var(--grey-4);
+}
+.card:hover{
+  cursor:pointer;
+}
+.dialogSize{
+  max-width: 700px!important;
+  margin: .5rem auto;
+  margin-top:70px!important;
+}
+.dialogBody{
+  background: white;
+  border-radius: 3px;
+}
+.right{
+  float:right;
+}
+.badgedg{
+  background-color: var(--steel-1);
+  color:var(--steel-6);
+  padding: 0.4em 0.7em;
+  font-weight: 600;
+}

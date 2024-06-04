@@ -37,21 +37,10 @@ type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
 
 
-/** Column CSV export options */
-export interface ColumnCsvExportOptions {
-  /** Custom column format to be used */
-  format: string;
-
-  /** Additional options */
-  [index: string]: any;
+/** Column name -> format */
+export interface ColumnsFormatCsvExportOptions {
+  [index: string]: string;
 }
-
-
-/** Column name -> options */
-export interface ColumnsCsvExportOptions {
-  [index: string]: ColumnCsvExportOptions;
-}
-
 
 /** Csv export options to be used in {@link DataFrame.toCsv} */
 export interface CsvExportOptions {
@@ -94,7 +83,7 @@ export interface CsvExportOptions {
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
-  columnOptions?: ColumnsCsvExportOptions;
+  columnFormats?: ColumnsFormatCsvExportOptions;
 }
 
 
@@ -312,7 +301,7 @@ export class DataFrame {
 
   /** Exports the content to JSON format */
   toJson(): any[] {
-    return Array.from({length: this.rowCount}, (_, idx) => 
+    return Array.from({length: this.rowCount}, (_, idx) =>
       this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
         entry[colName] = this.get(colName, idx);
         return entry;
@@ -441,6 +430,10 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
+  appendMerge(t: DataFrame): void {
+    api.grok_DataFrame_Append_Merge(this.dart, t.dart);
+  }
+
   _event(event: string): Observable<any> {
     return __obs(event, this.dart);
   }
@@ -547,6 +540,10 @@ export class DataFrame {
   getTableInfo(): TableInfo {
     return toJs(api.grok_DataFrame_Get_TableInfo(this.dart));
   }
+
+  _exportReopen(): DataFrame {
+    return toJs(api.grok_DataFrame_ExportAndReopen(this.dart));
+  }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
@@ -644,7 +641,7 @@ export class Column<T = any> {
    * @param length - Column length (should match row count of the data frame )
    *
    * {@link DataFrame.create}
-   * {@see COLUMN_TYPE}
+   * @see COLUMN_TYPE
    */
   static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
@@ -688,7 +685,7 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
   }
 
-  /** Creates a {Column} from the bitset.
+  /** Creates a {@link Column} from the bitset.
    * @param {string} name
    * @param {BitSet} bitset
    * @returns {Column} */
@@ -1065,6 +1062,7 @@ export class BigIntColumn extends Column<BigInt> {
     let v = api.grok_BigIntColumn_GetValue(this.dart, row);
     if (v == null)
       return null;
+
     return BigInt(v);
   }
 
@@ -1578,19 +1576,19 @@ export class Cell {
 export class BitSet {
   public dart: any;
 
-  /** Creates a {BitSet} from the specified Dart object. */
+  /** Creates a {@link BitSet} from the specified Dart object. */
   constructor(dart: any) {
     this.dart = dart;
   }
 
-  /** Creates a {BitSet} from the string representing the bitset.
+  /** Creates a {@link BitSet} from the string representing the bitset.
    * @param {string} zerosOnes - A string containing '1' and '0'.
    * @returns {BitSet} */
   static fromString(zerosOnes: string): BitSet {
     return new BitSet(api.grok_BitSet_FromString(zerosOnes));
   }
 
-  /** Creates a {BitSet} from the ArrayBuffer representing the bitset.
+  /** Creates a {@link BitSet} from the ArrayBuffer representing the bitset.
    * @param {ArrayBuffer} buffer - An array containing 1 and 0.
    * @param {Number} bitLength - count of bits.
    * @returns {BitSet} */
@@ -1600,7 +1598,7 @@ export class BitSet {
     return new BitSet(api.grok_BitSet_FromBytes(buffer, bitLength));
   }
 
-  /** Creates a {BitSet} of the specified length with all bits set to false.
+  /** Creates a {@link BitSet} of the specified length with all bits set to false.
    * @param {number} length - Number of bits.
    * @param {Function} f - when specified, Sets all bits by setting i-th bit to the results of f(i)
    * @returns {BitSet} */
@@ -1763,7 +1761,7 @@ export class BitSet {
     return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
-  /** Copies the content from the other {BitSet}. */
+  /** Copies the content from the other {@link BitSet}. */
   copyFrom(b: BitSet, notify: boolean = true): BitSet {
     api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
@@ -1797,7 +1795,7 @@ export class BitSet {
 }
 
 
-/** Represents basic descriptive statistics calculated for a {Column}.
+/** Represents basic descriptive statistics calculated for a {@link Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
   private readonly dart: any;

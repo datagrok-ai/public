@@ -2,10 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
+import {asRenderer, IRenderer, isRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 
 import {startDockerContainer} from '../utils/docker';
 
 import {_package} from '../package-test';
+import {CellRendererBackBase, getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -38,4 +40,17 @@ export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<
   await delay(0);
   await testEvent(grid.onAfterDrawContent, () => {},
     () => { grid.invalidate(); }, timeout);
+
+  const colCount = grid.columns.length;
+  for (let colI = 0; colI < colCount; ++colI) {
+    const gridCol = grid.columns.byIndex(colI);
+    if (gridCol) {
+      const gridCell = grid.cell(gridCol.name, 0);
+      const [_gridCol, _tableCol, temp] =
+        getGridCellRendererBack<void, CellRendererBackBase<void>>(gridCell);
+
+      const renderer = asRenderer(temp.rendererBack);
+      if (renderer) await renderer.awaitRendered();
+    }
+  }
 }

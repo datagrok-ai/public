@@ -80,7 +80,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`);
    
     grok.shell.windows.showContextPanel = true;
-    await this.action('Under <b>Pie chart</b> tab > <b>Data</b>, set Category to LC/MS', new Observable((subscriber: any) => {
+    await this.action('Under Pie chart tab > Data, set Category to LC/MS', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           if (m.previousSibling?.textContent === 'LC/MS') {

@@ -315,6 +315,10 @@ jobs:
             export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
+
+          # Skip initial setup in CI
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
+
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
@@ -367,7 +371,7 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         run: |
-          npm install -g datagrok-tools@latest
+          npm install -g datagrok-tools@4.12.27
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5

@@ -1,4 +1,3 @@
-// import {Options} from '../../utils/src/type-declarations';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**

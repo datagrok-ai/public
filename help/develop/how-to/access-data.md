@@ -80,7 +80,7 @@ When providing a connection string, you don't need to pass other parameters.
 
 Parameters carrying sensitive data (such as **Login**/**Password** or **Access Key**/**Secret Key**) are handled in a special way.
 
-Datagrok has a [built-in credentials management system](../../govern/security.md#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string.
+Datagrok has a [built-in credentials management system](../../govern/access-control/access-control.md#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string.
 
 <details>
 <summary> Example: Specifying credentials for a data connection </summary>
@@ -162,7 +162,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.md#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
@@ -186,14 +186,14 @@ To see how this method works, refer to [this example](https://public.datagrok.ai
 
 ### Sharing connections
 
-Data connections can be shared as part of a [project](../../concepts/project/project.md)
-, [package](../develop.md#packages) (and [repository](../../access/databases/connectors/git.md) containing this package), or as a
+Data connections can be shared as part of a [project](../../datagrok/concepts/project/project.md)
+, [package](../develop.md#packages) (and [repository](../../access/files/shares//git.md) containing this package), or as a
 standalone [entity](../../datagrok/concepts/objects.md). The access rights of a database connection are inherited from the access rights of a
 query. However, the access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection will be shared automatically. However, sharing a connection does not automatically share your queries. In the case of web queries, they are shared automatically when the corresponding connection is shared.
 
 ### Caching results
 
-See [Caching data](../../access/databases/databases.mdx#caching-data).
+See [Caching data](../../access/databases/databases.md#caching-data).
 
 ## Rest endpoints
 

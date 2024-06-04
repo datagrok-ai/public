@@ -73,7 +73,7 @@ our [JavaScript API documentation](https://datagrok.ai/js-api/classes/dg.JsViewe
 ### External dependencies
 
 Just like regular `npm` packages, Datagrok packages may have dependencies. Typically you would list them in
-your [package.json](../develop.md#package.json) file and get them locally via `npm install`. For instance, we will use a
+your [package.json](../develop.md#packagejson) file and get them locally via `npm install`. For instance, we will use a
 JavaScript library called [D3](https://d3js.org/) to create a bar chart. In this case, the `dependencies` field will
 look as follows:
 
@@ -85,7 +85,7 @@ look as follows:
 ```
 
 Some libraries, such as [datagrok-api](https://www.npmjs.com/package/datagrok-api), are marked as external modules in a
-package's [webpack configuration](../develop.md#webpack.config.js). This means that they will not be included in a
+package's [webpack configuration](../develop.md#webpackconfigjs). This means that they will not be included in a
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 
@@ -483,7 +483,7 @@ chart pinned to the right.
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
-mode. This also means that users can persist this viewer as part of a [project](../../concepts/project/project.md).
+mode. This also means that users can persist this viewer as part of a [project](../../datagrok/concepts/project/project.md).
 
 ![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 

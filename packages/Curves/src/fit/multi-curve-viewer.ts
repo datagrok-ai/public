@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {FitChartCellRenderer, mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getChartData, mergeProperties} from './fit-renderer';
-import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
@@ -31,7 +31,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   constructor() {
     super(new FitChartCellRenderer());
 
-    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FIT_SEM_TYPE});
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, { description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
@@ -143,7 +143,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
   onTableAttached(): void {
     const grid = this.tableView?.grid!;
-    const fitCol = this.dataFrame.columns.bySemType(FIT_SEM_TYPE);
+    const fitCol = this.dataFrame.columns.bySemType(FitConstants.FIT_SEM_TYPE);
     if (fitCol !== null)
       this.curvesColumnNames = [fitCol.name];
 

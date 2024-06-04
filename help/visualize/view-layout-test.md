@@ -44,13 +44,13 @@ choose **Clone**.
 
 1. Change row sorting by *Age* column to decrease
 
-* Table is sorted by values ​​of *Age* column descending
+* Table is sorted by values   of *Age* column descending
 
 1. Enable Color Coding for *Sex* column
 
-* Values ​​in *Sex* column are highlighted in different colors
+* Values   in *Sex* column are highlighted in different colors
 
-1. Set filter for values ​​only equals ```Asian``` in "Race" column
+1. Set filter for values   only equals ```Asian``` in "Race" column
 
 * Filter ```"Race" = Asian``` in applied *"demog"* table
 
@@ -77,7 +77,7 @@ choose **Clone**.
 
 1. Change row sorting by *Age* column to decrease
 
-* Table is sorted by values ​​of *Age* column descending
+* Table is sorted by values   of *Age* column descending
 
 1. Save received view to Layouts Gallery from menu **View | Layout | Save to Gallery** or use ```Ctrl + S``` or use
    **SAVE** button in "Layouts" tab on Toolbox

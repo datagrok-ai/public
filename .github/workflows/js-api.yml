@@ -191,6 +191,9 @@ jobs:
           profiles='--profile datagrok --profile db --profile grok_connect --profile grok_spawner'
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
+          # Skip initial setup in CI
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.js-api.debug.docker-compose.yaml
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "docker/localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
@@ -375,8 +378,8 @@ jobs:
         with:
           status: ${{ steps.publish.outcome }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}  
+          config: ".github/config/slack.yml"
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
@@ -411,7 +414,7 @@ jobs:
         with:
           status: ${{ steps.publish.outcome }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Slack Failed-Cancelled Notification
@@ -420,7 +423,7 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   libraries:
@@ -495,7 +498,7 @@ jobs:
               fi
             done
           fi
-     
+
       - name: Send mail
         if: always() && steps.commit.outcome == 'failure'
         uses: dawidd6/action-send-mail@v3
@@ -510,14 +513,14 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      
+
       - name: Slack Failed Notification
         if: failure()
         uses: act10ns/slack@v2.1.0
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
@@ -612,5 +615,5 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"        
+          config: ".github/config/slack.yml"
           webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

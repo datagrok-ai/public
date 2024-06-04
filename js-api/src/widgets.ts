@@ -20,6 +20,7 @@ import '../css/typeahead-input.css';
 import '../css/tags-input.css';
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
+import {HttpDataSource} from "./dapi";
 
 declare let grok: any;
 declare let DG: any;
@@ -267,9 +268,9 @@ export class Widget<TSettings = any> {
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
-   *  Registered property gets added to {@see properties}.
+   *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *
+   *  
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -1799,6 +1800,10 @@ export class TreeViewGroup extends TreeViewNode {
   get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
 
   get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
+
+  async loadSources(source: HttpDataSource<any>): Promise<void> {
+    return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
+  }
 }
 
 

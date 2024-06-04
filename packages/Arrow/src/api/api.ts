@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as arrow from 'apache-arrow';
-import {Compression,  readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm/esm/arrow1";
+import {Compression,  readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm";
 
 export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
   //todo: use direct creation of vectors from typed arrays
@@ -16,10 +16,8 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
       const rawData: Float64Array = (column.getRawData() as Float64Array).subarray(0, column.length);
       t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
     }
-    else if (columnType === 'string') {
-      const indexes = column.getRawData();
-      t[column_names[i]] = Array.from(indexes, (v, _) => column.get(v));
-    }
+    else if (columnType === 'string')
+      t[column_names[i]] = column.toList();
     else {
       const columnLength = column.length;
       const array = new Array(columnLength);

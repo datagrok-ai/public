@@ -5,3 +5,8 @@ tv.filters({filters: [
     {type: DG.FILTER_TYPE.MULTI_VALUE, column: 'sex', selected: ['F']},
     {type: DG.FILTER_TYPE.CATEGORICAL, column: 'disease'},
   ]});
+
+
+tv.filters({filters: [
+    {'min': 120, 'max': 150},
+  ]});

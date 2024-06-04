@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
+import {delay} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
 
-import {runKalign} from './multiple-sequence-alignment';
+import {MsaWarning, runKalign} from './multiple-sequence-alignment';
 import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
 import {multipleSequenceAlginmentUIOptions} from './types';
@@ -16,12 +17,6 @@ import {awaitContainerStart} from './docker';
 import {_package} from '../package';
 
 import '../../css/msa.css';
-
-export class MsaWarning extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-  }
-}
 
 export async function multipleSequenceAlignmentUI(
   options: multipleSequenceAlginmentUIOptions = {},
@@ -36,9 +31,10 @@ export async function multipleSequenceAlignmentUI(
     const table = options.col?.dataFrame ?? grok.shell.t;
     const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
-      const errMsg = `MSAError: dataset doesn't conain any Macromolecule column`;
+      const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
       grok.shell.warning(errMsg);
-      reject(new MsaWarning(errMsg));
+      reject(new MsaWarning(ui.divText(errMsg)));
+      return; // Prevents creating the MSA dialog
     }
 
     // UI for PepSea alignment
@@ -72,39 +68,50 @@ export async function multipleSequenceAlignmentUI(
 
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
-    //TODO: remove when the new version of datagrok-api is available
-    //TODO: allow only macromolecule columns to be chosen
-    const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
+    let prevSeqCol = seqCol;
+    const colInput = ui.columnInput(
+      'Sequence', table, seqCol,
+      async (valueCol: DG.Column) => {
+        if (!valueCol || valueCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+          okBtn.disabled = true;
+          await delay(0); // to
+          colInput.value = prevSeqCol as DG.Column<string>;
+          return;
+        }
+        prevSeqCol = valueCol;
+        okBtn.disabled = false;
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
           methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
         );
-        //@ts-ignore
       }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
     const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
     clustersColInput.nullable = true;
-    colInput.fireChanged();
-    //if column is specified (from tests), run alignment and resolve with the result
-    if (options.col) {
-      performAlignment = await onColInputChange(
-        options.col, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
-      );
 
-      await onDialogOk(colInput, table, performAlignment, resolve, reject);
-      return;
-    }
-    const _dlg = ui.dialog('MSA')
+    const dlg = ui.dialog('MSA')
       .add(colInput)
       .add(clustersColInput)
       .add(methodInput)
       .add(msaParamsDiv)
       .add(msaParamsButton)
       .add(kalignVersionDiv)
-      .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); })
-      .show();
+      .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); });
+    const okBtn = dlg.getButton('OK');
+
+    colInput.fireChanged(); // changes okBtn
+    //if column is specified (from tests), run alignment and resolve with the result
+    if (options.col) {
+      performAlignment = await onColInputChange(
+        options.col, table, pepseaInputRootStyles, kalignInputRootStyles,
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
+      );
+      await onDialogOk(colInput, table, performAlignment, resolve, reject);
+      return; // Prevents show the dialog
+    }
+
+    dlg.show();
   });
 }
 
@@ -132,8 +139,6 @@ async function onDialogOk(
 
     resolve(msaCol);
   } catch (err: any) {
-    const errMsg: string = err instanceof Error ? err.message : err.toString();
-    grok.shell.error(errMsg);
     reject(err);
   } finally {
     pi.close();

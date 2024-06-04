@@ -13,7 +13,7 @@
 
 1. Use menu "Select" for select rows ([Random](../../explore/select-random-rows.md)
    , [Duplicates](../../explore/select-duplicates.md),
-   [Missing Values](../../transform/missing-values-imputation.md))
+   [Missing Values](../../explore/missing-values-imputation.md))
 
 * Commands for opening dialogs and selection operations were written to the console.
 

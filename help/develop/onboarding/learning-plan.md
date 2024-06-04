@@ -20,12 +20,12 @@ perspective.
 
 1. Register on [public.datagrok.ai](https://public.datagrok.ai) and [dev.datagrok.ai](https://dev.datagrok.ai)
 1. Now let's import data into the platform:
-   1. [Local files](../../access/files/files.mdx#importing-text). Download a
+   1. [Local files](../../access/files/files.md#importing-text). Download a
       [dataset](https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ApiTests/files/datasets/demog.csv)
       and import it into the platform using different approaches: drag-and-drop, double-click the "Data" icon on the
       sidebar, select "Data > Open local file", press `Ctrl+O`, and so on.
-   1. [File shares](../../access/files/files.mdx). Add the dataset to your *Home* directory.
-   1. [Databases](../../access/databases/databases.mdx#database-manager).
+   1. [File shares](../../access/files/files.md). Add the dataset to your *Home* directory.
+   1. [Databases](../../access/databases/databases.md#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
       1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/Tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.
@@ -74,8 +74,8 @@ The goal for today is to gain experience with the platform by learning about its
 1. Scripting:
    1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/Scripting) tutorial
    1. Read documentation:
-      1. [Scripting for non-developers](../../compute/scripting-for-non-developers.mdx)
       1. [Scripting](../../compute/scripting/scripting.mdx)
+      1. [Advanced scripting](../../compute/scripting/advanced-scripting/advanced-scripting.mdx)
    1. Create a JavaScript script and share it with your mentor:
       1. Cylinder Volume Calculator takes parameters `radius` and `height` and returns `volume` rounded to 2 decimal
          places.
@@ -93,13 +93,12 @@ The goal for today is to set up the environment and learn how to create simple p
 
 1. Check out these links:
 
-   1. Wiki: <https://datagrok.ai/help>
-   1. JS API reference: <https://datagrok.ai/js-api/>
-   1. API samples: <https://public.datagrok.ai/js>
+   1. [Wiki](https://datagrok.ai/help)
+   1. [JS API reference](https://datagrok.ai/js-api/)
+   1. [API samples](https://public.datagrok.ai/js)
 
    Developers use these resources on a regular basis, so consider adding them to your bookmarks.
-1. Read our [Contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git
-   policy](../dev-process/git-policy.mdx)
+1. Read our [Contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git policy](../dev-process/git-policy.mdx)
 1. Clone our [public repository](https://github.com/datagrok-ai/public):
 
    ```sh

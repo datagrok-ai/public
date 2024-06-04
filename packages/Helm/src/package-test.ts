@@ -1,15 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import '@datagrok-libraries/bio/src/types/helm';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './tests/helm-tests.ts';
 import './tests/findMonomers-tests';
 import './tests/helm-service-tests';
 import './tests/renderers-tests';
-import './tests/get-molfiles';
+import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
 import './tests/get-all-parts-tests';
+import './tests/get-monomer-tests';
 
 export const _package = new DG.Package();
 export {tests};
@@ -21,6 +23,7 @@ export {tests};
 //input: object testContext {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+  // verbose: true - for tests returning dataframe
+  const data = await runTests({category, test, testContext, verbose: true});
   return DG.DataFrame.fromObjects(data)!;
 }

@@ -223,7 +223,7 @@ export class StreamSubscription {
   cancel(): void { api.grok_Subscription_Cancel(this.dart); }
 }
 
-/** Event arguments. {@see args} contains event details.
+/** @see Event arguments. {@link args} contains event details.
  *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
 export class EventData<TArgs = any> {
   public dart: any;
