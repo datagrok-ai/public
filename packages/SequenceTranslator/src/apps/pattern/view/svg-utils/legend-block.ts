@@ -56,10 +56,24 @@ export class LegendBlock extends SVGBlockBase {
     xShift: number,
     nucleotidesWithoutOverhangs?: string[]
   ): {elements: SVGElement[], numericLabel: HTMLElement, width: number} {
+    //create numeric label toggle checkbox
     const createNumericLabel = !name.includes('linkage') && nucleotidesWithoutOverhangs?.includes(name);
-
-    const circlePosition = {
+    const numericLabelCheckboxShift = createNumericLabel ? 25 : 0;
+    const numLabelCheckboxPosition = {
       x: xShift,
+      y: this.yShift - SVG_CIRCLE_SIZES.LEGEND_RADIUS * 4 + 1
+    };
+    const numericLableVisible = this.eventBus.getModificationsWithNumericLabels().includes(name);
+    const numericLabel = createNumericLabel ? ui.boolInput('', numericLableVisible, () => {
+      this.eventBus.toggleNumericLabels(numericLableVisible, name);
+    }).root : ui.div();
+    numericLabel.style.position = 'absolute';
+    numericLabel.style.top = numLabelCheckboxPosition.y.toString() + 'px';
+    numericLabel.style.left = numLabelCheckboxPosition.x.toString() + 'px';
+
+    //create circle
+    const circlePosition = {
+      x: xShift + numericLabelCheckboxShift,
       y: this.yShift - SVG_CIRCLE_SIZES.LEGEND_RADIUS
     };
 
@@ -69,26 +83,15 @@ export class LegendBlock extends SVGBlockBase {
         .createCircleElement(circlePosition, SVG_CIRCLE_SIZES.LEGEND_RADIUS, getNucleobaseColorFromStyleMap(name), 'default');
 
 
+    //create modification label
     const paddedCircleWidth = 2 * SVG_CIRCLE_SIZES.LEGEND_RADIUS;
-    xShift += paddedCircleWidth;
+    xShift += (paddedCircleWidth + + numericLabelCheckboxShift);
 
     const textPosition = {y: this.yShift, x: xShift};
 
     const textElement = this.svgElementFactory
       .createTextElement(name, textPosition, SVG_TEXT_FONT_SIZES.COMMENT, SVG_ELEMENT_COLORS.TEXT, 'normal', '1.0', 'default');
     const textWidth = TextDimensionsCalculator.getTextDimensions(name, SVG_TEXT_FONT_SIZES.COMMENT).width;
-
-    const numericLabelPosition = {
-      x: xShift + textWidth,
-      y: this.yShift - SVG_CIRCLE_SIZES.LEGEND_RADIUS * 4
-    };
-    const numericLableVisible = this.eventBus.getModificationsWithNumericLabels().includes(name);
-    const numericLabel = createNumericLabel ? ui.boolInput('', numericLableVisible, () => {
-      this.eventBus.toggleNumericLabels(numericLableVisible, name);
-    }).root : ui.div();
-    numericLabel.style.position = 'absolute';
-    numericLabel.style.top = numericLabelPosition.y.toString() + 'px';
-    numericLabel.style.left = numericLabelPosition.x.toString() + 'px';
 
     return {elements: [circle, numericLabel, textElement].filter((element) => element !== null) as SVGElement[],
       numericLabel: numericLabel, width: paddedCircleWidth + textWidth + (createNumericLabel ? 35 : 5)};
