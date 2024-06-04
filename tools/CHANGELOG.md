@@ -4,7 +4,7 @@
 
 ### Features
 
-* Added variable `package`
+* Added argument `package`, which allows you to choose a package for the `test` command
 
 
 ## 4.12.13 (2023-08-17)
