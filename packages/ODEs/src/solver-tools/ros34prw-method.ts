@@ -11,7 +11,7 @@ import {inverseMatrix, memAlloc, memFree} from '../../wasm/matrix-operations-api
 import {ODEs, max, abs, SAFETY, PSHRNK, PSGROW, REDUCE_COEF, GROW_COEF,
   ERR_CONTR, TINY, EPS, tDerivative, jacobian, ERROR_MSG} from './solver-defs';
 
-// The method specific constants (see Table 3 [1])
+// The method specific constants (see Table 3 [1]):
 const GAMMA = 0.435866521508459;
 
 const GAMMA_21 = -1.3075995645253771;
@@ -34,14 +34,15 @@ const GAMMA_4 = GAMMA_41 + GAMMA_42 + GAMMA_43 + GAMMA;
 
 const ALPHA_21 = 1.3075995645253771;
 const ALPHA_2 = ALPHA_21;
-const ALPHA_31 = 0.5;
+
+/* REMARK. Expressions with ALPHAs are simplified */
+/*const ALPHA_31 = 0.5;
 const ALPHA_32 = 0.5;
 const ALPHA_3 = ALPHA_31 + ALPHA_32;
-
 const ALPHA_41 = 0.5;
 const ALPHA_42 = 0.5;
 const ALPHA_43 = 0;
-const ALPHA_4 = ALPHA_41 + ALPHA_42 + ALPHA_43;
+const ALPHA_4 = ALPHA_41 + ALPHA_42;*/
 
 const B_1 = 0.34449143192447917;
 const B_2 = -0.45388516575112231;
@@ -210,9 +211,9 @@ export function ros34prw(odes: ODEs, callBack?: any): DG.DataFrame {
 
       // 9) F3 = F(t + alpha3 * h, y + h * (alpha31 * k1 + alpha32 * k2))  <-- Fbuf
       for (let i = 0; i < dim; ++i)
-        kBuf[i] = y[i] + h * (ALPHA_31 * k1[i] + ALPHA_32 * k2[i]);
+        kBuf[i] = y[i] + h * 0.5 * (k1[i] + k2[i]);
 
-      f(t + ALPHA_3 * h, kBuf, fBuf);
+      f(t + h, kBuf, fBuf);
 
       // 10) kBuf = gamma31 / gamma * k1 + gamma32 / gamma * k2
       for (let i = 0; i < dim; ++i)
@@ -230,9 +231,9 @@ export function ros34prw(odes: ODEs, callBack?: any): DG.DataFrame {
 
       // 12) F4 = F(t + alpha4 * h, y + h * (alpha41 * k1 + alpha42 * k2 + alpha43 * k3))  <-- Fbuf
       for (let i = 0; i < dim; ++i)
-        kBuf[i] = y[i] + h * (ALPHA_41 * k1[i] + ALPHA_42 * k2[i] + ALPHA_43 * k3[i]);
+        kBuf[i] = y[i] + h * 0.5 * (k1[i] + k2[i]);
 
-      f(t + ALPHA_4 * h, kBuf, fBuf);
+      f(t + h, kBuf, fBuf);
 
       // 13) kBuf = gamma41 / gamma * k1 + gamma42 / gamma * k2 + gamma43 / gamma * k3
       for (let i = 0; i < dim; ++i)
