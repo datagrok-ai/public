@@ -1,9 +1,13 @@
-# Demo changelog
+# Samples changelog
 
-## 1.3.5 (2023-07-27)
+## 1.0.3 2024-06-05
 
-*Dependency: datagarok-api >= 1.13.0*
+This release focuses on improving feature stability and usability.
+
+*Dependency: datagrok-api >= 1.13.0*
+
+### Features
 
 ### Bug Fixes
 
-* Fixed minor issues with packages and notebooks
+* Fixed demo projects
