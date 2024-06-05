@@ -14,7 +14,7 @@ const ToolMarkup = () => {
         <label for="horns">Breaking changes</label>
         <br />
         <input type="checkbox" id="anyCausesBreakingChangesCheckbox" disabled  style={{margin: '0 2px'}}/>
-        <label for="horns">Show any breaking changes</label>
+        <label for="horns">Show type 'any' as breaking changes</label>
         <br />
         <input type="checkbox" id="newFunctionalityCheckbox"  style={{margin: '0 2px'}}/>
         <label for="horns">New functionality</label>
