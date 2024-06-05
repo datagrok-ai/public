@@ -15,6 +15,7 @@ import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
 import './tests/get-all-parts-tests';
 import './tests/get-monomer-tests';
+import './tests/parse-helm-tests';
 
 export const _package = new DG.Package();
 export {tests};

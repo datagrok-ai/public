@@ -51,6 +51,13 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     tableCol: DG.Column<string>,
   ) {
     super(gridCol, tableCol, new WrapLogger(_package.logger) /* _package.logger */, true);
+
+    const monomerLib = getMonomerLib();
+    if (!monomerLib)
+      throw new Error('Helm package is not initialized yet.');
+    this.subs.push(monomerLib.onChanged.subscribe(() => {
+      this.reset();
+    }));
   }
 
   protected override reset(): void {

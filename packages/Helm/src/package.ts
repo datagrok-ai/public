@@ -8,7 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {getJSDrawModules} from '@datagrok/js-draw-lite/src/types';
 import {IOrgWebEditorMonomer} from '@datagrok/js-draw-lite/src/types/org';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
@@ -30,9 +29,12 @@ import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
 import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
-let monomerLib: IMonomerLib | null = null;
+// Do not import anything than types from @datagrok/helm-web-editor/src/types
+import type {HweWindow} from '@datagrok/helm-web-editor/src/types';
 
 export const _package = new HelmPackage();
+
+let monomerLib: IMonomerLib | null = null;
 
 /*
   Loading modules:
@@ -41,10 +43,12 @@ export const _package = new HelmPackage();
     HELMWebEditor
       JSDraw.Lite is embedded into HELMWebEditor bundle (dist/package.js)
  */
+
+declare const window: Window & HweWindow;
 declare const scil: ScilModule;
 declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
-declare const helmWebEditorInitPromise: Promise<void>;
+
 
 //tags: init
 export async function initHelm(): Promise<void> {
@@ -60,17 +64,19 @@ export async function initHelm(): Promise<void> {
           resolve();
         }),
         (async () => {
-          _package.logger.debug(`${logPrefix}, dependence loading...`);
+          _package.logger.debug(`${logPrefix}, dependence loading …`);
           const t1: number = performance.now();
 
-          _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
+          _package.logger.debug(`${logPrefix}, dojox loading and patching …`);
           await initHelmPatchDojo();
-          _package.logger.debug(`${logPrefix}, patch dojox.gfx.svg.Text.prototype.getTextWidth`);
+          _package.logger.debug(`${logPrefix}, dojox loaded and patched`);
 
-          await helmWebEditorInitPromise;
+          _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
+          await window.helmWebEditor$.initPromise;
+          _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
           org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
-          _package.logger.debug(`${logPrefix}, patch scil.Utils.alert`);
+          _package.logger.debug(`${logPrefix}, scil.Utils.alert patch`);
           _package.initHelmPatchScilAlert(); // patch immediately
 
           const t2: number = performance.now();

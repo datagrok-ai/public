@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
 import type {IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import type {IOrgHelmWebEditor, IOrgMonomers} from '@datagrok/helm-web-editor/src/types/org-helm';
+import type {IOrgHelmWebEditor, IOrgHelmMonomers} from '@datagrok/helm-web-editor/src/types/org-helm';
 
 import {timeout} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -160,7 +160,7 @@ export class HelmPackage extends DG.Package {
     };
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {
-      constructor(base: IOrgMonomers) {
+      constructor(base: IOrgHelmMonomers) {
         return new Proxy(base, {
           get(target: any, p: string | symbol, _receiver: any): any {
             return target[p];
@@ -177,7 +177,7 @@ export class HelmPackage extends DG.Package {
           },
         });
       }
-    }(org.helm.webeditor.Monomers) as IOrgMonomers;
+    }(org.helm.webeditor.Monomers) as IOrgHelmMonomers;
 
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor = new class {
