@@ -286,19 +286,23 @@ export class PatternAppRightSection {
     return svgDownloadButton;
   }
 
-  private createShareLinkButton(): HTMLButtonElement {
+  private createShareLinkButton(): HTMLDivElement {
+    const div = ui.div();
     const shareLinkButton = ui.button(
       ui.iconFA('link'),
       () => navigator.clipboard.writeText(window.location.href)
-        .then(() => grok.shell.info('Link to pattern copied to clipboard'))
+        .then(() => grok.shell.info('Link to pattern copied to clipboard')),
     );
+    ui.tooltip.bind(div,
+      () =>  shareLinkButton.disabled ? `Save pattern to share link` : `Copy pattern link`);
 
+    div.append(shareLinkButton);
     this.eventBus.patternHasUnsavedChanges$.subscribe((hasUnsavedChanges: boolean) => {
       shareLinkButton.disabled = hasUnsavedChanges;
     });
 
     ui.tooltip.bind(shareLinkButton, 'Share pattern link');
-    return shareLinkButton;
+    return div;
   }
 
   private createSavePatternButton(): HTMLElement {
