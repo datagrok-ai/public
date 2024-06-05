@@ -26,8 +26,8 @@ export interface IDartApi {
   grok_Set_CurrentObject(x: any, freeze: Bool): any;
   grok_Get_CurrentViewer(): any;
   grok_Set_CurrentViewer(x: any): any;
-  grok_Get_LastError(): any;
-  grok_Set_LastError(s: String): any;
+  grok_Get_LastError(): Promise<any>;
+  grok_Clear_LastError(): any;
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
@@ -1288,7 +1288,7 @@ export interface IDartApi {
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
   grok_UI_WaitBox(jsugetElement: any): any;
-  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool): any;
+  grok_UI_ShowPopup(element: any, anchor: any, vertical: Bool, dx: Num, dy: Num): any;
   grok_UI_Markdown(x: String): any;
   grok_UI_Tags(x: any): any;
   grok_UI_Context_Actions(x: any): any;

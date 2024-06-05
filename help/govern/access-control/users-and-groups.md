@@ -5,6 +5,12 @@ unlisted: false
 sidebar_position: 1
 ---
 
+```mdx-code-block
+import NewUser from '../img/create-new-user-dialog.png';
+import NewServiceUser from '../img/create-new-service-user-dialog.png';
+import InviteUser from '../img/invite-a-friend-dialog.png';
+```
+
 ## Users
 
 A _user_ represents the identity of a person, and is used for [group](#groups) and role
@@ -35,9 +41,35 @@ operations apply to it, like getting its URL or using it as a parameter in the
 
 ### Managing users
 
-To learn how to add users, see [Add users](../../deploy/complete-setup/configure-auth.md#add-users). 
+To create a new user: 
+1. On the **Sidebar**, click **Browse (<FAIcon icon="fa-solid fa-compass"/>) > Platform > Users**.
+1. Click the **NEW** button and select the option you want:
 
-To manage users, go to **Sidebar > Browse (<FAIcon icon="fa-solid fa-compass"/>) > Platform > Users**, find the user you want, and right-click it to access available actions.
+   * **User...**: Select this option to create a user without sending an invitation to sign up. This option is typically used to create the initial admin users who can later invite other users to sign up via URL or email invitation, or add users using services like OAuth or OpenID.
+     <details>
+     <summary>Instructions</summary>
+     1. In the **New User** dialog, enter the user's name, email, and login.
+     <img src={NewUser} width="200px"/>
+     1. Click **OK** to create a user.
+     </details> 
+
+   * **Service user...**: Choose this option to create a service user account.
+     <details>
+     <summary>Instructions</summary>
+     1. In the **New Service User** dialog, enter the login for the service user.
+     <img src={NewServiceUser} width="200px"/>
+     1. Click **OK** to create the service user.   
+     </details>
+
+   * **Invite a Friend...**: Select this option to email an invitation to sign up to the platform.
+     <details>
+     <summary>Instructions</summary>
+     1. In the **Invite User** dialog, enter the email address of the user you want to invite.
+     <img src={InviteUser} width="200px"/>
+     1. Click OK to send the invitation.
+     </details>
+
+To manage users, in the **Users View**, find the user you want, and right-click it to access available actions.
 
 Only [Administrators](#group-types) with global permissions can add or remove users.
 

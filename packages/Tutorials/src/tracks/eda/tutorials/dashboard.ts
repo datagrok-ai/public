@@ -4,7 +4,8 @@ import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, Observable} from 'rxjs';
-
+import { delay } from '@datagrok-libraries/utils/src/test';
+import { waitForElementClick } from './utils';
 
 export class DashboardTutorial extends Tutorial {
   get name(): string {
@@ -97,18 +98,18 @@ export class DashboardTutorial extends Tutorial {
 
     await this.openPlot('bar chart', (x) => x.type === DG.VIEWER.BAR_CHART);
 
-    const projectPane = grok.shell.sidebar.getPane('Projects');
     const projectPaneHints = [
-      projectPane.header,
-      $('button.ui-btn').filter((idx, el) => el.textContent?.toLowerCase() === 'upload')[0]!,
+      $('button.ui-btn').filter((idx, el) => el.textContent?.toLowerCase() === 'save')[0]!,
     ];
-    const uploadProjectInfo = 'Click on the "UPLOAD" button in the scratchpad.';
+    const uploadProjectInfo = 'Click on the "Save" button in the scratchpad.';
 
     const projectName = 'Coffee sales dashboard';
-    const projectDlg = await this.openDialog('Save a project', 'Upload project', projectPaneHints, uploadProjectInfo);
-    const projectNameHint = $(projectDlg.root).find('div.grok-project-summary > input.ui-input-editor')[0];
-    await this.action(`Set the project name to "${projectName}"`, interval(1000).pipe(filter(() => projectName ===
-      (<HTMLInputElement>$(projectDlg.root).find('div.grok-project-summary > input.ui-input-editor')[0])?.value)),
+    const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo);
+    await delay(1000);
+    const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
+
+    await this.action(`Set the project name to "${projectName}"`, interval(2000).pipe(filter(() => projectName ===
+      (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
       projectNameHint);
 
     await this.action('Enable Data sync', new Observable((subscriber: any) => {
@@ -121,8 +122,14 @@ export class DashboardTutorial extends Tutorial {
       $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
 
-    await this.openViewByType('Open the project gallery', DG.View.PROJECTS,
-      this.getSidebarHints('Data', DG.View.PROJECTS));
+    const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
+    await this.action(
+      'Find Browse on the sidebar and click', 
+      waitForElementClick(browseSidebar), browseSidebar);
+
+    const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
+
+    await this.action('Open the project gallery', waitForElementClick(dashboardsLabel), dashboardsLabel);
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));

@@ -90,6 +90,11 @@ for (const lang of langs) {
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
       });
+
+      test('Empty dataframe', async () => {
+        const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
+        expect(result.rowCount, 0);
+      });
     }
 
     if (!['JavaScript', 'Grok'].includes(lang)) {

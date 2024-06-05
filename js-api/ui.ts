@@ -586,13 +586,9 @@ export function bind(item: any, element: HTMLElement, options?: {contextMenu: bo
 }
 
 /** Shows popup with the [element] near the [anchor].
- * tooltip, and popup menu.
- * @param {Element} element
- * @param {Element} anchor
- * @param {boolean} vertical
- * @returns {Element}. */
-export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false): Element {
-  return api.grok_UI_ShowPopup(element, anchor, vertical);
+ * tooltip, and popup menu. */
+export function showPopup(element: HTMLElement, anchor: HTMLElement, options?: {vertical?: boolean, dx?: number, dy?: number}): Element {
+  return api.grok_UI_ShowPopup(element, anchor, options?.vertical ?? false, options?.dx ?? 0, options?.dy ?? 0);
 }
 
 /**
@@ -1685,6 +1681,11 @@ export class ObjectHandler {
   /** Type of the object that this meta handles. */
   get type(): string {
     throw 'Not defined.';
+  }
+
+  /** URL of help page for the object that this meta handles. */
+  get helpUrl(): string | null {
+    return null;
   }
 
   get name(): string { return `${this.type} handler`; }

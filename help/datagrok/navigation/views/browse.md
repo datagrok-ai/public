@@ -23,7 +23,7 @@ preview, manage, and access anything in Datagrok. To open **Browse**, click the 
 
 **Browse** is divided in two sections:
 
-* **Scratchpad** (<FAIcon icon="fa-solid fa-display" size="1x"/>): Located in the upper section, **Scratchpad** shows all open entities, grouped by [project](../../concepts/project/project.md). It's used to manage and save your work in progress. [Learn more about Scratchpad](#scratchpad).
+* **Scratchpad** (<FAIcon icon="fa-solid fa-display" size="1x"/>): Located in the upper section, [Scratchpad](#scratchpad) shows all open entities, grouped by [project](../../concepts/project/project.md). It's used to manage and save your work in progress.
 * **Main tree** (<FAIcon icon="fa-solid fa-cloud" size="1x"/>): The lower section shows all entities saved to the server and is your primary navigation and data management tool, organized as follows:
    * **My stuff**: This is your personal directory. In addition to entities you create or others share with you, it contains entities relevant to you like your favorites or recent items.
    * **Namespaces**: Here, entities are organized by _project_, typically aligned with organizational use, such as by project or department. To learn how to create projects and add entities to them, see [Projects](../../concepts/project/project.md).
@@ -32,7 +32,7 @@ preview, manage, and access anything in Datagrok. To open **Browse**, click the 
       * Apps
       * [Files](../../../access/files/files.md)
       * [Databases](../../../access/databases/databases.md) (includes available connections, queries, database schemas, tables, and columns)
-      * **Platform**: Contains galleries for [plugins](../../plugins.md), [functions](../../concepts/functions/functions.md) (queries, scripts, [OpenAPI](../../../access/open-api.md)), users, groups, [connectors](../../../access/databases/connectors/connectors.md), notebooks, predictive models, repositories, dockers, [layouts](../../../visualize/view-layout.md), as well as schemas and entity types for [sticky meta](../../../govern/catalog/sticky-meta.md)
+      * **Platform**: Contains galleries for [plugins](../../plugins.md), [functions](../../concepts/functions/functions.md) (queries, scripts, [OpenAPI](../../../access/open-api.md)), [users](../../../govern/access-control/users-and-groups.md#users), [groups](../../../govern/access-control/users-and-groups.md#groups), [connectors](../../../access/databases/connectors/connectors.md), notebooks, predictive models, repositories, dockers, [layouts](../../../visualize/view-layout.md), as well as schemas and entity types for [sticky meta](../../../govern/catalog/sticky-meta.md)
    
 Above the **Scratchpad**, is a **Top Menu**. From here, you can do the following:
 
@@ -42,7 +42,7 @@ Above the **Scratchpad**, is a **Top Menu**. From here, you can do the following
 * Toggle the **Browse** view (<FAIcon icon="fa-solid fa-folder-tree" size="1x"/>)
 * Refresh the **Browse** view (<FAIcon icon="fa-solid fa-arrows-rotate" size="1x"/>)
 
-You may also see view-specific options, such as the **Create new connection** button for [databases](../../../access/databases/databases.md).
+For active [views](#entity-views), you may also see view-specific options, such as the **Create new connection** button for [databases](../../../access/databases/databases.md).
 
 ## Controls
 
@@ -77,29 +77,6 @@ the change.
 impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/project.md#moving-entities-between-projects).
 
 :::
-
-### Favorites
-
-To add an entity to favorites, do any of the following:
-
-* Drag and drop the entity on the **Favorites** directory under **My stuff**.
-* Click the **Favorites** directory under **My stuff**. This opens the
-  **Favorites** view. Drag and drop the entity on the view.
-* Use the **Context Panel**
-  1. In the **Browse** tree, click the entity you want. The **Context Panel**
-     updates with entity-specific information and actions.
-  1. On the **Context Panel** next to the entity's name, click the **Add to
-     favorites (<FAIcon icon="fa-regular fa-star"/>) icon**. The color of the
-     icon changes to orange, and the entity is added to your favorites.
-
-You can later access favorites either from the **Browse** tree, or by clicking
-the **Favorites (<FAIcon icon="fa-regular fa-star"/>) icon** on the **Sidebar**
-or on top of the **Context Panel**. 
-
-To remove an entity from favorites, use the context menu. Alternatively, on the
-**Context Panel** next to the entity's name, click the orange **Add to favorites
-(<FAIcon icon="fa-regular fa-star"/>) icon**. The color changes to neutral, and
-the entity is removed from your favorites.
 
 ## Entity search
 
@@ -161,24 +138,23 @@ author.joined > -5d
 ## Scratchpad
 
 **Scratchpad** (<FAIcon icon="fa-solid fa-display"/>) is located in the upper
-section of the **Browse** view and is used for managing and saving your work related to tables and visualizations. 
+section of the **Browse** view and is used to manage and save your work on tables and visualizations. 
 
 When you open a table in Datagrok, it's loaded in your browser and appears on the
-**Scratchpad** within a project context:
+**Scratchpad**:
 
-* Newly created tables like those generated from queries or opened files are temporarily placed inside **New project** until you save them to the server.
-* Tables that are part of existing projects open together with their projects, visible within those projects on the **Scratchpad**.
+* Newly created tables (e.g., those generated from queries or opened files) are placed inside **New project** until you save them to the server.
+* Existing tables open together with their projects, visible within those projects on the **Scratchpad**.
 
 ![](img/scratchpad-open-entities.gif)
 
 All open entities are stored in your browser's memory. If
-you refresh or close your browser without saving, you will lose unsaved
-work.
+you refresh or close your browser without saving your work to the server, you will lose it.
 
 ### Uploading changes
 
 When you upload an entity to the server, it needs to be assigned to a project.
-By default, newly created entities are saved to your personal project in **My
+By default, newly created entities are saved to your personal project under **My
 stuff**. For changes to entities that belong to existing projects, you have [several saving options](../basic-tasks/basic-tasks.md#save). 
 
 Post-upload, the **SAVE** button on the **Scratchpad** and the
@@ -219,7 +195,7 @@ size="1x"/>) icon**.
 
 ## Entity views
 
-Similar to a Windows Explorer, clicking an entity in the **Browse** tree opens a
+Similar to a Windows Explorer, clicking an entity in the **Browse** tree opens an
 entity-specific view alongside it. These views vary depending on what you click.
 For example, clicking a file shows its contents, while clicking an entity gallery like **Layouts**, shows all entities of that type.
 
@@ -286,7 +262,7 @@ entity](#entity-search), such as by name or tag.
 </TabItem>
 </Tabs>
 
-Like other _views_, _entity views_ are fully interactive and support drag-and-drop and docking. To learn more about views, see [User interface](../../navigation/navigation.md).
+Like other _views_, _entity views_ are fully interactive and support drag-and-drop and docking. To learn more about the Datagrok UI, see [User interface](../../navigation/navigation.md).
 
 ## Home page
 
