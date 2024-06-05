@@ -1032,7 +1032,7 @@ export interface IBarChartSettings {
 
   showValueSelector: boolean;
 
-  verticalMode: boolean;
+  orientation: string;
 
   /// A categorical column to split data on (each bar represents a category)
   split: string;
