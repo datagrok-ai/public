@@ -20,6 +20,14 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+## 2024-06-05 1.18.9
+
+### Addressed Issues
+
+* (Bug) GROK-15605: #2839: Show Help in "Settings \- Windows" remains checked always 
+* (Bug) GROK-15834: Table Linking: wrong results when multiple duplicate keys are present in both master and details table 
+
+
 ## 2024-05-22 1.18.8
 
 ### Addressed Issues
