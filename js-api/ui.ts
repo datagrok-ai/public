@@ -587,8 +587,9 @@ export function bind(item: any, element: HTMLElement, options?: {contextMenu: bo
 
 /** Shows popup with the [element] near the [anchor].
  * tooltip, and popup menu. */
-export function showPopup(element: HTMLElement, anchor: HTMLElement, options?: {vertical?: boolean, dx?: number, dy?: number}): Element {
-  return api.grok_UI_ShowPopup(element, anchor, options?.vertical ?? false, options?.dx ?? 0, options?.dy ?? 0);
+export function showPopup(element: HTMLElement, anchor: HTMLElement, options?: {vertical?: boolean, dx?: number,
+  dy?: number, smart?: boolean}): Element {
+  return api.grok_UI_ShowPopup(element, anchor, options?.vertical ?? false, options?.dx ?? 0, options?.dy ?? 0, options?.smart ?? true);
 }
 
 /**
