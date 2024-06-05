@@ -15,10 +15,10 @@ import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO,
-  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, TIMEOUT} from './ui-constants';
+  WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME} from './ui-constants';
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
-  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS} from './scripting-tools';
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
 
 import './css/app-styles.css';
@@ -198,7 +198,7 @@ export class DiffStudio {
           await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
       }
     },
-    TIMEOUT.APP_RUN_SOLVING);
+    UI_TIME.APP_RUN_SOLVING);
 
     return this.solverView;
   } // runSolverApp
@@ -276,7 +276,7 @@ export class DiffStudio {
 
     this.toRunWhenFormCreated = true;
 
-    setTimeout(() => this.runSolving(true), TIMEOUT.PREVIEW_RUN_SOLVING);
+    setTimeout(() => this.runSolving(true), UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
@@ -302,6 +302,9 @@ export class DiffStudio {
   private isSolvingSuccess = false;
   private toChangePath = false;
   private toRunWhenFormCreated = true;
+  private toCheckPerformance = true;
+  private toShowPerformanceDlg = true;
+  private solvingTimeLimit = UI_TIME.SOLVING_DEFAULT;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
@@ -312,6 +315,7 @@ export class DiffStudio {
   private exportButton: HTMLButtonElement;
   private sensAnIcon: HTMLElement;
   private fittingIcon: HTMLElement;
+  private performanceDlg: DG.Dialog | null = null;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
 
@@ -343,7 +347,7 @@ export class DiffStudio {
     };
 
     if (!toAddTableView)
-      setTimeout(dockTabCtrl, TIMEOUT.PREVIEW_DOCK_EDITOR);
+      setTimeout(dockTabCtrl, UI_TIME.PREVIEW_DOCK_EDITOR);
     else
       dockTabCtrl();
 
@@ -573,6 +577,8 @@ export class DiffStudio {
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
+    const noCustomSettings = (ivp.solverSettings === DEFAULT_SOLVER_SETTINGS);
+
     try {
       if (this.toChangePath)
         this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
@@ -586,6 +592,9 @@ export class DiffStudio {
 
       if ((step <= 0) || (step > finish - start))
         return;
+
+      if (this.toCheckPerformance && noCustomSettings)
+        ivp.solverSettings = `{maxTimeMs: ${this.solvingTimeLimit}}`;
 
       const scriptText = getScriptLines(ivp).join('\n');
       const script = DG.Script.create(scriptText);
@@ -641,9 +650,13 @@ export class DiffStudio {
       this.isSolvingSuccess = true;
       this.runPane.header.hidden = false;
     } catch (error) {
-      if (error instanceof CallbackAction)
-        grok.shell.warning(error.message);
-      else {
+      if (error instanceof CallbackAction) {
+        if (this.toShowPerformanceDlg && noCustomSettings) {
+          ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
+          await this.showPerformanceDlg(ivp, inputsPath, error.message);
+        } else
+          grok.shell.warning(error.message);
+      } else {
         this.clearSolution();
         this.isSolvingSuccess = false;
         grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
@@ -945,5 +958,32 @@ export class DiffStudio {
       if (!(err instanceof CallbackAction))
         throw new Error((err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE);
     }
+  }
+
+  /** Close previousely opened performance dialog */
+  private closePerformanceDlg(): void {
+    if (this.performanceDlg) {
+      this.performanceDlg.close();
+      this.performanceDlg = null;
+    }
+  }
+
+  /** Show performance dialog */
+  private async showPerformanceDlg(ivp: IVP, inputsPath: string, warningMsg: string): Promise<void> {
+    this.closePerformanceDlg();
+
+    this.performanceDlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
+    this.solverView.append(this.performanceDlg);
+    ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
+    ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
+
+    this.performanceDlg.add(ui.label(`${warningMsg}. ${WARNING.CONTINUE}`))
+      .onCancel(() => this.performanceDlg.close())
+      .onOK(async () => {
+        ivp.solverSettings = DEFAULT_OPTIONS.NO_CHECKS;
+        this.performanceDlg.close();
+        await this.solve(ivp, inputsPath);
+      })
+      .show();
   }
 };

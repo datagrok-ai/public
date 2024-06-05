@@ -77,7 +77,8 @@ export function jacobian(t: number, y: Float64Array, f: Func, eps: number,
 /** Error messeges */
 export enum ERROR_MSG {
   MRT_FAILS = 'The modified Rosenbrock triple method fails',
-  ROS3PW_FAILS = 'The ROS3Pw method fails',
+  ROS3PRW_FAILS = 'The ROS3PRw method fails',
+  ROS34PRW_FAILS = 'The ROS34PRw method fails',
 };
 
 /** Callback action */
@@ -90,4 +91,5 @@ export class CallbackAction extends Error {
 /** Default options of the solver */
 export enum DEFAULT_OPTIONS {
   SCRIPTING = '{maxIterations: 1}',
+  NO_CHECKS = '{ }',
 }

@@ -238,7 +238,7 @@ export function ros3prw(odes: ODEs, callback?: Callback): DG.DataFrame {
         if (tNew == t) {
           memFree(wasmMemory.off1);
           memFree(wasmMemory.off2);
-          throw new Error(ERROR_MSG.ROS3PW_FAILS);
+          throw new Error(ERROR_MSG.ROS3PRW_FAILS);
         }
       } else {
         if (errmax > ERR_CONTR)

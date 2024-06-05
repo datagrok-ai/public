@@ -14,6 +14,6 @@ export class TimeCheckerCallback extends Callback {
 
   public onIterationStart(): void {
     if (performance.now() - this.startingTime > this.maxTime)
-      throw new CallbackAction(`Max computation time exceeded (${this.maxTime} ms)`);
+      throw new CallbackAction(`Max time exceeded (${this.maxTime} ms)`);
   }
 }

@@ -29,6 +29,8 @@ export enum HINT {
   SAVE = 'Save changes',
   SENS_AN = 'Run sensitivity analysis',
   FITTING = 'Run fitting inputs',
+  CONTINUE = 'Continue computations',
+  ABORT = 'Abort computations',
 };
 
 /** UI titles */
@@ -102,6 +104,7 @@ export enum WARNING {
   TITLE = 'WARNING',
   CHECK = 'Show this warning',
   MES = 'Overwrite the current model?',
+  CONTINUE = 'Continue?',
 };
 
 /** Other UI constants */
@@ -174,11 +177,12 @@ export enum PATH {
   PARAM = `?params:`,
 };
 
-/** UI timeouts */
-export enum TIMEOUT {
+/** UI time constants */
+export enum UI_TIME {
   PREVIEW_DOCK_EDITOR = 1000,
   PREVIEW_RUN_SOLVING = 1100,
   APP_RUN_SOLVING = 1100,
+  SOLVING_DEFAULT = 10,
 };
 
 /** Numerical methods names */
@@ -187,4 +191,3 @@ export enum METHOD {
   ROS3PRw = 'ros3prw',
   ROS34PRw = 'ros34prw',
 };
-

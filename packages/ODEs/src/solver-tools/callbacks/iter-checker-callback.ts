@@ -16,6 +16,6 @@ export class IterCheckerCallback extends Callback {
     ++this.currentIter;
 
     if (this.currentIter > this.maxIter)
-      throw new CallbackAction(`Max number of iterations exceeded (${this.maxIter})`);
+      throw new CallbackAction(`Max iterations count exceeded (${this.maxIter})`);
   }
 }
