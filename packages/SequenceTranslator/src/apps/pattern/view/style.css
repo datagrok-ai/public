@@ -70,3 +70,19 @@
   padding-top: 8px;
   padding-bottom: 8px
 }
+
+.edit-monomer-popup {
+  padding: 5px 5px 0 5px;
+}
+
+.edit-monomer-popup > .ui-input-choice > .ui-input-editor {
+  width: 108px;
+}
+
+.edit-terminals-field > .ui-input-text > .ui-input-editor {
+  width: 90px;
+}
+
+.add-delete-monomer-div {
+  justify-content: end;
+}

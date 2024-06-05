@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NUCLEOTIDES} from '../../../common/model/const';
-import {STRAND, STRANDS, TERMINUS} from '../../model/const';
+import {STRAND, STRANDS, TERMINI, TERMINUS} from '../../model/const';
 import {PatternConfiguration} from '../../model/types';
 import {isOverhangNucleotide} from '../../model/utils';
 import {LEGEND_PADDING, SVG_CIRCLE_SIZES, SVG_ELEMENT_COLORS, SVG_TEXT_FONT_SIZES} from './const';
@@ -10,6 +10,7 @@ import {SVGElementFactory} from './svg-element-factory';
 import {TextDimensionsCalculator} from './text-dimensions-calculator';
 import {computeTextColorForNucleobaseLabel, getNucleobaseColorFromStyleMap, getNucleobaseLabelForCircle} from './utils';
 import { EventBus } from '../../model/event-bus';
+import { DataManager } from '../../model/data-manager';
 
 const NUMERIC_LABEL_PADDING = 5;
 const SENSE_STRAND_HEIGHT = SVG_TEXT_FONT_SIZES.NUCLEOBASE +
@@ -28,13 +29,14 @@ export class StrandsBlock extends SVGBlockBase {
     config: PatternConfiguration,
     yShift: number,
     eventBus: EventBus,
+    dataManager: DataManager
   ) {
     super(svgElementFactory, config, yShift);
     const strandTypes = STRANDS.filter((strandType) => config.nucleotideSequences[strandType].length > 0);
 
     yShift += MODIFICATION_LABEL_WIDTH;
     this.strands = strandTypes
-      .map((strand) => new SingleStrandBlock(this.svgElementFactory, config, yShift, strand, eventBus));
+      .map((strand) => new SingleStrandBlock(this.svgElementFactory, config, yShift, strand, eventBus, dataManager));
 
     this.labels = strandTypes.map(
       (strandType, idx) =>
@@ -65,12 +67,14 @@ class SingleStrandBlock extends SVGBlockBase {
   private _svgElements: SVGElement[];
   private nucleotideNumericLabels: (number | null)[];
   private nucleotidesWithoutOverhangs: string[];
+  private nucleotideBaseChoices: string[];
   constructor(
     protected svgElementFactory: SVGElementFactory,
     protected config: PatternConfiguration,
     protected yShift: number,
     private strand: STRAND,
     private eventBus: EventBus,
+    private dataManager: DataManager
   ) {
     super(svgElementFactory, config, yShift);
 
@@ -79,6 +83,11 @@ class SingleStrandBlock extends SVGBlockBase {
     
     // WARNING: should be computed before creating circles
     this.nucleotideNumericLabels = this.computeNucleotideNumericLabels();
+
+    this.nucleotideBaseChoices = this.dataManager.fetchAvailableNucleotideBases()
+    .sort(
+      (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+    );
 
     if (this.strand === STRAND.ANTISENSE) {
       this.config.phosphorothioateLinkageFlags[this.strand].reverse();
@@ -148,28 +157,74 @@ class SingleStrandBlock extends SVGBlockBase {
   private createNucleotideCircleElements(
     nucleotide: string,
     index: number,
-    defaultShift: {x: number, y: number}
+    defaultShift: { x: number, y: number }
   ): (SVGElement | null)[] {
     const color = getNucleobaseColorFromStyleMap(nucleotide);
-    const centerPosition = {...defaultShift, x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER};
+    const centerPosition = { ...defaultShift, x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER };
 
     const circle = this.svgElementFactory
       .createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color, 'pointer');
 
     const strandIdx = this.strand === STRAND.ANTISENSE ?
       this.config.nucleotideSequences[this.strand].length - 1 - index : index;
-      circle.onclick = (e) => {
+
+    circle.onclick = (e) => {
       e.stopPropagation();
       e.preventDefault();
-      DG.Menu.popup()
-        .item('Remove', () => {
+
+      const deleteButton = ui.button(
+        ui.icons.delete(() => { }),
+        () => {
           this.eventBus.removeNucleotide(this.strand, strandIdx);
-        })
-        .item('Add', () => {
+          popup?.remove();
+        }, 'Remove selected monomer'
+      );
+
+      const addButton = ui.button(
+        ui.icons.add(() => { }),
+        () => {
           this.eventBus.addNucleotide(this.strand, strandIdx);
-        })
-        .item('Edit', () => { })
-        .show();
+          popup?.remove();
+        }, 'Add monomer after selected'
+      );
+
+      const removeTooltip = () => {
+        const tooltip = document.getElementsByClassName('d4-tooltip');
+        if (tooltip.length)
+          (tooltip[0] as HTMLElement).style.display = 'none'; 
+      };
+
+      const modificationEdit = ui.choiceInput<string>('', nucleotide, this.nucleotideBaseChoices, () => {
+        this.eventBus.setNucleotide(this.strand, strandIdx, modificationEdit.value!);
+        removeTooltip();
+        popup?.remove();
+      });
+      ui.tooltip.bind(modificationEdit.input, 'Change modification');
+
+      const terminalsEdit = ui.div('', 'edit-terminals-field');
+      if (index === 0 || index === this.config.nucleotideSequences[this.strand].length - 1) {
+        const terminus = this.strand === STRAND.SENSE ?
+          index === 0 ? TERMINUS.FIVE_PRIME : TERMINUS.THREE_PRIME :
+          index === 0 ? TERMINUS.THREE_PRIME : TERMINUS.FIVE_PRIME;
+        const initialValue = this.eventBus.getTerminalModifications()[this.strand][terminus];
+        const terminalsInput = ui.stringInput(terminus, initialValue);
+        terminalsInput.onInput(() => {
+          removeTooltip();
+          const newValue = terminalsInput.value;
+          if (newValue === null)
+            return;
+          this.eventBus.updateTerminusModification(this.strand, terminus, newValue);
+        });
+        ui.tooltip.bind(terminalsInput.input, 'Enter terminal modification');
+        terminalsEdit.append(terminalsInput.root);
+      };
+
+      const div = ui.divV([
+        modificationEdit.root,
+        terminalsEdit,
+        ui.divH([deleteButton, addButton], 'add-delete-monomer-div'),
+      ], 'edit-monomer-popup')
+      const popup = ui.showPopup(div, ui.div(), { dx: e.clientX, dy: e.clientY, smart: false });
     };
 
     const nonModifiedNucleotideLetterLabel = this.createNucleotideLetterLabel(index, defaultShift, nucleotide);

@@ -21,7 +21,7 @@ export class PatternAppRightSection {
     private eventBus: EventBus,
     private dataManager: DataManager,
   ) {
-    this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus);
+    this.svgDisplay = SvgDisplayManager.createSvgDiv(eventBus, this.dataManager);
     this.loadControlsManager = new PatternLoadControlsManager(this.eventBus, this.dataManager);
   };
 

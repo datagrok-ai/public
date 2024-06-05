@@ -7,6 +7,7 @@ import {TitleBlock} from './title-block';
 import {LegendBlock} from './legend-block';
 import {LEGEND_PADDING, TITLE_SHIFT} from './const';
 import { EventBus } from '../../model/event-bus';
+import { DataManager } from '../../model/data-manager';
 
 export class NucleotidePatternSVGRenderer {
   private title: TitleBlock;
@@ -14,7 +15,7 @@ export class NucleotidePatternSVGRenderer {
   private legend: LegendBlock;
   private svgElementFactory = new SVGElementFactory();
 
-  constructor(patternConfig: PatternConfiguration, private eventBus: EventBus) {
+  constructor(patternConfig: PatternConfiguration, private eventBus: EventBus, private dataManager: DataManager) {
     const config = _.cloneDeep(patternConfig);
 
     let heightShift = TITLE_SHIFT;
@@ -22,7 +23,7 @@ export class NucleotidePatternSVGRenderer {
     this.title = new TitleBlock(this.svgElementFactory, config, heightShift);
     heightShift += this.title.getContentHeight();
 
-    this.strands = new StrandsBlock(this.svgElementFactory, config, heightShift, eventBus);
+    this.strands = new StrandsBlock(this.svgElementFactory, config, heightShift, eventBus, dataManager);
     heightShift += this.strands.getContentHeight();
 
     this.legend = new LegendBlock(this.svgElementFactory, config, heightShift, eventBus);

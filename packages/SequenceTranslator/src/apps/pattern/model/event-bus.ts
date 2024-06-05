@@ -345,6 +345,12 @@ export class EventBus {
     });
     this._nucleotideSequences$.next(newNucleotideSequences);
 
+    //update modification labels
+    const labelledMOdifications = this.getNucleotidesWithModificationLabels();
+    if (labelledMOdifications.length) {
+      this._nucleotidesWithModificationLabels$.next([newNucleobase]);
+    }
+
     const labelledNucleotides = this._modificationsWithNumericLabels$.getValue();
     if (!labelledNucleotides.includes(newNucleobase))
       this.updateModificationsWithNumericLabels(labelledNucleotides.concat(newNucleobase));
@@ -434,9 +440,16 @@ export class EventBus {
     this.updatePhosphorothioateLinkageFlags(flags);
   }
 
-  setNucleotide(strand: StrandType, index: number, value: string) {
+  setNucleotide(strand: StrandType, index: number, value: string, hideModificationLabel?: boolean) {
     const sequences = this.getNucleotideSequences();
     sequences[strand][index] = value;
+
+    //update modification labels
+    const labelledNucleotides = this.getNucleotidesWithModificationLabels();
+    if (labelledNucleotides.length && !labelledNucleotides.includes(value)) {
+      this._nucleotidesWithModificationLabels$.next(labelledNucleotides.concat(value))
+    }
+    //update numeric labels
     const labelledModifications = this.getModificationsWithNumericLabels();
     this.updateModificationsWithNumericLabels(labelledModifications.concat(value));
     this.updateNucleotideSequences(sequences);
