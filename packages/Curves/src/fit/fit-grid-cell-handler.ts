@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
+  FitChartCellRenderer,
   getChartData,
   getColumnChartOptions,
   getDataFrameChartOptions,
@@ -17,7 +18,7 @@ import {
   mergeProperties,
   substituteZeroes
 } from './fit-renderer';
-import {CellRenderViewer} from './cell-render-viewer';
+import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from './const';
 

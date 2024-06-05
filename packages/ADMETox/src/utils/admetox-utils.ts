@@ -5,11 +5,12 @@ import { _package } from '../package-test';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import '../css/admetox.css';
 import { PieChartCellRenderer } from '../../../PowerGrid/src/sparklines/piechart';
+import { CellRenderViewer } from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import { STORAGE_NAME, KEY, TEMPLATES_FOLDER, Model, ModelColoring, Subgroup, Template } from './constants';
 
 export let DEFAULT_LOWER_VALUE = 0.8;
 export let DEFAULT_UPPER_VALUE = 1.0;
-export let DEFAULT_APPLICABILITY_VALUE = 0.5;
+export let DEFAULT_APPLICABILITY_VALUE = 0.4;
 export let properties: any;
 
 async function getAdmetoxContainer() {
@@ -176,7 +177,7 @@ function createPieSettings(columnNames: string[], properties: any, probabilities
           name: modelName,
           lowThreshold: min,
           highThreshold: max,
-          weight: weightProperty.object.weight,
+          weight: Math.random(),
           applicability: DEFAULT_APPLICABILITY_VALUE,
           probabilities: Object.entries(probabilities)
             .filter(([key, value]) => key.includes(modelName))
@@ -299,7 +300,6 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const view = grok.shell.tableView(semValue.cell.dataFrame.name);
   const gridCol = view.grid.col(semValue.cell.column.name);
   const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
-  const container = ui.div();
   const params = await getQueryParams();
   const result = await runAdmetox(`smiles\n${semValue.cell.value}`, params, 'true');
   const probabilities: { [key: string]: number[] } = {};
@@ -311,15 +311,9 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const pieSettings = createPieSettings(params.split(','), properties, probabilities);
   pieSettings.sectors.values = result!;
   gridCol!.settings = pieSettings;
-  const canvas = ui.canvas();
-  canvas.width = 300;
-  canvas.height = 200;
-  const ctx = canvas.getContext('2d');
   const pieChartRenderer = new PieChartCellRenderer();
 
-  pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
-  container.appendChild(canvas);
-  return container;
+  return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
