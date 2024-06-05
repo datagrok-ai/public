@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.8 (2023-06-05)
+
+Fix the infinite loading of tests.
+
 ## 4.2.7 (2023-06-05)
 
 Fix the lastError problem in the test engine.
