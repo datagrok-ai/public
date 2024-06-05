@@ -1,0 +1,50 @@
+{
+  "name": "andrew-sequence",
+  "friendlyName": "andrew-sequence",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "^4.2.7"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-andrew-sequence": "webpack && grok publish",
+    "release-andrew-sequence": "webpack && grok publish --release",
+    "build-andrew-sequence": "webpack",
+    "build": "webpack",
+    "debug-andrew-sequence-dev": "webpack && grok publish dev",
+    "release-andrew-sequence-dev": "webpack && grok publish dev --release",
+    "debug-andrew-sequence-local": "webpack && grok publish local",
+    "release-andrew-sequence-local": "webpack && grok publish local --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public",
+    "directory": "packages/andrew-sequence"
+  }
+}
