@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -33,7 +33,7 @@
     "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "debug-demo": "grok publish",
+    "debug-demo": "grok publish public --release",
     "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",
     "build": "tsc && webpack",
