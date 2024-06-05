@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.7 (2023-06-05)
+
+Fix the lastError problem in the test engine.
+
 ## 4.2.6 (2023-05-29)
 
 ### Features
