@@ -112,20 +112,6 @@ export class PatternAppRightSection {
     ], 'st-strands-lengths-div');
   }
 
-  private createModificationLabelsToggle(): HTMLElement {
-    const modificationLabels = ui.boolInput('Modification labels', 
-    this.eventBus.modificationLablesVisible(), () => {
-      this.eventBus.togglemodificationLables(modificationLabels.value!);
-    });
-    this.eventBus.patternLoaded$.subscribe(() => {
-      const loadedValue = this.eventBus.modificationLablesVisible();
-      if (modificationLabels.value !== loadedValue)
-        modificationLabels.value = loadedValue;
-    });
-    ui.tooltip.bind(modificationLabels.captionLabel, 'Toggle modification labels');
-    return modificationLabels.root;
-  }
-
   private createAntisenseStrandToggle(): HTMLElement {
     const toggleAntisenseStrand = ui.switchInput(``,
       this.eventBus.isAntisenseStrandActive(), () => {
@@ -256,6 +242,24 @@ export class PatternAppRightSection {
     allPtoActivationInput.root.classList.add('st-all-pto-checkbox');
 
     return allPtoActivationInput.root;
+  }
+
+  private createModificationLabelsToggle(): HTMLElement {
+    const initialValue = !!this.eventBus.getNucleotidesWithModificationLabels().length;
+    const modificationLabels = ui.boolInput('Modification labels', initialValue);
+
+    modificationLabels.onInput(() => {
+      this.eventBus.setAllModificationLabels(modificationLabels.value!);
+    });
+
+    this.eventBus.nucleotidesModificationLabelsChanged$.subscribe(() => {
+      const labels = !!this.eventBus.getNucleotidesWithModificationLabels().length;
+      if (modificationLabels.value !== labels)
+        modificationLabels.value = labels;
+    });
+
+    ui.tooltip.bind(modificationLabels.captionLabel, 'Toggle modification labels');
+    return modificationLabels.root;
   }
 
 

@@ -34,6 +34,7 @@ export class EventBus {
   private _terminalModifications: rxjs.BehaviorSubject<StrandTerminusModifications>;
   private _comment$: rxjs.BehaviorSubject<string>;
   private _modificationsWithNumericLabels$: rxjs.BehaviorSubject<string[]>;
+  private _nucleotidesWithModificationLabels$: rxjs.BehaviorSubject<string[]>;
   private _sequenceBase$: rxjs.BehaviorSubject<string>;
 
   private _patternListUpdated$ = new rxjs.Subject<void>();
@@ -54,9 +55,6 @@ export class EventBus {
 
   private _selectedStrandColumn = new rxjs.BehaviorSubject<{[strand: string]: string | null} | null>(null);
   private _selectedIdColumn = new rxjs.BehaviorSubject<string | null>(null);
-
-  private _modificationLablesVisible$: rxjs.BehaviorSubject<boolean>;
-
 
   constructor(
     private dataManager: DataManager,
@@ -129,9 +127,6 @@ export class EventBus {
     this._isAntisenseStrandActive$ = new rxjs.BehaviorSubject(
       initialPattern[G.IS_ANTISENSE_STRAND_INCLUDED]
     );
-    this._modificationLablesVisible$ = new rxjs.BehaviorSubject(
-      initialPattern[G.MODIFICATION_LABELS_VISIBLE]
-    );
     this._nucleotideSequences$ = new rxjs.BehaviorSubject(
       initialPattern[G.NUCLEOTIDE_SEQUENCES]
     );
@@ -146,6 +141,9 @@ export class EventBus {
     );
     this._modificationsWithNumericLabels$ = new rxjs.BehaviorSubject(
       initialPattern[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]
+    );
+    this._nucleotidesWithModificationLabels$ = new rxjs.BehaviorSubject(
+      initialPattern[L.NUCLEOTIDES_WITH_MODIFICATION_LABELS]
     );
     this._sequenceBase$ = new rxjs.BehaviorSubject(
       getMostFrequentNucleotide(initialPattern[G.NUCLEOTIDE_SEQUENCES])
@@ -164,14 +162,6 @@ export class EventBus {
     return this._isAntisenseStrandActive$.asObservable();
   }
 
-  get modificationLablesToggled$(): rxjs.Observable<boolean> {
-    return this._modificationLablesVisible$.asObservable();
-  }
-
-  modificationLablesVisible(): boolean {
-    return this._modificationLablesVisible$.getValue();
-  }
-
   isAntisenseStrandActive(): boolean {
     return this._isAntisenseStrandActive$.getValue();
   }
@@ -186,15 +176,18 @@ export class EventBus {
     this.updateNucleotideSequences(this.getNucleotideSequences());
   }
 
-  toggleNumericLabels(visible: boolean, nucleotide: string) {
+  toggleNumericLabels(hide: boolean, nucleotide: string) {
     const labelledNucleotides = this.getModificationsWithNumericLabels();
-    const newArray = !visible ? labelledNucleotides.concat(nucleotide) :
+    const newArray = !hide ? labelledNucleotides.concat(nucleotide) :
       labelledNucleotides.filter((n) => n !== nucleotide);
     this.updateModificationsWithNumericLabels(newArray);
   }
 
-  togglemodificationLables(visible: boolean) {
-    this._modificationLablesVisible$.next(visible);
+  toggleModificationLables(hide: boolean, nucleotide: string) {
+    const labelledNucleotides = this.getNucleotidesWithModificationLabels();
+    const newArray = !hide ? labelledNucleotides.concat(nucleotide) :
+      labelledNucleotides.filter((n) => n !== nucleotide);
+    this._nucleotidesWithModificationLabels$.next(newArray);
   }
 
   getNucleotideSequences(): NucleotideSequences {
@@ -289,9 +282,23 @@ export class EventBus {
     return this._modificationsWithNumericLabels$.getValue();
   }
 
+  getNucleotidesWithModificationLabels(): string[] {
+    return this._nucleotidesWithModificationLabels$.getValue();
+  }
+
+
   updateModificationsWithNumericLabels(modificationsWithNumericLabels: string[]) {
     const newValue = getUniqueNucleotidesWithNumericLabels(modificationsWithNumericLabels);
     this._modificationsWithNumericLabels$.next(newValue);
+  }
+
+  get nucleotidesModificationLabelsChanged$(): rxjs.Observable<string[]> {
+    return this._nucleotidesWithModificationLabels$.asObservable();
+  }
+
+  setAllModificationLabels(flag: boolean) {
+    const newValue = flag ? getUniqueNucleotides(this._nucleotideSequences$.getValue(), this.isAntisenseStrandActive()) : [];
+    this._nucleotidesWithModificationLabels$.next(newValue);
   }
 
   get patternLoadRequested$(): rxjs.Observable<string> {
@@ -347,12 +354,12 @@ export class EventBus {
     const observable = rxjs.merge(
       this._patternName$.pipe(debounceTime(300), map(() => {})),
       this._isAntisenseStrandActive$,
-      this._modificationLablesVisible$,
       this._nucleotideSequences$,
       this._phosphorothioateLinkageFlags,
       this._terminalModifications,
       this._comment$.pipe(debounceTime(300)),
-      this._modificationsWithNumericLabels$
+      this._modificationsWithNumericLabels$,
+      this._nucleotidesWithModificationLabels$,
     ) as rxjs.Observable<void>;
 
     return observable;
@@ -394,12 +401,12 @@ export class EventBus {
   setPatternConfig(patternConfiguration: PatternConfiguration) {
     this._patternName$.next(patternConfiguration[L.PATTERN_NAME]);
     this._isAntisenseStrandActive$.next(patternConfiguration[G.IS_ANTISENSE_STRAND_INCLUDED]);
-    this._modificationLablesVisible$.next(patternConfiguration[G.MODIFICATION_LABELS_VISIBLE]);
     this._nucleotideSequences$.next(patternConfiguration[G.NUCLEOTIDE_SEQUENCES]);
     this._phosphorothioateLinkageFlags.next(patternConfiguration[G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]);
     this._terminalModifications.next(patternConfiguration[G.STRAND_TERMINUS_MODIFICATIONS]);
     this._comment$.next(patternConfiguration[L.PATTERN_COMMENT]);
     this._modificationsWithNumericLabels$.next(patternConfiguration[L.NUCLEOTIDES_WITH_NUMERIC_LABELS]);
+    this._nucleotidesWithModificationLabels$.next(patternConfiguration[L.NUCLEOTIDES_WITH_MODIFICATION_LABELS]);
   }
 
   setLastLoadedPatternConfig(patternConfiguration: PatternConfiguration) {
@@ -412,12 +419,12 @@ export class EventBus {
     return {
       [L.PATTERN_NAME]: this.getPatternName(),
       [G.IS_ANTISENSE_STRAND_INCLUDED]: this.isAntisenseStrandActive(),
-      [G.MODIFICATION_LABELS_VISIBLE]: this.modificationLablesVisible(),
       [G.NUCLEOTIDE_SEQUENCES]: this.getNucleotideSequences(),
       [G.PHOSPHOROTHIOATE_LINKAGE_FLAGS]: this.getPhosphorothioateLinkageFlags(),
       [G.STRAND_TERMINUS_MODIFICATIONS]: this.getTerminalModifications(),
       [L.PATTERN_COMMENT]: this.getComment(),
       [L.NUCLEOTIDES_WITH_NUMERIC_LABELS]: this.getModificationsWithNumericLabels(),
+      [L.NUCLEOTIDES_WITH_MODIFICATION_LABELS]: this.getNucleotidesWithModificationLabels(),
     };
   }
 

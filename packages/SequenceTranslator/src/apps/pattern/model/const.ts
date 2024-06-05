@@ -53,6 +53,7 @@ export namespace LEGEND_SETTINGS_KEYS {
   export const PATTERN_NAME = 'patternName';
   export const PATTERN_COMMENT = 'patternComment';
   export const NUCLEOTIDES_WITH_NUMERIC_LABELS = 'nucleotidesWithNumericLabels';
+  export const NUCLEOTIDES_WITH_MODIFICATION_LABELS = 'nucleotidesWithModificationLabels';
 }
 
 export namespace PATTERN_RECORD_KEYS {
@@ -116,7 +117,8 @@ export const EXAMPLE_PATTERN_CONFIG =
     'patternComment': '',
     'nucleotidesWithNumericLabels': [
       'RNA', 'GNA', 'UNA', 'A', 'LNA'
-    ]
+    ],
+    'nucleotidesWithModificationLabels': []
   },
   'authorID': ''
 };

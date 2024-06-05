@@ -135,11 +135,12 @@ class SingleStrandBlock extends SVGBlockBase {
     const circleElements = this.createNucleotideCircleElements(nucleotide, index, defaultShift);
     const numericLabel = this.nucleotidesWithoutOverhangs.includes(nucleotide) ?
       this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
-        this.createNucleotideNumericLabel(index, defaultShift, true) :
-          this.createNucleotideNumericLabel(index, defaultShift) :null;
+        this.createNucleotideNumericLabel(index, defaultShift) :
+          this.createNucleotideNumericLabel(index, defaultShift, true) :null;
 
-    const modificationLabel = this.config.modificationLabelsVisible ?
-      this.createNucleotideModificationLabel(nucleotide, index, defaultShift) : null;
+    const modificationLabel = this.config.nucleotidesWithModificationLabels.includes(nucleotide) ?
+      this.createNucleotideModificationLabel(nucleotide, index, defaultShift) :
+      this.createNucleotideModificationLabel(nucleotide, index, defaultShift, true);
     
     return [...circleElements, numericLabel, modificationLabel].filter((element) => element !== null) as SVGElement[];
   }
@@ -243,7 +244,7 @@ class SingleStrandBlock extends SVGBlockBase {
   private createNucleotideNumericLabel(
     index: number,
     defaultShift: {x: number, y: number},
-    visible?: boolean
+    hide?: boolean
   ): SVGElement | null {
     const label = this.nucleotideNumericLabels[index];
     if (label === null) return null;
@@ -261,7 +262,7 @@ class SingleStrandBlock extends SVGBlockBase {
       SVG_TEXT_FONT_SIZES.COMMENT,
       SVG_ELEMENT_COLORS.TEXT,
       'normal',
-      visible ? '1.0' : '0.0',
+      hide ? '0.0' : '1.0',
       'pointer'
     );
 
@@ -270,7 +271,7 @@ class SingleStrandBlock extends SVGBlockBase {
       e.stopPropagation();
       e.preventDefault();
       const nucleotide = this.config.nucleotideSequences[this.strand][index];
-      this.eventBus.toggleNumericLabels(!!visible, nucleotide);
+      this.eventBus.toggleNumericLabels(!hide, nucleotide);
     };
 
     return element;
@@ -279,7 +280,8 @@ class SingleStrandBlock extends SVGBlockBase {
   private createNucleotideModificationLabel(
     label: string,
     index: number,
-    defaultShift: {x: number, y: number}
+    defaultShift: {x: number, y: number},
+    hide?: boolean
   ): SVGElement | null {
     if (label === null) return null;
 
@@ -301,16 +303,25 @@ class SingleStrandBlock extends SVGBlockBase {
       y: this.getModificationLabelYShift(defaultShift, updatedWidth)
     };
 
-    return this.svgElementFactory.createTextElement(
+    const modificationEl = this.svgElementFactory.createTextElement(
       finalLabel,
       position,
       SVG_TEXT_FONT_SIZES.MODIFICATION_LABEL,
       SVG_ELEMENT_COLORS.MODIFICATION_LABEL,
       'normal',
-      '1.0',
-      'default',
+      hide ? '0.0' : '1.0',
+      'pointer',
       'rotate(-90deg)'
     );
+
+    modificationEl.onclick = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const nucleotide = this.config.nucleotideSequences[this.strand][index];
+      this.eventBus.toggleModificationLables(!hide, nucleotide);
+    };
+
+    return modificationEl;
   }
 
   private createPTOLinkageStars(): SVGElement[] {
