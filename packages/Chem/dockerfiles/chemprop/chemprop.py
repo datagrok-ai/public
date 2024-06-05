@@ -2,6 +2,8 @@
 
 from utils import *
 from engine import *
+import rdkit
+from rdkit import Chem
 
 class ChemProp(Engine):
     type = 'Chemprop'
@@ -14,6 +16,8 @@ class ChemProp(Engine):
         tmp_dir = Engine.get_temporary_directory(id)
         table_path = os.path.join(tmp_dir, 'table.csv')
         table.columns = [n if n == predict else 'smiles' for n in table.columns]
+        # Convert molblocks to SMILES if needed
+        table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
         ChemProp._save_table(table, table_path)
         params = [
             'chemprop',
@@ -45,6 +49,8 @@ class ChemProp(Engine):
         save_table = not os.path.exists(table_path)
         if save_table:
             table.columns = ['smiles']
+            # Convert molblocks to SMILES if needed
+            table['smiles'] = table['smiles'].apply(lambda x: self.convert_to_smiles(x) if 'M  END' in x else x)
             ChemProp._save_table(table, table_path)
         predictions_path = os.path.join(tmp_dir, 'table_preds_0.csv')
         params = [
@@ -68,6 +74,14 @@ class ChemProp(Engine):
     def _save_table(table: pd.DataFrame, table_path: str):
         table = table[['smiles'] + [col for col in table.columns if col != 'smiles']]
         table.to_csv(table_path, index=False)
+
+    @staticmethod
+    def convert_to_smiles(molblock):
+        try:
+            mol = Chem.MolFromMolBlock(molblock)
+            return Chem.MolToSmiles(mol) if mol else molblock
+        except:
+            return molblock
 
     options = {
         'features_enabled': True,
