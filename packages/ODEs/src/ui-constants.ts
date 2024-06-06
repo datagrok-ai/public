@@ -5,6 +5,8 @@ export enum HOT_KEY {
   RUN = 'F5',
 };
 
+const COMPUTATION_TIME_UNITS = 'ms';
+
 /** Tooltips messages */
 export enum HINT {
   HELP = 'Open help in a new tab',
@@ -31,6 +33,8 @@ export enum HINT {
   FITTING = 'Run fitting inputs',
   CONTINUE = 'Continue computations',
   ABORT = 'Abort computations',
+  CHECK_PERF = 'Specifies whether to check computation time if "OK"',
+  MAX_TIME = `Max computation time limit, ${COMPUTATION_TIME_UNITS}`,
 };
 
 /** UI titles */
@@ -105,6 +109,9 @@ export enum WARNING {
   CHECK = 'Show this warning',
   MES = 'Overwrite the current model?',
   CONTINUE = 'Continue?',
+  CHECK_PERF = 'Check time',
+  TIME_LIM = 'Time limit',
+  UNITS = COMPUTATION_TIME_UNITS,
 };
 
 /** Other UI constants */
@@ -182,7 +189,10 @@ export enum UI_TIME {
   PREVIEW_DOCK_EDITOR = 1000,
   PREVIEW_RUN_SOLVING = 1100,
   APP_RUN_SOLVING = 1100,
-  SOLVING_DEFAULT = 10,
+  SOLV_DEFAULT_TIME_MS = 1000,
+  SOLV_TIME_MIN_MS = 1,
+  SOLV_TIME_MAX_MS = 10000000,
+  SOLV_TIME_STEP_MS = 100,
 };
 
 /** Numerical methods names */

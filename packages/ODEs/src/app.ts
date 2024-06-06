@@ -304,7 +304,7 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private toCheckPerformance = true;
   private toShowPerformanceDlg = true;
-  private solvingTimeLimit = UI_TIME.SOLVING_DEFAULT;
+  private solvingTimeLimit = UI_TIME.SOLV_DEFAULT_TIME_MS;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
@@ -603,6 +603,9 @@ export class DiffStudio {
 
       await call.call();
 
+      if (noCustomSettings)
+        ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
+
       if (this.solutionViewer) {
         const options = this.solutionViewer.getOptions().look;
 
@@ -651,6 +654,9 @@ export class DiffStudio {
       this.runPane.header.hidden = false;
     } catch (error) {
       if (error instanceof CallbackAction) {
+        this.isSolvingSuccess = true;
+        this.runPane.header.hidden = false;
+
         if (this.toShowPerformanceDlg && noCustomSettings) {
           ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
           await this.showPerformanceDlg(ivp, inputsPath, error.message);
@@ -971,19 +977,46 @@ export class DiffStudio {
   /** Show performance dialog */
   private async showPerformanceDlg(ivp: IVP, inputsPath: string, warningMsg: string): Promise<void> {
     this.closePerformanceDlg();
-
     this.performanceDlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
     this.solverView.append(this.performanceDlg);
-    ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
-    ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
+
+    let toCheckPerformance = false;
+    const checkPerfInput = ui.boolInput(WARNING.CHECK_PERF, toCheckPerformance, () => {
+      toCheckPerformance = checkPerfInput.value;
+      maxTimeInput.root.hidden = !toCheckPerformance;
+    });
+    checkPerfInput.setTooltip(HINT.CHECK_PERF);
+
+    const opts = {
+      name: WARNING.TIME_LIM,
+      defaultValue: this.solvingTimeLimit,
+      inputType: INPUT_TYPE.INT,
+      min: UI_TIME.SOLV_TIME_MIN_MS,
+      max: UI_TIME.SOLV_TIME_MAX_MS,
+      step: UI_TIME.SOLV_TIME_STEP_MS,
+      description: HINT.MAX_TIME,
+      showPlusMinus: true,
+      units: WARNING.UNITS,
+    };
+    const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
+    maxTimeInput.onInput(() => {
+      if ((maxTimeInput.value <= UI_TIME.SOLV_TIME_MAX_MS) && (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_MS))
+        this.solvingTimeLimit = maxTimeInput.value;
+      else maxTimeInput.value = this.solvingTimeLimit;
+    });
+    maxTimeInput.root.hidden = !toCheckPerformance;
 
     this.performanceDlg.add(ui.label(`${warningMsg}. ${WARNING.CONTINUE}`))
+      .add(ui.form([checkPerfInput, maxTimeInput]))
       .onCancel(() => this.performanceDlg.close())
       .onOK(async () => {
-        ivp.solverSettings = DEFAULT_OPTIONS.NO_CHECKS;
+        ivp.solverSettings = toCheckPerformance ? DEFAULT_SOLVER_SETTINGS : DEFAULT_OPTIONS.NO_CHECKS;
         this.performanceDlg.close();
         await this.solve(ivp, inputsPath);
       })
       .show();
+
+    ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
+    ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
   }
 };
