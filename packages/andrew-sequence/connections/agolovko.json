@@ -1,0 +1,17 @@
+{
+  "name": "agolovko",
+  "#type": "DataConnection",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": "23306",
+    "db": "Northwind"
+  },
+  "credentials" : {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Postgres db connection"
+}

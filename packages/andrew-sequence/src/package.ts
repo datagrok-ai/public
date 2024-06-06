@@ -10,6 +10,7 @@ export const _package = new DG.Package();
 export function info() {
   grok.shell.info(_package.webRoot);
 }
+
 const COMPLEMENT_TABLE: Record<Nucleotide, Nucleotide> = {
   'A': 'T',
   'T': 'A',
@@ -66,4 +67,53 @@ export async function callCountSubsequenceTableAugmentScript(
   const countCol = df.columns.byIndex(0);
   countCol.name = `N(${subsequence})`;
   sequences.columns.insert(countCol);
+}
+
+//name: getOrders
+//output: dataframe df
+//input: string country = "USA"
+export async function getOrders(country: string): Promise<DG.DataFrame> {
+  return await grok.data.query('AndrewSequence:ordersByCountry', {country});
+}
+
+//input: string filepath
+//output: dataframe df
+export async function openTable1(filepath: string): Promise<DG.DataFrame> {
+  const df = await grok.data.getDemoTable(filepath);
+  grok.shell.addTableView(df);
+  return df;
+}
+//input: string filepath
+//output: dataframe df
+export async function openTable2(filepath: string): Promise<DG.DataFrame> {
+  const df = await grok.data.files.openTable(`System.DemoFiles/${filepath}`);
+  grok.shell.addTableView(df);
+  return df;
+}
+
+//input: string filepath
+//output: dataframe df
+export async function openTable3(filepath: string): Promise<DG.DataFrame> {
+  const [df] = await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`));
+  grok.shell.addTableView(df);
+  return df;
+}
+
+//name: Add Tables
+export async function addTables(): Promise<void> {
+  // Recursively list package files
+  const files = await _package.files.list('', true);
+
+  // Filter files by extension
+  const csvFiles = files.filter((f) => f.extension === 'csv');
+
+  // Load every table and add a view for it
+  for (const file of csvFiles) {
+    // Alternative ways to read a table are:
+    // const df = await grok.data.loadTable(`${_package.webRoot}${file.name}`);
+    
+    // const df = await _package.files.readCsv(file.name);
+    const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
+    grok.shell.addTableView(df);
+  }
 }

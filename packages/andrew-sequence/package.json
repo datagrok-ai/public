@@ -2,7 +2,7 @@
   "name": "andrew-sequence",
   "friendlyName": "andrew-sequence",
   "version": "0.0.1",
-  "description": "",
+  "description": "Agolovko's package containing developer exercises solution",
   "dependencies": {
     "datagrok-api": "latest",
     "cash-dom": "latest",
