@@ -1193,7 +1193,7 @@ export class tools {
       if (form.clientWidth - labelWidth < minInputWidth) {
         // try to shrink long labels if they are present
         let labelsToShrink = Math.ceil(labelWidths.length * 0.2); // find 20% longest labels
-        if (labelsToShrink > 0) {
+        if (labelsToShrink > 0 && labelsToShrink < labelWidths.length) {
           let newWidth = Math.max(...labelWidths.slice(labelsToShrink))
           if (newWidth < 0.8 * labelWidth) // worths it?
             labelWidth = Math.max(newWidth, form.clientWidth - minInputWidth);
