@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, from, merge, of, combineLatest, Observable, identity, EMPTY} from 'rxjs';
 import {
-  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map
+  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map,
 } from 'rxjs/operators';
 
 export class Viewer<T = any> extends HTMLElement {
@@ -19,7 +19,7 @@ export class Viewer<T = any> extends HTMLElement {
   constructor() {
     super();
 
-    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged(), filter((v) => !!v));
+    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged());
 
     const latestType$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.type)),
@@ -37,8 +37,22 @@ export class Viewer<T = any> extends HTMLElement {
       latestDf$,
     ] as const);
 
+    latestParams$.pipe(
+      takeUntil(this.destroyed$),
+    ).subscribe(([type, df]) => {
+      if (type !== this.typeSetted$.value)
+        this.dispatchEvent(new CustomEvent('viewer-type-changed', {detail: type}));
+      if (df !== this.dfSetted$.value)
+        this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: type}));
+    });
+
+    const settedParams$ = combineLatest([
+      this.typeSetted$,
+      this.dfSetted$,
+    ] as const);
+
     merge(
-      latestParams$,
+      settedParams$,
       this.viewerSetted$,
     ).pipe(
       switchMap((payload) => {
@@ -65,7 +79,7 @@ export class Viewer<T = any> extends HTMLElement {
       withLatestFrom(this.viewer$),
       takeUntil(this.destroyed$),
     ).subscribe(([df, viewer]) => {
-      if (viewer && df)
+      if (viewer && df && viewer.dataFrame !== df)
         viewer.dataFrame = df;
     });
 
