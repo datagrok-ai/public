@@ -304,7 +304,7 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private toCheckPerformance = true;
   private toShowPerformanceDlg = true;
-  private solvingTimeLimit = UI_TIME.SOLV_DEFAULT_TIME_MS;
+  private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
   private editorView: EditorView | undefined;
@@ -594,7 +594,7 @@ export class DiffStudio {
         return;
 
       if (this.toCheckPerformance && noCustomSettings)
-        ivp.solverSettings = `{maxTimeMs: ${this.solvingTimeLimit}}`;
+        ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
 
       const scriptText = getScriptLines(ivp).join('\n');
       const script = DG.Script.create(scriptText);
@@ -659,7 +659,7 @@ export class DiffStudio {
 
         if (this.toShowPerformanceDlg && noCustomSettings) {
           ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
-          await this.showPerformanceDlg(ivp, inputsPath, error.message);
+          await this.showPerformanceDlg(ivp, inputsPath);
         } else
           grok.shell.warning(error.message);
       } else {
@@ -863,7 +863,7 @@ export class DiffStudio {
     }
 
     // Inputs for initial values
-    ivp.inits.forEach((val, key, map) => {
+    ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.onChanged(async () => {
@@ -878,7 +878,7 @@ export class DiffStudio {
 
     // Inputs for parameters
     if (ivp.params !== null) {
-      ivp.params.forEach((val, key, map) => {
+      ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.onChanged(async () => {
@@ -975,47 +975,38 @@ export class DiffStudio {
   }
 
   /** Show performance dialog */
-  private async showPerformanceDlg(ivp: IVP, inputsPath: string, warningMsg: string): Promise<void> {
+  private async showPerformanceDlg(ivp: IVP, inputsPath: string): Promise<void> {
     this.closePerformanceDlg();
     this.performanceDlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
     this.solverView.append(this.performanceDlg);
 
-    let toCheckPerformance = false;
-    const checkPerfInput = ui.boolInput(WARNING.CHECK_PERF, toCheckPerformance, () => {
-      toCheckPerformance = checkPerfInput.value;
-      maxTimeInput.root.hidden = !toCheckPerformance;
-    });
-    checkPerfInput.setTooltip(HINT.CHECK_PERF);
-
     const opts = {
       name: WARNING.TIME_LIM,
-      defaultValue: this.solvingTimeLimit,
+      defaultValue: this.secondsLimit,
       inputType: INPUT_TYPE.INT,
-      min: UI_TIME.SOLV_TIME_MIN_MS,
-      max: UI_TIME.SOLV_TIME_MAX_MS,
-      step: UI_TIME.SOLV_TIME_STEP_MS,
+      min: UI_TIME.SOLV_TIME_MIN_SEC,
       description: HINT.MAX_TIME,
       showPlusMinus: true,
       units: WARNING.UNITS,
     };
     const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
     maxTimeInput.onInput(() => {
-      if ((maxTimeInput.value <= UI_TIME.SOLV_TIME_MAX_MS) && (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_MS))
-        this.solvingTimeLimit = maxTimeInput.value;
-      else maxTimeInput.value = this.solvingTimeLimit;
+      if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
+        this.secondsLimit = maxTimeInput.value;
+      else maxTimeInput.value = this.secondsLimit;
     });
-    maxTimeInput.root.hidden = !toCheckPerformance;
 
-    this.performanceDlg.add(ui.label(`${warningMsg}. ${WARNING.CONTINUE}`))
-      .add(ui.form([checkPerfInput, maxTimeInput]))
+    this.performanceDlg.add(ui.label(`Max time exceeded (${this.secondsLimit} sec.). ${WARNING.CONTINUE}`))
       .onCancel(() => this.performanceDlg.close())
       .onOK(async () => {
-        ivp.solverSettings = toCheckPerformance ? DEFAULT_SOLVER_SETTINGS : DEFAULT_OPTIONS.NO_CHECKS;
+        ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
         this.performanceDlg.close();
-        await this.solve(ivp, inputsPath);
+        setTimeout(async () => await this.solve(ivp, inputsPath), 20);
+        ;
       })
       .show();
 
+    this.performanceDlg.add(ui.form([maxTimeInput]));
     ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
     ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
   }
