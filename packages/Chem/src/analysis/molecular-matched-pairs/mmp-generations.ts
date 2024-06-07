@@ -2,9 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions} from './mmp-constants';
-import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../../chem-searches';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {SubstructureSearchType} from '../../constants';
 import {MmpInput} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
@@ -96,7 +93,7 @@ export function createColWithDescription(colType: any, colName: string, list: an
 
 export async function createMolExistsCol(molecules: string[], generation: string[], grid: DG.Grid): Promise<void> {
   const moleculesSet = new Set(molecules);
-  const boolCol = DG.Column.bool('Existing', generation.length).init((i) => moleculesSet.has(generation[i]))
+  const boolCol = DG.Column.bool('Existing', generation.length).init((i) => moleculesSet.has(generation[i]));
   grid.dataFrame.columns.add(boolCol);
   grid.col(boolCol.name)!.editable = false;
   grid.invalidate();

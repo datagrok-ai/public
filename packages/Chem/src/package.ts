@@ -46,7 +46,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
-import {MatchedMolecularPairsViewer, MmpAnalysis} from './analysis/molecular-matched-pairs/mmp-analysis';
+import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-analysis';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -59,7 +59,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {identifiersWidget} from './widgets/identifiers';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
-  //_demoMMPA,
+  _demoMMPA,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
@@ -73,7 +73,7 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {drawMoleculeLabels} from './rendering/molecule-label';
 import {getMCS} from './utils/most-common-subs';
-import { toDart } from 'datagrok-api/dg';
+import {toDart} from 'datagrok-api/dg';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1530,7 +1530,7 @@ export function addScaffoldTree(): void {
 }
 
 
-//name: Chem mmp
+//name: Matched Molecular Pairs Analysis
 //tags: viewer
 //output: viewer result
 export function mmpViewer(): MatchedMolecularPairsViewer {
@@ -1547,23 +1547,9 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4): void {//Promise<MmpAnalysis> {
   const viewer = (grok.shell.v as DG.TableView)
-    .addViewer('Chem mmp');
+    .addViewer('Matched Molecular Pairs Analysis');
 
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
-  // const view = grok.shell.tv;
-  // const mmp = await MmpAnalysis.init({table, molecules, activities, fragmentCutoff});
-
-  // //need this workaround with closing dock node since element cannot be docked repeatedly
-  // mmp.mmpView.root.classList.add('mmpa');
-  // const mmpaElement = view.dockManager.element.getElementsByClassName('mmpa')[0];
-  // if (mmpaElement) {
-  //   const node = view.dockManager.findNode(mmpaElement as HTMLElement);
-  //   if (node)
-  //     view.dockManager.close(node);
-  // }
-
-  // view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
-  //return mmp;
 }
 
 //name: Scaffold Tree Filter
@@ -1640,12 +1626,12 @@ export async function demoSimilarityDiversitySearch(): Promise<void> {
   await _demoSimilarityDiversitySearch();
 }
 
-// //name: Demo Matched Molecular Pairs
-// //description: Detect matched molecule pairs calculate the difference in activity values between them
-// //meta.demoPath: Cheminformatics | Matched Molecular Pairs
-// export async function demoMMPA(): Promise<void> {
-//   await _demoMMPA();
-// }
+//name: Demo Matched Molecular Pairs
+//description: Detect matched molecule pairs calculate the difference in activity values between them
+//meta.demoPath: Cheminformatics | Matched Molecular Pairs
+export async function demoMMPA(): Promise<void> {
+  await _demoMMPA();
+}
 
 
 //name: Demo R Group Analysis
