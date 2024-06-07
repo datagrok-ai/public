@@ -1696,6 +1696,10 @@ export interface IGridSettings {
   /// The grid should also be in the editable mode
   addNewRowOnLastRowEdit: boolean;
 
+  /// When [allowEditable] is true, allows user to remove the mouse over row.
+  /// The grid should also be in the editable mode
+  showRemoveRowIcon: boolean;
+
   showColumnLabels: boolean;
 
   /// Column header height. If not specified, it is calculated automatically.
