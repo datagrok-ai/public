@@ -393,7 +393,8 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull
-          git add static/versions
+          cd ..
+          git add docusaurus/static/versions
           git commit -m "js-api version updated by Compatibility tool"
           git sparse-checkout set static/versions
           git push
