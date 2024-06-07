@@ -1,9 +1,13 @@
-import * as fs from 'fs';
-import * as path from 'path'; 
+import fs from 'fs';
+import path from 'path';
 import { argv } from 'process';
+import * as dotenv from 'dotenv';
+dotenv.config();
+// const baseProjectDirectoryPath = './files/js-api';
+// const outputDir = './src/files/';
+const baseProjectDirectoryPath : string | undefined = process.env.baseProjectDirectoryPath || '../js-api/'
+const outputDir : string | undefined = process.env.outputDir || './static/versions/'
 
-const basePojectDirectoryPath = './files/js-api';
-const outputDir = './src/files/';
 
 const vesionsFile = 'versions.json';
 const newVersion = argv[2];
@@ -317,12 +321,15 @@ try {
 
     if (versions.versions.includes(newVersion) && argv[3] !== 'true')
         throw new Error("current version exists in version file add paramater 'true' to override it");
+    if (outputDir && baseProjectDirectoryPath) {
 
-    var functionsData = ProjectDGFunctionsParser.instance.GetFunctionsByDirectory(basePojectDirectoryPath);
-    SaveObjToJsonFile(outputDir + newVersion + ".json", functionsData);
 
-    if (!versions.versions.includes(newVersion))
-        VersionsManager.instance.addNewVersion(outputDir + vesionsFile, newVersion);
+        var functionsData = ProjectDGFunctionsParser.instance.GetFunctionsByDirectory(baseProjectDirectoryPath);
+        SaveObjToJsonFile(outputDir + newVersion + ".json", functionsData);
+
+        if (!versions.versions.includes(newVersion))
+            VersionsManager.instance.addNewVersion(outputDir + vesionsFile, newVersion);
+    }
 }
 catch (e) {
     if (e instanceof Error) {
