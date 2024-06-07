@@ -512,6 +512,10 @@ export interface IScatterPlotSettings {
 
   invertColorScheme: boolean;
 
+  colorMin: number;
+
+  colorMax: number;
+
   /// A numerical column to use for size-coding markers.
   /// See also *Marker Min Size* and *Marker Max Size*.
   size: string;
