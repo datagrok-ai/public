@@ -392,6 +392,7 @@ jobs:
           npx ts-node parser.ts $version true
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git pull
           git add static/versions
           git commit -m "js-api version updated by Compatibility tool"
           git push origin vhlushchenko/GROK-15909/compatibility-tool-CI/CD
