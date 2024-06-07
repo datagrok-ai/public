@@ -22,9 +22,31 @@ See also:
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
 
+
+## 2024-06-05 1.18.9
+
+### Addressed Issues:
+
+* GROK-15834: Table Linking: wrong results when multiple duplicate keys are present in both master and details table 
+* [#2839](https://github.com/datagrok-ai/public/issues/2839): Show Help in "Settings \- Windows" remains checked always 
+
+
+## 2024-05-19 1.18.8
+
+### Improvements:
+* GROK-15681: Projects Management 
+* [#2831](https://github.com/datagrok-ai/public/issues/2831): Default open folders in the Browse Menu 
+
+### Fixes:
+
+* [#2832](https://github.com/datagrok-ai/public/issues/2832): Tab Name changes when reopening Project 
+* [#2840](https://github.com/datagrok-ai/public/issues/2840): "Global Search" button on bottom-right bar menu improvements
+* [#2834](https://github.com/datagrok-ai/public/issues/2834): Loading of DB tables appears to continue forever and never complete 
+
+
 ## 2024-05-15 1.18.7
 
-### Improvemets:
+### Improvements:
 
 * [#2845](https://github.com/datagrok-ai/public/issues/2845): Changing the colors of labels in the properties
 
@@ -43,7 +65,7 @@ See also:
 
 ## 2024-05-01 1.18.5
 
-### Improvemets:
+### Improvements:
 
 * Error handling: "Report an error" dialog when you click on exclamation point.
 * Sticky meta: improve visibility for users:

@@ -1,5 +1,21 @@
 # Sequence Translator changelog
 
+## 1.3.2 (WIP)
+
+### Features
+
+* Add package MonomersPath package settings fallback to monomers-sample
+
+### Bug fixes
+
+* Fix tests for MonomersPath package settings
+
+## 1.3.1 (2024-06-05)
+
+### Bug fixes
+
+* PolyTool: example data added to project
+
 ## 1.3.0 (2024-03-30)
 
 ### Features
