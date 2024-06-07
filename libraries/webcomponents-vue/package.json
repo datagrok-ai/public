@@ -1,0 +1,41 @@
+{
+  "name": "@datagrok-libraries/webcomponents-vue",
+  "sideEffects": false,
+  "version": "0.0.1",
+  "description": "Datagrok web components vue wrappers",
+  "dependencies": {
+    "@datagrok-libraries/webcomponents": "file:../webcomponents",
+    "cash-dom": "^8.1.4",
+    "datagrok-api": "^1.18.6",
+    "dayjs": "=1.11.10",
+    "rxjs": "^6.6.7",
+    "vue": "^3.4.27",
+    "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.6",
+    "@babel/core": "^7.24.6",
+    "@types/wu": "^2.1.0",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "@vue/babel-plugin-jsx": "^1.2.2",
+    "babel-loader": "^9.1.3",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
+    "build-all": "npm --prefix ./../../js-api run build && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:datagrok-ai/public.git",
+    "directory": "libraries/webcomponents-vue"
+  }
+}
