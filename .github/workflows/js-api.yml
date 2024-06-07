@@ -387,8 +387,10 @@ jobs:
         working-directory: docusaurus
         run: |
           npm install
-          version=$(jq -r '.version' ../js-api/package.json)
+#          version=$(jq -r '.version' ../js-api/package.json)
+          version="1.18.5"
           echo "version - $version"
+          
           npx ts-node parser.ts $version true
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
