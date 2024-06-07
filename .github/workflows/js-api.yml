@@ -395,6 +395,7 @@ jobs:
           git pull
           git add static/versions
           git commit -m "js-api version updated by Compatibility tool"
+          git sparse-checkout set static/versions
           git push origin vhlushchenko/GROK-15909/compatibility-tool-CI/CD
           
 
