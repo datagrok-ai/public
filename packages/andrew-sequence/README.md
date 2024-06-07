@@ -7,7 +7,7 @@
 ### Exercise 1: Semantic types
 
 + `complement` & `complementWidget` ([package.ts](./src/package.ts)): the first one takes nucleotides string representation and change each character to the complementary one: A <=> T, G <=> C. The seconds function returns a special info tab widget containing a selected nucleotide data
-+ `complement testы` ([sequence-tests.ts](./src/tests/sequence-tests.ts)): cover the `complement` fucntion with unit testы checking complemention validity cases.
++ `complement tests` ([sequence-tests.ts](./src/tests/sequence-tests.ts)): cover the `complement` fucntion with a unit test checking dataframes appending and special calculation.
 + `detectNucleotides` ([detectors.js](./detectors.js)): efines whether a passed column consists of nucleotide values (strings validation). Returns `dna_nucleotide` semantic type if passed
 
 ### Exercise 2-3: Scripting and functions & Composing functions
@@ -32,3 +32,75 @@
 + `openTable2` pacakge function opens a dataframe by a passed argument `filepath` using `grok.data.files.openTable` and adds it to a table view
 + `openTable3` pacakge function opens a dataframe by a passed argument `filepath` using `grok.functions.eval('OpenServerFile(...)')` and adds it to a table view
 + `addTables` pacakge function works with files distributed with the package, adds all tables (`.csv` files) from the `files` folder to the workspace
+
+### Exercise 6: Creating a scripting viewer
+
+1. A scripting viewer to display a `WEIGHT(HEIGHT)` scatter plot with a color corresponding to `AGE` (from the `Data | Files | Demo Files | demog.csv` dataset):
+
+```python
+#name: WEIGHT(HEIGHT) Relation
+#language: python
+#tags: demo, viewers, hide-suggestions
+#input: dataframe t
+#input: column xColumnName {type:numerical}
+#input: column yColumnName {type:numerical}
+#input: column colorColumnName {type:numerical}
+#input: column sexColumnName {type:string}
+#output: graphics
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+color = t[colorColumnName].values
+cmap = plt.cm.Spectral
+norm = plt.Normalize(vmin=min(color), vmax=max(color))
+
+plt.scatter(t[[xColumnName]], y=t[[yColumnName]], color=cmap(norm(color)), alpha=0.5)
+plt.xlabel(xColumnName)
+plt.ylabel(yColumnName)
+plt.legend()
+plt.show()
+```
+
+2. A scripting viewer to display a `Frequency of Amino Acid Triplets in Sequences` histogram with all amino acid triplets occurred within all of the sequences in a passed `Sequence` column parameter (from the `Data | Files | Demo Files | bio | sars-cov-2.csv` dataset):
+
+```python
+#name: Frequency of Amino Acid Triplets in Sequences
+#language: python
+#input: dataframe t
+#input: column sequenceColumnName {semType: dna_nucleotide}
+#output: graphics
+
+from collections import Counter
+import pandas as pd
+import matplotlib.pyplot as plt
+
+t[sequenceColumnName] = t[sequenceColumnName].str.replace(r'\s+', '', regex=True)
+
+def generate_triplets(sequence):
+  return [sequence[i:i+3] for i in range(0, len(sequence) - 2, 3)]
+
+def generate_triplets_all_frames(sequence):
+  triplets = []
+  for frame in range(3):
+    triplets.extend([sequence[i:i+3] for i in range(frame, len(sequence) - 2, 3)])
+  return triplets
+
+triplet_counts = Counter()
+for seq in t[sequenceColumnName]:
+  triplets = generate_triplets(seq)
+  triplet_counts.update(triplets)
+
+plt.figure(figsize=(14, 8))
+plt.bar(triplet_counts.keys(), triplet_counts.values())
+plt.xlabel('Amino Acid Triplets')
+plt.ylabel('Frequency')
+plt.title('Frequency of Amino Acid Triplets in Sequences')
+plt.xticks(rotation=90)
+plt.show()
+```
+
+### Exercise 7: Transforming dataframes
+
++ `fuzzyJoin` pacakge function joins two passed dataframes and adds subsequences `Counts` column (by passed N argument)
++ `fuzzy join function` ([fuzzy-join-test.ts](./src/tests/fuzzy-join-test.ts)): cover the `fuzzyJoin` fucntion with a unit test checking dataframes appending and subsequences calculation.

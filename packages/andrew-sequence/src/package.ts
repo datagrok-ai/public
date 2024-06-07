@@ -2,34 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Nucleotide} from './types';
+
+import * as nu from './nucleotide-utils';
 
 export const _package = new DG.Package();
 
 //name: info
-export function info() {
+export function info(): void {
   grok.shell.info(_package.webRoot);
 }
-
-const COMPLEMENT_TABLE: Record<Nucleotide, Nucleotide> = {
-  'A': 'T',
-  'T': 'A',
-  'G': 'C',
-  'C': 'G',
-};
 
 //name: complement
 //input: string nucleotides {semType: dna_nucleotide}
 //output: string result {semType: dna_nucleotide}
 export function complement(nucleotides: string): string {
-  return Array.from(nucleotides).map((char: string): string => {
-    const upperChar = char.toUpperCase();
-    const replaceable = upperChar in COMPLEMENT_TABLE;
-    if (!replaceable) return char;
-    const isUpperCase = upperChar === char;
-    const replaced = COMPLEMENT_TABLE[upperChar as Nucleotide];
-    return isUpperCase ? replaced : replaced.toLowerCase();
-  }).join('');
+  return nu.complement(nucleotides);
 }
 
 //name: complementWidget
@@ -52,7 +39,7 @@ export function complementWidget(value: string): DG.Widget {
 //test: callCountSubsequencePythonScript("aBbabaB", "aB") == 2
 //test: callCountSubsequencePythonScript("ararar", "ararar") == 1
 export async function callCountSubsequencePythonScript(sequence: string, subsequence: string): Promise<number> {
-  return await grok.functions.call('AndrewSequence:CountSubsequencePython', {sequence, subsequence});
+  return await grok.functions.call(`${_package.name}:CountSubsequencePython`, {sequence, subsequence});
 }
 
 //name: callCountSubsequenceTableAugmentScript
@@ -62,7 +49,7 @@ export async function callCountSubsequencePythonScript(sequence: string, subsequ
 export async function callCountSubsequenceTableAugmentScript(
   sequences: DG.DataFrame, columnName: DG.Column, subsequence: string,
 ): Promise<void> {
-  const scriptName = 'AndrewSequence:CountSubsequencePythonDataframe';
+  const scriptName = `${_package.name}:CountSubsequencePythonDataframe`;
   const df = await grok.functions.call(scriptName, {sequences, columnName, subsequence});
   const countCol = df.columns.byIndex(0);
   countCol.name = `N(${subsequence})`;
@@ -73,7 +60,7 @@ export async function callCountSubsequenceTableAugmentScript(
 //output: dataframe df
 //input: string country = "USA"
 export async function getOrders(country: string): Promise<DG.DataFrame> {
-  return await grok.data.query('AndrewSequence:ordersByCountry', {country});
+  return await grok.data.query(`${_package.name}:ordersByCountry`, {country});
 }
 
 //input: string filepath
@@ -111,9 +98,41 @@ export async function addTables(): Promise<void> {
   for (const file of csvFiles) {
     // Alternative ways to read a table are:
     // const df = await grok.data.loadTable(`${_package.webRoot}${file.name}`);
-    
+
     // const df = await _package.files.readCsv(file.name);
     const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
     grok.shell.addTableView(df);
   }
+}
+
+//name: fuzzyJoin
+//input: dataframe df1
+//input: dataframe df2
+//input: int N = 3
+//output: dataframe result
+export function fuzzyJoin(df1: DG.DataFrame, df2: DG.DataFrame, N: number): DG.DataFrame {
+  const df = df1.append(df2);
+  const countCol = df.columns.addNew('Counts', DG.TYPE.INT);
+  const subsequencesCol = df.columns.bySemType(nu.NUCLEOTIDE_SEMTYPE);
+  if (!subsequencesCol) return df;
+
+  const df1Size = df1.rowCount;
+  if (!(df1Size && df2.rowCount)) return df;
+
+  const subsequenceLists = subsequencesCol.toList().map((seq: string): string[] => (
+    nu.generateSubsequences(seq.replaceAll(/\s+/g, ''), N)
+  ));
+
+  for (let i = 0; i < subsequenceLists.length; ++i) {
+    const isFirstfHalf = i < df1Size;
+    const jEnd = isFirstfHalf ? subsequenceLists.length : df1Size;
+    let matches = 0;
+    for (let j = isFirstfHalf ? df1Size : 0; j < jEnd; ++j) {
+      for (const seqEl of subsequenceLists[i])
+        matches += Number(subsequenceLists[j].includes(seqEl));
+    }
+    countCol.set(i, matches);
+  }
+
+  return df;
 }
