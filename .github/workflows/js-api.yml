@@ -146,41 +146,42 @@ jobs:
 #          echo -e "latest: ${{ steps.check-version.outputs.latest }}"
 #          echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 #
-#  build:
-#    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
-#    runs-on: ubuntu-22.04
+  build:
+    name: test #${{ needs.version.outputs.job_name || 'Deploy' }}
+    runs-on: ubuntu-22.04
 #    needs: [ version, common-check ]
 #    if: needs.common-check.outputs.continue == 'true'
-#    env:
-#      HOST: GitHubAction
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        with:
-#          token: ${{ secrets.WRITE_TOKEN || github.token }}
-#          sparse-checkout: |
-#            js-api
-#            .github
-#            docker
-#            packages/ApiTests
-#      - name: Setup Node
-#        uses: actions/setup-node@v4
-#        with:
-#          node-version: '18.x'
-#          registry-url: 'https://registry.npmjs.org'
-#          cache: 'npm'
-#          cache-dependency-path: |
-#            js-api/package-lock.json
-#      - name: Upgrade npm
-#        run: npm install -g npm@x
-#      - name: npm version
-#        run: npm version
-#      - run: npm install
-#        working-directory: ./js-api
-#      - run: npm run build
-#        working-directory: ./js-api
-#      - run: npm run build-ts
-#        working-directory: ./js-api
+    env:
+      HOST: GitHubAction
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            js-api
+            .github
+            docker
+            packages/ApiTests
+            docusaurus
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+      - name: Upgrade npm
+        run: npm install -g npm@x
+      - name: npm version
+        run: npm version
+      - run: npm install
+        working-directory: ./js-api
+      - run: npm run build
+        working-directory: ./js-api
+      - run: npm run build-ts
+        working-directory: ./js-api
 #      - name: Run datagrok stand
 #        id: datagrok-stand
 #        env:
@@ -382,6 +383,19 @@ jobs:
 #          steps: ${{ toJson(steps) }}
 #          config: ".github/config/slack.yml"
 #          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+      - name: compatibility-tool
+        working-directory: docusaurus
+        run: |
+          version=$(jq -r '.version' js-api/package.json)
+          echo "version - $version"
+          npx ts-node parser.ts $version true
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add static/versions
+          git commit -m "js-api version updated by Compatibility tool"
+          git push origin vhlushchenko/GROK-15909/compatibility-tool-CI/CD
+          
+
 #      - name: Commit package-lock.json
 #        continue-on-error: true
 #        if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'

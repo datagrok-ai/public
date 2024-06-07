@@ -13,6 +13,8 @@ on:
           - 'no'
         default: 'no'
   push:
+    branches:
+      vhlushchenko/GROK-15909/compatibility-tool-CI/CD
     paths:
       - 'help/**/*.md'
       - 'help/**/*.mdx'
@@ -75,239 +77,239 @@ jobs:
             packages/*/CHANGELOG.md
           fix: true
 
-  convert:
-    name: Build
-    needs: [ lint, common-check ]
-    if: always() && (needs.lint.result == 'skipped' || needs.lint.result == 'success') && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            docusaurus
-            help
-            packages
-            js-api
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
-          cache-dependency-path: |
-            docusaurus/package-lock.json
-            js-api/package-lock.json
-      - name: Cache Docusaurus
-        uses: actions/cache@v4
-        if: github.ref == 'refs/heads/master'
-        with:
-          path: docusaurus/.docusaurus
-          key: ${{ github.ref }}-docusaurus
-      - name: Cache Docusaurus build
-        uses: actions/cache@v4
-        if: github.ref == 'refs/heads/master'
-        with:
-          path: docusaurus/build
-          key: ${{ github.ref }}-docusaurus-build
-      - name: Install dependencies
-        run: npm install
-        working-directory: ./docusaurus
-      - name: Install js-api dependencies
-        run: npm install
-        working-directory: ./js-api
-      - run: npm run lint > help/_lint-check-report.md 2>&1
-        continue-on-error: true
-        if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
-      - name: Build Docusaurus website
-        id: build
-        run: |
-          if [[ "${{ inputs.force }}" == 'yes' ]]; then
-            echo 'Allow broken links in help for manually run action'
-            sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
-            sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
-          fi
-          npm run build > ../help/_docusaurus_build.txt 2>&1
-          cat ../help/_docusaurus_build.txt
-        working-directory: ./docusaurus
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
-        name: Save docusaurus build output
-        if: always() && steps.build.outcome != 'skipped'
-        with:
-          name: _docusaurus_build_output
-          path: help/_docusaurus_build.txt
-          retention-days: 14
-      - name: Set summary
-        id: build_summary
-        run: |
-          echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
-
-          bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
-          if [ -f help/_broken_links.csv ]; then
-            line_count=$(wc -l < help/_broken_links.csv)
-          else
-            line_count=0
-          fi
-
-          if [ "$line_count" -gt 1 ] || [[ "${{ steps.build.outcome }}" == "failure" ]] ; then
-              echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
-
-              echo "## Local execution" >> ${GITHUB_STEP_SUMMARY}
-              echo "To test locally run 'npm run build' from docusaurus directory" >> ${GITHUB_STEP_SUMMARY}
-
-              if [ "$line_count" -gt 1 ]; then
-                echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
-                # Add CSV as Markdown table 
-                echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
-                echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
-                tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
-                echo "broken_links=true" >> $GITHUB_OUTPUT
-              else
-                echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
-                cat help/_docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
-                echo ":no_entry_sign: Docusaurus build errors:"
-                cat help/_docusaurus_build.txt
-              fi
-    
-              if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
-                  echo ':x: Docusaurus build failed'
-                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-                  exit 1
-              else
-                  echo ':warning: Ignored docusaurus build warnings'
-                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-              fi
-          else
-              echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
-          fi
-      - uses: actions/upload-artifact@v4
-        name: Save broken links report
-        if: always() && steps.build_summary.outputs.broken_links == 'true'
-        with:
-          name: broken_links.csv
-          path: help/_broken_links.csv
-          retention-days: 14
-      - uses: actions/upload-artifact@v4
-        name: Save docusaurus build
-        if: github.ref == 'refs/heads/master'
-        with:
-          name: docusaurus
-          path: docusaurus/build
-          retention-days: 7
-
-  deploy:
-    name: Deploy
-    needs: [ convert, common-check ]
-    concurrency:
-      group: help-deploy-${{ github.ref }}
-      cancel-in-progress: true
-    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-22.04
-    environment: Help
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: docusaurus
-          path: docusaurus/build
-      - name: Deploy to server
-        id: deploy
-        shell: bash
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          sudo chmod 400 ~/.ssh/id_rsa
-          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          rsync \
-            --recursive \
-            --links \
-            --times \
-            --omit-dir-times \
-            --group --owner \
-            --chown=grok:grok \
-            --perms --executability --acls --xattrs \
-            --devices --specials \
-            --checksum \
-            --delete-after \
-            --compress \
-            --update \
-            --verbose \
-            --progress \
-            --itemize-changes \
-            --stats \
-            --human-readable \
-            "docusaurus/build/" "$REMOTE_USER@$REMOTE_HOST:$TARGET"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
-          REMOTE_HOST: ${{ secrets.HELP_HOST }}
-          REMOTE_USER: ${{ secrets.HELP_USER }}
-          TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
-
-      - name: Prepare Slack Message
-        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
-        id: slack-user
-        shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
-        run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-
-          header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-
-          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
-      - name: Send to Slack
-        id: slack
-        if: steps.slack-user.outcome == 'success'
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
-
-
-  scrape:
-    name: Scrape
-    needs: [ deploy, common-check ]
-    environment: Help
-    concurrency:
-      group: help-scrape-${{ github.ref }}
-      cancel-in-progress: true
-    if: always() && needs.deploy.result == 'success'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            docusaurus
-      - uses: celsiusnarhwal/typesense-scraper@v2
-        continue-on-error: true
-        with:
-          api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: 'typesense.datagrok.ai'
-          port: '443'
-          protocol: 'https'
-          config: docusaurus/docsearch.json
+#  convert:
+#    name: Build
+#    needs: [ lint, common-check ]
+#    if: always() && (needs.lint.result == 'skipped' || needs.lint.result == 'success') && needs.common-check.outputs.continue == 'true'
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          sparse-checkout: |
+#            docusaurus
+#            help
+#            packages
+#            js-api
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: 18
+#          cache: npm
+#          cache-dependency-path: |
+#            docusaurus/package-lock.json
+#            js-api/package-lock.json
+#      - name: Cache Docusaurus
+#        uses: actions/cache@v4
+#        if: github.ref == 'refs/heads/master'
+#        with:
+#          path: docusaurus/.docusaurus
+#          key: ${{ github.ref }}-docusaurus
+#      - name: Cache Docusaurus build
+#        uses: actions/cache@v4
+#        if: github.ref == 'refs/heads/master'
+#        with:
+#          path: docusaurus/build
+#          key: ${{ github.ref }}-docusaurus-build
+#      - name: Install dependencies
+#        run: npm install
+#        working-directory: ./docusaurus
+#      - name: Install js-api dependencies
+#        run: npm install
+#        working-directory: ./js-api
+#      - run: npm run lint > help/_lint-check-report.md 2>&1
+#        continue-on-error: true
+#        if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
+#      - name: Build Docusaurus website
+#        id: build
+#        run: |
+#          if [[ "${{ inputs.force }}" == 'yes' ]]; then
+#            echo 'Allow broken links in help for manually run action'
+#            sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
+#            sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
+#          fi
+#          npm run build > ../help/_docusaurus_build.txt 2>&1
+#          cat ../help/_docusaurus_build.txt
+#        working-directory: ./docusaurus
+#        continue-on-error: true
+#      - uses: actions/upload-artifact@v4
+#        name: Save docusaurus build output
+#        if: always() && steps.build.outcome != 'skipped'
+#        with:
+#          name: _docusaurus_build_output
+#          path: help/_docusaurus_build.txt
+#          retention-days: 14
+#      - name: Set summary
+#        id: build_summary
+#        run: |
+#          echo "## Summary" > "${GITHUB_STEP_SUMMARY}"
+#
+#          bash docusaurus/broken_links.sh help/_docusaurus_build.txt help/_broken_links.csv
+#          if [ -f help/_broken_links.csv ]; then
+#            line_count=$(wc -l < help/_broken_links.csv)
+#          else
+#            line_count=0
+#          fi
+#
+#          if [ "$line_count" -gt 1 ] || [[ "${{ steps.build.outcome }}" == "failure" ]] ; then
+#              echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
+#
+#              echo "## Local execution" >> ${GITHUB_STEP_SUMMARY}
+#              echo "To test locally run 'npm run build' from docusaurus directory" >> ${GITHUB_STEP_SUMMARY}
+#
+#              if [ "$line_count" -gt 1 ]; then
+#                echo "## Broken links" >> ${GITHUB_STEP_SUMMARY}
+#                # Add CSV as Markdown table
+#                echo "|$(head -n 1 help/_broken_links.csv | sed 's/,/|/g')|" | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+#                echo "|$(head -n 1 help/_broken_links.csv | sed 's/[^,]/-/g' | sed 's/,/|/g')|" >> ${GITHUB_STEP_SUMMARY}
+#                tail -n +2 help/_broken_links.csv | sed 's/,/|/g' | sed 's/^/|/' | sed 's/$/|/' | sed -e 's/|"/|/g' -e 's/"|/|/g' >> ${GITHUB_STEP_SUMMARY}
+#                echo "broken_links=true" >> $GITHUB_OUTPUT
+#              else
+#                echo "## Build output" >> ${GITHUB_STEP_SUMMARY}
+#                cat help/_docusaurus_build.txt >> "${GITHUB_STEP_SUMMARY}"
+#                echo ":no_entry_sign: Docusaurus build errors:"
+#                cat help/_docusaurus_build.txt
+#              fi
+#
+#              if [[ "${{ steps.build.outcome }}" == "failure" ]]; then
+#                  echo ':x: Docusaurus build failed'
+#                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+#                  exit 1
+#              else
+#                  echo ':warning: Ignored docusaurus build warnings'
+#                  echo 'Check workflow output for more information: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+#              fi
+#          else
+#              echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+#          fi
+#      - uses: actions/upload-artifact@v4
+#        name: Save broken links report
+#        if: always() && steps.build_summary.outputs.broken_links == 'true'
+#        with:
+#          name: broken_links.csv
+#          path: help/_broken_links.csv
+#          retention-days: 14
+#      - uses: actions/upload-artifact@v4
+#        name: Save docusaurus build
+#        if: github.ref == 'refs/heads/master'
+#        with:
+#          name: docusaurus
+#          path: docusaurus/build
+#          retention-days: 7
+#
+#  deploy:
+#    name: Deploy
+#    needs: [ convert, common-check ]
+#    concurrency:
+#      group: help-deploy-${{ github.ref }}
+#      cancel-in-progress: true
+#    if: always() && needs.convert.result == 'success' && github.ref == 'refs/heads/master'
+#    runs-on: ubuntu-22.04
+#    environment: Help
+#    steps:
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: docusaurus
+#          path: docusaurus/build
+#      - name: Deploy to server
+#        id: deploy
+#        shell: bash
+#        run: |
+#          mkdir -p ~/.ssh/
+#          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+#          sudo chmod 400 ~/.ssh/id_rsa
+#          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+#          rsync \
+#            --recursive \
+#            --links \
+#            --times \
+#            --omit-dir-times \
+#            --group --owner \
+#            --chown=grok:grok \
+#            --perms --executability --acls --xattrs \
+#            --devices --specials \
+#            --checksum \
+#            --delete-after \
+#            --compress \
+#            --update \
+#            --verbose \
+#            --progress \
+#            --itemize-changes \
+#            --stats \
+#            --human-readable \
+#            "docusaurus/build/" "$REMOTE_USER@$REMOTE_HOST:$TARGET"
+#        env:
+#          SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
+#          SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
+#          REMOTE_HOST: ${{ secrets.HELP_HOST }}
+#          REMOTE_USER: ${{ secrets.HELP_USER }}
+#          TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
+#
+#      - name: Prepare Slack Message
+#        if: steps.deploy.outcome == 'success' && github.actor != 'github-actions[bot]'
+#        id: slack-user
+#        shell: bash
+#        env:
+#          SLACK_ID: ${{ secrets.SLACK_ID }}
+#        run: |
+#          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+#          echo "::add-mask::$channel_id"
+#          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+#
+#          header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
+#          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+#
+#          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+#          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+#
+#      - name: Send to Slack
+#        id: slack
+#        if: steps.slack-user.outcome == 'success'
+#        uses: slackapi/slack-github-action@v1.26.0
+#        with:
+#          channel-id: ${{ env.SLACK_CHANNEL }}
+#          payload: |
+#            {
+#                "blocks": [
+#                    {
+#                        "type": "section",
+#                        "text": {
+#                            "type": "mrkdwn",
+#                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+#                        }
+#                    },
+#                    {
+#                        "type": "context",
+#                        "elements": [
+#                            {
+#                                "type": "mrkdwn",
+#                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+#                            }
+#                        ]
+#                    }
+#                ]
+#            }
+#        env:
+#          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+#
+#
+#  scrape:
+#    name: Scrape
+#    needs: [ deploy, common-check ]
+#    environment: Help
+#    concurrency:
+#      group: help-scrape-${{ github.ref }}
+#      cancel-in-progress: true
+#    if: always() && needs.deploy.result == 'success'
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          sparse-checkout: |
+#            docusaurus
+#      - uses: celsiusnarhwal/typesense-scraper@v2
+#        continue-on-error: true
+#        with:
+#          api-key: ${{ secrets.TYPESENSE_API_KEY }}
+#          host: 'typesense.datagrok.ai'
+#          port: '443'
+#          protocol: 'https'
+#          config: docusaurus/docsearch.json
