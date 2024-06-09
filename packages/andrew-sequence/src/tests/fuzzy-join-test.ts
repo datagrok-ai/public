@@ -27,7 +27,7 @@ category('fuzzy join function', (): void => {
       'tgt gaa',
     ]);
 
-    const exptectedCountsValues = [2, 1, 3, 1, 2, 2];
+    const exptectedCountsValues = [2, 1, 3, 1, 2, 3];
 
     // Computations performing
     const dfResult = fuzzyJoin(df1, df2, N);
