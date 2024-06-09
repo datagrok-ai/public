@@ -8,19 +8,19 @@ export const helmFieldsToPolyToolInputFields = {
 
 export const R_GROUP_BLOCK_DUMMY = [
   {
-    'capGroupSMILES': '[*:1][H]',
+    'capGroupSmiles': '[*:1][H]',
     'alternateId': 'R1-H',
     'capGroupName': 'H',
     'label': 'R1'
   },
   {
-    'capGroupSMILES': 'O[*:2]',
+    'capGroupSmiles': 'O[*:2]',
     'alternateId': 'R2-OH',
     'capGroupName': 'OH',
     'label': 'R2'
   },
   {
-    'capGroupSMILES': '[*:3][H]',
+    'capGroupSmiles': '[*:3][H]',
     'alternateId': 'R3-H',
     'capGroupName': 'H',
     'label': 'R3'

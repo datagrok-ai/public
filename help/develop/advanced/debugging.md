@@ -293,5 +293,5 @@ See also:
 
 * [Getting started](../onboarding/getting-started.md)
 * [JavaScript development](../develop.md)
-* [Audit](../../govern/audit.md)
+* [Audit](../../govern/audit/audit.md)
 * [Query debugging](./query-debugging.md)

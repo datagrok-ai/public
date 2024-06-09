@@ -69,7 +69,7 @@ category('UI: Users', () => {
   }, {skipReason: 'GROK-11318'});
 
   test('actions.addServiceUser', async () => {
-    await showDialog('Service user');
+    await showDialog('Service User...');
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Add Service User dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
@@ -77,7 +77,7 @@ category('UI: Users', () => {
   });
 
   test('actions.inviteFriend', async () => {
-    await showDialog('Invite a friend');
+    await showDialog('Invite a Friend...');
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Invite a friend dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;

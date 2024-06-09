@@ -1,5 +1,6 @@
 ---
-title: "Bug reports"
+title: "Feedback"
+sidebar_position: 5
 ---
 
 A bug report functionality is a critical feature in software development and maintenance. 
@@ -38,5 +39,5 @@ but the title, rows and columns count will be added by default when the table is
 
 When the report is submitted it will be sent to the Datagrok server and analyzed if there were reported similar exceptions.
 If there weren't the report will be sent to the emails that are specified in the **Settings** > **Admin** > **Report email**.
-The report in any case will be saved and available in the **User reports** tab of the [Usage Analysis](./usage-analysis.md) for 
+The report in any case will be saved and available in the **User reports** tab of the [Usage Analysis](audit/usage-analysis.md) for 
 further analysis by developers and administrators.

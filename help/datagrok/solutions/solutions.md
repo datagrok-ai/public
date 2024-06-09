@@ -29,7 +29,7 @@ customize the platform for any domain of knowledge. For example:
 * Powerful, chemical spreadsheet and other chemically-aware viewers
 * Customizable [chemical info panes](domains/chem/info-panels/info-panels.md)
 * Substructure search
-* [Chemical space analysis](./domains/chem/chem.md#chemical-space)
+* [Chemical space analysis](domains/chem/chem.md#chemical-space)
 * R-groups decomposition
 * Scaffold tree
 * Activity cliffs
@@ -105,7 +105,7 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 * Collaboration features with version control across projects
 * Scales well
 * Extensive customization options through [plugins](../../develop/how-to/create-package.md)
-* Real-time data processing and analytics. [Usage analysis](../../govern/usage-analysis.md)
+* Real-time data processing and analytics. [Usage analysis](../../govern/audit/usage-analysis.md)
 * Flexible deployment options: cloud-based, on-premises, hybrid
 
 [**Visit the Enterprise IT page >**](enterprise/enterprise.md)

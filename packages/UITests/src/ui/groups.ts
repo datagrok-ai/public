@@ -59,7 +59,7 @@ category('UI: Groups', () => {
 
   test('actions.createNewGroup', async () => {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
-      .find((el) => el.textContent === 'New group');
+      .find((el) => el.textContent === 'New Group...');
     if (cng === undefined) throw new Error('cannot find New Group button');
     (cng as HTMLElement).click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'Create New Group dialog was not shown', 1000);

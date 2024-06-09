@@ -1,7 +1,7 @@
 import {before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import {default as init} from "parquet-wasm/esm/arrow1";
+import {default as init} from "parquet-wasm";
 import {fromFeather, fromParquet} from "../api/api";
 
 const expectedColumns = ['pclass', 'survived', 'name', 'sex', 'age',
@@ -13,7 +13,7 @@ category('Parquet', () => {
   let dfFromParquet: DG.DataFrame | null;
 
   before(async () => {
-    await init(_package.webRoot + 'dist/arrow1_bg.wasm');
+    await init(_package.webRoot + 'dist/parquet_wasm_bg.wasm');
     const bytesParquet = await _package.files.readAsBytes('titanic.parquet');
     dfFromParquet = fromParquet(bytesParquet);
   });

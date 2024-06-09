@@ -25,8 +25,8 @@ The platform has browsers for the following entities:
 | [Applications](../../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
 | [Models](../../learn/learn.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
 | [Notebooks](../../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
-| [Users](../../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
-| [Groups](../../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
+| [Users](../../govern/access-control/users-and-groups#users)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
+| [Groups](../../govern/access-control/users-and-groups#groups)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
 | [Connections](../../access/access.md#data-connection)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
 | Jobs                | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
 | [Packages](../../develop/develop.md)              | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |

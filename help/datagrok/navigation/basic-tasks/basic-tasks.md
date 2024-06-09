@@ -3,19 +3,24 @@ title: "Basic tasks"
 format: 'mdx'
 ---
 
+```mdx-code-block
+import DownloadIcon from '../../../uploads/icons/download-icon.png';
+import ExportCSV from '../../../uploads/pictures/export-csv.png';
+```
+
 ## Access
 
 ### Import
 
 To open a local file, drag and drop it on the platform. Alternatively, go to
-**Sidebar** > **Browse** > **Top Menu** and click the **Open file**
-(![](../../../uploads/icons/open-file-con-temp.png)) icon or the **Import text**
-(![](../../../uploads/icons/open-text-icon-temp.png)) icon, which lets you
-configure the text file before import. 
+**Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>) > **Top Menu** and click the **Open file**
+(<FAIcon icon="fa-regular fa-folder-open"/>) icon or the **Import text**
+(<FAIcon icon="fa-regular fa-file-lines"/>) icon, which lets you
+configure the text file before import.
 
 ### Open in Datagrok
 
-To open a file, table, or other object in Datagrok, open **Browse** (**Sidebar** > **Browse**). In the **Browse** tree, find your object and double-click it to
+To open a file, table, or other object in Datagrok, open **Browse** (**Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>)). In the **Browse** tree, find your object and double-click it to
 open.
 
 To learn more about data access options, see the
@@ -35,7 +40,7 @@ To save your changes, find the **SAVE** button at the top of the screen and
 click it. This typically opens the dialog where you can specify what to save and
 where to save it.
 
-### Table Views
+### Saving a dashboard
 
 When you open a CSV file or run a [function](../../concepts/functions/functions.md)
 that produces a table, it opens a [Table View](../views/table-view.md) resembling Excel. Here, you can edit both the data
@@ -95,10 +100,10 @@ When you upload a table with a generation script, you can activate the **Data sy
 ## Share
 
 You can share Datagrok [entities](../../concepts/objects.md) with other users or
-[groups](../../../govern/group.md). When you share an entity, you grant a
-[privilege](../../../govern/authorization.md) (typically, _view_ or _edit_) to others.
+[groups](../../../govern/access-control/users-and-groups#groups). When you share an entity, you grant a
+[privilege](../../../govern/access-control/access-control.md#permissions) (typically, _view_ or _edit_) to others.
 To learn how to manage groups and privileges, see
-[Security](../../../govern/security.md).
+[Access control](../../../govern/access-control/access-control.md#authorization).
 
 You can share _entities_ in two ways:
 
@@ -126,12 +131,21 @@ To share an entity using context actions:
    1. To skip notification, clear the **Send notification** checkbox.
 1. Click **OK** to share. The shared item appears in the recipient's [Browse view](../views/browse.md).
 
+:::note
+
+You can share an entity with an email address that doesn't yet have a Datagrok
+account. In such cases, Datagrok creates a 'quasi' user account. To access the
+shared entity, the recipient will need to register and activate their account
+using the specified email address.
+
+:::
+
 ## Download
 
-### Tables
+### Tables and visualizations
 
 You can download any open table as a file or a set of files. To do this, use the
-**Download** (![](../../../uploads/icons/download-icon.png)) icon located at the
+**Download** (<img src={DownloadIcon} width="15px"/>) icon located at the
 top of the screen.
 
 <details>
@@ -155,7 +169,7 @@ This opens the **Save as CSV** dialog, where you can specify the desired
 configuration. If you want to use these settings by default in the future, click
 the **SET DEFAULT** button.
 
-![Export CSV](../../../uploads/pictures/export-csv.png "Export CSV")
+<img src={ExportCSV} width="250px"/>
 
 When downloading tables in a **CSV** format, only the current table
 is downloaded. 
@@ -193,3 +207,36 @@ table using drag and drop.
 To download a file, go to **Sidebar** > **Browse**. In the **Browse** tree,
 locate the file you want to download, right-click it and select the download
 option from its **Context Menu**.
+
+## Add to favorites
+
+To add an entity to favorites, do any of the following:
+
+* Drag-and-drop in the [Browse](../views/browse.md) tree:
+    * Drag and drop the entity on the **Favorites** directory under **My stuff**.
+    * Click the **Favorites** directory under **My stuff**. This opens the
+  **Favorites** view. Drag and drop the entity on the view.
+* Use the **Context Panel**
+  1. In the **Browse** tree, click the entity you want. The **Context Panel** shows entity-specific information and actions.
+  1. On the **Context Panel** next to the entity's name, click the **Add to
+     favorites (<FAIcon icon="fa-regular fa-star"/>) icon**. The color of the
+     icon changes to orange, and the entity is added to your favorites.
+
+You can later access favorites either from the **Browse** tree or by clicking
+the **Favorites (<FAIcon icon="fa-regular fa-star"/>) icon**:
+* On the **Sidebar**, or
+* On top of the **Context Panel**. 
+
+To remove an entity from favorites, use the context menu. Alternatively, on the
+**Context Panel** next to the entity's name, click the orange **Add to favorites
+(<FAIcon icon="fa-regular fa-star"/>) icon**. The color changes to neutral, and
+the entity is removed from your favorites.
+
+![](img/add-to-favorites.gif)
+
+:::note
+
+You can favorite any Datagrok [entity](../../concepts/objects.md) like a data connection, query, or a project.
+You can't favorite an individual file or a specific value within a cell. <!--This can be solved with sticky meta.Suggestion submitted-->
+
+:::

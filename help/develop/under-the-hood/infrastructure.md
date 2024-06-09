@@ -9,7 +9,7 @@ Datagrok server installation consists of two big blocks:
   * [Datlas](#datlas) - Datagrok application server
   * [Database](#database)
   * [Persistent file storage](#storage)
-  * [Credentials Management Service](../../govern/security.md#credentials)
+  * [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system)
   * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
 * [Compute](#compute-components)
@@ -41,7 +41,7 @@ administration tasks could be performed via the web interface as well.
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
-[authentication](../../govern/authentication.md) methods. Regarding Datagrok infrastructure it can be easily done. For
+[authentication](../../govern/access-control/access-control.md#authentication) methods. Regarding Datagrok infrastructure it can be easily done. For
 more information check [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
 page.
 
@@ -80,7 +80,7 @@ Datagrok components are:
 * [Datlas](#datlas) - Datagrok application server
 * [Database](#database)
 * [Persistent file storage](#storage)
-* [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
+* [Credentials Management Service](../../govern/access-control/access-control.md#credentials-management-system). Can be installed as a separate service in
   separate container with a separate database.
 * [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
 * Nginx server

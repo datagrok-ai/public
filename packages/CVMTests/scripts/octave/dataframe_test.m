@@ -8,6 +8,6 @@
 #output: dataframe resultNumerical
 #output: dataframe resultCategorical
 
-resultDf = df
-resultNumerical = dfNumerical
-resultCategorical = dfCategorical
+resultDf = df;
+resultNumerical = dfNumerical;
+resultCategorical = dfCategorical;

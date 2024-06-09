@@ -10,6 +10,7 @@ export class HitAppBase<T> {
   public template?: T;
   public baseUrl!: string;
   public computeFunctions: Promise<ComputeFunctions>;
+  protected isJoining = false;
   // public layouts: Promise<DG.ViewLayout[]>;
   constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
@@ -75,5 +76,37 @@ export class HitAppBase<T> {
       };
       history.replaceState(obj, obj.Title, obj.Url);
     }
+  }
+
+  /// creates a union of two dataframes based on a molecule column and adds to second dataframe
+  protected unionDataframes(df1: DG.DataFrame, df2: DG.DataFrame, molColName: string) {
+    const df1MolCol: string[] | undefined = df1.col(molColName)?.toList()?.filter((it) => !!it)
+      .map((it) => DG.chem.convert(it, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles));
+    const df2MolCol: string[] | undefined = df2.col(molColName)?.toList()?.filter((it) => !!it)
+      .map((it) => DG.chem.convert(it, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles));
+    if (!df1MolCol || !df2MolCol)
+      throw new Error('Molecule column not found');
+    this.isJoining = true;
+    try {
+    // first check that all columns are there
+      for (const col of df1.columns) {
+        if (!df2.columns.contains(col.name))
+          df2.columns.addNew(col.name, col.type);
+      }
+      for (let i = 0; i < df1MolCol.length; i++) {
+        if (!df2MolCol.includes(df1MolCol[i])) {
+          df2.rows.addNew(null, true);
+          for (const col of df1.columns) {
+            const value = col.get(i);
+            df2.col(col.name)?.set(df2.rowCount - 1, value, false);
+          }
+        }
+      }
+    } finally {
+      setTimeout(() => {
+        this.isJoining = false;
+      }, 500);
+    }
+    return df2;
   }
 }

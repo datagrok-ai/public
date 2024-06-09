@@ -6,6 +6,8 @@ sidebar_position: 1
 Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
 are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 
+Dataframes are visualized using the [grid](../../visualize/viewers/grid.md) viewer.
+
 ## Column
 
 Dataframes consist of columns. In addition to the data type, a column can be
@@ -40,9 +42,9 @@ You can use these fields to filter tables with smart search:
 | colCount    |                                  |
 | createdOn   |                                  |
 | updatedOn   |                                  |
-| author      | [User](../../govern/user.md) object |
-| starredBy   | [User](../../govern/user.md) object |
-| commentedBy | [User](../../govern/user.md) object |
+| author      | [User](../../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../../govern/access-control/users-and-groups#users) object |
 
 See also:
 

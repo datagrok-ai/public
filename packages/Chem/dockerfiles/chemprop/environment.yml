@@ -7,7 +7,7 @@ dependencies:
   - numpy
   - pandas
   - Flask
-  - chemprop==1.6.1
+  - chemprop==2.0.0
   - werkzeug
   - urllib3
   - requests

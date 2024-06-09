@@ -37,13 +37,13 @@ If it's machine-readable, we can work with it!
 
 Use catalogs, data lineage tools, audit, and usage analysis to take control.
 Your data is [FAIR](../govern/catalog/fair.md) and secure.
-* Control who, what, where, and how: [roles, groups, and privileges](../govern/security.md), 
-flexible [authentication](../govern/authentication.md), 
-[secrets managers](../access/data-connection-credentials.md)
+* Control who, what, where, and how: [roles, groups, and privileges](../govern/access-control/access-control.md#authorization), 
+flexible [authentication](../govern/access-control/access-control.md#authentication), 
+[secrets managers](../govern/access-control/data-connection-credentials.md)
 * Centralized [metadata](concepts/objects.md#metadata)-annotated catalog of
 [entities](concepts/objects.md). Powerful "everything" browser for
 managing data, connections, users, and more
-* Built-in [data provenance](../govern/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/usage-analysis.md), and [audit](../govern/audit.md) tools
+* Built-in [data provenance](../govern/audit/data-provenance.md), data lineage, impact analysis, [usage analysis](../govern/audit/usage-analysis.md), and [audit](../govern/audit/audit.md) tools
 * Global search. 
 
 #### Transform

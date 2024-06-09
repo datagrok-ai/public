@@ -1,5 +1,11 @@
 # KetcherSketcher changelog
 
+## 2.1.9 (2024-05-30)
+
+### Bug fixes
+
+* Updated path to package icon
+
 ## 2.1.8 (2024-05-28)
 
 ### Bug fixes

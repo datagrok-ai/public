@@ -3,7 +3,7 @@ title: "Configure authentication"
 sidebar_position: 1
 ---
 
-Datagrok supports many [authentication](../../govern/authentication.md) methods, including popular methods such as SSO and OAuth:
+Datagrok supports many [authentication](../../govern/access-control/access-control.md#authentication) methods, including popular methods such as SSO and OAuth:
 
 * [General](#general-login-password-authentication) (login-password)
 * [LDAP](#ldap-authentication)
@@ -34,13 +34,13 @@ For login-password authentication, it is important to [configure an email servic
 
 ### Add users
 
-To create [user](../../govern/user.md):
+To create [user](../../govern/access-control/users-and-groups#users):
 
 1. On the **Sidebar** go to **Manage** > **Users**. 
 2. On the **Toolbox** click **Add User**. Create new user dialog appears. 
 3. Fill all input fields and click **OK**. New User profile appears. Click **Save** on the **Top Bar**.
 
-Use [user groups](../../govern/group.md) to manage user permissions inside platform.
+Use [user groups](../../govern/access-control/users-and-groups#groups) to manage user permissions inside platform.
 
 ## LDAP authentication
 

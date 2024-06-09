@@ -59,7 +59,7 @@ category('UI: Sharing', () => {
 
   test('connections.api', async () => {
     await testEntityAPI(DG.DataConnection.create('', {
-      dataSource: '',
+      dataSource: 'Files',
       server: '',
       db: ''}), grok.dapi.connections);
   });

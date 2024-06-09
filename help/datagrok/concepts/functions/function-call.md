@@ -22,8 +22,8 @@ Each function call contains the following data:
 Connections are first-class entities in the Datagrok platform, and as such are subjects to the standard checks and
 routines performed against them whenever they are used in the specific context. Some of the most popular privileges
 are: `view`, `edit`, `delete`, and `share`. Those privileges can be given to individual users, or
-to [groups](../../../govern/group.md). For more information on the access privilege model, check
-out [privileges](../../../govern/security.md#privileges).
+to [groups](../../../govern/access-control/users-and-groups#groups). For more information on the access privilege model, check
+out [privileges](../../../govern/access-control/access-control.md#permissions).
 
 Those privileges can be given to individuals or to groups (which can be defined via dynamic filters)
 . For more information on the access privilege model, refer to the Datagrok - Access Privileges page.

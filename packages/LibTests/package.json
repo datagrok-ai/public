@@ -11,12 +11,16 @@
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.34.2",
     "@datagrok-libraries/utils": "^4.2.3",
+    "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
+    "@datagrok-libraries/webcomponents-vue": "file:../../libraries/webcomponents-vue",
+    "@vueuse/rxjs": "^10.9.0",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.3",
     "dayjs": "=1.11.10",
     "deep-equal": "^2.2.1",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "^6.6.7",
+    "vue": "^3.4.27",
     "wu": "latest"
   },
   "devDependencies": {
@@ -25,9 +29,12 @@
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
+    "@vue/babel-plugin-jsx": "^1.2.2",
+    "babel-loader": "^9.1.3",
     "css-loader": "^6.7.1",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
+    "source-map-loader": "^5.0.0",
     "style-loader": "^3.3.1",
     "ts-loader": "latest",
     "typescript": "latest",
@@ -37,7 +44,7 @@
   "scripts": {
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
+    "lint-fix": "eslint src --ext .ts,.tsx --fix",
     "debug-lib-tests": "webpack && grok publish",
     "release-lib-tests": "webpack && grok publish --release",
     "build-lib-tests": "webpack",

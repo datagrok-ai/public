@@ -51,6 +51,6 @@ publish the package to the platform. See [this guide](../develop.md#publishing) 
 grok publish <HOST>
 ```
 
-If you want to use this package with other users, share the package with the [group](../../govern/group.md).
+If you want to use this package with other users, share the package with the [group](../../govern/access-control/users-and-groups#groups).
 
 ![Share package](share-package.png)

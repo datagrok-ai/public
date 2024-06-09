@@ -27,20 +27,20 @@ Yet, despite this variety, the UI consistently includes several key elements:
 <TabItem value="Sidebar" label ="Sidebar" default>
 
 Positioned on the far left, the **Sidebar** provides access to settings,
-commands, and favorites, and lets you switch between different windows. It
+commands, you [personal profile view](views/user-profile-view.md), and favorites, and lets you switch between different windows. It
 remains fixed in its position no matter where you are on the platform or
 what you work on.
 
 <details>
 <summary>Sidebar icons</summary>
 
-* All Datagrok commands
-* **Browse** view
-* Favorites
-* Your profile
-* Help
-* Settings
-* Feedback
+* All Datagrok commands (the Datagrok icon)
+* **Browse** view (<FAIcon icon="fa-solid fa-compass"/>)
+* Favorites (<FAIcon icon="fa-regular fa-star"/>)
+* Your profile (a photo icon)
+* Help (<FAIcon icon="fa-regular fa-circle-question"/>)
+* Settings (<FAIcon icon="fa-solid fa-gear"/>)
+* Feedback (<FAIcon icon="fa-solid fa-circle-exclamation"/>)
 
 </details>
 
@@ -53,8 +53,9 @@ A _view_ is a window designed for specific tasks, such as data analysis or data 
 
 A view may have these elements associated with it:
 
-1. **Toolbox**: Located to the left of the _view_, it provides tools and
-   functionalities specific to that view.
+1. [Toolbox](views/views.md#toolbox): Located to the left of the _view_, it provides tools and
+   functionalities specific to that view. To show the **Toolbox**, hover over
+    the **Sidebar**. You can also pin it to keep it visible at all times.
 1. **Top Menu**: Often at the top of the _view_, it provides
    view-specific commands.
 1. **Status bar**: The central section is view-specific. For example, in **Table
@@ -77,7 +78,14 @@ and more.
 </TabItem>
 <TabItem value="browse" label="Browse">
 
-[Browse](views/browse.md) is used for navigation and data management. From its **Top Menu**, you can open local files, toggle preview, refresh the view, and more.
+The [Browse](views/browse.md) view is used for navigation and data management.
+From its **Top Menu**, you can open local files, toggle or refresh the
+view, and more.
+
+Clicking a tree node or an object in the **Browse** view opens a view associated
+with that item. For example, clicking a file opens an interactive preview of
+its content, clicking a folder shows its content, and clicking an entity gallery
+such as **Projects** or **Users** opens an **Entity View**. 
 
 ![](img/browse-marked-up.gif)
 
@@ -107,7 +115,7 @@ _view_ and include:
 * [Context Panel](../navigation/panels/panels.md#context-panel): Shows information and options for your current
   object. For example, clicking a molecule shows details
   like its weight or toxicity. Clicking a query shows its SQL code and
-  parameters. 
+  parameters.
 * [Context Help](../navigation/panels/panels.md#context-help): Shows a help page for your current object.
 * [Console](../navigation/panels/panels.md#console): Automatically logs every function call associated
   with visual data transformations. You can also use it to call functions
@@ -121,7 +129,7 @@ on your needs, you can toggle the visibility of any panel from the **Status Bar*
 <TabItem value="status-bar" label ="Status Bar">
 
 Located at the bottom of the screen, the **Status Bar** has these sections:
-* _Right_: Has icons for global search, toggling panels, and activating presentation mode.
+* _Right_: Has icons for tabs mode, global search, toggling panels, and activating presentation mode.
 * _Left_: Shows progress during task execution.
 * _Center_: Is view specific.
 
@@ -137,7 +145,7 @@ in separate windows, or toggle their visibility.
 
 When you start dragging an object, all potential drop zones are highlighted,
 guiding you where to place it. You can drag and drop almost any object. For
-example, in a **Table View**, most viewers and many dialogs can accept columns
+example, in a [Table View](views/table-view.md), most viewers and many dialogs can accept columns
 dragged into or from them. 
 
 ![](img/drag-and-drop-columns.gif)
@@ -154,3 +162,14 @@ changes happen in the UI:
 * Clicking a molecule updates the [Context Panel](../navigation/panels/panels.md#context-panel) with molecule-specific info panes.
 
 ![Chem dataset exploration](../solutions/domains/chem/img/chem-exploration.png)
+
+You can right-click almost anything on the platform to access context actions for that item.
+
+### Dialogs
+
+
+
+### Docking
+
+
+

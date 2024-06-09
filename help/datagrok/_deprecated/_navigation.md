@@ -280,9 +280,9 @@ To edit client settings, open `Settings` from the sidebar.
 
 ## User profile
 
-Click on your user image on the sidebar to open the [user profile](../../govern/user.md#profile). Here you can find a
+Click on your user image on the sidebar to open the user profile. Here you can find a
 summary of your data, read notifications, change your password,retrieve API and developer keys. The data on your
-activity is provided by the platform's internal [audit system](../../govern/audit.md).
+activity is provided by the platform's internal [audit system](../../govern/audit/audit.md).
 
 ## Help
 

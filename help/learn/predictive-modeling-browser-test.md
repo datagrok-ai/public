@@ -21,12 +21,12 @@ them.
 
 * Model edit dialog has been opened
 
-1. Share [model](learn.md) from its context menu to another [user](../govern/user.md)
-   or user [group](../govern/group.md)
+1. Share [model](learn.md) from its context menu to another [user](../govern/access-control/users-and-groups#users)
+   or user [group](../govern/access-control/users-and-groups#groups)
 
-* Access to the model is enabled for the selected [user](../govern/user.md)
-  or [group](../govern/group.md) of users.
-* Appropriate [user](../govern/user.md) received a notification and a letter to the mail
+* Access to the model is enabled for the selected [user](../govern/access-control/users-and-groups#users)
+  or [group](../govern/access-control/users-and-groups#groups) of users.
+* Appropriate [user](../govern/access-control/users-and-groups#users) received a notification and a letter to the mail
 
 1. Open the "General" tab in [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 

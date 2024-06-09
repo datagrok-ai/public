@@ -13,7 +13,7 @@ export const _package = new DG.Package();
 
 //input: dynamic treeNode
 //input: view browseView
-export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
   await hitAppTB(treeNode, browseView, 'Hit Triage');
 }
 
@@ -27,11 +27,11 @@ export async function hitTriageApp(): Promise<DG.ViewBase> {
 
 //input: dynamic treeNode
 //input: view browseView
-export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+export async function hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any) {// TODO: DG.BrowseView
   await hitAppTB(treeNode, browseView, 'Hit Design');
 }
 
-async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView, name: AppName) {
+async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: any, name: AppName) {// TODO: DG.BrowseView
   const camps = await loadCampaigns(name, []);
 
   for (const [_, camp] of Object.entries(camps)) {

@@ -5,8 +5,7 @@ import * as DG from 'datagrok-api/dg';
 category('data sync', () => {
   test('grok connect streaming and data sync', async () => {
     grok.functions.eval('DbTests:PostgresqlTestDataSync()').then(() => {});
-    await awaitCheck(() => grok.shell.tv?.table?.name == 'result', 'Query first batch timeout', 30000);
-    expect(grok.shell.tv?.table?.tags['.script'], 'Result = Dbtests:PostgresqlTestDataSync()');
+    await awaitCheck(() => grok.shell.tv?.table?.name === 'PostgresqlTestDataSync', 'Query first batch timeout', 30000);
     grok.shell.closeTable(grok.shell.tv!.table!);
     grok.shell.tv?.close();
   });

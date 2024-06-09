@@ -21,7 +21,7 @@ Additionally, there are views for specialized tasks, like data access or
 scripting, and [plugins](../../plugins.md) can introduce custom views. For more
 information on such views, see the appropriate sections in our documentation.
 
-A view may have UI elements associated with it: **Toolbox**, **Top Menu**, and **Status Bar**.
+A view may have UI elements associated with it: [Toolbox](#toolbox), **Top Menu**, and **Status Bar**.
 
 Open views appear on the **Sidebar**. Views of the same
 type, such as multiple tables, are grouped with a badge showing the
@@ -56,7 +56,7 @@ icon on the right and select **Split right** or **Split down**.
 
 ## Embedding views
 
-For saved projects, you can also embed views into an external site as an iframe.
+For saved [projects](../../concepts/project/project.md), you can also embed views into an external site as an iframe.
 Embedded views remain fully interactive and maintain the connection with the
 data from which it was created inside Datagrok.
 
@@ -66,3 +66,29 @@ To embed a view:
 1. In the view's **Top Menu**, click the **Hamburger** icon and select **Embed...** This opens an **Embed** dialog.
 1. From the dialog, copy the generated iframe and use it on your site.
 
+## Toolbox
+
+A **Toolbox** is a panel associated with a view. The content of the **Toolbox** is view-dependent, for example:
+
+<Tabs>
+<TabItem value="table-view" label="Table View" default>
+
+In the [Table View](table-view.md), the **Toolbox** lets you add viewers, refresh dynamic
+dashboards, [filter](table-view.md#select-and-filter), [search](table-view.md#search), and do more. The upper part of the **Toolbox** acts
+as a navigation tool, displaying a list of all open tables. From here, you can
+easily switch between different tables by simply clicking on the desired table. 
+
+![](img/toolbox-table-view.png)
+
+</TabItem>
+<TabItem value="user-profile-view" label="User Profile View">
+
+In the [User Profile View](user-profile-view.md), the **Toolbox** lets you switch between different
+views related to the user's profile.
+
+![](img/toolbox-user-profile-view.png)
+
+</TabItem>
+</Tabs>
+
+To show the **Toolbox**, hover over the **Sidebar**. To pin it, clicking the **Pin (<FAIcon icon="fa-solid fa-thumbtack"/>) icon** in the top right corner.  

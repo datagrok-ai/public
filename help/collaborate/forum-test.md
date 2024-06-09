@@ -30,13 +30,13 @@ notified that someone asked for help.
 
 1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel) for
    current
-   [user](../govern/user.md)
+   [user](../govern/access-control/users-and-groups#users)
 
 * Reply added to topic.
 * Open topic from "Forums" window to see a new answer.
 
 1. Drag the objects ([table](../datagrok/table.md), [project](../datagrok/concepts/project/project.md)
-   , [use](../govern/user.md), etc)
+   , [use](../govern/access-control/users-and-groups#users), etc)
    to answer field.
 
 * Objects are added to the comments successfully.

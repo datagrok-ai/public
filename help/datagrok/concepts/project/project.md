@@ -16,7 +16,7 @@ In Datagrok, there are two types of projects:
   projects.
 * **Child projects**: Exist under root projects and are prefixed with the name
   of the root project they belong to. For example, the name `Demo:CoffeeCompany` indicates
-  that `CoffeeCompany` is a child project under the root project `Demo`. Child projects inherit [privileges](../../../govern/authorization.md) from the root project.
+  that `CoffeeCompany` is a child project under the root project `Demo`. Child projects inherit [privileges](../../../govern/access-control/access-control.md#permissions) from the root project.
 
 Datagrok automatically creates root projects for
 [plugins](../../../develop/how-to/create-package.md) and users:
@@ -72,7 +72,7 @@ impacts their hierarchy, names, and privileges.
 When moving entities, you have these options:
 
 1. **Clone**:
-   * This action create a copy of the entity in the new project. The entity in the original project remains unaffected.
+   * This action creates a copy of the entity in the new project. The entity in the original project remains unaffected.
 1. **Move**:
    * The entity is moved to the new project, is automatically renamed, and adopts the permissions of the new project.
    * A view-only copy of the moved entity is created in the original project. This view-only copy is linked to the entity in the new project.
@@ -106,12 +106,13 @@ To find projects using [smart search](../../navigation/views/browse.md#entity-se
 |-------------|----------------------------------------|
 | name        |                                        |
 | description |                                        |
+| ID          |                                        |
 | createdOn   |                                        |
 | updatedOn   |                                        |
-| author      | [User](../../../govern/user.md) object |
-| starredBy   | [User](../../../govern/user.md) object |
-| commentedBy | [User](../../../govern/user.md) object |
-| usedBy      | [User](../../../govern/user.md) object |
+| author      | [User](../../../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../../../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../../../govern/access-control/users-and-groups#users) object |
+| usedBy      | [User](../../../govern/access-control/users-and-groups#users) object |
 
 ## See also
 

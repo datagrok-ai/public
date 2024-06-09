@@ -2,6 +2,8 @@
 
 from utils import *
 from engine import *
+import rdkit
+from rdkit import Chem
 
 class ChemProp(Engine):
     type = 'Chemprop'
@@ -14,12 +16,18 @@ class ChemProp(Engine):
         tmp_dir = Engine.get_temporary_directory(id)
         table_path = os.path.join(tmp_dir, 'table.csv')
         table.columns = [n if n == predict else 'smiles' for n in table.columns]
+        # Convert molblocks to SMILES if needed
+        table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
         ChemProp._save_table(table, table_path)
         params = [
-            'chemprop_train',
-            '--data_path', table_path,
-            '--save_dir', tmp_dir]
+            'chemprop',
+            'train',
+            '--data-path', table_path,
+            '--output-dir', tmp_dir,
+        ]
         params.extend(self.parameter_values_to_shell_params_string(parameter_values))
+        index_of_type = params.index('--dataset-type')
+        params[index_of_type] = '--task-type'
         log = call_process(params)
         model_blob = ''
         try:
@@ -41,13 +49,15 @@ class ChemProp(Engine):
         save_table = not os.path.exists(table_path)
         if save_table:
             table.columns = ['smiles']
+            # Convert molblocks to SMILES if needed
+            table['smiles'] = table['smiles'].apply(lambda x: self.convert_to_smiles(x) if 'M  END' in x else x)
             ChemProp._save_table(table, table_path)
-        predictions_path = os.path.join(tmp_dir, 'predictions.csv')
+        predictions_path = os.path.join(tmp_dir, 'table_preds_0.csv')
         params = [
-            'chemprop_predict',
-            '--test_path', table_path,
-            '--checkpoint_path', model_path,
-            '--preds_path', predictions_path
+            'chemprop',
+            'predict',
+            '--test-path', table_path,
+            '--model-path', model_path,
         ]
         call_process(params)
         prediction = pd.read_csv(predictions_path, na_values=['Invalid SMILES'])
@@ -58,12 +68,20 @@ class ChemProp(Engine):
 
     @staticmethod
     def _get_model_blob_path(tmp_dir: str):
-        return os.path.join(tmp_dir, 'fold_0', 'model_0', 'model.pt')
+        return os.path.join(tmp_dir, 'model_0', 'best.pt')
 
     @staticmethod
     def _save_table(table: pd.DataFrame, table_path: str):
         table = table[['smiles'] + [col for col in table.columns if col != 'smiles']]
         table.to_csv(table_path, index=False)
+
+    @staticmethod
+    def convert_to_smiles(molblock):
+        try:
+            mol = Chem.MolFromMolBlock(molblock)
+            return Chem.MolToSmiles(mol) if mol else molblock
+        except:
+            return molblock
 
     options = {
         'features_enabled': True,
@@ -82,14 +100,7 @@ class ChemProp(Engine):
             'required': True
         },
 
-        'log_frequency': {
-            'type': Types.INT,
-            'description': 'The number of batches between each logging of the training loss',
-            'category': 'general',
-            'default_value': 10
-        },
-
-        'metric': {
+         'metric': {
             'type': Types.STRING,
             'choices': ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy'],
             'description': 'Metric to use during evaluation.'
@@ -107,13 +118,6 @@ class ChemProp(Engine):
             'default_value': 3
         },
 
-        'no_cache': {
-            'type': Types.BOOL,
-            'description': 'Turn off caching mol2graph computation',
-            'category': 'general',
-            'default_value': False
-        },
-
         'num_folds': {
             'type': Types.INT,
             'description': 'Number of folds when performing cross validation',
@@ -121,20 +125,13 @@ class ChemProp(Engine):
             'default_value': 1
         },
 
-        'seed': {
+        'data_seed': {
             'type': Types.INT,
             'description': 'Random seed to use when splitting data into train/val/test sets.'
                            'When `num_folds` > 1, the first fold uses this seed and all'
                            'subsequent folds add 1 to the seed.',
             'category': 'general',
             'default_value': 0
-        },
-
-        'show_individual_scores': {
-            'type': Types.BOOL,
-            'description': 'Show all scores for individual targets, not just average, at the end',
-            'category': 'general',
-            'default_value': False
         },
 
         'split_sizes': {
@@ -152,20 +149,6 @@ class ChemProp(Engine):
             'default_value': 'random'
         },
 
-        'test': {
-            'type': Types.BOOL,
-            'description': 'Whether to skip training and only test the model',
-            'category': 'general',
-            'default_value': False
-        },
-
-        'use_compound_names': {
-            'type': Types.BOOL,
-            'description': 'Use when test data file contains compound names in addition to SMILES strings',
-            'category': 'general',
-            'default_value': False
-        },
-
         'activation': {
             'type': Types.STRING,
             'description': 'Activation function',
@@ -181,7 +164,7 @@ class ChemProp(Engine):
             'default_value': False
         },
 
-        'bias': {
+        'message_bias': {
             'type': Types.BOOL,
             'description': 'Whether to add bias to linear layers',
             'category': 'model',
@@ -195,7 +178,7 @@ class ChemProp(Engine):
             'default_value': 1
         },
 
-        'hidden_size': {
+        'message_hidden_dim': {
             'type': Types.INT,
             'description': 'Dimensionality of hidden layers in MPN',
             'category': 'model',
@@ -223,7 +206,7 @@ class ChemProp(Engine):
             'default_value': False
         },
 
-        'ffn_hidden_size': {
+        'ffn_hidden_dim': {
             'type': Types.INT,
             'description': 'Hidden dim for higher-capacity FFN (defaults to hidden_size)',
             'category': 'model',
@@ -241,14 +224,14 @@ class ChemProp(Engine):
             'type': Types.INT,
             'description': 'Number of epochs to run',
             'category': 'training',
-            'default_value': 30
+            'default_value': 50
         },
 
         'batch_size': {
             'type': Types.INT,
             'description': 'Batch size',
             'category': 'training',
-            'default_value': 50
+            'default_value': 64
         },
 
         'warmup_epochs': {
@@ -281,17 +264,10 @@ class ChemProp(Engine):
             'default_value': 0.0001
         },
 
-        'no_features_scaling': {
+        'no_descriptor_scaling': {
             'type': Types.BOOL,
             'description': 'Turn off scaling of features',
             'category': 'training',
             'default_value': False
-        },
-
-        'max_data_size': {
-            'type': Types.INT,
-            'description': 'Maximum number of data points to load',
-            'category': 'predict',
-            'default_value': None
         }
     }

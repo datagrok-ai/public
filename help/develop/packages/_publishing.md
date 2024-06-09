@@ -63,7 +63,7 @@ grok publish <url> -k <dev-key>
 
 ## Sharing a package
 
-Just like other entities on the platform, packages are subject to [privileges](../../govern/security.md#privileges). You
+Just like other entities on the platform, packages are subject to [privileges](../../govern/access-control/access-control.md#permissions#privileges). You
 can specify the viewing or editing rights for a developer and, optionally, notify them.
 
 It's possible to manage the access directly from the package. For that, specify the eligible user groups

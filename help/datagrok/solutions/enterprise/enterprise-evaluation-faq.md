@@ -7,9 +7,9 @@ title: "Enterprise evaluation FAQ"
   * [Deployment](../../../deploy/deploy.md)
 
 * Security
-  * [Security overview](security.md)
-  * [Authentication](../../../govern/authentication.md)
-  and [authorization](../../../govern/authorization.md)
+  * [Security overview](../../../govern/access-control/access-control.md)
+  * [Authentication](../../../govern/access-control/access-control.md#authentication)
+  and [authorization](../../../govern/access-control/access-control.md#authorization)
   * [Encryption at rest](#encryption-at-rest)
   and [encryption in transit](#encryption-in-transit)
 

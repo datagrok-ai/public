@@ -3,7 +3,7 @@
 
 # Tests: Profile Settings
 
-[Users](../govern/user.md) can change the information in their profiles. Such as profile photo, password, first and last
+[Users](../govern/access-control/users-and-groups#users) can change the information in their profiles. Such as profile photo, password, first and last
 names.
 
 ## Testing scenarios
@@ -28,4 +28,4 @@ names.
 
 See also:
 
-* [User](../govern/user.md)
+* [User](../govern/access-control/users-and-groups#users)

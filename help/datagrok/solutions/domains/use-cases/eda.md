@@ -42,7 +42,7 @@ What's more, Datagrok understands the nature of your
 * Seamlessly access information with [widgets](../../../../visualize/widgets.md)
  and context-driven [info panes](../../../navigation/panels/info-panels.md). 
 * Create dashboards in seconds. Share your analysis in easy and
-[secure](../../../../govern/security.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
+[secure](../../../../govern/access-control/access-control.md) way: send a URL link or integrate: REST API, JS API, or embed as an iframe. 
 * Use data annotations and team discussions to collaborate on decision-making. 
 
 Need a specific tool or functionality? Easily [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions in [R, Python, or Julia](../../../../compute/scripting/scripting.mdx).

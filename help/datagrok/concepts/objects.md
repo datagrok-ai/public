@@ -14,8 +14,8 @@ features applicable to them. We call these objects _entities_. Here they are:
 * Data Job
 * DB Table Info
 * DB Column Info
-* [User](../../govern/user.md)
-* [Group](../../govern/group.md)
+* [User](../../govern/access-control/users-and-groups.md#users)
+* [Group](../../govern/access-control/users-and-groups.md#groups)
 * [Model](../../learn/learn.md)
 * [Notebook](../../compute/jupyter-notebook.md)
 * [Package](../../develop/develop.md#packages)
@@ -30,9 +30,9 @@ The following operations can be applied to any entity:
 * Getting its URL
 * Referencing it in a [chat](../../collaborate/chat.md), in
   [markup](../../develop/under-the-hood/markup.md), or a [dashboard](project/dashboard.md)
-* Assigning [privileges](../../govern/authorization.md), such as rights to view,
+* Assigning [privileges](../../govern/access-control/access-control.md#authorization), such as rights to view,
   edit, or share, to a particular instance
-* Using it as a parameter in the [audit](../../govern/audit.md) record
+* Using it as a parameter in the [audit](../../govern/audit/audit.md) record
 * Deleting it
 
 ## Metadata
@@ -83,14 +83,10 @@ particular entity types. Common properties include:
 
 ## Search
 
-Search criteria can be combined using 'and' or 'or' operands:
-
-* `#demo or #chem`
-
-[Learn more about search patterns](../navigation/views/table-view.md#search)
+You can use metadata to [search for entities](../navigation/views/table-view.md#search)
 
 See also:
 
-* [Privileges](../../govern/authorization.md)
+* [Privileges](../../govern/access-control/access-control.md#authentication)
 * [Sharing](../navigation/basic-tasks/basic-tasks.md#share)
-* [Audit](../../govern/audit.md)
+* [Audit](../../govern/audit/audit.md)

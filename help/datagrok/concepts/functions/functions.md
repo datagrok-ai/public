@@ -25,7 +25,7 @@ all share the same mechanism and therefore have the same features:
 * Introspectable - programmatically find out function parameter's metadata
 * Secure - A function can have privileges associated with it. For instance, you might want the
   "ApproveExpense" function be available only to people belonging to the "
-  Managers" [group](../../../govern/group.md).
+  Managers" [group](../../../govern/access-control/users-and-groups#groups).
 * Auditable - find out who and when executed a particular function, and which parameters were used
 * Ability to get a table with all parameters used for a particular function
 * Runnable - dynamically generated UI for editing parameter values
@@ -66,7 +66,7 @@ Neither inputs nor outputs can be accessed by functions executed by other users.
 server, where the data is stored or processed. All traffic between client and server
 is [TLS-encrypted](https://en.wikipedia.org/wiki/Transport_Layer_Security).
 
-Most of the actions performed by users are logged for the usage analysis and [audit](../../../govern/audit.md) purposes.
+Most of the actions performed by users are logged for the usage analysis and [audit](../../../govern/audit/audit.md) purposes.
 For logging, only the metadata associated with the parameters (such as table and column names) will be additionally
 stored in the database. Additionally, if a table passed as a parameter is already residing on a server, the
 corresponding audit record will contain a reference to it.
@@ -82,10 +82,10 @@ You can use these fields to filter functions with [smart search](../../navigatio
 | runs        | list of [FuncCall](function-call.md) object |
 | createdOn   |                                             |
 | updatedOn   |                                             |
-| author      | [User](../../../govern/user.md) object         |
-| starredBy   | [User](../../../govern/user.md) object         |
-| commentedBy | [User](../../../govern/user.md) object         |
-| usedBy      | [User](../../../govern/user.md) object         |
+| author      | [User](../../../govern/access-control/users-and-groups#users) object         |
+| starredBy   | [User](../../../govern/access-control/users-and-groups#users) object         |
+| commentedBy | [User](../../../govern/access-control/users-and-groups#users) object         |
+| usedBy      | [User](../../../govern/access-control/users-and-groups#users) object         |
 
 ## Videos
 

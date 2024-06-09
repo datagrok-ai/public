@@ -4,6 +4,7 @@ keywords:
  - info panel
  - info pane
 format: mdx
+sidebar_position: 2
 ---
 
 ```mdx-code-block
@@ -101,7 +102,7 @@ info panes are displayed accordingly.
 
 You can control access to specific types of info panes based on user attributes
 such as roles, groups, etc. This condition can be set directly within the script
-or externally through [global permissions](../../../govern/global-permissions.md).
+or externally through [global permissions](../../../govern/access-control/users-and-groups.md#group-types).
 
 <details>
 <summary>Code snippet</summary>

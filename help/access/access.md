@@ -50,10 +50,10 @@ To see all available data source connections, on the **Sidebar**, select **Manag
 | description |                                  |
 | createdOn   |                                  |
 | updatedOn   |                                  |
-| author      | [User](../govern/user.md) object |
-| starredBy   | [User](../govern/user.md) object |
-| commentedBy | [User](../govern/user.md) object |
-| usedBy      | [User](../govern/user.md) object |
+| author      | [User](../govern/access-control/users-and-groups#users) object |
+| starredBy   | [User](../govern/access-control/users-and-groups#users) object |
+| commentedBy | [User](../govern/access-control/users-and-groups#users) object |
+| usedBy      | [User](../govern/access-control/users-and-groups#users) object |
 
 </details>
 
@@ -105,8 +105,8 @@ Datagrok offers an array of capabilities and features designed to help users eff
 
 ## Sharing and access control
 
-Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/concepts/objects.md), which means there is a common set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
-to [groups](../govern/group.md). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
+Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/concepts/objects.md), which means there is a common set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
+to [groups](../govern/access-control/users-and-groups.md#groups). For more information on the access privilege model, see [Access Control](../govern/access-control/access-control.md).
 
 Data connections can be shared as part of a [project](../datagrok/concepts/project/project.md), [package](../develop/develop.md#packages), or as a standalone [entity](../datagrok/concepts/objects.md). When you share a query with someone, the database connection associated with it is automatically shared as well. This is because the query's access rights depend on the access rights of the connection. However, if you share a database connection with someone, your queries won't be shared automatically. You need to share them separately. For web queries, they are shared automatically when the corresponding connection is shared.
 

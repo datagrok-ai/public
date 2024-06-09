@@ -10,7 +10,7 @@ import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
 import {testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
-  getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
+  getTrainedModel, getPrediction, isApplicableSVM, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
@@ -323,6 +323,16 @@ export async function applyLinearKernelSVM(df: DG.DataFrame, model: any): Promis
   return await getPrediction(df, model);
 }
 
+//name: isApplicableLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export async function isApplicableLinearKernelSVM(df: DG.DataFrame, predict_column: string): Promise<boolean> {
+  return isApplicableSVM(df, predict_column);
+}
+
 //name: trainRBFkernelSVM
 //meta.mlname: RBF-kernel LS-SVM
 //meta.mlrole: train
@@ -352,6 +362,16 @@ export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string
 //output: dataframe table
 export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
   return await getPrediction(df, model);
+}
+
+//name: isApplicableRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export async function isApplicableRBFkernelSVM(df: DG.DataFrame, predict_column: string): Promise<boolean> {
+  return isApplicableSVM(df, predict_column);
 }
 
 //name: trainPolynomialKernelSVM
@@ -386,6 +406,16 @@ export async function applyPolynomialKernelSVM(df: DG.DataFrame, model: any): Pr
   return await getPrediction(df, model);
 }
 
+//name: isApplicablePolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export async function isApplicablePolynomialKernelSVM(df: DG.DataFrame, predict_column: string): Promise<boolean> {
+  return isApplicableSVM(df, predict_column);
+}
+
 //name: trainSigmoidKernelSVM
 //meta.mlname: sigmoid kernel LS-SVM
 //meta.mlrole: train
@@ -416,6 +446,16 @@ export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: st
 //output: dataframe table
 export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> {
   return await getPrediction(df, model);
+}
+
+//name: isApplicableSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export async function isApplicableSigmoidKernelSVM(df: DG.DataFrame, predict_column: string): Promise<boolean> {
+  return isApplicableSVM(df, predict_column);
 }
 
 //top-menu: ML | Analyze | ANOVA...

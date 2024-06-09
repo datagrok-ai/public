@@ -2,10 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {MonomerTypes, PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
+import {MonomerType, PolymerType, MonomerTypes, PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
 
 import HELM_POLYMER_TYPE = PolymerTypes;
 import HELM_MONOMER_TYPE = MonomerTypes;
+import {RGroup} from '../types';
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
 
@@ -82,16 +83,16 @@ export const jsonSdfMonomerLibDict = {
 };
 
 export const DUMMY_MONOMER = {
-  'monomerType': 'Backbone',
+  'monomerType': 'Backbone' as MonomerType,
   'smiles': '',
   'name': '',
   'author': 'Datagrok',
   'molfile': '',
   'naturalAnalog': '',
-  'rgroups': [],
+  'rgroups': [] as RGroup[],
   'createDate': null,
   'id': 0,
-  'polymerType': 'PEPTIDE',
+  'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
 };
 // range of hex nubers used in PepSea library to endode monomers

@@ -264,7 +264,7 @@ a namespace for it.
 
 Another popular case is when you actually host the application's code in the customer's repository,
 but the credentials to proprietary data sources remain as what you won't put there along the code.
-For this scenario, consider [pushing credentials](govern/security.md#credentials) to your Datagrok instance
+For this scenario, consider [pushing credentials](govern/access-control/access-control.md#credentials-management-system#credentials) to your Datagrok instance
 as part of the package deployment process.
 
 -->
@@ -587,12 +587,12 @@ security patterns for storing credentials and authorized access to Datagrok usin
 
 Datagrok has a flexible mechanism for grouping users together. A user can belong to more than one group. A group can be
 included in another group, which is useful for both reflecting organization hierarchy and implementing
-role-based [security](../../govern/security.md).
+role-based [security](../../govern/access-control/access-control.md).
 
 Many types of objects within the Datagrok platform can be shared with other users or
-[groups](../../govern/group.md). Such shareable objects are called [entities](../../datagrok/concepts/objects.md). When an object
-is shared, you are essentially granting a [privilege](../../govern/authorization.md)
-(typically, 'view' or 'edit') to a grantee. See the [Security](../../govern/security.md) article for details.
+[groups](../../govern/access-control/users-and-groups#groups). Such shareable objects are called [entities](../../datagrok/concepts/objects.md). When an object
+is shared, you are essentially granting a [privilege](../../govern/access-control/access-control.md#authorization)
+(typically, 'view' or 'edit') to a grantee. See the [Security](../../govern/access-control/access-control.md#permissions) article for details.
 
 Often it's a reasonable choice to create a new group for the users of your application. To let users access your
 application, share application's package with their group. Open the "Manage" pane in the sidebar, navigate to "Packages"
@@ -602,8 +602,8 @@ and other package entities shared to the group.
 *References:*
 
 * [Sharing](../../datagrok/navigation/basic-tasks/basic-tasks.md#share)
-* [Security](../../govern/security.md)
-* [Authorization](../../govern/authorization.md)
+* [Security](../../govern/access-control/access-control.md#credentials-management-system)
+* [Authorization](../../govern/access-control/access-control.md#authorization)
 
 #### Authentication
 
@@ -614,7 +614,7 @@ scheme. We can accommodate these needs by developing a customer-specific integra
 
 *References:*
 
-* [Authentication](../../govern/authentication.md)
+* [Authentication](../../govern/access-control/access-control.md#authentication)
 
 #### Obtaining groups and users info
 

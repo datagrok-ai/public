@@ -6,11 +6,20 @@ import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activit
 import {convertMolNotation, getRdKitModule} from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
 
 const cashedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+
+export type ActivityCliffsParams = {
+  molColName: string,
+  activityColName: string,
+  similarityMetric: BitArrayMetrics,
+  similarity: number,
+  options: any
+}
 
 export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const molecule1 = params.seqCol.get(params.points[0]);
@@ -121,7 +130,7 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   const molHost = ui.div();
   if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
-//@ts-ignore
+
   ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
   molHost.onclick = () => {
     const obj = grok.shell.o;

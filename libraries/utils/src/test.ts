@@ -304,11 +304,13 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        grok.shell.lastError = '';
+        grok.shell.clearLastError();
         await f.apply();
         await delay(wait ? wait : 2000);
-        if (grok.shell.lastError)
-          throw new Error(grok.shell.lastError);
+        const unhandled = await grok.shell.lastError;
+        if (unhandled)
+          throw new Error(unhandled);
+
       }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }
@@ -372,7 +374,7 @@ export async function runTests(options?:
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
-  grok.shell.lastError = '';
+  grok.shell.clearLastError();
   const categories = [];
   const logs = redefineConsole();
   try {
@@ -428,11 +430,12 @@ export async function runTests(options?:
   }
   if (options.testContext.catchUnhandled) {
     await delay(1000);
-    if (grok.shell.lastError.length > 0) {
+    const error = await grok.shell.lastError;
+    if (error) {
       results.push({
         category: 'Unhandled exceptions',
         name: 'exceptions',
-        result: grok.shell.lastError, success: false, ms: 0, skipped: false
+        result: error, success: false, ms: 0, skipped: false
       });
     }
   }

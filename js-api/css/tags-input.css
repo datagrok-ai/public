@@ -1,5 +1,5 @@
 .ui-input-root.ui-input-tags {
-    flex-direction: column;
+    flex-direction: row;
 }
 
 .ui-tag-list {

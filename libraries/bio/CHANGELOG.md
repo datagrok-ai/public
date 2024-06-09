@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.41.9 (2024-05-29)
+
+Fix Monomer type
+
 ## 5.41.8 (2024-05-29)
 
 Fix TAGS, ALPHABET enum

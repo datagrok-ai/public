@@ -771,7 +771,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.treeBuildCount > runNum || this.cancelled)
       return;
 
-    if (jsonStr != null)
+    if (jsonStr != null && jsonStr != '')
       await this.loadTreeStr(jsonStr);
 
     if (this.cancelled) {

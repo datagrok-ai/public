@@ -10,7 +10,7 @@ USER mambauser
 
 WORKDIR /app
 
-COPY environment.yml /app/
+COPY --chown=mambauser:mambauser environment.yml /app/
 
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
@@ -21,7 +21,7 @@ RUN set -ex ; \
     micromamba env create -f environment.yml ; \
     micromamba clean -afy
 
-COPY . /app
+COPY --chown=mambauser:mambauser . /app
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
 
