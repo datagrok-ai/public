@@ -12,7 +12,7 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'},
+      {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
         test: /\.(js|mjs|jsx|ts|tsx)$/,
         enforce: 'pre',

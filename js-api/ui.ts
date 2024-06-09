@@ -1078,7 +1078,7 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
     });
   }
 
-  return rxjs.Observable.create(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
+  return new rxjs.Observable(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
     const resizeObserver = new ResizeObserver(observerEntries => {
       // trigger a new item on the stream when resizes happen
       for (const entry of observerEntries) {
@@ -1107,22 +1107,10 @@ export class tools {
   //static void annotateEntities(element: HTMLElement) { }
 
   static handleResize(element: HTMLElement, onChanged: (width: number, height: number) => void): () => void {
-    let width = element.clientWidth;
-    let height = element.clientHeight;
-    let interval = setInterval(() => {
-      let newWidth = element.clientWidth;
-      let newHeight = element.clientHeight;
-      if ((newWidth === 0 && newHeight === 0)) {
-        return
-      }
-
-      if (newWidth !== width || newHeight !== height) {
-        width = newWidth;
-        height = newHeight;
-        onChanged(width, height);
-      }
-    }, 100);
-    return () => clearInterval(interval);
+    let sub = onSizeChanged(element).subscribe((_) => {
+      onChanged(element.clientWidth, element.clientHeight);
+    });
+    return () => sub.unsubscribe();
   }
 
   static setHoverVisibility(host: HTMLElement, items: HTMLElement[]) {
@@ -1172,14 +1160,21 @@ export class tools {
     });
   }
 
-  static async resizeFormLabels(form: HTMLElement): Promise<void> {
-    //Min input width and padding
-    const minInputWidth = 180;
+  static resizeFormLabels(form: HTMLElement): void {
 
-    const labelWidths = this.getLabelsWidths(form);
-    labelWidths.sort();
+    let minInputWidth = 150;
+    let labelMaxWidth = 140;
 
-    let labelMaxWidth = Math.max(...labelWidths);
+    let labelWidths: number[] = []
+
+    function calcWidths(): void {
+      labelWidths = tools.getLabelsWidths(form);
+      labelWidths.sort();
+      const inputsMinWidths = tools.getInputsMinWidths(form);
+      minInputWidth = Math.max(...inputsMinWidths);
+      labelMaxWidth = Math.max(...labelWidths);
+    }
+
     function setLabelsWidth(w: number) {
       for (const label of Array.from(form.querySelectorAll('label.ui-input-label'))) {
         (label as HTMLElement).style.minWidth = `${w}px`;
@@ -1187,9 +1182,9 @@ export class tools {
         (label as HTMLElement).style.width = 'initial';
       }
     }
+
     function handleResize() {
       let labelWidth = labelMaxWidth;
-      console.log(`labelWidth: ${labelWidth}, form.clientWidth: ${form.clientWidth}`);
       if (form.clientWidth - labelWidth < minInputWidth) {
         // try to shrink long labels if they are present
         let labelsToShrink = Math.ceil(labelWidths.length * 0.2); // find 20% longest labels
@@ -1199,7 +1194,6 @@ export class tools {
             labelWidth = Math.max(newWidth, form.clientWidth - minInputWidth);
         }
       }
-      console.log(`new labelWidth: ${labelWidth}`);
       if (form.clientWidth - labelWidth < minInputWidth) {
         // switch form to tall view if inputs room is too small
         form.classList.add('ui-form-condensed');
@@ -1208,13 +1202,42 @@ export class tools {
       }
       setLabelsWidth(labelWidth);
     }
-    this.handleResize(form, (w, h) => {
-        handleResize();
+
+    new MutationObserver((_) => {
+      calcWidths();
+      setLabelsWidth(labelMaxWidth);
+    }).observe(form, {
+      childList: true,
+      subtree: true,
     });
 
+    this.handleResize(form, (w, h) => {
+      handleResize();
+    });
+
+    calcWidths();
     setLabelsWidth(labelMaxWidth);
     handleResize();
+    form.attributes['data-resizer-processed'] = true;
     return;
+  }
+
+  private static getInputsMinWidths(form: HTMLElement): number[] {
+    const widths: number[] = [];
+    const elements = $(form).find('div.ui-input-root:not(.ui-input-buttons)');
+    elements.each((i) => {
+      let element = elements[i] as HTMLElement;
+      let width = 100;
+      if (element.classList.contains('ui-input-float'))
+        width = 120;
+      if (element.classList.contains('ui-input-int'))
+        width = 100;
+      if (element.classList.contains('ui-input-string'))
+        width = 180; // todo: analyze content and metadata
+      // todo: analyze more types
+      widths.push(width);
+    });
+    return widths;
   }
 
   private static getLabelsWidths(tempForm: HTMLElement): number[] {

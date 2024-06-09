@@ -301,15 +301,10 @@ export async function testDataLinearNonSeparable(name: string, sigma: number, sa
 //input: dataframe df
 //input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
-//input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
 export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string,
-  gamma: number, toShowReport: boolean): Promise<any> {
+  gamma: number): Promise<any> {
   const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
-
-  if (toShowReport)
-    showTrainReport(df, trainedModel);
-
   return getPackedModel(trainedModel);
 }
 
@@ -333,6 +328,19 @@ export async function isApplicableLinearKernelSVM(df: DG.DataFrame, predict_colu
   return isApplicableSVM(df, predict_column);
 }
 
+//name: visualizeLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export async function visualizeLinearKernelSVM(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+  return showTrainReport(df, model);
+}
+
+
 //name: trainRBFkernelSVM
 //meta.mlname: RBF-kernel LS-SVM
 //meta.mlrole: train
@@ -340,16 +348,12 @@ export async function isApplicableLinearKernelSVM(df: DG.DataFrame, predict_colu
 //input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double sigma = 1.5 {category: Hyperparameters}
-//input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
 export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string,
-  gamma: number, sigma: number, toShowReport: boolean): Promise<any> {
+  gamma: number, sigma: number): Promise<any> {
   const trainedModel = await getTrainedModel(
     {gamma: gamma, kernel: RBF, sigma: sigma},
     df, predict_column);
-
-  if (toShowReport)
-    showTrainReport(df, trainedModel);
 
   return getPackedModel(trainedModel);
 }
@@ -374,6 +378,18 @@ export async function isApplicableRBFkernelSVM(df: DG.DataFrame, predict_column:
   return isApplicableSVM(df, predict_column);
 }
 
+//name: visualizeRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export async function visualizeRBFkernelSVM(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+  return showTrainReport(df, model);
+}
+
 //name: trainPolynomialKernelSVM
 //meta.mlname: polynomial kernel LS-SVM
 //meta.mlrole: train
@@ -382,16 +398,12 @@ export async function isApplicableRBFkernelSVM(df: DG.DataFrame, predict_column:
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double c = 1 {category: Hyperparameters}
 //input: double d = 2 {category: Hyperparameters}
-//input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
 export async function trainPolynomialKernelSVM(df: DG.DataFrame, predict_column: string,
-  gamma: number, c: number, d: number, toShowReport: boolean): Promise<any> {
+  gamma: number, c: number, d: number): Promise<any> {
   const trainedModel = await getTrainedModel(
     {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d},
     df, predict_column);
-
-  if (toShowReport)
-    showTrainReport(df, trainedModel);
 
   return getPackedModel(trainedModel);
 } // trainPolynomialKernelSVM
@@ -416,6 +428,18 @@ export async function isApplicablePolynomialKernelSVM(df: DG.DataFrame, predict_
   return isApplicableSVM(df, predict_column);
 }
 
+//name: visualizePolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export async function visualizePolynomialKernelSVM(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+  return showTrainReport(df, model);
+}
+
 //name: trainSigmoidKernelSVM
 //meta.mlname: sigmoid kernel LS-SVM
 //meta.mlrole: train
@@ -424,16 +448,12 @@ export async function isApplicablePolynomialKernelSVM(df: DG.DataFrame, predict_
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double kappa = 1 {category: Hyperparameters}
 //input: double theta = 1 {category: Hyperparameters}
-//input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
 export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: string,
-  gamma: number, kappa: number, theta: number, toShowReport: boolean): Promise<any> {
+  gamma: number, kappa: number, theta: number): Promise<any> {
   const trainedModel = await getTrainedModel(
     {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta},
     df, predict_column);
-
-  if (toShowReport)
-    showTrainReport(df, trainedModel);
 
   return getPackedModel(trainedModel);
 } // trainSigmoidKernelSVM
@@ -456,6 +476,18 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //output: bool result
 export async function isApplicableSigmoidKernelSVM(df: DG.DataFrame, predict_column: string): Promise<boolean> {
   return isApplicableSVM(df, predict_column);
+}
+
+//name: visualizeSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export async function visualizeSigmoidKernelSVM(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+  return showTrainReport(df, model);
 }
 
 //top-menu: ML | Analyze | ANOVA...

@@ -1,11 +1,11 @@
 {
-  "name": "webcomponents",
+  "name": "@datagrok/webcomponents",
   "friendlyName": "WebComponents",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
-    "@datagrok-libraries/webcomponents": "file:../../libraries/webcomponents",
+    "@datagrok-libraries/webcomponents": "^0.0.2",
     "cash-dom": "latest",
     "datagrok-api": "latest",
     "dayjs": "latest"
