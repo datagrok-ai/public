@@ -2,8 +2,9 @@ name: JS API
 on:
   workflow_dispatch: { }
 
-  paths:
-    - 'js-api/**'
+  push:
+    paths:
+      - 'js-api/**'
   pull_request:
     paths:
       - 'js-api/**'
