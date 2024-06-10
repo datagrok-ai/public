@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {TestContext, runTests, tests} from '@datagrok-libraries/utils/src/test';
 
+import './tests/compute-api/richFunctionViewTests';
+import './tests/compute-api/compositionPipelineTests';
 import './tests/expectTests';
 import './tests/jsonSerializationTests';
 import './tests/richFunctionViewTests';

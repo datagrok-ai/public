@@ -10,16 +10,28 @@ import type {
 } from '@datagrok-libraries/compute-utils';
 
 //@ts-ignore
-export const makeValidationResult = (window.compute.makeValidationResult) as
-  ((...args: Parameters<typeof makeValidationResultType>) => ReturnType<typeof makeValidationResultType>);
+export function makeValidationResult(
+  ...args: Parameters<typeof makeValidationResultType>
+): ReturnType<typeof makeValidationResultType> {
+  //@ts-ignore
+  return window.compute.makeValidationResult(...args);
+}
 
 //@ts-ignore
-export const makeAdvice = (window.compute.makeAdvice) as
-  ((...args: Parameters<typeof makeAdviceType>) => ReturnType<typeof makeAdviceType>);
+export function makeAdvice(
+  ...args: Parameters<typeof makeAdviceType>
+): ReturnType<typeof makeAdviceType> {
+  //@ts-ignore
+  return window.compute.makeAdvice(...args);
+}
 
 //@ts-ignore
-export const makeRevalidation = (window.compute.makeRevalidation) as
-  ((...args: Parameters<typeof makeRevalidationType>) => ReturnType<typeof makeRevalidationType>);
+export function makeRevalidation(
+  ...args: Parameters<typeof makeRevalidationType>
+): ReturnType<typeof makeRevalidationType> {
+  //@ts-ignore
+  return window.compute.makeRevalidation(...args);
+}
 
 export type ValidationInfo = ValidationInfoType;
 

@@ -6,15 +6,42 @@ import * as DG from 'datagrok-api/dg';
 import type {
   PipelineView as PipelineViewType,
   RichFunctionView as RichFunctionViewType,
+  CompositionPipeline as CompositionPipelineType,
+  PipelineCompositionConfiguration as PipelineCompositionConfigurationType,
+  PipelineConfiguration as PipelineConfigurationType,
 } from '@datagrok-libraries/compute-utils';
 
 export type PipelineView = PipelineViewType;
 export type RichFunctionView = RichFunctionViewType;
+export type CompositionPipeline = CompositionPipelineType;
+export type PipelineCompositionConfiguration = PipelineCompositionConfigurationType;
+export type PipelineConfiguration = PipelineConfigurationType;
 
-//@ts-ignore
-export const Pipeline = (window.compute.Pipeline) as
-  (new (...args: ConstructorParameters<typeof PipelineViewType>) => PipelineViewType);
+export function composeCompositionPipeline(
+  ...args: Parameters<typeof CompositionPipelineType.compose>
+) {
+  //@ts-ignore
+  return window.compute.CompositionPipeline.compose(...args);
+}
 
-//@ts-ignore
-export const RFV = (window.compute.RFV) as
-  (new (...args: ConstructorParameters<typeof RichFunctionViewType>) => RichFunctionViewType);
+export function createCompositionPipeline(
+  ...args: ConstructorParameters<typeof CompositionPipelineType>
+): CompositionPipelineType {
+  //@ts-ignore
+  return new window.compute.CompositionPipeline(...args);
+};
+
+
+export function createPipeline(
+  ...args: ConstructorParameters<typeof PipelineViewType>
+): PipelineViewType {
+  //@ts-ignore
+  return new window.compute.Pipeline(...args);
+};
+
+export function createRFV(
+  ...args: ConstructorParameters<typeof RichFunctionViewType>
+): RichFunctionViewType {
+  //@ts-ignore
+  return new window.compute.RFV(...args);
+};

@@ -5,7 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
-  RichFunctionView as RichFunctionViewInst, UiUtils, PipelineView as PipelineViewInst
+  RichFunctionView as RichFunctionViewInst, 
+  PipelineView as PipelineViewInst,
+  CompositionPipeline as CompositionPipelineViewInst,
+  UiUtils, 
 } from "@datagrok-libraries/compute-utils";
 import { 
   ValidationInfo, 
@@ -332,8 +335,9 @@ export function ObjectCoolingSelector(params: any) {
 
 //// Compute-utils API section
 
-export const Pipeline = PipelineViewInst;
 export const RFV = RichFunctionViewInst;
+export const Pipeline = PipelineViewInst;
+export const CompositionPipeline = CompositionPipelineViewInst;
 export const makeValidationResult = makeValidationResultInst;
 export const makeAdvice = makeAdviceInst;
 export const makeRevalidation = makeRevalidationInst;
