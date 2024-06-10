@@ -322,7 +322,7 @@ The `Fermentation` example illustrates the kinetics of the biochemical reactions
 
 ### PK
 
-[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The `PK` example simulates this process.
+[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The `PK` example simulates this process. It demonstrates the usage of the `meta.solver` feature for numerical [solver management](#solver-management).
 
 ![add-to-workspace](pics/DiffStudio-pk.png)
 
@@ -375,6 +375,40 @@ The export feature provides an extension of your project with [scripting](script
 
 * non-elementary and special functions' use
 * Datagrok packages' functions call
+
+## Solver management
+
+Manage the solver of ODEs to improve performance. Specify its settings in the `#meta.solver`-line:
+
+* the numerical method (`method`)
+* the maximum number of iterations (`maxIterations`)
+* the maximum computation time (`maxTimeMs`)
+
+Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
+
+|Method|Value|
+|-------------|--------|
+|The modified Rosenbrock triple|`'mrt'`|
+|The ROS3PRw method|`'ros3prw'`|
+|The ROS34PRw method|`'ros34prw'`|
+
+By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
+
+```python
+#meta.solver: {method: 'mrt'}
+```
+
+Set the maximum number of iterations to debug formulas in complex models:
+
+```python
+#meta.solver: {method: 'mrt'; maxIterations: 1}
+```
+
+Diff Studio alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
+
+```python
+#meta.solver: {method: 'mrt'; maxTimeMs: 50}
+```
 
 See also
 
