@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.41.10 (2024-06-10)
+
+NGL typings
+
 ## 5.41.9 (2024-05-29)
 
 Fix Monomer type
