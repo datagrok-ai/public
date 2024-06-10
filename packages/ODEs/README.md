@@ -215,5 +215,4 @@ See also
 
 * [Sensitivity analysis](https://datagrok.ai/help/compute/#sensitivity-analysis)
 * [Parameter optimization](https://datagrok.ai/help/compute/#input-parameter-optimization)
-* [Viewers gallery](https://datagrok.ai/help/visualize/gallery)
 * [Scripting](https://datagrok.ai/help/compute/scripting)
