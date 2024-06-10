@@ -36,29 +36,29 @@ export function complementWidget(value: string): DG.Widget {
   ));
 }
 
-//name: callCountSubsequencePythonScript
+//name: runCountSubsequenceScript
 //input: string sequence {semType: dna_nucleotide}
 //input: string subsequence
 //input: string scriptType = "Python"
 //output: int count
-//test: callCountSubsequencePythonScript("A", "AAA") == 0
-//test: callCountSubsequencePythonScript("aBbabaB", "aB") == 2
-//test: callCountSubsequencePythonScript("ararar", "ararar") == 1
-export async function callCountSubsequencePythonScript(
+//test: runCountSubsequenceScript("A", "AAA", "Python") == 0
+//test: runCountSubsequenceScript("aBbabaB", "aB", "JS") == 2
+//test: runCountSubsequenceScript("ararar", "ararar", "Python") == 1
+export async function runCountSubsequenceScript(
   sequence: string, subsequence: string, scriptType: su.ScriptType,
 ): Promise<number> {
   return await su.countSubsequences(_package.name, {sequence, subsequence}, scriptType);
 }
 
-//name: callCountSubsequenceTableAugmentScript
+//name: runCountSubsequenceForTableScript
 //input: dataframe sequences
 //input: column columnName
 //input: string subsequence = "acc"
 //input: string scriptType = "Python"
-export async function callCountSubsequenceTableAugmentScript(
-  sequences: DG.DataFrame, columnName: DG.Column, subsequence: string, scriptType: su.ScriptType,
+export async function runCountSubsequenceForTableScript(
+  sequences: DG.DataFrame, column: DG.Column, subsequence: string, scriptType: su.ScriptType,
 ): Promise<void> {
-  const scriptPrams = {sequences, columnName, subsequence};
+  const scriptPrams = {sequences, columnName: column, subsequence};
   const countCol = await su.getSubsequencesCountColumn(_package.name, scriptPrams, scriptType);
   countCol.name = `N(${subsequence})`;
   sequences.columns.insert(countCol);

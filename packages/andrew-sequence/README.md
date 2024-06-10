@@ -16,8 +16,8 @@
   + [CountSubsequenceJS](./scripts/CountSubsequenceJS.js) (client function) and [CountSubsequencePython](./scripts/CountSubsequencePython.py) (server function) count sequence occurrences for a passed sequence and by a passed sunsequence
   + [CountSubsequenceJSDataframe](./scripts/CountSubsequenceJSDataframe.js) (client function) and [CountSubsequencePythonDataframe](./scripts/CountSubsequencePythonDataframe.py) (server function) count sequence occurrences for eanch frame values and by a passed sunsequence returning a new column DataFrame with a calculated result column (modifying dataframes)
 + There're also functions in the [main](./src/package.ts) package file to call the scripts using JS API:
-  + `callCountSubsequencePythonScript` calls `AndrewSequence:CountSubsequencePython` scripts wrapping its logic (includes some lightweight unit tests)
-  + `callCountSubsequenceTableAugmentScript` calls `AndrewSequence:CountSubsequencePythonDataframe` scripts to modify a dataframe (works the same as `CountSubsequencePythonDataframe`)
+  + `runCountSubsequenceScript` calls `AndrewSequence:CountSubsequencePython` or `AndrewSequence:CountSubsequenceJS` scripts wrapping its logic (includes some lightweight unit tests)
+  + `runCountSubsequenceForTableScript` calls `AndrewSequence:CountSubsequencePythonDataframe` or `AndrewSequence:CountSubsequenceJSDataframe` scripts to modify a dataframe (works the same as `CountSubsequencePythonDataframe`)
 
 ### Exercise 4: Querying databases
 
