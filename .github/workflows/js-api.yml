@@ -384,7 +384,7 @@ jobs:
           npm install
           version=$(jq -r '.version' ../js-api/package.json)
           echo "version - $version"
-          npx ts-node parser.ts $version true          
+          npx ts-node parser.ts $version          
           git add ./static/versions
           git commit -m "js-api version updated by Compatibility tool"
           git sparse-checkout set static/versions
