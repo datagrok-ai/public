@@ -12,9 +12,7 @@ on:
           - 'yes'
           - 'no'
         default: 'no'
-  push:
-    branches:
-      vhlushchenko/GROK-15909/compatibility-tool-CI/CD
+  
     paths:
       - 'help/**/*.md'
       - 'help/**/*.mdx'
