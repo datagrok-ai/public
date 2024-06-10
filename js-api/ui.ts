@@ -1218,7 +1218,6 @@ export class tools {
     calcWidths();
     setLabelsWidth(labelMaxWidth);
     handleResize();
-    form.attributes['data-resizer-processed'] = true;
     return;
   }
 
