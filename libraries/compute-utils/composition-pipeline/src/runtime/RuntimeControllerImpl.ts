@@ -124,12 +124,6 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.getView(fullPath);
   }
 
-  public goToStep(path: ItemPath): void {
-    this.checkAborted();
-    const fullPath = pathJoin(this.config.pipelinePath, path);
-    return this.rt.goToStep(fullPath);
-  }
-
   public setValidation(path: ItemPath, validation?: ValidationResult): void {
     this.checkAborted();
     const fullPathTarget = pathJoin(this.config.pipelinePath, path);

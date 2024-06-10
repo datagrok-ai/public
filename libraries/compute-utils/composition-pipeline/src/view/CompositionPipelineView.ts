@@ -5,7 +5,7 @@ import {takeUntil} from 'rxjs/operators';
 import {ValidationResult} from '../../../shared-utils/validation';
 import {ABILITY_STATE, VISIBILITY_STATE} from '../../../shared-utils/consts';
 import {StepState} from '../../../function-views/src/pipeline-view';
-import {ItemPath, PipelineHooks, ExportConfig, NqName} from '../PipelineConfiguration';
+import {ItemPath, PipelineHooks, NqName} from '../PipelineConfiguration';
 import {PathKey} from '../config-processing-utils';
 import {ControllerConfig} from '../runtime/ControllerConfig';
 import {PipelineRuntime} from '../runtime/PipelineRuntime';
@@ -25,7 +25,7 @@ export interface HookSpec {
 }
 
 export interface ICompositionView {
-  injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig): void;
+  injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime): void;
   getStateBindings<T = any>(viewId: PathKey, stateId: string): { changes: Observable<T>; setter: (x: any) => void; };
   enableStep(stepId: PathKey): void;
   getStepState(stepId: PathKey): VISIBILITY_STATE;
@@ -49,10 +49,7 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
     super(funcName, [], {historyEnabled: true, isTabbed: false, skipInit: true});
   }
 
-  public injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig) {
-    if (exportConfig)
-      this.exportConfig = {...this.exportConfig, ...exportConfig};
-
+  public injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime) {
     this.initialConfig = steps.map((step) => ({...step, customId: step.id}));
     this.hooks = hooks;
     this.rt = rt;
@@ -178,5 +175,4 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
       }
     }
   }
-}
-'';
+};

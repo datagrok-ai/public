@@ -263,10 +263,6 @@ export class PipelineRuntime {
     return [...this.runningLinks];
   }
 
-  public goToStep(_path: ItemPath): void {
-    console.log('TODO: not implemented');
-  }
-
   public disableSubStepsIOSetters(prefixPath: ItemPath) {
     const k = pathToKey(prefixPath);
     debuglog(`disable substeps setters: ${k}`);

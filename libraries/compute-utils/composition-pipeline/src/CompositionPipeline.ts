@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
-import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, RuntimeController, ExportConfig, NqName, NestedPipelineConfig, StateType} from './PipelineConfiguration';
-import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isCompositionConfig} from './config-processing-utils';
+import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, RuntimeController, NqName, NestedPipelineConfig, StateType} from './PipelineConfiguration';
+import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isNestedPipelineConfig} from './config-processing-utils';
 import {NodeConf, NodeConfTypes, SubNodeConf, SubNodeConfTypes} from './runtime/NodeConf';
 import {NodeState} from './runtime/NodeState';
 import {LinkState} from './runtime/LinkState';
@@ -22,7 +22,6 @@ type ItemsToMerge = {
 export class CompositionPipeline {
   private id?: ItemName;
   private nqName?: NqName;
-  private exportConfig?: ExportConfig;
 
   private pipelineState = new PipelineGlobalState();
 
@@ -65,7 +64,6 @@ export class CompositionPipeline {
     if (this.nqName && this.nqName !== this.config.nqName)
       throw new Error(`Config different wrapper nqName ${this.config.nqName}, already set to ${this.nqName}`);
     this.nqName = this.config.nqName;
-    this.exportConfig = this.config.exportConfig;
   }
 
   public makePipelineView(nqName = this.nqName) {
@@ -96,7 +94,7 @@ export class CompositionPipeline {
     this.processConfig();
     this.addSystemHooks();
     this.rt = new PipelineRuntime(this.nodes, this.links, this.viewInst, this.pipelineState);
-    this.viewInst.injectConfiguration(this.steps, this.hooks, this.rt, this.exportConfig);
+    this.viewInst.injectConfiguration(this.steps, this.hooks, this.rt);
     this.isInit = true;
     await this.viewInst.init();
   }
@@ -203,7 +201,7 @@ export class CompositionPipeline {
     const {toRemove, toAdd, nestedPipelineConfig} = traverseConfigPipelines(
       this.config,
       (acc, node, path) => {
-        if (isCompositionConfig(node))
+        if (isNestedPipelineConfig(node))
           this.processMergeConfig(node, path, acc.toRemove, acc.toAdd, acc.nestedPipelineConfig);
         return acc;
       },
@@ -479,7 +477,7 @@ export class CompositionPipeline {
           for (const pconf of conf.popups ?? [])
             this.addNodeIOInfo(pconf);
         }
-        if (isCompositionConfig(node)) {
+        if (isNestedPipelineConfig(node)) {
           for (const [conf] of node.popupsToAdd ?? [])
             this.addNodeIOInfo(conf);
         }
@@ -518,7 +516,7 @@ export class CompositionPipeline {
           for (const pconf of conf.popups ?? [])
             names.add(pconf.nqName);
         }
-        if (isCompositionConfig(node)) {
+        if (isNestedPipelineConfig(node)) {
           for (const [conf] of node.popupsToAdd ?? [])
             names.add(conf.nqName);
         }

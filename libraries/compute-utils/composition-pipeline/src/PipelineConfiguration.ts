@@ -27,36 +27,33 @@ export type NqName = string;
 export type InputState = 'disabled' | 'restricted' | 'user input';
 
 export interface RuntimeController {
+  // individual links
   enableLink(path: ItemPath): void;
   disableLink(path: ItemPath): void;
   triggerLink(path: ItemPath): void;
   isLinkEnabled(path: ItemPath): void;
+  // individual steps
   enableStep(path: ItemPath): void;
   disableStep(path: ItemPath): void;
   isStepEnabled(path: ItemPath): boolean;
+  // pipeline level
   enablePipeline(path: ItemPath): void;
   disablePipeline(path: ItemPath): void;
   loadNestedPipeline(path: ItemPath, runId: string): void;
+  // step state manipulation
   getState<T = any>(path: ItemPath): T | void;
   setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
   updateStateInputState(path: ItemPath, inputState?: InputState): void;
   getValidationAction(path: ItemPath, name?: string): ActionItem;
   setValidation(path: ItemPath, validation?: ValidationResult | undefined): void;
+  // internal access
   getView(path: ItemPath): RichFunctionView | void;
-  goToStep(path: ItemPath): void;
   getCloseNotifier(): Observable<boolean>;
 }
 
 //
 // CompositionPipeline public configuration
 //
-
-export type ExportConfig = {
-  export?: ((format: string) => Promise<Blob>);
-  filename?: ((format: string) => string);
-  supportedFormats?: string[];
-  supportedExtensions?: Record<string, string>;
-};
 
 export type StateType = 'input' | 'output' | 'state';
 
@@ -130,7 +127,6 @@ export type PipelineConfiguration = {
   links?: PipelineLinkConfiguration[];
   actions?: PipelineActionConfiguraion[];
   states?: StateItemConfiguration[];
-  exportConfig?: ExportConfig;
   helpUrl?: string;
 };
 

@@ -5,20 +5,23 @@ import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemP
 // Internal config processing
 //
 
-export type CompositionGraphConfig = (PipelineConfiguration | PipelineCompositionConfiguration) & GraphNestedPipelines;
+export type NestedPipelineConfiguration = PipelineCompositionConfiguration & GraphNestedPipelines
 
-export type PipelineConfigVariants = PipelineConfiguration | CompositionGraphConfig;
+export type CompositionGraphConfig = PipelineConfiguration | NestedPipelineConfiguration;
+
+export type PipelineConfigVariants = PipelineConfiguration | PipelineCompositionConfiguration;
+
 type GraphNestedPipelines = {
   nestedPipelines?: {
-    [key: ItemName]: PipelineConfiguration | CompositionGraphConfig;
+    [key: ItemName]: CompositionGraphConfig;
   };
 };
 
-export function isCompositionConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineCompositionConfiguration {
+export function isNestedPipelineConfig(config: CompositionGraphConfig): config is NestedPipelineConfiguration {
   return (config as any)?.nestedPipelines;
 }
 
-function isPipelineConfig(config: CompositionGraphConfig | PipelineCompositionConfiguration | PipelineConfiguration): config is PipelineConfiguration {
+function isPipelineConfig(config: CompositionGraphConfig): config is PipelineConfiguration {
   return !(config as any)?.nestedPipelines;
 }
 
@@ -81,7 +84,7 @@ export function traverseConfigPipelines<T>(
 
   while (stk.length) {
     const {node, path} = stk.pop()!;
-    if (isCompositionConfig(node)) {
+    if (isNestedPipelineConfig(node)) {
       if (queuedNested.has(node))
         acc = nodeHandler(acc, node, path);
       else {
