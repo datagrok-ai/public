@@ -1197,7 +1197,7 @@ export class tools {
       if (form.clientWidth - labelWidth < minInputWidth) {
         // switch form to tall view if inputs room is too small
         form.classList.add('ui-form-condensed');
-      } else {
+      } else if (form.clientWidth - labelWidth > minInputWidth + 10) { // hysteresis
         form.classList.remove('ui-form-condensed');
       }
       setLabelsWidth(labelWidth);
