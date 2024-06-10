@@ -4,7 +4,7 @@
 
 Implemented
 
-* The ROS3PRw and ROS34PRw methods for numercal solving ODEs
+* The ROS3PRw and ROS34PRw methods for numerical solving ODEs
 * Callback mechanism for solvers control
 * `#meta.solver`-block for solving method control:
   * method
