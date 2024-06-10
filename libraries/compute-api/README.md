@@ -1,3 +1,4 @@
-# compute-utils
+# compute-api
 
-compute-utils is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+compute-api is a library for the [Datagrok](https://datagrok.ai) platform.
+It provides typings and access to Compute package API.
