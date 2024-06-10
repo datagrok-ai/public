@@ -5,7 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import * as nu from './nucleotide-utils';
 import * as ena from './ena';
-import {Nucleotide} from './types';
+import * as fu from './file-units';
+import * as su from './script-utils';
+
+import NucleotideBoxCellRenderer from './nucleotide-cell-renderer';
 
 export const _package = new DG.Package();
 
@@ -28,7 +31,7 @@ export function complement(nucleotides: string): string {
 //condition: true
 export function complementWidget(value: string): DG.Widget {
   return new DG.Widget(ui.divText(value ?
-    'value - ' + value :
+    'value - ' + complement(value) :
     'value is empty',
   ));
 }
@@ -36,24 +39,27 @@ export function complementWidget(value: string): DG.Widget {
 //name: callCountSubsequencePythonScript
 //input: string sequence {semType: dna_nucleotide}
 //input: string subsequence
+//input: string scriptType = "Python"
 //output: int count
 //test: callCountSubsequencePythonScript("A", "AAA") == 0
 //test: callCountSubsequencePythonScript("aBbabaB", "aB") == 2
 //test: callCountSubsequencePythonScript("ararar", "ararar") == 1
-export async function callCountSubsequencePythonScript(sequence: string, subsequence: string): Promise<number> {
-  return await grok.functions.call(`${_package.name}:CountSubsequencePython`, {sequence, subsequence});
+export async function callCountSubsequencePythonScript(
+  sequence: string, subsequence: string, scriptType: su.ScriptType,
+): Promise<number> {
+  return await su.countSubsequences(_package.name, {sequence, subsequence}, scriptType);
 }
 
 //name: callCountSubsequenceTableAugmentScript
 //input: dataframe sequences
 //input: column columnName
 //input: string subsequence = "acc"
+//input: string scriptType = "Python"
 export async function callCountSubsequenceTableAugmentScript(
-  sequences: DG.DataFrame, columnName: DG.Column, subsequence: string,
+  sequences: DG.DataFrame, columnName: DG.Column, subsequence: string, scriptType: su.ScriptType,
 ): Promise<void> {
-  const scriptName = `${_package.name}:CountSubsequencePythonDataframe`;
-  const df = await grok.functions.call(scriptName, {sequences, columnName, subsequence});
-  const countCol = df.columns.byIndex(0);
+  const scriptPrams = {sequences, columnName, subsequence};
+  const countCol = await su.getSubsequencesCountColumn(_package.name, scriptPrams, scriptType);
   countCol.name = `N(${subsequence})`;
   sequences.columns.insert(countCol);
 }
@@ -62,49 +68,23 @@ export async function callCountSubsequenceTableAugmentScript(
 //output: dataframe df
 //input: string country = "USA"
 export async function getOrders(country: string): Promise<DG.DataFrame> {
-  return await grok.data.query(`${_package.name}:ordersByCountry`, {country});
+  return await su.selectOredersByCountry(_package.name, country);
 }
 
+//name: openTable
 //input: string filepath
+//input: string stategy = "dataFiles"
 //output: dataframe df
-export async function openTable1(filepath: string): Promise<DG.DataFrame> {
-  const df = await grok.data.getDemoTable(filepath);
-  grok.shell.addTableView(df);
-  return df;
-}
-//input: string filepath
-//output: dataframe df
-export async function openTable2(filepath: string): Promise<DG.DataFrame> {
-  const df = await grok.data.files.openTable(`System.DemoFiles/${filepath}`);
-  grok.shell.addTableView(df);
-  return df;
-}
-
-//input: string filepath
-//output: dataframe df
-export async function openTable3(filepath: string): Promise<DG.DataFrame> {
-  const [df] = await (grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`));
+export async function openTable(filepath: string, srategy: keyof fu.FileLoadStategies): Promise<DG.DataFrame> {
+  const loader = fu.fileLoadStategies[srategy] ?? fu.fileLoadStategies.dataFiles;
+  const df = await loader(filepath);
   grok.shell.addTableView(df);
   return df;
 }
 
 //name: Add Tables
 export async function addTables(): Promise<void> {
-  // Recursively list package files
-  const files = await _package.files.list('', true);
-
-  // Filter files by extension
-  const csvFiles = files.filter((f) => f.extension === 'csv');
-
-  // Load every table and add a view for it
-  for (const file of csvFiles) {
-    // Alternative ways to read a table are:
-    // const df = await grok.data.loadTable(`${_package.webRoot}${file.name}`);
-
-    // const df = await _package.files.readCsv(file.name);
-    const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
-    grok.shell.addTableView(df);
-  }
+  return await fu.addTablesFromPacakgeCsv(_package);
 }
 
 //name: fuzzyJoin
@@ -121,80 +101,13 @@ export function fuzzyJoin(df1: DG.DataFrame, df2: DG.DataFrame, N: number): DG.D
   const df1Size = df1.rowCount;
   if (!(df1Size && df2.rowCount)) return df;
 
-  // const subsequenceLists = subsequencesCol.toList().map((seq: string): string[] => (
-  //   nu.generateSubsequences(seq.replaceAll(/\s+/g, ''), N)
-  // ));
+  // nu.conutMatchedBySeparatorArrayStrategy(subsequencesCol.toList(), N, df1Size)
+  //   .forEach((m: number, i: number): void => countCol.set(i, m));
 
-  // for (let i = 0; i < subsequenceLists.length; ++i) {
-  //   const isFirstfHalf = i < df1Size;
-  //   const jEnd = isFirstfHalf ? subsequenceLists.length : df1Size;
-  //   let matches = 0;
-  //   for (let j = isFirstfHalf ? df1Size : 0; j < jEnd; ++j) {
-  //     for (const seqEl of subsequenceLists[i])
-  //       matches += subsequenceLists[j].filter((n: string): boolean => n === seqEl).length;
-  //   }
-  //   countCol.set(i, matches);
-  // }
+  nu.conutMatchedBySeparatorMapStrategy(subsequencesCol.toList(), N, df1Size)
+    .forEach((m: number, i: number): void => countCol.set(i, m));
 
-  const subsequenceLists = subsequencesCol.toList().map((seq: string): Map<string, number> => (
-    nu.countSubsequences(seq.replaceAll(/\s+/g, ''), N)
-  ));
-
-  for (let i = 0; i < subsequenceLists.length; ++i) {
-    const isFirstfHalf = i < df1Size;
-    const jEnd = isFirstfHalf ? subsequenceLists.length : df1Size;
-    let matches = 0;
-    for (let j = isFirstfHalf ? df1Size : 0; j < jEnd; ++j) {
-      for (const [seqEl, seqCount] of subsequenceLists[i])
-        matches += seqCount * (subsequenceLists[j].get(seqEl) ?? 0);
-    }
-    countCol.set(i, matches);
-  }
-
-  // grok.shell.addTableView(df);
   return df;
-}
-
-export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'Nucleotide cell renderer';}
-  get cellType() {return nu.NUCLEOTIDE_SEMTYPE;}
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    const sequence: string[] = gridCell.cell.value;
-    const ctx = g.canvas.getContext('2d');
-    if (!ctx) return;
-
-    // ctx.font = '11px courier';
-    ctx.font = cellStyle.font;
-
-    const paddingX = 3;
-    const paddingY = 3;
-
-    const charOffsetX = 8;
-    const alternativeCharOffsetX = 6;
-    const charOffsetY = 13;
-
-    const x2 = x + w - paddingX;
-    const y2 = y - paddingY;
-
-    let curX = x + paddingX;
-    let curY = y - h * .7 + paddingY;
-    for (const nucleotideRaw of sequence) {
-      if (curY > y2) break;
-      const nucleotide = nucleotideRaw.toUpperCase() as Nucleotide;
-
-      ctx.fillStyle = nu.NUCLEOTIDE_COLORS[nucleotide] ?? 'black';
-      ctx.fillText(nucleotideRaw, curX, curY);
-
-      const isAtrernativeOffset = nucleotide === 'T';
-      curX += isAtrernativeOffset ? alternativeCharOffsetX : charOffsetX;
-
-      if (curX >= x2) {
-        curX = x + paddingX;
-        curY += charOffsetY;
-      }
-    }
-  }
 }
 
 //name: nucleotideBoxCellRenderer
@@ -211,26 +124,16 @@ export function nucleotideBoxCellRenderer(): NucleotideBoxCellRenderer {
 //output: widget result
 //condition: true
 export async function enaSequence(cellText: string): Promise<DG.Widget> {
-  const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/${cellText}`;
+  const url = `${ena.ENA_API}/fasta/${cellText}`;
   const fasta = await grok.dapi.fetchProxy(url)
     .then((res: Response): Promise<string> => res.text());
   const enaSequence = ena.parseENASequenceFasta(fasta);
-  // console.log('enaSequence:', enaSequence);
 
   return new DG.Widget(ui.box(
-    // ui.splitV([
     ui.divV([
       ui.h1(enaSequence?.id ?? 'No ENA id'),
       ui.divText(enaSequence?.sequence ?? 'Sequence is empty'),
-
-      // ui.divV([ui.h3('code'), ui.divText(enaSequence?.code ?? 'is empty')]),
-      // ui.divV([ui.h3('extra'), ui.divText(enaSequence?.extra ?? 'is empty')]),
-      // ui.divV([ui.h3('description'), ui.divText(enaSequence?.description ?? 'is empty')]),
-      // ui.divV([ui.h3('genBank'), ui.divText(enaSequence?.genBank ?? 'is empty')]),
-      // ui.divV([ui.h3('sequence'), ui.input.textArea(enaSequence?.sequence ?? 'is empty')]),
-
-      // ui.divV([ui.h3('sequence'), ui.divText(enaSequence?.sequence ?? 'is empty')]),
-    ], {style: {gap: '0'}}),
+    ]),
   ));
 }
 
@@ -240,25 +143,12 @@ export async function enaSequence(cellText: string): Promise<DG.Widget> {
 //input: int offset = 0
 //output: dataframe result
 export async function _fetchENASequence(query: string, limit: number, offset: number): Promise<DG.DataFrame> {
-  const queryParams = `result=sequence&query=${query}&limit=${limit}&offset=${offset}`;
-  const idsUrl = `https://www.ebi.ac.uk/ena/browser/api/embl/textsearch?${queryParams}`;
-  const seqsUrl =`https://www.ebi.ac.uk/ena/browser/api/fasta/textsearch?${queryParams}`;
-
-  const idsRequest: Promise<string[]> = grok.dapi.fetchProxy(idsUrl)
-    .then((res: Response): Promise<string> => res.text())
-    .then(ena.searchENAIdsEmbs);
-
-  const seqsReqest: Promise<string[]> = grok.dapi.fetchProxy(seqsUrl)
-    .then((res: Response): Promise<string> => res.text())
-    .then(ena.parseENAMultipleSequencesFasta);
-
-  const [ids, seqs] = await Promise.all([idsRequest, seqsReqest]);
+  const {ids, sequences} = await ena.fetchSequences(query, limit, offset);
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', ids),
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', seqs),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', sequences),
   ]);
   df.getCol('Sequence').semType = nu.NUCLEOTIDE_SEMTYPE;
-
   return df;
 }
 
@@ -270,33 +160,11 @@ export function formENADataTable(): void {
   ]);
   previewDf.getCol('Sequence').semType = nu.NUCLEOTIDE_SEMTYPE;
 
-  const grid = DG.Viewer.grid(previewDf);
-  const limitInput = ui.input.int('How many rows: ', {value: 100});
-  const queryInput = ui.input.string('Query: ', {value: 'coronavirus'});
-  const offsetInput = ui.input.int('Sequence offset: ', {value: 0});
+  const fetchSequence = (params: {
+    query: string,
+    limit: number,
+    offset: number,
+  }) => _fetchENASequence(params.query, params.limit, params.offset);
 
-  const createDf = (): Promise<DG.DataFrame> => (
-    _fetchENASequence(queryInput.value, limitInput.value, offsetInput.value)
-  );
-
-  const button = ui.button('Preview', async (): Promise<void> => {
-    if (previewDf.rowCount > 0)
-      previewDf.rows.removeAt(0, previewDf.rowCount);
-    previewDf.append(await createDf(), true);
-  });
-
-  ui.dialog('Create sequences table')
-    .add(ui.splitV([
-      ui.splitH([
-        ui.span([queryInput.root]),
-        button,
-      ]),
-      ui.div([grid]),
-      ui.div([limitInput, offsetInput]),
-    ]))
-    .onOK(async (): Promise<void> => {
-      const df = previewDf.rowCount > 0 ? previewDf : await createDf();
-      grok.shell.addTableView(df);
-    })
-    .show();
+  ena.showEnaSequenceFormDialog(previewDf, fetchSequence);
 }

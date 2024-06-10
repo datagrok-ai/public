@@ -28,9 +28,9 @@
 ### Exercise 5: Reading files
 
 + [files](./files/) dir contains stored datasets (and other extensions)
-+ `openTable1` pacakge function opens a dataframe by a passed argument `filepath` using `grok.data.getDemoTable` and adds it to a table view
-+ `openTable2` pacakge function opens a dataframe by a passed argument `filepath` using `grok.data.files.openTable` and adds it to a table view
-+ `openTable3` pacakge function opens a dataframe by a passed argument `filepath` using `grok.functions.eval('OpenServerFile(...)')` and adds it to a table view
++ `openTableFromDemo` function (from [utis](./src/file-units.ts)) opens a dataframe by a passed argument `filepath` using `grok.data.getDemoTable` and adds it to a table view
++ `openTablefromDataFiles` function (from [utis](./src/file-units.ts)) opens a dataframe by a passed argument `filepath` using `grok.data.files.openTable` and adds it to a table view
++ `openTableWithEval` function (from [utis](./src/file-units.ts)) opens a dataframe by a passed argument `filepath` using `grok.functions.eval('OpenServerFile(...)')` and adds it to a table view
 + `addTables` pacakge function works with files distributed with the package, adds all tables (`.csv` files) from the `files` folder to the workspace
 
 ### Exercise 6: Creating a scripting viewer
