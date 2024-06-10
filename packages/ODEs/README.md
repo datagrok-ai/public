@@ -176,16 +176,16 @@ By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
 #meta.solver: {method: 'mrt'}
 ```
 
-To check correctness of formulas, set the minimum number of iterations:
+To check correctness of formulas, set the maximum number of iterations:
 
 ```python
-#meta.solver: {method: 'mrt', maxIterations: 1}
+#meta.solver: {method: 'mrt'; maxIterations: 1}
 ```
 
 Diff Studio alerts you if computations take too long. The default time limit is 5 seconds. To customize it, set the maximum computation time (in milliseconds):
 
 ```python
-#meta.solver: {method: 'mrt', maxTimeMs: 50}
+#meta.solver: {method: 'mrt'; maxTimeMs: 50}
 ```
 
 ## Export to JavaScript script
