@@ -10,9 +10,9 @@
   "fullName": "Utils",
   "version": "4.2.8",
   "description": "Common utilities",
-  "dependencies": { 
+  "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.18.6",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "latest"

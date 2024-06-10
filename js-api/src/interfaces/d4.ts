@@ -209,6 +209,7 @@ export interface IHistogramSettings {
   showFilteredOutRows: boolean;
 
   /// Allows to filter table using the range slider on the bottom.
+  /// This option also controls slider visibility.
   filteringEnabled: boolean;
 
   /// A numerical column used to calculate the distribution of values.

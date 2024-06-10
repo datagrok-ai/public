@@ -31,6 +31,8 @@ import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
 import type {HweWindow} from '@datagrok/helm-web-editor/src/types';
+import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {buildWebEditorApp} from './helm-web-editor';
 
 export const _package = new HelmPackage();
 
@@ -244,32 +246,14 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  org.helm.webeditor.MolViewer.molscale = 0.8;
-  const app = new org.helm.webeditor.App(view, {
-    showabout: false,
-    mexfontsize: '90%',
-    mexrnapinontab: true,
-    topmargin: 20,
-    mexmonomerstab: true,
-    sequenceviewonly: false,
-    mexfavoritefirst: true,
-    mexfilter: true
-  });
-  const sizes = app.calculateSizes();
-  app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
-  let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-  scil.apply(app.sequence.style, s);
-  scil.apply(app.notation.style, s);
-  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  scil.apply(app.properties.parent.style, s);
-  app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
-  app.mex.resize(sizes.topheight - 80);
-  setTimeout(() => {
+  let app: IWebEditorApp;
+  setTimeout(async () => {
+    app = await buildWebEditorApp(view);
     if (!!cell && units === undefined)
       app.canvas.helm.setSequence(cell.value, 'HELM');
     else
       app.canvas.helm.setSequence(value!, 'HELM');
-  }, 200);
+  }, 20);
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {

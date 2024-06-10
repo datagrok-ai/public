@@ -39,7 +39,7 @@
     "@datagrok-libraries/math": "^1.1.5",
     "@datagrok-libraries/ml": "^6.6.5",
     "@datagrok-libraries/tutorials": "^1.3.12",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.2.6",
     "@webgpu/types": "^0.1.40",
     "ajv": "^8.12.0",
     "ajv-errors": "^3.0.0",
@@ -55,11 +55,11 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/js-draw-lite": "../../../../external/JSDraw.Lite/source/web",
-    "@datagrok/helm-web-editor": "../../../../external/HELMWebEditor/Helm/source",
     "@datagrok/chem": "^1.9.2",
     "@datagrok/dendrogram": "^1.2.29",
     "@datagrok/helm": "^2.2.1",
+    "@datagrok/helm-web-editor": "../../../../external/HELMWebEditor/Helm/source",
+    "@datagrok/js-draw-lite": "../../../../external/JSDraw.Lite/source/web",
     "@types/node": "^17.0.24",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
