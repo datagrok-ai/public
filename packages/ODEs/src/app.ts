@@ -329,7 +329,8 @@ export class DiffStudio {
     this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
       setTimeout(() => {
         this.modelDiv.style.height = '100%';
-        this.editorView!.dom.style.height = '100%';
+        if (this.editorView)
+          this.editorView!.dom.style.height = '100%';
       }, 10);
       return this.modelDiv;
     });
