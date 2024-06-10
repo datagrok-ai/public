@@ -1,10 +1,12 @@
 # Sequence Translator changelog
 
-## 1.3.2 (WIP)
+## 1.3.2 (2024-06-10)
 
 ### Features
 
 * Add package MonomersPath package settings fallback to monomers-sample
+* Add README for monomers-sample
+* Add sample for bulk translation in Translator app
 
 ### Bug fixes
 
