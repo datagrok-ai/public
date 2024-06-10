@@ -1080,10 +1080,14 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
   return new rxjs.Observable(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
     const resizeObserver = new ResizeObserver(observerEntries => {
+      resizeObserver.unobserve(element);
       // trigger a new item on the stream when resizes happen
-      for (const entry of observerEntries) {
-        observer.next(entry);
-      }
+      setTimeout(() => {
+        for (const entry of observerEntries) {
+          observer.next(entry);
+        }
+        resizeObserver.observe(element);
+      }, 1);
     });
 
     // start listening for resize events
@@ -1161,7 +1165,6 @@ export class tools {
   }
 
   static resizeFormLabels(form: HTMLElement): void {
-
     let minInputWidth = 150;
     let labelMaxWidth = 140;
 
@@ -1176,7 +1179,7 @@ export class tools {
     }
 
     function setLabelsWidth(w: number) {
-      for (const label of Array.from(form.querySelectorAll('label.ui-input-label'))) {
+      for (const label of Array.from(form.querySelectorAll('div.ui-input-root > label.ui-input-label:not(:empty)'))) {
         (label as HTMLElement).style.minWidth = `${w}px`;
         (label as HTMLElement).style.maxWidth = `${w}px`;
         (label as HTMLElement).style.width = 'initial';
@@ -1184,23 +1187,30 @@ export class tools {
     }
 
     function handleResize() {
-      let labelWidth = labelMaxWidth;
-      if (form.clientWidth - labelWidth < minInputWidth) {
-        // try to shrink long labels if they are present
-        let labelsToShrink = Math.ceil(labelWidths.length * 0.2); // find 20% longest labels
-        if (labelsToShrink > 0 && labelsToShrink < labelWidths.length) {
-          let newWidth = Math.max(...labelWidths.slice(labelsToShrink))
-          if (newWidth < 0.8 * labelWidth) // worths it?
-            labelWidth = Math.max(newWidth, form.clientWidth - minInputWidth);
+      window.requestAnimationFrame(() => {
+        let labelWidth = labelMaxWidth;
+        if (form.clientWidth - labelWidth < minInputWidth) {
+          // try to shrink long labels if they are present
+          let labelsToShrink = Math.ceil(labelWidths.length * 0.2); // find 20% longest labels
+          if (labelsToShrink > 0 && labelsToShrink < labelWidths.length) {
+            let newWidth = Math.max(...labelWidths.slice(labelsToShrink))
+            if (newWidth < 0.8 * labelWidth) // worths it?
+              labelWidth = Math.max(newWidth, form.clientWidth - minInputWidth);
+          }
         }
-      }
-      if (form.clientWidth - labelWidth < minInputWidth) {
-        // switch form to tall view if inputs room is too small
-        form.classList.add('ui-form-condensed');
-      } else if (form.clientWidth - labelWidth > minInputWidth + 10) { // hysteresis
-        form.classList.remove('ui-form-condensed');
-      }
-      setLabelsWidth(labelWidth);
+        if (form.classList.contains('d4-dialog-contents')) {
+          let dialogFormWidth = labelMaxWidth + minInputWidth;
+          form.style.minWidth = `${dialogFormWidth}px`;
+        } else {
+          if (form.clientWidth - labelWidth < minInputWidth) {
+            // switch form to tall view if inputs room is too small
+            form.classList.add('ui-form-condensed');
+          } else if (form.clientWidth - labelWidth > minInputWidth + 10) { // hysteresis
+            form.classList.remove('ui-form-condensed');
+          }
+        }
+        setLabelsWidth(labelWidth);
+      });
     }
 
     new MutationObserver((_) => {
@@ -1211,13 +1221,19 @@ export class tools {
       subtree: true,
     });
 
-    this.handleResize(form, (w, h) => {
-      handleResize();
-    });
-
     calcWidths();
     setLabelsWidth(labelMaxWidth);
     handleResize();
+    if (!_isDartium()) {
+      let observer = new ResizeObserver(observerEntries => {
+        observer.unobserve(form);
+        setTimeout(() => {
+          observer.observe(form);
+          handleResize()
+        }, 1);
+      });
+      observer.observe(form);
+    }
     return;
   }
 
@@ -1226,13 +1242,24 @@ export class tools {
     const elements = $(form).find('div.ui-input-root:not(.ui-input-buttons)');
     elements.each((i) => {
       let element = elements[i] as HTMLElement;
+      if ($(element).find('label').length == 0)
+        return;
       let width = 100;
+      if (element.classList.contains('ui-input-bool'))
+        width = 30;
+      if (element.classList.contains('ui-input-switch'))
+        width = 50;
+      if (element.classList.contains('ui-input-table'))
+        width = 200;
       if (element.classList.contains('ui-input-float'))
-        width = 120;
+        width = 140;
       if (element.classList.contains('ui-input-int'))
         width = 100;
-      if (element.classList.contains('ui-input-string'))
-        width = 180; // todo: analyze content and metadata
+      if (element.classList.contains('ui-input-date'))
+        width = 140;
+      if (element.classList.contains('ui-input-text'))
+        width = 200;
+      // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
     });
