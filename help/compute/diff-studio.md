@@ -412,5 +412,6 @@ Diff Studio alerts you if computations take too long. The default time limit is 
 
 See also
 
-* [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
 * [Stiff equations](https://en.wikipedia.org/wiki/Stiff_equation)
+* [Rosenbrock–Wanner method](https://doi.org/10.1016/j.cam.2015.03.010)
+* [Numerical methods for ODEs](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations)
