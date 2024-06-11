@@ -9,6 +9,7 @@ import {
   type PipelineConfiguration,
   createCompositionPipeline,
   composeCompositionPipeline,
+  initComputeApi,
 } from '@datagrok-libraries/compute-api';
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
@@ -50,8 +51,7 @@ function pickPipelineConfData(obj: any): any {
 
 category('Compute API: CompositionPipeline single config', async () => {
   before(async () => {
-    const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
-    await initFunc.prepare().call();
+    await initComputeApi();
   });
 
   test('Simple config', async () => {

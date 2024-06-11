@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
-import {createRFV} from '@datagrok-libraries/compute-api';
+import {createRFV, initComputeApi} from '@datagrok-libraries/compute-api';
 import {take, filter} from 'rxjs/operators';
 import {applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {getFuncCallIO} from '../utils';
@@ -10,8 +10,7 @@ import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/sr
 
 category('Compute API: RFV Inputs', async () => {
   before(async () => {
-    const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
-    await initFunc.prepare().call();
+    await initComputeApi();
   });
 
   test('Simple inputs setParamValue', async () => {

@@ -25,3 +25,8 @@ export {
   createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
   PipelineCompositionConfiguration, PipelineConfiguration,
 };
+
+export async function initComputeApi() {
+  const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
+  await initFunc.prepare().call();
+}
