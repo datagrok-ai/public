@@ -4,39 +4,26 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import type {
-  PipelineView as PipelineViewType,
+  ComputationView as ComputationViewType,
   RichFunctionView as RichFunctionViewType,
+  PipelineView as PipelineViewType,
   CompositionPipeline as CompositionPipelineType,
   PipelineCompositionConfiguration as PipelineCompositionConfigurationType,
   PipelineConfiguration as PipelineConfigurationType,
 } from '@datagrok-libraries/compute-utils';
 
-export type PipelineView = PipelineViewType;
+export type ComputationView = ComputationViewType;
 export type RichFunctionView = RichFunctionViewType;
+export type PipelineView = PipelineViewType;
 export type CompositionPipeline = CompositionPipelineType;
 export type PipelineCompositionConfiguration = PipelineCompositionConfigurationType;
 export type PipelineConfiguration = PipelineConfigurationType;
 
-export function composeCompositionPipeline(
-  ...args: Parameters<typeof CompositionPipelineType.compose>
-) {
+export function createCompView(
+  ...args: ConstructorParameters<typeof ComputationViewType>
+): ComputationViewType {
   //@ts-ignore
-  return window.compute.CompositionPipeline.compose(...args);
-}
-
-export function createCompositionPipeline(
-  ...args: ConstructorParameters<typeof CompositionPipelineType>
-): CompositionPipelineType {
-  //@ts-ignore
-  return new window.compute.CompositionPipeline(...args);
-};
-
-
-export function createPipeline(
-  ...args: ConstructorParameters<typeof PipelineViewType>
-): PipelineViewType {
-  //@ts-ignore
-  return new window.compute.Pipeline(...args);
+  return new window.compute.CompView(...args);
 };
 
 export function createRFV(
@@ -45,3 +32,24 @@ export function createRFV(
   //@ts-ignore
   return new window.compute.RFV(...args);
 };
+
+export function createPipeline(
+  ...args: ConstructorParameters<typeof PipelineViewType>
+): PipelineViewType {
+  //@ts-ignore
+  return new window.compute.Pipeline(...args);
+};
+
+export function createCompositionPipeline(
+  ...args: ConstructorParameters<typeof CompositionPipelineType>
+): CompositionPipelineType {
+  //@ts-ignore
+  return new window.compute.CompositionPipeline(...args);
+};
+
+export function composeCompositionPipeline(
+  ...args: Parameters<typeof CompositionPipelineType.compose>
+) {
+  //@ts-ignore
+  return window.compute.CompositionPipeline.compose(...args);
+}

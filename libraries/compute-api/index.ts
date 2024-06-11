@@ -3,28 +3,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as UiUtils from './src/ui-utils';
+export {UiUtils};
+
 import {
-  makeValidationResult,
-  makeAdvice,
-  makeRevalidation,
+  makeValidationResult, makeAdvice, makeRevalidation,
   ValidationInfo,
 } from './src/validation';
-
 export {
-  makeValidationResult,
-  makeAdvice,
-  makeRevalidation, ValidationInfo,
+  makeValidationResult, makeAdvice, makeRevalidation,
+  ValidationInfo,
 };
 
 import {
-  PipelineView, RichFunctionView, CompositionPipeline,
-  createPipeline, createRFV, createCompositionPipeline,
+  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
+  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
   PipelineCompositionConfiguration, PipelineConfiguration,
-  composeCompositionPipeline,
 } from './src/views';
 export {
-  PipelineView, RichFunctionView, CompositionPipeline,
-  createPipeline, createRFV, createCompositionPipeline,
+  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
+  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
   PipelineCompositionConfiguration, PipelineConfiguration,
-  composeCompositionPipeline,
 };

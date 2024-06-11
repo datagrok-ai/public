@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {
+  ComputationView as ComputationViewInst,
   RichFunctionView as RichFunctionViewInst, 
   PipelineView as PipelineViewInst,
   CompositionPipeline as CompositionPipelineViewInst,
@@ -335,6 +336,7 @@ export function ObjectCoolingSelector(params: any) {
 
 //// Compute-utils API section
 
+export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const Pipeline = PipelineViewInst;
 export const CompositionPipeline = CompositionPipelineViewInst;
