@@ -578,7 +578,7 @@ export class DiffStudio {
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
-    const noCustomSettings = (ivp.solverSettings === DEFAULT_SOLVER_SETTINGS);
+    const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
       if (this.toChangePath)
@@ -594,7 +594,7 @@ export class DiffStudio {
       if ((step <= 0) || (step > finish - start))
         return;
 
-      if (this.toCheckPerformance && noCustomSettings)
+      if (this.toCheckPerformance && !customSettings)
         ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
 
       const scriptText = getScriptLines(ivp).join('\n');
@@ -604,7 +604,7 @@ export class DiffStudio {
 
       await call.call();
 
-      if (noCustomSettings)
+      if (!customSettings)
         ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
 
       if (this.solutionViewer) {
@@ -658,9 +658,9 @@ export class DiffStudio {
         this.isSolvingSuccess = true;
         this.runPane.header.hidden = false;
 
-        if (this.toShowPerformanceDlg && noCustomSettings) {
+        if (this.toShowPerformanceDlg && !customSettings) {
           ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
-          await this.showPerformanceDlg(ivp, inputsPath);
+          this.showPerformanceDlg(ivp, inputsPath);
         } else
           grok.shell.warning(error.message);
       } else {
@@ -969,14 +969,12 @@ export class DiffStudio {
 
   /** Close previousely opened performance dialog */
   private closePerformanceDlg(): void {
-    if (this.performanceDlg) {
-      this.performanceDlg.close();
-      this.performanceDlg = null;
-    }
+    this.performanceDlg?.close();
+    this.performanceDlg = null;
   }
 
   /** Show performance dialog */
-  private async showPerformanceDlg(ivp: IVP, inputsPath: string): Promise<void> {
+  private showPerformanceDlg(ivp: IVP, inputsPath: string): DG.Dialog {
     this.closePerformanceDlg();
     this.performanceDlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
     this.solverView.append(this.performanceDlg);
@@ -1010,5 +1008,7 @@ export class DiffStudio {
     this.performanceDlg.add(ui.form([maxTimeInput]));
     ui.tooltip.bind(this.performanceDlg.getButton('OK'), HINT.CONTINUE);
     ui.tooltip.bind(this.performanceDlg.getButton('CANCEL'), HINT.ABORT);
+
+    return this.performanceDlg;
   }
 };

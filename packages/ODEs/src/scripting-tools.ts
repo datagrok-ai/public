@@ -1103,12 +1103,12 @@ function checkSolverSettings(line: string): void {
   if (openBraceIdx >= closeBraceIdx)
     throw new Error(`${ERROR_MSG.BRACES}. Check the line '${line}'`);
 
-  line.slice(openBraceIdx + 1, closeBraceIdx).split(ANNOT_SEPAR).forEach((item: string) => {
+  for (const item of line.slice(openBraceIdx + 1, closeBraceIdx).split(ANNOT_SEPAR)) {
     sepIdx = item.indexOf(CONTROL_SEP);
 
     if (sepIdx > 1)
       settings.set(item.slice(0, sepIdx).trim(), item.slice(sepIdx + 1).trim());
-  });
+  }
 
   SOLVER_OPTIONS_RANGES.forEach((range, opt) => {
     if (settings.has(opt)) {
