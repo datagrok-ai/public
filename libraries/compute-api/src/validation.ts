@@ -9,27 +9,27 @@ import type {
   ValidationInfo as ValidationInfoType,
 } from '@datagrok-libraries/compute-utils';
 
-//@ts-ignore
+declare global {
+  interface Window {
+    compute: any
+  }
+}
+
 export function makeValidationResult(
   ...args: Parameters<typeof makeValidationResultType>
 ): ReturnType<typeof makeValidationResultType> {
-  //@ts-ignore
   return window.compute.makeValidationResult(...args);
 }
 
-//@ts-ignore
 export function makeAdvice(
   ...args: Parameters<typeof makeAdviceType>
 ): ReturnType<typeof makeAdviceType> {
-  //@ts-ignore
   return window.compute.makeAdvice(...args);
 }
 
-//@ts-ignore
 export function makeRevalidation(
   ...args: Parameters<typeof makeRevalidationType>
 ): ReturnType<typeof makeRevalidationType> {
-  //@ts-ignore
   return window.compute.makeRevalidation(...args);
 }
 

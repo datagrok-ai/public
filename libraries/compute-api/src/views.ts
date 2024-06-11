@@ -19,37 +19,38 @@ export type CompositionPipeline = CompositionPipelineType;
 export type PipelineCompositionConfiguration = PipelineCompositionConfigurationType;
 export type PipelineConfiguration = PipelineConfigurationType;
 
+declare global {
+  interface Window {
+    compute: any
+  }
+}
+
 export function createCompView(
   ...args: ConstructorParameters<typeof ComputationViewType>
 ): ComputationViewType {
-  //@ts-ignore
   return new window.compute.CompView(...args);
 };
 
 export function createRFV(
   ...args: ConstructorParameters<typeof RichFunctionViewType>
 ): RichFunctionViewType {
-  //@ts-ignore
   return new window.compute.RFV(...args);
 };
 
 export function createPipeline(
   ...args: ConstructorParameters<typeof PipelineViewType>
 ): PipelineViewType {
-  //@ts-ignore
   return new window.compute.Pipeline(...args);
 };
 
 export function createCompositionPipeline(
   ...args: ConstructorParameters<typeof CompositionPipelineType>
 ): CompositionPipelineType {
-  //@ts-ignore
   return new window.compute.CompositionPipeline(...args);
 };
 
 export function composeCompositionPipeline(
   ...args: Parameters<typeof CompositionPipelineType.compose>
 ) {
-  //@ts-ignore
   return window.compute.CompositionPipeline.compose(...args);
 }
