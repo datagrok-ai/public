@@ -132,7 +132,7 @@ Planned:
 
 <h5>Watch</h5>
 
-* [Using formulas in calculated columns](https://www.youtube.com/watch?v=-yTTaS_WOU4)
+* [Using formulas in calculated columns (~ 5 mins)](https://www.youtube.com/watch?v=-yTTaS_WOU4)
 * [Aggregation (~3 mins)](https://www.youtube.com/watch?v=1EI1w2HECrM)
 
 <h5>Complete tutorials</h5>
