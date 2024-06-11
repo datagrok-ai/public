@@ -56,7 +56,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Experience in Demo app</h5>
 
-* Browse the **Data Access** section
+* Browse the [**Data Access**](https://public.datagrok.ai/apps/Tutorials/Demo/Data%20Access) section
 
 <h5>Complete tutorials</h5>
 
@@ -85,7 +85,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Experience in Demo app</h5>
 
-* Explore the **Visualization section** section
+* Explore the [**Visualization section**](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization) section
 
 <h5>Complete tutorials</h5>
 
@@ -160,8 +160,8 @@ Planned:
 
 <h5>Experience in Demo app</h5>
 
-* Explore the **Cheminformatics** section
-* Explore **Curve fitting** options
+* Explore the [**Cheminformatics**](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) section
+* Explore [**Curve fitting**](https://public.datagrok.ai/apps/Tutorials/Demo/Curves) options
 
 <h5>Complete tutorials</h5>
 
