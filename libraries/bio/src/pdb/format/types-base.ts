@@ -25,6 +25,12 @@ export class LineBase {
   }
 }
 
+const backboneRanks: { [atomFullName: string]: number } = {'N': 1, 'CA': 2, 'C': 3, 'O': 4};
+const atomNameRanks: { [atomName: string]: number } = {
+  '': 0, 'A': 1, 'B': 2, 'G': 3, 'D': 4, 'E': 5, 'Z': 6, 'H': 7,
+  /* terminal */ 'X': 1000
+};
+
 /** 1-27 */
 export class AtomBase extends LineBase implements IAtomBase {
   /**
@@ -63,6 +69,41 @@ export class AtomBase extends LineBase implements IAtomBase {
       /* resNumber */ parseInt(line.slice(23 - 1, 26)),
       `${line.slice(27 - 1, 27).trim()}`,
     );
+  }
+
+  compare(b: AtomBase): number {
+    const a = this;
+    if (a.chain != b.chain)
+      return a.chain.localeCompare(b.chain);
+    if (a.resNumber !== b.resNumber)
+      return a.resNumber - b.resNumber;
+    else {
+      const aFullName = `${a.atomElement}${a.atomName}`;
+      const bFullName = `${b.atomElement}${b.atomName}`;
+      const aBackboneRank = backboneRanks[aFullName] ?? -1;
+      const bBackboneRank = backboneRanks[bFullName] ?? -1;
+      if (aBackboneRank !== -1 && bBackboneRank !== -1)
+        return aBackboneRank - bBackboneRank;
+      else if (aBackboneRank !== -1)
+        return -1;
+      else if (bBackboneRank !== -1)
+        return +1;
+      else {
+        const aAtomNameRank = atomNameRanks[a.atomName.replaceAll(/\d+/g, '').slice(0, 1)];
+        const bAtomNameRank = atomNameRanks[b.atomName.replaceAll(/\d+/g, '').slice(0, 1)];
+        if (aAtomNameRank === undefined)
+          throw new Error(`Unexpected atom element ${a.atomElement} name ${a.atomName}`);
+        if (bAtomNameRank === undefined)
+          throw new Error(`Unexpected atom element ${b.atomElement} name ${b.atomName}`);
+        if (aAtomNameRank !== bAtomNameRank)
+          return aAtomNameRank - bAtomNameRank;
+        else {
+          const aAtomNameNum = parseInt(a.atomName.slice(1));
+          const bAtomNameNum = parseInt(b.atomName.slice(1));
+          return aAtomNameNum - bAtomNameNum;
+        }
+      }
+    }
   }
 
   toStr(): string {
