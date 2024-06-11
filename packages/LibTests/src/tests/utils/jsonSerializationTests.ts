@@ -3,7 +3,7 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 
-category('jsonSerialization', async () => {
+category('Utils: jsonSerialization', async () => {
   test('serialize/deserialize works with DF', async () => {
     const initial = {a: DG.DataFrame.fromColumns([
       DG.Column.fromList('string', 'a', ['a', 'b']),

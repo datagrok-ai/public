@@ -11,8 +11,6 @@ import {
   composeCompositionPipeline,
   initComputeApi,
 } from '@datagrok-libraries/compute-api';
-import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
 import simpleConfData from '../snapshots/simple-conf-data.json';
 import complexConfData from '../snapshots/complex-conf-data.json';
 import twoConfsSimple from '../snapshots/2-confs-simple.json';
@@ -26,19 +24,7 @@ import threeConfsRemoveNested from '../snapshots/3-confs-remove-nested-items.jso
 import threeConfsAdd from '../snapshots/3-confs-add-items.json';
 import threeConfsAddNested from '../snapshots/3-confs-add-nested-items.json';
 import twoConfsSteps from '../snapshots/2-confs-steps.json';
-
-export function removeObservables<T>(config: T): T {
-  return cloneDeepWith(config, (val) => {
-    if (val instanceof Map) {
-      const entries = removeObservables([...val.entries()]);
-      return new Map(entries);
-    }
-    if ((val instanceof Subject) || (val instanceof BehaviorSubject) || (val instanceof Observable))
-      return '$observable';
-    if (val instanceof Function)
-      return 'function';
-  });
-}
+import {removeObservables} from '../utils';
 
 const IS_UPDATE = false;
 const ADD_VIEW = false;

@@ -4,34 +4,20 @@ import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/jso
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
-import simpleConfData from './snapshots/simple-conf-data.json';
-import complexConfData from './snapshots/complex-conf-data.json';
-import twoConfsSimple from './snapshots/2-confs-simple.json';
-import threeConfsSimple from './snapshots/3-confs-simple.json';
-import threeConfsSimpleNested from './snapshots/3-confs-simple-nested.json';
-import twoConfs from './snapshots/2-confs.json';
-import threeConfs from './snapshots/3-confs.json';
-import threeConfsNested from './snapshots/3-confs-nested.json';
-import threeConfsRemove from './snapshots/3-confs-remove-items.json';
-import threeConfsRemoveNested from './snapshots/3-confs-remove-nested-items.json';
-import threeConfsAdd from './snapshots/3-confs-add-items.json';
-import threeConfsAddNested from './snapshots/3-confs-add-nested-items.json';
-import twoConfsSteps from './snapshots/2-confs-steps.json';
-
-export function removeObservables<T>(config: T): T {
-  return cloneDeepWith(config, (val) => {
-    if (val instanceof Map) {
-      const entries = removeObservables([...val.entries()]);
-      return new Map(entries);
-    }
-    if ((val instanceof Subject) || (val instanceof BehaviorSubject) || (val instanceof Observable))
-      return '$observable';
-    if (val instanceof Function)
-      return 'function';
-  });
-}
+import simpleConfData from '../snapshots/simple-conf-data.json';
+import complexConfData from '../snapshots/complex-conf-data.json';
+import twoConfsSimple from '../snapshots/2-confs-simple.json';
+import threeConfsSimple from '../snapshots/3-confs-simple.json';
+import threeConfsSimpleNested from '../snapshots/3-confs-simple-nested.json';
+import twoConfs from '../snapshots/2-confs.json';
+import threeConfs from '../snapshots/3-confs.json';
+import threeConfsNested from '../snapshots/3-confs-nested.json';
+import threeConfsRemove from '../snapshots/3-confs-remove-items.json';
+import threeConfsRemoveNested from '../snapshots/3-confs-remove-nested-items.json';
+import threeConfsAdd from '../snapshots/3-confs-add-items.json';
+import threeConfsAddNested from '../snapshots/3-confs-add-nested-items.json';
+import twoConfsSteps from '../snapshots/2-confs-steps.json';
+import {removeObservables} from '../utils';
 
 const IS_UPDATE = false;
 const ADD_VIEW = false;
@@ -42,7 +28,7 @@ function pickPipelineConfData(obj: any): any {
   return IS_UPDATE ? new Blob([serialize(removeObservables(res))], {type: 'application/json'}) : removeObservables(res);
 }
 
-category('CompositionPipeline single config', async () => {
+category('ComputeUtils: CompositionPipeline single config', async () => {
   before(async () => {});
 
   test('Simple config', async () => {
@@ -146,7 +132,7 @@ category('CompositionPipeline single config', async () => {
   });
 });
 
-category('CompositionPipeline composition config', async () => {
+category('ComputeUtils: CompositionPipeline composition config', async () => {
   const sconfig1: PipelineConfiguration = {
     id: 'testPipeline1',
     nqName: 'LibTests:MockWrapper',
@@ -616,11 +602,9 @@ category('CompositionPipeline composition config', async () => {
       expectDeepEqual(actual, applyTransformations(twoConfsSteps));
 
   });
-
-
 });
 
-category('CompositionPipeline reactivity', async () => {
+category('ComputeUtils: CompositionPipeline reactivity', async () => {
   test('simple link', async () => {
     const pipeline = new CompositionPipeline({
       id: 'testPipeline',

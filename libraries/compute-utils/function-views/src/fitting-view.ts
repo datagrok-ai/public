@@ -1237,6 +1237,7 @@ export class FittingView {
         showYAxis: true,
         showXAxis: true,
         showXSelector: true,
+        //@ts-ignore
         showYSelector: true,
         lineColoringType: 'custom',
         lineColor: 15274000,
@@ -1331,6 +1332,7 @@ export class FittingView {
           rawBuf = col.getRawData();
           const expVals = Array<number>(rowCount);
           indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
+          //@ts-ignore
           const options: Partial<DG.ILineChartLookSettings> = {
             multiAxis: true,
             yGlobalScale: true,

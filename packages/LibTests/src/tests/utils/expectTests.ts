@@ -19,7 +19,7 @@ function throwTester(fn: Function, expectedMessage?: any) {
   throw new Error(`Expected error message ${expectedMessage}, got ${err?.message}`);
 }
 
-category('expectDeepEqual', async () => {
+category('Utils: expectDeepEqual', async () => {
   before(async () => {
   });
 

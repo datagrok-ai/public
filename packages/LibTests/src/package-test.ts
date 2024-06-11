@@ -3,10 +3,10 @@ import {TestContext, runTests, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/compute-api/richFunctionViewTests';
 import './tests/compute-api/compositionPipelineTests';
-import './tests/expectTests';
-import './tests/jsonSerializationTests';
-import './tests/richFunctionViewTests';
-import './tests/compositionPipelineTests';
+import './tests/utils/expectTests';
+import './tests/utils/jsonSerializationTests';
+import './tests/compute-utils/richFunctionViewTests';
+import './tests/compute-utils/compositionPipelineTests';
 
 export const _package = new DG.Package();
 export {tests};

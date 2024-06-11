@@ -367,7 +367,7 @@ category('Compute API: RFV Inputs', async () => {
 
 });
 
-category('RFV Validation', async () => {
+category('Compute API: RFV Validation', async () => {
   before(async () => {
   });
 
