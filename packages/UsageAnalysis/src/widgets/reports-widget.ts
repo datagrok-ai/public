@@ -10,6 +10,17 @@ export class ReportsWidget extends DG.Widget {
     super(ui.box());
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Top reports');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
+    const link = ui.link('Open Reports', async () => {
+      const progress = DG.TaskBarProgressIndicator.create('Opening Reports...');
+      try {
+        grok.shell.addView(await grok.functions.eval('UsageAnalysis:reportsApp()'));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        progress.close();
+      }
+    });
+    this.root.appendChild(ui.box(ui.div(link, {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', height: '40px', paddingRight: '8px'}}), {style: {maxHeight: '40px'}}));
     this.root.appendChild(ui.waitBox(async () => {
       const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').list({pageNumber: 1, pageSize: 20});
       const items = [];
@@ -20,7 +31,7 @@ export class ReportsWidget extends DG.Widget {
         const clock = ui.iconFA('clock', null, report.createdOn.toISOString());
         clock.style.marginRight = '10px';
         const portrait = ui.tooltip.bind(userHandler.renderIcon(report.reporter.dart)!, () => {
-          return userHandler.renderTooltip(report.reporter)!;
+          return userHandler.renderTooltip(report.reporter.dart)!;
         });
         portrait.style.marginRight = '10px';
         const content = ui.divH([clock, portrait, ui.divText(report.description)]);

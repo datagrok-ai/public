@@ -1,5 +1,20 @@
 # bio changelog
 
+## 5.41.11 (2024-06-11)
+
+### Bug fixes
+
+Fix Pdbqt parser to assume ROOT as MODEL
+Fix Pdbqt.toPdb sorting atoms, tests
+
+## 5.41.10 (2024-06-10)
+
+NGL typings
+
+## 5.41.9 (2024-05-29)
+
+Fix Monomer type
+
 ## 5.41.8 (2024-05-29)
 
 Fix TAGS, ALPHABET enum

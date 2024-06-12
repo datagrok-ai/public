@@ -31,19 +31,19 @@ Enterprise customers might prefer to use a custom SSO (single sign-on) scheme. W
 developing a customer-specific integration.
 
 More information about Datagrok authentication capabilities can be found on
-the [Authentication](../../../govern/authentication.md) page.
+the [Authentication](../../../govern/access-control/access-control.md#authentication) page.
 
 ## Credentials
 
-[Security credentials](../../../govern/security.md#credentials) are used to gain access to external resources. For example,
+[Security credentials](../../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,
 database connections typically requires a pair of login and password.
 
 Data connection credentials are managed
-using [Datagrok Credentials Management Service](../../../govern/security.md#credentials). All credentials
-are [encrypted and stored securely](../../../govern/security.md#credentials-storage).
+using [Datagrok Credentials Management Service](../../../govern/access-control/access-control.md#credentials-management-system). All credentials
+are [encrypted and stored securely](../../../govern/access-control/access-control.md#credentials-storage).
 
 In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
-[AWS Secret Manager](../../../access/data-connection-credentials.md) instead.
+[AWS Secret Manager](../../../govern/access-control/data-connection-credentials.md) instead.
 
 Once a connection is set up, access to it (either `use` or `edit`) is subject to [user permissions](#user-permissions).
 
@@ -53,7 +53,7 @@ The platform has a flexible access control mechanism that lets administrators de
 allowed to execute actions against different entities, based on the entity attributes. For instance, it is possible to
 define a group of people who would be able to open dashboards, but would not have access to the underlying connection.
 See
-[Authorization System](../../../govern/authorization.md) for details.
+[Authorization System](../../../govern/access-control/access-control.md#authorization) for details.
 
 ## Vulnerability remediation
 
@@ -98,7 +98,7 @@ and [server-side encryption of ECS ephemeral storage](https://aws.amazon.com/blo
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
-[authentication](../../../govern/authentication.md) methods. In case of on-premise deployment, we rely on the internal
+[authentication](../../../govern/access-control/access-control.md#authentication) methods. In case of on-premise deployment, we rely on the internal
 company policies.
 
 #### CloudFormation deployment
@@ -118,4 +118,4 @@ accessed directly, all requests goes through Application Load Balancer.
 * [Architecture](../../../develop/under-the-hood/architecture.md)
 * [Infrastructure](../../../develop/under-the-hood/infrastructure.md)
 * [CloudFormation deployment](../../../deploy/aws/deploy-amazon-cloudformation.md)
-* [Security](../../../govern/security.md)
+* [Security](../../../govern/access-control/access-control.md#credentials-management-system)

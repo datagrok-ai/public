@@ -585,7 +585,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
       ...sconfig2,
       nestedPipelinesConfig: {
         'testPipeline1': {
-	  insertBeforeStep: 'step2',
+          insertBeforeStep: 'step2',
         },
       },
     };

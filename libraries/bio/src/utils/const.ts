@@ -13,6 +13,7 @@ export {PolymerTypes, HelmTypes, MonomerTypes};
 
 import HELM_POLYMER_TYPE = org.helm.PolymerTypes;
 import HELM_MONOMER_TYPE = org.helm.MonomerTypes;
+import {MonomerType, PolymerType, RGroup} from '../types';
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
 
@@ -89,16 +90,16 @@ export const jsonSdfMonomerLibDict = {
 };
 
 export const DUMMY_MONOMER = {
-  'monomerType': 'Backbone',
+  'monomerType': 'Backbone' as MonomerType,
   'smiles': '',
   'name': '',
   'author': 'Datagrok',
   'molfile': '',
   'naturalAnalog': '',
-  'rgroups': [],
+  'rgroups': [] as RGroup[],
   'createDate': null,
   'id': 0,
-  'polymerType': 'PEPTIDE',
+  'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
 };
 // range of hex nubers used in PepSea library to endode monomers

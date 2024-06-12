@@ -58,7 +58,7 @@ export async function reportsApp(path?: string):Promise<DG.ViewBase> {
 //input: view browseView
 export async function reportsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
   await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
-  await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.by(10));
+  await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
 }
 
 //output: widget result

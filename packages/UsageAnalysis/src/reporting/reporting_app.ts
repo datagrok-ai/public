@@ -51,6 +51,16 @@ export class ReportingApp {
         reports.rows.removeWhere((r) => r.get('number') === reportNumber);
         this.table?.appendMerge(reports);
         this.refreshFilter();
+        setTimeout(async () => {
+          await this.showPropertyPanel(this.table!);
+          const length = this.table!.rowCount;
+          for (let i = 0; i < length; i++) {
+            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+              this.view?.grid.scrollToCell('date', i);
+              break;
+            }
+          }
+        }, 200);
       }
     }, 300);
   }
@@ -63,7 +73,6 @@ export class ReportingApp {
     table.getCol('first_occurrence').setTag('friendlyName', 'first');
     table.getCol('description').semType = 'Text';
     table.getCol('error_stack_trace').semType = 'Text';
-    // this._scroll(grid);
     this.applyStyle(grid);
     grid.onCellPrepare(async (gc) => {
       if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -108,7 +117,7 @@ export class ReportingApp {
         if (idCol.get(i) === r.id) {
           table.cell(i, 'is_resolved').value = r.isResolved;
           table.cell(i, 'jira').value = r.jiraTicket;
-          table.cell(i, 'assignee').value = r.assignee?.id;
+          table.cell(i, 'assignee').value = r.assignee?.friendlyName;
           table.fireValuesChanged();
         }
       }
@@ -129,7 +138,7 @@ export class ReportingApp {
       for (let i = 0; i < length; i++) {
         if (affectedIds.has(idCol.get(i))) {
           table.cell(i, 'is_resolved').value = fields['is_resolved'];
-          table.cell(i, 'assignee').value = fields['assignee_id'];
+          table.cell(i, 'assignee').value = fields['assignee'];
           if (fields['label'])
             table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
         }
@@ -155,6 +164,7 @@ export class ReportingApp {
     viewer.col('assignee')!.cellType = 'html';
 
     viewer.col('jira')!.cellType = 'html';
+    viewer.col('jira')!.width = 35;
 
     viewer.col('id')!.visible = false;
     viewer.col('error_stack_trace_hash')!.visible = false;

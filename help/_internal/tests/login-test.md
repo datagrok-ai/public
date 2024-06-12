@@ -30,7 +30,7 @@ his Google (Facebook, GitHub) account to log in to platform, then he can be logg
 
 See also:
 
-* [User](../../govern/user.md)
-* [Authentication](../../govern/authentication.md)
-* [Authorization](../../govern/authorization.md)
+* [User](../../govern/access-control/users-and-groups#users)
+* [Authentication](../../govern/access-control/access-control.md#authentication)
+* [Authorization](../../govern/access-control/access-control.md#authorization)
 * [Login Auto Test](../selenium/login-test.side)

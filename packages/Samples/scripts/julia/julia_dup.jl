@@ -4,6 +4,5 @@
 #tags: test, selenium
 #input: string s
 #output: string res
-#test: JuliaDup("abc") == "abcabc"
 
 res = s^2

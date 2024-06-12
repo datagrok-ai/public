@@ -64,8 +64,9 @@ export class Shell {
   }
 
   /** Last error state */
-  get lastError(): string { return api.grok_Get_LastError(); }
-  set lastError(s: string) { api.grok_Set_LastError(s); }
+  get lastError(): Promise<string|undefined> { return api.grok_Get_LastError(); }
+
+  clearLastError(): void { api.grok_Clear_LastError(); }
 
   /** Current user */
   get user(): User {

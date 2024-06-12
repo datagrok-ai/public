@@ -23,7 +23,7 @@ sidebar_position: 1.2
 
 |Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:90 }}></div> |Description  | Release|
 |------|-------|---------------|-------------------|---|
-| Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](../govern/usage-analysis.md)) | Beta |
+| Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](../govern/audit/usage-analysis.md)) | Beta |
 
 
 ## Visualize

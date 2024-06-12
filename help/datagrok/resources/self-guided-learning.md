@@ -7,16 +7,19 @@ sidebar_position: 1
 To get you started, we've prepared the following resources:
 
 * **Help pages**: Read on a topic
-* **Demo app**: [Run an app](https://public.datagrok.ai/browse/tutorials.demoapp) to interactively explore features
+* **Demo app**: [Run an app](https://public.datagrok.ai/browse/tutorials.demoapp) to interactively explore Datagrok features and capabilities
 * **Interactive tutorials**: Complete at [public.datagrok.ai](https://public.datagrok.ai) or your corporate instance (requires the [Tutorials package](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)).
 * **Webinars and short product demos**: Watch on youtube
-* **Demo datasets**: See what else you can do: drag and drop your dataset or use ours (**Browse > Files > Demo Files**)
+* **Demo datasets**: See what else you can do: drag and drop your dataset or use ours (**Sidebar > Browse (<FAIcon icon="fa-solid fa-compass"/>) > Files > Demo Files**)
 
 ## Orient yourself
 
 <h5>Read</h5>
 
 1. [User interface](../navigation/navigation.md)
+1. [Views](../navigation/views/views.md)
+1. [Context Panel](../navigation/panels/panels.md#context-panel)
+1. [Context Help](../navigation/panels/panels.md#context-help)
 1. [Browse](../navigation/views/browse.md)
 1. [Projects](../concepts/project/project.md)
 1. [Key concepts](../concepts/concepts.md)
@@ -53,7 +56,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Experience in Demo app</h5>
 
-* Browse the **Data Access** section
+* Browse the [**Data Access**](https://public.datagrok.ai/apps/Tutorials/Demo/Data%20Access) section
 
 <h5>Complete tutorials</h5>
 
@@ -82,7 +85,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Experience in Demo app</h5>
 
-* Explore the **Visualization section** section
+* Explore the [**Visualization section**](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization) section
 
 <h5>Complete tutorials</h5>
 
@@ -129,7 +132,7 @@ Planned:
 
 <h5>Watch</h5>
 
-* [Using formulas in calculated columns](https://www.youtube.com/watch?v=-yTTaS_WOU4)
+* [Using formulas in calculated columns (~ 5 mins)](https://www.youtube.com/watch?v=-yTTaS_WOU4)
 * [Aggregation (~3 mins)](https://www.youtube.com/watch?v=1EI1w2HECrM)
 
 <h5>Complete tutorials</h5>
@@ -157,8 +160,8 @@ Planned:
 
 <h5>Experience in Demo app</h5>
 
-* Explore the **Cheminformatics** section
-* Explore **Curve fitting** options
+* Explore the [**Cheminformatics**](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) section
+* Explore [**Curve fitting**](https://public.datagrok.ai/apps/Tutorials/Demo/Curves) options
 
 <h5>Complete tutorials</h5>
 

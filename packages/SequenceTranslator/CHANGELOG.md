@@ -1,10 +1,29 @@
 # Sequence Translator changelog
 
-## 1.3.0 (2024-05-29)
+## 1.3.2 (2024-06-10)
 
 ### Features
 
-* PolyTool: algorithm facilitated, json files are used as rules
+* Add package MonomersPath package settings fallback to monomers-sample
+* Add README for monomers-sample
+* Add sample for bulk translation in Translator app
+
+### Bug fixes
+
+* Fix tests for MonomersPath package settings
+
+## 1.3.1 (2024-06-05)
+
+### Bug fixes
+
+* PolyTool: example data added to project
+
+## 1.3.0 (2024-03-30)
+
+### Features
+
+* PolyTool: algorithm of conversion facilitated, json files are used as rules
+* PolyTool: enumeration feature (demo) added
 
 ## 1.2.9 (2024-03-30)
 

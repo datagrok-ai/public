@@ -152,9 +152,14 @@ class Engine(object):
             value = parameter_values[param]
             if value != self.parameters[param]['default_value'] or \
                     ('required' in self.parameters[param] and self.parameters[param]['required']):
-                str_value = str(value)
                 if self.parameters[param]['type'] == Types.LIST:
-                    str_value = str_value[1:(len(str_value) - 1)]
+                    param = param.replace('_', '-')
+                    params.append('--' + param)
+                    for number in value:
+                        params.append(str(number))
+                    continue
+                str_value = str(value)
+                param = param.replace('_', '-')
                 params.append('--' + param)
                 params.append(str_value)
         return params
