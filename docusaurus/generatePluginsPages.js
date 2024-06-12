@@ -39,6 +39,7 @@ async function getChangelog(filename, version) {
             let linkRegex = /([\S ]*\[[\S ]+\]\(\S+\)[\S ]*)/g;
             matches = Array.from(versionMatch.matchAll(linkRegex), x => x[1].trim());
             summary = matches.join('\n');
+            console.log(summary)
             if (!summary) {
                 const featuresRegex = /### Features:?(?<text>[\S\s]*?)(?:$|### (?:Features|Bug|Fixed|Breaking)|##|\*? ?Dependency)/g;
                 matches = Array.from(versionMatch.matchAll(featuresRegex), x => x[1].trim());

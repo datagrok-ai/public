@@ -385,7 +385,7 @@ jobs:
           npm install
           version=${{ needs.version.outputs.current_version }}
           npx ts-node parser.ts $version true         
-          if [ -n "$(git status -s docusaurus)" ]; then
+          if [ -n "$(git status -s static/versions)" ]; then
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
