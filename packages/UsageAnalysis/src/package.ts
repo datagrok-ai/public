@@ -13,9 +13,30 @@ import { ReportingApp } from "./reporting/reporting_app";
 import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
 
 import { getDate } from './utils';
+import dayjs from "dayjs";
 
 
 export const _package = new DG.Package();
+
+//name: BuildTests
+//meta.runOnOpen: false
+//meta.runOnInput: false
+//input: string build {choices: UsageAnalysis:Builds}
+//output: dataframe df
+export async function BuildTests(build: any) {
+  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds');
+  let date = dayjs();
+  let next = dayjs();
+  for (let i = 0; i < builds.rowCount; i++) {
+    if (builds.get('text', i) == build) {
+      date = builds.get('build', i);
+      next = builds.get('next', i);
+      break;
+    }
+  }
+  return await grok.functions.call('UsageAnalysis:BuildTestsData', {'dateStart': date, 'dateEnd': next});
+}
+
 
 //name: TestAnalysisReportForCurrentDay
 //input: datetime date 

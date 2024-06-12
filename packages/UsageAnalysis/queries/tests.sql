@@ -213,6 +213,37 @@ left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4
 ORDER BY eventnames.eventname;
 --end
 
+--name: Builds
+--connection: System:Datagrok
+with commits as (
+select distinct on (a.commit) a.id, a.buildtime, a.commit
+from (select
+e.id, e.description, e.event_time as buildtime, v2.value as commit
+from events e
+inner join event_types t on t.id = e.event_type_id
+inner join event_parameter_values v2 inner join event_parameters p2 on (p2.id = v2.parameter_id and p2.name = 'commit')  on v2.event_id = e.id
+where t.friendly_name = 'datagrok-started' and t.source = 'info' and NOT e.id = 'e1c09320-25d0-11ef-abf5-c1c6c1b45111'
+order by e.event_time) a)
+select buildtime || ' - ' || commit as text, buildtime as build,
+coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits order by 1 desc
+--end
+
+--name: BuildTestsData
+--connection: System:Datagrok
+--meta.cache: all
+--meta.cache.invalidateOn: 0 0 * * *
+--input: datetime dateStart
+--input: datetime dateEnd
+select DISTINCT ON (t.friendly_name) t.friendly_name as description,
+case when e.event_time IS NULL then 'did not run' when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else  'failed' end as status
+from
+event_types t
+left join events e on e.event_type_id = t.id and (e.event_time  BETWEEN @dateStart and @dateEnd)
+left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
+left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
+where t.source = 'usage' and t.friendly_name like 'test-%'
+ORDER BY t.friendly_name, e.event_time desc;
+--end
 
 
 --name: getServerStartTestResults
