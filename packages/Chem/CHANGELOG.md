@@ -12,7 +12,7 @@
 * GROK-15502: Chem: MMPA: Ability to swith activity on/off
 * GROK-15507: Chem: MMP: Control of fragments size
 * Chem: Integrate with Chemprop
-* Chem: Chemprop upgrade from version 1.6.7 to version 2.0 (reduced memory usage, improved performance)
+* Chem: Chemprop upgrade from version "1.6.7" to version "2.0" (reduced memory usage, improved performance)
 
 ### Bug Fixes
 
