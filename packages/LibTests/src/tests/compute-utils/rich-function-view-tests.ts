@@ -3,12 +3,12 @@ import {category, test, before, delay} from '@datagrok-libraries/utils/src/test'
 import {RichFunctionView} from '@datagrok-libraries/compute-utils';
 import {take, filter} from 'rxjs/operators';
 import {applyTransformations, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {getFuncCallIO} from './utils';
+import {getFuncCallIO} from '../utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
-import fc1 from './snapshots/fc1.json';
+import fc1 from '../snapshots/fc1.json';
 
-category('RichFunctionView Inputs', async () => {
+category('ComputeUtils: RichFunctionView Inputs', async () => {
   before(async () => {
   });
 
@@ -366,7 +366,7 @@ category('RichFunctionView Inputs', async () => {
 
 });
 
-category('RichFunctionView Validation', async () => {
+category('ComputeUtils: RichFunctionView Validation', async () => {
   before(async () => {
   });
 

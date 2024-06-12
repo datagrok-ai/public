@@ -3,35 +3,27 @@ import * as grok from 'datagrok-api/grok';
 import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {CompositionPipeline, PipelineCompositionConfiguration, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import cloneDeepWith from 'lodash.clonedeepwith';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
-import simpleConfData from './snapshots/simple-conf-data.json';
-import complexConfData from './snapshots/complex-conf-data.json';
-import twoConfsSimple from './snapshots/2-confs-simple.json';
-import threeConfsSimple from './snapshots/3-confs-simple.json';
-import threeConfsSimpleNested from './snapshots/3-confs-simple-nested.json';
-import twoConfs from './snapshots/2-confs.json';
-import threeConfs from './snapshots/3-confs.json';
-import threeConfsNested from './snapshots/3-confs-nested.json';
-import threeConfsRemove from './snapshots/3-confs-remove-items.json';
-import threeConfsRemoveNested from './snapshots/3-confs-remove-nested-items.json';
-import threeConfsAdd from './snapshots/3-confs-add-items.json';
-import threeConfsAddNested from './snapshots/3-confs-add-nested-items.json';
-import twoConfsSteps from './snapshots/2-confs-steps.json';
-
-export function removeObservables<T>(config: T): T {
-  return cloneDeepWith(config, (val) => {
-    if (val instanceof Map) {
-      const entries = removeObservables([...val.entries()]);
-      return new Map(entries);
-    }
-    if ((val instanceof Subject) || (val instanceof BehaviorSubject) || (val instanceof Observable))
-      return '$observable';
-    if (val instanceof Function)
-      return 'function';
-  });
-}
+import { 
+  type PipelineCompositionConfiguration, 
+  type PipelineConfiguration,
+  createCompositionPipeline,
+  composeCompositionPipeline,
+  initComputeApi,
+} from '@datagrok-libraries/compute-api';
+import simpleConfData from '../snapshots/simple-conf-data.json';
+import complexConfData from '../snapshots/complex-conf-data.json';
+import twoConfsSimple from '../snapshots/2-confs-simple.json';
+import threeConfsSimple from '../snapshots/3-confs-simple.json';
+import threeConfsSimpleNested from '../snapshots/3-confs-simple-nested.json';
+import twoConfs from '../snapshots/2-confs.json';
+import threeConfs from '../snapshots/3-confs.json';
+import threeConfsNested from '../snapshots/3-confs-nested.json';
+import threeConfsRemove from '../snapshots/3-confs-remove-items.json';
+import threeConfsRemoveNested from '../snapshots/3-confs-remove-nested-items.json';
+import threeConfsAdd from '../snapshots/3-confs-add-items.json';
+import threeConfsAddNested from '../snapshots/3-confs-add-nested-items.json';
+import twoConfsSteps from '../snapshots/2-confs-steps.json';
+import {removeObservables} from '../utils';
 
 const IS_UPDATE = false;
 const ADD_VIEW = false;
@@ -42,8 +34,10 @@ function pickPipelineConfData(obj: any): any {
   return IS_UPDATE ? new Blob([serialize(removeObservables(res))], {type: 'application/json'}) : removeObservables(res);
 }
 
-category('CompositionPipeline single config', async () => {
-  before(async () => {});
+category('Compute API: CompositionPipeline single config', async () => {
+  before(async () => {
+    await initComputeApi();
+  });
 
   test('Simple config', async () => {
     const config: PipelineConfiguration = {
@@ -65,7 +59,7 @@ category('CompositionPipeline single config', async () => {
         to: ['step2', 'a'],
       }],
     };
-    const pipeline = new CompositionPipeline(config);
+    const pipeline = createCompositionPipeline(config);
     const view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(view);
@@ -132,7 +126,7 @@ category('CompositionPipeline single config', async () => {
         },
       ],
     };
-    const pipeline = new CompositionPipeline(config);
+    const pipeline = createCompositionPipeline(config);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -146,7 +140,11 @@ category('CompositionPipeline single config', async () => {
   });
 });
 
-category('CompositionPipeline composition config', async () => {
+category('Compute API: CompositionPipeline composition config', async () => {
+  before(async () => {
+    await initComputeApi();
+  });
+
   const sconfig1: PipelineConfiguration = {
     id: 'testPipeline1',
     nqName: 'LibTests:MockWrapper',
@@ -374,8 +372,8 @@ category('CompositionPipeline composition config', async () => {
   };
 
   test('2 configs simple', async () => {
-    const composedConfig = CompositionPipeline.compose(sconfig2, [sconfig1]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(sconfig2, [sconfig1]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -389,8 +387,8 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs simple configs', async () => {
-    const composedConfig = CompositionPipeline.compose(sconfig3, [sconfig1, sconfig2]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(sconfig3, [sconfig1, sconfig2]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -404,8 +402,8 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs simple nested composition', async () => {
-    const composedConfig = CompositionPipeline.compose(sconfig3, [CompositionPipeline.compose(sconfig2, [sconfig1])]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(sconfig3, [composeCompositionPipeline(sconfig2, [sconfig1])]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -419,8 +417,8 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('2 configs', async () => {
-    const composedConfig = CompositionPipeline.compose(conf2, [conf1]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(conf2, [conf1]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -434,8 +432,8 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs', async () => {
-    const composedConfig = CompositionPipeline.compose(conf3, [conf1, conf2]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(conf3, [conf1, conf2]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -449,8 +447,8 @@ category('CompositionPipeline composition config', async () => {
   });
 
   test('3 configs nested composition', async () => {
-    const composedConfig = CompositionPipeline.compose(conf3, [CompositionPipeline.compose(conf2, [conf1])]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(conf3, [composeCompositionPipeline(conf2, [conf1])]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -473,8 +471,8 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline2', 'link1'],
       ],
     };
-    const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(cconf, [conf1, conf2]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -497,8 +495,8 @@ category('CompositionPipeline composition config', async () => {
         ['testPipeline2', 'link1'],
       ],
     };
-    const composedConfig = CompositionPipeline.compose(cconf, [CompositionPipeline.compose(conf2, [conf1])]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(cconf, [composeCompositionPipeline(conf2, [conf1])]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -537,8 +535,8 @@ category('CompositionPipeline composition config', async () => {
         }, ['testPipeline2', 'step2']],
       ],
     };
-    const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(cconf, [conf1, conf2]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -580,8 +578,8 @@ category('CompositionPipeline composition config', async () => {
         }, ['testPipeline1', 'step2']],
       ],
     };
-    const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(cconf3, [composeCompositionPipeline(cconf2, [conf1])]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -599,12 +597,12 @@ category('CompositionPipeline composition config', async () => {
       ...sconfig2,
       nestedPipelinesConfig: {
         'testPipeline1': {
-          insertBeforeStep: 'step2',
+	        insertBeforeStep: 'step2',
         },
       },
     };
-    const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
-    const pipeline = new CompositionPipeline(composedConfig);
+    const composedConfig = composeCompositionPipeline(pconf, [sconfig1]);
+    const pipeline = createCompositionPipeline(composedConfig);
     const _view = pipeline.makePipelineView();
     if (ADD_VIEW)
       grok.shell.addView(_view);
@@ -620,9 +618,13 @@ category('CompositionPipeline composition config', async () => {
 
 });
 
-category('CompositionPipeline reactivity', async () => {
+category('Compute API: CompositionPipeline reactivity', async () => {
+  before(async () => {
+    await initComputeApi();
+  });
+  
   test('simple link', async () => {
-    const pipeline = new CompositionPipeline({
+    const pipeline = createCompositionPipeline({
       id: 'testPipeline',
       nqName: 'LibTests:TestWrapper1',
       steps: [
@@ -694,7 +696,7 @@ category('CompositionPipeline reactivity', async () => {
         },
       ],
     };
-    const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
+    const pipeline = createCompositionPipeline(composeCompositionPipeline(conf1, [conf2]));
     const view = pipeline.makePipelineView();
     await pipeline.init();
 
@@ -759,7 +761,7 @@ category('CompositionPipeline reactivity', async () => {
         to: ['testPipeline1', 'step1', 'a'],
       }],
     };
-    const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf2, [conf1]));
+    const pipeline = createCompositionPipeline(composeCompositionPipeline(conf2, [conf1]));
     const view = pipeline.makePipelineView();
     await pipeline.init();
 
