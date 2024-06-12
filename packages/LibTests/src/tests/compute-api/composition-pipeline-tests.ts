@@ -3,8 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {serialize, applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';
 import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {
-  CompositionPipeline, 
+import { 
   type PipelineCompositionConfiguration, 
   type PipelineConfiguration,
   createCompositionPipeline,
