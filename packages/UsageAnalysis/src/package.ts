@@ -23,7 +23,7 @@ export const _package = new DG.Package();
 export async function TestAnalysisReportForCurrentDay(date: any) {
   const tests = await TestAnalysesManager.collectTests();
   const testsListMapped = tests.map((elem) => {
-    return { 'name': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+    return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
   const testRuns = await grok.functions.call('UsageAnalysis:getServerStartTestResults', { 'date': getDate(new Date(date)), 'testslist': DG.DataFrame.fromObjects(testsListMapped) });
   return testRuns;

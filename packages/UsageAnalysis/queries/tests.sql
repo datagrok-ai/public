@@ -219,7 +219,7 @@ ORDER BY eventnames.eventname;
 --connection: System:Datagrok
 --meta.cache: all
 --input: datetime date
---input: dataframe testslist
+--input: dataframe testslist 
 with commits as (
 select distinct on (a.commit) a.id, a.buildtime, a.commit
 from (select
@@ -232,12 +232,14 @@ order by e.event_time) a)
 
 select DISTINCT ON (t.friendly_name) t.friendly_name as description,
 case when e.event_time IS NULL then 'did not run' when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else  'failed' end as status
-from
-event_types t
+from (select x.id, COALESCE(x.friendly_name, df.name) as friendly_name
+from (select d.id,  d.friendly_name
+from event_types d
+where d.source = 'usage' and d.friendly_name like 'test-%') x
+FULL OUTER JOIN testslist df ON df.name =  x.friendly_name) t
 left join events e on e.event_type_id = t.id and (e.event_time  BETWEEN (select max(buildtime) from commits) and @date)
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-where t.source = 'usage' and t.friendly_name like 'test-%'
 ORDER BY t.friendly_name, e.event_time desc;
 
 
