@@ -19,7 +19,7 @@ export class TestAnalysesManager {
     }
 
     public async init(){ 
-        let testsList = await this.collectTests();
+        let testsList = await TestAnalysesManager.collectTests();
 
         this.testsListMapped = testsList.map((elem) => {
             return { 'name': elem.packageName + ": " + elem.test.category + ": " + elem.test.name  };
@@ -39,14 +39,14 @@ export class TestAnalysesManager {
     }
 
 
-    private async collectPackages(packageName?: string): Promise<any[]> {
+    static async collectPackages(packageName?: string): Promise<any[]> {
         let testFunctions = DG.Func.find({ name: 'Test', meta: { file: 'package-test.js' } });
         testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
         if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
         return testFunctions;
     }
 
-    private async collectTests(): Promise<IPackageTest[]> {
+    static async collectTests(): Promise<IPackageTest[]> {
         let packagesTests = await this.collectPackages();
         let testsData: IPackageTest[] = [];
 

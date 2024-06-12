@@ -12,15 +12,21 @@ import { ReportsWidget } from "./widgets/reports-widget";
 import { ReportingApp } from "./reporting/reporting_app";
 import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
 
+import { getDate } from './utils';
+
 
 export const _package = new DG.Package();
 
-//name: Test Analysis Report For Current Day
-export async function TestAnalysisReportForCurrentDay() {
-  let manager = new TestAnalysesManager();
-  await manager.init();
-  let testsResult = await manager.getTestsStatusesByLastCommit();
-  grok.shell.addTableView(testsResult);
+//name: TestAnalysisReportForCurrentDay
+//input: datetime date 
+//output: dataframe df
+export async function TestAnalysisReportForCurrentDay(date: any) {
+  const tests = await TestAnalysesManager.collectTests();
+  const testsListMapped = tests.map((elem) => {
+    return { 'name': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+  });
+  const testRuns = await grok.functions.call('UsageAnalysis:getServerStartTestResults', { 'date': getDate(new Date(date)), 'testslist': DG.DataFrame.fromObjects(testsListMapped) });
+  return testRuns;
 }
 
 
