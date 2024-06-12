@@ -7,7 +7,7 @@ import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
 import {
-  IMonomerLib, Monomer, MonomerLibSummaryType, MonomerType, PolymerType, RGroup
+  IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, MonomerType, PolymerType, RGroup
 } from '@datagrok-libraries/bio/src/types';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/utils/const';
 import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
@@ -139,7 +139,7 @@ export class MonomerLib implements IMonomerLib {
     return this._onChanged;
   }
 
-  private _updateInt(lib: IMonomerLib): void {
+  private _updateLibInt(lib: IMonomerLib): void {
     const typesNew = lib.getPolymerTypes();
     const types = this.getPolymerTypes();
 
@@ -156,14 +156,24 @@ export class MonomerLib implements IMonomerLib {
     });
   }
 
+  private _updateSetInt(set: IMonomerSet): void {
+    // TODO: To be implemented
+  }
+
   public update(lib: IMonomerLib): void {
-    this._updateInt(lib);
+    this._updateLibInt(lib);
     this._onChanged.next();
   }
 
-  public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
-    if (reload) this._monomers = {};
-    for (const lib of libList) if (!lib.error) this._updateInt(lib);
+  public updateLibs(libList: IMonomerLib[], setList: IMonomerSet[], reload: boolean = false): void {
+    if (reload) {
+      this._monomers = {};
+      this._sets = [];
+    }
+    for (const lib of libList)
+      if (!lib.error) this._updateLibInt(lib);
+    for (const _set of setList)
+      if (!_set.error) this._updateSetInt(_set);
     this._onChanged.next();
   }
 
@@ -171,6 +181,9 @@ export class MonomerLib implements IMonomerLib {
     this._monomers = {};
     this._onChanged.next();
   }
+
+  private _sets: IMonomerSet[];
+  get sets(): IMonomerSet[] { return this._sets; }
 
   getSummaryObj(): MonomerLibSummaryType {
     const res: MonomerLibSummaryType = {};

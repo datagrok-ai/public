@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 import {
-  getUserLibSettings, setUserLibSettings, LIB_PATH
+  getUserLibSettings, setUserLibSettings, LIB_PATH, SET_PATH
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -16,6 +16,7 @@ import {
 import {MonomerLib} from './monomer-lib';
 import {MonomerLibFileManager} from './library-file-manager/file-manager';
 import {MonomerLibFileEventManager} from './library-file-manager/event-manager';
+import {MonomerSet} from './monomer-set';
 
 import {_package} from '../../package';
 
@@ -83,16 +84,23 @@ export class MonomerLibManager implements IMonomerLibHelper {
       // because it will prevent further handling monomer library settings
       // through blocking this.loadLibrariesPromise
       try {
-        const [libFileNameList, settings]: [string[], UserLibSettings] = await Promise.all([
-          (await this.getFileManager()).getValidLibraryPaths(),
-          getUserLibSettings(),
-        ]);
+        const [[libFileNameList, setFileNameList], settings]: [[string[], string[]], UserLibSettings] =
+          await Promise.all([
+            await this.getFileManager().then((fileManager) => {
+              return [fileManager.getValidLibraryPaths(), fileManager.getValidSetPaths()];
+            }),
+            getUserLibSettings(),
+          ]);
 
         const filteredLibFnList = libFileNameList.filter((libFileName) => {
           const isFileIncluded = !settings.exclude.includes(libFileName);
           const isExplicit = settings.explicit.length === 0 || settings.explicit.includes(libFileName);
 
           return isFileIncluded && isExplicit;
+        });
+
+        const filteredSetFnList = setFileNameList.filter((setFileName) => {
+          return true;
         });
 
         const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
@@ -104,7 +112,18 @@ export class MonomerLibManager implements IMonomerLibHelper {
               return new MonomerLib({}, libFileName, errMsg);
             });
           }));
-        this._monomerLib.updateLibs(libs, reload);
+
+        const sets: IMonomerSet[] = await Promise.all(filteredSetFnList
+          .map((setFileName) => {
+            // TODO: handle whether files are in place
+            return this.readSet(SET_PATH, setFileName).catch((err: any) => {
+              const errMsg: string = `Loading monomer sets from '${setFileName}' error: ` +
+                `${err instanceof Error ? err.message : err.toString()}`;
+              return new MonomerSet('Broken monomer set', [], setFileName, errMsg);
+            });
+          }));
+
+        this._monomerLib.updateLibs(libs, sets, reload);
       } catch (err: any) {
         const errMsg: string = 'Loading monomer libraries error: ' +
           `${err instanceof Error ? err.message : err.toString()}`;
@@ -125,6 +144,12 @@ export class MonomerLibManager implements IMonomerLibHelper {
     const fileManager = await this.getFileManager();
     const lib: IMonomerLib = await fileManager.loadLibraryFromFile(path, fileName);
     return lib;
+  }
+
+  async readSet(path: string, fileName: string): Promise<IMonomerSet> {
+    const fileManager = await this.getFileManager();
+    const set: IMonomerSet = await fileManager.loadSetFromFile(this._monomerLib, path, fileName);
+    return set;
   }
 
   /** Reset user settings to the specified library. WARNING: clears user * settings */

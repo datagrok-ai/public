@@ -29,6 +29,7 @@ import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-
 import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
+import {addContextMenuForFileInfoJsonUI} from './utils/context-menu';
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -304,4 +305,12 @@ export async function measureCellRenderer(): Promise<void> {
     etCount++;
   }
   _package.logger.info(`measureCellRenderer(), avg ET: ${etSum / etCount} ms`);
+}
+
+// -- Handle context menu --
+
+//name: addContextMenuForFileInfoJson
+//input: object event
+export function addContextMenuForFileInfoJson(event: DG.EventData): void {
+  addContextMenuForFileInfoJsonUI(event);
 }

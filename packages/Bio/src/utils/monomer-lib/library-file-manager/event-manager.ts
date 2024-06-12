@@ -20,19 +20,25 @@ export class MonomerLibFileEventManager implements IMonomerLibFileEventManager {
     return MonomerLibFileEventManager._instance;
   }
 
-  private _libraryFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
+  private _libFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
   private _addLibraryFilesSubject$ = new Subject<void>();
   private _librarySelectionSubject$ = new Subject<[string, boolean]>();
 
-  getValidFilesPathList(): string[] {
-    return this._libraryFilesUpdateSubject$.getValue();
+  private _setFilesUpdateSubject$ = new BehaviorSubject<string[]>([]);
+
+  getValidLibPathList(): string[] {
+    return this._libFilesUpdateSubject$.getValue();
+  }
+
+  getValidSetPathList(): string[] {
+    return this._setFilesUpdateSubject$.getValue();
   }
 
   // TODO: remove after adding init from user data storage
   // WARNING: a temporary solution
   async getValidLibraryPathsAsynchronously(): Promise<string[]> {
     return new Promise((resolve) => {
-      this._libraryFilesUpdateSubject$.pipe<string[]>(
+      this._libFilesUpdateSubject$.pipe<string[]>(
         skip(1)
       ).subscribe((fileNames) => {
         resolve(fileNames);
@@ -40,19 +46,29 @@ export class MonomerLibFileEventManager implements IMonomerLibFileEventManager {
     });
   }
 
-  changeValidFilesPathList(newList: string[]): void {
-    this._libraryFilesUpdateSubject$.next(newList);
+  changeValidLibPathList(newLibPathList: string[]): void {
+    this._libFilesUpdateSubject$.next(newLibPathList);
+  }
+
+  changeValidSetPathList(newSetPathList: string[]): void {
+    this._setFilesUpdateSubject$.next(newSetPathList);
   }
 
   get updateUIControlsRequested$(): Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+    return this._libFilesUpdateSubject$.pipe(
       // debounceTime(1000)
     );
   }
 
   get updateValidLibraryFileListRequested$(): Observable<string[]> {
-    return this._libraryFilesUpdateSubject$.pipe(
+    return this._libFilesUpdateSubject$.pipe(
       // debounceTime(3000)
+    );
+  }
+
+  get updateValidSetFileListRequested$(): Observable<string[]> {
+    return this._setFilesUpdateSubject$.pipe(
+      // debounceTime(1000)
     );
   }
 

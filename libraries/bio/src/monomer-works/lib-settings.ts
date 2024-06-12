@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import {UserLibSettings} from './types';
 
 // -- Monomer libraries --
-export const LIB_STORAGE_NAME = 'Libraries';
-export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
+export const LIB_STORAGE_NAME: string = 'Libraries';
+export const LIB_PATH: string = 'System:AppData/Bio/monomer-libraries/';
+export const SET_PATH: string = 'System:AppData/Bio/monomer-sets/';
 const LIB_SETTINGS_FOR_TESTS: UserLibSettings = {explicit: ['HELMCoreLibrary.json'], exclude: []};
 
 

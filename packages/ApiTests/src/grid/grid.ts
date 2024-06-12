@@ -1,6 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+
+import {Observable} from 'rxjs';
+
+import {before, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
+
+import {_package} from '../package-test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -41,6 +46,45 @@ category('Grid', () => {
     expect(demog.filter.trueCount, 73);
   });
 
+  test('filterAsync', async () => {
+    const logPrefix = `ApiTests.Grid.filterAsync()`;
+
+    // const viewSub = grok.events.onViewRemoving.subscribe((event) => {
+    //   if (event.args.view.dart.id == grid.dart.id) {
+    //     try {
+    //       _package.logger.debug(`${logPrefix}, grok.events.onViewRemoving`);
+    //
+    //     } finally {viewSub.unsubscribe();}
+    //   }
+    // });
+    // const sub = grok.events.onViewerClosed.subscribe((event) => {
+    //   if (event.args.viewer.dart.id == grid.dart.id) {
+    //     try {
+    //       _package.logger.debug(`${logPrefix}, grok.events.onViewerClosed`);
+    //       demog.rows.match('sex = M').filter();
+    //       expect(demog.filter.trueCount, 73);
+    //     } finally { sub.unsubscribe(); }
+    //   }
+    // });
+
+    // onViewerClosed - ok
+    // onViewRemoved - ok
+    // onViewRemoving - ok
+    for (const grokEvent of [grok.events.onViewerClosed, grok.events.onViewRemoving, grok.events.onViewRemoved]) {
+      const df = demog.clone();
+      const view = grok.shell.addTableView(df);
+      await delay(200);
+      await testEvent(grokEvent as Observable<any>, (eventArg) => {
+        df.filter
+        df.rows.match('sex = M').filter();
+        expect(df.filter.trueCount, 73);
+        df.rows.requestFilter();
+      }, () => {
+        view.close();
+      }, 300);
+    }
+  });
+
   test('colorCoding', async () => {
     grid.col('race')!.categoryColors = {
       'Asian': 0xFF0000FF,
@@ -59,7 +103,7 @@ category('Grid', () => {
     const raceTags: string[] = Array.from(demog.col('race')!.tags);
     if (!hasTag(raceTags, '.color-coding-categorical') ||
       !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
-      
+
       throw new Error('Categorical Color Coding error');
 
     //numerical HEIGHT column check for Conditional ColorCoding
@@ -68,7 +112,7 @@ category('Grid', () => {
       !hasTag(heightTags, 'Conditional') ||
       !hasTag(heightTags, '.color-coding-conditional') ||
       !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
-      
+
       throw new Error('Conditional Color Coding error');
 
     //numerical AGE column check for Linear ColorCoding
@@ -77,7 +121,7 @@ category('Grid', () => {
       !hasTag(ageTags, 'Linear') ||
       !hasTag(ageTags, '.color-coding-linear') ||
       !hasTag(ageTags, '[4294944000, 4278255360]'))
-      
+
       throw new Error('Linear Color Coding error');
   });
 
@@ -99,7 +143,7 @@ category('Grid', () => {
       !hasTag(siteTags, '["New York", "Buffalo"]') ||
       !hasTag(siteTags, '.auto-choices') ||
       !hasTag(siteTags, 'New York'))
-      
+
       throw new Error('Column Controlled Values (Choices) error');
   });
 

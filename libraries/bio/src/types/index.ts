@@ -45,6 +45,34 @@ export type Monomer = {
   wem?: WebEditorMonomer,
 };
 
+export interface IMonomerLinkData {
+  libName: string;
+  symbol: string;
+  notes: string;
+}
+
+export interface IMonomerLink {
+  get lib(): IMonomerLib;
+  get symbol(): string;
+}
+
+export interface IMonomerSetPlaceholder {
+  get symbol(): string;
+  get polymerType(): PolymerType;
+  get monomerType(): MonomerType;
+  get monomerLinks(): IMonomerLinkData[];
+
+  get monomers(): Monomer[];
+}
+
+export interface IMonomerSet {
+  get source(): string | undefined;
+  get error(): string | undefined;
+
+  get description(): string;
+  get placeholders(): IMonomerSetPlaceholder[];
+}
+
 export type MonomerLibSummaryType = { [polymerType: string]: number };
 
 export interface IMonomerLib {
@@ -59,6 +87,8 @@ export interface IMonomerLib {
   getPolymerTypes(): PolymerType[];
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
+
+  get sets(): IMonomerSet[];
 
   /** Summary string with lib monomer count by type
    * @deprecated Keep for backward compatibility */

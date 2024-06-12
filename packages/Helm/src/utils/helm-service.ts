@@ -125,6 +125,8 @@ export class HelmService extends HelmServiceBase {
     return true;
   }
 
-  async reset(): Promise<void> { }
+  async reset(): Promise<void> {
+    await super.reset();
+  }
 }
 

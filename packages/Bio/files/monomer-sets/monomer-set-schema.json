@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Monomer Sets JSON Schema v1 for combinatorial libraries",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "placeholders": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "monomerType": {
+            "enum": ["Backbone", "Branch", "Terminal"]
+          },
+          "polymerType": {
+            "enum": ["PEPTIDE", "RNA"]
+          },
+          "set": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Link to a monomer of a monomer library",
+              "required": ["source", "symbol"],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "description": "Monomer library name, path."
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "Monomer symbol from the library"
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

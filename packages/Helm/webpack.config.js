@@ -1,11 +1,16 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production') {
+  console.warn(`Building Helm with '${mode}' mode.`);
+}
+
 module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: mode,
   entry: {
     package: './src/package.ts',
     test: {
@@ -18,6 +23,7 @@ module.exports = {
     fallback: {'url': false},
     extensions: ['.ts', '.tsx', '.js', '.wasm', '.mjs', '.json'],
   },
+  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {
     contentBase: './dist',
   },
@@ -28,12 +34,11 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: /node_modules/},
     ],
   },
-  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
+    'openchemlib/full': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',

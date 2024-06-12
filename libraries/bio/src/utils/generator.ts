@@ -50,13 +50,17 @@ export function generateLongSequence2(
   col.setTag(TAGS.alphabet, alphabet);
   if (notation == NOTATION.SEPARATOR) col.setTag(TAGS.separator, separator!);
 
+  // limited sequence diversity, to speed up generator
   const sh = SeqHandler.forColumn(col);
-  for (let rowI = 0; rowI < rowCount; rowI++) {
+  const seqList = new Array(3);
+  for (let seqI = 0; seqI < seqList.length; ++seqI) {
     const seqMList: string[] = wu.count(0).take(seqLength)
       .map((i) => { return alphabetSet[Math.floor(Math.random() * alphabetSize)]; })
       .toArray();
-    const seq = sh.joiner(new StringListSeqSplitted(seqMList, GapOriginals[notation]));
-    col.set(rowI, seq);
+    seqList[seqI] = sh.joiner(new StringListSeqSplitted(seqMList, GapOriginals[notation]));
+  }
+  for (let rowI = 0; rowI < rowCount; rowI++) {
+    col.set(rowI, seqList[Math.floor(Math.random() * seqList.length)]);
   }
 
   return col;

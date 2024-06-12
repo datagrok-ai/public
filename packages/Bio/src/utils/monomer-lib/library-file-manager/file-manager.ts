@@ -5,8 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {JSONSchemaType} from 'ajv';
 
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {LIB_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {
+  IMonomerLib, IMonomerLinkData, IMonomerSet, Monomer, PolymerType, MonomerType
+} from '@datagrok-libraries/bio/src/types';
+import {LIB_PATH, SET_PATH} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {
   HELM_REQUIRED_FIELD as REQ,
 } from '@datagrok-libraries/bio/src/utils/const';
@@ -18,6 +20,7 @@ import {MonomerLib} from '../monomer-lib';
 import {HELM_JSON_SCHEMA_PATH} from './consts';
 import {MonomerLibFileEventManager} from './event-manager';
 import {MonomerLibFileValidator} from './file-validator';
+import {MonomerSet, MonomerSetPlaceholder} from '../monomer-set';
 
 import {_package} from '../../../package';
 
@@ -33,7 +36,10 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     public readonly eventManager: MonomerLibFileEventManager,
   ) {
     this.eventManager.updateValidLibraryFileListRequested$.subscribe(async () => {
-      await this.updateValidLibraryList();
+      await this.updateValidLibList();
+    });
+    this.eventManager.updateValidSetFileListRequested$.subscribe(async () => {
+      await this.updateValidSetList();
     });
   }
 
@@ -65,7 +71,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
 
       await this.validateAgainstHELM(fileContent, fileName);
       await grok.dapi.files.writeAsText(LIB_PATH + `${fileName}`, fileContent);
-      await this.updateValidLibraryList();
+      await this.updateValidLibList();
       const fileExists = await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
       if (!fileExists)
         grok.shell.error(`Failed to add ${fileName} library`);
@@ -80,7 +86,7 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
   async deleteLibraryFile(fileName: string): Promise<void> {
     try {
       await grok.dapi.files.delete(LIB_PATH + `${fileName}`);
-      await this.updateValidLibraryList();
+      await this.updateValidLibList();
       grok.shell.info(`Deleted ${fileName} library`);
     } catch (e) {
       console.error(e);
@@ -93,13 +99,13 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
   }
 
   async loadLibraryFromFile(path: string, fileName: string): Promise<IMonomerLib> {
-    let rawLibData: any[] = [];
+    let raw: any[] = [];
     const fileSource = new DG.FileSource(path);
-    const file = await fileSource.readAsText(fileName);
-    rawLibData = JSON.parse(file);
+    const content = await fileSource.readAsText(fileName);
+    raw = JSON.parse(content);
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
     const polymerTypes: string[] = [];
-    rawLibData.forEach((monomer) => {
+    raw.forEach((monomer) => {
       const polymerType = monomer[REQ.POLYMER_TYPE];
       const monomerSymbol = monomer[REQ.SYMBOL];
       if (!polymerTypes.includes(polymerType)) {
@@ -112,8 +118,30 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     return new MonomerLib(monomers, fileName);
   }
 
+  async loadSetFromFile(monomerLib: IMonomerLib, path: string, fileName: string): Promise<IMonomerSet> {
+    let raw: any = {};
+    const fileSource = new DG.FileSource(path);
+    const content = await fileSource.readAsText(fileName);
+    raw = JSON.parse(content);
+
+    const description = raw['description'];
+    const placeholders = Object.entries(raw['placeholders']).map(([k, v]: [string, any]) => {
+      const placeholderSymbol = k;
+      const polymerType = v['polymerType'] as PolymerType;
+      const monomerType = v['monomerType'] as MonomerType;
+      const monomerLinks = v['set'] as IMonomerLinkData[];
+      return new MonomerSetPlaceholder(monomerLib, placeholderSymbol, polymerType, monomerType, monomerLinks);
+    });
+
+    return new MonomerSet(description, placeholders);
+  }
+
   getValidLibraryPaths(): string[] {
-    return this.eventManager.getValidFilesPathList();
+    return this.eventManager.getValidLibPathList();
+  }
+
+  getValidSetPaths(): string[] {
+    return this.eventManager.getValidSetPathList();
   }
 
   // TODO: remove after adding init from user data storage
@@ -126,21 +154,21 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     return await grok.dapi.files.exists(LIB_PATH + `${fileName}`);
   }
 
-  private async updateValidLibraryList(): Promise<void> {
-    const logPrefix: string = `${this.toLog()}.updateValidLibraryList()`;
+  private async updateValidLibList(): Promise<void> {
+    const logPrefix: string = `${this.toLog()}.updateValidLibList()`;
     _package.logger.debug(`${logPrefix}, start`);
     return this.filesPromise = this.filesPromise.then(async () => {
       _package.logger.debug(`${logPrefix}, IN`);
       const invalidFiles = [] as string[];
       // console.log(`files before validation:`, this.libraryEventManager.getValidFilesPathList());
-      const filePaths = await this.getFilePathsAtDefaultLocation();
+      const libPathList = await this.getFilePathsAtDefaultLocation();
 
-      if (!this.fileListHasChanged(filePaths)) {
+      if (!this.libListHasChanged(libPathList)) {
         _package.logger.debug(`${logPrefix}, end, not changed`);
         return;
       }
 
-      for (const path of filePaths) {
+      for (const path of libPathList) {
         if (!path.endsWith('.json')) {
           invalidFiles.push(path);
           continue;
@@ -151,16 +179,15 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
           invalidFiles.push(path);
       }
 
-      const validLibraryPaths = filePaths.filter((path) => !invalidFiles.includes(path));
-
-      if (this.fileListHasChanged(validLibraryPaths)) {
-        this.eventManager.changeValidFilesPathList(validLibraryPaths);
+      const validLibPathList = libPathList.filter((path) => !invalidFiles.includes(path));
+      if (this.libListHasChanged(validLibPathList)) {
+        this.eventManager.changeValidSetPathList(validLibPathList);
         this.libHelper.loadLibraries(true);
       }
       // console.log(`files after validation:`, this.libraryEventManager.getValidFilesPathList());
 
-      if (validLibraryPaths.some((el) => !el.endsWith('.json')))
-        _package.logger.warning(`Wrong validation: ${validLibraryPaths}`);
+      if (validLibPathList.some((el) => !el.endsWith('.json')))
+        _package.logger.warning(`Wrong validation: ${validLibPathList}`);
 
       if (invalidFiles.length > 0) {
         const message = `Invalid monomer library files in ${LIB_PATH}` +
@@ -174,8 +201,50 @@ export class MonomerLibFileManager implements IMonomerLibFileManager {
     _package.logger.debug(`${logPrefix}, end`);
   }
 
-  private fileListHasChanged(newList: string[]): boolean {
-    const currentList = this.eventManager.getValidFilesPathList();
+  private async updateValidSetList(): Promise<void> {
+    const logPrefix: string = `${this.toLog()}.updateValidSetList()`;
+    _package.logger.debug(`${logPrefix}, start`);
+    return this.filesPromise = this.filesPromise.then(async () => {
+      _package.logger.debug(`${logPrefix}, IN`);
+      const invalidFiles = [] as string[];
+      const setPathList: string[] = (await grok.dapi.files.list(SET_PATH))
+        .map((fi) => fi.fullPath);
+
+      if (!this.setListHasChanged(setPathList)) {
+        _package.logger.debug(`${logPrefix}, end, not changed`);
+        return;
+      }
+
+      for (const path of setPathList) {
+        if (!path.endsWith('.json')) {
+          invalidFiles.push(path);
+          continue;
+        }
+
+        const fileContent = await grok.dapi.files.readAsText(SET_PATH + `${path}`);
+        // TODO: Validate monomer set
+        // if (!this.isValidMonomerSet(fileContent, path))
+        //   invalidFiles.push(path);
+      }
+
+      const validSetPathList = setPathList.filter((path) => !invalidFiles.includes(path));
+      if (this.setListHasChanged(validSetPathList)) {
+        this.eventManager.changeValidSetPathList(validSetPathList);
+        this.libHelper.loadLibraries();
+      }
+
+      _package.logger.debug(`${logPrefix}, OUT`);
+    });
+    _package.logger.debug(`${logPrefix}, end`);
+  }
+
+  private libListHasChanged(newList: string[]): boolean {
+    const currentList = this.eventManager.getValidLibPathList();
+    return newList.length !== currentList.length || newList.some((el, i) => el !== currentList[i]);
+  }
+
+  private setListHasChanged(newList: string[]): boolean {
+    const currentList = this.eventManager.getValidSetPathList();
     return newList.length !== currentList.length || newList.some((el, i) => el !== currentList[i]);
   }
 
