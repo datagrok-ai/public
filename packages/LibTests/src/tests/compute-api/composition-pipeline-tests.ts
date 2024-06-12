@@ -143,8 +143,7 @@ category('Compute API: CompositionPipeline single config', async () => {
 
 category('Compute API: CompositionPipeline composition config', async () => {
   before(async () => {
-    const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
-    await initFunc.prepare().call();
+    await initComputeApi();
   });
 
   const sconfig1: PipelineConfiguration = {
@@ -622,8 +621,7 @@ category('Compute API: CompositionPipeline composition config', async () => {
 
 category('Compute API: CompositionPipeline reactivity', async () => {
   before(async () => {
-    const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
-    await initFunc.prepare().call();
+    await initComputeApi();
   });
   
   test('simple link', async () => {

@@ -369,6 +369,7 @@ category('Compute API: RFV Inputs', async () => {
 
 category('Compute API: RFV Validation', async () => {
   before(async () => {
+    await initComputeApi();
   });
 
   test('Validate on start', async () => {
