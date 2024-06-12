@@ -379,7 +379,7 @@ jobs:
 #          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 #        if: needs.version.outputs.changed_version == 'true'
       - name: Commit js-api version json for compatibility-tool
-        if: ${{ steps.publish.outcome == 'success' }}
+#        if: ${{ steps.publish.outcome == 'success' }}
         working-directory: docusaurus
         run: |
           npm install
