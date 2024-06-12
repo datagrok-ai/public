@@ -12,7 +12,7 @@ on:
           - 'yes'
           - 'no'
         default: 'no'
-
+  push:
     paths:
       - 'help/**/*.md'
       - 'help/**/*.mdx'
