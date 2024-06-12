@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.12.24 (XXXX)
+## 2.12.24 (WIP)
 
 ### Bug fixes
 
