@@ -162,16 +162,26 @@ class SingleStrandBlock extends SVGBlockBase {
     const color = getNucleobaseColorFromStyleMap(nucleotide);
     const centerPosition = { ...defaultShift, x: defaultShift.x + index * SVG_CIRCLE_SIZES.NUCLEOBASE_DIAMETER };
 
+    const circleRadiusWithoutHoverBorder = SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS - 1;
     const circle = this.svgElementFactory
-      .createCircleElement(centerPosition, SVG_CIRCLE_SIZES.NUCLEOBASE_RADIUS, color, 'pointer');
+      .createCircleElement(centerPosition, circleRadiusWithoutHoverBorder, color, 'pointer');
+    circle.classList.add('st-monomer');
 
     const strandIdx = this.strand === STRAND.ANTISENSE ?
       this.config.nucleotideSequences[this.strand].length - 1 - index : index;
 
+    circle.onmouseenter = (e: MouseEvent) => {
+      ui.tooltip.show(`Click to change monomer`, e.clientX, e.clientY);
+    }
+
+    circle.onmouseleave = (e: MouseEvent) => {
+      ui.tooltip.hide();
+    }
+
     circle.onclick = (e) => {
       e.stopPropagation();
       e.preventDefault();
-
+      ui.tooltip.hide();
       const deleteButton = ui.button(
         ui.icons.delete(() => { }),
         () => {
@@ -321,6 +331,8 @@ class SingleStrandBlock extends SVGBlockBase {
       'pointer'
     );
 
+    element.classList.add('st-numeric-label');
+
    // ui.tooltip.bind(element as unknown as HTMLElement, `Remove numeric labels`);
     element.onclick = (e) => {
       e.stopPropagation();
@@ -368,6 +380,8 @@ class SingleStrandBlock extends SVGBlockBase {
       'pointer',
       'rotate(-90deg)'
     );
+
+    modificationEl.classList.add('st-modification-label');
 
     modificationEl.onclick = (e) => {
       e.stopPropagation();

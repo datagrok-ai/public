@@ -86,3 +86,16 @@
 .add-delete-monomer-div {
   justify-content: end;
 }
+
+.st-monomer:hover {
+  stroke: var(--grey-6);
+  stroke-width: 2px;
+}
+
+.st-numeric-label:hover {
+  font-weight: 900;
+}
+
+.st-modification-label:hover {
+  font-weight: 900;
+}
