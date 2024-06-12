@@ -397,7 +397,7 @@ export class AddNewColumnDialog {
           let dom = document.createElement("div");
           const funcName = text.slice(start - from, end - from);
           const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName]; 
-          dom.textContent = `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(',')})` : ''}`;
+          dom.textContent = `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}`;
           return {dom}
         }
       }
