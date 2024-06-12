@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.3.4 (2024-06-12)
+
+### Bug fixes
+
+* Fix terminal modification SVG rendering
+
 ## 1.3.3 (2024-06-12)
 
 ### Bug fixes
