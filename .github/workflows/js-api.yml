@@ -5,8 +5,8 @@ on:
   push:
     branches:
       vhlushchenko/GROK-15909/compatibility-tool-CI/CD
-    paths:
-      - 'js-api/**'
+#    paths:
+#      - 'js-api/**'
   pull_request:
     paths:
       - 'js-api/**'
