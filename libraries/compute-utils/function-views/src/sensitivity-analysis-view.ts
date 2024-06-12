@@ -1293,8 +1293,8 @@ export class SensitivityAnalysisView {
 
     return outputsOfInterest;
   }
-  //@ts-ignore
-  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<DG.IScatterPlotLookSettings> {
+
+  private getScatterOpt(colNamesToShow: string[], nameOfNonFixedOutput: string): Partial<DG.IScatterPlotSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnName: colNamesToShow[1],
@@ -1304,8 +1304,8 @@ export class SensitivityAnalysisView {
       jitterSize: 5,
     };
   }
-  //@ts-ignore
-  private getLineChartOpt(colNamesToShow: string[]): Partial<DG.ILineChartLookSettings> {
+
+  private getLineChartOpt(colNamesToShow: string[]): Partial<DG.ILineChartSettings> {
     return {
       xColumnName: colNamesToShow[0],
       yColumnNames: colNamesToShow.slice(1, Math.min(colNamesToShow.length, 8)),
@@ -1314,8 +1314,8 @@ export class SensitivityAnalysisView {
       multiAxis: true,
     };
   }
-  //@ts-ignore
-  private getBarChartOpt(descr: string, split: string, value: string): Partial<DG.IBarChartLookSettings> {
+
+  private getBarChartOpt(descr: string, split: string, value: string): Partial<DG.IBarChartSettings> {
     return {
       description: descr,
       splitColumnName: split,
