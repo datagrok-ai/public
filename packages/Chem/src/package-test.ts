@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/ui-tests-info-panel';
-import './tests/ui-tests-top-menu';
 import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
@@ -35,6 +34,7 @@ import './tests/projects-tests';
 //import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
+import './tests/ui-tests-top-menu';
 
 export const _package = new DG.Package();
 export {tests};
