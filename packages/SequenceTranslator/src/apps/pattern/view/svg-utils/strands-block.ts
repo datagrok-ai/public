@@ -144,8 +144,8 @@ class SingleStrandBlock extends SVGBlockBase {
     const circleElements = this.createNucleotideCircleElements(nucleotide, index, defaultShift);
     const numericLabel = this.nucleotidesWithoutOverhangs.includes(nucleotide) ?
       this.config.nucleotidesWithNumericLabels.includes(nucleotide) ?
-        this.createNucleotideNumericLabel(index, defaultShift) :
-          this.createNucleotideNumericLabel(index, defaultShift, true) :null;
+        this.createNucleotideNumericLabel(nucleotide, index, defaultShift) :
+          this.createNucleotideNumericLabel(nucleotide, index, defaultShift, true) :null;
 
     const modificationLabel = this.config.nucleotidesWithModificationLabels.includes(nucleotide) ?
       this.createNucleotideModificationLabel(nucleotide, index, defaultShift) :
@@ -170,9 +170,9 @@ class SingleStrandBlock extends SVGBlockBase {
     const strandIdx = this.strand === STRAND.ANTISENSE ?
       this.config.nucleotideSequences[this.strand].length - 1 - index : index;
 
-    circle.onmouseenter = (e: MouseEvent) => {
-      ui.tooltip.show(`Click to change monomer`, e.clientX, e.clientY);
-    }
+    // circle.onmouseenter = (e: MouseEvent) => {
+    //   ui.tooltip.show(`Click to change monomer`, e.clientX, e.clientY);
+    // }
 
     circle.onmouseleave = (e: MouseEvent) => {
       ui.tooltip.hide();
@@ -307,6 +307,7 @@ class SingleStrandBlock extends SVGBlockBase {
   }
 
   private createNucleotideNumericLabel(
+    nucleotide: string, 
     index: number,
     defaultShift: {x: number, y: number},
     hide?: boolean
@@ -333,10 +334,19 @@ class SingleStrandBlock extends SVGBlockBase {
 
     element.classList.add('st-numeric-label');
 
+    element.onmouseenter = (e: MouseEvent) => {
+        ui.tooltip.show(`Click to ${hide ? 'add': 'remove'} numeric labels for ${nucleotide}`, e.clientX, e.clientY);
+    };
+
+    element.onmouseleave = (e: MouseEvent) => {
+      ui.tooltip.hide();
+    };
+
    // ui.tooltip.bind(element as unknown as HTMLElement, `Remove numeric labels`);
     element.onclick = (e) => {
       e.stopPropagation();
       e.preventDefault();
+      ui.tooltip.hide();
       const nucleotide = this.config.nucleotideSequences[this.strand][index];
       this.eventBus.toggleNumericLabels(!hide, nucleotide);
     };
@@ -380,12 +390,20 @@ class SingleStrandBlock extends SVGBlockBase {
       'pointer',
       'rotate(-90deg)'
     );
-
     modificationEl.classList.add('st-modification-label');
+
+    modificationEl.onmouseenter = (e: MouseEvent) => {
+        ui.tooltip.show(`Click to ${hide ? 'add' : 'remove'} ${label} labels`, e.clientX, e.clientY);
+    };
+
+    modificationEl.onmouseleave = (e: MouseEvent) => {
+      ui.tooltip.hide();
+    };
 
     modificationEl.onclick = (e) => {
       e.stopPropagation();
       e.preventDefault();
+      ui.tooltip.hide();
       const nucleotide = this.config.nucleotideSequences[this.strand][index];
       this.eventBus.toggleModificationLables(!hide, nucleotide);
     };
@@ -409,16 +427,23 @@ class SingleStrandBlock extends SVGBlockBase {
         const color = SVG_ELEMENT_COLORS.LINKAGE_STAR;
 
         const starElement = this.svgElementFactory.createStarElement(centerPosition, color, !ptoFlag ? '0.0' : '1.0', 'pointer');
+        starElement.classList.add('st-pto-star');
+
+        starElement.onmouseenter = (e: MouseEvent) => {
+            ui.tooltip.show(`Click to ${!ptoFlag ? 'add' : 'remove'} PTO`, e.clientX, e.clientY);
+        };
+
+        starElement.onmouseleave = (e: MouseEvent) => {
+          ui.tooltip.hide();
+        };
+        
         const strandIdx = this.strand === STRAND.ANTISENSE ?
           this.config.nucleotideSequences[this.strand].length - index : index;
         starElement.onclick = (e) => {
           e.stopPropagation();
           e.preventDefault();
-          DG.Menu.popup()
-            .item(!ptoFlag ? 'Add PTO' : 'Remove PTO', () => {
-              this.eventBus.setPhosphorothioateLinkageFlag(this.strand, strandIdx, !ptoFlag);
-            })
-            .show();
+          ui.tooltip.hide();
+          this.eventBus.setPhosphorothioateLinkageFlag(this.strand, strandIdx, !ptoFlag);
         };
         
         return starElement;

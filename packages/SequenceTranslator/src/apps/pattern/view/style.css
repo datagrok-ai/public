@@ -92,6 +92,11 @@
   stroke-width: 2px;
 }
 
+.st-pto-star:hover {
+  stroke: var(--grey-6);
+  stroke-width: 2px;
+}
+
 .st-numeric-label:hover {
   font-weight: 900;
 }
