@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.41.12 (2024-06-12)
+
+### Bug fixes
+
+* Fix .pdbqt to .pdb sorting atoms, add tests
+* Fix cell renderer async base to reset errorCount
+
 ## 5.41.11 (2024-06-11)
 
 ### Bug fixes
