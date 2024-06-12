@@ -6,13 +6,22 @@ import { UsageWidget } from './widgets/usage-widget';
 import { PackageUsageWidget } from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
-import {ViewHandler} from './view-handler';
-import {TestTrack} from './test-track/app';
-import {ReportsWidget} from "./widgets/reports-widget";
-import {ReportingApp} from "./reporting/reporting_app";
+import { ViewHandler } from './view-handler';
+import { TestTrack } from './test-track/app';
+import { ReportsWidget } from "./widgets/reports-widget";
+import { ReportingApp } from "./reporting/reporting_app";
+import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
 
 
 export const _package = new DG.Package();
+
+//name: Test Analysis Report For Current Day
+export async function TestAnalysisReportForCurrentDay() {
+  let manager = new TestAnalysesManager();
+  await manager.init();
+  let testsResult = await manager.getTestsStatusesByLastCommit();
+  grok.shell.addTableView(testsResult);
+}
 
 
 //name: Usage Analysis
@@ -36,9 +45,8 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 export function testTrackApp(): void {
-  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root)) 
+  if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
-  
 }
 
 //name: Reports
@@ -47,7 +55,7 @@ export function testTrackApp(): void {
 //input: string path {isOptional: true; meta.url: true}
 //input: map params {isOptional: true}
 //output: view v
-export async function reportsApp(path?: string):Promise<DG.ViewBase> {
+export async function reportsApp(path?: string): Promise<DG.ViewBase> {
   const parent = grok.functions.getCurrentCall();
   const app = new ReportingApp(parent);
   await app.init(path);
