@@ -382,7 +382,7 @@ jobs:
         run: |
           npm install
           version=${{ needs.version.outputs.current_version }}
-          npx ts-node parser.ts $version true         
+          npx ts-node parser.ts $version         
           if [ -n "$(git status -s static/versions)" ]; then
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
