@@ -31,6 +31,8 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
+import {computeLinRegressionCoefs} from './regression';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -541,4 +543,14 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //desription: Missing values imputation using the k-nearest neighbors method
 export function kNNImputation() {
   runKNNImputer();
+}
+
+//top-menu: ML | Analyze | Linear Regression...
+//name: linearRegression
+//description: Linear Regression demo
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: column target {type: numerical}
+export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column): Promise<void> {
+  await computeLinRegressionCoefs(features, target);
 }
