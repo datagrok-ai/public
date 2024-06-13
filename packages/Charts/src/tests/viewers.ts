@@ -9,8 +9,6 @@ category('Viewers', () => {
   const viewersToSkip: {[v: string]: string} = {
     'Tree': 'GROK-12569',
     'Sunburst': 'GROK-13778',
-    'Surface plot': 'GROK-13778',
-    'Timelines': 'GROK-13778',
   };
 
   for (const v of viewers) {
