@@ -5,7 +5,7 @@ import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
 import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
-const STANDART_TIMEOUT = 180000;
+const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;
 
 const stdLog = console.log.bind(console);
