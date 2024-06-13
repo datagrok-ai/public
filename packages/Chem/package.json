@@ -75,6 +75,8 @@
     "css-loader": "latest",
     "ts-loader": "latest",
     "@datagrok/chembl": "^1.0.35",
+    "@datagrok/charts": "latest",
+    "@datagrok/power-grid": "latest",
     "@datagrok/pubchem-api": "^1.1.16",
     "@datagrok/chembl-api": "^1.0.12"
   },
