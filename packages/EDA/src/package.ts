@@ -31,7 +31,7 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {computeLinRegressionCoefs} from './regression';
+import {computeLinRegressionCoefs, getPredictionByLinearRegression} from './regression';
 
 export const _package = new DG.Package();
 
@@ -545,12 +545,24 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
-//top-menu: ML | Analyze | Linear Regression...
+//top-menu: ML | Analyze | Linear Regression (demo)...
 //name: linearRegression
 //description: Linear Regression demo
 //input: dataframe table
 //input: column_list features {type: numerical}
 //input: column target {type: numerical}
-export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column): Promise<void> {
-  await computeLinRegressionCoefs(features, target);
+//input: bool plot = true {caption: plot}
+export function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): void {
+  const params = computeLinRegressionCoefs(features, target);
+  const prediction = getPredictionByLinearRegression(features, params);
+  table.columns.add(prediction);
+
+  if (plot) {
+    const view = grok.shell.tableView(table.name);
+    view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+      xColumnName: target.name,
+      yColumnName: prediction.name,
+      showRegressionLine: true,
+    });
+  }
 }
