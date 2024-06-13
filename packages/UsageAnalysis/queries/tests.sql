@@ -231,7 +231,7 @@ coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.
 --name: BuildTestsData
 --connection: System:Datagrok
 --meta.cache: all
---meta.cache.invalidateOn: 0 0 * * *
+--meta.cache.invalidateOn: * /10 * * * *
 --input: datetime dateStart
 --input: datetime dateEnd
 select DISTINCT ON (t.friendly_name) t.friendly_name as description,
