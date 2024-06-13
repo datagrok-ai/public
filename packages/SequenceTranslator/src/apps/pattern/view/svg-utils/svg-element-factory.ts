@@ -65,7 +65,7 @@ export class SVGElementFactory {
     this.setAttributes(star, {
       points: pointsAttribute,
       fill: color,
-      opacity: opacity,
+      'fill-opacity': opacity,
       cursor: cursor
     });
     return star;

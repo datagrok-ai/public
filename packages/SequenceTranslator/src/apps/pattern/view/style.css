@@ -101,6 +101,10 @@
   font-weight: 900;
 }
 
+.label-inactive:hover {
+  opacity: 0.5;
+}
+
 .st-modification-label:hover {
   font-weight: 900;
 }

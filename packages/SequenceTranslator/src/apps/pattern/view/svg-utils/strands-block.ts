@@ -333,6 +333,8 @@ class SingleStrandBlock extends SVGBlockBase {
     );
 
     element.classList.add('st-numeric-label');
+    if (hide)
+      element.classList.add('label-inactive');
 
     element.onmouseenter = (e: MouseEvent) => {
         ui.tooltip.show(`Click to ${hide ? 'add': 'remove'} numeric labels for ${nucleotide}`, e.clientX, e.clientY);
@@ -391,6 +393,8 @@ class SingleStrandBlock extends SVGBlockBase {
       'rotate(-90deg)'
     );
     modificationEl.classList.add('st-modification-label');
+    if (hide)
+      modificationEl.classList.add('label-inactive');
 
     modificationEl.onmouseenter = (e: MouseEvent) => {
         ui.tooltip.show(`Click to ${hide ? 'add' : 'remove'} ${label} labels`, e.clientX, e.clientY);
