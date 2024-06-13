@@ -29,6 +29,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {runKNNImputer} from './missing-values-imputation/ui';
 import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
+import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 export const _package = new DG.Package();
 
@@ -220,8 +221,40 @@ export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMet
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false, inflate: number = 0,
 ): Promise< DG.ScatterPlotViewer | undefined> {
-  const res = (await markovCluster(df, cols, metrics, weights,
-    aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate));
+  const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+  const serializedOptions: string = JSON.stringify({
+    cols: cols.map((col) => col.name),
+    metrics: metrics,
+    weights: weights,
+    aggregationMethod: aggregationMethod,
+    preprocessingFuncs: preprocessingFuncs.map((func) => func?.name ?? null),
+    preprocessingFuncArgs: preprocessingFuncArgs,
+    threshold: threshold,
+    maxIterations: maxIterations,
+    useWebGPU: useWebGPU,
+    inflate: inflate,
+  } satisfies MCLSerializableOptions);
+  df.setTag(MCL_OPTIONS_TAG, serializedOptions);
+
+  const sc = tv.addViewer(DG.VIEWER.SCATTER_PLOT, {title: 'MCL', initializationFunction: 'EDA:MCLInitializationFunction'}) as DG.ScatterPlotViewer;
+  return sc;
+}
+
+//name: MCLInitializationFunction
+//input: viewer sc
+export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
+  const df = sc.dataFrame;
+  if (df === null)
+    throw new Error('Data frame of the scatter plot is null');
+  const mclTag = df.getTag(MCL_OPTIONS_TAG);
+  if (!mclTag)
+    throw new Error('MCL options tag on the dataFrame is not found');
+  const options: MCLSerializableOptions = JSON.parse(mclTag);
+  const cols = options.cols.map((colName) => df.columns.byName(colName));
+  const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
+  const res = await markovCluster(df, cols, options.metrics, options.weights,
+    options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
+    options.maxIterations, options.useWebGPU, options.inflate, sc);
   return res?.sc;
 }
 
