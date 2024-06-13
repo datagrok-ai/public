@@ -184,6 +184,7 @@
 
 .dlg-add-new-column{
     flex-direction: row;
+    overflow: hidden;
 }
 
 .ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {

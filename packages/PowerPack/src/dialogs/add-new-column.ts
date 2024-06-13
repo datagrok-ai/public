@@ -135,7 +135,7 @@ export class AddNewColumnDialog {
     this.prepareForSeleniumTests();
     await this.updatePreview(this.codeMirror!.state.doc.toString());
     this.prepareFunctionsListForAutocomplete();
-    
+    this.codeMirror.focus();
   }
 
   prepareFunctionsListForAutocomplete() {
@@ -252,6 +252,8 @@ export class AddNewColumnDialog {
 
     const wordHover = this.hoverTooltipCustom(this.packageFunctionsParams, this.coreFunctionsParams);
 
+    const domEventHandlers = EditorView.domEventHandlers({ blur() { cm.focus(); } });
+
     const cm = new EditorView({
       parent: editorDiv,
       state: EditorState.create({
@@ -275,9 +277,10 @@ export class AddNewColumnDialog {
               formulaErrorDiv.append(ui.divText(error, 'cm-error-div'));
             }
           }),
+          domEventHandlers
         ],
       }),
-    });
+    });  
 
     if (this.call)
       this.codeMirror!.dispatch({changes: {
