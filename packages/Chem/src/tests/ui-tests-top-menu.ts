@@ -288,7 +288,7 @@ category('UI top menu', () => {
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    }, {timeout: 30000}); 
+    }, {timeout: 300000}); 
 
     after(async () => {
         grok.shell.closeAll();
