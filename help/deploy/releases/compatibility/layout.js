@@ -4,28 +4,28 @@ const ToolMarkup = () => {
 
     const toolMarkup = (<div class="MarkUpTool">
         <label for="compare">Compare</label>
-        <select id="selector1" name="compare" style={{margin: '0 5px'}}>
+        <select id="selector1" name="compare" style={{ margin: '0 5px' }}>
         </select>
         <label for="with"> with </label>
-        <select id="selector2" name="with" style={{margin: '0 5px'}}>
+        <select id="selector2" name="with" style={{ margin: '0 5px' }}>
         </select>
         <br />
-        <input type="checkbox" id="breakingChangesCheckbox" style={{margin: '0 2px'}}/>
+        <input type="checkbox" id="breakingChangesCheckbox" style={{ margin: '0 2px' }} />
         <label for="horns">Breaking changes</label>
         <br />
-        <input type="checkbox" id="anyCausesBreakingChangesCheckbox" disabled  style={{margin: '0 2px'}}/>
-        <label for="horns">Show type 'any' as breaking changes</label>
+        <input type="checkbox" id="anyCausesBreakingChangesCheckbox" disabled style={{ margin: '0 2px' }} />
+        <label for="horns">Include cases where parameter type changes either to or from ‘any’</label>
         <br />
-        <input type="checkbox" id="newFunctionalityCheckbox"  style={{margin: '0 2px'}}/>
+        <input type="checkbox" id="newFunctionalityCheckbox" style={{ margin: '0 2px' }} />
         <label for="horns">New functionality</label>
         <br />
         <br />
 
         <div id="compareResultsBlock">
         </div>
-        <script src="./output.js" type="text/javascript"></script> 
+        <script src="./output.js" type="text/javascript"></script>
     </div>);
-    
+
     useEffect(() => {
         var breakingChangesCheckbox = document.getElementById("breakingChangesCheckbox");
 
@@ -191,8 +191,11 @@ const ToolMarkup = () => {
                 var hasCompares = false;
                 summaryBlock.textContent = className;
                 detailsBlock.appendChild(summaryBlock)
+                var addedElements = [];
+                var removedElements = [];
 
                 Object.keys(functionsData[className]).sort().forEach((functionName) => {
+
                     if (functionsData[className][functionName].hasOwnProperty(selectorToCompare1.value)) {
                         if (functionsData[className][functionName].hasOwnProperty(selectorToCompare2.value)) {
                             var preElement1 = document.createElement("pre");
@@ -223,51 +226,84 @@ const ToolMarkup = () => {
 
                                 }
                             }
-                            preElement1.textContent = selectorToCompare1.value + " : " + textElement1;
-                            preElement2.textContent = selectorToCompare2.value + " : " + textElement2;
+
+                            var divVersionElement = document.createElement("div");
+                            divVersionElement.textContent = selectorToCompare1.value + ": ";
+                            divVersionElement.style = "color: green; width: 70px; display: inline-block;";
+                            var divSignatureElement = document.createElement("div");
+                            divSignatureElement.style = "display: inline-block;";
+                            divSignatureElement.textContent = textElement1;
+
+                            preElement1.textContent = '';
+                            preElement1.appendChild(divVersionElement);
+                            preElement1.appendChild(divSignatureElement);
+
+                            divVersionElement = document.createElement("div");
+                            divVersionElement.textContent = selectorToCompare2.value + ": ";
+                            divVersionElement.style = "color: red; width: 70px; display: inline-block;";
+                            divSignatureElement = document.createElement("div");
+                            divSignatureElement.style = "display: inline-block;";
+                            divSignatureElement.textContent = textElement2;
+                            
+                            preElement2.textContent = '';
+                            preElement2.appendChild(divVersionElement);
+                            preElement2.appendChild(divSignatureElement);
                         }
                         else {
-                            var label = document.createElement("label");
-                            label.style = "color: green";
-                            label.textContent = "Added";
                             var preElement1 = document.createElement("pre");
                             preElement1.textContent = functionSignatureToString(functionName, functionsData[className][functionName][selectorToCompare1.value]);
 
                             if (showNewFunctionality) {
-                                detailsBlock.appendChild(label)
-                                detailsBlock.appendChild(preElement1)
-                                detailsBlock.appendChild(document.createElement("br"))
+                                addedElements[addedElements.length] = preElement1;
                                 hasCompares = true;
                             }
                             else if (showBreakingChanges == false) {
-                                detailsBlock.appendChild(label)
-                                detailsBlock.appendChild(preElement1)
-                                detailsBlock.appendChild(document.createElement("br"))
+                                addedElements[addedElements.length] = preElement1;
                                 hasCompares = true;
                             }
                         }
                     }
                     else if (functionsData[className][functionName].hasOwnProperty(selectorToCompare2.value)) {
-                        var label = document.createElement("label");
-                        label.style = "color: red";
-                        label.textContent = "Removed";
                         var preElement1 = document.createElement("pre");
                         preElement1.textContent = functionSignatureToString(functionName, functionsData[className][functionName][selectorToCompare2.value]);
 
                         if (showBreakingChanges) {
-                            detailsBlock.appendChild(label)
-                            detailsBlock.appendChild(preElement1)
-                            detailsBlock.appendChild(document.createElement("br"))
+                            removedElements[removedElements.length] = preElement1;
                             hasCompares = true;
                         }
                         else if (showNewFunctionality == false) {
-                            detailsBlock.appendChild(label)
-                            detailsBlock.appendChild(preElement1)
-                            detailsBlock.appendChild(document.createElement("br"))
+                            removedElements[removedElements.length] = preElement1;
                             hasCompares = true;
                         }
                     }
                 });
+
+                if (addedElements.length > 0) {
+                    var label = document.createElement("label");
+                    label.style = "color: green";
+                    label.textContent = "Added";
+
+                    detailsBlock.appendChild(label)
+                    detailsBlock.appendChild(document.createElement("br"))
+
+                    addedElements.forEach((preElement1) => {
+                        detailsBlock.appendChild(preElement1)
+                        detailsBlock.appendChild(document.createElement("br"))
+                    });
+                }
+
+                if (removedElements.length > 0) {
+
+                    var label = document.createElement("label");
+                    label.style = "color: red";
+                    label.textContent = "Removed";
+
+                    detailsBlock.appendChild(label)
+                    removedElements.forEach((preElement1) => {
+                        detailsBlock.appendChild(preElement1)
+                        detailsBlock.appendChild(document.createElement("br"))
+                    });
+                }
 
                 if (hasCompares) {
                     compareResultsBlock.appendChild(detailsBlock)
@@ -404,7 +440,7 @@ const ToolMarkup = () => {
             return result;
         }
     });
- 
+
     return toolMarkup;
 }
 
