@@ -64,7 +64,7 @@ namespace regr {
 		auto buf = X * y;
 
 		// Here, other Eigen decompositions can be used
-		beta = (X * X.transpose()).colPivHouseholderQr().solve(buf);		
+		beta = (X * X.transpose()).ldlt().solve(buf);		
 
 		// Rescale coefs, since data was normalized
 		Float sum = 0;
@@ -83,7 +83,7 @@ namespace regr {
 		targets - target values, Y
 		params - parameters to be computed
 		samplesCount - number of samples
-		featuresCount - number of features   */
+		featuresCount - number of features */
 	template<typename Float>
 	int fitLinearRegressionParams(
 		Float* features,
