@@ -3,8 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { EditorSelection, EditorState, Extension } from '@codemirror/state'
-import { EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
+import { DecorationSet, EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
+import {RegExpCursor} from "@codemirror/search"
 import {Completion, CompletionContext, CompletionResult, autocompletion, completeFromList} from "@codemirror/autocomplete"
+import {StateEffect, StateField} from "@codemirror/state"
+import {Decoration} from "@codemirror/view"
+import { minimalSetup } from 'codemirror';
 
 /**
  * Class AddNewColumnDialog is a useful method to add a new column to the table
@@ -258,6 +262,45 @@ export class AddNewColumnDialog {
 
     const domEventHandlers = EditorView.domEventHandlers({ blur() { cm.focus(); } });
 
+    const addHIghlight = StateEffect.define<{from: number, to: number}>({
+      map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
+    })
+
+    const highlightField = StateField.define<DecorationSet>({
+      create() {
+        return Decoration.none
+      },
+      update(underlines, tr) {
+        underlines = underlines.map(tr.changes)
+        for (let e of tr.effects) if (e.is(addHIghlight)) {
+          underlines = underlines.update({
+            add: [highlightMark.range(e.value.from, e.value.to)]
+          })
+        }
+        return underlines
+      },
+      provide: f => EditorView.decorations.from(f)
+    });
+
+    const highlightMark = Decoration.mark({class: "cm-column-name"});
+    const highlightTheme = EditorView.baseTheme({
+      ".cm-column-name": { 
+        'color': 'var(--blue-2)',
+        'font-weight': 'bold' 
+       }
+    })
+
+    const underlineSelection = (view: EditorView, selections: any[]) => {
+      let effects: StateEffect<unknown>[] = selections.map(({from, to}) => addHIghlight.of({from, to}));
+      if (!effects.length)
+        return false;
+    
+      if (!view.state.field(highlightField, false))
+        effects.push(StateEffect.appendConfig.of([highlightField, highlightTheme]));
+      view.dispatch({effects});
+      return true;
+    }
+
     const cm = new EditorView({
       
       parent: this.codeMirrorDiv!,
@@ -267,10 +310,24 @@ export class AddNewColumnDialog {
           EditorView.lineWrapping,
           autocomplete,
           wordHover,
+          minimalSetup,
+          highlightTheme,
+          highlightField,
           EditorView.updateListener.of(async (e: ViewUpdate) => {
             if (!e.docChanged)
               return;
             const cmValue = cm.state.doc.toString();
+            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{\\w+\\}');
+
+            const selections = [];
+            while (!cursor.done) {
+              cursor.next();
+              if (cursor.value.from !== -1 && cursor.value.to !== -1)
+                selections.push({from: cursor.value.from, to: cursor.value.to});
+            }
+            if (selections.length)
+              underlineSelection(cm, selections);
+
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
             let error = '';
@@ -391,7 +448,7 @@ export class AddNewColumnDialog {
         }
       }
       //dynamic allows any type
-      if (property.propertyType === DG.TYPE.DYNAMIC)
+      if (property.propertyType === DG.TYPE.DYNAMIC || actualInputType === DG.TYPE.DYNAMIC)
         continue;
       //check for exact match
       if (property.propertyType === actualInputType)
@@ -449,6 +506,8 @@ export class AddNewColumnDialog {
   setSelection(cursorPos: number, fromEnd?: boolean) {
     const openParenthesis = fromEnd ? this.codeMirror!.state.doc.toString().lastIndexOf('(', cursorPos) :
       this.codeMirror!.state.doc.toString().indexOf('(', cursorPos);
+    if (openParenthesis === -1)
+      return;
     const commaIdx = this.codeMirror!.state.doc.toString().indexOf(',', openParenthesis);
     const closeParenthesisIdx = this.codeMirror!.state.doc.toString().indexOf(')', openParenthesis);
     let firstParamEnd = commaIdx;
@@ -743,5 +802,3 @@ export class AddNewColumnDialog {
     };
   }
 }
-
-
