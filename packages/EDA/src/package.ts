@@ -31,7 +31,7 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {computeLinRegressionCoefs, getPredictionByLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
 export const _package = new DG.Package();
 
@@ -553,8 +553,15 @@ export function kNNImputation() {
 //input: column target {type: numerical}
 //input: bool plot = true {caption: plot}
 export function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): void {
-  const params = computeLinRegressionCoefs(features, target);
+  const t1 = performance.now();
+  const params = getLinearRegressionParams(features, target);
+  const t2 = performance.now();
+  console.log(`Fit: ${t2 - t1} ms.`);
   const prediction = getPredictionByLinearRegression(features, params);
+  console.log(`Predict: ${performance.now() - t2} ms.`);
+
+  prediction.name = table.columns.getUnusedName(prediction.name);
+
   table.columns.add(prediction);
 
   if (plot) {
@@ -565,4 +572,19 @@ export function linearRegression(table: DG.DataFrame, features: DG.ColumnList, t
       showRegressionLine: true,
     });
   }
+}
+
+//top-menu: ML | Analyze | Linear Regression Data...
+//name: generateDatasetForLinearRegressionTest
+//description: Linear Regression demo
+//input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
+//input: int colCount = 10 {min: 1; max: 1000; step: 10}
+//input: double featuresScale = 10 {min: -1000; max: 1000; step: 10}
+//input: double featuresBias = 10 {min: -1000; max: 1000; step: 10}
+//input: double paramsScale = 10 {min: -1000; max: 1000; step: 10}
+//input: double paramsBias = 10 {min: -1000; max: 1000; step: 10}
+//output: dataframe table
+export function generateDatasetForLinearRegressionTest(rowCount: number, colCount: number,
+  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
+  return getTestDatasetForLinearRegression(rowCount, colCount, featuresScale, featuresBias, paramsScale, paramsBias);
 }

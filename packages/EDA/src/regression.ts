@@ -6,8 +6,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {_fitLinearRegressionParams, _fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
 
-/** Computes coefficients of linear regression */
-export function computeLinRegressionCoefs(features: DG.ColumnList, targets: DG.Column): Float32Array {
+/** Compute coefficients of linear regression */
+export function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Float32Array {
   const featuresCount = features.length;
 
   const yAvg = targets.stats.avg;
@@ -61,7 +61,7 @@ export function computeLinRegressionCoefs(features: DG.ColumnList, targets: DG.C
   return params;
 } // computeLinRegressionCoefs
 
-/** */
+/** Return prediction of linear regression model */
 export function getPredictionByLinearRegression(features: DG.ColumnList, params: Float32Array): DG.Column {
   const featuresCount = features.length;
   if (featuresCount !== params.length - 1)
@@ -87,4 +87,48 @@ export function getPredictionByLinearRegression(features: DG.ColumnList, params:
   }
 
   return DG.Column.fromFloat32Array('prediction', prediction, samplesCount);
-}
+} // getPredictionByLinearRegression
+
+/** Generate test dataset */
+export function getTestDatasetForLinearRegression(rowCount: number, colCount: number,
+  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
+  const df = grok.data.demo.randomWalk(rowCount, colCount + 1);
+  const cols = df.columns;
+  const noiseCol = cols.byIndex(colCount);
+  noiseCol.name = 'y (noisy)';
+  const yNoisy = noiseCol.getRawData();
+  const y = new Float32Array(rowCount).fill(paramsBias);
+
+  let idx = 0;
+  let scale = 0;
+  let bias = 0;
+  let weight = 0;
+
+  for (const col of cols) {
+    col.name = `x${idx}`;
+    scale = Math.random() * featuresScale;
+    bias = Math.random() * featuresBias;
+    const arr = col.getRawData();
+    weight = Math.random() * paramsScale;
+
+    for (let j = 0; j < rowCount; ++j) {
+      arr[j] = scale * arr[j] + bias;
+      y[j] += arr[j] * weight;
+    }
+
+    ++idx;
+
+    if (idx === colCount)
+      break;
+  }
+
+  scale = Math.random() * featuresScale;
+  bias = Math.random() * featuresBias;
+
+  for (let j = 0; j < rowCount; ++j)
+    yNoisy[j] = scale * yNoisy[j] + y[j];
+
+  cols.add(DG.Column.fromFloat32Array('y', y, rowCount));
+
+  return df;
+} // getTestDatasetForLinearRegression
