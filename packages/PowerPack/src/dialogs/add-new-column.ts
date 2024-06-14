@@ -80,8 +80,8 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
-  codeMirrorDiv?: HTMLDivElement;
-  errorDiv?: HTMLDivElement;
+  codeMirrorDiv = ui.div('', { style: { height: '140px' } });
+  errorDiv = ui.div();
   columnNames: string[] = [];
   coreFunctionsNames: string[] = [];
   coreFunctionsParams: {[key: string]: PropInfo[]} = {};
@@ -118,8 +118,6 @@ export class AddNewColumnDialog {
 
     this.inputName = this.initInputName();
     this.inputType = this.initInputType();
-    this.codeMirrorDiv = ui.div('', { style: { height: '140px' } });
-    this.errorDiv = ui.div();
 
     // Not necessary, but if the Dialog knows about inputs, then it can implement extra-logic:
     this.uiDialog
@@ -302,7 +300,6 @@ export class AddNewColumnDialog {
     }
 
     const cm = new EditorView({
-      
       parent: this.codeMirrorDiv!,
       state: EditorState.create({
         doc: '',
