@@ -1201,6 +1201,18 @@ export interface IDensityPlotSettings {
 
   showYAxis: boolean;
 
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  allowZoom: boolean;
+
+  binToRange: boolean;
+
   xBins: number;
 
   yBins: number;
