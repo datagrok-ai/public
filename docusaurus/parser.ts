@@ -3,11 +3,12 @@ import path from 'path';
 import { argv } from 'process';
 import * as dotenv from 'dotenv';
 dotenv.config();
-// const baseProjectDirectoryPath = './files/js-api';
-// const outputDir = './src/files/';
-const baseProjectDirectoryPath : string | undefined = process.env.baseProjectDirectoryPath || '../js-api/'
-const outputDir : string | undefined = process.env.outputDir || './static/versions/'
+const baseProjectDirectoryPathConst = '../js-api/';
+const outputDirConst = './static/versions/';
+const baseProjectDirectoryPath: string | undefined = process.env.baseProjectDirectoryPath || baseProjectDirectoryPathConst
+const outputDir: string | undefined = process.env.outputDir || outputDirConst
 
+const spacesAmount = 2;
 
 const vesionsFile = 'versions.json';
 const newVersion = argv[2];
@@ -50,7 +51,7 @@ class ProjectDGFunctionsParser {
 
     public GetFunctionsByDirectory(directoryPath: string): any {
         this.resultFunctionsObject = {};
-        let filesList = this.GetListOfDirectories(directoryPath)
+        const filesList = this.GetListOfDirectories(directoryPath)
         filesList.forEach((filePath: string) => {
             this.GetMethodsFormFile(filePath);
         });
@@ -124,7 +125,7 @@ class ProjectDGFunctionsParser {
                         }
                         else if (this.functionRegex.test(trimmedLine)) {
                             let isMethod = true;
-                            if (trimmedLine.indexOf('function ') != -1) {
+                            if (trimmedLine.indexOf('function ') !== -1) {
                                 trimmedLine = trimmedLine.substring(trimmedLine.indexOf('function ') + 'function '.length).trim();
                                 isMethod = false;
                             }
@@ -191,7 +192,7 @@ class ProjectDGFunctionsParser {
         this.lastClass = undefined
     }
 
-    private CheckIsNamespaceExistsInOutput(className: string, functionName: string) {
+    private checkIsNamespaceExistsInOutput(className: string, functionName: string) {
         if (!this.resultFunctionsObject[className]) {
             this.resultFunctionsObject[className] = {};
         }
@@ -207,7 +208,7 @@ class ProjectDGFunctionsParser {
             const name = 'get ' + match[1];
             const returnType = match[2];
 
-            this.CheckIsNamespaceExistsInOutput(this.lastClass, name);
+            this.checkIsNamespaceExistsInOutput(this.lastClass, name);
             this.resultFunctionsObject[this.lastClass][name]['type'] = 'get';
             this.resultFunctionsObject[this.lastClass][name]['result'] = returnType;
 
@@ -225,7 +226,7 @@ class ProjectDGFunctionsParser {
             const name = 'set ' + match[1];
             const paramsString = match[2];
 
-            this.CheckIsNamespaceExistsInOutput(this.lastClass, name);
+            this.checkIsNamespaceExistsInOutput(this.lastClass, name);
             this.resultFunctionsObject[this.lastClass][name]['type'] = 'set';
             this.resultFunctionsObject[this.lastClass][name]['params'] = paramsString;
 
@@ -244,7 +245,7 @@ class ProjectDGFunctionsParser {
             const paramsString = match[2];
             const returnType = match[3];
 
-            this.CheckIsNamespaceExistsInOutput(this.lastClass, name);
+            this.checkIsNamespaceExistsInOutput(this.lastClass, name);
             this.resultFunctionsObject[this.lastClass][name]['type'] = isMethod ? '' : 'function';
             this.resultFunctionsObject[this.lastClass][name]['params'] = paramsString;
             this.resultFunctionsObject[this.lastClass][name]['result'] = returnType;
@@ -290,7 +291,7 @@ class VersionsManager {
     }
 
     private writeJSONToFile(filename: string, newData: IData) {
-        fs.writeFileSync(filename, JSON.stringify(newData, null, 2));
+        fs.writeFileSync(filename, JSON.stringify(newData, null, spacesAmount));
     }
 
     public addNewVersion(filename: string, newVersion: string) {
