@@ -45,11 +45,10 @@ export class TestsView extends TATab {
             return { 'name': "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
         }));
 
-        this.builds = (await grok.functions.call('UsageAnalysis:Builds'));
-        let date = this.builds!.get('build', 0);
-        let next = this.builds!.get('next', 0); 
-        this.tests = await grok.functions.call('UsageAnalysis:getTestsInBuildsTimespan', { 'dateStart': date, 'dateEnd': next, 'testslist': this.testsListMapped });
-
+        this.builds = (await grok.functions.call('UsageAnalysis:Builds')); 
+        let id: any =this.builds!.get('id', 0); 
+        this.tests = await grok.functions.call('UsageAnalysis:getTestStatusesByBuildId', { 'buildId': id, 'testslist': this.testsListMapped });
+                    
         // Table
         const grid = ui.wait(async () => {
             this.updateGrid(this.tests!);
@@ -61,17 +60,15 @@ export class TestsView extends TATab {
             const popupMenu = ui.input.choice('build', {
                 value: this.builds!.get('text', 0), items: this.builds!.getCol('text').categories,
                 onValueChanged: async (input) => {
-                    let date = dayjs();
-                    let next = dayjs();
+                    let id: any = undefined; 
                     for (let i = 0; i < this.builds!.rowCount; i++) {
                         if (this.builds!.get('text', i) === input) {
-                            date = this.builds!.get('build', i);
-                            next = this.builds!.get('next', i);
+                            id = this.builds!.get('id', i); 
                             break;
                         }
                     }
-                    let testsDf = await grok.functions.call('UsageAnalysis:getTestsInBuildsTimespan', { 'dateStart': date, 'dateEnd': next, 'testslist': this.testsListMapped });
-                    this.updateGrid(testsDf);
+                    this.tests = await grok.functions.call('UsageAnalysis:getTestStatusesByBuildId', { 'buildId': id, 'testslist': this.testsListMapped });
+                    this.updateGrid(this.tests!);
                 }
             });
             return popupMenu.root;

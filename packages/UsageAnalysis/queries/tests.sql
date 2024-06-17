@@ -317,7 +317,7 @@ e.id, e.description, e.event_time as buildtime, v2.value as commit
 from events e
 inner join event_types t on t.id = e.event_type_id
 inner join event_parameter_values v2 inner join event_parameters p2 on (p2.id = v2.parameter_id and p2.name = 'commit')  on v2.event_id = e.id
-where e.id = buildId
+where e.id = @buildId
 order by e.event_time) a), 
 builds as (select buildtime || ' - ' || commit as build, buildtime as date,
 coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits order by 1 desc
