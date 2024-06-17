@@ -157,7 +157,7 @@ export class ReportingApp {
   }
 
   applyStyle(viewer: DG.Grid) {
-    viewer.columns.setOrder(['date', 'auto', 'number', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
+    viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
     viewer.col('reporter')!.width = 25;
     viewer.col('reporter')!.cellType = 'html';
     viewer.col('assignee')!.width = 25;
