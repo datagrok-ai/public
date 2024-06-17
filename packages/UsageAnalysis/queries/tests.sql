@@ -317,10 +317,11 @@ e.id, e.description, e.event_time as buildtime, v2.value as commit
 from events e
 inner join event_types t on t.id = e.event_type_id
 inner join event_parameter_values v2 inner join event_parameters p2 on (p2.id = v2.parameter_id and p2.name = 'commit')  on v2.event_id = e.id
-where e.id = @buildId
+where t.friendly_name = 'datagrok-started' and t.source = 'info' and NOT e.id = 'e1c09320-25d0-11ef-abf5-c1c6c1b45111' 	
 order by e.event_time) a), 
 builds as (select buildtime || ' - ' || commit as build, buildtime as date,
-coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits order by 1 desc
+coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits
+where id = @buildId order by 1 desc
 ), types as
 (select t.id, COALESCE(t.friendly_name, df.name) as friendly_name, regexp_matches(COALESCE(t.friendly_name, df.name), 'test-(\S*) (\S[^:]*): (.*): (.*)')as data
 from event_types t
