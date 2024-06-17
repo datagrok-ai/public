@@ -302,7 +302,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        //grok.shell.clearLastError();
+        grok.shell.clearLastError();
         await f.apply();
         await delay(wait ? wait : 2000);
         const unhandled = await grok.shell.lastError;
@@ -372,7 +372,7 @@ export async function runTests(options?:
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
-  //grok.shell.clearLastError();
+  grok.shell.clearLastError();
   const categories = [];
   const logs = redefineConsole();
   try {
