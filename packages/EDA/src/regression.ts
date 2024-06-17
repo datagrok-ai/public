@@ -39,8 +39,6 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
     // Analyze inputs sizes
     const inputsAnalysis = getInputsAnalysis(featuresCount, samplesCount);
 
-    console.log(inputsAnalysis);
-
     if (inputsAnalysis.toApplyPLS) {
       // Apply the PLS method
       const paramsByPLS = await getLinearRegressionParamsUsingPLS(features, targets, inputsAnalysis.components);
@@ -134,7 +132,11 @@ export function getPredictionByLinearRegression(features: DG.ColumnList, params:
       prediction[i] += weight * rawData[i];
   }
 
-  return DG.Column.fromFloat32Array('prediction', prediction, samplesCount);
+  return DG.Column.fromFloat32Array(
+    features.getUnusedName('prediction'),
+    prediction,
+    samplesCount,
+  );
 } // getPredictionByLinearRegression
 
 /** Generate test dataset */

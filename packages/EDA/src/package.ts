@@ -545,7 +545,6 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
-//top-menu: ML | Analyze | Linear Regression (demo)...
 //name: linearRegression
 //description: Linear Regression demo
 //input: dataframe table
@@ -574,7 +573,6 @@ export async function linearRegression(table: DG.DataFrame, features: DG.ColumnL
   }
 }
 
-//top-menu: ML | Analyze | Linear Regression Data...
 //name: generateDatasetForLinearRegressionTest
 //description: Linear Regression demo
 //input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
@@ -614,10 +612,6 @@ export async function trainLinearRegression(df: DG.DataFrame, predict_column: st
 export function applyLinearRegression(df: DG.DataFrame, model: any): DG.DataFrame {
   const features = df.columns;
   const params = new Float32Array((model as Uint8Array).buffer);
-
-  console.log('Extracted params:');
-  console.log(params);
-
   return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
 }
 
@@ -633,4 +627,20 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: s
       return false;
   }
   return true;
+}
+
+//name: visualizeLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export function visualizeLinearRegression(df: DG.DataFrame, target_column: string, predict_column: string, model: any): any {
+  return DG.Viewer.scatterPlot(df, {
+    xColumnName: target_column,
+    yColumnName: predict_column,
+    showRegressionLine: true,
+  }).root;
 }
