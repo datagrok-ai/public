@@ -256,15 +256,13 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     return;
   }
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
-    const testFunctions: DG.Func[] = DG.Func.find({ tags: ['dartTest'] });
-    for (const f of testFunctions) {
-      const arr = f.name.split(/\s*\|\s*/g);
+    for (const f of (<any>window).dartTests) {
+      const arr = f.name.split(/\s*\|\s*!/g);
       const name = arr.pop() ?? f.name;
       const cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
       if (moduleTests[cat] === undefined)
-        moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name,
-        async () => await f.apply(), { isAggregated: f.outputs.length > 0, timeout: STANDART_TIMEOUT }));
+        moduleTests[cat] = {tests: [], clear: true};
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, {isAggregated: false, timeout: STANDART_TIMEOUT}));
     }
   }
   const moduleAutoTests = [];
