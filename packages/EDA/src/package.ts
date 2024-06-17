@@ -552,9 +552,9 @@ export function kNNImputation() {
 //input: column_list features {type: numerical}
 //input: column target {type: numerical}
 //input: bool plot = true {caption: plot}
-export function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): void {
+export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): Promise<void> {
   const t1 = performance.now();
-  const params = getLinearRegressionParams(features, target);
+  const params = await getLinearRegressionParams(features, target);
   const t2 = performance.now();
   console.log(`Fit: ${t2 - t1} ms.`);
   const prediction = getPredictionByLinearRegression(features, params);
@@ -595,15 +595,12 @@ export function generateDatasetForLinearRegressionTest(rowCount: number, colCoun
 //input: dataframe df
 //input: string predict_column
 //output: dynamic model
-export function trainLinearRegression(df: DG.DataFrame, predict_column: string): Uint8Array {
+export async function trainLinearRegression(df: DG.DataFrame, predict_column: string): Promise<Uint8Array> {
   const features = df.columns;
   const target = features.byName(predict_column);
   features.remove(predict_column);
 
-  const params = getLinearRegressionParams(features, target);
-
-  console.log('Computed params:');
-  console.log(params);
+  const params = await getLinearRegressionParams(features, target);
 
   return new Uint8Array(params.buffer);
 }

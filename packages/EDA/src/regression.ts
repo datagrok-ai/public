@@ -5,10 +5,25 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_fitLinearRegressionParams, _fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
+import {getPlsAnalysis} from './pls/pls-tools';
+
+// Linear regression computations limits
+const FATURES_COUNT_LIMIT = 1000;
+const SAMPLES_COUNT_LIMIT = 1000000;
+
+// Default PLS components count
+const PLS_COMPONENTS_COUNT = 10;
+
+// Wasm computations specific constants (see https://eigen.tuxfamily.org/dox/classEigen_1_1LDLT.html)
+const BYTES_PER_VALUE = 4; // wasm computations operates 4-byte floats
+const MEMORY_SCALE = 2; // due to the features of the Eigen lib decomposition
+const BUFFERS_COUNT = 1; // due to the features of the Eigen lib decomposition
+const WASM_MEMORY = 268435456; // wasm buffer size specified in '../scripts/module.json'
 
 /** Compute coefficients of linear regression */
-export function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Float32Array {
+export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Promise<Float32Array> {
   const featuresCount = features.length;
+  const samplesCount = targets.length;
 
   const yAvg = targets.stats.avg;
   const yStdev = targets.stats.stdev;
@@ -16,47 +31,80 @@ export function getLinearRegressionParams(features: DG.ColumnList, targets: DG.C
   const params = new Float32Array(featuresCount + 1).fill(0);
   params[featuresCount] = yAvg;
 
-  if ((targets.length < featuresCount) || (yStdev === 0))
+  // The trivial case
+  if ((yStdev === 0) || (samplesCount === 1))
     return params;
 
-  const nonConstFeatureColsIndeces: number[] = [];
-  const nonConstFeatureCols: DG.Column[] = [];
-  const nonConstFeatureAvgs = new Float32Array(featuresCount);
-  const nonConstFeatureStdevs = new Float32Array(featuresCount);
+  try {
+    // Analyze inputs sizes
+    const inputsAnalysis = getInputsAnalysis(featuresCount, samplesCount);
 
-  let idx = 0;
-  let nonConstFeaturesCount = 0;
-  for (const col of features) {
-    const stats = col.stats;
+    console.log(inputsAnalysis);
 
-    if (stats.stdev > 0) {
-      nonConstFeatureColsIndeces.push(idx);
-      nonConstFeatureCols.push(col);
-      nonConstFeatureAvgs[nonConstFeaturesCount] = stats.avg;
-      nonConstFeatureStdevs[nonConstFeaturesCount] = stats.stdev;
-      ++nonConstFeaturesCount;
+    if (inputsAnalysis.toApplyPLS) {
+      // Apply the PLS method
+      const paramsByPLS = await getLinearRegressionParamsUsingPLS(features, targets, inputsAnalysis.components);
+
+      let tmpSum = 0;
+
+      // Compute bias (due to the centering feature of PLS)
+      for (let i = 0; i < featuresCount; ++i) {
+        params[i] = paramsByPLS[i];
+        tmpSum += paramsByPLS[i] * features.byIndex(i).stats.avg;
+      }
+
+      params[featuresCount] -= tmpSum;
+
+      return params;
     }
 
-    ++idx;
+    // Non-constant columns data
+    const nonConstFeatureColsIndeces: number[] = [];
+    const nonConstFeatureCols: DG.Column[] = [];
+    const nonConstFeatureAvgs = new Float32Array(featuresCount);
+    const nonConstFeatureStdevs = new Float32Array(featuresCount);
+
+    let idx = 0;
+    let nonConstFeaturesCount = 0;
+
+    // Extract non-constant columns data
+    for (const col of features) {
+      const stats = col.stats;
+
+      if (stats.stdev > 0) {
+        nonConstFeatureColsIndeces.push(idx);
+        nonConstFeatureCols.push(col);
+        nonConstFeatureAvgs[nonConstFeaturesCount] = stats.avg;
+        nonConstFeatureStdevs[nonConstFeaturesCount] = stats.stdev;
+        ++nonConstFeaturesCount;
+      }
+
+      ++idx;
+    }
+
+    // The trivial case
+    if (nonConstFeaturesCount === 0)
+      return params;
+
+    // Compute parameters of linear regression
+    const tempParams = _fitLinearRegressionParamsWithDataNormalizing(
+      DG.DataFrame.fromColumns(nonConstFeatureCols).columns,
+      DG.Column.fromFloat32Array('xAvgs', nonConstFeatureAvgs, nonConstFeaturesCount),
+      DG.Column.fromFloat32Array('xStdevs', nonConstFeatureStdevs, nonConstFeaturesCount),
+      targets,
+      yAvg,
+      yStdev,
+      nonConstFeaturesCount + 1,
+    ).getRawData();
+
+    // Extract params taking into account non-constant columns
+    for (let i = 0; i < nonConstFeaturesCount; ++i)
+      params[nonConstFeatureColsIndeces[i]] = tempParams[i];
+
+    params[featuresCount] = tempParams[nonConstFeaturesCount];
+  } catch (e) {
+    grok.shell.error(`Fitted the trivial model: ${e instanceof Error ? e.message : 'due to the platform issue'}`);
   }
-
-  if (nonConstFeaturesCount === 0)
-    return params;
-
-  const tempParams = _fitLinearRegressionParamsWithDataNormalizing(
-    DG.DataFrame.fromColumns(nonConstFeatureCols).columns,
-    DG.Column.fromFloat32Array('xAvgs', nonConstFeatureAvgs, nonConstFeaturesCount),
-    DG.Column.fromFloat32Array('xStdevs', nonConstFeatureStdevs, nonConstFeaturesCount),
-    targets,
-    yAvg,
-    yStdev,
-    nonConstFeaturesCount + 1,
-  ).getRawData();
-
-  for (let i = 0; i < nonConstFeaturesCount; ++i)
-    params[nonConstFeatureColsIndeces[i]] = tempParams[i];
-
-  params[featuresCount] = tempParams[nonConstFeaturesCount];
 
   return params;
 } // computeLinRegressionCoefs
@@ -132,3 +180,51 @@ export function getTestDatasetForLinearRegression(rowCount: number, colCount: nu
 
   return df;
 } // getTestDatasetForLinearRegression
+
+/** Reteurn linear regression params using the PLS method */
+async function getLinearRegressionParamsUsingPLS(features: DG.ColumnList,
+  targets: DG.Column, components: number): Promise<Float32Array> {
+  const plsAnalysis = await getPlsAnalysis({
+    table: DG.DataFrame.fromColumns([targets]),
+    features: features,
+    predict: targets,
+    components: components,
+    names: null,
+  });
+
+  return plsAnalysis.regressionCoefficients.getRawData() as Float32Array;
+}
+
+/** Check wasm-buffer overflow */
+const wasmBufferOverflow = (featuresCount: number, samplesCount: number) => {
+  return MEMORY_SCALE * BYTES_PER_VALUE * samplesCount * (featuresCount + BUFFERS_COUNT) >= WASM_MEMORY;
+};
+
+/** Check whether to apply the PLS method & how many components to use */
+const getInputsAnalysis = (featuresCount: number, samplesCount: number) => {
+  if (wasmBufferOverflow(featuresCount, samplesCount) || (featuresCount >= FATURES_COUNT_LIMIT)) {
+    return {
+      toApplyPLS: true,
+      components: PLS_COMPONENTS_COUNT,
+    };
+  }
+
+  if (samplesCount >= SAMPLES_COUNT_LIMIT) {
+    return {
+      toApplyPLS: true,
+      components: Math.min(PLS_COMPONENTS_COUNT, featuresCount),
+    };
+  }
+
+  if (samplesCount <= featuresCount) {
+    return {
+      toApplyPLS: true,
+      components: Math.min(PLS_COMPONENTS_COUNT, samplesCount),
+    };
+  }
+
+  return {
+    toApplyPLS: false,
+    components: PLS_COMPONENTS_COUNT,
+  };
+}; // getInputsAnalysis
