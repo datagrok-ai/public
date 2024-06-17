@@ -86,7 +86,7 @@ sidebar_position: 1.2
 | Database search |[PubChemApi](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 | Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
 | Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
-| Hit to Lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Alpha|
+| Hit to Lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Beta|
 <!--
 |Misc |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)|Misc|Integration with the Chemspace, a service for online shopping for the chemical building blocks|Alpha|
 -->
@@ -101,6 +101,8 @@ sidebar_position: 1.2
 | SAR  | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Beta|
 | Oligonucleotides  |[SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Fit-for-purpose| App that converts oligonucleotides into various formats  |Beta|
 | Oligonucleotides  |[OligoBatchCalculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) |Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
+| ADMET | [ADMETox](https://github.com/datagrok-ai/public/tree/master/packages/ADMETox) | Optional | App that lets you evaluate ADMET properties | Alpha |
+| Docking | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Alpha |
 
 ### NLP
 
