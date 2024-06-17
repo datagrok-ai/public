@@ -12,7 +12,7 @@ import { getDate, colors } from '../../utils';
 import dayjs from "dayjs";
 export const filters = ui.box();
 filters.id = 'ua-tests-filters';
-const counters = ['passed', 'failed', 'skipped'];
+const counters = ['passed', 'failed', 'skipped', 'did not run'];
 
 
 export class TestsView extends TATab {
@@ -35,6 +35,7 @@ export class TestsView extends TATab {
     current = this.leftDate;
     cardsView: HTMLDivElement = ui.div([], { classes: 'ua-cards' });
     builds?: DG.DataFrame;
+    tests?: DG.DataFrame;
     testsListMapped?: DG.DataFrame;
 
     async initViewers(path?: string): Promise<void> {
@@ -45,13 +46,13 @@ export class TestsView extends TATab {
         }));
 
         this.builds = (await grok.functions.call('UsageAnalysis:Builds'));
+        let date = this.builds!.get('build', 0);
+        let next = this.builds!.get('next', 0); 
+        this.tests = await grok.functions.call('UsageAnalysis:getTestsInBuildsTimespan', { 'dateStart': date, 'dateEnd': next, 'testslist': this.testsListMapped });
 
         // Table
         const grid = ui.wait(async () => {
-            let date = this.builds!.get('build', 0);
-            let next = this.builds!.get('next', 0); 
-            let testsDf = await grok.functions.call('UsageAnalysis:getTestsInBuildsTimespan', { 'dateStart': date, 'dateEnd': next, 'testslist': this.testsListMapped });
-            this.updateGrid(testsDf);
+            this.updateGrid(this.tests!);
             return this.grid!.root;
         });
 
@@ -63,7 +64,7 @@ export class TestsView extends TATab {
                     let date = dayjs();
                     let next = dayjs();
                     for (let i = 0; i < this.builds!.rowCount; i++) {
-                        if (this.builds!.get('text', i) == input) {
+                        if (this.builds!.get('text', i) === input) {
                             date = this.builds!.get('build', i);
                             next = this.builds!.get('next', i);
                             break;
@@ -76,43 +77,26 @@ export class TestsView extends TATab {
             return popupMenu.root;
         });
 
+        //Button
+
+        const addToWorkspaceButton = ui.button('add to workspace', () => {
+            if (this.grid !== undefined) {
+                grok.shell.addTableView(this.grid.dataFrame);
+            }
+        });
+
+
         // Cards
         this.updateCards(getDate(new Date()));
 
-        // Compare section
-        const compare = ui.button('compare to', () => {
-            this.leftDf = this.grid?.dataFrame;
-            this.current = this.rightDate;
-            compare.disabled = true;
-        });
-        let icon = ui.iconFA('external-link');
-        icon.classList.replace('fal', 'fas');
-        const done = ui.button(icon, () => {
-            const res = grok.data.compareTables(this.leftDf!, this.grid?.dataFrame!,
-                ['package', 'test', 'category'], ['package', 'test', 'category'],
-                ['status', 'result', 'ms'], ['status', 'result', 'ms']);
-            grok.shell.addTableView(res.diffTable);
-        }, 'Compare tables');
-        done.disabled = true;
-        icon = ui.iconFA('undo');
-        icon.classList.replace('fal', 'fas');
-        const reset = ui.button(icon, () => {
-            this.current = this.leftDate;
-            this.rightDate.innerText = '';
-            compare.disabled = false;
-            done.disabled = true;
-        }, 'Reset');
-        const compareSection = ui.divH([this.leftDate, compare, this.rightDate, done, reset], 'ua-tt-compare');
-
         const leftSide = ui.divV([
             ui.box(this.cardsView, { style: { flexGrow: 0, flexBasis: '35%' } }),
-            compareSection,
         ]);
 
         this.root.append(ui.splitV([
             ui.splitH(
                 [ui.divH([leftSide, ui.divV([buildSelector], { style: { height: '70px', marginLeft: '10px', marginTop: '10px' } })])],
-                { style: { height: '150px' } }), grid], null, false));
+                { style: { maxHeight: '150px' } }), ui.splitH([ui.div(addToWorkspaceButton, { style: { maxWidth: '200px' } })], { style: { maxHeight: '70px', maxWidth: '200px' } }), grid], null, false));
     }
 
     updateCards(date: any): void {
@@ -148,7 +132,8 @@ export class TestsView extends TATab {
             this.grid = df.plot.grid();
 
         this.grid.dataFrame = df;
-
+        this.grid.columns.setVisible(['test_time', 'type', 'package', 'category', 'test', 'ms', 'status', 'test_id']);
+        this.grid.columns.setOrder(['test_time', 'type', 'package', 'category', 'test', 'ms', 'status', 'test_id']);
     }
 }
 

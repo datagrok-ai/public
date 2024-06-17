@@ -22,7 +22,7 @@ export const _package = new DG.Package();
 
 //name: Test Analysis
 //tags: app
-//meta.url: / 
+//meta.url: /tests/analysis
 //output: view v
 export async function TestAnalysis(): Promise<DG.ViewBase| null > { 
   const handler = new TestAnalysisApp();
