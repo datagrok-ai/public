@@ -11,12 +11,25 @@ import { TestTrack } from './test-track/app';
 import { ReportsWidget } from "./widgets/reports-widget";
 import { ReportingApp } from "./reporting/reporting_app";
 import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
+import { TestAnalysisApp } from './test-analysis/app';
 
 import { getDate } from './utils';
 import dayjs from "dayjs";
 
 
 export const _package = new DG.Package();
+
+
+//name: Test Analysis
+//tags: app
+//meta.url: / 
+//output: view v
+export async function TestAnalysis(): Promise<DG.ViewBase| null > { 
+  const handler = new TestAnalysisApp();
+  await handler.init();
+  return handler.view; 
+}
+
 
 //name: BuildTests
 //meta.runOnOpen: false
