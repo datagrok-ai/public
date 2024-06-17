@@ -41,7 +41,7 @@ category('chemprop', () => {
     const smilesColumn = table.columns.byName('canonical_smiles');
     const column = await applyModel(MODEL_ID, binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv());
         
-    expect(column.length, 29);
+    expect(column.length, 30);
   });
 });
 
@@ -89,34 +89,28 @@ export async function applyModel(id: string, modelBlob: Uint8Array, table: strin
 function getParameterValues() {
   return {
     'dataset_type': 'regression',
-    'log_frequency': 10,
     'metric': null,
     'multiclass_num_classes': 3,
-    'no_cache': false,
     'activation': 'ReLU',
     'atom_messages': false,
     'batch_size': 50,
-    'bias': false,
+    'message_bias': false,
     'depth': 3,
     'dropout': 0,
     'ensemble_size': 1,
-    'epochs': 30,
-    'ffn_hidden_size': 300,
+    'epochs': 50,
+    'ffn_hidden_dim': 300,
     'ffn_num_layers': 2,
     'final_lr': 0.0001,
-    'hidden_size': 300,
+    'message_hidden_dim': 300,
     'init_lr': 0.0001,
-    'max_data_size': null,
     'max_lr': 0.001,
-    'no_features_scaling': false,
+    'no_descriptor_scaling': false,
     'num_folds': 1,
-    'seed': 0,
-    'show_individual_scores': false,
+    'data_seed': 0,
     'split_sizes': [0.8, 0.1, 0.1],
     'split_type': 'random',
-    'test': false,
     'undirected': false,
-    'use_compound_names': false,
     'warmup_epochs': 2
   };
 }

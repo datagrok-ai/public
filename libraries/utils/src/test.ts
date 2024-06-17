@@ -264,7 +264,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
       moduleTests[cat].tests.push(new Test(cat, name,
-        async () => await f.apply(), { isAggregated: f.outputs.length > 0, timeout: 300000 }));
+        async () => await f.apply(), { isAggregated: f.outputs.length > 0, timeout: STANDART_TIMEOUT }));
     }
   }
   const moduleAutoTests = [];

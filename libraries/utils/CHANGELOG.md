@@ -1,5 +1,17 @@
 # utils changelog
 
+## 4.2.9 (2023-06-13)
+
+Fixed viewer testing.
+
+## 4.2.8 (2023-06-05)
+
+Fix the infinite loading of tests.
+
+## 4.2.7 (2023-06-05)
+
+Fix the lastError problem in the test engine.
+
 ## 4.2.6 (2023-05-29)
 
 ### Features
