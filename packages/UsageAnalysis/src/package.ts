@@ -33,7 +33,7 @@ export async function TestAnalysis(): Promise<DG.ViewBase| null > {
 //name: TestsList 
 //meta.url: /tests/list
 //output: dataframe df
-export async function TestLists(): Promise<DG.DataFrame| undefined> { 
+export async function TestsList(): Promise<DG.DataFrame| undefined> { 
   const pacakageTests = await TestAnalysesManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
