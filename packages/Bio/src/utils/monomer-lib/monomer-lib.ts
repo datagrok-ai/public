@@ -6,8 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {PolymerTypes, PolymerType, MonomerType} from '@datagrok/js-draw-lite/src/types/org';
-
+import {MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {IMonomerLib, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
 import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -230,6 +230,7 @@ export class MonomerLib implements IMonomerLib {
       const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       let structureEl: HTMLElement;
       if (monomer.molfile) {
+        //
         structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
       } else if (monomer.smiles) {
         structureEl = ui.divV([
