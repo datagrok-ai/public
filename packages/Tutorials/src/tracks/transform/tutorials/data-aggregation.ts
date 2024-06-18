@@ -89,17 +89,18 @@ export class AggregationTutorial extends Tutorial {
       'context menu.'
     );
     
+    await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
+      $(aggRoot).find(colTagSelector).length === 1), ageAggr, 'In addition, you can change the aggregation column from the context menu too. ' +
+      'For example, if you are adding multiple columns using the same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
+      'it under the "Aggregation" submenu. Let\'s calculate the average weight for each patient group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.'
+    );
+
     await this.action('Change the aggregation function to "med"',
-      findColTag(aggRoot, 'med(AGE)', () => $(aggRoot).find(colTagSelector).length === 1), ageAggr,
-      'To change the aggregation function, right-click the "avg(AGE), ' +
+      findColTag(aggRoot, 'med(WEIGHT)', () => $(aggRoot).find(colTagSelector).length === 1), ageAggr,
+      'To change the aggregation function, right-click the "avg(WEIGHT), ' +
       'select <b>Aggregation</b> from the context menu, and choose <b>med</b>.'
     );
 
-    await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'med(WEIGHT)', () =>
-      $(aggRoot).find(colTagSelector).length === 1), ageAggr, 'In addition, you can change the aggregation column from the context menu too. ' +
-      'For example, if you are adding multiple columns using the same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
-      'it under the "Aggregation" submenu. Let\'s calculate the median weight for each patient group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.'
-    );
 
     const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
     await this.action('Add viewer to visualize aggregation', waitForElementClick(viewerPopup as HTMLElement), viewerPopup,
