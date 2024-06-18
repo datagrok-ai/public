@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
+import type {App} from '@datagrok-libraries/bio/src/helm/types';
+
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
@@ -24,9 +25,9 @@ export class HelmHelper implements IHelmHelper {
     return new HelmWebEditor();
   }
 
-  createWebEditorApp(host: HTMLDivElement, helm: string): IWebEditorApp {
+  createWebEditorApp(host: HTMLDivElement, helm: string): App {
     org.helm.webeditor.MolViewer.molscale = 0.8;
-    const webEditorApp: IWebEditorApp = new org.helm.webeditor.App(host, {
+    const webEditorApp: App = new org.helm.webeditor.App(host, {
       showabout: false,
       mexfontsize: '90%',
       mexrnapinontab: true,

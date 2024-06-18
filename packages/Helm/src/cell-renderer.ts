@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType, Mol} from '@datagrok-libraries/bio/src/helm/types';
 
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -14,11 +13,11 @@ import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-re
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
 import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
 import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
-import {JSDraw2Module} from './types';
+import {JSDraw2HelmModule} from './types';
 
 import {getMonomerLib} from './package';
 
-declare const JSDraw2: JSDraw2Module;
+declare const JSDraw2: JSDraw2HelmModule;
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -51,7 +50,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
-      const editorMol: IMol<HelmType> | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      const editorMol: Mol<HelmType> | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
       if (editorMol)

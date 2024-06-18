@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  HelmType, MonomerType, PolymerType, IOrgWebEditorMonomer, WebEditorRGroups
-} from '@datagrok/js-draw-lite/src/types/org';
+  HelmType, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups
+} from '@datagrok-libraries/bio/src/helm/types';
 
 import {Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
@@ -35,7 +35,7 @@ export function getRS(smiles: string) {
   return res;
 }
 
-export class LibraryWebEditorMonomer implements IOrgWebEditorMonomer {
+export class LibraryWebEditorMonomer implements IWebEditorMonomer {
   public get rs(): number { return Object.keys(this.at).length; }
 
   public get issmiles(): boolean { return !!this.smiles; }
@@ -52,7 +52,7 @@ export class LibraryWebEditorMonomer implements IOrgWebEditorMonomer {
     public readonly smiles?: string,
   ) /* eslint-enable max-params */ {}
 
-  static fromMonomer(biotype: HelmType, monomer: Monomer): IOrgWebEditorMonomer {
+  static fromMonomer(biotype: HelmType, monomer: Monomer): IWebEditorMonomer {
     let at: WebEditorRGroups = {};
     const smiles = monomer[REQ.SMILES];
     if (monomer.rgroups.length > 0) {
@@ -79,7 +79,7 @@ export class LibraryWebEditorMonomer implements IOrgWebEditorMonomer {
 }
 
 /* eslint-disable camelcase */
-export abstract class DummyWebEditorMonomer implements IOrgWebEditorMonomer {
+export abstract class DummyWebEditorMonomer implements IWebEditorMonomer {
   //@formatter:off
   public abstract get backgroundcolor(): string | undefined;
   public abstract get linecolor(): string | undefined;

@@ -2,20 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import {IEditor} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {
+  App, Editor, HelmType, IHelmWebEditor
+} from '@datagrok-libraries/bio/src/helm/types';
 
-import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-
-import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
-import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2Module;
+declare const JSDraw2: JSDraw2HelmModule;
 declare const org: OrgHelmModule;
 
 export class HelmWebEditor implements IHelmWebEditor {
-  editor: IEditor<HelmType>;
+  editor: Editor<HelmType>;
   host: HTMLDivElement;
 
   w = 200;
@@ -31,7 +29,7 @@ export class HelmWebEditor implements IHelmWebEditor {
   }
 }
 
-export function buildWebEditorApp(view: HTMLDivElement): IWebEditorApp {
+export function buildWebEditorApp(view: HTMLDivElement): App {
   org.helm.webeditor.MolViewer.molscale = 0.8;
   const app = new org.helm.webeditor.App(view, {
     showabout: false,

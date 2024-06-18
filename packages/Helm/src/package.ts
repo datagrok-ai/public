@@ -8,14 +8,13 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {IOrgWebEditorMonomer} from '@datagrok/js-draw-lite/src/types/org';
-
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -27,12 +26,10 @@ import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-
 import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
-import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
-import type {HweWindow} from '@datagrok/helm-web-editor/src/types';
-import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
 import {buildWebEditorApp} from './helm-web-editor';
+import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
 export const _package = new HelmPackage();
 
@@ -48,7 +45,7 @@ let monomerLib: IMonomerLib | null = null;
 
 declare const window: Window & HweWindow;
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2Module;
+declare const JSDraw2: JSDraw2HelmModule;
 declare const org: OrgHelmModule;
 
 
@@ -96,7 +93,7 @@ export async function initHelm(): Promise<void> {
 
     _package.logger.debug(`${logPrefix}, then(), lib loaded`);
     monomerLib = lib;
-    rewriteLibraries(); // initHelm()
+    // rewriteLibraries(); // initHelm()
     await _package.initHelmPatchPistoia(monomerLib);
 
     monomerLib.onChanged.subscribe((_) => {
@@ -115,9 +112,9 @@ export async function initHelm(): Promise<void> {
         const libMsg: string = `Monomer lib updated:<br /> ${libSummaryHtml}`;
         grok.shell.info(libMsg);
 
-        _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
-        rewriteLibraries(); // initHelm() monomerLib.onChanged()
-        _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
+        // _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
+        // rewriteLibraries(); // initHelm() monomerLib.onChanged()
+        // _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
       } catch (err: any) {
         const errMsg = errorToConsole(err);
         console.error(`${logPrefixInt} error:\n` + errMsg);
@@ -141,49 +138,49 @@ export function getMonomerLib(): IMonomerLib | null {
   return monomerLib;
 }
 
-/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
-function rewriteLibraries() {
-  org.helm.webeditor.Monomers.clear();
-  monomerLib!.getPolymerTypes().forEach((polymerType) => {
-    const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
-    monomerSymbols.forEach((monomerSymbol) => {
-      let isBroken = false;
-      const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: IOrgWebEditorMonomer = {
-        id: monomerSymbol,
-        m: monomer.molfile,
-        n: monomer.name,
-        na: monomer.naturalAnalog,
-        rs: monomer.rgroups.length,
-        type: monomer.polymerType,
-        mt: monomer.monomerType,
-        at: {},
-      };
-
-      if (monomer.rgroups.length > 0) {
-        // @ts-ignore
-        webEditorMonomer.rs = monomer.rgroups.length;
-        const at: { [prop: string]: any } = {};
-        monomer.rgroups.forEach((it) => {
-          at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
-        });
-        webEditorMonomer.at = at;
-      } else if (monomer[SMILES] != null) {
-        // @ts-ignore
-        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-        webEditorMonomer.at = getRS(monomer[SMILES].toString());
-      } else
-        isBroken = true;
-
-      if (!isBroken)
-        org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
-    });
-  });
-
-  // Obsolete
-  const grid: DG.Grid = grok.shell.tv?.grid;
-  if (grid) grid.invalidate();
-}
+// /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
+// function rewriteLibraries() {
+//   org.helm.webeditor.Monomers.clear();
+//   monomerLib!.getPolymerTypes().forEach((polymerType) => {
+//     const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
+//     monomerSymbols.forEach((monomerSymbol) => {
+//       let isBroken = false;
+//       const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
+//       const webEditorMonomer: IOrgWebEditorMonomer = {
+//         id: monomerSymbol,
+//         m: monomer.molfile,
+//         n: monomer.name,
+//         na: monomer.naturalAnalog,
+//         rs: monomer.rgroups.length,
+//         type: monomer.polymerType,
+//         mt: monomer.monomerType,
+//         at: {},
+//       };
+//
+//       if (monomer.rgroups.length > 0) {
+//         // @ts-ignore
+//         webEditorMonomer.rs = monomer.rgroups.length;
+//         const at: { [prop: string]: any } = {};
+//         monomer.rgroups.forEach((it) => {
+//           at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
+//         });
+//         webEditorMonomer.at = at;
+//       } else if (monomer[SMILES] != null) {
+//         // @ts-ignore
+//         webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
+//         webEditorMonomer.at = getRS(monomer[SMILES].toString());
+//       } else
+//         isBroken = true;
+//
+//       if (!isBroken)
+//         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
+//     });
+//   });
+//
+//   // Obsolete
+//   const grid: DG.Grid = grok.shell.tv?.grid;
+//   if (grid) grid.invalidate();
+// }
 
 //name: getHelmService
 //output: object result
@@ -246,7 +243,7 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  let app: IWebEditorApp;
+  let app: App;
   setTimeout(async () => {
     app = await buildWebEditorApp(view);
     if (!!cell && units === undefined)

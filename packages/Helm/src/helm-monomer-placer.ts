@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {HelmType, PolymerType} from '@datagrok/js-draw-lite/src/types/org';
-import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType, Mol, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
@@ -21,7 +20,7 @@ export interface ISeqMonomer {
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   private _allPartsList: (string[] | null)[];
   private _lengthsList: (number[] | null)[];
-  private _editorMolList: (IMol<HelmType> | null)[];
+  private _editorMolList: (Mol<HelmType> | null)[];
 
   public monomerCharWidth: number = 7;
   public leftPadding: number = 5;
@@ -37,7 +36,7 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   protected override reset(): void {
     this._allPartsList = new Array<string[] | null>(this.tableCol.length).fill(null);
     this._lengthsList = new Array<number[] | null>(this.tableCol.length).fill(null);
-    this._editorMolList = new Array<IMol<HelmType> | null>(this.tableCol.length).fill(null);
+    this._editorMolList = new Array<Mol<HelmType> | null>(this.tableCol.length).fill(null);
   }
 
   /** Skips cell for the fallback rendering */
@@ -83,11 +82,11 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
     this.invalidateGrid();
   }
 
-  public setEditorMol(tableRowIndex: number, editorMol: IMol<HelmType>) {
+  public setEditorMol(tableRowIndex: number, editorMol: Mol<HelmType>) {
     this._editorMolList![tableRowIndex] = editorMol.clone(false);
   }
 
-  public getEditorMol(tableRowIndex: number): IMol<HelmType> | null {
+  public getEditorMol(tableRowIndex: number): Mol<HelmType> | null {
     return this._editorMolList![tableRowIndex];
   }
 }

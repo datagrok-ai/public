@@ -2,11 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import {HelmType, HelmTypes, IOrgWebEditorMonomer} from '@datagrok/js-draw-lite/src/types/org';
-
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {Atom, HelmType, IWebEditorMonomer} from '@datagrok-libraries/bio/src/helm/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {
   HELM_REQUIRED_FIELD as REQ
@@ -16,6 +14,7 @@ import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, LibraryWebEditorMonomer}
 import {OrgHelmModule, ScilModule} from '../types';
 
 import {_package} from '../package';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 declare const org: OrgHelmModule;
 declare const scil: ScilModule;
@@ -24,12 +23,12 @@ const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
 const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
 
-export type GetMonomerResType = IOrgWebEditorMonomer | null;
+export type GetMonomerResType = IWebEditorMonomer | null;
 
-export type GetMonomerFunc = (a: IAtom<HelmType> | HelmType, name: string | undefined) => GetMonomerResType;
+export type GetMonomerFunc = (a: Atom<HelmType> | HelmType, name: string | undefined) => GetMonomerResType;
 type GetMonomerOverridingFunc = (
-  a: IAtom<HelmType> | HelmType, name: string, monomerLib: IMonomerLib,
-  originalGetMonomer: (a: IAtom<HelmType> | HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
+  a: Atom<HelmType> | HelmType, name: string, monomerLib: IMonomerLib,
+  originalGetMonomer: (a: Atom<HelmType> | HelmType, name: string) => GetMonomerResType) => GetMonomerResType;
 
 export function getMonomerOverrideAndLogAlert(
   monomerLib: IMonomerLib, getMonomerOverriding: GetMonomerOverridingFunc, trigger: () => void, logger: ILogger,
@@ -40,7 +39,7 @@ export function getMonomerOverrideAndLogAlert(
   const alertOriginal = scil.Utils.alert;
   try {
     org.helm.webeditor.Monomers.getMonomer = (
-      a: IAtom<HelmType> | HelmType, name: string
+      a: Atom<HelmType> | HelmType, name: string
     ): GetMonomerResType => {
       return getMonomerOverriding(a, name, monomerLib, getMonomerOriginal);
     };
@@ -57,13 +56,13 @@ export function getMonomerOverrideAndLogAlert(
 
 /** Inputs logic */
 export function getMonomerHandleArgs(
-  a: IAtom<HelmType> | HelmType, name?: string
+  a: Atom<HelmType> | HelmType, name?: string
 ): [/** biotype */ HelmType, /** elem */ string] {
   let biotype: HelmType;
   let elem: string;
-  if ((a as IAtom<HelmType>).T === 'ATOM') {
-    biotype = (a as IAtom<HelmType>).biotype();
-    elem = (a as IAtom<HelmType>).elem;
+  if ((a as Atom<HelmType>).T === 'ATOM') {
+    biotype = (a as Atom<HelmType>).biotype()!;
+    elem = (a as Atom<HelmType>).elem;
   } else {
     biotype = a as HelmType;
     elem = org.helm.webeditor.IO.trimBracket(name!);
@@ -75,8 +74,8 @@ export function getMonomerHandleArgs(
 /** Substitutes {@link org.helm.webeditor.Monomers.getMonomer()} */
 export function getWebEditorMonomer(
   monomerLib: IMonomerLib,
-  a: IAtom<HelmType> | HelmType, argName: string,
-): IOrgWebEditorMonomer | null {
+  a: Atom<HelmType> | HelmType, argName: string,
+): IWebEditorMonomer | null {
   const [biotype, elem] = getMonomerHandleArgs(a, argName);
   const pt = helmTypeToPolymerType(biotype);
 
@@ -94,7 +93,7 @@ export function getWebEditorMonomer(
     m = monomerLib.addMissingMonomer(pt, elem);
 
   /** Get or create {@link org,helm.WebEditorMonomer} */
-  let resWem: IOrgWebEditorMonomer | undefined = m.wem;
+  let resWem: IWebEditorMonomer | null = m.wem ?? null;
   if (!resWem) {
     if (elem === '*')
       resWem = m.wem = new GapWebEditorMonomer(biotype, elem);

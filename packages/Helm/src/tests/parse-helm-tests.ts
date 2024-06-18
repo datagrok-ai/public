@@ -2,15 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import {OrgType} from '@datagrok/helm-web-editor/src/types/org-helm';
-import {JSDraw2Module} from '../types';
-
-declare const org: OrgType;
-declare const JSDraw2: JSDraw2Module;
 
 import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
-import {IMol} from '@datagrok/js-draw-lite/src/types/jsdraw2';
+import {HelmType, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {JSDraw2HelmModule} from '../types';
+
+declare const org: OrgType;
+declare const JSDraw2: JSDraw2HelmModule;
 
 type TestTgtType = { atomCount: number, bondCount: number };
 
@@ -49,7 +47,7 @@ function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, null);
 
-  const m: IMol<HelmType> = plugin.jsd.m;
+  const m: Mol<HelmType> = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
 }
@@ -63,7 +61,7 @@ function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, null);
 
-  const m: IMol<HelmType> = plugin.jsd.m;
+  const m: Mol<HelmType> = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
 }

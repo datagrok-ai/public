@@ -2,12 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import type {IAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-import type {IOrgHelmWebEditor, IOrgHelmMonomers} from '@datagrok/helm-web-editor/src/types/org-helm';
-
 import {timeout} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {
+  Atom, HelmType, IOrgHelmMonomers, IOrgHelmWebEditor, Monomers
+} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
@@ -138,7 +137,7 @@ export class HelmPackage extends DG.Package {
     this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
 
     org.helm.webeditor.Monomers.getMonomer = (
-      a: IAtom<HelmType> | HelmType, name: string
+      a: Atom<HelmType> | HelmType, name: string
     ): GetMonomerResType => {
       const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
       try {
@@ -160,7 +159,7 @@ export class HelmPackage extends DG.Package {
     };
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {
-      constructor(base: IOrgHelmMonomers) {
+      constructor(base: Monomers) {
         return new Proxy(base, {
           get(target: any, p: string | symbol, _receiver: any): any {
             return target[p];
@@ -177,7 +176,7 @@ export class HelmPackage extends DG.Package {
           },
         });
       }
-    }(org.helm.webeditor.Monomers) as IOrgHelmMonomers;
+    }(org.helm.webeditor.Monomers) as Monomers;
 
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor = new class {

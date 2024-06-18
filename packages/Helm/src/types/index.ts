@@ -1,7 +1,5 @@
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import {JSDraw2ModuleType, ScilModuleType} from '@datagrok/js-draw-lite/src/types';
-import {OrgType} from '@datagrok/helm-web-editor/src/types/org-helm';
+import {HelmType, JSDraw2ModuleType, OrgType, ScilModuleType} from '@datagrok-libraries/bio/src/helm/types';
 
 export type ScilModule = ScilModuleType;
-export type JSDraw2Module = JSDraw2ModuleType<HelmType>;
+export type JSDraw2HelmModule = JSDraw2ModuleType<HelmType>;
 export type OrgHelmModule = OrgType;

@@ -4,13 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {HelmType} from '@datagrok/js-draw-lite/src/types/org';
-import {IAtom, IJsAtom} from '@datagrok/js-draw-lite/src/types/jsdraw2';
-
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
 } from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {Atom, HelmType, IJsAtom} from '@datagrok-libraries/bio/src/helm/types';
 import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -21,12 +19,12 @@ import {
 import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
 import {GetMonomerFunc, getMonomerHandleArgs} from '../utils/get-monomer';
-import {JSDraw2Module, OrgHelmModule} from '../types';
+import {JSDraw2HelmModule, OrgHelmModule} from '../types';
 
 import {_package} from '../package-test';
 
 declare const org: OrgHelmModule;
-declare const JSDraw2: JSDraw2Module;
+declare const JSDraw2: JSDraw2HelmModule;
 
 type TestDataType = { args: { a: any, name?: string }, tgt: any };
 
@@ -145,7 +143,7 @@ category('getMonomer', ()=>{
     }
 
     for (const [[testName, testData], testI] of wu.enumerate(Object.entries(tests))) {
-      const a: IAtom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
+      const a: Atom<HelmType> | HelmType = getAtomFromJson(testData.args.a);
       const [biotype, elem] = getMonomerHandleArgs(a, testData.args.name);
       const tgt = testData.tgt;
 
@@ -181,8 +179,8 @@ category('getMonomer', ()=>{
   });
 });
 
-function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): IAtom<HelmType> | HelmType {
-  let res: IAtom<HelmType> | HelmType;
+function getAtomFromJson(argA: IJsAtom<HelmType> | HelmType): Atom<HelmType> | HelmType {
+  let res: Atom<HelmType> | HelmType;
   const a = argA as IJsAtom<HelmType>;
   if (a.T === 'ATOM')
     res = new JSDraw2.Atom(a.p, a.elem, a.bio);
