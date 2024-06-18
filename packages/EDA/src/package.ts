@@ -545,7 +545,6 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
-//top-menu: ML | Analyze | Linear Regression (demo)...
 //name: linearRegression
 //description: Linear Regression demo
 //input: dataframe table
@@ -574,9 +573,8 @@ export async function linearRegression(table: DG.DataFrame, features: DG.ColumnL
   }
 }
 
-//top-menu: ML | Analyze | Linear Regression Data...
 //name: generateDatasetForLinearRegressionTest
-//description: Create dataset for linear regression demo
+//description: Create demo dataset for linear regression
 //input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
 //input: int colCount = 10 {min: 1; max: 1000; step: 10}
 //input: double featuresScale = 10 {min: -1000; max: 1000; step: 10}
@@ -600,8 +598,6 @@ export async function trainLinearRegression(df: DG.DataFrame, predict_column: st
   const target = features.byName(predict_column);
   features.remove(predict_column);
 
-  console.log('TRAINING...');
-
   const params = await getLinearRegressionParams(features, target);
 
   return new Uint8Array(params.buffer);
@@ -614,7 +610,6 @@ export async function trainLinearRegression(df: DG.DataFrame, predict_column: st
 //input: dynamic model
 //output: dataframe table
 export function applyLinearRegression(df: DG.DataFrame, model: any): DG.DataFrame {
-  console.log('PREDICTING...');
   const features = df.columns;
   const params = new Float32Array((model as Uint8Array).buffer);
   return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
@@ -632,20 +627,4 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: s
       return false;
   }
   return true;
-}
-
-//name: visualizeLinearRegression
-//meta.mlname: Linear Regression
-//meta.mlrole: visualize
-//input: dataframe df
-//input: string target_column
-//input: string predict_column
-//input: dynamic model
-//output: dynamic widget
-export function visualizeLinearRegression(df: DG.DataFrame, target_column: string, predict_column: string, model: any): any {
-  return DG.Viewer.scatterPlot(df, {
-    xColumnName: target_column,
-    yColumnName: predict_column,
-    showRegressionLine: true,
-  }).root;
 }
