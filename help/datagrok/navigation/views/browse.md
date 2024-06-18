@@ -146,7 +146,7 @@ you refresh or close your browser without saving your work to the server, you wi
 
 When you upload an entity to the server, it needs to be assigned to a project.
 By default, newly created entities are saved to your personal project under **My
-stuff**. For changes to entities that belong to existing projects, you have [several saving options](../basic-tasks/basic-tasks.md#save). 
+stuff**. For changes to entities that belong to existing projects, you have [several saving options](../basic-tasks/basic-tasks.md#save-and-share-a-table). 
 
 Post-upload, the **SAVE** button on the **Scratchpad** and the
 [Table View](table-view.md) appear greyed out, indicating there are no unsaved changes.
