@@ -2,13 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {IWebEditorApp} from '@datagrok/helm-web-editor/src/types/org-helm';
+import type {App} from '@datagrok/helm-web-editor/helm/App';
 import {IHelmWebEditor} from './types';
 
 export interface IHelmHelper {
   createHelmWebEditor(): IHelmWebEditor;
 
-  createWebEditorApp(host: HTMLDivElement, helm?: string): IWebEditorApp;
+  createWebEditorApp(host: HTMLDivElement, helm?: string): App;
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {

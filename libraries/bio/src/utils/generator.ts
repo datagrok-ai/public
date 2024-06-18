@@ -2,12 +2,11 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
-
 import {ALPHABET, getAlphabet, NOTATION, TAGS} from './macromolecule';
 import {GapOriginals, SeqHandler} from './seq-handler';
 import {StringListSeqSplitted} from './macromolecule/utils';
 import {IMonomerLib} from '../types/index';
+import { PolymerTypes } from '../helm/consts';
 
 export function generateManySequences(): DG.Column[] {
   const columns: DG.Column[] = [];

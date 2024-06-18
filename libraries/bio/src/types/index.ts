@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
 
-import {IOrgWebEditorMonomer, MonomerType, PolymerType} from '@datagrok/js-draw-lite/src/types/org';
-
+import {IWebEditorMonomer, MonomerType, PolymerType} from '../helm/types';
 import {
   HELM_REQUIRED_FIELD as REQ,
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE,
@@ -35,7 +34,7 @@ export type Monomer = {
   [OPT.META]?: { [property: string]: any },
 
   lib?: IMonomerLib,
-  wem?: IOrgWebEditorMonomer,
+  wem?: IWebEditorMonomer,
 };
 
 export type MonomerLibSummaryType = { [polymerType: string]: number };

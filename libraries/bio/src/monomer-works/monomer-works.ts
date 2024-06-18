@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok/js-draw-lite/src/types/org';
 import {IMonomerLib} from '../types';
+import {HelmType, PolymerType} from '../helm/types';
+import {HelmTypes, PolymerTypes} from '../helm/consts';
 
 /** Hypothetical interface to convert mol block notation.
  * It should be placed in the chem-meta package, and have an implementation in the Chem package.
