@@ -1,10 +1,30 @@
 # Sequence Translator changelog
 
-## 1.3.2 (WIP)
+## 1.3.5 (2024-06-13)
+
+### Features
+
+* PolyTool Enumeration: cell with helm is added to the input
+
+## 1.3.4 (2024-06-12)
+
+### Bug fixes
+
+* Fix terminal modification SVG rendering
+
+## 1.3.3 (2024-06-12)
+
+### Bug fixes
+
+* Fix terminal modification SVG rendering
+
+## 1.3.2 (2024-06-10)
 
 ### Features
 
 * Add package MonomersPath package settings fallback to monomers-sample
+* Add README for monomers-sample
+* Add sample for bulk translation in Translator app
 
 ### Bug fixes
 

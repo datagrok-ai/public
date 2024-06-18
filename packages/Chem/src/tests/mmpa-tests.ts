@@ -185,12 +185,23 @@ category('mmpa', () => {
 
   test('mmpaOpens', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-    const mmp: MatchedMolecularPairsViewer = (grok.shell.v as DG.TableView)
+    let mmp: MatchedMolecularPairsViewer = (grok.shell.v as DG.TableView)
       .addViewer('Matched Molecular Pairs Analysis') as MatchedMolecularPairsViewer;
     mmp.setOptions({
       molecules: 'smiles',
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
+    //wait for MMPA viewer to be created
+    await awaitCheck(() => {
+      let mmpCreated = false;
+      for (const v of tv.viewers) {
+        if (v.type === 'Matched Molecular Pairs Analysis') {
+          mmp = v as MatchedMolecularPairsViewer;
+          mmpCreated = true;
+        }
+      }
+      return mmpCreated;
+    }, 'MMPA hasn\'t been initialized', 3000);
     //ensure MMPA opened
     await awaitCheck(() => document.getElementsByClassName('chem-mmpa-transformation-tab-header').length > 0,
       'MMPA hasn\'t been started', 3000);
@@ -209,14 +220,26 @@ category('mmpa', () => {
 
   test('transformationsTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-    const mmp: MatchedMolecularPairsViewer = await mmpViewer();
+    let mmp: MatchedMolecularPairsViewer = (grok.shell.v as DG.TableView)
+      .addViewer('Matched Molecular Pairs Analysis') as MatchedMolecularPairsViewer;
     mmp.setOptions({
       molecules: 'smiles',
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
-
+    //wait for MMPA viewer to be created
+    await awaitCheck(() => {
+      let mmpCreated = false;
+      for (const v of tv.viewers) {
+        if (v.type === 'Matched Molecular Pairs Analysis') {
+          mmp = v as MatchedMolecularPairsViewer;
+          mmpCreated = true;
+        }
+      }
+      return mmpCreated;
+    }, 'MMPA hasn\'t been initialized', 3000);
 
     //check Fragments Grid
+    await awaitCheck(() => mmp.allPairsGrid?.dataFrame != null, 'All pairs grid hasn\'t been created', 3000);
     const fragsDf = mmp.allPairsGrid!.dataFrame;
     await awaitCheck(() => fragsDf.rowCount === 40 && fragsDf.columns.length === 7 &&
       fragsDf.filter.trueCount === 2 && fragsDf.filter.get(mmp.calculatedOnGPU ? 1 : 0) && fragsDf.filter.get(2),
@@ -246,12 +269,23 @@ category('mmpa', () => {
 
   test('cliffsTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-    const mmp: MatchedMolecularPairsViewer = await mmpViewer();
+    let mmp: MatchedMolecularPairsViewer = (grok.shell.v as DG.TableView)
+      .addViewer('Matched Molecular Pairs Analysis') as MatchedMolecularPairsViewer;
     mmp.setOptions({
       molecules: 'smiles',
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
-
+    //wait for MMPA viewer to be created
+    await awaitCheck(() => {
+      let mmpCreated = false;
+      for (const v of tv.viewers) {
+        if (v.type === 'Matched Molecular Pairs Analysis') {
+          mmp = v as MatchedMolecularPairsViewer;
+          mmpCreated = true;
+        }
+      }
+      return mmpCreated;
+    }, 'MMPA hasn\'t been initialized', 3000);
     //check created lines
     await awaitCheck(() => mmp.lines!.from.length === 81 && mmp.lines!.to.length === 81 &&
     mmp.linesIdxs!.length === 81, 'Incorrect lines number');
@@ -279,12 +313,24 @@ category('mmpa', () => {
 
   test('generationTab', async () => {
     const tv = await createTableView('demo_files/matched_molecular_pairs.csv');
-    const mmp: MatchedMolecularPairsViewer = await mmpViewer();
+    let mmp: MatchedMolecularPairsViewer = (grok.shell.v as DG.TableView)
+      .addViewer('Matched Molecular Pairs Analysis') as MatchedMolecularPairsViewer;
     mmp.setOptions({
       molecules: 'smiles',
       activities: tv.dataFrame.clone().columns.remove('smiles').names(),
       fragmentCutoff: 0.4});
-
+    //wait for MMPA viewer to be created
+    await awaitCheck(() => {
+      let mmpCreated = false;
+      for (const v of tv.viewers) {
+        if (v.type === 'Matched Molecular Pairs Analysis') {
+          mmp = v as MatchedMolecularPairsViewer;
+          mmpCreated = true;
+        }
+      }
+      return mmpCreated;
+    }, 'MMPA hasn\'t been initialized', 3000);
+    await awaitCheck(() => mmp.generationsGrid?.dataFrame != null, 'Generation grid hasn\'t been created', 3000);
     const genDf = mmp.generationsGrid!.dataFrame;
     await awaitCheck(() => genDf.rowCount === 114, 'Incorrect lines number');
     checkRandomValues(genDf, 'Generation', mmp.calculatedOnGPU!);
