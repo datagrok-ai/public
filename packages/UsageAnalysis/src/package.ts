@@ -30,6 +30,22 @@ export async function TestAnalysis(): Promise<DG.ViewBase| null > {
   return handler.view; 
 }
 
+//name: TestsList 
+//meta.url: /tests/list
+//output: dataframe df
+export async function TestLists(): Promise<DG.DataFrame| undefined> { 
+  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const packageTestsListMapped = pacakageTests.map((elem) => {
+    return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+  });
+  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTestsListMapped = manualTest.map((elem) => {
+    return { 'name':  "test-manual " + elem };
+  });
+  const resultTestsList = manualTestsListMapped.concat(packageTestsListMapped);
+  return DG.DataFrame.fromObjects(resultTestsList);
+}
+
 
 //name: BuildTests
 //meta.runOnOpen: false
@@ -55,7 +71,7 @@ export async function BuildTests(build: any) {
 //input: datetime date 
 //output: dataframe df
 export async function TestAnalysisReportForCurrentDay(date: any) {
-  const tests = await TestAnalysesManager.collectTests();
+  const tests = await TestAnalysesManager.collectPackageTests();
   const testsListMapped = tests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });

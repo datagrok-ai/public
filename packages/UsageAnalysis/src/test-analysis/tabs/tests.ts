@@ -40,7 +40,7 @@ export class TestsView extends TATab {
 
     async initViewers(path?: string): Promise<void> {
 
-        const tests = await TestAnalysesManager.collectTests();
+        const tests = await TestAnalysesManager.collectPackageTests();
         this.testsListMapped = DG.DataFrame.fromObjects(tests.map((elem) => {
             return { 'name': "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
         }));
