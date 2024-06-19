@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.35.1 (2024-06-19)
+
+- Exposed testPipeline method
+
 ## 1.35.0 (2024-06-12)
 
 - Exposed ComputeAPI
