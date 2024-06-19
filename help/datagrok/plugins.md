@@ -41,17 +41,19 @@ sidebar_position: 1.2
 |Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
 -->
 
-<!--
 ## Compute
 
 |Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
 |------|-------|------------|----------------------|---|
-|General |[Compute](https://github.com/datagrok-ai/public/tree/master/packages/Compute)|Required|Provides analytical and UI blocks for scientific computing|Alpha|
-|ODE solver |[ODEs](https://github.com/datagrok-ai/public/tree/master/packages/ODEs)|Fit-for-purpose|An app for solving ordinary differential equations (ODE)|Alpha|
-|Modeling |[Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors)|Fit-for-purpose|Simulation of the Controlled Fab-Arm Exchange mechanism|Alpha|
+|General |[Compute](https://github.com/datagrok-ai/public/tree/master/packages/Compute)|Required|Provides analytical and UI blocks for scientific computing|Stable|
+|DiffStudio |[DiffStudio](https://github.com/datagrok-ai/public/tree/master/packages/ODEs)|Fit-for-purpose|An app for solving ordinary differential equations (ODE)|Alpha|
 
+<!----
+
+|Modeling |[Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors)|Fit-for-purpose|Simulation of the Controlled Fab-Arm Exchange mechanism|Alpha|
 |Modeling |SimPKPD|Fit-for-purpose|App for PKPD simulations|Labs|
--->
+
+---->
 
 ## Learn
 
