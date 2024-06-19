@@ -46,6 +46,28 @@ export async function TestsList(): Promise<DG.DataFrame| undefined> {
   return DG.DataFrame.fromObjects(resultTestsList);
 }
 
+//name: TestsListJoined 
+//meta.url: /tests/joinedlist
+//output: dataframe df
+export async function TestsListJoined(): Promise<DG.DataFrame| undefined> { 
+  
+  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const packageTestsListMapped = pacakageTests.map((elem) => {
+    return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+  });
+  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTestsListMapped = manualTest.map((elem) => {
+    return { 'name':  "test-manual " + elem };
+  });
+  const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
+
+  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
+  const id = builds.get('id', 0); 
+
+  const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
+  return tests;
+}
+
 
 //name: BuildTests
 //meta.runOnOpen: false
