@@ -47,20 +47,27 @@ export class ReportingApp {
       this.view!._onAdded();
       await this.refresh(this.table!, this.view!.grid);
       if (reportNumber != -1) {
-        const reports = await grok.dapi.reports.getReports();
-        reports.rows.removeWhere((r) => r.get('number') === reportNumber);
-        this.table?.appendMerge(reports);
-        this.refreshFilter();
-        setTimeout(async () => {
-          await this.showPropertyPanel(this.table!);
-          const length = this.table!.rowCount;
-          for (let i = 0; i < length; i++) {
-            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
-              this.view?.grid.scrollToCell('date', i);
-              break;
+        const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
+        try {
+          const reports = await grok.dapi.reports.getReports();
+          reports.rows.removeWhere((r) => r.get('number') === reportNumber);
+          this.table?.appendMerge(reports);
+          this.refreshFilter();
+          setTimeout(async () => {
+            await this.showPropertyPanel(this.table!);
+            const length = this.table!.rowCount;
+            for (let i = 0; i < length; i++) {
+              if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+                this.view?.grid.scrollToCell('date', i);
+                break;
+              }
             }
-          }
-        }, 200);
+          }, 200);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          progress.close();
+        }
       }
     }, 300);
   }
