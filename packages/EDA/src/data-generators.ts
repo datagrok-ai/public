@@ -13,8 +13,10 @@ const SVM_GEN_FEATURES_INDEX = 0;
 const SVM_GEN_LABELS_INDEX = 1;
 const SVM_FEATURE_NAME = 'Feature #';
 const SVM_LABEL_NAME = 'Label';
+const BOOL_TRESHOLD_SCALE = 0.5;
+const TYPE_TRESHOLD = 0.5;
 
-// Returns the dataframe "cars"
+/**  Returns the dataframe "cars" */
 export function carsDataframe(): DG.DataFrame {
   return DG.DataFrame.fromColumns(
     [
@@ -38,7 +40,7 @@ export function carsDataframe(): DG.DataFrame {
     ]);
 } // carsDataframe
 
-// Generate dataset for testing binary classifiers
+/** Generate dataset for testing binary classifiers */
 export async function testDataForBinaryClassification(kernel: number, kernelParams: Array<number>,
   name: string, samplesCount: number, featuresCount: number, min: number,
   max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
@@ -72,3 +74,54 @@ export async function testDataForBinaryClassification(kernel: number, kernelPara
 
   return df;
 } // testDataForMachineLearning
+
+/** Generate dataset for testing multiclass classifiers */
+export function testDataForClassifiers(featureCount: number, samplesCount: number, useInts: boolean, violatorsRatio: number, min: number, max: number): DG.DataFrame {
+  if ((min >= max) || (featureCount < 1) || (samplesCount < 1) || (violatorsRatio < 0) || (violatorsRatio > 1))
+    throw new Error('Incorrect data generation inputs');
+
+  const features = Array<Float32Array | Int32Array>(featureCount);
+  const step = max - min;
+  const threshold = featureCount * BOOL_TRESHOLD_SCALE;
+
+  for (let i = 0; i < featureCount; ++i) {
+    const arr = useInts ? ((Math.random() > TYPE_TRESHOLD) ? new Int32Array(samplesCount) : new Float32Array(samplesCount)) : new Float32Array(samplesCount);
+
+    for (let j = 0; j < samplesCount; ++j)
+      arr[j] = min + Math.random() * step;
+
+    features[i] = arr;
+  }
+
+  const boolLabels = Array<boolean>(samplesCount);
+  const strLabels = Array<string>(samplesCount);
+
+  let sum = 0;
+  for (let i = 0; i < samplesCount; ++i) {
+    sum = 0;
+    for (let j = 0; j < featureCount; ++j)
+      sum += (features[j][i] - min) / step;
+
+
+    if (sum > threshold) {
+      boolLabels[i] = true;
+      strLabels[i] = `A${features[0][i] > threshold ? 1 : 2}`;
+    } else {
+      boolLabels[i] = false;
+      strLabels[i] = `B${features[0][i] > threshold ? 1 : 2}`;
+    }
+
+    if (Math.random() < violatorsRatio) {
+      boolLabels[i] = !boolLabels[i];
+      strLabels[i] = 'A1';
+    }
+  }
+
+  const cols = features.map((arr, idx) =>
+    (arr instanceof Int32Array) ? DG.Column.fromInt32Array(`${SVM_FEATURE_NAME}${idx}`, arr) : DG.Column.fromFloat32Array(`${SVM_FEATURE_NAME}${idx}`, arr));
+
+  cols.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, `${SVM_LABEL_NAME} (binary)`, boolLabels));
+  cols.push(DG.Column.fromStrings(`${SVM_LABEL_NAME} (multi)`, strLabels));
+
+  return DG.DataFrame.fromColumns(cols);
+}

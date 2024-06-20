@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
-import {testDataForBinaryClassification} from './data-generators';
+import {testDataForBinaryClassification, testDataForClassifiers} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, isApplicableSVM, showTrainReport, getPackedModel} from './svm';
 
@@ -541,4 +541,19 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //desription: Missing values imputation using the k-nearest neighbors method
 export function kNNImputation() {
   runKNNImputer();
+}
+
+//top-menu: ML | Generate Data ...
+//name: generateClassifierTestData
+//desription: Generates demo data for classifiers testing
+//input: int featureCount = 2 {caption: features; min: 1; max: 2000; step: 10}
+//input: int samplesCount = 1000 {caption: samples; min: 1; max: 1000000; step: 1000}
+//input: bool useInts = true {caption: with ints}
+//input: double violatorsRatio = 0.05 {caption: violators; min: 0; max: 1}
+//input: double min = -10 {min: -1000; max: 1000}
+//input: double max = 10 {min: -1000; max: 1000}
+//output: dataframe df {caption: Test data}
+export function generateClassifierTestData(featureCount: number, samplesCount: number,
+  useInts: boolean, violatorsRatio: number, min: number, max: number): DG.DataFrame {
+  return testDataForClassifiers(featureCount, samplesCount, useInts, violatorsRatio, min, max);
 }
