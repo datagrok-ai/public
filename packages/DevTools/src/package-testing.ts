@@ -497,7 +497,7 @@ export class TestManager extends DG.ViewBase {
     setTimeout(async () => {
       const unhandled = await grok.shell.lastError;
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType, unhandled);
-      grok.shell.clearLastError();
+      //grok.shell.clearLastError();
     }, 30);
   }
 

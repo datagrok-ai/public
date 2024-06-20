@@ -491,7 +491,7 @@ export class TestTrack extends DG.ViewBase {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
       category: value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start
     };
-    grok.log.usage(value.path, params, `test-manual ${value.path}`);
+    grok.shell.reportTest('manual', params);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
 
     grok.dapi.users.find(params['uid']).then((user) => {
@@ -519,7 +519,8 @@ export class TestTrack extends DG.ViewBase {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start
     };
-    grok.log.usage(node.value.path, params, `test-manual ${node.value.path}`);
+
+    grok.shell.reportTest('manual', params);
   }
 
   showStartNewTestingDialog(): void {

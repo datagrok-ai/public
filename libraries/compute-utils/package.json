@@ -8,7 +8,7 @@
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.3",
+    "@datagrok-libraries/utils": "^4.2.11",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.18.6",
