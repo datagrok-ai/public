@@ -338,6 +338,7 @@ export async function testDataLinearNonSeparable(name: string, sigma: number, sa
 export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string,
   gamma: number): Promise<any> {
   const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
+  console.log(trainedModel);
   return getPackedModel(trainedModel);
 }
 
@@ -556,4 +557,58 @@ export function kNNImputation() {
 export function generateClassifierTestData(featureCount: number, samplesCount: number,
   useInts: boolean, violatorsRatio: number, min: number, max: number): DG.DataFrame {
   return testDataForClassifiers(featureCount, samplesCount, useInts, violatorsRatio, min, max);
+}
+
+
+// ==========================
+
+//name: trainMulticlassLinearKernelSVM
+//meta.mlname: Multiclass linear kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//output: dynamic model
+export async function trainMulticlassLinearKernelSVM(df: DG.DataFrame, predict_column: string,
+  gamma: number): Promise<Uint8Array> {
+  const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
+  console.log(trainedModel);
+  return new Uint8Array(10);
+}
+
+//name: applyMulticlassLinearKernelSVM
+//meta.mlname: Multiclass linear kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export async function applyMulticlassLinearKernelSVM(df: DG.DataFrame, model: Uint8Array): Promise<DG.DataFrame> {
+  return await getPrediction(df, model);
+}
+
+//name: isApplicableMulticlassLinearKernelSVM
+//meta.mlname: Multiclass linear kernel LS-SVM
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_column: string): boolean {
+  for (const col of df.columns) {
+    if (col.name !== predict_column) {
+      if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT))
+        return false;
+
+      if (col.stats.missingValueCount > 0)
+        return false;
+    }
+  }
+
+  const target = df.columns.byName(predict_column);
+
+  if (target.stats.missingValueCount > 0)
+    return false;
+
+  const predictType = target.type;
+
+  return (predictType === DG.COLUMN_TYPE.BOOL) || (predictType === DG.COLUMN_TYPE.STRING);
 }

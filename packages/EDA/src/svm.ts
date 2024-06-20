@@ -473,6 +473,8 @@ function getUnpackedModel(packedModel: any): any {
 export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise<DG.DataFrame> {
   const model = getUnpackedModel(new Uint8Array(packedModel));
 
+  console.log(model);
+
   const resNumeric = await predict(model, df.columns);
   const res = DG.Column.string(PREDICTION, resNumeric.length);
   const categories = model.realLabels.categories;
