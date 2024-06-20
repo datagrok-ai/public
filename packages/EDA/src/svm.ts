@@ -75,19 +75,11 @@ const FEATURES_COUNT_NAME = 'features count';
 const TRAIN_SAMPLES_COUNT_NAME = 'train samples count';
 const TRAIN_ERROR = 'Train error,%';
 const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
-const POSITIVE_NAME = 'positive (P)';
-const NEGATIVE_NAME = 'negative (N)';
-const PREDICTED_POSITIVE_NAME = 'predicted positive (PP)';
-const PREDICTED_NEGATIVE_NAME = 'predicted negative (PN)';
 const SENSITIVITY = 'Sensitivity';
 const SPECIFICITY = 'Specificity';
 const BALANCED_ACCURACY = 'Balanced accuracy';
 const POSITIVE_PREDICTIVE_VALUE = 'Positive predicitve value';
 const NEGATIVE_PREDICTIVE_VALUE = 'Negative predicitve value';
-const ML_REPORT = 'Model report';
-const ML_REPORT_PREDICTED_LABELS = 'Predicted labels';
-const ML_REPORT_TRAIN_LABELS = 'Train labels';
-const ML_REPORT_CORRECTNESS = 'Prediction correctness';
 const PREDICTION = 'prediction';
 
 // Pack/unpack constants
@@ -279,11 +271,11 @@ export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, pr
 
   if (labels.categories.length != 2)
     throw new Error(WRONG_LABELS_MESSAGE);
-  let labelNumeric : DG.Column = DG.Column.float(labels.name, labels.length);
-  for (var i = 0; i < labels.length; i++)
+  const labelNumeric : DG.Column = DG.Column.float(labels.name, labels.length);
+  for (let i = 0; i < labels.length; i++)
     labelNumeric.set(i, labels.get(i) == labels.categories[0] ? -1.0 : 1.0, false);
 
-  let model = await trainAndAnalyzeModel(hyperparameters, columns, labelNumeric);
+  const model = await trainAndAnalyzeModel(hyperparameters, columns, labelNumeric);
   model.realLabels = labels;
   return model;
 }
@@ -308,19 +300,6 @@ function getModelInfo(model: any): DG.DataFrame {
   ]);
 }
 
-// Get dataframe with confusion matrix
-function getConfusionMatrixDF(model: any): DG.DataFrame {
-  const data = model.confusionMatrix.getRawData();
-
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('', [POSITIVE_NAME, NEGATIVE_NAME]),
-    DG.Column.fromList('int', PREDICTED_POSITIVE_NAME,
-      [data[TRUE_POSITIVE_INDEX], data[FALSE_POSITIVE_INDEX]]),
-    DG.Column.fromList('int', PREDICTED_NEGATIVE_NAME,
-      [data[FALSE_NEGATIVE_INDEX], data[TRUE_NEGATIVE_INDEX]]),
-  ]);
-}
-
 // Show training report
 export function showTrainReport(df: DG.DataFrame, packedModel: any): HTMLElement {
   const model = getUnpackedModel(packedModel);
@@ -337,7 +316,7 @@ export function getPackedModel(model: any): any {
   const realLabelsSize = BYTES + realLabelsBuffer.length + 4 - realLabelsBuffer.length % 4;
   const modelInfoBuffer = getModelInfo(model).toByteArray();
   const modelInfoSize = BYTES + modelInfoBuffer.length + 4 - modelInfoBuffer.length % 4;
-  
+
   /*let bufferSize = BYTES * (7 + featuresCount * samplesCount
     + 3 * featuresCount + 2 * samplesCount);*/
 
@@ -474,7 +453,7 @@ function getUnpackedModel(packedModel: any): any {
   offset += BYTES;
   const modelInfo = DG.DataFrame.fromByteArray(new Uint8Array(modelBytes, offset, modelInfoSize));
   offset += modelInfoBytesSize;
-  
+
   const model = {kernelType: header[MODEL_KERNEL_INDEX],
     kernelParams: kernelParams,
     trainLabels: trainLabels,
@@ -484,7 +463,7 @@ function getUnpackedModel(packedModel: any): any {
     modelParams: modelParams,
     modelWeights: modelWeights,
     normalizedTrainData: normalizedTrainData,
-    modelInfo: modelInfo
+    modelInfo: modelInfo,
   };
 
   return model;
@@ -497,20 +476,19 @@ export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise
   const resNumeric = await predict(model, df.columns);
   const res = DG.Column.string(PREDICTION, resNumeric.length);
   const categories = model.realLabels.categories;
-  for (var i = 0; i < res.length; i++) {
+  for (let i = 0; i < res.length; i++)
     res.set(i, resNumeric.get(i) == -1 ? categories[0] : categories[1]);
-  }
+
 
   return DG.DataFrame.fromColumns([res]);
 } // getPrediction
-
 
 export function isApplicableSVM(df: DG.DataFrame, predictColumn: string): boolean {
   const columns = df.columns;
   const labels = columns.byName(predictColumn);
   columns.remove(predictColumn);
-  var res: boolean = labels.type == 'string';
-  for (var i = 0; i < columns.length; i++)
+  let res: boolean = labels.type == 'string';
+  for (let i = 0; i < columns.length; i++)
     res = res && (columns.byIndex(i).type == 'double' || columns.byIndex(i).type == 'int');
   return res;
 }
