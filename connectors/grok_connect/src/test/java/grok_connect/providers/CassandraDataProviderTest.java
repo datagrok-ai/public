@@ -75,7 +75,7 @@ class CassandraDataProviderTest {
     @DisplayName("Test of testConnection(DataConnection conn) when no credentials provided")
     @Test
     public void testConnection_notOk() {
-        connection.parameters.put(DbCredentials.CONNECTION_STRING, "foo://bar");
+        connection.credentials = null;
         Assertions.assertThrows(GrokConnectException.class, () -> provider.testConnection(connection));
     }
 

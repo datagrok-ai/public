@@ -73,9 +73,6 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     public String getConnectionString(DataConnection conn) {
         String connString = super.getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
-        if (conn.credentials.getLogin() == null || conn.credentials.getPassword() == null) {
-            throw new RuntimeException("Login or password can't be blank");
-        }
         return connString;
     }
 
