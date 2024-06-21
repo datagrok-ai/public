@@ -20,6 +20,13 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-06-21 1.19.1
+
+### Addressed Issues
+
+* (Bug) GROK-16000: HashId for package functions doesn't work 
+
+
 ## 2024-06-07 1.19.0
 
 ### Addressed Issues
