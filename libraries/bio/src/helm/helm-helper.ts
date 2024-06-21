@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import type {App} from '@datagrok/helm-web-editor/helm/App';
+import type {App} from '@datagrok-libraries/helm-web-editor/helm/App';
 import {Atom, HelmType, IHelmWebEditor, IWebEditorMonomer} from './types';
 import {IMonomerLib} from '../types/index';
 
