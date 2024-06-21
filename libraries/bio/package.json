@@ -26,14 +26,15 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/js-draw-lite": "^0.0.2",
     "@datagrok-libraries/helm-web-editor": "^1.1.4",
+    "@datagrok-libraries/js-draw-lite": "^0.0.2",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
+    "datagrok-tools": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
     "ts-loader": "^9.2.6",
