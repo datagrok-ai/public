@@ -52,6 +52,7 @@ export class TestTrack extends DG.ViewBase {
   nameDiv: HTMLDivElement = ui.divText('', { id: 'tt-name' });
   testingName: string;
   searchInput: DG.InputBase = ui.input.search('');
+  testDescription: Map<string, string> = new Map<string, string>();
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -159,7 +160,8 @@ export class TestTrack extends DG.ViewBase {
     this.list.forEach((obj) => this.initTreeGroupRecursive(obj, this.tree));
     this.tree.children.forEach((c) => this.updateGroupStatusRecursiveDown(c as DG.TreeViewGroup));
     this.setContextMenu();
-
+    for (let item of this.tree.items)
+      this.testDescription.set(item.value.name, item.value.text?.textContent || '');
     // Ribbon
     const gh = ui.button(getIcon('github', { style: 'fab' }), () => {
       window.open('https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis/files/Test Track',
@@ -279,13 +281,16 @@ export class TestTrack extends DG.ViewBase {
     const regExpToSearch = new RegExp(stringToSearch.toLowerCase());
     const listToShow: HTMLElement[] = [];
 
-    function isFitsSearchString(stringToCheck: string): boolean {
-      return regExpToSearch.test(stringToCheck.toLocaleLowerCase());
+    function isFitsSearchString(stringToCheck: string, description?: string): boolean {
+      var result =regExpToSearch.test(stringToCheck.toLocaleLowerCase()) ;
+      if(description){
+        result = result || regExpToSearch.test(description.toLocaleLowerCase())
+      }
+      return result ;
     }
-
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
-      const foundFunc = isFitsSearchString(item.textContent?.toString() || '');
+      const foundFunc = isFitsSearchString(item.textContent?.toString() || '', (this.testDescription.get(item.textContent?.toString() || '') || '').toLocaleLowerCase());
       if (foundFunc) {
         listToShow[listToShow.length] = (item);
         item.classList.remove('hidden');
