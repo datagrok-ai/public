@@ -5,6 +5,7 @@
 ### Bug fixes
 
 * PolyTool: files moved to SequenceTranslator
+* Bio: 
 
 ## 2.12.23 (2024-05-30)
 
