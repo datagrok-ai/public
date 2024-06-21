@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -92,8 +90,8 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+            GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String db = connection.getDb();
