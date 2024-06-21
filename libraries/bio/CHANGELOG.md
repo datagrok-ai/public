@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.0 (2024-06-21)
+
+Use types of forked JSDraw.Lite and HELMWebEditor
+
 ## 5.41.12 (2024-06-12)
 
 ### Bug fixes

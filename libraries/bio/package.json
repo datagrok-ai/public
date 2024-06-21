@@ -8,12 +8,12 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.41.12",
+  "version": "5.42.0",
   "description": "Bio utilities, types supporting Macromolecule, Molecule3D data",
   "dependencies": {
     "@datagrok-libraries/gridext": "^1.3.71",
-    "@datagrok-libraries/utils": "^4.2.11",
-    "@datagrok-libraries/ml": "^6.6.5",
+    "@datagrok-libraries/ml": "^6.6.11",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "latest",
     "datagrok-api": "^1.18.6",
@@ -26,8 +26,10 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@types/three": "^0.159.0",
+    "@datagrok/js-draw-lite": "../../external/JSDraw.Lite/source/web",
+    "@datagrok/helm-web-editor": "../../external/HELMWebEditor/Helm/source",
     "@types/signals": "1.0.1",
+    "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
