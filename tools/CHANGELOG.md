@@ -1,6 +1,6 @@
 # Datagrok-tools changelog
 
-## 4.13.1 (2024-06-21)
+## 4.13.3 (2024-06-21)
 
 ### Features
 
