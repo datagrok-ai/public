@@ -16,6 +16,8 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import '../../../css/cell-renderer.css';
 
+import {_package} from '../../package';
+
 /** Wrapper for monomers obtained from different sources. For managing monomere
  * libraries, use MolfileHandler class instead */
 export class MonomerLib implements IMonomerLib {
@@ -74,7 +76,8 @@ export class MonomerLib implements IMonomerLib {
     return m;
   }
 
-  getMonomer(polymerType: PolymerType, argMonomerSymbol: string): Monomer | null {
+  getMonomer(polymerType: PolymerType | null, argMonomerSymbol: string): Monomer | null {
+    const logPrefix = `Bio: MonomerLib.getMonomer()`;
     // Adjust RNA's 'R' for ribose to 'r' and 'P' for phosphate to 'p' for case-sensitive monomer names.
     // There are uppercase 'R' and 'P' at RNA samples in test data 'helm2.csv' but lowercase in HELMCoreLibrary.json
     let monomerSymbol = argMonomerSymbol;
@@ -83,10 +86,20 @@ export class MonomerLib implements IMonomerLib {
     if (polymerType == 'RNA' && monomerSymbol == 'P')
       monomerSymbol = 'p';
 
-    if (polymerType in this._monomers! && monomerSymbol in this._monomers![polymerType])
-      return this._monomers![polymerType][monomerSymbol];
-    else
-      return null;
+    let res: Monomer | null = null;
+
+    if (!polymerType) {
+      _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
+      // Assume any polymer type
+      for (const [polymerType, dict] of Object.entries(this._monomers)) {
+        res = dict[monomerSymbol];
+        if (res) break;
+      }
+    } else {
+      const dict = this._monomers[polymerType];
+      res = dict ? dict[monomerSymbol] : null;
+    }
+    return res;
   }
 
   getPolymerTypes(): PolymerType[] {
