@@ -44,7 +44,7 @@ function runChecks(packagePath: string): boolean {
     if (externals)
       warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
-  checkSourceMap(packagePath);
+  warnings.push(...checkSourceMap(packagePath));
   warnings.push(...checkFuncSignatures(packagePath, funcFiles));
   warnings.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
   warnings.push(...checkChangelog(packagePath, json));
@@ -377,7 +377,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   return warnings;
 }
 
-export function checkChangelog(packagePath: string, json: PackageFile) {
+export function checkChangelog(packagePath: string, json: PackageFile): string[] {
   if (json.servicePackage) return [];
   const warnings: string[] = [];
   let clf: string;
@@ -405,29 +405,30 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
 
   return warnings;
 }
- 
-export function checkSourceMap(packagePath: string) {
-  const warnings: string[] = [];  
 
+export function checkSourceMap(packagePath: string): string[] {
+  const warnings: string[] = [];
   const tsconfigFilePath = path.join(packagePath, 'tsconfig.json');
-  const configJson: string = fs.readFileSync(tsconfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
+  const webpackConfigFilePath = path.join(packagePath, 'webpack.config.js');
 
-  if (!(new RegExp('"sourceMap"\\s*:\\s*true')).test(configJson))
-    warnings.push('ts config doesnt contain source map');
+  if (fs.existsSync(tsconfigFilePath) && fs.existsSync(webpackConfigFilePath)) {
+    const configJson: string = fs.readFileSync(tsconfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
 
+    if (!(new RegExp('"sourceMap"\\s*:\\s*true')).test(configJson))
+      warnings.push('ts config doesnt contain source map');
 
-  const webpackconfigFilePath = path.join(packagePath, 'webpack.config.js');
-  const webpackconfigJson: string = fs.readFileSync(webpackconfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
+    const webpackConfigJson: string = fs.readFileSync(webpackConfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
 
-  if (!(new RegExp(`devtool\s*:\s*'source-map'`)).test(webpackconfigJson))
-    warnings.push('webpack config doesnt contain source map'); 
+    if (!(new RegExp(`devtool\\s*:\\s*'source-map'`)).test(webpackConfigJson))
+      warnings.push('webpack config doesnt contain source map');
 
-  if (!fs.existsSync(packagePath + 'dist\\package.js'))
-    warnings.push('dist\\package.js file doesnt exists');
+    if (!fs.existsSync(packagePath + '/dist/package.js'))
+      warnings.push('dist\\package.js file doesnt exists');
 
-  if (!fs.existsSync(packagePath + 'dist\\package-test.js'))
-    warnings.push('dist\\package-test.js file doesnt exists');
+    if (!fs.existsSync(packagePath + '/dist/package-test.js'))
+      warnings.push('dist\\package-test.js file doesnt exists');
 
+  }
   return warnings;
 }
 
