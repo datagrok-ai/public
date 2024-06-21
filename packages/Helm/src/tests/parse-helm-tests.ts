@@ -3,9 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
 import {HelmType, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {JSDraw2HelmModule} from '../types';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 declare const org: OrgType;
 declare const JSDraw2: JSDraw2HelmModule;
@@ -23,6 +28,28 @@ category('parseHelm', () => {
       tgt: {atomCount: 12, bondCount: 11}
     }
   };
+
+  let libHelper: IMonomerLibHelper;
+  /** Backup actual user's monomer libraries settings */
+  let userLibSettings: UserLibSettings;
+
+  before(async () => {
+    libHelper = await getMonomerLibHelper();
+
+    await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
+      'get user lib settings for backup');
+
+    // parseHelm is dependent on monomers RGroups available, test requires default monomer library
+    await setUserLibSettingsForTests();
+    await timeout(async () => { await libHelper.awaitLoaded(); }, 5000,
+      'await monomerLib to be loaded');
+    await libHelper.loadLibraries(true);
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await libHelper.loadLibraries(true);
+  });
 
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
     test(`Editor-${testName}`, async () => {

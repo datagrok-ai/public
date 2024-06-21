@@ -15,7 +15,7 @@ import {
   SDF_MONOMER_NAME
 } from '../constants';
 
-import {_package} from '../package';
+import {_package, getMonomerLib} from '../package';
 
 declare const scil: ScilModule;
 declare const org: OrgHelmModule;
@@ -113,19 +113,9 @@ export function parseHelm(s: string): string[] {
 // }
 
 /** Searches monomers of helmString for missed. */
-export function findMonomers(monomerSymbolList: string[]): Set<string> {
-  const types = Object.keys(org.helm.webeditor.monomerTypeList());
-  const monomers: any = [];
-  const monomerNames: any = [];
-  for (let i = 0; i < types.length; i++) {
-    // @ts-ignore
-    // eslint-disable-next-line new-cap
-    monomers.push(new org.helm.webeditor.Monomers.getMonomerSet(types[i]));
-    Object.keys(monomers[i]).forEach((k) => {
-      monomerNames.push(monomers[i][k].id);
-    });
-  }
-  return new Set(monomerSymbolList.filter((val) => !monomerNames.includes(val)));
+export function findMonomers(seqMonomerSymbolList: string[]): Set<string> {
+  const monomerLib = getMonomerLib();
+  return new Set(seqMonomerSymbolList.filter((s) => monomerLib?.getMonomer(null, s)));
 }
 
 function findClosing(s: string, start: number, open: string, close: string) {

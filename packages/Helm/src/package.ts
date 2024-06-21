@@ -3,9 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// import '@datagrok-libraries/bio/src/types/dojo';
-// import * as dojo from 'DOJO';
-
 import $ from 'cash-dom';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
@@ -23,7 +20,7 @@ import {HelmCellRenderer} from './cell-renderer';
 import {HelmHelper} from './helm-helper';
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
-import {_getHelmService, HelmPackage, initHelmPatchDojo} from './package-utils';
+import {_getHelmService, HelmPackage, initHelmLoadAndPatchDojo} from './package-utils';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/dummy-monomer';
 
@@ -48,7 +45,6 @@ declare const scil: ScilModule;
 declare const JSDraw2: JSDraw2HelmModule;
 declare const org: OrgHelmModule;
 
-
 //tags: init
 export async function initHelm(): Promise<void> {
   const logPrefix: string = 'Helm: _package.initHelm()';
@@ -67,8 +63,11 @@ export async function initHelm(): Promise<void> {
           const t1: number = performance.now();
 
           _package.logger.debug(`${logPrefix}, dojox loading and patching …`);
-          await initHelmPatchDojo();
+          await initHelmLoadAndPatchDojo();
           _package.logger.debug(`${logPrefix}, dojox loaded and patched`);
+
+          // through webpack.config.ts/alias
+          require('vendor/helm-web-editor');
 
           _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
           await window.helmWebEditor$.initPromise;
@@ -137,50 +136,6 @@ export async function initHelm(): Promise<void> {
 export function getMonomerLib(): IMonomerLib | null {
   return monomerLib;
 }
-
-// /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
-// function rewriteLibraries() {
-//   org.helm.webeditor.Monomers.clear();
-//   monomerLib!.getPolymerTypes().forEach((polymerType) => {
-//     const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
-//     monomerSymbols.forEach((monomerSymbol) => {
-//       let isBroken = false;
-//       const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-//       const webEditorMonomer: IOrgWebEditorMonomer = {
-//         id: monomerSymbol,
-//         m: monomer.molfile,
-//         n: monomer.name,
-//         na: monomer.naturalAnalog,
-//         rs: monomer.rgroups.length,
-//         type: monomer.polymerType,
-//         mt: monomer.monomerType,
-//         at: {},
-//       };
-//
-//       if (monomer.rgroups.length > 0) {
-//         // @ts-ignore
-//         webEditorMonomer.rs = monomer.rgroups.length;
-//         const at: { [prop: string]: any } = {};
-//         monomer.rgroups.forEach((it) => {
-//           at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
-//         });
-//         webEditorMonomer.at = at;
-//       } else if (monomer[SMILES] != null) {
-//         // @ts-ignore
-//         webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-//         webEditorMonomer.at = getRS(monomer[SMILES].toString());
-//       } else
-//         isBroken = true;
-//
-//       if (!isBroken)
-//         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
-//     });
-//   });
-//
-//   // Obsolete
-//   const grid: DG.Grid = grok.shell.tv?.grid;
-//   if (grid) grid.invalidate();
-// }
 
 //name: getHelmService
 //output: object result
@@ -294,7 +249,7 @@ export function getMolfiles(col: DG.Column): DG.Column {
 //name: getHelmHelper
 //output: object result
 export async function getHelmHelper(): Promise<IHelmHelper> {
-  return HelmHelper.getInstance();
+  return _package.hh;
 }
 
 //name: measureCellRenderer

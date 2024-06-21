@@ -2,23 +2,27 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {timeout} from '@datagrok-libraries/utils/src/test';
+import {delay, timeout} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {
-  Atom, HelmType, IOrgHelmMonomers, IOrgHelmWebEditor, Monomers
+import type {
+  DojoType, DojoxType, IOrgHelmWebEditor, Monomers
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
+import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
-import {GetMonomerFunc, GetMonomerResType, getWebEditorMonomer} from './utils/get-monomer';
 import {OrgHelmModule, ScilModule} from './types';
 
 import {_package} from './package';
 
+declare const dojo: DojoType;
+declare const dojox: DojoxType;
 declare const scil: ScilModule;
 declare const org: OrgHelmModule;
+
+// eslint-disable-next-line
+var dojoConfig = {async: true};
 
 type HelmWindowType = Window & {
   $helmService?: HelmServiceBase,
@@ -31,49 +35,23 @@ export function _getHelmService(): HelmServiceBase {
   return res;
 }
 
-export async function initHelmPatchDojo(): Promise<void> {
+export async function initHelmLoadAndPatchDojo(): Promise<void> {
   const logPrefix = `Helm: _package.initHelmPatchDojo()`;
   // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
   /** get the text width in pixels */
   // @ts-ignore
   await timeout(async () => {
-    await new Promise<void>((resolve, reject) => {
-      try {
-        let rCount = 0;
-        // @ts-ignore
-        dojo.require('dojo/ready')((...args: any[]) => {
-          _package.logger.debug(`${logPrefix}, dojo.ready(), callback rCount: ${rCount}`);
-          //if (--rCount === 0) {
-          _package.logger.debug(`${logPrefix}, dojo.ready(), callback resolve()`);
-          resolve();
-          //}
-        });
+    dojo.require('dojo/ready');
+    dojo.require('dojo/dom');
+    dojo.require('dojox/gfx');
+    dojo.require('dojox/gfx/svg');
+    dojo.require('dojox/gfx/shape');
+    while (
+      !dojo || !dojox || !dojox.gfx || !dojox.gfx.svg ||
+      !dojox.gfx.shape || !dojox.gfx.createSurface
+      ) await delay(200);
+  }, 60000, 'timeout dojox.gfx.svg');
 
-        //@ts-ignore
-        const rList: any[] = [dojo.require('dojox/gfx'), dojo.require('dojox/gfx/svg')];
-        rCount = rList.filter((r) => r === undefined).length;
-        if (rCount === 0) {
-          _package.logger.debug(`${logPrefix}, dojo.require(...) already all`);
-          resolve();
-        }
-      } catch (err: any) {
-        reject(err);
-      }
-    });
-  }, 5000, 'dojox.gfx.svg');
-
-  // await timeout(async ()=>{
-  //   await new Promise<void>((resolve, reject) => {
-  //     try{
-  //
-  //       //@ts-ignore
-  //       if(dojo.require('dojox/gfx')){}
-  //
-  //     } catch (err: any) {
-  //       reject(err);
-  //     }
-  //   });
-  // });
   _package.logger.debug(`${logPrefix}, patch window.dojox.gfx.svg.Text.prototype.getTextWidth`);
   // @ts-ignore
   window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
@@ -117,8 +95,13 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 };
 
 export class HelmPackage extends DG.Package {
-  public getMonomerOriginal: GetMonomerFunc;
   public alertOriginal: (s: string) => void;
+  public readonly hh: HelmHelper;
+
+  constructor() {
+    super();
+    this.hh = new HelmHelper(this.logger);
+  }
 
   public initHelmPatchScilAlert(): void {
     const logPrefix: string = 'Helm: initHelmPatchScilAlert()';
@@ -133,30 +116,10 @@ export class HelmPackage extends DG.Package {
     const logPrefix: string = 'Helm: initHelmPatchPistoia()';
     const monomers = org.helm.webeditor.Monomers;
 
-    this.getMonomerOriginal = monomers.getMonomer.bind(monomers);
     this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
 
-    org.helm.webeditor.Monomers.getMonomer = (
-      a: Atom<HelmType> | HelmType, name: string
-    ): GetMonomerResType => {
-      const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
-      try {
-        // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
+    this.hh.overrideGetMonomer(this.hh.buildGetMonomerFromLib(monomerLib));
 
-        // Creates monomers in lib
-        const dgWem = getWebEditorMonomer(monomerLib, a, name);
-
-        // // Returns null for gap
-        // const oWem = this.getMonomerOriginal(a, name);
-        // if (!oWem)
-        //   logger.warning(`${logPrefixInt}, getMonomerOriginal( a: ${a}, name: ${name}) returns null`);
-        return dgWem; //dgWem;
-      } catch (err) {
-        const [errMsg, errStack] = errInfo(err);
-        this.logger.error(`${logPrefixInt}, Error: ${errMsg}`, undefined, errStack);
-        throw err;
-      }
-    };
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {
       constructor(base: Monomers) {
