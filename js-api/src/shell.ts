@@ -39,7 +39,7 @@ export class Shell {
     await fetch(`${grok.dapi.root}/log/tests/${type}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       credentials: 'same-origin',
-      body: JSON.stringify(params)
+      body: api.grok_JSON_encode(toDart(params))
     });
   }
 
