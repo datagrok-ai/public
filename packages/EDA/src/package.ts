@@ -31,6 +31,8 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
+import {SoftmaxClassifier} from './softmax-classifier';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -611,4 +613,19 @@ export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_
   const predictType = target.type;
 
   return (predictType === DG.COLUMN_TYPE.BOOL) || (predictType === DG.COLUMN_TYPE.STRING);
+}
+
+//top-menu: ML | Fit SoftMax ...
+//name: fitSoftmax
+//input: dataframe df
+//input: column_list features
+//input: column target
+export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column): void {
+  const c = target.categories.length;
+  const n = features.length;
+  const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
+  model.fit(features, target);
+  const packed = model.toBytes();
+  const unpacked = new SoftmaxClassifier(undefined, packed);
+  unpacked.toBytes();
 }
