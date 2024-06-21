@@ -19,12 +19,14 @@ import type {HweWindow} from '@datagrok/helm-web-editor/src/types';
 import type {JSDraw2ModuleType, ScilModuleType} from '@datagrok/js-draw-lite/src/types';
 import type {OrgType} from '@datagrok/helm-web-editor/src/types/org-helm';
 import type {Monomers} from '@datagrok/helm-web-editor/helm/Monomers';
+import type {DojoType, DojoxType} from '@datagrok/js-draw-lite/src/types/dojo';
 
 export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
 export {Atom, IJsAtom, Bond, Mol, Editor};
 
 export {IWebEditorMonomer, IOrgHelmWebEditor, IOrgHelmMonomers, App, Monomers};
 
+export {DojoType, DojoxType};
 export {HweWindow, ScilModuleType, JSDraw2ModuleType, OrgType};
 
 

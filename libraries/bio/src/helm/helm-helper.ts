@@ -3,12 +3,22 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import type {App} from '@datagrok/helm-web-editor/helm/App';
-import {IHelmWebEditor} from './types';
+import {Atom, HelmType, IHelmWebEditor, IWebEditorMonomer} from './types';
+import {IMonomerLib} from '../types/index';
+
+export type GetMonomerResType = IWebEditorMonomer | null;
+export type GetMonomerFunc = (a: Atom<HelmType> | HelmType, name?: string) => GetMonomerResType;
 
 export interface IHelmHelper {
   createHelmWebEditor(): IHelmWebEditor;
 
   createWebEditorApp(host: HTMLDivElement, helm?: string): App;
+
+  get originalGetMonomer(): GetMonomerFunc | null;
+
+  buildGetMonomerFromLib(monomerLib: IMonomerLib): GetMonomerFunc;
+  overrideGetMonomer(getMonomerFunc: GetMonomerFunc): GetMonomerFunc;
+  revertOriginalGetMonomer(): GetMonomerFunc;
 }
 
 export async function getHelmHelper(): Promise<IHelmHelper> {
