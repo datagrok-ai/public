@@ -26,8 +26,8 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok/js-draw-lite": "../../external/JSDraw.Lite/source/web",
-    "@datagrok/helm-web-editor": "../../external/HELMWebEditor/Helm/source",
+    "@datagrok-libraries/js-draw-lite": "^0.0.2",
+    "@datagrok-libraries/helm-web-editor": "^1.1.4",
     "@types/signals": "1.0.1",
     "@types/three": "^0.159.0",
     "@types/uuid": "^9.0.1",
