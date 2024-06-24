@@ -10,10 +10,10 @@ import {_toIterable} from "./utils";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
-import {ComponentBuildInfo} from "./dapi";
+import {ComponentBuildInfo, Dapi} from "./dapi";
 
 declare let ui: any;
-declare let grok: { shell: Shell };
+declare let grok: { shell: Shell, dapi: Dapi };
 const api: IDartApi = <any>window;
 
 class AppBuildInfo {
@@ -33,6 +33,14 @@ export class Shell {
 
   testError(s: String): void {
     return api.grok_Test_Error(s);
+  }
+
+  async reportTest(type: String, params: object): Promise<void> {
+    await fetch(`${grok.dapi.root}/log/tests/${type}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: api.grok_JSON_encode(toDart(params))
+    });
   }
 
   /** Current table, or null. */
@@ -65,6 +73,8 @@ export class Shell {
 
   /** Last error state */
   get lastError(): Promise<string|undefined> { return api.grok_Get_LastError(); }
+
+  set lastError(s: any) { api.grok_Set_LastError(s); }
 
   clearLastError(): void { api.grok_Clear_LastError(); }
 

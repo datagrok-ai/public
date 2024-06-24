@@ -1,5 +1,11 @@
 # DevTools changelog
 
+## 1.3.45 (2024-06-17)
+
+### Bug fixes
+
+* Core tests compatibility fix
+
 ## 1.3.43 (2024-04-02)
 
 ### Bug fixes
