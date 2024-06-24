@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
 ## 1.35.1 (2024-06-19)
 
 - Exposed testPipeline method
