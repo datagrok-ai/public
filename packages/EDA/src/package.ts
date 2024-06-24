@@ -618,17 +618,47 @@ export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_
 //top-menu: ML | Fit SoftMax ...
 //name: fitSoftmax
 //input: dataframe df
-//input: column_list features
-//input: column target
-export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column): void {
+//input: column_list features {type: numerical}
+//input: column target {type: string}
+//input: double rate = 0.01
+//input: int iterations = 100
+//input: double penalty = 1
+//input: bool scatter = true
+export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
+  rate: number, iterations: number, penalty: number, scatter: boolean): void {
   const c = target.categories.length;
   const n = features.length;
   const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
-  model.fit(features, target);
+  let start = performance.now();
+  model.fit(features, target, rate, iterations, penalty);
+  let finish = performance.now();
+
+  console.log(`Fitting: ${finish - start} ms.`);
+
   const packed = model.toBytes();
   const unpacked = new SoftmaxClassifier(undefined, packed);
   unpacked.toBytes();
 
+  start = performance.now();
   const pred = model.predict(features);
+  finish = performance.now();
+  console.log(`Fitting: ${finish - start} ms.`);
+
   df.columns.add(pred);
+
+  /*const m = target.length;
+  df.columns.addNewBool('correct');
+  const col = df.columns.byName('correct');
+
+  for (let i = 0; i < m; ++i)
+    col.set(i, target.get(i) === pred.get(i));*/
+
+  if (scatter) {
+    const v = grok.shell.getTableView(df.name);
+    v.addViewer(DG.VIEWER.SCATTER_PLOT, {
+      xColumnName: features.byIndex(0).name,
+      yColumnName: features.byIndex(1).name,
+      //color: 'correct',
+    });
+  }
 }

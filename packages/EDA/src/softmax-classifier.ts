@@ -10,7 +10,7 @@ const STDEVS_NAME = 'Stddev-s';
 const PRED_NAME = 'predicted';
 const DEFAULT_LEARNING_RATE = 0.01;
 const DEFAULT_ITER_COUNT = 100;
-const DEFAULT_REG_RATE = 0.1;
+const DEFAULT_PENALTY = 0.1;
 
 type DataSpecification = {
   classesCount: number,
@@ -19,7 +19,7 @@ type DataSpecification = {
 
 type TargetLabelsData = {
   oneHot: Array<Uint8Array>,
-  weights: Float32Array,
+  weights: Uint32Array,
 };
 
 /** Softmax classifier */
@@ -143,13 +143,12 @@ export class SoftmaxClassifier {
     columns[c + 1] = DG.Column.fromFloat32Array(STDEVS_NAME, this.stdevs);
 
     const modelDf = DG.DataFrame.fromColumns(columns);
-    grok.shell.addTableView(modelDf);
 
     return modelDf.toByteArray();
   } // toBytes
 
-  public fit(features: DG.ColumnList, target: DG.Column, learningRate: number = DEFAULT_LEARNING_RATE,
-    iterCount: number = DEFAULT_ITER_COUNT, regRate: number = DEFAULT_REG_RATE): void {
+  public fit(features: DG.ColumnList, target: DG.Column, rate: number = DEFAULT_LEARNING_RATE,
+    iterations: number = DEFAULT_ITER_COUNT, penalty: number = DEFAULT_PENALTY): void {
     const n = this.featuresCount;
     const m = target.length; // samples count
     const c = this.classesCount;
@@ -157,7 +156,7 @@ export class SoftmaxClassifier {
     if (features.length !== n)
       throw new Error('Training failes - incorrect features count');
 
-    if ((learningRate <= 0) || (iterCount < 1) || (regRate <= 0))
+    if ((rate <= 0) || (iterations < 1) || (penalty <= 0))
       throw new Error('Training failes - incorrect fitting hyperparameters');
 
     // 1. Pre-process data
@@ -170,19 +169,10 @@ export class SoftmaxClassifier {
     const X = this.normalized(features);
     const transposedX = this.transposed(features);
 
-    //console.log(X);
-
-    //console.log('==============================');
-
-    //console.log(transposedX);
-
     // 1.2) Classes
     const targetData = this.preprocessedTargets(target);
     const Y = targetData.oneHot;
     const classesWeights = targetData.weights;
-
-    //console.log(Y);
-    //console.log(classesWeights);
 
     // 2. Fitting
 
@@ -205,12 +195,8 @@ export class SoftmaxClassifier {
     for (let i = 0; i < c; ++i)
       dW[i] = new Float32Array(n + 1);
 
-    //console.log(this.params);
-
     // Fitting
-    for (let iter = 0; iter < iterCount; ++iter) {
-      //console.log(`iter: ${iter}`);
-
+    for (let iter = 0; iter < iterations; ++iter) {
       // 2.1) Forward propagation
       for (let j = 0; j < m; ++j) {
         xBuf = X[j];
@@ -225,7 +211,7 @@ export class SoftmaxClassifier {
           for (let k = 0; k < n; ++k)
             sum += wBuf[k] * xBuf[k];
 
-          zBuf[i] = Math.exp(sum);
+          zBuf[i] = Math.exp(sum) * classesWeights[i];
           sumExp += zBuf[i];
         }
 
@@ -271,21 +257,17 @@ export class SoftmaxClassifier {
         }
       }
 
-      //console.log(dW);
-
       // 2.3) Update weights
       for (let i = 0; i < c; ++i) {
         wBuf = this.params[i];
         dWbuf = dW[i];
 
         for (let j = 0; j < n; ++j)
-          wBuf[j] = (1 - learningRate * regRate / m) * wBuf[j] - learningRate * dWbuf[j];
+          wBuf[j] = (1 - rate * penalty / m) * wBuf[j] - rate * dWbuf[j];
 
-        wBuf[n] -= learningRate * dWbuf[n];
+        wBuf[n] -= rate * dWbuf[n];
       }
     } // for iter
-
-    //console.log(this.params);
 
     this.isTrained = true;
   }; // fit
@@ -383,7 +365,7 @@ export class SoftmaxClassifier {
       this.categories[i] = cats[i];
 
     const Y = new Array<Uint8Array>(m);
-    const weights = new Float32Array(c).fill(0);
+    const weights = new Uint32Array(c).fill(0);
 
     for (let i = 0; i < m; ++i)
       Y[i] = new Uint8Array(c).fill(0);
@@ -392,9 +374,6 @@ export class SoftmaxClassifier {
       Y[i][raw[i]] = 1;
       ++weights[raw[i]];
     }
-
-    for (let i = 0; i < c; ++i)
-      weights[i] = m / (c * weights[i]);
 
     return {
       oneHot: Y,
