@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import type {
-  HelmType, PolymerType, MonomerType, IWebEditorMonomer, WebEditorRGroups
+  HelmType, PolymerType, MonomerType, IWebEditorMonomer, WebEditorRGroups, IMonomerColors
 } from '@datagrok-libraries/js-draw-lite/src/types/org';
 
 import type {Atom} from '@datagrok-libraries/js-draw-lite/src/Atom';
@@ -24,7 +24,7 @@ import type {DojoType, DojoxType} from '@datagrok-libraries/js-draw-lite/src/typ
 export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
 export {Atom, IJsAtom, Bond, Mol, Editor};
 
-export {IWebEditorMonomer, IOrgHelmWebEditor, IOrgHelmMonomers, App, Monomers};
+export {IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers, App, Monomers};
 
 export {DojoType, DojoxType};
 export {HweWindow, ScilModuleType, JSDraw2ModuleType, OrgType};
