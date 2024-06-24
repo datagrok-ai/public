@@ -414,6 +414,8 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .cm-error-div {
     color: red;
+    padding-top: 2px;
+    min-height: 19px;
 }
 
 .cm-tooltip-hover {

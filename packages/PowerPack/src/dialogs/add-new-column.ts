@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { EditorSelection, EditorState, Extension } from '@codemirror/state'
 import { DecorationSet, EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
 import {RegExpCursor} from "@codemirror/search"
-import {Completion, CompletionContext, CompletionResult, autocompletion, completeFromList} from "@codemirror/autocomplete"
+import {Completion, CompletionContext, CompletionResult, autocompletion, startCompletion, completeFromList} from "@codemirror/autocomplete"
 import {StateEffect, StateField} from "@codemirror/state"
 import {Decoration} from "@codemirror/view"
 import { minimalSetup } from 'codemirror';
@@ -81,7 +81,7 @@ export class AddNewColumnDialog {
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
   codeMirrorDiv = ui.div('', { style: { height: '140px' } });
-  errorDiv = ui.div();
+  errorDiv = ui.div('', 'cm-error-div');
   columnNames: string[] = [];
   coreFunctionsNames: string[] = [];
   coreFunctionsParams: {[key: string]: PropInfo[]} = {};
@@ -139,7 +139,6 @@ export class AddNewColumnDialog {
     this.prepareForSeleniumTests();
     await this.updatePreview(this.codeMirror!.state.doc.toString());
     this.prepareFunctionsListForAutocomplete();
-    this.codeMirror.focus();
   }
 
   prepareFunctionsListForAutocomplete() {
@@ -258,7 +257,15 @@ export class AddNewColumnDialog {
 
     const wordHover = this.hoverTooltipCustom(this.packageFunctionsParams, this.coreFunctionsParams);
 
-    const domEventHandlers = EditorView.domEventHandlers({ blur() { cm.focus(); } });
+    this.uiDialog!.root.onclick = () => {
+      setTimeout(() => {
+        if (!this.inputName!.root.contains(document.activeElement)
+          && !this.uiColumns!.contains(document.activeElement)
+          && !this.uiFunctions!.contains(document.activeElement)) {
+          cm.focus();
+        }
+      }, 100);
+    }
 
     const addHIghlight = StateEffect.define<{from: number, to: number}>({
       map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
@@ -311,6 +318,7 @@ export class AddNewColumnDialog {
           highlightTheme,
           highlightField,
           EditorView.updateListener.of(async (e: ViewUpdate) => {
+            cm.focus();
             if (!e.docChanged)
               return;
             const cmValue = cm.state.doc.toString();
@@ -331,8 +339,10 @@ export class AddNewColumnDialog {
             if (cmValue) {
               const fullFuncName = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1)?.funcName;
               if (this.packageAutocomplete)
-                error = `Start typing to see ${fullFuncName?.substring(0, fullFuncName?.length -1 )} package functions`;
-              if(fullFuncName?.includes(':')) {
+                setTimeout(() => {
+                  startCompletion(cm);
+              }, 100);
+              else if(fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
                   error = `Package ${packAndFuncNames[0]} not found`;
@@ -355,10 +365,9 @@ export class AddNewColumnDialog {
               await this.updatePreview(cmValue);
             }
             else {
-              this.errorDiv!.append(ui.divText(error, 'cm-error-div'));
+              this.errorDiv!.append(ui.divText(error));
             }
           }),
-          domEventHandlers
         ],
       }),
     });  
