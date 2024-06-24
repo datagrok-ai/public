@@ -232,10 +232,16 @@ export class AddNewColumnDialog {
 
 
   initCodeMirror(): EditorView {
-    //let errorMsg = '';
     this.codeMirrorDiv!.onclick = () => {
       cm.focus();
-    }
+    };
+
+    this.uiDialog!.root.onclick = () => {
+      setTimeout(() => {
+        this.setCodeMirrorFocus();
+      }, 100);
+    };
+
     // Columns and functions can be drag-n-dropped into the Expression field:
     ui.makeDroppable(this.codeMirrorDiv!, {
       acceptDrop: (dragObject) => this.typeOf(dragObject, DG.Column, DG.Func),
@@ -245,6 +251,7 @@ export class AddNewColumnDialog {
       },
     });
 
+    //autocompletion extension
     const autocomplete = autocompletion({
       override: [this.functionsCompletions(this.columnNames, this.packageNames, this.coreFunctionsNames,
         this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
@@ -255,14 +262,10 @@ export class AddNewColumnDialog {
       }
     });
 
+    //functions tooltip extension
     const wordHover = this.hoverTooltipCustom(this.packageFunctionsParams, this.coreFunctionsParams);
 
-    this.uiDialog!.root.onclick = () => {
-      setTimeout(() => {
-        this.setCodeMirrorFocus();
-      }, 100);
-    }
-
+    //highlight column names
     const addHIghlight = StateEffect.define<{from: number, to: number}>({
       map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
     })
@@ -291,7 +294,7 @@ export class AddNewColumnDialog {
        }
     })
 
-    const underlineSelection = (view: EditorView, selections: any[]) => {
+    const columnSelection = (view: EditorView, selections: any[]) => {
       let effects: StateEffect<unknown>[] = selections.map(({from, to}) => addHIghlight.of({from, to}));
       if (!effects.length)
         return false;
@@ -302,6 +305,7 @@ export class AddNewColumnDialog {
       return true;
     }
 
+    //create code mirror
     const cm = new EditorView({
       parent: this.codeMirrorDiv!,
       state: EditorState.create({
@@ -327,7 +331,7 @@ export class AddNewColumnDialog {
                 selections.push({from: cursor.value.from, to: cursor.value.to});
             }
             if (selections.length)
-              underlineSelection(cm, selections);
+              columnSelection(cm, selections);
 
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
@@ -410,7 +414,6 @@ export class AddNewColumnDialog {
   }
 
   validateFuncCallTypes(funcCall: DG.FuncCall) {
-
     const innerFuncCalls: string[] = [];
     const actualInputParamTypes: { [key: string]: string } = {};
 
