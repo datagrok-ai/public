@@ -6,6 +6,7 @@ import { getModelsSingle, addAllModelPredictions, addColorCoding, performChemica
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 import { properties } from './utils/admetox-utils';
 import { AdmeticaBaseEditor } from './utils/admetox-editor';
+import { _demoAdmetox } from './demo/demo-admetox';
 
 export const _package = new DG.Package();
 
@@ -117,4 +118,10 @@ export function AdmeticaEditor(call: DG.FuncCall): void {
 //editor: Admetox: AdmeticaEditor
 export async function admetica(table: DG.DataFrame, molecules: DG.Column, templates: string, models: string[], addPiechart: boolean): Promise<void> {
   await performChemicalPropertyPredictions(molecules, table, models.join(','), templates, addPiechart);
+}
+
+//name: Demo Admetox
+//meta.demoPath: Cheminformatics | ADMETox
+export async function demoAdmetox(): Promise<void> {
+  await _demoAdmetox();
 }
