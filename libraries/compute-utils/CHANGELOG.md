@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
 ## 1.35.0 (2024-06-12)
 
 - Code adapted for Compute API
