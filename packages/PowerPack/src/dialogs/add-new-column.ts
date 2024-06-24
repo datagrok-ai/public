@@ -259,11 +259,7 @@ export class AddNewColumnDialog {
 
     this.uiDialog!.root.onclick = () => {
       setTimeout(() => {
-        if (!this.inputName!.root.contains(document.activeElement)
-          && !this.uiColumns!.contains(document.activeElement)
-          && !this.uiFunctions!.contains(document.activeElement)) {
-          cm.focus();
-        }
+        this.setCodeMirrorFocus();
       }, 100);
     }
 
@@ -318,7 +314,7 @@ export class AddNewColumnDialog {
           highlightTheme,
           highlightField,
           EditorView.updateListener.of(async (e: ViewUpdate) => {
-            cm.focus();
+            this.setCodeMirrorFocus();
             if (!e.docChanged)
               return;
             const cmValue = cm.state.doc.toString();
@@ -380,6 +376,14 @@ export class AddNewColumnDialog {
       }});
 
     return cm;
+  }
+
+  setCodeMirrorFocus() {
+    if (!this.inputName!.root.contains(document.activeElement)
+      && !this.uiColumns!.contains(document.activeElement)
+      && !this.uiFunctions!.contains(document.activeElement)) {
+      this.codeMirror!.focus();
+    }
   }
 
   validateFormula(formula: string): string {
