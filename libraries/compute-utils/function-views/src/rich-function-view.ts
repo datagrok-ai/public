@@ -724,6 +724,10 @@ export class RichFunctionView extends FunctionView {
     this._isOutputOutdated.next(false);
   }
 
+  public getViewers(propName: string) {
+    return this.dfToViewerMapping[propName];
+  }
+
   public buildOutputBlock(): HTMLElement {
     this.tabsElem.root.style.width = '100%';
 
