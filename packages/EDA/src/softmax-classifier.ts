@@ -7,7 +7,10 @@ const COLS_EXTRA = 2;
 const MIN_COLS_COUNT = 1 + COLS_EXTRA;
 const AVGS_NAME = 'Avg-s';
 const STDEVS_NAME = 'Stddev-s';
-const PRED_NAME = 'Prediction';
+const PRED_NAME = 'predicted';
+const DEFAULT_LEARNING_RATE = 0.01;
+const DEFAULT_ITER_COUNT = 100;
+const DEFAULT_REG_RATE = 0.1;
 
 type DataSpecification = {
   classesCount: number,
@@ -145,12 +148,17 @@ export class SoftmaxClassifier {
     return modelDf.toByteArray();
   } // toBytes
 
-  public fit(features: DG.ColumnList, target: DG.Column): void {
+  public fit(features: DG.ColumnList, target: DG.Column, learningRate: number = DEFAULT_LEARNING_RATE,
+    iterCount: number = DEFAULT_ITER_COUNT, regRate: number = DEFAULT_REG_RATE): void {
     const n = this.featuresCount;
     const m = target.length; // samples count
+    const c = this.classesCount;
 
     if (features.length !== n)
       throw new Error('Training failes - incorrect features count');
+
+    if ((learningRate <= 0) || (iterCount < 1) || (regRate <= 0))
+      throw new Error('Training failes - incorrect fitting hyperparameters');
 
     // 1. Pre-process data
 
@@ -162,19 +170,122 @@ export class SoftmaxClassifier {
     const X = this.normalized(features);
     const transposedX = this.transposed(features);
 
-    console.log(X);
+    //console.log(X);
 
-    console.log('==============================');
+    //console.log('==============================');
 
-    console.log(transposedX);
+    //console.log(transposedX);
 
     // 1.2) Classes
     const targetData = this.preprocessedTargets(target);
     const Y = targetData.oneHot;
     const classesWeights = targetData.weights;
 
-    console.log(Y);
-    console.log(classesWeights);
+    //console.log(Y);
+    //console.log(classesWeights);
+
+    // 2. Fitting
+
+    // Routine
+    let xBuf: Float32Array;
+    let wBuf: Float32Array;
+    let zBuf: Float32Array;
+    let sum: number;
+    let sumExp: number;
+    let yTrue: Uint8Array;
+    let yPred: Float32Array;
+    let dWbuf: Float32Array;
+    const Z = new Array<Float32Array>(m);
+    for (let i = 0; i < m; ++i)
+      Z[i] = new Float32Array(c);
+    const dZ = new Array<Float32Array>(c);
+    for (let i = 0; i < c; ++i)
+      dZ[i] = new Float32Array(m);
+    const dW = new Array<Float32Array>(c);
+    for (let i = 0; i < c; ++i)
+      dW[i] = new Float32Array(n + 1);
+
+    //console.log(this.params);
+
+    // Fitting
+    for (let iter = 0; iter < iterCount; ++iter) {
+      //console.log(`iter: ${iter}`);
+
+      // 2.1) Forward propagation
+      for (let j = 0; j < m; ++j) {
+        xBuf = X[j];
+        zBuf = Z[j];
+        sum = 0;
+        sumExp = 0;
+
+        for (let i = 0; i < c; ++i) {
+          wBuf = this.params[i];
+          sum = wBuf[n];
+
+          for (let k = 0; k < n; ++k)
+            sum += wBuf[k] * xBuf[k];
+
+          zBuf[i] = Math.exp(sum);
+          sumExp += zBuf[i];
+        }
+
+        for (let i = 0; i < c; ++i)
+          zBuf[i] /= sumExp;
+      }
+
+      // 2.2) Backward propagation
+
+      // 2.2.1) dZ
+      for (let j = 0; j < m; ++j) {
+        yPred = Z[j];
+        yTrue = Y[j];
+
+        for (let i = 0; i < c; ++i)
+          dZ[i][j] = yPred[i] - yTrue[i];
+      }
+
+      // 2.2.2) dB
+      for (let i = 0; i < c; ++i) {
+        sum = 0;
+        zBuf = dZ[i];
+
+        for (let j = 0; j < m; ++j)
+          sum += zBuf[j];
+
+        dW[i][n] = sum / m;
+      }
+
+      // 2.2.3) dW
+      for (let i = 0; i < c; ++i) {
+        zBuf = dZ[i];
+        wBuf = dW[i];
+
+        for (let j = 0; j < n; ++j) {
+          xBuf = transposedX[j];
+
+          sum = 0;
+          for (let k = 0; k < m; ++k)
+            sum += zBuf[k] * xBuf[k];
+
+          wBuf[j] = sum / m;
+        }
+      }
+
+      //console.log(dW);
+
+      // 2.3) Update weights
+      for (let i = 0; i < c; ++i) {
+        wBuf = this.params[i];
+        dWbuf = dW[i];
+
+        for (let j = 0; j < n; ++j)
+          wBuf[j] = (1 - learningRate * regRate / m) * wBuf[j] - learningRate * dWbuf[j];
+
+        wBuf[n] -= learningRate * dWbuf[n];
+      }
+    } // for iter
+
+    //console.log(this.params);
 
     this.isTrained = true;
   }; // fit
