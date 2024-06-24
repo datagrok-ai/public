@@ -299,7 +299,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   addCustomTooltip(viewTable.name);
 }
 
-/*async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
+async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
   const view = grok.shell.tableView(semValue.cell.dataFrame.name);
   const gridCol = view.grid.col(semValue.cell.column.name);
   const gridCell = view.grid.cell(semValue.cell.column.name, semValue.cell.rowIndex);
@@ -324,7 +324,7 @@ export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, a
   pieChartRenderer.render(ctx!, 0, 0, canvas.width, canvas.height, gridCell, DG.GridCellStyle.create());
   container.appendChild(canvas);
   return container;
-}*/
+}
 
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('ADME/Tox');
@@ -362,7 +362,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
     }, false);
   }
 
-  /*const result = ui.div();
+  const result = ui.div();
   acc.addPane('Summary', () => {
     result.append(ui.loader());
     try {
@@ -376,7 +376,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
       console.error(error);
     }
     return result;
-  }, false);*/
+  }, false);
 
 
   return acc;

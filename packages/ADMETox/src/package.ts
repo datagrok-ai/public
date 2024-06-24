@@ -121,7 +121,6 @@ export async function admetica(table: DG.DataFrame, molecules: DG.Column, templa
 }
 
 //name: Demo Admetox
-//description: To be added
 //meta.demoPath: Cheminformatics | ADMETox
 export async function demoAdmetox(): Promise<void> {
   await _demoAdmetox();
