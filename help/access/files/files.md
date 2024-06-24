@@ -128,25 +128,6 @@ To learn how searching works in Datagrok, see [Smart search](../../datagrok/navi
 :::
 -->
 
-## Importing text
-
-Datagrok supports text-to-tabular-data conversion for delimiter-separated files
-with an option to manually edit or customize data during import. To use this
-feature, open the [Text Import Manager](https://public.datagrok.ai/text). To do
-this, open **Browse** and click the **Open text** icon on its **Top Menu**. Load your file or paste
-text directly into the editor area. Here you can change the data as needed.
-Adjust default import parameters like delimiters, decimal separators, and header
-settings in the **Toolbox** on the left. By default, changes are automatically
-applied and displayed in the **Preview**, which updates as you modify the data.
-To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync**
-button.
-
-When satisfied with the data, click **Done** to open the dataframe in Datagrok.
-From there, you can export it, make further edits, save it as a project, or
-share with others via URL.
-
-![Text Manager](img/text-manager.gif)
-
 ## File Manager
 
 The **File Manager** is an interface that allows you to manage connections,
@@ -288,6 +269,10 @@ The specified privilege allows the grantee do the following:
 * _Can edit_: Everything under "view", plus rename, edit, delete, and reshare
 
 ![Share a folder](img/share-the-folder.gif)
+
+You can also share the folder's URL from the address bar with other users. This won't
+give them the necessary privilege, but it might be a convenient way of sharing links
+with people who already have proper privileges.
 
 :::tip
 

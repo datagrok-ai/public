@@ -281,6 +281,14 @@ You can customize the **Home Page** programmatically.
 
 :::
 
+## Importing text
+
+You can parse delimiter-separated text to table by clicking on the "Open text" icon on top.
+Paste your text or edit it right there, adjust the import parameter until you get it right, 
+and click "DONE" to open the resulting table in the workspace. 
+
+![Text Manager](img/text-manager.gif)
+
 <!--TODO: Add more info on how the search works here. Also, add a link wrt how to customize the home page programmatically -->
 
 
