@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { delay, Test, TestContext, initAutoTests, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { initComputeApi } from "@datagrok-libraries/compute-api";
 import { c } from './package';
 import '../css/styles.css';
 
@@ -105,6 +106,15 @@ export class TestManager extends DG.ViewBase {
     if (pathSegments.length <= 4 && TMState) {
       pathSegments = TMState.split('/');
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
+    }
+
+    // we need to init Compute package here, before loading any of
+    // compute model packages, since theirs top level might implicitly
+    // depend on Compute provided globals
+    try {
+      await initComputeApi();
+    } catch (e) {
+      console.error(e);
     }
 
     let searchInvoked = false
