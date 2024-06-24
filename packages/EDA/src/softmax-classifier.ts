@@ -13,6 +13,11 @@ type DataSpecification = {
   featuresCount: number,
 };
 
+type TargetLabelsData = {
+  oneHot: Array<Uint8Array>,
+  weights: Float32Array,
+};
+
 /** Softmax classifier */
 export class SoftmaxClassifier {
   private isTrained = false;
@@ -163,9 +168,12 @@ export class SoftmaxClassifier {
     console.log(transposedX);
 
     // 1.2) Classes
-    const Y = this.getOneHot(target);
+    const targetData = this.getPreprocessedTargets(target);
+    const Y = targetData.oneHot;
+    const classesWeights = targetData.weights;
 
     console.log(Y);
+    console.log(classesWeights);
 
     this.isTrained = true;
   }; // fit
@@ -184,6 +192,7 @@ export class SoftmaxClassifier {
     }
   } // extractStats
 
+  /** Retrun normalized features */
   private normalized(features: DG.ColumnList): Array<Float32Array> {
     const m = features.byIndex(0).length;
 
@@ -215,6 +224,7 @@ export class SoftmaxClassifier {
     return X;
   } // normalized
 
+  /** Retrun normalized & transposed features */
   private transposed(features: DG.ColumnList): Array<Float32Array> {
     const m = features.byIndex(0).length;
     const n = this.featuresCount;
@@ -247,7 +257,8 @@ export class SoftmaxClassifier {
     return X;
   } // transposed
 
-  private getOneHot(target: DG.Column): Array<Uint8Array> {
+  /** Return one-hot vectors and classes weights */
+  private getPreprocessedTargets(target: DG.Column): TargetLabelsData {
     if (target.type !== DG.COLUMN_TYPE.STRING)
       throw new Error('Training failes - incorrect target type');
 
@@ -259,14 +270,23 @@ export class SoftmaxClassifier {
     for (let i = 0; i < c; ++i)
       this.categories[i] = cats[i];
 
-    const Y = new Array<Uint8Array>(c);
-
-    for (let i = 0; i < c; ++i)
-      Y[i] = new Uint8Array(m).fill(0);
+    const Y = new Array<Uint8Array>(m);
+    const weights = new Float32Array(c).fill(0);
 
     for (let i = 0; i < m; ++i)
-      Y[raw[i]][i] = 1;
+      Y[i] = new Uint8Array(c).fill(0);
 
-    return Y;
+    for (let i = 0; i < m; ++i) {
+      Y[i][raw[i]] = 1;
+      ++weights[raw[i]];
+    }
+
+    for (let i = 0; i < c; ++i)
+      weights[i] = m / (c * weights[i]);
+
+    return {
+      oneHot: Y,
+      weights: weights,
+    };
   } // getOneHot
 }; // SoftmaxClassifier
