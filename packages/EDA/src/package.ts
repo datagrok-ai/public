@@ -628,4 +628,7 @@ export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG
   const packed = model.toBytes();
   const unpacked = new SoftmaxClassifier(undefined, packed);
   unpacked.toBytes();
+
+  const pred = model.predict(features);
+  df.columns.add(pred);
 }

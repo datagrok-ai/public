@@ -7,6 +7,7 @@ const COLS_EXTRA = 2;
 const MIN_COLS_COUNT = 1 + COLS_EXTRA;
 const AVGS_NAME = 'Avg-s';
 const STDEVS_NAME = 'Stddev-s';
+const PRED_NAME = 'Prediction';
 
 type DataSpecification = {
   classesCount: number,
@@ -168,7 +169,7 @@ export class SoftmaxClassifier {
     console.log(transposedX);
 
     // 1.2) Classes
-    const targetData = this.getPreprocessedTargets(target);
+    const targetData = this.preprocessedTargets(target);
     const Y = targetData.oneHot;
     const classesWeights = targetData.weights;
 
@@ -258,7 +259,7 @@ export class SoftmaxClassifier {
   } // transposed
 
   /** Return one-hot vectors and classes weights */
-  private getPreprocessedTargets(target: DG.Column): TargetLabelsData {
+  private preprocessedTargets(target: DG.Column): TargetLabelsData {
     if (target.type !== DG.COLUMN_TYPE.STRING)
       throw new Error('Training failes - incorrect target type');
 
@@ -289,4 +290,58 @@ export class SoftmaxClassifier {
       weights: weights,
     };
   } // getOneHot
+
+  /** Return prediction column */
+  public predict(features: DG.ColumnList): DG.Column {
+    if (!this.isTrained)
+      throw new Error('Predcition fails: no fitted parameters');
+
+    if (features.length !== this.featuresCount)
+      throw new Error('Predcition fails: incorrect features count');
+
+    // Normalize features
+    const X = this.normalized(features);
+
+    // Routine items
+    const m = X.length;
+    const n = this.featuresCount;
+    const c = this.classesCount;
+    let xBuf: Float32Array;
+    let wBuf: Float32Array;
+    const Z = new Float32Array(c);
+    let sum: number;
+    let max: number;
+    let argMax: number;
+    const predClass = new Array<string>(m);
+
+    // get prediction for each sample
+    for (let j = 0; j < m; ++j) {
+      xBuf = X[j];
+      sum = 0;
+
+      for (let i = 0; i < c; ++i) {
+        wBuf = this.params[i];
+        sum = wBuf[n];
+
+        for (let k = 0; k < n; ++k)
+          sum += wBuf[k] * xBuf[k];
+
+        Z[i] = Math.exp(sum);
+      }
+
+      max = Z[0];
+      argMax = 0;
+
+      for (let k = 1; k < c; ++k) {
+        if (max < Z[k]) {
+          max = Z[k];
+          argMax = k;
+        }
+      }
+
+      predClass[j] = this.categories[argMax];
+    }
+
+    return DG.Column.fromStrings(PRED_NAME, predClass);
+  }
 }; // SoftmaxClassifier
