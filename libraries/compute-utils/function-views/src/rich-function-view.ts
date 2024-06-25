@@ -124,7 +124,7 @@ export class RichFunctionView extends FunctionView {
     super(initValue, options);
   }
 
-  protected async onFuncCallReady() {
+  public async onFuncCallReady() {
     await this.loadInputsOverrides();
     await this.loadInputsValidators();
     await super.onFuncCallReady();
@@ -722,6 +722,10 @@ export class RichFunctionView extends FunctionView {
   private showOutput() {
     ui.setDisplay(this.tabsElem.root, true);
     this._isOutputOutdated.next(false);
+  }
+
+  public getViewers(propName: string) {
+    return this.dfToViewerMapping[propName];
   }
 
   public buildOutputBlock(): HTMLElement {
