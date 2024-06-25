@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.35.3 (2024-06-25)
+
+- Changed inputs to use new API
+
 ## 1.35.2 (2024-06-24)
 
 - RFV: Added getViewers method
