@@ -72,10 +72,10 @@ class CassandraDataProviderTest {
         Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
     }
 
-    @DisplayName("Test of testConnection(DataConnection conn) when no credentials provided")
+    @DisplayName("Test of testConnection(DataConnection conn) when some parameters are missing")
     @Test
     public void testConnection_notOk() {
-        connection.credentials = null;
+        connection.parameters.clear();
         Assertions.assertThrows(GrokConnectException.class, () -> provider.testConnection(connection));
     }
 
