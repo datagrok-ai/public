@@ -22,9 +22,9 @@ export class HistoricalRunEdit extends DG.Dialog {
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
     let isFavorite = oldIsFavorite;
-    const titleInput = ui.stringInput('Title', title, (s: string) => title = s);
+    const titleInput = ui.input.string('Title', {value: title, onValueChanged: (input) => title = input.value});
 
-    const dummyInput = ui.stringInput(' ', '');
+    const dummyInput = ui.input.string(' ', {value: ''});
     const tagsLine = DG.TagEditor.create();
     (funcCall.options['tags'] ?? []).forEach((tag: string) => {
       tagsLine.addTag(tag);
@@ -41,7 +41,7 @@ export class HistoricalRunEdit extends DG.Dialog {
       tagsLine.addTag(tagInput.value);
       tagInput.value = '';
     };
-    const tagInput = ui.stringInput('Tag', '').addOptions(ui.iconFA('plus', addNewTag, 'Add this tag'));
+    const tagInput = ui.input.string('Tag', {value: ''}).addOptions(ui.iconFA('plus', addNewTag, 'Add this tag'));
 
     const enterSub = fromEvent<KeyboardEvent>(tagInput.input, 'onkeydown').subscribe((ev) => {
       if (ev.key == 'Enter') {
@@ -53,8 +53,8 @@ export class HistoricalRunEdit extends DG.Dialog {
 
     this.add(ui.form([
       titleInput,
-      ui.stringInput('Description', description, (s: string) => description = s),
-      ui.boolInput('Favorites', isFavorite, (b: boolean) => isFavorite = b),
+      ui.input.string('Description', {value: description, onValueChanged: (input) => description = input.value}),
+      ui.input.bool('Favorites', {value: isFavorite, onValueChanged: (input) => isFavorite = input.value}),
       tagInput,
       dummyInput,
     ]));
