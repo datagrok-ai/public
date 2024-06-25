@@ -121,14 +121,8 @@ export interface SettingsInterface {
   /// Datlas API URL.
   apiUrl: string;
 
-  /// Jupyter Gateway instance token.
-  jupyterGatewayToken: string;
-
   /// Jupyter Notebook instance token.
   jupyterNotebookToken: string;
-
-  /// Help base URL.
-  helpBaseUrl: string;
 
   clientFuncCacheEnabled: boolean;
 
