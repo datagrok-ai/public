@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.35.4 (2024-06-25)
+
+- Inputs bugfixes
+
 ## 1.35.3 (2024-06-25)
 
 - Changed inputs to use new API
