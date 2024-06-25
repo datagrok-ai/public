@@ -67,7 +67,7 @@ export class FittingView {
     );
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
-      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (input) => f(input.value)});
+      const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: () => f(input.value)});
       $(input.root).addClass('sa-switch-input');
       $(input.captionLabel).hide();
 
@@ -108,9 +108,8 @@ export class FittingView {
           const: {
             input:
             (() => {
-              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: (input) => {
-                const v = input.value;
-                ref.const.value = v;
+              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: () => {
+                ref.const.value = inp.value;
                 this.updateApplicabilityState();
               }});
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
@@ -124,9 +123,8 @@ export class FittingView {
           min: {
             input:
               (() => {
-                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: (input) => {
-                  const v = input.value;
-                  (ref as FittingNumericStore).min.value = v;
+                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: () => {
+                  (ref as FittingNumericStore).min.value = inp.value;
                   this.updateApplicabilityState();
                 }});
                 inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
@@ -140,9 +138,8 @@ export class FittingView {
           },
           max: {
             input: (() => {
-              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: (input) => {
-                const v = input.value;
-                (ref as FittingNumericStore).max.value = v;
+              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: () => {
+                (ref as FittingNumericStore).max.value = inp.value;
                 this.updateApplicabilityState();
               }});
               inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
@@ -287,7 +284,7 @@ export class FittingView {
             return input;
           })(),
           colNameInput: (() => {
-            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: (input) => {temp.colName = input.value!;}});
+            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: () => {temp.colName = input.value!;}});
             input.setTooltip('Column with argument values');
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;

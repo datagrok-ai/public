@@ -730,8 +730,8 @@ export class HistoricalRunsList extends DG.Widget {
     this.styleHistoryFilters();
   }});
 
-  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async (input) => {
-    const newValue = input.value;
+  private showInputsIcon = ui.input.toggle('Params', {value: false, onValueChanged: async () => {
+    const newValue = this.showInputsIcon.value;
     if (this.runs.size === 0) return;
 
     if (newValue && this.options?.isHistory) {
