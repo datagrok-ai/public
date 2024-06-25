@@ -5,7 +5,7 @@ import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs, toDart} from "./wrappers";
-import {__obs, StreamSubscription} from "./events";
+import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
 import {filter, map} from 'rxjs/operators';
@@ -499,6 +499,15 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   get activeFrame(): DataFrame {
     return api.grok_LineChartViewer_activeFrame(this.dart);
   }
+
+  resetView(): void{
+    api.grok_LineChartViewer_ResetView(this.dart);
+  }
+
+  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
+  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); } 
+  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-linechart-line-selected'); } 
 }
 
 /** 2D scatter plot */
@@ -547,6 +556,21 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onPointClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-scatterplot-point-click'); }
+}
+
+export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onVisibilityToggled(): rxjs.Observable<null> { return this.onEvent('d4-histogram-visibility-toggled'); }
+  get onMissingValuesFilteredOut(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-out-missing-values'); }
+  get onMissingValuesOnly(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-values-changed'); }
+  get onBinsSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-select-bins'); }
+  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-select-line'); }
+  get onMouseOverBins(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-mouse-over-bins'); }
+  get onMouseOverLine(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-mouse-over-line'); }
 }
 
 export class ViewerMetaHelper {
