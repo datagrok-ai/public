@@ -321,7 +321,7 @@ export function HeatCapValidator(params: any) {
 //input: object params
 //output: object input
 export function CustomStringInput(params: any) {
-  const defaultInput = ui.stringInput('Custom input', '');
+  const defaultInput = ui.input.string('Custom input', {value:''});
   defaultInput.root.style.backgroundColor = 'aqua';
   defaultInput.input.style.backgroundColor = 'aqua';
   return defaultInput;
