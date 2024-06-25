@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 0.0.6 (2024-06-25)
+
+- Updated compute-utils dep
+
 ## 0.0.5 (2024-06-24)
 
 - Updated compute-utils dep
