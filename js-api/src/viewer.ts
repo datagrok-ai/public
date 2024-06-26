@@ -587,6 +587,14 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
 
 }
 
+export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onSegmentClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
+}
+
 export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
