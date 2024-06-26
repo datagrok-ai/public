@@ -1,5 +1,5 @@
-import {ItemPath} from '../PipelineConfiguration';
-import {normalizePaths, pathToKey} from '../config-processing-utils';
+import {ItemPath} from '../config/CommonTypes';
+import {normalizePaths, pathToKey} from '../config/config-processing-utils';
 
 
 export class ControllerConfig {

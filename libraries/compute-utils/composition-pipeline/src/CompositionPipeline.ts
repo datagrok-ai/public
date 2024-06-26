@@ -2,21 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
-import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, RuntimeController, NqName, NestedPipelineConfig, StateType} from './PipelineConfiguration';
-import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isNestedPipelineConfig} from './config-processing-utils';
+import {FixedPipelineConfiguration, PipelineCompositionConfiguration, PipelineStepConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, NestedPipelineConfig} from './config/PipelineConfiguration';
+import {ItemName, ItemPath, NqName, StateType} from './config/CommonTypes';
+import {RuntimeController} from './RuntimeController';
+import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isNestedPipelineConfig} from './config/config-processing-utils';
 import {NodeConf, NodeConfTypes, SubNodeConf, SubNodeConfTypes} from './runtime/NodeConf';
 import {NodeState} from './runtime/NodeState';
 import {LinkState} from './runtime/LinkState';
 import {PipelineRuntime} from './runtime/PipelineRuntime';
-import {PipelineGlobalState} from './runtime/PipelineGlobalState';
+import {PipelineDriverState} from './runtime/PipelineDriverState';
 import {HookSpec, CompositionPipelineView, StepSpec} from './view/CompositionPipelineView';
-import {RFVPopup} from './view/RFVPopup';
-import {RichFunctionView} from '../../function-views';
 
 
 type ItemsToMerge = {
   step?: PipelineStepConfiguration[];
-  popup?: PipelinePopupConfiguration[];
   action?: PipelineActionConfiguraion[];
 };
 
@@ -24,7 +23,7 @@ export class CompositionPipeline {
   private id?: ItemName;
   private nqName?: NqName;
 
-  private pipelineState = new PipelineGlobalState();
+  private pipelineState = new PipelineDriverState();
 
   private config?: CompositionGraphConfig;
   private ioInfo = new Map<NqName, StateItemConfiguration[]>();
@@ -110,18 +109,11 @@ export class CompositionPipeline {
 
   private addSystemHooks() {
     const stepIdsToBtnNodes = new Map<PathKey, NodeState[]>();
-    const additionalViewNames = new Map<PathKey, NqName>();
-    const additionalViews = this.viewInst!.customViews;
     const menuItems = new Map<string, NodeState>();
 
     for (const node of this.nodes.values()) {
-      if (node.type === 'popup' || node.type === 'action') {
-        if (node.type === 'popup') {
-          const conf = node.conf as PipelinePopupConfiguration;
-          additionalViewNames.set(conf.id, conf.nqName);
-        }
-
-        const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
+      if (node.type === 'action') {
+        const conf = node.conf as (PipelineActionConfiguraion);
 
         if (conf.position === 'none')
           continue;
@@ -143,51 +135,7 @@ export class CompositionPipeline {
       }
     }
 
-    const beforeInit = [{
-      id: '_SystemViewsAdd_',
-      handler: async () => {
-        for (const [k, nqName] of additionalViewNames.entries()) {
-          const view = new RFVPopup(nqName, {historyEnabled: false, isTabbed: true});
-          await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-          (view.root).style.width = '100%';
-          (view.root).style.height = '100%';
-          (view.root).style.overflow = 'hidden';
-          additionalViews.set(k, view);
-        }
-      },
-    }];
-
-    const onViewReady = [
-      {
-        id: '_SystemButtonsAdd_',
-        handler: async ({controller}: { controller: RuntimeController }) => {
-          for (const [viewKey, nodes] of stepIdsToBtnNodes.entries()) {
-            const btns = nodes.map((node) => {
-              const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
-              const action = this.rt!.getAction(keyToPath(conf.id));
-              return ui.button(action.actionName, action.action);
-            });
-            const view = controller.getView(keyToPath(viewKey))! as RichFunctionView;
-            view.setAdditionalButtons(btns);
-          }
-        },
-      },
-      {
-        id: '_SystemMenuAdd_',
-        handler: async () => {
-          for (const [name, node] of menuItems) {
-            const conf = node.conf as (PipelineActionConfiguraion | PipelinePopupConfiguration);
-            const action = this.rt!.getAction(keyToPath(conf.id));
-            this.viewInst!.addMenuItem(name, action.action as () => void);
-          }
-        },
-      },
-    ];
-
-    const hooks = {
-      beforeInit,
-      onViewReady,
-    };
+    const hooks = {};
     this.hooks.unshift({
       pipelinePath: [],
       hooks,
@@ -272,7 +220,7 @@ export class CompositionPipeline {
 
   // deal with hooks
 
-  private getPipelineHooks(node: PipelineConfiguration, toRemove: Set<string>, path: ItemPath) {
+  private getPipelineHooks(node: FixedPipelineConfiguration, toRemove: Set<string>, path: ItemPath) {
     node.hooks = node.hooks ?? {};
     for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
       const filteredHooks = [];
@@ -291,7 +239,7 @@ export class CompositionPipeline {
 
   // pipeline config processing
 
-  private processPipelineConfig(pipelineConf: PipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+  private processPipelineConfig(pipelineConf: FixedPipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const subPath = this.proccessPipelineNodeConfig(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
     for (const conf of pipelineConf.steps) {
@@ -299,23 +247,6 @@ export class CompositionPipeline {
       if (!stepConf)
         continue;
       const sKey = stepConf.id;
-      const popups: PipelinePopupConfiguration[] = [];
-      for (const popupConf of this.getAllItems(stepConf.popups ?? [], sKey, toAdd, 'popup')) {
-        const pPopupConf = this.processNodeConfig(popupConf, keyToPath(sKey), subPath, toRemove, 'popup');
-        if (!pPopupConf)
-          continue;
-
-        const actions: PipelineActionConfiguraion[] = [];
-        for (const actionConf of this.getAllItems(popupConf.actions ?? [], pPopupConf.id, toAdd, 'action')) {
-          const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(pPopupConf.id), subPath, toRemove);
-          if (!pActionConf)
-            continue;
-
-          actions.push(pActionConf);
-        }
-        popupConf.actions = actions;
-        popups.push(popupConf);
-      }
       const actions: PipelineActionConfiguraion[] = [];
       for (const actionConf of this.getAllItems(stepConf.actions ?? [], sKey, toAdd, 'action')) {
         const pActionConf = this.processActionNodeConfig(actionConf, keyToPath(sKey), subPath, toRemove);
@@ -324,7 +255,6 @@ export class CompositionPipeline {
 
         actions.push(pActionConf);
       }
-      stepConf.popups = popups;
       stepConf.actions = actions;
       steps.push(stepConf);
     }
@@ -355,7 +285,7 @@ export class CompositionPipeline {
     return [...data, ...moreItems] as T[];
   }
 
-  private proccessPipelineNodeConfig(conf: PipelineConfiguration, pipelinePath: ItemPath) {
+  private proccessPipelineNodeConfig(conf: FixedPipelineConfiguration, pipelinePath: ItemPath) {
     const nodePath = this.updateFullPathNode(conf, pipelinePath);
     const nodeKey = pathToKey(nodePath);
 

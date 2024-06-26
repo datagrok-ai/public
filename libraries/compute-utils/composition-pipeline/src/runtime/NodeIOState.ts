@@ -1,10 +1,11 @@
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {switchMap, takeUntil} from 'rxjs/operators';
-import {ItemName, InputState, StateItemConfiguration} from '../PipelineConfiguration';
+import {StateItemConfiguration} from '../config/PipelineConfiguration';
+import {ItemName, InputState} from '../config/CommonTypes';
 import {debuglog} from '../utils';
-import {PipelineGlobalState} from './PipelineGlobalState';
+import {PipelineDriverState} from './PipelineDriverState';
 
-export class NodeItemState<T = any> {
+export class NodeIOState<T = any> {
   private currentSource = new BehaviorSubject<Observable<T>>(of());
   private valueChanges = this.currentSource.pipe(
     switchMap((source) => source),
@@ -18,7 +19,7 @@ export class NodeItemState<T = any> {
 
   constructor(
     public conf: StateItemConfiguration,
-    public pipelineState: PipelineGlobalState,
+    public pipelineState: PipelineDriverState,
     public parentId: ItemName,
     public notifier?: Observable<true>,
   ) {

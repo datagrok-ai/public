@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import {RichFunctionView} from '../../../function-views';
 import {ActionItem, ValidationResult} from '../../../shared-utils/validation';
-import {ItemPath, RuntimeController} from '../PipelineConfiguration';
-import {keyToPath, pathToKey, pathJoin} from '../config-processing-utils';
+import {ItemPath} from '../config/CommonTypes';
+import {RuntimeController} from '../RuntimeController';
+import {keyToPath, pathToKey, pathJoin} from '../config/config-processing-utils';
 import {Aborted} from './NodeConf';
 import {ControllerConfig} from './ControllerConfig';
 import {PipelineRuntime} from './PipelineRuntime';
@@ -90,7 +91,7 @@ export class RuntimeControllerImpl implements RuntimeController {
     return this.rt.triggerLink(fullPath);
   }
 
-  public getState<T = any>(path: ItemPath): T | void {
+  public getState<T = any>(path: ItemPath): T | undefined {
     this.checkAborted();
     const fullPath = pathJoin(this.config.pipelinePath, path);
     if (!this.checkInput(fullPath))

@@ -1,7 +1,8 @@
 import {BehaviorSubject, Observable, merge, of, Subject} from 'rxjs';
 import {withLatestFrom, filter, switchMap, mapTo} from 'rxjs/operators';
-import {ItemPath, PipelineLinkConfiguration} from '../PipelineConfiguration';
-import {PipelineGlobalState} from './PipelineGlobalState';
+import {PipelineLinkConfiguration} from '../config/PipelineConfiguration';
+import {ItemPath} from '../config/CommonTypes';
+import {PipelineDriverState} from './PipelineDriverState';
 import {ControllerConfig} from './ControllerConfig';
 
 export class LinkState {
@@ -16,7 +17,7 @@ export class LinkState {
   constructor(
     public conf: PipelineLinkConfiguration,
     public pipelinePath: ItemPath,
-    public pipelineState: PipelineGlobalState,
+    public pipelineState: PipelineDriverState,
   ) {
     this.controllerConfig = new ControllerConfig(pipelinePath, conf.from, conf.to);
   }

@@ -1,5 +1,6 @@
 import cloneDeepWith from 'lodash.clonedeepwith';
-import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemPath} from './PipelineConfiguration';
+import {FixedPipelineConfiguration, PipelineCompositionConfiguration} from './PipelineConfiguration';
+import {ItemName, ItemPath} from './CommonTypes';
 
 //
 // Internal config processing
@@ -7,9 +8,9 @@ import {PipelineConfiguration, PipelineCompositionConfiguration, ItemName, ItemP
 
 export type NestedPipelineConfiguration = PipelineCompositionConfiguration & GraphNestedPipelines
 
-export type CompositionGraphConfig = PipelineConfiguration | NestedPipelineConfiguration;
+export type CompositionGraphConfig = FixedPipelineConfiguration | NestedPipelineConfiguration;
 
-export type PipelineConfigVariants = PipelineConfiguration | PipelineCompositionConfiguration;
+export type PipelineConfigVariants = FixedPipelineConfiguration | PipelineCompositionConfiguration;
 
 type GraphNestedPipelines = {
   nestedPipelines?: {
@@ -21,7 +22,7 @@ export function isNestedPipelineConfig(config: CompositionGraphConfig): config i
   return (config as any)?.nestedPipelines;
 }
 
-function isPipelineConfig(config: CompositionGraphConfig): config is PipelineConfiguration {
+function isPipelineConfig(config: CompositionGraphConfig): config is FixedPipelineConfiguration {
   return !(config as any)?.nestedPipelines;
 }
 
@@ -59,7 +60,6 @@ export function getSuffix(key: PathKey, prefix: PathKey) {
 export function normalizePaths(paths: ItemPath | ItemPath[]): ItemPath[] {
   if (Array.isArray(paths[0]))
     return paths as ItemPath[];
-
   else
     return [paths as ItemPath];
 }

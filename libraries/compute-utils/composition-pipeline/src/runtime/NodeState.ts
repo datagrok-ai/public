@@ -1,37 +1,32 @@
 import {Subject} from 'rxjs';
-import {ItemName, ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion} from '../PipelineConfiguration';
+import {PipelineStepConfiguration, PipelineActionConfiguraion} from '../config/PipelineConfiguration';
+import {ItemName, ItemPath} from '../config/CommonTypes';
 import {NodeConf, NodeConfTypes} from './NodeConf';
-import {NodeItemState} from './NodeItemState';
-import {PipelineGlobalState} from './PipelineGlobalState';
+import {NodeIOState} from './NodeIOState';
+import {PipelineDriverState} from './PipelineDriverState';
 import {ControllerConfig} from './ControllerConfig';
 
 export class NodeState {
   public controllerConfig?: ControllerConfig;
-  public states = new Map<ItemName, NodeItemState>();
+  public states = new Map<ItemName, NodeIOState>();
   public notifier = new Subject<true>();
 
   constructor(
     public conf: NodeConf,
     public type: NodeConfTypes,
     public pipelinePath: ItemPath,
-    public pipelineState: PipelineGlobalState,
+    public pipelineState: PipelineDriverState,
   ) {
     if (type === 'pipeline') {
       const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id));
+        this.states.set(state.id, new NodeIOState(state, this.pipelineState, conf.id));
     }
 
     if (type === 'step') {
       const states = (conf as PipelineStepConfiguration).states;
       for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id));
-    }
-
-    if (type === 'popup') {
-      const states = (conf as PipelinePopupConfiguration).states;
-      for (const state of states ?? [])
-        this.states.set(state.id, new NodeItemState(state, this.pipelineState, conf.id, this.notifier));
+        this.states.set(state.id, new NodeIOState(state, this.pipelineState, conf.id));
     }
 
     if (type === 'action') {

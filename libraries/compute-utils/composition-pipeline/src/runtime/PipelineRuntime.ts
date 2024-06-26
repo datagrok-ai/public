@@ -2,27 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Observable, of, from, Subject} from 'rxjs';
-import {RichFunctionView} from '../../../function-views';
-import {filter, switchMap, debounceTime, takeUntil, take, sample, finalize, mapTo, concatMap, startWith} from 'rxjs/operators';
+import {filter, switchMap, debounceTime, takeUntil, take, finalize, mapTo, concatMap, startWith} from 'rxjs/operators';
 import {ActionItem, ValidationResult, mergeValidationResults} from '../../../shared-utils/validation';
 import {historyUtils} from '../../../history-utils';
-import {ABILITY_STATE, VISIBILITY_STATE} from '../../../shared-utils/consts';
-import {isIncomplete} from '../../../shared-utils/utils';
-import {ItemPath, PipelineStepConfiguration, PipelinePopupConfiguration, PipelineActionConfiguraion, InputState, Handler} from '../PipelineConfiguration';
-import {keyToPath, pathToKey, PathKey, getSuffix, pathJoin} from '../config-processing-utils';
+import {PipelineStepConfiguration, PipelineActionConfiguraion, Handler} from '../config/PipelineConfiguration';
+import {ItemPath, InputState} from '../config/CommonTypes';
+import {keyToPath, pathToKey, PathKey, getSuffix, pathJoin} from '../config/config-processing-utils';
 import {NodeConfTypes, Aborted} from './NodeConf';
 import {NodeState} from './NodeState';
 import {LinkState} from './LinkState';
 import {debuglog, callHandler} from '../utils';
-import {ICompositionView} from '../view/CompositionPipelineView';
 import {RuntimeControllerImpl} from './RuntimeControllerImpl';
-import {PipelineGlobalState} from './PipelineGlobalState';
-
-interface NestedStepData {
-  pathKey: string;
-  nestedStepId: string;
-  nqName: string;
-}
+import {PipelineDriverState} from './PipelineDriverState';
+import {IViewBridge} from '../view/IViewBridge';
 
 export class PipelineRuntime {
   private runningLinks = new Set<string>();
@@ -34,8 +26,8 @@ export class PipelineRuntime {
   constructor(
     private nodes: Map<PathKey, NodeState>,
     private links: Map<PathKey, LinkState>,
-    private view: ICompositionView,
-    public pipelineState: PipelineGlobalState,
+    private viewBridge: IViewBridge,
+    public pipelineState: PipelineDriverState,
   ) {
     this.pipelineLoads.pipe(
       concatMap(({path, runId}) => from(this.pipelineLoader(path, runId))),
@@ -56,33 +48,6 @@ export class PipelineRuntime {
     return !!link?.enabled.value;
   }
 
-  public setStepState(path: ItemPath, enabled: boolean): void {
-    const k = pathToKey(path);
-
-    if (this.isSetterDisabled(path, 'step'))
-      return;
-
-    debuglog(`step visibility updated: ${k}, new value: ${enabled}`);
-
-    if (enabled)
-      this.view.showSteps(k);
-
-    else
-      this.view.hideSteps(k);
-  }
-
-  public getStepState(path: ItemPath): boolean {
-    const k = pathToKey(path);
-    const value = this.view.getStepState(k);
-    return value === VISIBILITY_STATE.VISIBLE;
-  }
-
-  public setPipelineState(path: ItemPath, enabled: boolean): void {
-    const steps = this.getNestedSteps(path);
-    for (const data of steps)
-      this.setStepState(keyToPath(data.pathKey), enabled);
-  }
-
   public loadNestedPipeline(path: ItemPath, runId: string) {
     this.pipelineLoads.next({path, runId});
   }
@@ -94,7 +59,7 @@ export class PipelineRuntime {
       link.trigger();
   }
 
-  public getState<T = any>(path: ItemPath): T | void {
+  public getState<T = any>(path: ItemPath): T | undefined {
     const {state} = this.getNodeState(path)!;
     const val = state?.getValue();
     return val;
@@ -104,11 +69,6 @@ export class PipelineRuntime {
     const {state, node} = this.getNodeState(path)!;
     if (state && !this.isSetterDisabled(path, node.type))
       state.setValue(value, inputState);
-  }
-
-  public getView(path: ItemPath): RichFunctionView | void {
-    const k = pathToKey(path);
-    return this.view.getStepView<RichFunctionView>(k);
   }
 
   public setValidation(targetPath: ItemPath, linkPath: ItemPath, validation: ValidationResult | undefined): void {
@@ -123,67 +83,35 @@ export class PipelineRuntime {
   public getAction(path: ItemPath, name?: string): ActionItem {
     const k = pathToKey(path);
     const node = this.nodes.get(k);
-    if (node?.type !== 'action' && node?.type !== 'popup') {
-      const msg = `Node ${path.join(',')} is not an action/popup`;
+    if (node?.type !== 'action') {
+      const msg = `Node ${path.join(',')} is not an action`;
       grok.shell.error(msg);
       throw new Error(msg);
     }
 
-    if (node.type === 'action') {
-      const conf = node.conf as PipelineActionConfiguraion;
-      const handler = conf.handler;
-      const ctrlConf = node.controllerConfig!;
-      return {
-        actionName: name ?? conf.friendlyName,
-        action: async () => {
-          try {
-            const controller = new RuntimeControllerImpl(node.conf.id, ctrlConf, this!);
-            await callHandler(handler, {controller});
-          } catch (e) {
-            grok.shell.error(String(e));
-            throw (e);
-          }
-        },
-      };
-    } else {
-      const conf = node.conf as PipelinePopupConfiguration;
-      const view = this.view.getStepView(conf.id);
-      if (!view) {
-        const msg = `Popup view ${conf.id} not found`;
-        grok.shell.error(msg);
-        throw new Error(msg);
-      }
-      return {
-        actionName: name ?? conf.friendlyName,
-        action: async () => {
-          try {
-            await new Promise((resolve, _reject) => {
-              ui.dialog(conf.friendlyName)
-                .add(view.root)
-                .onOK(() => {
-                  node.notifier.next(true);
-                  resolve(true);
-                })
-                .onCancel(() => {
-                  resolve(false);
-                })
-                .showModal(true);
-            });
-          } catch (e) {
-            grok.shell.error(String(e));
-            throw (e);
-          }
-        },
-      };
-    }
+    const conf = node.conf as PipelineActionConfiguraion;
+    const handler = conf.handler;
+    const ctrlConf = node.controllerConfig!;
+    return {
+      actionName: name ?? conf.friendlyName,
+      action: async () => {
+        try {
+          const controller = new RuntimeControllerImpl(node.conf.id, ctrlConf, this!);
+          await callHandler(handler, {controller}).toPromise();
+        } catch (e) {
+          grok.shell.error(String(e));
+          throw (e);
+        }
+      },
+    };
   }
 
   public wireViews() {
     for (const [, node] of this.nodes) {
       for (const [, state] of node.states) {
-        if ((node.type === 'popup' || node.type === 'step') && (state.conf.stateType === 'input' || state.conf.stateType === 'output')) {
+        if ((node.type === 'step') && (state.conf.stateType === 'input' || state.conf.stateType === 'output')) {
           const stateId = state.conf.id;
-          const {changes, setter} = this.view.getStateBindings(node.conf.id, stateId);
+          const {changes, setter} = this.viewBridge.getStateBindings(node.conf.id, stateId);
           state.linkState(changes, setter);
         }
       }
@@ -241,10 +169,7 @@ export class PipelineRuntime {
 
         return of(param);
       })) : state.value;
-    const notifier = state.notifier;
-    if (link.conf.ignoreNotifier || !notifier)
-      return valueChanges;
-    return valueChanges.pipe(sample(notifier));
+    return valueChanges;
   }
 
   private getDefaultHandler(link: LinkState) {
@@ -284,7 +209,6 @@ export class PipelineRuntime {
   }
 
   private async pipelineLoader(path: ItemPath, runId: string) {
-    this.setPipelineState(path, false);
     this.disableSubStepsIOSetters(path);
     try {
       const calls = await this.loadPipelineFuncCalls(runId);
@@ -294,31 +218,6 @@ export class PipelineRuntime {
     } finally {
       this.enableSubStepsIOSetters(path);
     }
-  }
-
-  private async loadNestedSteps(calls: DG.FuncCall[], stepsData: NestedStepData[]) {
-    const stepsMappings = new Map<string, NestedStepData>();
-    for (const data of stepsData)
-      stepsMappings.set(data.nestedStepId, data);
-
-    for (const call of calls) {
-      const customId = call.options['customId'];
-      const data = stepsMappings.get(customId);
-      if (data) {
-        const rfv = this.view.getStepView(data.pathKey);
-        if (rfv) {
-          debuglog(`loaded step: ${data.pathKey}, nqName: ${data.nqName}, id: ${call.id}`);
-          const ncall = await rfv.loadRun(call.id);
-          this.view.showSteps(data.pathKey);
-          if (!isIncomplete(ncall))
-            this.view.enableStep(data.pathKey);
-        }
-      }
-    }
-
-    const nextStep = this.view.getFollowingStep();
-    if (nextStep)
-      nextStep.ability.next(ABILITY_STATE.ENABLED);
   }
 
   private getNestedSteps(pipelinePath: ItemPath) {
@@ -381,6 +280,6 @@ export class PipelineRuntime {
     const keys = [...targetState.keys()].sort();
     const validations = keys.map((k) => targetState.get(k));
     const {state, node} = this.getNodeState(targetPath)!;
-    this.view.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
+    this.viewBridge.setExternalValidationResults(node.conf.id, state.conf.id, mergeValidationResults(...validations));
   }
 }

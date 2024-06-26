@@ -1,3 +1,3 @@
 export {CompositionPipeline} from './src/CompositionPipeline';
-export {PipelineConfiguration, PipelineCompositionConfiguration, RuntimeController} from './src/PipelineConfiguration';
+export {FixedPipelineConfiguration, PipelineCompositionConfiguration, RuntimeController} from './src/config/PipelineConfiguration';
 export {path} from './src/utils';
