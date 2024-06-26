@@ -573,6 +573,20 @@ export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
   get onMouseOverLine(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-mouse-over-line'); }
 }
 
+export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  resetView(): void{
+    api.grok_BarChartViewer_ResetView(this.dart);
+  }
+
+  get onCategoryClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
+  get onCategoryHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
+
+}
+
 export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
