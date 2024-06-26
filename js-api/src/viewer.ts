@@ -620,6 +620,15 @@ export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
   get onPointClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-boxplot-point-click'); }
 }
 
+
+export class CorrelationPlotViewer extends Viewer<interfaces.ICorrelationPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onCorrCellClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
+}
+
 export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
