@@ -719,12 +719,12 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutput() {
+  private showOutput(): void {
     ui.setDisplay(this.tabsElem.root, true);
     this._isOutputOutdated.next(false);
   }
 
-  public getViewers(propName: string) {
+  public getViewers(propName: string): DG.Viewer[] {
     return this.dfToViewerMapping[propName];
   }
 
