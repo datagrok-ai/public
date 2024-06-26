@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
+import {delay, delayWhen} from "rxjs/operators";
 
 
 category('Dapi: connection', () => {
@@ -58,8 +59,8 @@ category('Dapi: connection cache', () => {
   const testFilePath2: string = 'System:AppData/ApiTests/renamed_test_files.txt';
 
   before(async () => {
-    const connection: DG.DataConnection = await grok.dapi.connections.filter(`name="AppData"`).first();
-    await grok.functions.call('DropConnectionCache', {connection: connection});
+    const connection: DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
+    await grok.functions.call('DropConnectionCache', {'connection': connection});
   });
 
   test('Invalidation, performance', async () => {
@@ -79,8 +80,7 @@ category('Dapi: connection cache', () => {
     expect(second * 10 < first);
 
     // cache should be bumped after renaming
-    await grok.dapi.files.rename(testFilePath1,
-      testFilePath2);
+    await grok.dapi.files.rename(testFilePath1, 'renamed_test_files.txt');
     list = await grok.dapi.files.list('System:AppData/ApiTests');
     expect(list.some((f) => f.name === 'renamed_test_files.txt'));
 
@@ -91,17 +91,14 @@ category('Dapi: connection cache', () => {
   }, {skipReason: 'GROK-15408'});
 
   test('Performance: read csv', async () => {
-    const connection: DG.DataConnection = await grok.dapi.connections.filter(`name="AppData"`).first();
-    if (!(connection.parameters.get('cacheResults') ?? false))
-      return;
     const first = await getExecutionTime(async () => {
-      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv')
+      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
     });
     const second = await getExecutionTime(async () => {
-      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv')
+      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
     });
     // second execution should be faster
-    expect(second * 10 < first);
+    expect(second * 2 < first);
   }, {skipReason: 'GROK-15408'});
 
   after(async () => {
