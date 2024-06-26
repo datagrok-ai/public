@@ -22,8 +22,8 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/js-draw-lite": "^0.0.3",
     "@datagrok-libraries/helm-web-editor": "^1.1.5",
+    "@datagrok-libraries/js-draw-lite": "^0.0.3",
     "@datagrok/bio": "^2.12.23",
     "@datagrok/chem": "^1.9.2",
     "@types/node": "17.0.45",
