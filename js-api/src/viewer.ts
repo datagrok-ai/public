@@ -595,6 +595,15 @@ export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
   get onSegmentClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
 }
 
+export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onLineClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
+  get onLineHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
+}
+
 export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
