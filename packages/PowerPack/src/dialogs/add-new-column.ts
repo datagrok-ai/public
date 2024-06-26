@@ -2,13 +2,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { EditorSelection, EditorState, Extension } from '@codemirror/state'
+import { EditorSelection, EditorState, Extension, StateEffectType } from '@codemirror/state'
 import { DecorationSet, EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
 import {RegExpCursor} from "@codemirror/search"
 import {Completion, CompletionContext, CompletionResult, autocompletion, startCompletion, completeFromList} from "@codemirror/autocomplete"
 import {StateEffect, StateField} from "@codemirror/state"
 import {Decoration} from "@codemirror/view"
 import { minimalSetup } from 'codemirror';
+import {bracketMatching} from "@codemirror/language"
 
 /**
  * Class AddNewColumnDialog is a useful method to add a new column to the table
@@ -266,36 +267,57 @@ export class AddNewColumnDialog {
     const wordHover = this.hoverTooltipCustom(this.packageFunctionsParams, this.coreFunctionsParams);
 
     //highlight column names
-    const addHIghlight = StateEffect.define<{from: number, to: number}>({
+    const addColHighlight = StateEffect.define<{from: number, to: number}>({
       map: ({from, to}, change) => ({from: change.mapPos(from), to: change.mapPos(to)})
-    })
+    });
 
-    const highlightField = StateField.define<DecorationSet>({
-      create() {
-        return Decoration.none
-      },
-      update(underlines, tr) {
-        underlines = underlines.map(tr.changes)
-        for (let e of tr.effects) if (e.is(addHIghlight)) {
-          underlines = underlines.update({
-            add: [highlightMark.range(e.value.from, e.value.to)]
-          })
-        }
-        return underlines
-      },
-      provide: f => EditorView.decorations.from(f)
+    //remove unmatched parentheses
+    const addUnmatchedParentheses = StateEffect.define<{ from: number, to: number }>({
+      map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
+    });
+
+    //remove all highlights
+    const removeHighlight = StateEffect.define<{ from: number, to: number }>({
+      map: ({ from, to }, change) => ({ from: change.mapPos(from), to: change.mapPos(to) })
     });
 
     const highlightMark = Decoration.mark({class: "cm-column-name"});
+    const unmatchedParenthesesMark = Decoration.mark({class: "cm-unmatched-bracket"});
     const highlightTheme = EditorView.baseTheme({
       ".cm-column-name": { 
         'color': 'var(--blue-2)',
         'font-weight': 'bold' 
-       }
-    })
+       },
+      ".cm-unmatched-bracket": {
+        'color': 'red',
+        'font-weight': 'bold' 
+      }
+    });
 
-    const columnSelection = (view: EditorView, selections: any[]) => {
-      let effects: StateEffect<unknown>[] = selections.map(({from, to}) => addHIghlight.of({from, to}));
+    const highlightField = StateField.define<DecorationSet>({
+      create() {
+        return Decoration.none;
+      },
+      update(underlines, tr) {
+        underlines = underlines.map(tr.changes)
+        for (let e of tr.effects)
+          if (e.is(addColHighlight))
+            underlines = underlines.update({
+              add: [highlightMark.range(e.value.from, e.value.to)]
+            });
+          else if (e.is(addUnmatchedParentheses))
+            underlines = underlines.update({
+              add: [unmatchedParenthesesMark.range(e.value.from, e.value.to)]
+            })
+          else if (e.is(removeHighlight))
+            underlines = Decoration.none;
+        return underlines;
+      },
+      provide: f => EditorView.decorations.from(f)
+    });
+
+    const setSelection = (view: EditorView, selections: any[], stateEffect: StateEffectType<unknown>) => {
+      let effects: StateEffect<unknown>[] = selections.map(({from, to}) => stateEffect.of({from, to}));
       if (!effects.length)
         return false;
     
@@ -317,21 +339,50 @@ export class AddNewColumnDialog {
           minimalSetup,
           highlightTheme,
           highlightField,
+          bracketMatching({brackets : "()[]{}"}),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
             this.setCodeMirrorFocus();
             if (!e.docChanged)
               return;
             const cmValue = cm.state.doc.toString();
+
+            //remove highlight
+            setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
+
+            //add column highlight
             const cursor = new RegExpCursor(cm.state.doc, '\\$\\{\\w+\\}');
 
-            const selections = [];
+            const colSelections = [];
             while (!cursor.done) {
               cursor.next();
               if (cursor.value.from !== -1 && cursor.value.to !== -1)
-                selections.push({from: cursor.value.from, to: cursor.value.to});
+                colSelections.push({from: cursor.value.from, to: cursor.value.to});
             }
-            if (selections.length)
-              columnSelection(cm, selections);
+            if (colSelections.length)
+              setSelection(cm, colSelections, addColHighlight);
+
+            //add unmatched parentheses highlight
+            const openBrackets: number[] = [];
+            const closeBrackets: number[] = [];
+          
+            for (let i = 0; i < cmValue.length; i++) {
+              if (cmValue[i] === '(') {
+                openBrackets.push(i);
+              }
+              if (cmValue[i] === ')') {
+                if (!openBrackets.length)
+                  closeBrackets.push(i)
+                else
+                  openBrackets.pop();
+              }
+            }
+            const unmatchedBracketsSelections: any[] = [];
+            openBrackets.concat(closeBrackets).forEach((it) => {
+              unmatchedBracketsSelections.push({from: it, to: it + 1});
+            });
+
+            if (unmatchedBracketsSelections.length)
+              setSelection(cm, unmatchedBracketsSelections, addUnmatchedParentheses);
 
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
