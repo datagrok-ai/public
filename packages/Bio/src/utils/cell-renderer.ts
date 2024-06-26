@@ -26,7 +26,7 @@ import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-re
 
 import {
   Temps as mmcrTemps, Tags as mmcrTags,
-  tempTAGS, rendererSettingsChangedState
+  tempTAGS, rendererSettingsChangedState, MonomerWidthMode
 } from '../utils/cell-renderer-consts';
 import * as C from './constants';
 
@@ -155,8 +155,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let maxLengthOfMonomer = 50; // in case of long monomer representation, do not limit max length
 
     // Cell renderer settings
-    const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
-    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
+    const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidthMode];
+    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth :
+      (_package.properties?.MonomerWidthMode ?? MonomerWidthMode.short);
     if (monomerWidth === 'short') {
       // Renderer can start to work before Bio package initialized, in that time _package.properties is null.
       // TODO: Render function is available but package init method is not completed
@@ -169,20 +170,23 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       getGridCellRendererBack<string, MonomerPlacer>(gridCell);
     let seqColTemp: MonomerPlacer = temp.rendererBack;
     if (!seqColTemp) {
-      seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger,
+      seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
         () => {
           const sh = SeqHandler.forColumn(tableCol);
           return {
             seqHandler: sh,
             monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
-            monomerToShort: monomerToShortFunction, monomerLengthLimit: maxLengthOfMonomer,
+            monomerToShort: monomerToShortFunction,
           };
         });
     }
 
     g.save();
     try {
-      if (tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true) {
+      if (
+        tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true ||
+        seqColTemp.monomerLengthLimit != maxLengthOfMonomer
+      ) {
         gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
         // this event means that the mm renderer settings have changed,
         // particularly monomer representation and max width.
@@ -245,12 +249,13 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         g.fillStyle = undefinedColor;
         const last = posIdx === subParts.length - 1;
         /*x1 = */
-        printLeftOrCentered(g, amino, x + this.padding, y, w, h, {
+        const opts = {
           color: color, pivot: 0, left: true, transparencyRate: 1.0, separator: separator, last: last,
           drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx, gridCell: gridCell,
           referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
           monomerTextSizeMap: seqColTemp._monomerLengthMap, logger: _package.logger
-        });
+        };
+        printLeftOrCentered(g, amino, x + this.padding, y, w, h, opts);
         if (minDistanceRenderer > w) break;
       }
     } catch (err: any) {

@@ -4,9 +4,11 @@ import * as ui from 'datagrok-api/ui';
 
 import {Observable, Subject} from 'rxjs';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {MonomerWidthMode} from './utils/cell-renderer-consts';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
+  MonomerWidthMode = 'MonomerWidthMode',
   MaxMonomerLength = 'MaxMonomerLength',
   TooltipWebLogo = 'TooltipWebLogo',
   DefaultSeparator = 'DefaultSeparator',
@@ -16,6 +18,15 @@ export const enum BioPackagePropertiesNames {
 export class BioPackageProperties extends Map<string, any> {
   private _onPropertyChanged: Subject<string> = new Subject<string>();
   public get onPropertyChanged(): Observable<string> { return this._onPropertyChanged; }
+
+  public get MonomerWidthMode(): MonomerWidthMode {
+    return super.get(BioPackagePropertiesNames.MonomerWidthMode) as MonomerWidthMode;
+  }
+
+  public set MonomerWidthMode(value: MonomerWidthMode) {
+    super.set(BioPackagePropertiesNames.MonomerWidthMode, value);
+    this._onPropertyChanged.next(BioPackagePropertiesNames.MonomerWidthMode);
+  }
 
   /** Monomer name maximum length displayed in short mode. */
   public get MaxMonomerLength(): number {

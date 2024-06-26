@@ -28,7 +28,7 @@ export const enum Temps {
 export const enum tempTAGS {
   referenceSequence = 'reference-sequence',
   currentWord = 'current-word',
-  monomerWidth = 'monomer-width',
+  monomerWidthMode = 'monomer-width-mode',
 }
 
 // export const MacromoleculeCellRendererDefaults = new class {

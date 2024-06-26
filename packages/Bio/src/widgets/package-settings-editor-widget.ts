@@ -1,6 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {MonomerWidthMode} from '../utils/cell-renderer-consts';
+
 import {_package} from '../package';
 
 export class PackageSettingsEditorWidget extends DG.Widget {
@@ -20,6 +22,13 @@ export class PackageSettingsEditorWidget extends DG.Widget {
   }
 
   async init(): Promise<void> {
+    const monomerWidthModeInput = ui.choiceInput('Monomer width mode',
+      _package.properties.MonomerWidthMode,
+      [MonomerWidthMode.short, MonomerWidthMode.long],
+      (value: MonomerWidthMode) => {
+        _package.properties.MonomerWidthMode = value;
+      });
+
     const maxMonomerLengthInput = ui.intInput('Max monomer length',
       _package.properties.MaxMonomerLength,
       (value: number) => {
@@ -40,6 +49,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
       });
 
     this.root.appendChild(ui.form([
+      monomerWidthModeInput,
       maxMonomerLengthInput,
       tooltipWebLogoInput,
       defaultSeparatorInput,

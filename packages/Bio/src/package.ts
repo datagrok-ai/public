@@ -76,6 +76,7 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
+import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 
 export const _package = new BioPackage();
 
@@ -290,16 +291,16 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Package settings editor --
 
-// //name: packageSettingsEditor
-// //description: The database connection
-// //tags: packageSettingsEditor
-// //input: object propList
-// //output: widget result
-// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-//   const widget = new PackageSettingsEditorWidget(propList);
-//   widget.init().then(); // Ignore promise returned
-//   return widget as DG.Widget;
-// }
+//name: packageSettingsEditor
+//description: The database connection
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+  const widget = new PackageSettingsEditorWidget(propList);
+  widget.init().then(); // Ignore promise returned
+  return widget as DG.Widget;
+}
 
 // -- Cell renderers --
 

@@ -1,5 +1,17 @@
 # Bio changelog
 
+## 2.13.2 (2024-06-26)
+
+### Features
+
+* Add package settings for MonomerWidthMode
+
+### Bug fixes
+
+* Fix cell renderer for long mode
+* Fix Cell Renderer column widget for MonomerWidthMode
+* Enable package settings editor widget
+
 ## 2.13.1 (2024-06-25)
 
 Bump dependencies versions JSDraw.Lite and HELMWebEditor
