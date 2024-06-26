@@ -422,6 +422,7 @@ export interface IDartApi {
   grok_LineChartViewer_activeFrame(s: any): any;
   grok_LineChartViewer_ResetView(l: any): any;
   grok_BarChartViewer_ResetView(b: any): any;
+  grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;

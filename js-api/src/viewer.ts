@@ -507,7 +507,8 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); } 
-  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-linechart-line-selected'); } 
+  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-linechart-line-selected'); }
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
 }
 
 /** 2D scatter plot */
@@ -584,7 +585,7 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
 
   get onCategoryClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
   get onCategoryHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
-
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-barchart-reset-view'); }
 }
 
 export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
@@ -602,6 +603,21 @@ export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
 
   get onLineClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
   get onLineHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
+}
+
+export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  resetView(): void{
+    api.grok_BoxPlotViewer_ResetView(this.dart);
+  }
+
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
+  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
+  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onPointClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-boxplot-point-click'); }
 }
 
 export class ViewerMetaHelper {
