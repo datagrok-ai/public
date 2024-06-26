@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.42.3 (2024-06-26)
+
+### Bug fixes
+
+* GROK-15996: Fix cell renderer for long mode
+* Fix package-lock.json
+
 ## 5.42.2 (2024-06-25)
 
 Bump dependencies versions JSDraw.Lite and HELMWebEditor
