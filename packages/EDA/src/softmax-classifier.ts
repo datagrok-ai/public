@@ -8,9 +8,10 @@ const MIN_COLS_COUNT = 1 + COLS_EXTRA;
 const AVGS_NAME = 'Avg-s';
 const STDEVS_NAME = 'Stddev-s';
 const PRED_NAME = 'predicted';
-const DEFAULT_LEARNING_RATE = 0.01;
+const DEFAULT_LEARNING_RATE = 1;
 const DEFAULT_ITER_COUNT = 100;
 const DEFAULT_PENALTY = 0.1;
+const DEFAULT_TOLERANCE = 0.01;
 
 type DataSpecification = {
   classesCount: number,
@@ -24,12 +25,10 @@ type TargetLabelsData = {
 
 /** Softmax classifier */
 export class SoftmaxClassifier {
-  private isTrained = false;
-
   private avgs: Float32Array;
   private stdevs: Float32Array;
   private categories: string[];
-  private params: Float32Array[];
+  private params: Float32Array[] | undefined = undefined;
   private classesCount = 1;
   private featuresCount = 1;
 
@@ -56,26 +55,6 @@ export class SoftmaxClassifier {
       this.categories = new Array<string>(len);
       this.featuresCount = n;
       this.classesCount = c;
-
-      // Xavier initialization scale value
-      const xavierScale = 2 * Math.sqrt(6.0 / (c + n));
-
-      // Init params
-      this.params = new Array<Float32Array>(c);
-      for (let i = 0; i < c; ++i) {
-        const current = new Float32Array(len);
-
-        // initialize bias, b
-        current[n] = 0;
-
-        //Xavier initialization of weights, w
-        for (let j = 0; j < n; ++j)
-          current[j] = (Math.random() - 0.5) * xavierScale;
-
-        this.params[i] = current;
-      }
-
-      this.isTrained = true; // DELETE THIS
     } else if (packedModel !== undefined) {
       try {
         const modelDf = DG.DataFrame.fromByteArray(packedModel);
@@ -115,8 +94,6 @@ export class SoftmaxClassifier {
         if (stdevsCol.type !== DG.COLUMN_TYPE.FLOAT)
           throw new Error('incorrect standard deviations column type');
         this.stdevs = stdevsCol.getRawData() as Float32Array;
-
-        this.isTrained = true;
       } catch (e) {
         throw new Error(`Failed to load model: ${(e instanceof Error ? e.message : 'the platform issue')}`);
       }
@@ -126,8 +103,8 @@ export class SoftmaxClassifier {
 
   /** Return packed softmax classifier */
   public toBytes(): Uint8Array {
-    if (!this.isTrained)
-      throw new Error('Empty model');
+    if (this.params === undefined)
+      throw new Error('Non-trained model');
 
     const c = this.classesCount;
     const columns = new Array<DG.Column>(c + COLS_EXTRA);
@@ -147,129 +124,28 @@ export class SoftmaxClassifier {
     return modelDf.toByteArray();
   } // toBytes
 
-  public fit(features: DG.ColumnList, target: DG.Column, rate: number = DEFAULT_LEARNING_RATE,
-    iterations: number = DEFAULT_ITER_COUNT, penalty: number = DEFAULT_PENALTY): void {
-    const n = this.featuresCount;
-    const m = target.length; // samples count
-    const c = this.classesCount;
-
-    if (features.length !== n)
+  public async fit(features: DG.ColumnList, target: DG.Column, rate: number = DEFAULT_LEARNING_RATE,
+    iterations: number = DEFAULT_ITER_COUNT, penalty: number = DEFAULT_PENALTY, tolerance: number = DEFAULT_TOLERANCE) {
+    if (features.length !== this.featuresCount)
       throw new Error('Training failes - incorrect features count');
 
-    if ((rate <= 0) || (iterations < 1) || (penalty <= 0))
+    if ((rate <= 0) || (iterations < 1) || (penalty <= 0) || (tolerance <= 0))
       throw new Error('Training failes - incorrect fitting hyperparameters');
 
-    // 1. Pre-process data
-
-    // 1.1) Normalize data
-
+    // Extract statistics
     this.extractStats(features);
 
-    /** Normalized data */
-    const X = this.normalized(features);
-    const transposedX = this.transposed(features);
+    this.params = await this.fitSoftmaxParams(
+      features,
+      target,
+      iterations,
+      rate,
+      penalty,
+      tolerance,
+    ) as Float32Array[];
 
-    // 1.2) Classes
-    const targetData = this.preprocessedTargets(target);
-    const Y = targetData.oneHot;
-    const classesWeights = targetData.weights;
-
-    // 2. Fitting
-
-    // Routine
-    let xBuf: Float32Array;
-    let wBuf: Float32Array;
-    let zBuf: Float32Array;
-    let sum: number;
-    let sumExp: number;
-    let yTrue: Uint8Array;
-    let yPred: Float32Array;
-    let dWbuf: Float32Array;
-    const Z = new Array<Float32Array>(m);
-    for (let i = 0; i < m; ++i)
-      Z[i] = new Float32Array(c);
-    const dZ = new Array<Float32Array>(c);
-    for (let i = 0; i < c; ++i)
-      dZ[i] = new Float32Array(m);
-    const dW = new Array<Float32Array>(c);
-    for (let i = 0; i < c; ++i)
-      dW[i] = new Float32Array(n + 1);
-
-    // Fitting
-    for (let iter = 0; iter < iterations; ++iter) {
-      // 2.1) Forward propagation
-      for (let j = 0; j < m; ++j) {
-        xBuf = X[j];
-        zBuf = Z[j];
-        sum = 0;
-        sumExp = 0;
-
-        for (let i = 0; i < c; ++i) {
-          wBuf = this.params[i];
-          sum = wBuf[n];
-
-          for (let k = 0; k < n; ++k)
-            sum += wBuf[k] * xBuf[k];
-
-          zBuf[i] = Math.exp(sum) * classesWeights[i];
-          sumExp += zBuf[i];
-        }
-
-        for (let i = 0; i < c; ++i)
-          zBuf[i] /= sumExp;
-      }
-
-      // 2.2) Backward propagation
-
-      // 2.2.1) dZ
-      for (let j = 0; j < m; ++j) {
-        yPred = Z[j];
-        yTrue = Y[j];
-
-        for (let i = 0; i < c; ++i)
-          dZ[i][j] = yPred[i] - yTrue[i];
-      }
-
-      // 2.2.2) dB
-      for (let i = 0; i < c; ++i) {
-        sum = 0;
-        zBuf = dZ[i];
-
-        for (let j = 0; j < m; ++j)
-          sum += zBuf[j];
-
-        dW[i][n] = sum / m;
-      }
-
-      // 2.2.3) dW
-      for (let i = 0; i < c; ++i) {
-        zBuf = dZ[i];
-        wBuf = dW[i];
-
-        for (let j = 0; j < n; ++j) {
-          xBuf = transposedX[j];
-
-          sum = 0;
-          for (let k = 0; k < m; ++k)
-            sum += zBuf[k] * xBuf[k];
-
-          wBuf[j] = sum / m;
-        }
-      }
-
-      // 2.3) Update weights
-      for (let i = 0; i < c; ++i) {
-        wBuf = this.params[i];
-        dWbuf = dW[i];
-
-        for (let j = 0; j < n; ++j)
-          wBuf[j] = (1 - rate * penalty / m) * wBuf[j] - rate * dWbuf[j];
-
-        wBuf[n] -= rate * dWbuf[n];
-      }
-    } // for iter
-
-    this.isTrained = true;
+    if (this.params === undefined)
+      throw new Error('Training failes');
   }; // fit
 
   private extractStats(features: DG.ColumnList): void {
@@ -383,8 +259,8 @@ export class SoftmaxClassifier {
 
   /** Return prediction column */
   public predict(features: DG.ColumnList): DG.Column {
-    if (!this.isTrained)
-      throw new Error('Predcition fails: no fitted parameters');
+    if (this.params === undefined)
+      throw new Error('Non-trained model');
 
     if (features.length !== this.featuresCount)
       throw new Error('Predcition fails: incorrect features count');
@@ -433,5 +309,31 @@ export class SoftmaxClassifier {
     }
 
     return DG.Column.fromStrings(PRED_NAME, predClass);
+  }
+
+  /** Fit params in the webworker */
+  private async fitSoftmaxParams(features: DG.ColumnList, target: DG.Column,
+    iterations: number, rate: number, penalty: number, tolerance: number) {
+    const targetData = this.preprocessedTargets(target);
+
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('./workers/softmax-worker.ts', import.meta.url));
+      worker.postMessage({
+        features: this.normalized(features),
+        transposed: this.transposed(features),
+        oneHot: targetData.oneHot,
+        classesWeights: targetData.weights,
+        targetRaw: target.getRawData(),
+        iterations: iterations,
+        rate: rate,
+        penalty: penalty,
+        tolerance: tolerance,
+      });
+      worker.onmessage = function(e) {
+        worker.terminate();
+        resolve(e.data.params);
+        console.log(`Loss: ${e.data.loss}`);
+      };
+    });
   }
 }; // SoftmaxClassifier

@@ -620,17 +620,18 @@ export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_
 //input: dataframe df
 //input: column_list features {type: numerical}
 //input: column target {type: string}
-//input: double rate = 0.01
+//input: double rate = 1
 //input: int iterations = 100
 //input: double penalty = 1
+//input: double tolerance = 0.1
 //input: bool scatter = true
-export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
-  rate: number, iterations: number, penalty: number, scatter: boolean): void {
+export async function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
+  rate: number, iterations: number, penalty: number, tolerance: number, scatter: boolean) {
   const c = target.categories.length;
   const n = features.length;
   const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
   let start = performance.now();
-  model.fit(features, target, rate, iterations, penalty);
+  await model.fit(features, target, rate, iterations, penalty, tolerance);
   let finish = performance.now();
 
   console.log(`Fitting: ${finish - start} ms.`);
@@ -646,19 +647,22 @@ export function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG
 
   df.columns.add(pred);
 
-  /*const m = target.length;
-  df.columns.addNewBool('correct');
-  const col = df.columns.byName('correct');
+  const targetRaw = target.getRawData();
+  const predRaw = pred.getRawData();
 
-  for (let i = 0; i < m; ++i)
-    col.set(i, target.get(i) === pred.get(i));*/
+  const rows = df.rowCount;
+  const correct = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'correct', df.rowCount);
+  for (let i = 0; i < rows; ++i)
+    correct.set(i, targetRaw[i] === predRaw[i]);
+
+  df.columns.add(correct);
 
   if (scatter) {
     const v = grok.shell.getTableView(df.name);
     v.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: features.byIndex(0).name,
       yColumnName: features.byIndex(1).name,
-      //color: 'correct',
+      color: 'correct',
     });
   }
 }
