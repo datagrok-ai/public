@@ -41,36 +41,30 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   /** get the text width in pixels */
   // @ts-ignore
   await timeout(async () => {
-    try { dojo.require('dojo.ready'); } catch (err: any) {
-      _package.logger.warning(err.message);
+    const dojoTargetList: { module: string, checker: () => boolean }[] = [
+      {module: 'dojo.ready', checker: () => !!dojo?.ready},
+      {module: 'dojo.window', checker: () => !!dojo?.window},
+      {module: 'dojo.io.script', checker: () => !!dojo?.io?.script},
+      // {module: 'dojo.request.iframe', checker: () => !!dojo?.request?.iframe},
+      {module: 'dojo.dom', checker: () => !!dojo?.dom},
+      {module: 'dojox.gfx', checker: () => !!dojox?.gfx},
+      {module: 'dojox.gfx.svg', checker: () => !!dojox?.gfx?.svg},
+      {module: 'dojox.gfx.shape', checker: () => !!dojox?.gfx?.shape},
+    ];
+    for (const dojoTarget of dojoTargetList) {
+      try { dojo.require(dojoTarget.module); } catch (err: any) {
+        _package.logger.error(err.message);
+      }
     }
-    try { dojo.require('dojo.window'); } catch (err: any) {
-      _package.logger.warning(err.message);
+    const getDojoProgress = (): string[] => {
+      return dojoTargetList.filter((dt) => !dt.checker()).map((dt) => dt.module);
+    };
+    /** List of dojo modules not ready yet */ let dojoProgress: string[];
+    while ((dojoProgress = getDojoProgress()).length > 0) {
+      _package.logger.debug(`${logPrefix}, dojo loading ... ${dojoProgress.map((m) => `'${m}'`).join(',')} ...`);
+      await delay(100);
     }
-    try { dojo.require('dojo.io.script'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    try { dojo.require('dojo.request.iframe'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    try { dojo.require('dojo.dom'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    try { dojo.require('dojox.gfx'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    try { dojo.require('dojox.gfx.svg'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    try { dojo.require('dojox.gfx.shape'); } catch (err: any) {
-      _package.logger.warning(err.message);
-    }
-    // @formatter:off
-    while (!(
-      dojo && dojo.window && dojo.io?.script && dojo.request?.iframe &&
-      dojox && dojox.gfx && dojox.gfx?.svg && dojox.gfx?.shape && !dojox.gfx?.createSurface
-    )) await delay(100);
-    // @formatter:on
+    _package.logger.debug(`${logPrefix}, dojo ready all modules`);
   }, 60000, 'timeout dojox.gfx.svg');
 
   _package.logger.debug(`${logPrefix}, patch window.dojox.gfx.svg.Text.prototype.getTextWidth`);

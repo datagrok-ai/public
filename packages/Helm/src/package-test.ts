@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 // import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import './tests/helm-tests';
 import './tests/findMonomers-tests';
@@ -21,6 +22,7 @@ import './tests/helm-web-editor-tests';
 export const _package = new DG.Package();
 export {tests};
 
+let initPromise: Promise<void> | undefined = undefined;
 
 //name: test
 //input: string category {optional: true}
@@ -28,6 +30,15 @@ export {tests};
 //input: object testContext {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      _package.logger.debug('Helm: _package-test.initHelmPackageTest(), start');
+      const hh = await getHelmHelper();
+      _package.logger.debug('Helm: _package-test.initHelmPackageTest(), end');
+    })();
+  }
+  await initPromise;
+
   // verbose: true - for tests returning dataframe
   const data = await runTests({category, test, testContext, verbose: true});
   return DG.DataFrame.fromObjects(data)!;

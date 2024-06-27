@@ -206,8 +206,8 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
     else
       app.canvas.helm.setSequence(value!, 'HELM');
   }, 20);
-  const dlg = ui.dialog({showHeader: false, showFooter: true})
-    .add(view)
+  const dlg = ui.dialog({showHeader: false, showFooter: true});
+  dlg.add(view)
     .onOK(() => {
       const helmValue: string = app.canvas.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
