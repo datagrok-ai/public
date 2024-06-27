@@ -85,9 +85,9 @@ export class DataSourceType {
 
   static CoreWeave = 'CoreWeave';
 
-  static get fileDataSources(): Array<string> { return api.grok_DataSourceType_Get_fileDataSources(); };
+  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint'];
 
-  static get systemDataSources(): Array<string> { return api.grok_DataSourceType_Get_systemDataSources(); };
+  static systemDataSources = ['AWS', 'PostgresDart'];
 
 }
 import {Entity} from '../entities'

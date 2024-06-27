@@ -510,6 +510,8 @@ export interface IScatterPlotSettings {
 
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -1357,13 +1359,22 @@ export interface IBoxPlotSettings {
 
   whiskerLineWidth: number;
 
+  interquartileLineWidth: number;
+
   whiskerWidthRatio: number;
 
   maxBinWidth: number;
 
   axisUseColumnFormat: boolean;
 
+  /// Number of KDE bins to display a violin plot
+  bins: number;
+
+  plotStyle: string;
+
   whiskerColor: number;
+
+  violinWhiskerColor: number;
 
   backColor: number;
 
