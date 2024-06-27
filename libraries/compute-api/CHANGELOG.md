@@ -1,5 +1,10 @@
 # compute-utils changelog
 
+## 0.0.7 (2024-06-27)
+
+- Exposed mergeValidationResults method
+- Added window.compute typing
+
 ## 0.0.6 (2024-06-25)
 
 - Updated compute-utils dep
