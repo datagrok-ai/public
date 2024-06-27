@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {_fitSoftmax} from '../wasm/EDAAPI';
+
 const ROWS_EXTRA = 1;
 const COLS_EXTRA = 2;
 const MIN_COLS_COUNT = 1 + COLS_EXTRA;
@@ -11,7 +13,7 @@ const PRED_NAME = 'predicted';
 const DEFAULT_LEARNING_RATE = 1;
 const DEFAULT_ITER_COUNT = 100;
 const DEFAULT_PENALTY = 0.1;
-const DEFAULT_TOLERANCE = 0.01;
+const DEFAULT_TOLERANCE = 0.001;
 
 type DataSpecification = {
   classesCount: number,
@@ -132,17 +134,58 @@ export class SoftmaxClassifier {
     if ((rate <= 0) || (iterations < 1) || (penalty <= 0) || (tolerance <= 0))
       throw new Error('Training failes - incorrect fitting hyperparameters');
 
-    // Extract statistics
+    // Extract statistics & categories
     this.extractStats(features);
+    const rowsCount = target.length;
+    const classesCount = target.categories.length;
+    const cats = target.categories;
+    for (let i = 0; i < classesCount; ++i)
+      this.categories[i] = cats[i];
 
-    this.params = await this.fitSoftmaxParams(
+    const paramCols = _fitSoftmax(
       features,
-      target,
-      iterations,
-      rate,
-      penalty,
-      tolerance,
-    ) as Float32Array[];
+      DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
+      DG.Column.fromFloat32Array('stdevs', this.stdevs, this.featuresCount),
+      DG.Column.fromInt32Array('targets', target.getRawData() as Int32Array, rowsCount),
+      classesCount,
+      iterations, rate, penalty, tolerance,
+      this.featuresCount + 1, classesCount,
+    ).columns as DG.ColumnList;
+
+    this.params = new Array<Float32Array>(classesCount);
+    for (let i = 0; i < classesCount; ++i)
+      this.params[i] = paramCols.byIndex(i).getRawData() as Float32Array;
+
+    try {
+      const paramCols = _fitSoftmax(
+        features,
+        DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
+        DG.Column.fromFloat32Array('stdevs', this.stdevs, this.featuresCount),
+        DG.Column.fromInt32Array('targets', target.getRawData() as Int32Array, rowsCount),
+        classesCount,
+        iterations, rate, penalty, tolerance,
+        this.featuresCount + 1, classesCount,
+      ).columns as DG.ColumnList;
+
+      this.params = new Array<Float32Array>(classesCount);
+      for (let i = 0; i < classesCount; ++i)
+        this.params[i] = paramCols.byIndex(i).getRawData() as Float32Array;
+
+      console.log('Wasm done');
+    } catch (error) {
+      try {
+        this.params = await this.fitSoftmaxParams(
+          features,
+          target,
+          iterations,
+          rate,
+          penalty,
+          tolerance,
+        ) as Float32Array[];
+      } catch (error) {
+        throw new Error('Training failes');
+      }
+    }
 
     if (this.params === undefined)
       throw new Error('Training failes');
@@ -232,13 +275,9 @@ export class SoftmaxClassifier {
     if (target.type !== DG.COLUMN_TYPE.STRING)
       throw new Error('Training failes - incorrect target type');
 
-    const cats = target.categories;
     const c = this.classesCount;
     const m = target.length;
     const raw = target.getRawData();
-
-    for (let i = 0; i < c; ++i)
-      this.categories[i] = cats[i];
 
     const Y = new Array<Uint8Array>(m);
     const weights = new Uint32Array(c).fill(0);

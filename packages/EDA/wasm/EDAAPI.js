@@ -129,3 +129,18 @@ export async function _trainAndAnalyzeLSSVMInWebWorker(gamma, kernel, kernelPara
   });
 }
 
+export function _fitSoftmax(features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols) {
+  return callWasm(EDA, 'fitSoftmax', [features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols]);
+}
+
+export async function _fitSoftmaxInWebWorker(features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/fitSoftmaxWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['fitSoftmax'].arguments,[features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['fitSoftmax'], e.data));
+    }
+  });
+}
+

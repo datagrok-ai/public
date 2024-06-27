@@ -11,6 +11,7 @@ onmessage = async function(evt) {
   const tolerance = evt.data.tolerance;
   const targetRaw = evt.data.targetRaw;
   let loss = 0;
+  let lossPrev = 0;
 
   const n = transposedX.length;
   const m = X.length;
@@ -86,8 +87,10 @@ onmessage = async function(evt) {
 
     loss /= m;
 
-    if (loss < tolerance)
+    if (Math.abs(loss - lossPrev) < tolerance)
       break;
+
+    lossPrev = loss;
 
     // 2.3) Backward propagation
 

@@ -620,23 +620,19 @@ export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_
 //input: dataframe df
 //input: column_list features {type: numerical}
 //input: column target {type: string}
-//input: double rate = 1
-//input: int iterations = 100
-//input: double penalty = 1
-//input: double tolerance = 0.1
 //input: bool scatter = true
-export async function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
-  rate: number, iterations: number, penalty: number, tolerance: number, scatter: boolean) {
+export async function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column, scatter: boolean) {
   const c = target.categories.length;
   const n = features.length;
   const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
   let start = performance.now();
-  await model.fit(features, target, rate, iterations, penalty, tolerance);
+  await model.fit(features, target);
   let finish = performance.now();
 
   console.log(`Fitting: ${finish - start} ms.`);
 
   const packed = model.toBytes();
+
   const unpacked = new SoftmaxClassifier(undefined, packed);
   unpacked.toBytes();
 
