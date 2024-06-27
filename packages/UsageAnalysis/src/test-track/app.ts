@@ -338,7 +338,7 @@ export class TestTrack extends DG.ViewBase {
     if (pathL.length < 2)
       grok.shell.error('Root test case');
     const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
-    const [textS, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
+    const [textS, jsonS] = (await _package.files.readAsText(file)).split('---', 2);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
     const name = file.name.replace(/\.[^.]+$/, '');
@@ -368,10 +368,13 @@ export class TestTrack extends DG.ViewBase {
         return a.name.localeCompare(b.name);
       if (a.order === undefined) return 1;
       if (b.order === undefined) return -1;
+      if (a.order === b.order)
+        return a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase());
       return a.order > b.order ? 1 : -1;
     });
     cats.forEach((c) => this.sortCategoryRecursive(c));
   }
+
 
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
     if ('text' in obj) {
