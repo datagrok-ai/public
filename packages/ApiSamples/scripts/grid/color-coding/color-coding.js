@@ -9,6 +9,9 @@ t.col('age').meta.colors.setLinear(["#ff0000", "#ffff00", "#00ff00"]);
 // Categorical color-coding for string columns
 t.col('race').meta.colors.setCategorical({"Asian": 4278190335, "Black": 4286578816});
 
+// Set fallback color to be used in categorical color-coding
+t.col('race').meta.colors.setFallbackColor('#e6e6fa');
+
 grok.shell.addTableView(t);
 
 // To turn the color-coding off, use either approach:

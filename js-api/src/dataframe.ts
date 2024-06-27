@@ -2380,6 +2380,10 @@ export class ColumnColorHelper {
     }
   }
 
+  setFallbackColor(color: string): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = color;
+  }
+
   getColor(i: number): number {
     return api.grok_Column_GetColor(this.column.dart, i);
   }
