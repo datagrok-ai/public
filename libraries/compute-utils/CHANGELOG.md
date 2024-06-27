@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResults method
+
 ## 1.35.5 (2024-06-26)
 
 - getParamChanges fixed empty FuncCall error
