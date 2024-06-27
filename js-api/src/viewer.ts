@@ -638,6 +638,14 @@ export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
   get onCalendarClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-calendar-clicked'); }
 }
 
+export class PivotViewer extends Viewer<interfaces.IPivotViewerSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onAggregationChanged(): rxjs.Observable<null> { return this.onEvent('d4-pivot-grid-aggr-changed'); }
+}
+
 export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
