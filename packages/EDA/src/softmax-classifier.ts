@@ -1,3 +1,5 @@
+// Softmax classifier (multinomial logistic regression): https://en.wikipedia.org/wiki/Multinomial_logistic_regression
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -15,11 +17,13 @@ const DEFAULT_ITER_COUNT = 100;
 const DEFAULT_PENALTY = 0.1;
 const DEFAULT_TOLERANCE = 0.001;
 
+/** Train data sizes */
 type DataSpecification = {
   classesCount: number,
   featuresCount: number,
 };
 
+/** Target labels specification */
 type TargetLabelsData = {
   oneHot: Array<Uint8Array>,
   weights: Uint32Array,
@@ -35,7 +39,7 @@ export class SoftmaxClassifier {
   private featuresCount = 1;
 
   constructor(specification?: DataSpecification, packedModel?: Uint8Array) {
-    if (specification !== undefined) {
+    if (specification !== undefined) { // Create empty model
       /** features count */
       const n = specification.featuresCount;
 
@@ -57,7 +61,7 @@ export class SoftmaxClassifier {
       this.categories = new Array<string>(len);
       this.featuresCount = n;
       this.classesCount = c;
-    } else if (packedModel !== undefined) {
+    } else if (packedModel !== undefined) { // Get classifier from packed model (bytes)
       try {
         const modelDf = DG.DataFrame.fromByteArray(packedModel);
         const columns = modelDf.columns;
@@ -126,6 +130,7 @@ export class SoftmaxClassifier {
     return modelDf.toByteArray();
   } // toBytes
 
+  /** Train classifier */
   public async fit(features: DG.ColumnList, target: DG.Column, rate: number = DEFAULT_LEARNING_RATE,
     iterations: number = DEFAULT_ITER_COUNT, penalty: number = DEFAULT_PENALTY, tolerance: number = DEFAULT_TOLERANCE) {
     if (features.length !== this.featuresCount)
@@ -142,21 +147,8 @@ export class SoftmaxClassifier {
     for (let i = 0; i < classesCount; ++i)
       this.categories[i] = cats[i];
 
-    const paramCols = _fitSoftmax(
-      features,
-      DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
-      DG.Column.fromFloat32Array('stdevs', this.stdevs, this.featuresCount),
-      DG.Column.fromInt32Array('targets', target.getRawData() as Int32Array, rowsCount),
-      classesCount,
-      iterations, rate, penalty, tolerance,
-      this.featuresCount + 1, classesCount,
-    ).columns as DG.ColumnList;
-
-    this.params = new Array<Float32Array>(classesCount);
-    for (let i = 0; i < classesCount; ++i)
-      this.params[i] = paramCols.byIndex(i).getRawData() as Float32Array;
-
     try {
+      // call wasm-computations
       const paramCols = _fitSoftmax(
         features,
         DG.Column.fromFloat32Array('avgs', this.avgs, this.featuresCount),
@@ -170,10 +162,8 @@ export class SoftmaxClassifier {
       this.params = new Array<Float32Array>(classesCount);
       for (let i = 0; i < classesCount; ++i)
         this.params[i] = paramCols.byIndex(i).getRawData() as Float32Array;
-
-      console.log('Wasm done');
     } catch (error) {
-      try {
+      try { // call fitting TS-computations (if wasm failed)
         this.params = await this.fitSoftmaxParams(
           features,
           target,
@@ -191,6 +181,7 @@ export class SoftmaxClassifier {
       throw new Error('Training failes');
   }; // fit
 
+  /** Extract features' stats */
   private extractStats(features: DG.ColumnList): void {
     let j = 0;
 
