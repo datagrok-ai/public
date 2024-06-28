@@ -501,7 +501,7 @@ export class TestTrack extends DG.ViewBase {
     }
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
-      category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, batchName: this.testingName
+      category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName
     };
     grok.shell.reportTest('manual', params);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
@@ -514,7 +514,7 @@ export class TestTrack extends DG.ViewBase {
       };
 
       map['Reason'] = reasonTooltipValue;
-      ui.tooltip.bind(icon, () => ui.tableFromMap(map)); 
+      ui.tooltip.bind(icon, () => ui.tableFromMap(map));
     });
   }
 
@@ -528,7 +528,7 @@ export class TestTrack extends DG.ViewBase {
     node.value.reason.append(this.getReason(reason));
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start
+      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName
     };
 
     grok.shell.reportTest('manual', params);
@@ -579,8 +579,8 @@ export class TestTrack extends DG.ViewBase {
       const el = ui.divText(reason, 'tt-link tt-link-list');
       el.setAttribute('data-label', 'LIST');
       const df = DG.DataFrame.fromColumns([DG.Column.fromList("string", "key", reason.split('\n'))]);
-      const grid = df.plot.grid(); 
-      return grid.root; 
+      const grid = df.plot.grid();
+      return grid.root;
       // const res  = ui.div(reason.split('\n').map((e)=>{return ui.label(e)}))
       // return res;
     }
