@@ -258,6 +258,7 @@ export const TAGS = {
   COLOR_CODING_SCHEME_MAX: '.color-coding-scheme-max',
   COLOR_CODING_SCHEME_MIN: '.color-coding-scheme-min',
   COLOR_CODING_MATCH_TYPE: '.color-coding-match-type',
+  COLOR_CODING_FALLBACK_COLOR: '.color-coding-fallback-color',
 
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',

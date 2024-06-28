@@ -2364,10 +2364,12 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null, options: {matchType?: MatchType} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.fallbackColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
     if (options?.matchType != null)
       this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
