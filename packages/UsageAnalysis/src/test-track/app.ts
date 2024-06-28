@@ -483,10 +483,8 @@ export class TestTrack extends DG.ViewBase {
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string): void {
     const value = node.value;
     if (value.status) {
-      const oldIcon = getStatusIcon(value.status);
-      if (value.history.children.length === 3)
-        value.history.children[2].remove();
-      value.history.prepend(oldIcon);
+       if (value.history.children.length === 4)
+        value.history.children[2].remove(); 
     }
     value.status = status;
     value.icon.innerHTML = '';
