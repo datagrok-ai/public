@@ -282,11 +282,11 @@ export class TestTrack extends DG.ViewBase {
     const listToShow: HTMLElement[] = [];
 
     function isFitsSearchString(stringToCheck: string, description?: string): boolean {
-      var result =regExpToSearch.test(stringToCheck.toLocaleLowerCase()) ;
-      if(description){
+      var result = regExpToSearch.test(stringToCheck.toLocaleLowerCase());
+      if (description) {
         result = result || regExpToSearch.test(description.toLocaleLowerCase())
       }
-      return result ;
+      return result;
     }
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
@@ -338,7 +338,7 @@ export class TestTrack extends DG.ViewBase {
     if (pathL.length < 2)
       grok.shell.error('Root test case');
     const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
-    const [textS, jsonS] = (await _package.files.readAsText(file)).split('\r\n---\r\n', 2);
+    const [textS, jsonS] = (await _package.files.readAsText(file)).split('---', 2);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
     const name = file.name.replace(/\.[^.]+$/, '');
@@ -368,10 +368,13 @@ export class TestTrack extends DG.ViewBase {
         return a.name.localeCompare(b.name);
       if (a.order === undefined) return 1;
       if (b.order === undefined) return -1;
+      if (a.order === b.order)
+        return a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase());
       return a.order > b.order ? 1 : -1;
     });
     cats.forEach((c) => this.sortCategoryRecursive(c));
   }
+
 
   initTreeGroupRecursive(obj: Category | TestCase, parent: DG.TreeViewGroup): void {
     if ('text' in obj) {
@@ -490,15 +493,19 @@ export class TestTrack extends DG.ViewBase {
     value.reason.innerHTML = '';
     const icon = getStatusIcon(status);
     value.icon.append(icon);
-    if (status === FAILED || status === SKIPPED)
-      value.reason.append(this.getReason(reason!));
+    if (status === FAILED || status === SKIPPED) {
+      if (!reason!.includes('\n'))
+        value.reason.append(this.getReason(reason!));
+      else
+        value.reason.append(ui.label('list'));
+    }
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
-      category: value.path.replace(/:\s[^:]+$/, ''), test: node.text, version: this.version, uid: this.uid, start: this.start
+      category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, batchName: this.testingName
     };
     grok.shell.reportTest('manual', params);
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
-
+    let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
     grok.dapi.users.find(params['uid']).then((user) => {
       const map: StatusInfo = {
         'User': user,
@@ -506,9 +513,8 @@ export class TestTrack extends DG.ViewBase {
         'Version': params['version'],
       };
 
-      if (value.reason)
-        map['Reason'] = value.reason;
-      ui.tooltip.bind(icon, () => ui.tableFromMap(map));
+      map['Reason'] = reasonTooltipValue;
+      ui.tooltip.bind(icon, () => ui.tableFromMap(map)); 
     });
   }
 
@@ -572,8 +578,11 @@ export class TestTrack extends DG.ViewBase {
     if (reason.includes('\n')) {
       const el = ui.divText(reason, 'tt-link tt-link-list');
       el.setAttribute('data-label', 'LIST');
-      ui.tooltip.bind(el, () => ui.list(reason.split('\n')));
-      return el;
+      const df = DG.DataFrame.fromColumns([DG.Column.fromList("string", "key", reason.split('\n'))]);
+      const grid = df.plot.grid(); 
+      return grid.root; 
+      // const res  = ui.div(reason.split('\n').map((e)=>{return ui.label(e)}))
+      // return res;
     }
     const jira = reason.match(/GROK-\d{1,6}\b/);
     if (jira) return this.getReasonLink(reason, 'https://reddata.atlassian.net/browse/' + jira[0], jira[0]);

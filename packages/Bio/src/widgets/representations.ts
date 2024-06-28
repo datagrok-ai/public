@@ -25,29 +25,41 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
-  const monomerWidth = ui.choiceInput('Monomer width',
-    (col?.temp[tempTAGS.monomerWidth] != null) ? col.temp[tempTAGS.monomerWidth] : MonomerWidthMode.short,
-    [MonomerWidthMode.short, MonomerWidthMode.long],
-    (s: string) => {
-      col.temp[tempTAGS.monomerWidth] = s;
+  const monomerWidthModeInput = ui.input.choice('Monomer width', {
+    value: (col?.temp[tempTAGS.monomerWidthMode] != null) ? col.temp[tempTAGS.monomerWidthMode] :
+      (_package.properties?.MonomerWidthMode ?? MonomerWidthMode.short),
+    items: [MonomerWidthMode.short, MonomerWidthMode.long],
+    onValueChanged: () => {
+      const s = monomerWidthModeInput.value;
+      col.temp[tempTAGS.monomerWidthMode] = s;
       col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
       col.dataFrame.fireValuesChanged();
-    });
-  monomerWidth.setTooltip(
-    `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`,
-  );
+
+      maxMonomerLengthInput.enabled = monomerWidthModeInput.value === MonomerWidthMode.short;
+    },
+  });
+  monomerWidthModeInput.setTooltip(
+    `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`);
 
   const tagMaxMonomerLength: number = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
-  const maxMonomerLength: DG.InputBase = ui.intInput('Max monomer length',
-    !isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties.MaxMonomerLength,
-    (value: number) => {
+  const maxMonomerLengthInput = ui.input.slider('Max monomer length', {
+    value: !isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength :
+      (_package.properties?.MaxMonomerLength ?? 4),
+    min: 1, max: 16, step: 1,
+    onValueChanged: () => {
+      const value = maxMonomerLengthInput.value;
+      maxMonomerLengthValueDiv.innerText = maxMonomerLengthInput.stringValue;
       col.setTag(mmcrTAGS.maxMonomerLength, value.toString());
       col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
       col.dataFrame.fireValuesChanged();
-    });
-  maxMonomerLength.setTooltip(
-    `The max length of monomer name displayed without shortening in '${MonomerWidthMode.short}' monomer width mode.`
-  );
+    },
+  });
+  const maxMonomerLengthValueDiv = ui.divText(maxMonomerLengthInput.stringValue, 'ui-input-description');
+  maxMonomerLengthInput.addOptions(maxMonomerLengthValueDiv);
+  maxMonomerLengthInput.setTooltip(
+    `The max length of monomer name displayed without shortening ` +
+    ` in '${MonomerWidthMode.short}' monomer width mode.`);
+  maxMonomerLengthInput.enabled = monomerWidthModeInput.value === MonomerWidthMode.short;
 
   const gapLengthInput = ui.intInput('Monomer margin', col.temp[mmcrTemps.gapLength] ?? 0,
     (value: number) => {
@@ -82,8 +94,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   compareWithCurrent.setTooltip('When on, all sequences get rendered in the "diff" mode');
 
   const rdKitInputs = ui.inputs([
-    monomerWidth,
-    maxMonomerLength,
+    monomerWidthModeInput,
+    maxMonomerLengthInput,
     gapLengthInput,
     referenceSequence,
     colorCode,

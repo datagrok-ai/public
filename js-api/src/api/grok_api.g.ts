@@ -1556,6 +1556,7 @@ export interface IDartApi {
 
   // Generated from ../ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;
+  grok_TagValues_Create(): any;
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 }

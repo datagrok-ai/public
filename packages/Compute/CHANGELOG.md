@@ -1,5 +1,25 @@
 # Compute changelog
 
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResultsInst method
+
+## 1.35.5 (2024-06-26)
+
+- getParamChanges fixed empty FuncCall error
+
+## 1.35.4 (2024-06-25)
+
+- Inputs bugfixes
+
+## 1.35.3 (2024-06-25)
+
+- Changed inputs to use new API
+
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
 ## 1.35.1 (2024-06-19)
 
 - Exposed testPipeline method
@@ -280,7 +300,7 @@
 
 - RFV: Added input form adaptiveness
 - RFV: Renamed validator tag to `validatorFunc`
-- RFV: Added `nullable` tag for inputs 
+- RFV: Added `nullable` tag for inputs
 
 ## 1.17.3 (2023-11-22)
 
