@@ -6,11 +6,11 @@ import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-work
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 import {
-  Tags as mmcrTags, Temps as mmcrTemps, MonomerWidthMode,
-  tempTAGS, rendererSettingsChangedState
+  Temps as mmcrTemps, rendererSettingsChangedState, Temps
 } from '../utils/cell-renderer-consts';
 
 import {_package} from '../package';
+import {max} from 'rxjs/operators';
 
 
 /**
@@ -25,81 +25,77 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
-  const monomerWidthModeInput = ui.input.choice('Monomer width', {
-    value: (col?.temp[tempTAGS.monomerWidthMode] != null) ? col.temp[tempTAGS.monomerWidthMode] :
-      (_package.properties?.MonomerWidthMode ?? MonomerWidthMode.short),
-    items: [MonomerWidthMode.short, MonomerWidthMode.long],
+  let maxMonomerLength: number | null = (_package.properties ? _package.properties.MaxMonomerLength : 4);
+  if (mmcrTAGS.maxMonomerLength in col.tags) {
+    const v = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
+    maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
+  }
+  if (Temps.maxMonomerLength in col.temp) {
+    const v = parseInt(col.temp[Temps.maxMonomerLength]);
+    maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
+  }
+  const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
+    value: maxMonomerLength!,
+    nullable: true, min: 1, max: 50, step: 1,
     onValueChanged: () => {
-      const s = monomerWidthModeInput.value;
-      col.temp[tempTAGS.monomerWidthMode] = s;
-      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
-      col.dataFrame.fireValuesChanged();
-
-      maxMonomerLengthInput.enabled = monomerWidthModeInput.value === MonomerWidthMode.short;
+      if (maxMonomerLengthInput.value == 0)
+        setTimeout(() => { maxMonomerLengthInput.value = null!; }, 0);
+      else {
+        const value = maxMonomerLengthInput.value ?? '';
+        const tagValue = value == null ? '' : value.toString();
+        col.temp[Temps.maxMonomerLength] = tagValue;
+        col.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        col.dataFrame.fireValuesChanged();
+      }
     },
+    tooltipText: `The max length of monomer symbol displayed without shortening, empty to no limit`
   });
-  monomerWidthModeInput.setTooltip(
-    `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`);
 
-  const tagMaxMonomerLength: number = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
-  const maxMonomerLengthInput = ui.input.slider('Max monomer length', {
-    value: !isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength :
-      (_package.properties?.MaxMonomerLength ?? 4),
-    min: 1, max: 16, step: 1,
+  const gapLengthInput = ui.input.int('Monomer Margin', {
+    value: col.temp[mmcrTemps.gapLength] ?? 0,
     onValueChanged: () => {
-      const value = maxMonomerLengthInput.value;
-      maxMonomerLengthValueDiv.innerText = maxMonomerLengthInput.stringValue;
-      col.setTag(mmcrTAGS.maxMonomerLength, value.toString());
-      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
+      col.temp[mmcrTemps.gapLength] = gapLengthInput.value;
+      col.temp[mmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
       col.dataFrame.fireValuesChanged();
     },
+    tooltipText: 'The size of margin between monomers (in pixels)'
   });
-  const maxMonomerLengthValueDiv = ui.divText(maxMonomerLengthInput.stringValue, 'ui-input-description');
-  maxMonomerLengthInput.addOptions(maxMonomerLengthValueDiv);
-  maxMonomerLengthInput.setTooltip(
-    `The max length of monomer name displayed without shortening ` +
-    ` in '${MonomerWidthMode.short}' monomer width mode.`);
-  maxMonomerLengthInput.enabled = monomerWidthModeInput.value === MonomerWidthMode.short;
 
-  const gapLengthInput = ui.intInput('Monomer margin', col.temp[mmcrTemps.gapLength] ?? 0,
-    (value: number) => {
-      col.temp[mmcrTemps.gapLength] = value;
-      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
+  const colorCodeInput = ui.input.bool('Color Code', {
+    value: (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
+    onValueChanged: () => {
+      col.temp['color-code'] = colorCodeInput.value;
       col.dataFrame.fireValuesChanged();
-    });
-  gapLengthInput.setTooltip('The size of margin between monomers (in pixels)');
+    },
+    tooltipText: 'Color code'
+  });
 
-  const colorCode = ui.boolInput('Color code',
-    (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
-    (v: boolean) => {
-      col.temp['color-code'] = v;
+  const referenceSequenceInput = ui.input.string('Reference Sequence', {
+    value: (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '',
+    nullable: true,
+    onValueChanged: () => {
+      col.temp['reference-sequence'] = referenceSequenceInput.value;
       col.dataFrame.fireValuesChanged();
-    });
-  colorCode.setTooltip('Color code');
+    },
+    tooltipText: 'Reference sequence is not empty, then the sequence will be render ' + '\n' +
+      'as a difference from the reference sequence'
+  });
 
-  const referenceSequence = ui.stringInput('Reference sequence',
-    (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '', (v: string) => {
-      col.temp['reference-sequence'] = v;
+  const compareWithCurrentInput = ui.input.bool('Compare with current', {
+    value: (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
+    onValueChanged: () => {
+      col.temp['compare-with-current'] = compareWithCurrentInput.value;
       col.dataFrame.fireValuesChanged();
-    });
-  referenceSequence.setTooltip('Reference sequence is not empty, then the sequence will be render ' + '\n' +
-    'as a difference from the reference sequence');
-
-  const compareWithCurrent = ui.boolInput('Compare with current',
-    (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
-    (v: boolean) => {
-      col.temp['compare-with-current'] = v;
-      col.dataFrame.fireValuesChanged();
-    });
-  compareWithCurrent.setTooltip('When on, all sequences get rendered in the "diff" mode');
+    },
+    tooltipText: 'When on, all sequences get rendered in the "diff" mode'
+  });
 
   const rdKitInputs = ui.inputs([
-    monomerWidthModeInput,
     maxMonomerLengthInput,
     gapLengthInput,
-    referenceSequence,
-    colorCode,
-    compareWithCurrent,
+    referenceSequenceInput,
+    colorCodeInput,
+    compareWithCurrentInput,
   ]);
 
   return new DG.Widget(rdKitInputs);

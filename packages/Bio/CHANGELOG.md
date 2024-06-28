@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.13.3 (2024-06-28)
+
+### Bug fixes
+
+* Fix MaxMonomerLength package setting, and column setting
+* Fix loading monomer libs for explicit stuck from tests
+
 ## 2.13.2 (2024-06-26)
 
 ### Features

@@ -14,29 +14,22 @@
   },
   "properties": [
     {
-      "name": "MonomerWidthMode",
-      "propertyType": "string",
-      "choices": [
-        "short",
-        "long"
-      ],
-      "defaultValue": "short",
-      "nullable": false
-    },
-    {
       "name": "MaxMonomerLength",
-      "propertyType": "int",
-      "defaultValue": 4,
+      "description": "The max length of monomer symbol displayed without shortening, 'long' to no limit",
+      "propertyType": "string",
+      "defaultValue": "4",
       "nullable": false
     },
     {
       "name": "TooltipWebLogo",
+      "description": "Display WebLogo in a Macromolecule column header tooltip",
       "propertyType": "bool",
       "defaultValue": "true",
       "nullable": false
     },
     {
       "name": "DefaultSeparator",
+      "description": "Default separator using to convert sequences into separator notation",
       "propertyType": "string",
       "defaultValue": ".",
       "nullable": false
