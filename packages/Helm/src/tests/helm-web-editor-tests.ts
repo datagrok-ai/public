@@ -3,12 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+
+import {initHelmMainPackage} from './utils';
 
 category('helm-web-editor', async () => {
   let monomerLibHelper: IMonomerLibHelper;
@@ -17,6 +19,7 @@ category('helm-web-editor', async () => {
   let hh: IHelmHelper;
 
   before(async () => {
+    await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     await setUserLibSettingsForTests();

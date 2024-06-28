@@ -12,7 +12,7 @@
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.42.2",
+    "@datagrok-libraries/bio": "^5.42.3",
     "@datagrok-libraries/chem-meta": "^1.2.5",
     "@datagrok-libraries/utils": "^4.2.11",
     "cash-dom": "^8.1.1",

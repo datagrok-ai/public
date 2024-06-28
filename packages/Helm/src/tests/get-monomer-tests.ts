@@ -7,10 +7,11 @@ import wu from 'wu';
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
 } from '@datagrok-libraries/utils/src/test';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {Atom, HelmType, IJsAtom, IWebEditorMonomer, GetMonomerFunc} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, Monomer, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
-import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -21,10 +22,12 @@ import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bi
 import {getMonomerHandleArgs} from '../utils/get-monomer';
 import {JSDraw2HelmModule, OrgHelmModule} from '../types';
 
-import {_package} from '../package-test';
 import {HelmHelper} from '../helm-helper';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
 import {getRS} from '../utils/get-monomer-dummy';
+import {initHelmMainPackage} from './utils';
+
+import {_package} from '../package-test';
 
 declare const org: OrgHelmModule;
 declare const JSDraw2: JSDraw2HelmModule;
@@ -76,6 +79,8 @@ category('getMonomer', ()=>{
   let userLibSettings: UserLibSettings;
 
   before(async ()=>{
+    await initHelmMainPackage();
+
     [libHelper, helmHelper] = await Promise.all([getMonomerLibHelper(), getHelmHelper()]);
 
     await timeout(async () => { monomerLibHelper = await getMonomerLibHelper(); }, 5000,

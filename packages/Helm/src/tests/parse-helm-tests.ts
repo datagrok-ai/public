@@ -5,12 +5,14 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
 import {HelmType, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
-import {JSDraw2HelmModule} from '../types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+
+import {JSDraw2HelmModule} from '../types';
+import {initHelmMainPackage} from './utils';
 
 declare const org: OrgType;
 declare const JSDraw2: JSDraw2HelmModule;
@@ -34,6 +36,8 @@ category('parseHelm', () => {
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    await initHelmMainPackage();
+
     libHelper = await getMonomerLibHelper();
 
     await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
