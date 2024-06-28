@@ -623,7 +623,7 @@ export function applyLinearRegression(df: DG.DataFrame, model: any): DG.DataFram
 //output: bool result
 export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: string): boolean {
   for (const col of df.columns) {
-    if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT))
+    if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
       return false;
   }
   return true;
