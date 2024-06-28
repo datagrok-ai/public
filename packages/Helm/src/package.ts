@@ -66,12 +66,12 @@ export async function initHelm(): Promise<void> {
           await initHelmLoadAndPatchDojo();
           _package.logger.debug(`${logPrefix}, dojox loaded and patched`);
 
-          // through webpack.config.ts/alias
-          require('vendor/helm-web-editor');
-
+          // Alternatively load old bundles by package.json/sources
           _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
+          require('vendor/helm-web-editor'); // through webpack.config.ts/alias
           await window.helmWebEditor$.initPromise;
           _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
+
           org.helm.webeditor.kCaseSensitive = true; // GROK-13880
 
           _package.logger.debug(`${logPrefix}, scil.Utils.alert patch`);

@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.3.1 (2024-06-28)
+
+Fix cell renderer error before package initialized
+
 ## 2.3.0 (2024-06-24)
 
 Use forked JSDraw.Lite and HELMWebEditor

@@ -35,7 +35,7 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: [/node_modules/, /vendor/]},
     ],
   },
-  devtool: 'source-map',
+  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

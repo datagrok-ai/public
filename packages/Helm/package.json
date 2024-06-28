@@ -1,12 +1,16 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
+  "sources-backup": [
+    "helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed.js",
+    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
+  ],
   "sources": [
     "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js",
     "css/helm.css"
@@ -24,7 +28,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.5",
     "@datagrok-libraries/js-draw-lite": "^0.0.3",
-    "@datagrok/bio": "^2.13.2",
+    "@datagrok/bio": "^2.13.3",
     "@datagrok/chem": "^1.9.2",
     "@types/node": "17.0.45",
     "@types/wu": "latest",
