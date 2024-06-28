@@ -35,6 +35,7 @@ type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
+type MatchType = 'contains' | 'starts with' | 'ends with' | 'equals' | 'regex';
 
 
 /** Column name -> format */
@@ -2363,10 +2364,12 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.matchType != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
 
   setConditional(rules: {[index: string]: number | string}  | null = null): void {
