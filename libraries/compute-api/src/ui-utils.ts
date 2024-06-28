@@ -4,12 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type {UiUtils} from '@datagrok-libraries/compute-utils/shared-components';
 
-declare global {
-  interface Window {
-    compute: any
-  }
-}
-
 export function fileInput(...args: Parameters<typeof UiUtils.fileInput>): ReturnType<typeof UiUtils.fileInput> {
   return window.compute.fileInput(...args);
 }

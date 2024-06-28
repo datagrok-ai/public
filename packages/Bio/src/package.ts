@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '@datagrok-libraries/bio/src/types/helm';
-
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionBaseEditor, PreprocessFunctionReturnType}
   from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
@@ -78,6 +76,7 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
+import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 
 export const _package = new BioPackage();
 
@@ -109,7 +108,7 @@ let monomerLib: IMonomerLib | null = null;
 
 //tags: init
 export async function initBio() {
-  const logPrefix = 'Bio: initBio()';
+  const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
   const module = await grok.functions.call('Chem:getRdKitModule');
   const t1: number = window.performance.now();
@@ -152,7 +151,7 @@ export async function initBio() {
 
   hydrophobPalette = new SeqPaletteCustom(palette);
 
-  _package.logger.debug('Bio: initBio(), completed');
+  _package.logger.debug(`${logPrefix}, end`);
 }
 
 //name: sequenceTooltip
@@ -292,16 +291,16 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Package settings editor --
 
-// //name: packageSettingsEditor
-// //description: The database connection
-// //tags: packageSettingsEditor
-// //input: object propList
-// //output: widget result
-// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-//   const widget = new PackageSettingsEditorWidget(propList);
-//   widget.init().then(); // Ignore promise returned
-//   return widget as DG.Widget;
-// }
+//name: packageSettingsEditor
+//description: The database connection
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+  const widget = new PackageSettingsEditorWidget(propList);
+  widget.init().then(); // Ignore promise returned
+  return widget as DG.Widget;
+}
 
 // -- Cell renderers --
 

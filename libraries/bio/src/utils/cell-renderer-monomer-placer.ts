@@ -14,7 +14,7 @@ import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
 type MonomerPlacerProps = {
   seqHandler: SeqHandler,
   monomerCharWidth: number, separatorWidth: number,
-  monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
+  monomerToShort: MonomerToShortFunc
 };
 
 export function hitBounds(bounds: number[], x: number): number | null {
@@ -49,9 +49,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private _processedRows: DG.BitSet; // rows for which monomer lengths were processed
   private _processedMaxVisibleSeqLength: number = 0;
 
-  private _updated: boolean = false;
-  public get updated(): boolean { return this._updated; }
-
   public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
   public _monomerStructureMap: { [key: string]: HTMLElement } = {}; // caches the atomic structures of monomers
 
@@ -60,6 +57,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column<string>,
     logger: ILogger,
+    public monomerLengthLimit: number,
     private readonly propsProvider: () => MonomerPlacerProps
   ) {
     super(gridCol, tableCol, logger);
@@ -107,9 +105,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
+    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
+    // this.logger.debug(`${logPrefix}, start`);
+
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
-      this._updated = true;
     }
 
     const minMonWidth = this.props.separatorWidth + 1 * this.props.monomerCharWidth;
@@ -124,22 +124,22 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       let seqWidth: number = 0;
       for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
         const seqMonLabel = seqMonList[seqMonI];
-        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const separatorWidth = this.props.seqHandler.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
         const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = seqMonWidth;
         seqWidth += seqMonWidth;
         if (seqWidth > this.colWidth) break;
       }
-      this._updated = true;
     }
     return res;
   }
 
   private getCellMonomerLengthsForSeqMsa(): number[] {
+    const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
+    // this.logger.debug(`${logPrefix}, start`);
     if (this._monomerLengthList === null) {
       this._monomerLengthList = new Array(1).fill(null);
-      this._updated = true;
     }
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];
@@ -175,13 +175,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       let seqWidth: number = 0;
       for (let seqMonI = 0; seqMonI < visibleSeqLength; ++seqMonI) {
         const seqMonLabel: string = seqMonList[seqMonI];
-        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.monomerLengthLimit);
         const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
         seqWidth += seqMonWidth;
         if (seqWidth >= this.colWidth) break;
       }
-      this._updated = true;
       this._processedMaxVisibleSeqLength = Math.max(this._processedMaxVisibleSeqLength, maxVisibleSeqLength);
     }
     return res; // first (and single) row of data
@@ -198,13 +197,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   public setMonomerLengthLimit(limit: number): void {
-    this.props.monomerLengthLimit = limit;
-    this._updated = true;
+    this.monomerLengthLimit = limit;
+    this.reset();
   }
 
   public setSeparatorWidth(width: number): void {
     this.props.separatorWidth = width;
-    this._updated = true;
+    this.reset();
   }
 
   public isMsa(): boolean {

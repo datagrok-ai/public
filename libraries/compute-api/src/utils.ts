@@ -5,12 +5,6 @@ import type {
   testPipeline as testPipelineType,
 } from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
 
-declare global {
-  interface Window {
-    compute: any
-  }
-}
-
 export function testPipeline(
   ...args: Parameters<typeof testPipelineType>
 ): ReturnType<typeof testPipelineType> {

@@ -34,7 +34,11 @@ export async function admeFormEditor(call: DG.FuncCall) {
   if (molColumns.length === 1) {
     call.func.prepare({molecules: molColumns[0]}).call(true);
   } else {
-    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0], null, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
+    const colInput = ui.input.column('Molecules', {
+      table: grok.shell.tv.dataFrame,
+      value: molColumns[0],
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE
+    });
     ui.dialog({title: 'Full profile'})
     .add(colInput)
     .onOK(async () => {

@@ -6,14 +6,9 @@ import type {
   makeValidationResult as makeValidationResultType,
   makeAdvice as makeAdviceType,
   makeRevalidation as makeRevalidationType,
+  mergeValidationResults as mergeValidationResultsType,
   ValidationInfo as ValidationInfoType,
 } from '@datagrok-libraries/compute-utils';
-
-declare global {
-  interface Window {
-    compute: any
-  }
-}
 
 export function makeValidationResult(
   ...args: Parameters<typeof makeValidationResultType>
@@ -31,6 +26,12 @@ export function makeRevalidation(
   ...args: Parameters<typeof makeRevalidationType>
 ): ReturnType<typeof makeRevalidationType> {
   return window.compute.makeRevalidation(...args);
+}
+
+export function mergeValidationResults(
+  ...args: Parameters<typeof mergeValidationResultsType>
+): ReturnType<typeof mergeValidationResultsType> {
+  return window.compute.mergeValidationResults(...args);
 }
 
 export type ValidationInfo = ValidationInfoType;

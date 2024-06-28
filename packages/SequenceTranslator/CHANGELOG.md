@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.3.6 (2024-06-12)
+
+### Bug fixes
+
+* Fix bulk input in Pattern app
+
 ## 1.3.5 (2024-06-13)
 
 ### Features
