@@ -54,11 +54,18 @@ export class DemoDatasets {
     return this.getDemoTable('random walk', rows, columns);
   }
 
-  /** Demographics
-   * @returns {DataFrame}*/
-  demog(rows: number = 10000): DataFrame {
-    return this.getDemoTable('demog', rows);
-  }
+  /** Demographics:
+   * - subj: int
+   * - study: string
+   * - site: string
+   * - age: int
+   * - sex: string
+   * - race: string
+   * - disease: string
+   * - started: date
+   * - height: float
+   * - weight: float */
+  demog(rows: number = 10000): DataFrame { return this.getDemoTable('demog', rows); }
 
   /** Demographics
    * @returns {DataFrame}*/
