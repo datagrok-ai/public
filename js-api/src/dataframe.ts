@@ -946,9 +946,7 @@ export class Column<T = any> {
     return api.grok_Column_IsNone(this.dart, i);
   }
 
-  /** Gets the value of the specified tag.
-   *  @param {string} tag
-   *  @returns {string} */
+  /** Returns the value of the specified tag, or null if the tag is not present. */
   getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.dart, tag);
   }
@@ -2455,4 +2453,9 @@ export class ColumnMetaHelper {
 
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
+
+  /** When specified, column filter treats the split strings as separate values.
+   * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
+  get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
+  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
 }

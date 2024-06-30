@@ -121,6 +121,11 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
  use the **.multi-value-separator** column tag to
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
+  <details>
+  <summary>Example</summary>
+  <pre> t.col('languages').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n'); </pre>
+  <img src="img/filters-multi-values.gif" alt="Filtering of multi-value cells"/>
+  </details>
 
 * To work with custom filters, use such column tags as `.custom-filter-type` and
   `.ignore-custom-filter`. The `.custom-filter-type` tag contains a custom
