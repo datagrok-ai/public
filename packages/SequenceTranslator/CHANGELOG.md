@@ -1,6 +1,12 @@
 # Sequence Translator changelog
 
-## 1.3.6 (2024-06-12)
+## 1.3.7 (2024-07-01)
+
+### Bug fixes
+
+* Fix style for colored text input
+
+## 1.3.6 (2024-06-26)
 
 ### Bug fixes
 
