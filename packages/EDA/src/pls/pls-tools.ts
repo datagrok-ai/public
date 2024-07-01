@@ -141,7 +141,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const scoresScatter = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.SCORES,
