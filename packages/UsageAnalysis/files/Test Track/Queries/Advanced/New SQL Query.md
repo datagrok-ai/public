@@ -1,3 +1,4 @@
+**PostgresDart**
 1. Go to **Browse** > **Databases**
 2. Expand **PostgresDart** > **northwind** > **Schemas** > **public**. A list of tables opens.
 3. Right-click the **products** DB table and select **New SQL Query** from the context menu.
@@ -5,5 +6,5 @@
 5. On Toolbox, click the **Run query**... action.
 ---
 {
-  "order": 4
+  "order": 3
 }
