@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
-import {testDataForBinaryClassification} from './data-generators';
+import {testDataForBinaryClassification, testDataForClassifiers} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, isApplicableSVM, showTrainReport, getPackedModel} from './svm';
 
@@ -30,6 +30,9 @@ import {runKNNImputer} from './missing-values-imputation/ui';
 import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
+
+import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
+import {SoftmaxClassifier} from './softmax-classifier';
 
 export const _package = new DG.Package();
 
@@ -338,6 +341,7 @@ export async function testDataLinearNonSeparable(name: string, sigma: number, sa
 export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string,
   gamma: number): Promise<any> {
   const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
+  console.log(trainedModel);
   return getPackedModel(trainedModel);
 }
 
@@ -541,4 +545,216 @@ export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column
 //desription: Missing values imputation using the k-nearest neighbors method
 export function kNNImputation() {
   runKNNImputer();
+}
+
+//name: linearRegression
+//description: Linear Regression demo
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: column target {type: numerical}
+//input: bool plot = true {caption: plot}
+export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): Promise<void> {
+  const t1 = performance.now();
+  const params = await getLinearRegressionParams(features, target);
+  const t2 = performance.now();
+  console.log(`Fit: ${t2 - t1} ms.`);
+  const prediction = getPredictionByLinearRegression(features, params);
+  console.log(`Predict: ${performance.now() - t2} ms.`);
+
+  prediction.name = table.columns.getUnusedName(prediction.name);
+
+  table.columns.add(prediction);
+
+  if (plot) {
+    const view = grok.shell.tableView(table.name);
+    view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+      xColumnName: target.name,
+      yColumnName: prediction.name,
+      showRegressionLine: true,
+    });
+  }
+}
+
+//name: generateDatasetForLinearRegressionTest
+//description: Create demo dataset for linear regression
+//input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
+//input: int colCount = 10 {min: 1; max: 1000; step: 10}
+//input: double featuresScale = 10 {min: -1000; max: 1000; step: 10}
+//input: double featuresBias = 10 {min: -1000; max: 1000; step: 10}
+//input: double paramsScale = 10 {min: -1000; max: 1000; step: 10}
+//input: double paramsBias = 10 {min: -1000; max: 1000; step: 10}
+//output: dataframe table
+export function generateDatasetForLinearRegressionTest(rowCount: number, colCount: number,
+  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
+  return getTestDatasetForLinearRegression(rowCount, colCount, featuresScale, featuresBias, paramsScale, paramsBias);
+}
+
+//name: trainLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//output: dynamic model
+export async function trainLinearRegression(df: DG.DataFrame, predict_column: string): Promise<Uint8Array> {
+  const features = df.columns;
+  const target = features.byName(predict_column);
+  features.remove(predict_column);
+
+  const params = await getLinearRegressionParams(features, target);
+
+  return new Uint8Array(params.buffer);
+}
+
+//name: applyLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyLinearRegression(df: DG.DataFrame, model: any): DG.DataFrame {
+  const features = df.columns;
+  const params = new Float32Array((model as Uint8Array).buffer);
+  return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
+}
+
+//name: isApplicableLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: string): boolean {
+  for (const col of df.columns) {
+    if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
+      return false;
+  }
+  return true;
+}
+
+//top-menu: ML | Generate Data ...
+//name: generateClassifierTestData
+//desription: Generates demo data for classifiers testing
+//input: int featureCount = 2 {caption: features; min: 1; max: 2000; step: 10}
+//input: int samplesCount = 1000 {caption: samples; min: 1; max: 1000000; step: 1000}
+//input: bool useInts = true {caption: with ints}
+//input: double violatorsRatio = 0.05 {caption: violators; min: 0; max: 1}
+//input: double min = -10 {min: -1000; max: 1000}
+//input: double max = 10 {min: -1000; max: 1000}
+//output: dataframe df {caption: Test data}
+export function generateClassifierTestData(featureCount: number, samplesCount: number,
+  useInts: boolean, violatorsRatio: number, min: number, max: number): DG.DataFrame {
+  return testDataForClassifiers(featureCount, samplesCount, useInts, violatorsRatio, min, max);
+}
+
+//name: trainSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 20} [Learning rate]
+//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step: 10} [Fitting iterations count]
+//input: double penalty = 0.1 {category: Hyperparameters; min: 0.0001; max: 1} [Regularization rate]
+//input: double tolerance = 0.001 {category: Hyperparameters; min: 0.00001; max: 0.1} [Fitting tolerance]
+//output: dynamic model
+export async function trainSoftmax(df: DG.DataFrame, predict_column: string, rate: number,
+  iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
+  const features = df.columns;
+  const target = features.byName(predict_column);
+  features.remove(predict_column);
+
+  const model = new SoftmaxClassifier({
+    classesCount: target.categories.length,
+    featuresCount: features.length,
+  });
+
+  await model.fit(features, target, rate, iterations, penalty, tolerance);
+
+  return model.toBytes();
+}
+
+//name: applySoftmax
+//meta.mlname: Softmax
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applySoftmax(df: DG.DataFrame, model: any): DG.DataFrame {
+  const features = df.columns;
+  const unpackedModel = new SoftmaxClassifier(undefined, model);
+
+  return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
+}
+
+//name: isApplicableSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export function isApplicableSoftmax(df: DG.DataFrame, predict_column: string): boolean {
+  for (const col of df.columns) {
+    if (col.name !== predict_column) {
+      if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
+        return false;
+
+      if (col.stats.missingValueCount > 0)
+        return false;
+    }
+  }
+
+  const target = df.columns.byName(predict_column);
+
+  if (target.stats.missingValueCount > 0)
+    return false;
+
+  return (target.type === DG.COLUMN_TYPE.STRING);
+}
+
+//top-menu: ML | Fit SoftMax ...
+//name: fitSoftmaxDemo
+//desription: Softmax demo
+//input: dataframe df
+//input: column_list features {type: numerical}
+//input: column target {type: string}
+//input: bool scatter = true
+export async function fitSoftmaxDemo(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column, scatter: boolean) {
+  const c = target.categories.length;
+  const n = features.length;
+  const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
+  let start = performance.now();
+  await model.fit(features, target);
+  let finish = performance.now();
+
+  console.log(`Fitting: ${finish - start} ms.`);
+
+  const packed = model.toBytes();
+
+  const unpacked = new SoftmaxClassifier(undefined, packed);
+  unpacked.toBytes();
+
+  start = performance.now();
+  const pred = model.predict(features);
+  finish = performance.now();
+  console.log(`Fitting: ${finish - start} ms.`);
+
+  df.columns.add(pred);
+
+  const targetRaw = target.getRawData();
+  const predRaw = pred.getRawData();
+
+  const rows = df.rowCount;
+  const correct = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'correct', df.rowCount);
+  for (let i = 0; i < rows; ++i)
+    correct.set(i, targetRaw[i] === predRaw[i]);
+
+  df.columns.add(correct);
+
+  if (scatter) {
+    const v = grok.shell.getTableView(df.name);
+    v.addViewer(DG.VIEWER.SCATTER_PLOT, {
+      xColumnName: features.byIndex(0).name,
+      yColumnName: features.byIndex(1).name,
+      color: 'correct',
+    });
+  }
 }
