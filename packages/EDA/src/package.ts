@@ -651,12 +651,13 @@ export function generateClassifierTestData(featureCount: number, samplesCount: n
 //meta.mlrole: train
 //input: dataframe df
 //input: string predict_column
-//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 100} [Learning rate]
-//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step; 50} [Fitting iterations count]
-//input: double penalty = 0.1 {category: Hyperparameters; min: 0; max: 1} [Regularization rate]
+//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 20} [Learning rate]
+//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step: 10} [Fitting iterations count]
+//input: double penalty = 0.1 {category: Hyperparameters; min: 0.0001; max: 1} [Regularization rate]
 //input: double tolerance = 0.001 {category: Hyperparameters; min: 0.00001; max: 0.1} [Fitting tolerance]
 //output: dynamic model
-export async function trainSoftmax(df: DG.DataFrame, predict_column: string, rate: number, iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
+export async function trainSoftmax(df: DG.DataFrame, predict_column: string, rate: number,
+  iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
   const features = df.columns;
   const target = features.byName(predict_column);
   features.remove(predict_column);
@@ -677,7 +678,7 @@ export async function trainSoftmax(df: DG.DataFrame, predict_column: string, rat
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export function applySoftmax(df: DG.DataFrame, model: Uint8Array): DG.DataFrame {
+export function applySoftmax(df: DG.DataFrame, model: any): DG.DataFrame {
   const features = df.columns;
   const unpackedModel = new SoftmaxClassifier(undefined, model);
 

@@ -489,8 +489,14 @@ export function isApplicableSVM(df: DG.DataFrame, predictColumn: string): boolea
   const columns = df.columns;
   const labels = columns.byName(predictColumn);
   columns.remove(predictColumn);
-  let res: boolean = labels.type == 'string';
-  for (let i = 0; i < columns.length; i++)
-    res = res && (columns.byIndex(i).type == 'double' || columns.byIndex(i).type == 'int');
-  return res;
+
+  if ((labels.type !== DG.COLUMN_TYPE.STRING) || (labels.categories.length > 2))
+    return false;
+
+  for (const col of columns) {
+    if ((col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.INT))
+      return false;
+  }
+
+  return true;
 }
