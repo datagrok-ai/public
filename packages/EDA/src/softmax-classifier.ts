@@ -16,6 +16,7 @@ const DEFAULT_LEARNING_RATE = 1;
 const DEFAULT_ITER_COUNT = 100;
 const DEFAULT_PENALTY = 0.1;
 const DEFAULT_TOLERANCE = 0.001;
+const BYTES_PER_MODEL_SIZE = 4;
 
 /** Train data sizes */
 type DataSpecification = {
@@ -63,7 +64,14 @@ export class SoftmaxClassifier {
       this.classesCount = c;
     } else if (packedModel !== undefined) { // Get classifier from packed model (bytes)
       try {
-        const modelDf = DG.DataFrame.fromByteArray(packedModel);
+        // Extract model's bytes count
+        const sizeArr = new Uint32Array(packedModel.buffer, 0, 1);
+        const bytesCount = sizeArr[0];
+
+        // Model's bytes
+        const modelBytes = new Uint8Array(packedModel.buffer, BYTES_PER_MODEL_SIZE, bytesCount);
+
+        const modelDf = DG.DataFrame.fromByteArray(modelBytes);
         const columns = modelDf.columns;
         const colsCount = columns.length;
 
@@ -127,7 +135,20 @@ export class SoftmaxClassifier {
 
     const modelDf = DG.DataFrame.fromColumns(columns);
 
-    return modelDf.toByteArray();
+    const modelBytes = modelDf.toByteArray();
+    const bytesCount = modelBytes.length;
+
+    // Packed model bytes, including bytes count
+    const packedModel = new Uint8Array(bytesCount + BYTES_PER_MODEL_SIZE);
+
+    // 4 bytes for storing model's bytes count
+    const sizeArr = new Uint32Array(packedModel.buffer, 0, 1);
+    sizeArr[0] = bytesCount;
+
+    // Store model's bytes
+    packedModel.set(modelBytes, BYTES_PER_MODEL_SIZE);
+
+    return packedModel;
   } // toBytes
 
   /** Train classifier */

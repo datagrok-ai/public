@@ -646,43 +646,54 @@ export function generateClassifierTestData(featureCount: number, samplesCount: n
   return testDataForClassifiers(featureCount, samplesCount, useInts, violatorsRatio, min, max);
 }
 
-
-// ==========================
-
-//name: trainMulticlassLinearKernelSVM
-//meta.mlname: Multiclass linear kernel LS-SVM
+//name: trainSoftmax
+//meta.mlname: Softmax
 //meta.mlrole: train
 //input: dataframe df
 //input: string predict_column
-//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 100} [Learning rate]
+//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step; 50} [Fitting iterations count]
+//input: double penalty = 0.1 {category: Hyperparameters; min: 0; max: 1} [Regularization rate]
+//input: double tolerance = 0.001 {category: Hyperparameters; min: 0.00001; max: 0.1} [Fitting tolerance]
 //output: dynamic model
-export async function trainMulticlassLinearKernelSVM(df: DG.DataFrame, predict_column: string,
-  gamma: number): Promise<Uint8Array> {
-  const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);
-  console.log(trainedModel);
-  return new Uint8Array(10);
+export async function trainSoftmax(df: DG.DataFrame, predict_column: string, rate: number, iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
+  const features = df.columns;
+  const target = features.byName(predict_column);
+  features.remove(predict_column);
+
+  const model = new SoftmaxClassifier({
+    classesCount: target.categories.length,
+    featuresCount: features.length,
+  });
+
+  await model.fit(features, target, rate, iterations, penalty, tolerance);
+
+  return model.toBytes();
 }
 
-//name: applyMulticlassLinearKernelSVM
-//meta.mlname: Multiclass linear kernel LS-SVM
+//name: applySoftmax
+//meta.mlname: Softmax
 //meta.mlrole: apply
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export async function applyMulticlassLinearKernelSVM(df: DG.DataFrame, model: Uint8Array): Promise<DG.DataFrame> {
-  return await getPrediction(df, model);
+export function applySoftmax(df: DG.DataFrame, model: Uint8Array): DG.DataFrame {
+  const features = df.columns;
+  const unpackedModel = new SoftmaxClassifier(undefined, model);
+
+  return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
 }
 
-//name: isApplicableMulticlassLinearKernelSVM
-//meta.mlname: Multiclass linear kernel LS-SVM
+//name: isApplicableSoftmax
+//meta.mlname: Softmax
 //meta.mlrole: isApplicable
 //input: dataframe df
 //input: string predict_column
 //output: bool result
-export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_column: string): boolean {
+export function isApplicableSoftmax(df: DG.DataFrame, predict_column: string): boolean {
   for (const col of df.columns) {
     if (col.name !== predict_column) {
-      if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT))
+      if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
         return false;
 
       if (col.stats.missingValueCount > 0)
@@ -695,18 +706,17 @@ export function isApplicableMulticlassLinearKernelSVM(df: DG.DataFrame, predict_
   if (target.stats.missingValueCount > 0)
     return false;
 
-  const predictType = target.type;
-
-  return (predictType === DG.COLUMN_TYPE.BOOL) || (predictType === DG.COLUMN_TYPE.STRING);
+  return (target.type === DG.COLUMN_TYPE.STRING);
 }
 
 //top-menu: ML | Fit SoftMax ...
-//name: fitSoftmax
+//name: fitSoftmaxDemo
+//desription: Softmax demo
 //input: dataframe df
 //input: column_list features {type: numerical}
 //input: column target {type: string}
 //input: bool scatter = true
-export async function fitSoftmax(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column, scatter: boolean) {
+export async function fitSoftmaxDemo(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column, scatter: boolean) {
   const c = target.categories.length;
   const n = features.length;
   const model = new SoftmaxClassifier({classesCount: c, featuresCount: n});
