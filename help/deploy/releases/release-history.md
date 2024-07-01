@@ -22,6 +22,13 @@ See also:
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
 
+## 2024-06-21 1.19.1
+
+### Fixes:
+
+* GROK-16000: HashId for package functions doesn't work.
+
+
 ## 2024-06-07 Datagrok 1.19.0 release
  
 ### Breaking changes:
