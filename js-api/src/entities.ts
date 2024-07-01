@@ -714,12 +714,16 @@ export class FileInfo extends Entity {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 
-  static fromBytes(data: Uint8Array): FileInfo {
-      return api.grok_FileInfo_FromBytes(data);
+  static fromBytes(path: string, data: Uint8Array): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromBytes(path, data);
   }
 
-  static fromString(data: string): FileInfo {
-    return api.grok_FileInfo_FromString(data);
+  static fromString(path: string, data: string): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromString(path, data);
   }
 }
 

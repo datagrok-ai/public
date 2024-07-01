@@ -19,12 +19,6 @@ export type CompositionPipeline = CompositionPipelineType;
 export type PipelineCompositionConfiguration = PipelineCompositionConfigurationType;
 export type PipelineConfiguration = PipelineConfigurationType;
 
-declare global {
-  interface Window {
-    compute: any
-  }
-}
-
 export function createCompView(
   ...args: ConstructorParameters<typeof ComputationViewType>
 ): ComputationViewType {
@@ -51,6 +45,6 @@ export function createCompositionPipeline(
 
 export function composeCompositionPipeline(
   ...args: Parameters<typeof CompositionPipelineType.compose>
-) {
+): ReturnType<typeof CompositionPipelineType.compose> {
   return window.compute.CompositionPipeline.compose(...args);
 }

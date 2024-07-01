@@ -314,6 +314,14 @@ jobs:
             export GROK_SPAWNER_VERSION='bleeding-edge'
             export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
+                    
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "bio" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "helm" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "st" ]]; then
+            DATAGROK_VERSION='bleeding-edge'
+            export GROK_SPAWNER_VERSION='bleeding-edge'
+            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
+          fi
           export DATAGROK_VERSION
 
           # Skip initial setup in CI

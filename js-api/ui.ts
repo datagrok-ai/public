@@ -908,7 +908,7 @@ export namespace input {
     return _create(d4.InputType.Columns, name, options);
   }
 
-  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame[]>): InputBase<DataFrame> {
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame> {
     return _create(d4.InputType.Table, name, options);
   }
 
@@ -1282,8 +1282,9 @@ export class tools {
       let renderWidth = Math.ceil(value.getBoundingClientRect().width);
       value.remove();
       widths.push(renderWidth);
-      api.grok_Tooltip_SetOn(element, element?.textContent);
-    });
+      api.grok_Tooltip_SetOn(element, () => {
+        return  element != null && element.clientWidth < element.children[0].scrollWidth ? element?.textContent : null
+      });    });
     return widths;
   }
 }

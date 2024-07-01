@@ -25,7 +25,7 @@ export class AddNewColumnDialog {
   placeholderType: string = 'Type'; // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 25;
-  maxPreviwRowCount: number = 100;
+  maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)}/g;
   tooltips = {
@@ -199,7 +199,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the Preview Grid. */
   initUiPreview(): HTMLDivElement {
     // Limiting the number of rows in the Preview Grid:
-    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviwRowCount);
+    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviewRowCount);
     this.previwDf = this.sourceDf!.clone(DG.BitSet.create(previewRowCount, (idx) => idx < previewRowCount));
     this.gridPreview = DG.Viewer.grid(this.previwDf!);
     this.gridPreview.root.classList.add('ui-grid-with-thin-scrollbars');
