@@ -251,6 +251,22 @@ category('Dapi: functions calls', async () => {
     expect(loadedCalls.inputs[0].name, 'a');
   }, {skipReason: 'GROK-14735'});
 
+  test('list package script funccalls with package', async () => {
+    const loadedCalls = await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.name="dummyPackageScript"`).list();
+
+    expect(loadedCalls[0].func.package, 'ApiTests');
+  });
+
+  test('list package function funccalls with package', async () => {
+    const loadedCalls = await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list();
+
+    expect(loadedCalls[0].func.package, 'ApiTests');
+  });
+
   test('filter script funcCalls by nqName', async () => {
     // expect no-throw
     await grok.dapi.functions.calls
