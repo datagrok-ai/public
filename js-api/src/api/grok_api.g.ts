@@ -1326,8 +1326,8 @@ export interface IDartApi {
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
-  grok_FileInfo_FromBytes(data: any): any;
-  grok_FileInfo_FromString(data: String): any;
+  grok_FileInfo_FromBytes(path: String, data: any): any;
+  grok_FileInfo_FromString(path: String, data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
