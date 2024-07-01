@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as JSDraw2 from 'JSDraw2';
 import wu from 'wu';
 
+import {HelmType, Mol} from '@datagrok-libraries/bio/src/helm/types';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
@@ -18,6 +18,8 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {_package, getMonomerLib} from '../package';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {GridCell, GridCellStyle, x} from 'datagrok-api/dg';
 
 class WrapLogger implements ILogger {
   constructor(
@@ -43,6 +45,8 @@ class WrapLogger implements ILogger {
 
 export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
   private _auxList: (HelmAux | null)[];
+
+  private monomerLib: IMonomerLib | null = null;
 
   constructor(
     gridCol: DG.GridColumn | null,
@@ -134,7 +138,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const argsX = (e.offsetX - gcb.x) * dpr;
     const argsY = (e.offsetY - gcb.y) * dpr;
 
-    const editorMol: JSDraw2.IEditorMol | null = aux.mol;
+    const editorMol: Mol<HelmType> | null = aux.mol;
     if (!editorMol) {
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
@@ -152,10 +156,22 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     }
   }
 
+  public override render(g: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number,
+    gridCell: GridCell, cellStyle: GridCellStyle) {
+    if (!this.monomerLib) {
+      this.monomerLib = getMonomerLib();
+      if (this.monomerLib) {
+        this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
+      }
+    }
+    super.render(g, x, y, w, h, gridCell, cellStyle);
+  }
+
   // -- Handle events --
+
   private monomerLibOnChanged(_value: any): void {
     this.reset();
-    this.invalidateGrid();
   }
 
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {

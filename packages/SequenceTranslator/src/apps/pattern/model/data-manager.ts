@@ -274,7 +274,10 @@ export class DataManager {
       this.currentUserPatternNameToHash.set(patternName, patternHash);
     } else {
       if (!userIdsToUserNames.has(authorID)) {
-        const userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
+        let userFriendlyName = '<UNKNOWN_USER>';
+        try {
+          userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
+        } catch (e) {}
         userIdsToUserNames.set(authorID, userFriendlyName);
       }
       const fullPatternName = patternName + ` (created by ${userIdsToUserNames.get(authorID)})`;

@@ -1,10 +1,41 @@
 # Bio changelog
 
-## 2.12.24 (WIP)
+## 2.13.3 (2024-06-28)
+
+### Bug fixes
+
+* Fix MaxMonomerLength package setting, and column setting
+* Fix loading monomer libs for explicit stuck from tests
+
+## 2.13.2 (2024-06-26)
+
+### Features
+
+* Add package settings for MonomerWidthMode
+
+### Bug fixes
+
+* Fix cell renderer for long mode
+* Fix Cell Renderer column widget for MonomerWidthMode
+* Enable package settings editor widget
+
+## 2.13.1 (2024-06-25)
+
+Bump dependencies versions JSDraw.Lite and HELMWebEditor
+
+## 2.13.0 (2024-06-24)
 
 ### Bug fixes
 
 * PolyTool: files moved to SequenceTranslator
+* GROK-15994: Bio: Color missing monomers
+* Use types from js-draw-lite, helm-web-editor
+* Fix error on access to MaxMonomerLength package settings
+* Fix getMonomer for PolymerType unspecified as any
+* Fix monomer lib validation
+* GROK-15995: Colors for libraries monomers
+* Fix error on open Manage Monomer Libraries
+* Fix WebLogo in a column header tooltip
 
 ## 2.12.23 (2024-05-30)
 

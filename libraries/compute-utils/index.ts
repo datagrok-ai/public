@@ -2,6 +2,9 @@ export {FunctionView, ComputationView, PipelineView, RichFunctionView, RunCompar
   SensitivityAnalysisView} from './function-views';
 export {historyUtils} from './history-utils/src/history-utils';
 export {UiUtils} from './shared-components';
-export {makeValidationResult, makeAdvice, makeRevalidation, ValidationInfo} from './shared-utils/validation';
+export {
+  makeValidationResult, makeAdvice, makeRevalidation, mergeValidationResults,
+  ValidationInfo,
+} from './shared-utils/validation';
 export {CompositionPipeline, PipelineConfiguration, PipelineCompositionConfiguration,
   RuntimeController, path} from './composition-pipeline';

@@ -80,7 +80,7 @@ export async function applyNN(df, model) {
 //input: string predict_column
 //output: bool result
 export async function isApplicableNN(df, predict_column) {
-    return true;
+    return df.columns.byName(predict_column).matches('numerical');
 }
 
 
@@ -99,6 +99,8 @@ export async function visualizeNN(df, predict_column, target_column, model) {
     const width = 1000;
     const height = 400;
     let canvas = ui.canvas(1000, 400);
+    canvas.style.width = '600px';
+    
     const g = canvas.getContext("2d");
     let blockWidth = (width - 2 * offset) / (loadedModel.layers.length + 1);
 
@@ -114,7 +116,7 @@ export async function visualizeNN(df, predict_column, target_column, model) {
         if (layer.kernel !== undefined) {
             let curBlockHeight = (height - 2 * offset) / layer.kernel.shape[0];
             let nxtBlockHeight = (height - 2 * offset) / layer.kernel.shape[1];
-            var curWeights = _weights.find((w, _index, _obj) => w.name === layer.kernel.originalName).tensor.arraySync();
+            var curWeights = weights.find((w, _index, _obj) => w.name === layer.kernel.originalName).tensor.arraySync();
             for (var j = 0; j < layer.kernel.shape[0]; j++) {
                 for (var k = 0; k < layer.kernel.shape[1]; k++) {
                     var intensity = curWeights[j][k];
@@ -142,13 +144,5 @@ export async function visualizeNN(df, predict_column, target_column, model) {
         drawWeights(layer, i);
     }
     drawLayer(loadedModel.layers[loadedModel.layers.length - 1].output, loadedModel.layers.length);
-
-    let res = ui.div();
-    res.append(canvas);
-
-    let summary = '';
-    loadedModel.summary(undefined, undefined, (s) => summary += s + '\n');
-    res.append(ui.divText(summary));
-
-    return res;
+    return canvas;
 }

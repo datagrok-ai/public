@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '@datagrok-libraries/bio/src/types/helm';
-
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionBaseEditor, PreprocessFunctionReturnType}
   from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
@@ -78,6 +76,8 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
+import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 export const _package = new BioPackage();
 
@@ -109,13 +109,19 @@ let monomerLib: IMonomerLib | null = null;
 
 //tags: init
 export async function initBio() {
-  const logPrefix = 'Bio: initBio()';
+  const logPrefix = 'Bio: _package.initBio()';
   _package.logger.debug(`${logPrefix}, start`);
   const module = await grok.functions.call('Chem:getRdKitModule');
   const t1: number = window.performance.now();
   await Promise.all([
     (async () => {
       const monomerLibManager = await MonomerLibManager.getInstance();
+      // Fix user lib settings for explicit stuck from a terminated test
+      const libSettings = await getUserLibSettings();
+      if (libSettings.explicit) {
+        libSettings.explicit = [];
+        await setUserLibSettings(libSettings);
+      }
       await monomerLibManager.loadLibraries();
       monomerLib = monomerLibManager.getBioLib();
     })(),
@@ -152,7 +158,7 @@ export async function initBio() {
 
   hydrophobPalette = new SeqPaletteCustom(palette);
 
-  _package.logger.debug('Bio: initBio(), completed');
+  _package.logger.debug(`${logPrefix}, end`);
 }
 
 //name: sequenceTooltip

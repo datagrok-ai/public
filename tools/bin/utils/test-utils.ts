@@ -102,6 +102,22 @@ export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
   });
 }
 
+export async function timeout(func: () => Promise<any>, testTimeout: number, timeoutReason: string = 'EXECUTION TIMEOUT'): Promise<any> {
+  let timeout: any = null;
+  const timeoutPromise = new Promise<any>((_, reject) => {
+    timeout = setTimeout(() => {
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject(timeoutReason);
+    }, testTimeout);
+  });
+  try {
+    return await Promise.race([func(), timeoutPromise]);
+  } finally {
+    if (timeout)
+      clearTimeout(timeout);
+  }
+} 
+
 export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);

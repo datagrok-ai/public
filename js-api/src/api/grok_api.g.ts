@@ -17,6 +17,8 @@ export interface IDartApi {
   grok_List_Add(x: any, element: any): any;
   grok_List_Sort(x: any): any;
   grok_List_Remove(x: any, element: any): any;
+  grok_JSON_encode(o: any): any;
+  grok_JSON_decode(s: String): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
   grok_CompleteError(c: any, result: any): any;
@@ -28,6 +30,7 @@ export interface IDartApi {
   grok_Set_CurrentViewer(x: any): any;
   grok_Get_LastError(): Promise<any>;
   grok_Clear_LastError(): any;
+  grok_Set_LastError(_: any): any;
   grok_Get_TopMenu(): any;
   grok_Get_TopPanel(): any;
   grok_Get_BottomPanel(): any;
@@ -1447,6 +1450,7 @@ export interface IDartApi {
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
+  grok_Parse_Command(command: String, safe: Bool): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1552,6 +1556,7 @@ export interface IDartApi {
 
   // Generated from ../ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;
+  grok_TagValues_Create(): any;
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 }
