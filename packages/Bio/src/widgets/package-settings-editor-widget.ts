@@ -1,9 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MonomerWidthMode} from '../utils/cell-renderer-consts';
-
 import {_package} from '../package';
+
 
 export class PackageSettingsEditorWidget extends DG.Widget {
   maxMonomerLengthProp: DG.Property;
@@ -22,34 +21,35 @@ export class PackageSettingsEditorWidget extends DG.Widget {
   }
 
   async init(): Promise<void> {
-    const monomerWidthModeInput = ui.choiceInput('Monomer width mode',
-      _package.properties.MonomerWidthMode,
-      [MonomerWidthMode.short, MonomerWidthMode.long],
-      (value: MonomerWidthMode) => {
-        _package.properties.MonomerWidthMode = value;
-      });
-
-    const maxMonomerLengthInput = ui.intInput('Max monomer length',
-      _package.properties.MaxMonomerLength,
-      (value: number) => {
+    const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
+      value: _package.properties.MaxMonomerLength!,
+      nullable: true, min: 0,
+      onValueChanged: () => {
         // Handle user changed value
-        _package.properties.MaxMonomerLength = value;
-      });
+        _package.properties.MaxMonomerLength = maxMonomerLengthInput.value ?? null;
+      },
+      tooltipText: this.maxMonomerLengthProp.description,
+    });
 
-    const tooltipWebLogoInput = ui.boolInput('Tooltip WebLogo',
-      _package.properties.TooltipWebLogo,
-      (value: boolean) => {
-        _package.properties.TooltipWebLogo = value;
-      });
+    const tooltipWebLogoInput = ui.input.bool('Tooltip WebLogo', {
+      value: _package.properties.TooltipWebLogo,
+      nullable: false,
+      onValueChanged: () => {
+        _package.properties.TooltipWebLogo = tooltipWebLogoInput.value;
+      },
+      tooltipText: this.tooltipWebLogo.description,
+    });
 
-    const defaultSeparatorInput = ui.choiceInput('Default Separator',
-      _package.properties.DefaultSeparator, ['.', '/', '-'],
-      (value: string) => {
-        _package.properties.DefaultSeparator = value;
-      });
+    const defaultSeparatorInput = ui.input.choice('Default Separator', {
+      value: _package.properties.DefaultSeparator,
+      items: ['.', '/', '-'],
+      onValueChanged: () => {
+        _package.properties.DefaultSeparator = defaultSeparatorInput.value;
+      },
+      tooltipText: this.defaultSeparator.description,
+    });
 
     this.root.appendChild(ui.form([
-      monomerWidthModeInput,
       maxMonomerLengthInput,
       tooltipWebLogoInput,
       defaultSeparatorInput,

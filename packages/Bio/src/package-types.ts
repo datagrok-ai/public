@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {Observable, Subject} from 'rxjs';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {MonomerWidthMode} from './utils/cell-renderer-consts';
+import {Group} from 'datagrok-api/dg';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -19,22 +19,15 @@ export class BioPackageProperties extends Map<string, any> {
   private _onPropertyChanged: Subject<string> = new Subject<string>();
   public get onPropertyChanged(): Observable<string> { return this._onPropertyChanged; }
 
-  public get MonomerWidthMode(): MonomerWidthMode {
-    return super.get(BioPackagePropertiesNames.MonomerWidthMode) as MonomerWidthMode;
+  /** Monomer symbol maximum length displayed, null for unlimited. */
+  public get MaxMonomerLength(): number | null {
+    const vs = super.get(BioPackagePropertiesNames.MaxMonomerLength);
+    return vs === 'long' ? null : parseInt(vs);
   }
 
-  public set MonomerWidthMode(value: MonomerWidthMode) {
-    super.set(BioPackagePropertiesNames.MonomerWidthMode, value);
-    this._onPropertyChanged.next(BioPackagePropertiesNames.MonomerWidthMode);
-  }
-
-  /** Monomer name maximum length displayed in short mode. */
-  public get MaxMonomerLength(): number {
-    return super.get(BioPackagePropertiesNames.MaxMonomerLength) as number;
-  }
-
-  public set MaxMonomerLength(value: number) {
-    super.set(BioPackagePropertiesNames.MaxMonomerLength, value);
+  public set MaxMonomerLength(value: number | null) {
+    const vs = value === null ? 'long' : value.toString();
+    super.set(BioPackagePropertiesNames.MaxMonomerLength, vs);
     this._onPropertyChanged.next(BioPackagePropertiesNames.MaxMonomerLength);
   }
 

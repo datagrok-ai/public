@@ -43,6 +43,10 @@ export class Tags {
 
   static ColorCodingSchemeMin = '.color-coding-scheme-min';
 
+  static ColorCodingMatchType = '.color-coding-match-type';
+
+  static ColorCodingFallbackColor = '.color-coding-fallback-color';
+
   static ShowMarkersAlways = '.show-markers-always';
 
   static DefaultAxisType = '.default-axis-type';

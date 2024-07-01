@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {findMonomers, parseHelm} from '../utils';
+import {initHelmMainPackage} from './utils';
 
 
 /** Tests with default monomer library */
@@ -19,6 +20,7 @@ category('findMonomers', () => {
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 

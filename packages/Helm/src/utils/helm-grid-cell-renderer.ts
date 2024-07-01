@@ -18,6 +18,8 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {_package, getMonomerLib} from '../package';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
+import {GridCell, GridCellStyle, x} from 'datagrok-api/dg';
 
 class WrapLogger implements ILogger {
   constructor(
@@ -44,18 +46,13 @@ class WrapLogger implements ILogger {
 export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
   private _auxList: (HelmAux | null)[];
 
+  private monomerLib: IMonomerLib | null = null;
+
   constructor(
     gridCol: DG.GridColumn | null,
     tableCol: DG.Column<string>,
   ) {
     super(gridCol, tableCol, new WrapLogger(_package.logger) /* _package.logger */, true);
-
-    const monomerLib = getMonomerLib();
-    if (!monomerLib)
-      throw new Error('Helm package is not initialized yet.');
-    this.subs.push(monomerLib.onChanged.subscribe(() => {
-      this.reset();
-    }));
   }
 
   protected override reset(): void {
@@ -159,10 +156,22 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     }
   }
 
+  public override render(g: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number,
+    gridCell: GridCell, cellStyle: GridCellStyle) {
+    if (!this.monomerLib) {
+      this.monomerLib = getMonomerLib();
+      if (this.monomerLib) {
+        this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
+      }
+    }
+    super.render(g, x, y, w, h, gridCell, cellStyle);
+  }
+
   // -- Handle events --
+
   private monomerLibOnChanged(_value: any): void {
     this.reset();
-    this.invalidateGrid();
   }
 
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
