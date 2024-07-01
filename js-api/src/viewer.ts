@@ -491,6 +491,29 @@ export class FilterGroup extends Viewer {
   }
 }
 
+export type CategoryDataArgs = {
+  matchCondition: string,
+  mouseEvent: MouseEvent,
+  options: {[key: string]: any}
+}
+
+export type RowDataArgs = {
+  rowId: number,
+  mouseEvent: MouseEvent
+}
+
+export type LineChartLineArgs = {
+  chartIdx: number,
+  yColumnNames: string[], 
+  yAggrTypes: string[],
+}
+
+export type CorrPlotCellArgs = {
+  column1: string,
+  column2: string, 
+  value: number,
+}
+
 export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   constructor(dart: any) {
     super(dart);
@@ -507,7 +530,7 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); } 
-  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-linechart-line-selected'); }
+  get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
 }
 
@@ -557,7 +580,7 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
-  get onPointClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-scatterplot-point-click'); }
+  get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
@@ -565,13 +588,10 @@ export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
     super(dart);
   }
 
-  get onVisibilityToggled(): rxjs.Observable<null> { return this.onEvent('d4-histogram-visibility-toggled'); }
-  get onMissingValuesFilteredOut(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-out-missing-values'); }
-  get onMissingValuesOnly(): rxjs.Observable<null> { return this.onEvent('d4-histogram-filter-values-changed'); }
-  get onBinsSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-select-bins'); }
-  get onLineSelected(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-select-line'); }
-  get onMouseOverBins(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-mouse-over-bins'); }
-  get onMouseOverLine(): rxjs.Observable<EventData> { return this.onEvent('d4-histogram-mouse-over-line'); }
+  get onBinsSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-bins'); }
+  get onLineSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-line'); }
+  get onMouseOverBins(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-bins'); }
+  get onMouseOverLine(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-line'); }
 }
 
 export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
@@ -583,8 +603,8 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
     api.grok_BarChartViewer_ResetView(this.dart);
   }
 
-  get onCategoryClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
-  get onCategoryHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
+  get onCategoryClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
+  get onCategoryHovered(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-barchart-reset-view'); }
 }
 
@@ -593,7 +613,7 @@ export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
     super(dart);
   }
 
-  get onSegmentClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
+  get onSegmentClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
 }
 
 export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
@@ -601,8 +621,8 @@ export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
     super(dart);
   }
 
-  get onLineClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
-  get onLineHovered(): rxjs.Observable<EventData> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
+  get onLineClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
+  get onLineHovered(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
 }
 
 export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
@@ -617,7 +637,7 @@ export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
-  get onPointClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-boxplot-point-click'); }
+  get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-boxplot-point-click'); }
 }
 
 
@@ -626,7 +646,7 @@ export class CorrelationPlotViewer extends Viewer<interfaces.ICorrelationPlotSet
     super(dart);
   }
 
-  get onCorrCellClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
+  get onCorrCellClicked(): rxjs.Observable<EventData<CorrPlotCellArgs>> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
 }
 
 
@@ -635,7 +655,7 @@ export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
     super(dart);
   }
 
-  get onCalendarClicked(): rxjs.Observable<EventData> { return this.onEvent('d4-calendar-clicked'); }
+  get onCalendarClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-calendar-clicked'); }
 }
 
 export class PivotViewer extends Viewer<interfaces.IPivotViewerSettings> {
