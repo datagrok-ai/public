@@ -172,6 +172,32 @@ category('Dapi: functions calls', async () => {
     expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
   });
 
+  test('list package funccall with func\'s valid nqName', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFuncs = await GDF.calls
+      .filter(`func.name="dummyPackageFunction"`)
+      .include('func')
+      .list({pageSize: 10});
+
+    expect(loadedWithFuncs[0].func.nqName, 'ApiTests:dummyPackageFunction');
+  }, {skipReason: 'GROK-16228'});
+
+  test('list script funccall with func\'s valid nqName', async () => {
+    const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await scriptFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFuncs = await GDF.calls
+      .filter(`func.name="dummyPackageScript"`)
+      .include('func')
+      .list({pageSize: 10});
+  
+    expect(loadedWithFuncs[0].func.nqName, 'ApiTests:DummyPackageScript');
+  }, {skipReason: 'GROK-16228'});
+
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
