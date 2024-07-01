@@ -4,7 +4,7 @@ import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, LegendPosition, Type} from "./const";
+import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
@@ -1428,12 +1428,12 @@ export class Color {
   }
 
   /** Returns i-th categorical color (looping over the palette if needed) */
-  static getCategoricalColor(i: number): ColorType {
+  static getCategoricalColor(i: number): number {
     return Color.categoricalPalette[i % Color.categoricalPalette.length];
   }
 
   /** Returns either black or white color, depending on which one would be most contrast to the specified [color]. */
-  static getContrastColor(color: ColorType): ColorType {
+  static getContrastColor(color: number): number {
     return api.grok_Color_GetContrastColor(color);
   }
 
@@ -1444,16 +1444,16 @@ export class Color {
   static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
 
   /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
-  static toRgb(color: ColorType): string {
+  static toRgb(color: number): string {
     return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
   }
 
   /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
-  static get categoricalPalette(): ColorType[] {
+  static get categoricalPalette(): number[] {
     return api.grok_Color_CategoricalPalette();
   }
 
-  static get categoricalPalettes(): Array<ColorType[]> {
+  static get categoricalPalettes(): Array<number[]> {
     return api.grok_Color_GetCategoricalPalettes();
   }
 
@@ -1477,163 +1477,163 @@ export class Color {
     return min === max ? min : (x - min) / (max - min);
   }
 
-  static get gray(): ColorType {
+  static get gray(): number {
     return 0xFF808080;
   }
 
-  static get lightLightGray(): ColorType {
+  static get lightLightGray(): number {
     return 0xFFF0F0F0;
   }
 
-  static get lightGray(): ColorType {
+  static get lightGray(): number {
     return 0xFFD3D3D3;
   }
 
-  static get darkGray(): ColorType {
+  static get darkGray(): number {
     return 0xFF838383;
   }
 
-  static get blue(): ColorType {
+  static get blue(): number {
     return 0xFF0000FF;
   }
 
-  static get green(): ColorType {
+  static get green(): number {
     return 0xFF00FF00;
   }
 
-  static get darkGreen(): ColorType {
+  static get darkGreen(): number {
     return 0xFF006400;
   }
 
-  static get black(): ColorType {
+  static get black(): number {
     return 0xFF000000;
   }
 
-  static get yellow(): ColorType {
+  static get yellow(): number {
     return 0xFFFFFF00;
   }
 
-  static get white(): ColorType {
+  static get white(): number {
     return 0xFFFFFFFF;
   }
 
-  static get red(): ColorType {
+  static get red(): number {
     return 0xFFFF0000;
   }
 
-  static get darkRed(): ColorType {
+  static get darkRed(): number {
     return 0xFF8b0000;
   }
 
-  static get maroon(): ColorType {
+  static get maroon(): number {
     return 0xFF800000;
   }
 
-  static get olive(): ColorType {
+  static get olive(): number {
     return 0xFF808000;
   }
 
-  static get orange(): ColorType {
+  static get orange(): number {
     return 0xFFFFA500;
   }
 
-  static get darkOrange(): ColorType {
+  static get darkOrange(): number {
     return 0xFFFF8C00;
   }
 
-  static get lightBlue(): ColorType {
+  static get lightBlue(): number {
     return 0xFFADD8E6;
   }
 
-  static get darkBlue(): ColorType {
+  static get darkBlue(): number {
     return 0xFF0000A0;
   }
 
-  static get purple(): ColorType {
+  static get purple(): number {
     return 0xFF800080;
   }
 
-  static get whitesmoke(): ColorType {
+  static get whitesmoke(): number {
     return 0xFFF5F5F5;
   }
 
-  static get navy(): ColorType {
+  static get navy(): number {
     return 0xFF000080;
   }
 
-  static get cyan(): ColorType {
+  static get cyan(): number {
     return 0xFF00ffff;
   }
 
-  static get filteredRows(): ColorType {
+  static get filteredRows(): number {
     return 0xff1f77b4;
   }
 
-  static get filteredOutRows(): ColorType {
+  static get filteredOutRows(): number {
     return Color.lightLightGray;
   }
 
-  static get selectedRows(): ColorType {
+  static get selectedRows(): number {
     return Color.darkOrange;
   }
 
-  static get missingValueRows(): ColorType {
+  static get missingValueRows(): number {
     return Color.filteredOutRows;
   }
 
-  static get mouseOverRows(): ColorType {
+  static get mouseOverRows(): number {
     return 0xFFAAAAAA;
   }
 
-  static get currentRow(): ColorType {
+  static get currentRow(): number {
     return 0xFF38B738;
   }
 
-  static get histogramBar(): ColorType {
+  static get histogramBar(): number {
     return Color.filteredRows;
   }
 
-  static get barChart(): ColorType {
+  static get barChart(): number {
     return 0xFF24A221;
   }
 
-  static get scatterPlotMarker(): ColorType {
+  static get scatterPlotMarker(): number {
     return 0xFF40699c;
   }
 
-  static get scatterPlotSelection(): ColorType {
+  static get scatterPlotSelection(): number {
     return 0x80323232;
   }
 
-  static get scatterPlotZoom(): ColorType {
+  static get scatterPlotZoom(): number {
     return 0x80626200;
   }
 
-  static get areaSelection(): ColorType {
+  static get areaSelection(): number {
     return Color.lightBlue;
   }
 
-  static get rowSelection(): ColorType {
+  static get rowSelection(): number {
     return 0x60dcdca0;
   }
 
-  static get colSelection(): ColorType {
+  static get colSelection(): number {
     return 0x60dcdca0;
   }
 
-  static get areaZoom(): ColorType {
+  static get areaZoom(): number {
     return 0x80323232;
   }
 
-  static get gridWarningBackground(): ColorType {
+  static get gridWarningBackground(): number {
     return 0xFFFFB9A7;
   }
 
-  static get success(): ColorType {
+  static get success(): number {
     return 0xFF3cb173;
   }
 
-  static get failure(): ColorType {
+  static get failure(): number {
     return 0xFFeb6767;
   }
 }

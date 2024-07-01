@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -2348,11 +2348,11 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column.
-   * @param range - list of palette colors.
+   * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);

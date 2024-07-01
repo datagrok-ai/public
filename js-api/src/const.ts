@@ -619,7 +619,6 @@ export enum PERMISSION {
  * @typedef {string} Type
  * @typedef {string} SemType
  * @typedef {string} SimilarityMetric
- * @typedef {string} ColorType
  * @typedef {string} DockType
  *
  * @typedef {Object} ElementOptions
@@ -648,7 +647,6 @@ export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type StructureFilterType = `${STRUCTURE_FILTER_TYPE}`;
-export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
