@@ -251,6 +251,20 @@ category('Dapi: functions calls', async () => {
     expect(loadedCalls.inputs[0].name, 'a');
   }, {skipReason: 'GROK-14735'});
 
+  test('filter script funcCalls by nqName', async () => {
+    // expect no-throw
+    await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageScript"`).list();
+  });
+
+  test('filter package function funcCalls by nqName', async () => {
+    // expect no-throw
+    await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageFunction"`).list();
+  });
+
   test('find', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
