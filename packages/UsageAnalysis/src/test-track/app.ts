@@ -15,6 +15,7 @@ interface TestCase extends Options {
   status: Status | null;
   icon: HTMLDivElement;
   reason: HTMLDivElement;
+  fullReason?: string;
   history: HTMLDivElement;
 }
 
@@ -172,7 +173,7 @@ export class TestTrack extends DG.ViewBase {
       const list: { name: string, category: string, status: Status | null, reason: string }[] = [];
       Object.values(this.map).forEach((el) => {
         if ('children' in el) return;
-        list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.reason.innerText });
+        list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.fullReason||'' });
       });
       const df = DG.DataFrame.fromObjects(list)!;
       df.getCol('status').colors.setCategorical(colors);
@@ -413,7 +414,14 @@ export class TestTrack extends DG.ViewBase {
           },
           { radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty') })
         .endGroup()
-        .item('Edit', () => this.editTestCase(node));
+        .item('Edit', () => this.editTestCase(node))
+        .item('EditReason', () => { 
+          this.showNodeDialog(node, data.dart.item.value.status, true);
+         }, null, {
+          isEnabled: () => { 
+            return (data.dart.item.value.status ? (data.dart.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
+          }
+        });
     });
   }
 
@@ -453,7 +461,7 @@ export class TestTrack extends DG.ViewBase {
     const name = `${edit ? 'Edit' : 'Specify'} ${status === FAILED ? 'ticket' : 'skip reason'}`;
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
-    const value = edit ? node.value.reason?.innerText : '';
+    const value = edit ? node.value.fullReason : '';
     const stringInput = ui.stringInput(status === FAILED ? 'Key' : 'Reason', value, () => { });
     stringInput.nullable = false;
     const textInput = ui.textInput(status === FAILED ? 'Keys' : 'Reasons', value, () => { });
@@ -483,8 +491,8 @@ export class TestTrack extends DG.ViewBase {
   changeNodeStatus(node: DG.TreeViewNode, status: Status, reason?: string): void {
     const value = node.value;
     if (value.status) {
-       if (value.history.children.length === 4)
-        value.history.children[2].remove(); 
+      if (value.history.children.length === 4)
+        value.history.children[2].remove();
     }
     value.status = status;
     value.icon.innerHTML = '';
@@ -496,6 +504,7 @@ export class TestTrack extends DG.ViewBase {
         value.reason.append(this.getReason(reason!));
       else
         value.reason.append(ui.label('list'));
+      value.fullReason = reason;
     }
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
