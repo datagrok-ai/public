@@ -1,6 +1,9 @@
 // regression.h
-// 
-//Implementation linear regression coefficients computation
+
+/* Linear regression coefficients computation.
+   
+   Implemented 2 approaches: with & without data normalizing.
+   Data normalizing provides better results in te case of big data. */
 
 #include "../../../../Eigen/Eigen/Dense"
 using namespace Eigen;

@@ -1,10 +1,10 @@
-// Regression tools
+// Linear regression tools
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_fitLinearRegressionParams, _fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
+import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
 import {getPlsAnalysis} from './pls/pls-tools';
 
 // Linear regression computations limits
