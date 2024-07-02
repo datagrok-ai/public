@@ -1507,7 +1507,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
-  grok_ViewerEvent_Get_me(x: any): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;

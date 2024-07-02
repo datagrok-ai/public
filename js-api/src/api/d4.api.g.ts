@@ -33,7 +33,7 @@ export class ViewerEvent {
   get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
   set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
-  get me(): any { return api.grok_ViewerEvent_Get_me(this.dart); };
+  get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
 
 }
 export class InputType {
