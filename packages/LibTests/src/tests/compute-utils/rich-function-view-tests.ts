@@ -300,7 +300,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Complex inputs setParamValue rerun', async () => {
-    const view = new RichFunctionView('Libtests:complexInputs');
+    const view = new RichFunctionView('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValuesPre: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),

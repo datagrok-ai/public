@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY, DEMO_RESULTS} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -141,7 +141,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const scoresScatter = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.SCORES,
@@ -161,7 +161,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       min: -radius,
       max: radius,
       color: COLOR.CIRCLE,
-  })};
+    });
+  };
 
   scoreNames.forEach((xName) => {
     const x = '${' + xName + '}';
@@ -226,12 +227,13 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
-    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((viewer, idx) => {
-      return {
-        text: DEMO_RESULTS[idx].text,
-        showNextTo: viewer.root,
-      }
-    });
+    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar]
+      .map((viewer, idx) => {
+        return {
+          text: DEMO_RESULTS[idx].text,
+          showNextTo: viewer.root,
+        };
+      });
 
     const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
     wizard.helpUrl = LINK.MVA;

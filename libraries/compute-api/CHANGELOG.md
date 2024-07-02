@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 0.0.8 (2024-07-01)
+
+- Exposed skipDf option for HistoryInput
+
 ## 0.0.7 (2024-06-27)
 
 - Exposed mergeValidationResults method

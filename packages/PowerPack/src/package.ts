@@ -149,7 +149,7 @@ grok.events.onContextMenu.subscribe((args) => {
 
   if (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.TRELLIS_PLOT &&
       src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
-    menu = args.args.menu.find('Inner Viewer').find('Tools');
+    menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
 
   if (menu != null)
     menu.item('Formula Lines...', () => {formulaLinesDialog(src);});

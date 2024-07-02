@@ -12,7 +12,10 @@ import {extractStringValue, getMainParams, isIncomplete} from '../../shared-util
 import {getStarted} from '../../function-views/src/shared/utils';
 
 class DatabaseService {
-  static getHistoryRuns(funcName: string): Observable<DG.FuncCall[]> {
+  static getHistoryRuns(
+    funcName: string,
+    skipDfsOnInit: boolean = true,
+  ): Observable<DG.FuncCall[]> {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
@@ -21,7 +24,7 @@ class DatabaseService {
         ],
         {order: 'started'},
         ['func.params', 'session.user', 'options'],
-        true,
+        skipDfsOnInit,
       );
       return res;
     })());
@@ -75,6 +78,8 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       propFuncs?: Record<string, (currentRun: DG.FuncCall) => string>,
       // Custom logic for input's stringValue. By default, mainParams will be used to generate string value
       stringValueFunc?: (currentRun: DG.FuncCall) => string,
+      // If false, loads DFs right when the list is loaded
+      skipDfsOnInit?: boolean,
     },
   ) {
     const primaryInput = ui.input.string(label, {value: ''});
@@ -87,7 +92,10 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
-      switchMap(() => DatabaseService.getHistoryRuns(this._funcName).pipe(
+      switchMap(() => DatabaseService.getHistoryRuns(
+        this._funcName,
+        this.options?.skipDfsOnInit ?? true,
+      ).pipe(
         catchError((e) => {
           console.error(e);
           return EMPTY;
@@ -156,9 +164,12 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
     $(historyDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
 
     historyDialog.onOK(async () => {
-      const chosen = this._historyList.chosen;
+      let chosen = this._historyList.chosen;
       if (chosen) {
         // If DFs loading was skipped when the list was loaded, then we should load it now
+        if (this.options?.skipDfsOnInit ?? true)
+          chosen = await historyUtils.loadRun(chosen.id, false);
+
         this.setValue(chosen);
       }
 

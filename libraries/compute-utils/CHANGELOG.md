@@ -1,5 +1,10 @@
 # compute-utils changelog
 
+## 1.35.7 (2024-07-01)
+
+- HistoryList: Fixed bug on batch deletion
+- HistoryInput: Added skipDf option
+
 ## 1.35.6 (2024-06-27)
 
 - Exposed mergeValidationResults method
