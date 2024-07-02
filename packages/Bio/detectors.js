@@ -357,6 +357,8 @@ class BioPackageDetectors extends DG.Package {
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
     const stats = this.getStats(categoriesSample, seqMinLength, splitter);
+    const badSet = this.checkBadMultichar(stats.freq);
+    if (badSet.size > 0) return 0;
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
     const mLengthAvg = wu.entries(stats.freq)
@@ -384,7 +386,7 @@ class BioPackageDetectors extends DG.Package {
    * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
   checkBadMultichar(freq) {
-    const badRe = /[ .:]|^\d+$/i;
+    const badRe = /[ .:\[\]]|^\d+$/i;
     return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
   }
 
@@ -490,23 +492,27 @@ class BioPackageDetectors extends DG.Package {
 
   /** For trivial checks split by single chars*/
   getSplitterAsChars(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       return seq.split('', lengthLimit);
     };
+    resFunc.T = 'splitterAsChars';
+    return resFunc;
   }
 
   getSplitterWithSeparator(separator, limit) {
-    return (seq) => {
+    const resFunc = function(seq) {
       return !seq ? [] : seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
     };
+    resFunc.T = 'splitterWithSeparator';
+    return resFunc;
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  monomerRe = /\[(\w+)\]|(.)/g;
+  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|([A-Za-z-])/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
   getSplitterAsFasta(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       const res = wu(seq.toString().matchAll(this.monomerRe))
         .take(lengthLimit)
         .map((ma) => {
@@ -522,6 +528,8 @@ class BioPackageDetectors extends DG.Package {
 
       return res;
     }.bind(this);
+    resFunc.T = 'splitterAsFasta';
+    return resFunc;
   }
 
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
@@ -535,7 +543,7 @@ class BioPackageDetectors extends DG.Package {
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA). */
   getSplitterAsHelm(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       this.helmRe.lastIndex = 0;
       const ea = this.helmRe.exec(seq.toString());
       const inSeq = ea ? ea[2] : null;
@@ -553,6 +561,8 @@ class BioPackageDetectors extends DG.Package {
       const mmListRes = mmList.map(mmPostProcess);
       return mmListRes;
     }.bind(this);
+    resFunc.T = 'splitterAsHelm';
+    return resFunc;
   }
 
   sample(col, n) {

@@ -154,7 +154,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const msaGapLength = 8;
 
     // Cell renderer settings
-    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.MaxMonomerLength : 4) ?? 50;
+    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.maxMonomerLength : 4) ?? 50;
     if (mmcrTAGS.maxMonomerLength in tableCol.tags) {
       const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
