@@ -308,7 +308,7 @@ jobs:
           # docker system prune -af --volumes
 
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='1.19.0'
+            DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
@@ -317,7 +317,8 @@ jobs:
                     
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "bio" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "helm" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "st" ]]; then
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "sequencetranslator" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "curves" ]]; then
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
             export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
