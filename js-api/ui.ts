@@ -1282,9 +1282,7 @@ export class tools {
       let renderWidth = Math.ceil(value.getBoundingClientRect().width);
       value.remove();
       widths.push(renderWidth);
-      api.grok_Tooltip_SetOn(element, () => {
-        return  element != null && element.clientWidth < element.children[0].scrollWidth ? element?.textContent : null
-      });    });
+    });
     return widths;
   }
 }
