@@ -628,3 +628,49 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: s
   }
   return true;
 }
+
+//name: trainPLSRegression
+//meta.mlname: PLS
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: int components = 3 {min: 1; max: 10} [Number of latent components]
+//output: dynamic model
+export async function trainPLSRegression(df: DG.DataFrame, predict_column: string, components: number): Promise<Uint8Array> {
+  const features = df.columns;
+  const target = features.byName(predict_column);
+  features.remove(predict_column);
+
+  if (components > features.length)
+    throw new Error('Number of components is greater than features count');
+
+  const params = await getLinearRegressionParams(features, target);
+
+  return new Uint8Array(params.buffer);
+}
+
+//name: applyLinearRegression
+//meta.mlname: PLS
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
+  const features = df.columns;
+  const params = new Float32Array((model as Uint8Array).buffer);
+  return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
+}
+
+//name: isApplicablePLSRegression
+//meta.mlname: PLS
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: string predict_column
+//output: bool result
+export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: string): boolean {
+  for (const col of df.columns) {
+    if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
+      return false;
+  }
+  return true;
+}
