@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE, LINK_CLICK_BEHAVIOR
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -2383,6 +2383,10 @@ export class ColumnColorHelper {
     }
   }
 
+  setDisabled(): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.OFF;
+  }
+
   getColor(i: number): number {
     return api.grok_Column_GetColor(this.column.dart, i);
   }
@@ -2447,6 +2451,30 @@ export class ColumnMetaHelper {
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
+
+  get source(): string | null { return this.column.getTag(Tags.Source); }
+  set source(x: string | null) { this.column.tags[Tags.Source] = x; }
+
+  get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
+  set sourcePrecision(x: number | null) { this.column.tags[TAGS.SOURCE_PRECISION] = x?.toString(); }
+
+  get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
+  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+
+  get units(): string | null { return this.column.getTag(TAGS.UNITS); }
+  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
+
+  get choices(): string | null { return this.column.getTag(TAGS.CHOICES); }
+  set choices(x: string | null) { this.column.tags[TAGS.CHOICES] = x; }
+
+  get autoChoices(): string | null { return this.column.getTag(TAGS.AUTO_CHOICES); }
+  set autoChoices(x: string | null) { this.column.tags[TAGS.AUTO_CHOICES] = x; }
+
+  get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
+    return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+  }
+  set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
 
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }

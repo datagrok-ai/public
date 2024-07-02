@@ -11,7 +11,7 @@ grok.shell.addTableView(df);
 df.onColumnsRemoved
   .subscribe((data) => {
     data.args.columns
-      .filter((col) => col.tags.has(DG.TAGS.FORMULA))
+      .filter((col) => col.meta.formula != null)
       .forEach((col) => grok.shell.info(`Removed calculated column ${col.name}`));
 });
 
