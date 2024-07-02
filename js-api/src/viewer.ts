@@ -80,6 +80,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
   /// current row clicked
   get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-row-click')); }
+  get onPropertyValueChanged(): rxjs.Observable<EventData<Property>> { return this.onEvent('d4-property-value-changed'); }
 
   initDartObject(dart: any) {
     this.dart = dart;
