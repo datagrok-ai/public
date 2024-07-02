@@ -547,8 +547,8 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
-//name: linearRegression
-//description: Linear Regression demo
+//name: Linear regression
+//description: Linear regression demo
 //input: dataframe table
 //input: column_list features {type: numerical}
 //input: column target {type: numerical}
@@ -575,7 +575,7 @@ export async function linearRegression(table: DG.DataFrame, features: DG.ColumnL
   }
 }
 
-//name: generateDatasetForLinearRegressionTest
+//name: Generate linear regression dataset
 //description: Create demo dataset for linear regression
 //input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
 //input: int colCount = 10 {min: 1; max: 1000; step: 10}
@@ -631,8 +631,7 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: s
   return true;
 }
 
-//top-menu: ML | Generate Data ...
-//name: generateClassifierTestData
+//name: Generate classification dataset
 //desription: Generates demo data for classifiers testing
 //input: int featureCount = 2 {caption: features; min: 1; max: 2000; step: 10}
 //input: int samplesCount = 1000 {caption: samples; min: 1; max: 1000000; step: 1000}
@@ -710,9 +709,8 @@ export function isApplicableSoftmax(df: DG.DataFrame, predict_column: string): b
   return (target.type === DG.COLUMN_TYPE.STRING);
 }
 
-//top-menu: ML | Fit SoftMax ...
-//name: fitSoftmaxDemo
-//desription: Softmax demo
+//name: Softmax
+//desription: Softmax classifier demo
 //input: dataframe df
 //input: column_list features {type: numerical}
 //input: column target {type: string}
