@@ -172,6 +172,32 @@ category('Dapi: functions calls', async () => {
     expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
   });
 
+  test('list package funccall with func\'s valid nqName', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFuncs = await GDF.calls
+      .filter(`func.name="dummyPackageFunction"`)
+      .include('func')
+      .list({pageSize: 10});
+
+    expect(loadedWithFuncs[0].func.nqName, 'ApiTests:dummyPackageFunction');
+  }, {skipReason: 'GROK-16228'});
+
+  test('list script funccall with func\'s valid nqName', async () => {
+    const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await scriptFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFuncs = await GDF.calls
+      .filter(`func.name="dummyPackageScript"`)
+      .include('func')
+      .list({pageSize: 10});
+  
+    expect(loadedWithFuncs[0].func.nqName, 'ApiTests:DummyPackageScript');
+  }, {skipReason: 'GROK-16228'});
+
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
@@ -224,6 +250,36 @@ category('Dapi: functions calls', async () => {
       await GDF.calls.filter(`session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
     expect(loadedCalls.inputs[0].name, 'a');
   }, {skipReason: 'GROK-14735'});
+
+  test('list package script funccalls with package', async () => {
+    const loadedCalls = await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.name="dummyPackageScript"`).list();
+
+    expect(loadedCalls[0].func.package, 'ApiTests');
+  }, {skipReason: 'GROK-16230'});
+
+  test('list package function funccalls with package', async () => {
+    const loadedCalls = await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list();
+
+    expect(loadedCalls[0].func.package, 'ApiTests');
+  }, {skipReason: 'GROK-16230'});
+
+  test('filter script funcCalls by nqName', async () => {
+    // expect no-throw
+    await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageScript"`).list();
+  }, {skipReason: 'GROK-16229'});
+
+  test('filter package function funcCalls by nqName', async () => {
+    // expect no-throw
+    await grok.dapi.functions.calls
+      .allPackageVersions()
+      .include('func,func.package').filter(`func.nqName="ApiTests:dummyPackageFunction"`).list();
+  }, {skipReason: 'GROK-16229'});
 
   test('find', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');

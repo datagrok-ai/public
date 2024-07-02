@@ -77,6 +77,7 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 export const _package = new BioPackage();
 
@@ -115,6 +116,12 @@ export async function initBio() {
   await Promise.all([
     (async () => {
       const monomerLibManager = await MonomerLibManager.getInstance();
+      // Fix user lib settings for explicit stuck from a terminated test
+      const libSettings = await getUserLibSettings();
+      if (libSettings.explicit) {
+        libSettings.explicit = [];
+        await setUserLibSettings(libSettings);
+      }
       await monomerLibManager.loadLibraries();
       monomerLib = monomerLibManager.getBioLib();
     })(),
@@ -291,16 +298,16 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 // -- Package settings editor --
 
-//name: packageSettingsEditor
-//description: The database connection
-//tags: packageSettingsEditor
-//input: object propList
-//output: widget result
-export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-  const widget = new PackageSettingsEditorWidget(propList);
-  widget.init().then(); // Ignore promise returned
-  return widget as DG.Widget;
-}
+// //name: packageSettingsEditor
+// //description: The database connection
+// //tags: packageSettingsEditor
+// //input: object propList
+// //output: widget result
+// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+//   const widget = new PackageSettingsEditorWidget(propList);
+//   widget.init().then(); // Ignore promise returned
+//   return widget as DG.Widget;
+// }
 
 // -- Cell renderers --
 

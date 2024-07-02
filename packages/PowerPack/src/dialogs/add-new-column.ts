@@ -589,7 +589,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the Preview Grid. */
   initUiPreview(): HTMLDivElement {
     // Limiting the number of rows in the Preview Grid:
-    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviwRowCount);
+    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviewRowCount);
     this.previwDf = this.sourceDf!.clone(DG.BitSet.create(previewRowCount, (idx) => idx < previewRowCount));
     this.gridPreview = DG.Viewer.grid(this.previwDf!);
     this.gridPreview.root.classList.add('ui-grid-with-thin-scrollbars');

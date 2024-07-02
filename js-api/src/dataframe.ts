@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -35,6 +35,7 @@ type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
+type MatchType = 'contains' | 'starts with' | 'ends with' | 'equals' | 'regex';
 
 
 /** Column name -> format */
@@ -945,9 +946,7 @@ export class Column<T = any> {
     return api.grok_Column_IsNone(this.dart, i);
   }
 
-  /** Gets the value of the specified tag.
-   *  @param {string} tag
-   *  @returns {string} */
+  /** Returns the value of the specified tag, or null if the tag is not present. */
   getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.dart, tag);
   }
@@ -2349,11 +2348,11 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column.
-   * @param range - list of palette colors.
+   * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2363,10 +2362,14 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.fallbackColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
+    if (options?.matchType != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
 
   setConditional(rules: {[index: string]: number | string}  | null = null): void {
@@ -2450,4 +2453,9 @@ export class ColumnMetaHelper {
 
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
+
+  /** When specified, column filter treats the split strings as separate values.
+   * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
+  get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
+  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
 }

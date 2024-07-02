@@ -25,8 +25,8 @@ import {alphabetPolymerTypes, IMonomerLib} from '@datagrok-libraries/bio/src/typ
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {
-  Temps as mmcrTemps, Tags as mmcrTags,
-  tempTAGS, rendererSettingsChangedState, MonomerWidthMode
+  Temps as mmcrTemps,
+  tempTAGS, rendererSettingsChangedState, Temps
 } from '../utils/cell-renderer-consts';
 import * as C from './constants';
 
@@ -152,18 +152,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     let gapLength = 0;
     const msaGapLength = 8;
-    let maxLengthOfMonomer = 50; // in case of long monomer representation, do not limit max length
 
     // Cell renderer settings
-    const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidthMode];
-    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth :
-      (_package.properties?.MonomerWidthMode ?? MonomerWidthMode.short);
-    if (monomerWidth === 'short') {
-      // Renderer can start to work before Bio package initialized, in that time _package.properties is null.
-      // TODO: Render function is available but package init method is not completed
-      const tagMaxMonomerLength: number = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
-      maxLengthOfMonomer =
-        (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
+    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.MaxMonomerLength : 4) ?? 50;
+    if (mmcrTAGS.maxMonomerLength in tableCol.tags) {
+      const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
+      maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
+    }
+    if (Temps.maxMonomerLength in tableColTemp) {
+      const v = tableColTemp[Temps.maxMonomerLength];
+      maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
     }
 
     const [_gc, _tc, temp] =
@@ -184,7 +182,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g.save();
     try {
       if (
-        tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true ||
+        tableCol.temp[Temps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
         seqColTemp.monomerLengthLimit != maxLengthOfMonomer
       ) {
         gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
@@ -192,7 +190,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         // particularly monomer representation and max width.
         seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
         seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
-        tableCol.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.false);
+        tableCol.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.false;
       }
 
       const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =

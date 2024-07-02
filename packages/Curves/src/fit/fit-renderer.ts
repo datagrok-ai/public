@@ -403,8 +403,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!});
       renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag});
-      renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
-        xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
+      if (series.parameters)
+        renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
+          xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox});
     }

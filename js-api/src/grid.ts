@@ -14,6 +14,8 @@ import {IDartApi} from "./api/grok_api.g";
 const api: IDartApi = <any>window;
 let _bytes = new Float64Array(4);
 
+export type ColorType = number | string;
+
 export interface IPoint {
   x: number;
   y: number;
@@ -638,8 +640,8 @@ export class GridColumn {
   set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
   /** Background column as a 4-byte ARGB number. */
-  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
-  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
+  get backColor(): Color { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: Color) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */

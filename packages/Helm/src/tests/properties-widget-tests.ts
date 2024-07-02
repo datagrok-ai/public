@@ -11,6 +11,7 @@ import {
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
 
+import {initHelmMainPackage} from './utils';
 import {getPropertiesDict, SeqPropertiesError} from '../widgets/properties-widget';
 
 const enum MolProps {
@@ -76,6 +77,8 @@ category('properties-widget', () => {
   let userLibSettings: any = null;
 
   before(async () => {
+    await initHelmMainPackage();
+
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = getUserLibSettings();
 
