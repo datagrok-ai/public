@@ -1,6 +1,6 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {ColorType, MARKER_TYPE} from "./const";
+import {MARKER_TYPE} from "./const";
 import {Point, Rect, GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 
@@ -15,7 +15,7 @@ declare global {
 
     roundRect(x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D
 
-    line(x1: number, y1: number, x2: number, y2: number, color: ColorType): CanvasRenderingContext2D;
+    line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.

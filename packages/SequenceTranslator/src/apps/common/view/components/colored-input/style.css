@@ -19,8 +19,9 @@
   max-width: 100%;
   padding: 2px;
   line-height: normal;
-  font-family: 'Roboto Mono', 'Roboto Mono Local', monospace;
-  font-size: 12px;
+  font-family: 'Roboto', 'Roboto Local', sans-serif;
+  font-size: 13px;
+  padding-top: 6px !important;
   color: transparent;
   white-space: pre-wrap;
   word-wrap: break-word;

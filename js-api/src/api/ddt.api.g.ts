@@ -43,6 +43,10 @@ export class Tags {
 
   static ColorCodingSchemeMin = '.color-coding-scheme-min';
 
+  static ColorCodingMatchType = '.color-coding-match-type';
+
+  static ColorCodingFallbackColor = '.color-coding-fallback-color';
+
   static ShowMarkersAlways = '.show-markers-always';
 
   static DefaultAxisType = '.default-axis-type';
@@ -69,6 +73,8 @@ export class Tags {
   static Units = 'units';
 
   static Format = 'format';
+
+  static FormatFormula = '%formatFormula';
 
   static TooltipType = '.tooltip-type';
 
@@ -189,8 +195,10 @@ export class Tags {
 
   static MultiValueSeparator = '.multi-value-separator';
 
+  /// Name to be shown in the UI
   static FriendlyName = 'friendlyName';
 
+  /// Whether users can rename this table from the UI
   static AllowRename = '.allow-rename';
 
   /// Applies to columns or dataframes.
@@ -224,6 +232,16 @@ export class Tags {
 
   /// Specifies entity type that reference entity had
   static DbPropertyReferenceType = 'dbPropertyReferenceType';
+
+}
+export class TagValues {
+  static LINK_CLICK_BEHAVIOR_OPEN_IN_NEW_TAB = 'Open in new tab';
+
+  static LINK_CLICK_BEHAVIOR_OPEN_IN_CONTEXT_PANEL = 'Open in context panel';
+
+  static LINK_CLICK_BEHAVIOR_CUSTOM = 'Custom';
+
+  static LINK_CLICK_BEHAVIOR_VALUES = ['Open in new tab', 'Open in context panel', 'Custom'];
 
 }
 export class FuncOptions {

@@ -1,5 +1,23 @@
 # Sequence Translator changelog
 
+## 1.3.7 (2024-07-01)
+
+### Bug fixes
+
+* Fix style for colored text input
+
+## 1.3.6 (2024-06-26)
+
+### Bug fixes
+
+* Fix bulk input in Pattern app
+
+## 1.3.5 (2024-06-13)
+
+### Features
+
+* PolyTool Enumeration: cell with helm is added to the input
+
 ## 1.3.4 (2024-06-12)
 
 ### Bug fixes

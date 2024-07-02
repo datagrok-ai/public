@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 /** Set alpha over {@link color} */
-export function setAlpha(color: DG.ColorType, alpha: number): number {
+export function setAlpha(color: number, alpha: number): number {
   return 0 |
     Math.round(DG.Color.a(color) * alpha) << 24 |
     DG.Color.r(color) << 16 |
@@ -11,19 +11,19 @@ export function setAlpha(color: DG.ColorType, alpha: number): number {
     DG.Color.b(color);
 }
 
-export function intToRgb(value: DG.ColorType): string {
+export function intToRgb(value: number): string {
   return `rgb(${DG.Color.r(value)}, ${DG.Color.g(value)}, ${DG.Color.b(value)})`;
 }
 
-export function intToRgba(value: DG.ColorType): string {
+export function intToRgba(value: number): string {
   return `rgba(${DG.Color.r(value)}, ${DG.Color.g(value)}, ${DG.Color.b(value)}, ${DG.Color.a(value) / 255})`;
 }
 
-export function intToHtml(value: DG.ColorType): string {
+export function intToHtml(value: number): string {
   return `#${(value & 0xFFFFFF).toString(16).padStart(6, '0')}`;
 }
 
-export function intToHtmlA(value: DG.ColorType): string {
+export function intToHtmlA(value: number): string {
   const alpha = DG.Color.a(value);
   return `#${(value & 0xFFFFFF).toString(16).padStart(6, '0')}` +
     alpha.toString(16).padStart(2, '0');

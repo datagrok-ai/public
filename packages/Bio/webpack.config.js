@@ -31,7 +31,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: mode !== 'production' ? 'source-map' : 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -42,9 +42,6 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
-    'scil': 'scil',
-    'org': 'org',
-    // 'JSDraw2': 'JSDraw2',
   },
   output: {
     filename: '[name].js',
