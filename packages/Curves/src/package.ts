@@ -40,6 +40,7 @@ export function _FitViewer(): MultiCurveViewer {
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
 //meta.demoPath: Curves | Curve fitting
 //test: curveFitDemo() //wait: 2000
+//meta.demoSkip: skip
 export async function curveFitDemo(): Promise<void> {
   await curveDemo();
 }
