@@ -3,6 +3,8 @@
   "name": "PostgresNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "port": 54322,
     "db": "northwind"
