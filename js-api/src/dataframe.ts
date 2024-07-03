@@ -2447,7 +2447,7 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
@@ -2455,18 +2455,17 @@ export class ColumnMetaHelper {
 
   /** Returns the maximum amount of significant digits detected in the column. */
   get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
-  set sourcePrecision(x: number | null) { this.column.tags[TAGS.SOURCE_PRECISION] = x?.toString(); }
 
-  /** Returns the formula of the dataframe column. */
+  /** When set, uses the formula to calculate the column values. */
   get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
   set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
 
-  /** Returns the units of the dataframe column. */
+  /** Specifies the units of the dataframe column. */
   get units(): string | null { return this.column.getTag(TAGS.UNITS); }
   set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
 
 
-  /** Returns the list of choices for the dataframe column.
+  /** When set, switches the cell editor to a combo box that only allows to choose specified values.
    * Applicable for string columns only.
    * See also {@link autoChoices}. */
   get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
@@ -2476,19 +2475,21 @@ export class ColumnMetaHelper {
    * from a list of already existing values in the column.
    * Applicable for string columns only.
    * See also {@link choices}. */
-  get autoChoices(): boolean | null { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? null :
+  get autoChoices(): boolean { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? false :
     this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
-  set autoChoices(x: boolean | null) { this.column.tags[TAGS.AUTO_CHOICES] = x == null ? x : x.toString(); }
+  set autoChoices(x: boolean) { this.column.setTag(TAGS.AUTO_CHOICES, x.toString()); }
 
-  /** Returns the behavior of link click (open in new tab, open in context panel, custom) */
+  /** Specifies the behavior of link click (open in new tab, open in context panel, custom). Open in new tab is used by default. */
   get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
     return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
   }
   set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
 
+  /** Specifies whether the column is exported as part of the CSV file. Defaults to true. */
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
 
+  /** Specifies whether the column is exported as part of the binary file. Defaults to true. */
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
 
