@@ -1451,6 +1451,7 @@ export interface IDartApi {
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
   grok_Parse_Command(command: String, safe: Bool): any;
+  grok_Set_AutoReports_Prefix(prefix: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1556,7 +1557,6 @@ export interface IDartApi {
 
   // Generated from ../ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;
-  grok_TagValues_Create(): any;
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 }
