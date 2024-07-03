@@ -493,7 +493,8 @@ export class FilterGroup extends Viewer {
 }
 
 export type CategoryDataArgs = {
-  matchCondition: string,
+  matchCondition: {[key: string]: any},
+  matchConditionStr: string,
   mouseEvent: MouseEvent,
   options: {[key: string]: any}
 }
@@ -606,7 +607,7 @@ export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
 
   get onCategoryClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
   get onCategoryHovered(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
-  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-barchart-reset-view'); }
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-bar-chart-reset-view'); }
 }
 
 export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
