@@ -139,7 +139,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   };
 
   let bottomHeight = 'auto';
-  const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
+  const inputElements: HTMLElement[] = [ui.divV(inputsList)];
   $(inputElements[0]).find('label').css('width', 'unset');
   if (typeof col !== 'undefined') {
     const startBtn = ui.button('Launch SAR', startAnalysisCallback, '');
