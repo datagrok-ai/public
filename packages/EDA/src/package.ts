@@ -689,4 +689,8 @@ export async function plsMLdemo(table: DG.DataFrame, features: DG.ColumnList, pr
   const unpacked = new PLSmodel(packed);
 
   table.columns.add(unpacked.predict(features));
+
+  const view = grok.shell.tableView(table.name);
+
+  unpacked.viewers().forEach((v) => view.addViewer(v));
 }
