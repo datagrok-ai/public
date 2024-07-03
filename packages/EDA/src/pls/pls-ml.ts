@@ -4,6 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {getPlsAnalysis} from './pls-tools';
+import {getPredictionByLinearRegression} from '../regression';
+
 /** Acceptable column types */
 const NUMERIC_TYPES = [
   DG.COLUMN_TYPE.INT,
@@ -12,38 +15,111 @@ const NUMERIC_TYPES = [
   DG.COLUMN_TYPE.QNUM,
 ];
 
-/** */
-type PLSmodelSpecification = {
-  featureNames: string[],
-  regrCoefs: Float32Array,
-  loadings: Float32Array[],
-}
+// PLS ML specific constants
+const EXTRA = 1;
 
 /** */
 export class PLSmodel {
-  private model: PLSmodelSpecification | null = null;
+  private params: Float32Array | null = null;
+  private featureNames: string[] | null = null;
+  private loadings: Float32Array[] | null = null;
 
   constructor(packedModel?: Uint8Array) {
     if (packedModel) {}
   }
 
-  public async fit(features: DG.ColumnList, target: DG.Column, components: number) {}
+  /** Train model */
+  public async fit(features: DG.ColumnList, target: DG.Column, components: number) {
+    const analysis = await getPlsAnalysis({
+      table: DG.DataFrame.fromColumns([target]),
+      features: features,
+      predict: target,
+      components: components,
+      names: null,
+    });
 
+    // 1. Names of features
+    this.featureNames = features.names();
+    this.featureNames.push('_'); // add extra item
+
+    // 2. Regression coefficients
+    this.params = this.getRegrCoeffs(features, target, analysis.regressionCoefficients);
+
+    // 3. Loadings
+    this.loadings = this.getLoadings(components, analysis.xLoadings);
+
+    // 4. Compute explained variances
+    this.computeExplVars(target.length, components, analysis.yLoadings);
+  } // fit
+
+  /** Return x-loadings with extra items reserved for explained variances */
+  private getLoadings(components: number, loadingsCols: DG.Column[]): Float32Array[] {
+    const res = Array<Float32Array>(components);
+    const len = loadingsCols[0].length + EXTRA;
+
+    for (let i = 0; i < components; ++i) {
+      res[i] = new Float32Array(len);
+      res[i].set(loadingsCols[i].getRawData());
+    }
+
+    return res;
+  }
+
+  /** Return regression coefficients */
+  private getRegrCoeffs(features: DG.ColumnList, target: DG.Column, regrCoefsCol: DG.Column): Float32Array {
+    const featuresCount = features.length;
+    const params = new Float32Array(featuresCount + EXTRA);
+    const paramsByPLS = regrCoefsCol.getRawData();
+
+    let tmpSum = 0;
+
+    for (let i = 0; i < featuresCount; ++i) {
+      params[i] = paramsByPLS[i];
+      tmpSum += paramsByPLS[i] * features.byIndex(i).stats.avg;
+    }
+
+    // compute bias
+    params[featuresCount] = target.stats.avg - tmpSum;
+
+    return params;
+  }
+
+  /** Return explained variances */
+  private computeExplVars(samplesCount: number, components: number, yLoadings: DG.Column) {
+    if (this.loadings === null)
+      throw new Error('Failed to compute explained variances');
+
+    const raw = yLoadings.getRawData();
+    const featuresCount = this.loadings[0].length - 1;
+
+    // Compute, source: the paper https://doi.org/10.1002/cem.2589
+    let explVar = raw[0]**2 / samplesCount;
+
+    this.loadings[0][featuresCount] = explVar;
+
+    for (let comp = 1; comp < components; ++comp) {
+      explVar += raw[comp]**2 / samplesCount;
+      this.loadings[comp][featuresCount] = explVar;
+    }
+  }
+
+  /** Return packed model */
   public toBytes(): Uint8Array {
-    if (this.model === null)
-      throw new Error('Packing failed: model is not trained');
+    //if (this.model === null)
+    //  throw new Error('Packing failed: model is not trained');
 
     return new Uint8Array();
   }
 
+  /** Return prediction */
   public predict(features: DG.ColumnList): DG.Column {
-    return DG.Column.fromFloat32Array(
-      'prediction',
-      new Float32Array(features.byIndex(0).length),
-      features.byIndex(0).length,
-    );
+    if (this.params === null)
+      throw new Error('Predicting failed: model is not trained');
+
+    return getPredictionByLinearRegression(features, this.params);
   }
 
+  /** Check applicability */
   static isApplicable(features: DG.ColumnList): boolean {
     for (const col of features) {
       if (!NUMERIC_TYPES.includes(col.type as DG.COLUMN_TYPE))

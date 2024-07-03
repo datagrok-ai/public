@@ -33,6 +33,8 @@ import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/sr
 
 import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
+import {PLSmodel} from './pls/pls-ml';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -673,4 +675,18 @@ export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: stri
       return false;
   }
   return true;
+}
+
+//top-menu: ML | PLS ML demo...
+//name: PLS demo
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: column predict {type: numerical}
+//input: int components = 3
+export async function plsMLdemo(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number) {
+  const model = new PLSmodel();
+
+  await model.fit(features, predict, components);
+
+  table.columns.add(model.predict(features));
 }
