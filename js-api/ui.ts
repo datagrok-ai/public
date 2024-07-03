@@ -609,7 +609,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
  * @returns {VirtualView} */
-export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
+export function virtualView(length: number, renderer: (index: number) => HTMLElement, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
   return view;

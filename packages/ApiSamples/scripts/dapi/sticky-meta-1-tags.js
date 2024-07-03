@@ -12,7 +12,7 @@ const experiments = DG.Column.fromStrings('experiment', Array.from(Array(6).keys
 // Objects that store sticky meta should be identifiable through tags or semtypes.
 // We will use tag named "source".
 const experimentTag = uniqueName('experiment-tag');
-experiments.meta.source = experimentTag;
+experiments.setTag('source', experimentTag);
 
 // Authors of experiments.
 // We will save them as metadata related to experiment.
@@ -43,7 +43,7 @@ const testDf = DG.DataFrame.fromCsv(`experiment
 experiment 1
 experiment 3`
 );
-testDf.columns.byName('experiment').meta.source = experimentTag;
+testDf.columns.byName('experiment').setTag('source', experimentTag);
 
 // Fetch sticky meta related to the test dataframe.
 const dataFrameWithMeta = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));

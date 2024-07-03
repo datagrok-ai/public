@@ -2453,24 +2453,34 @@ export class ColumnMetaHelper {
   }
   set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
 
-  get source(): string | null { return this.column.getTag(Tags.Source); }
-  set source(x: string | null) { this.column.tags[Tags.Source] = x; }
-
+  /** Returns the maximum amount of significant digits detected in the column. */
   get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
   set sourcePrecision(x: number | null) { this.column.tags[TAGS.SOURCE_PRECISION] = x?.toString(); }
 
+  /** Returns the formula of the dataframe column. */
   get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
   set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
 
+  /** Returns the units of the dataframe column. */
   get units(): string | null { return this.column.getTag(TAGS.UNITS); }
   set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
 
-  get choices(): string | null { return this.column.getTag(TAGS.CHOICES); }
-  set choices(x: string | null) { this.column.tags[TAGS.CHOICES] = x; }
 
-  get autoChoices(): string | null { return this.column.getTag(TAGS.AUTO_CHOICES); }
-  set autoChoices(x: string | null) { this.column.tags[TAGS.AUTO_CHOICES] = x; }
+  /** Returns the list of choices for the dataframe column.
+   * Applicable for string columns only.
+   * See also {@link autoChoices}. */
+  get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
+  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
 
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also {@link choices}. */
+  get autoChoices(): boolean | null { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? null :
+    this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
+  set autoChoices(x: boolean | null) { this.column.tags[TAGS.AUTO_CHOICES] = x == null ? x : x.toString(); }
+
+  /** Returns the behavior of link click (open in new tab, open in context panel, custom) */
   get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
     return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
   }
