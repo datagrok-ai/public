@@ -1302,6 +1302,11 @@ export class tools {
     value.remove();
     return renderWidth;
   }
+
+  static scrollIntoViewIfNeeded(e: HTMLElement) {
+    // @ts-ignore
+    e.scrollIntoViewIfNeeded(false);
+  }
 }
 
 /** Represents a tooltip. */
