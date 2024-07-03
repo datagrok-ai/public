@@ -1259,6 +1259,15 @@ export class tools {
         width = 140;
       if (element.classList.contains('ui-input-text'))
         width = 200;
+      if (element.classList.contains('ui-input-choice')) {
+        width = 200;
+        let options = $(element).find('select option');
+        options.each((i) => {
+          let calc = this.getLabelWidth(options[i] as HTMLElement);
+          if (calc > width)
+            width = calc;
+        });
+      }
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
@@ -1272,18 +1281,23 @@ export class tools {
 
     elements.each((i) => {
       let element = elements[i] as HTMLElement;
-      let value = document.createElement('span');
-      value.style.visibility = 'hidden';
-      value.style.position = 'fixed';
-      value.style.padding = '0';
-      value.style.margin = '0';
-      value.textContent = element.textContent;
-      document.body.append(value);
-      let renderWidth = Math.ceil(value.getBoundingClientRect().width);
-      value.remove();
+      let renderWidth = this.getLabelWidth(element);
       widths.push(renderWidth);
     });
     return widths;
+  }
+
+  private static getLabelWidth(element: HTMLElement) {
+    let value = document.createElement('span');
+    value.style.visibility = 'hidden';
+    value.style.position = 'fixed';
+    value.style.padding = '0';
+    value.style.margin = '0';
+    value.textContent = element.textContent;
+    document.body.append(value);
+    let renderWidth = Math.ceil(value.getBoundingClientRect().width);
+    value.remove();
+    return renderWidth;
   }
 }
 
