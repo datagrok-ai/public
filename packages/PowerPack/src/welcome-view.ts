@@ -37,6 +37,8 @@ export function welcomeView(): DG.View | undefined {
       if (!settings[f.name] || settings[f.name].ignored) {
         const widgetHeader = ui.div();
         f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
+          if (!w)
+            return;
           w.factory = f;
           widgetsHost.appendChild(widgetHost(w, widgetHeader));
         }).catch((e) => {

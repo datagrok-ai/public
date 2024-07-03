@@ -15,7 +15,7 @@ import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
-import {awaitGrid} from './utils';
+import {awaitGrid, initHelmMainPackage} from './utils';
 import {TAGS as helmTAGS} from '../constants';
 
 import {_package} from '../package-test';
@@ -26,6 +26,8 @@ category('renderers', () => {
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    await initHelmMainPackage();
+
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 

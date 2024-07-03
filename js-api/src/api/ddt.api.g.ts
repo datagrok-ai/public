@@ -43,6 +43,10 @@ export class Tags {
 
   static ColorCodingSchemeMin = '.color-coding-scheme-min';
 
+  static ColorCodingMatchType = '.color-coding-match-type';
+
+  static ColorCodingFallbackColor = '.color-coding-fallback-color';
+
   static ShowMarkersAlways = '.show-markers-always';
 
   static DefaultAxisType = '.default-axis-type';
@@ -69,6 +73,8 @@ export class Tags {
   static Units = 'units';
 
   static Format = 'format';
+
+  static FormatFormula = '%formatFormula';
 
   static TooltipType = '.tooltip-type';
 
@@ -189,8 +195,10 @@ export class Tags {
 
   static MultiValueSeparator = '.multi-value-separator';
 
+  /// Name to be shown in the UI
   static FriendlyName = 'friendlyName';
 
+  /// Whether users can rename this table from the UI
   static AllowRename = '.allow-rename';
 
   /// Applies to columns or dataframes.
@@ -327,6 +335,10 @@ export class FuncParamOptions {
   static Nullable = 'nullable';
 
   static Separators = 'separators';
+
+  static Layout = 'layout';
+
+  static EditorParam = 'editorParam';
 
   /// Column filter.
   /// Applies to dataframes and columns

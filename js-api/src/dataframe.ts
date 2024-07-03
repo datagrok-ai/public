@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE, LINK_CLICK_BEHAVIOR
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -35,6 +35,7 @@ type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
+type MatchType = 'contains' | 'starts with' | 'ends with' | 'equals' | 'regex';
 
 
 /** Column name -> format */
@@ -945,9 +946,7 @@ export class Column<T = any> {
     return api.grok_Column_IsNone(this.dart, i);
   }
 
-  /** Gets the value of the specified tag.
-   *  @param {string} tag
-   *  @returns {string} */
+  /** Returns the value of the specified tag, or null if the tag is not present. */
   getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.dart, tag);
   }
@@ -2349,11 +2348,11 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column.
-   * @param range - list of palette colors.
+   * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2363,10 +2362,14 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.fallbackColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
+    if (options?.matchType != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
 
   setConditional(rules: {[index: string]: number | string}  | null = null): void {
@@ -2378,6 +2381,10 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  setDisabled(): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.OFF;
   }
 
   getColor(i: number): number {
@@ -2444,10 +2451,49 @@ export class ColumnMetaHelper {
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
+
+  /** Returns the maximum amount of significant digits detected in the column. */
+  get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
+  set sourcePrecision(x: number | null) { this.column.tags[TAGS.SOURCE_PRECISION] = x?.toString(); }
+
+  /** Returns the formula of the dataframe column. */
+  get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
+  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+
+  /** Returns the units of the dataframe column. */
+  get units(): string | null { return this.column.getTag(TAGS.UNITS); }
+  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
+
+
+  /** Returns the list of choices for the dataframe column.
+   * Applicable for string columns only.
+   * See also {@link autoChoices}. */
+  get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
+  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also {@link choices}. */
+  get autoChoices(): boolean | null { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? null :
+    this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
+  set autoChoices(x: boolean | null) { this.column.tags[TAGS.AUTO_CHOICES] = x == null ? x : x.toString(); }
+
+  /** Returns the behavior of link click (open in new tab, open in context panel, custom) */
+  get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
+    return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+  }
+  set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
 
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
 
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
+
+  /** When specified, column filter treats the split strings as separate values.
+   * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
+  get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
+  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
 }

@@ -54,7 +54,7 @@ export function test(args: TestArgs): boolean {
     } else {
       const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
       if (packageData.name) {
-        process.env.TARGET_PACKAGE = utils.kebabToCamelCase(packageData.name);
+        process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
       } else {
         color.error('Invalid package name. Set the `name` field in `package.json`');
         return false;
@@ -114,7 +114,7 @@ export function test(args: TestArgs): boolean {
 
   function test(): void {
     color.info('Starting tests...');
-    const P_START_TIMEOUT: number = 3600000;
+    const P_START_TIMEOUT: number = 900000;
     let browser: Browser;
     let page: Page;
     let recorder: PuppeteerScreenRecorder;
@@ -123,11 +123,11 @@ export function test(args: TestArgs): boolean {
       failed: boolean, csv?: string, countReport: { skip: number, pass: number }
     };
 
-    function init(timeout: number): Promise<void> {
+    function init(time: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
       if (args.gui)
         params['headless'] = false;
-      return testUtils.runWithTimeout(timeout, async () => {
+      return testUtils.timeout(async () => {
         try {
           const out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
@@ -136,14 +136,14 @@ export function test(args: TestArgs): boolean {
         } catch (e) {
           throw e;
         }
-      });
+      }, time);
     }
 
     function runTest(timeout: number, options: {
       path?: string, catchUnhandled?: boolean, core?: boolean,
       report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean
     } = {}): Promise<resultObject> {
-      return testUtils.runWithTimeout(timeout, async () => {
+      return testUtils.timeout(async () => {
         const consoleLogOutputDir = './test-console-output.log';
         function addLogsToFile(msg: any) {
           fs.appendFileSync(consoleLogOutputDir, `${msg}`);
@@ -226,14 +226,15 @@ export function test(args: TestArgs): boolean {
               resolve({ failReport, skipReport, passReport, failed, csv, countReport });
             }).catch((e: any) => {
               const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
-              resolve({
-                failReport: `${e.message}\n${stack}`,
-                skipReport: '',
-                passReport: '',
-                failed: true,
-                csv: '',
-                countReport: {skip: 0, pass: 0}
-              });});
+                resolve({
+                  failReport: `${e.message}\n${stack}`,
+                  skipReport: '',
+                  passReport: '',
+                  failed: true,
+                  csv: '',
+                  countReport: { skip: 0, pass: 0 }
+                });
+              });
             });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
@@ -242,7 +243,7 @@ export function test(args: TestArgs): boolean {
           await recorder.stop();
         }
         return r;
-      });
+      }, timeout);
     }
 
     (async () => {

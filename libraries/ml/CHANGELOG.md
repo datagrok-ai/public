@@ -1,5 +1,14 @@
 # ml changelog
 
+## 6.6.12 (2024-06-24)
+
+Fix activity cliffs styles
+
+## 6.6.11 (2024-06-11)
+
+* Fix dialog styles
+* Initialization of MCL viewer
+
 ## 6.6.10 (2024-05-27)
 
 Activity cliffs: ability to use with layouts and progects

@@ -25,6 +25,6 @@ German
 Italian"`;
 
 let t = DG.DataFrame.fromCsv(languages);
-t.col('languages').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n');
+t.col('languages').meta.multiValueSeparator = '\n';
 
 grok.shell.addTableView(t).addViewer(DG.VIEWER.FILTERS);

@@ -122,30 +122,33 @@ YN[Re]VYNR[Ac]WYV
 [Me]EYVMPSFW[Me]H`,
       pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true, undefined)},
     },
+    'fastaMsaExtManyMinus': {
+      csv: `seq
+[D-Tic]-------[D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]N[D-Orn][D-aThr]-[Phe_4Me]
+[Phe_2F]--------[Tyr_ab-dehydroMe][dV][Aca]N[D-Orn][D-aThr]-[Phe_4Me]
+[D-Tic]-[Hcy]QTWQ[Phe_4NH2][D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]----[Phe_4Me]`,
+      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 17, true, undefined)}
+    },
     'sepSameLength': {
       csv: `seq
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
-        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-'),
-      }
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+      pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 5, true, '-')}
     },
     'sepMsaSameLength': {
       csv: `seq
 Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2
 Ac(1)-A-A(2)-A-A-A-C(2)-A-A-A-A-C(1)-G-NH2
-Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`, pos: {
-        'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-'),
-      }
+Ac(1)-A-A-A-A-A-A-A-A-A-A-A-A-A-C(1)-G-NH2`,
+      pos: {'seq': new PosCol(NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 5, true, '-')}
     },
     'helmSameLength': {
       csv: `seq
 PEPTIDE1{Ac(1).A.A.A.A.A.A.A.A.A.A.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ab(1).Y.V.K.H.P.F.W.R.W.Y.A.A.A.C(1).G.NH2}$$$$
 PEPTIDE1{Ad(1).S.W.Y.C.K.H.P.M.W.A.A.A.A.C(1)-G-NH2}$$$$`,
-      pos: {
-        'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)
-      }
+      pos: {'seq': new PosCol(NOTATION.HELM, null, null, 19, undefined, undefined)}
     },
   };
 

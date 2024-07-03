@@ -102,7 +102,7 @@ for (const lang of langs) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': DG.FileInfo.fromString(fileStringData), 'blobInput': DG.FileInfo.fromBytes(fileBinaryData)});
+            {'fileInput': DG.FileInfo.fromString(fileStringData, 'test.txt'), 'blobInput': DG.FileInfo.fromBytes(fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
       });

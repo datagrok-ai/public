@@ -1,7 +1,9 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {STRAND, STRANDS, TERMINI, TERMINUS} from './const';
-import {PATTERN_APP_DATA} from '../../common/model/data-loader/json-loader';
 import {EventBus} from './event-bus';
+import {_package} from '../../../package';
+import {JsonData} from '../../common/model/data-loader/json-loader';
 
 export function bulkTranslate(eventBus: EventBus): void {
   const df = eventBus.getTableSelection();
@@ -9,13 +11,18 @@ export function bulkTranslate(eventBus: EventBus): void {
     grok.shell.warning('Please select a table');
     return;
   }
-  const strandColNames = STRANDS.filter(
+  const strandInputData = STRANDS.filter(
     (strand) => !(strand === STRAND.ANTISENSE && !eventBus.isAntisenseStrandActive())
-  ).map((strand) => eventBus.getSelectedStrandColumn(strand))
-    .filter((colName) => colName) as string[];
+  ).map((strand) => {
+    return {
+      strand,
+      column: eventBus.getSelectedStrandColumn(strand)
+    };
+  })
+    .filter((el) => el.column);
 
-  if (strandColNames.length === 0) {
-    grok.shell.warning('Please column for sense strand');
+  if (strandInputData.length === 0) {
+    grok.shell.warning('Select a sense strand column');
     return;
   }
 
@@ -24,23 +31,51 @@ export function bulkTranslate(eventBus: EventBus): void {
 
   const idColumn = df.getCol(idColumnName);
 
-  const strandCols = strandColNames.map((colName) => df.getCol(colName));
+  const strandColData = strandInputData.map((el) => {
+    return {strand: el.strand, column: df.getCol(el.column!)};
+  });
+
+  if (!areStrandColsValid(strandColData, eventBus)) {
+    grok.shell.warning(`Some strands in the table input do not match pattern length`);
+    return;
+  }
+
+  strandColData.forEach((strandColData) => {
+    const inputCol = strandColData.column;
+    const strand = strandColData.strand;
+    const modifications = eventBus.getNucleotideSequences()[strand];
+    const terminals = eventBus.getTerminalModifications()[strand];
+    const ptoFlags = eventBus.getPhosphorothioateLinkageFlags()[strand];
+
+    const outputColName = `${eventBus.getPatternName()}(${inputCol.name})`;
+    df.columns.addNewString(outputColName).init((i) => {
+      const input = inputCol.get(i);
+      return applyPatternToRawSequence(
+        input, modifications, ptoFlags, terminals
+      );
+    });
+  });
 }
+
+function areStrandColsValid(strandColumns: {strand: STRAND, column: DG.Column<string>}[], eventBus: EventBus) {
+  const nucleotides = eventBus.getNucleotideSequences();
+  return strandColumns.every((el) => {
+    const patternLength = nucleotides[el.strand].length;
+    return el.column.toList().every((input) => input.length === patternLength);
+  });
+}
+
 
 export function applyPatternToRawSequence(
   rawNucleotideSequence: string,
   modifications: string[],
   ptoFlags: boolean[],
-  terminalModifications: Record<TERMINUS, string>
+  terminalModifications: Record<TERMINUS, string>,
 ): string {
   const rawNucleotides = rawNucleotideSequence.split('');
 
   const modifiedNucleotides = rawNucleotides.map((nucleotide, i) => {
-    const modifiedNucleotide = getModifiedNucleotide(
-      nucleotide,
-      modifications[i]
-
-    );
+    const modifiedNucleotide = getModifiedNucleotide(nucleotide, modifications[i], _package.jsonData);
     return modifiedNucleotide;
   });
 
@@ -51,9 +86,9 @@ export function applyPatternToRawSequence(
   return modificationsWithPTOLinkages.join('');
 }
 
-function getModifiedNucleotide(nucleotide: string, modification: string): string {
-  const format = Object.keys(PATTERN_APP_DATA)[0];
-  const substitution = PATTERN_APP_DATA[format][modification].substitution;
+function getModifiedNucleotide(nucleotide: string, modification: string, jsonData: JsonData): string {
+  const format = Object.keys(jsonData.patternAppData)[0];
+  const substitution = jsonData.patternAppData[format][modification].substitution;
   return nucleotide.replace(/([AGCTU])/, substitution);
 }
 

@@ -1,7 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {_package} from '../package';
+
 
 export class PackageSettingsEditorWidget extends DG.Widget {
   maxMonomerLengthProp: DG.Property;
@@ -20,24 +21,33 @@ export class PackageSettingsEditorWidget extends DG.Widget {
   }
 
   async init(): Promise<void> {
-    const maxMonomerLengthInput = ui.intInput('Max monomer length',
-      _package.properties.MaxMonomerLength,
-      (value: number) => {
+    const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
+      value: _package.properties.maxMonomerLength!,
+      nullable: true, min: 0,
+      onValueChanged: () => {
         // Handle user changed value
-        _package.properties.MaxMonomerLength = value;
-      });
+        _package.properties.maxMonomerLength = maxMonomerLengthInput.value ?? null;
+      },
+      tooltipText: this.maxMonomerLengthProp.description,
+    });
 
-    const tooltipWebLogoInput = ui.boolInput('Tooltip WebLogo',
-      _package.properties.TooltipWebLogo,
-      (value: boolean) => {
-        _package.properties.TooltipWebLogo = value;
-      });
+    const tooltipWebLogoInput = ui.input.bool('Tooltip WebLogo', {
+      value: _package.properties.tooltipWebLogo,
+      nullable: false,
+      onValueChanged: () => {
+        _package.properties.tooltipWebLogo = tooltipWebLogoInput.value;
+      },
+      tooltipText: this.tooltipWebLogo.description,
+    });
 
-    const defaultSeparatorInput = ui.choiceInput('Default Separator',
-      _package.properties.DefaultSeparator, ['.', '/', '-'],
-      (value: string) => {
-        _package.properties.DefaultSeparator = value;
-      });
+    const defaultSeparatorInput = ui.input.choice('Default Separator', {
+      value: _package.properties.defaultSeparator,
+      items: ['.', '/', '-'],
+      onValueChanged: () => {
+        _package.properties.defaultSeparator = defaultSeparatorInput.value;
+      },
+      tooltipText: this.defaultSeparator.description,
+    });
 
     this.root.appendChild(ui.form([
       maxMonomerLengthInput,

@@ -1,5 +1,34 @@
 # compute-utils changelog
 
+## 1.35.7 (2024-07-01)
+
+- HistoryList: Fixed bug on batch deletion
+- HistoryInput: Added skipDf option
+
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResults method
+
+## 1.35.5 (2024-06-26)
+
+- getParamChanges fixed empty FuncCall error
+
+## 1.35.4 (2024-06-25)
+
+- Inputs bugfixes
+
+## 1.35.3 (2024-06-25)
+
+- Changed inputs to use new API
+
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
+## 1.35.0 (2024-06-12)
+
+- Code adapted for Compute API
+
 ## 1.34.3 (2024-05-21)
 
 ### Bug fixes
@@ -173,7 +202,7 @@
 ### Features
 
 - RFV: Now supports readme files via `meta.readme` tag
-- Wizard: Now support help panel state saving 
+- Wizard: Now support help panel state saving
 
 ## 1.24.1 (2024-03-02)
 

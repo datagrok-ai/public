@@ -7,11 +7,7 @@ category('Viewers', () => {
   const df = grok.data.demo.demog(100);
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
   const viewersToSkip: {[v: string]: string} = {
-    'Tree': 'GROK-12569',
-    'Word cloud': 'GROK-13198',
-    'Sunburst': 'GROK-13778',
-    'Surface plot': 'GROK-13778',
-    'Timelines': 'GROK-13778',
+    'Globe': 'GROK-14320',
   };
 
   for (const v of viewers) {

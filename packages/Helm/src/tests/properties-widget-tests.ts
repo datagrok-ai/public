@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, before, category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectObject, test, timeout} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {
@@ -11,6 +11,7 @@ import {
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
 
+import {initHelmMainPackage} from './utils';
 import {getPropertiesDict, SeqPropertiesError} from '../widgets/properties-widget';
 
 const enum MolProps {
@@ -26,6 +27,7 @@ const enum Tests {
   separatorGaps = 'separator-gaps',
   fastaPt = 'fasta-PT',
   fastaPtMsa = 'fasta-PT-MSA',
+  fastaRna = 'fasta-RNA',
   fastaDna = 'fasta-DNA',
 }
 
@@ -57,6 +59,11 @@ const TestsData: {
     units: NOTATION.FASTA, alphabet: ALPHABET.PT,
     res: {[MolProps.formula]: 'C38H58N10O12S', [MolProps.mw]: 878.99, [MolProps.extinctCoef]: 1.55}
   },
+  [Tests.fastaRna]: {
+    seq: 'ACGUAUUCC',
+    units: NOTATION.FASTA, alphabet: ALPHABET.RNA,
+    res: {[MolProps.formula]: 'C84H107N30O65P9', [MolProps.mw]: 2855.67, [MolProps.extinctCoef]: 96.27}
+  },
   [Tests.fastaDna]: {
     seq: 'ACGTATTCC',
     units: NOTATION.FASTA, alphabet: ALPHABET.DNA,
@@ -70,9 +77,14 @@ category('properties-widget', () => {
   let userLibSettings: any = null;
 
   before(async () => {
+    await initHelmMainPackage();
+
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = getUserLibSettings();
+
     await setUserLibSettingsForTests();
+    await timeout(async () => { await monomerLibHelper.awaitLoaded(); },
+      5000, 'MonomerLibHelper.awaitLoaded() timeout');
     await monomerLibHelper.loadLibraries(true); // load default libraries
   });
 

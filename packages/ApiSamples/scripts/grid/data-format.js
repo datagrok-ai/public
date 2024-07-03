@@ -5,10 +5,10 @@
 let df = grok.data.demo.demog();
 let view = grok.shell.addTableView(df);
 
-df.col('age').tags[DG.TAGS.FORMAT] = 'compact simple currency';
-df.col('height').tags[DG.TAGS.FORMAT] = 'scientific';
-df.col('weight').tags[DG.TAGS.FORMAT] = '#.0000';
-df.col('started').tags[DG.TAGS.FORMAT] = 'dd.MM.yyyy';
+df.col('age').meta.format = 'compact simple currency';
+df.col('height').meta.format = 'scientific';
+df.col('weight').meta.format = '#.0000';
+df.col('started').meta.format = 'dd.MM.yyyy';
 
 // NUMBER FORMATS (https://datagrok.ai/help/discover/tags#numbers)
 // The usual formats, such as "0.000" or "#.0000", are supported.

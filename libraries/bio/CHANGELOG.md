@@ -1,5 +1,46 @@
 # bio changelog
 
+## 5.42.4 (2024-07-02)
+
+Fix types ISeqMonomer from Helm
+
+## 5.42.3 (2024-06-26)
+
+### Bug fixes
+
+* GROK-15996: Fix cell renderer for long mode
+* Fix package-lock.json
+
+## 5.42.2 (2024-06-25)
+
+Bump dependencies versions JSDraw.Lite and HELMWebEditor
+
+## 5.42.1 (2024-06-24)
+
+Fix for JSDraw types
+
+## 5.42.0 (2024-06-21)
+
+Use types of forked JSDraw.Lite and HELMWebEditor
+
+## 5.41.12 (2024-06-12)
+
+### Bug fixes
+
+* Fix .pdbqt to .pdb sorting atoms, add tests
+* Fix cell renderer async base to reset errorCount
+
+## 5.41.11 (2024-06-11)
+
+### Bug fixes
+
+Fix Pdbqt parser to assume ROOT as MODEL
+Fix Pdbqt.toPdb sorting atoms, tests
+
+## 5.41.10 (2024-06-10)
+
+NGL typings
+
 ## 5.41.9 (2024-05-29)
 
 Fix Monomer type
