@@ -30,8 +30,8 @@ SharePoint connector supports OneDrive as well, when **Drive** is set to "OneDri
 {
   "parameters": {
     "domain": "",
-    "root site": false, // 
-    "site": "", // specify if not root site
+    "root site": true,
+    "site": "", // specify if not a root site
     "drive": "",
     "redirect url": "" // is set automatically
   },
