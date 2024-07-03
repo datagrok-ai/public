@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.29 (2024-07-08)
+
+Add PLS regression to predictive modeling tools
+
 ## 1.1.27 (2024-06-17)
 
 Add linear regression

@@ -688,5 +688,9 @@ export async function plsMLdemo(table: DG.DataFrame, features: DG.ColumnList, pr
 
   await model.fit(features, predict, components);
 
-  table.columns.add(model.predict(features));
+  const packed = model.toBytes();
+
+  const unpacked = new PLSmodel(packed);
+
+  table.columns.add(unpacked.predict(features));
 }
