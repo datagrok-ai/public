@@ -52,7 +52,7 @@ export class AddNewColumnDialog {
   placeholderType: string = 'Type'; // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 50;
-  maxPreviwRowCount: number = 100;
+  maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)}/g;
   tooltips = {
@@ -436,7 +436,8 @@ export class AddNewColumnDialog {
   setCodeMirrorFocus() {
     if (!this.inputName!.root.contains(document.activeElement)
       && !this.uiColumns!.contains(document.activeElement)
-      && !this.uiFunctions!.contains(document.activeElement)) {
+      && !this.uiFunctions!.contains(document.activeElement)
+      && !this.inputType!.root.contains(document.activeElement)) {
       this.codeMirror!.focus();
     }
   }
