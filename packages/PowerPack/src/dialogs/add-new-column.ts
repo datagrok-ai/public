@@ -84,6 +84,7 @@ export class AddNewColumnDialog {
   codeMirrorDiv = ui.div('', { style: { height: '140px' } });
   errorDiv = ui.div('', 'cm-error-div');
   columnNames: string[] = [];
+  columnNamesLowerCase: string[] = [];
   coreFunctionsNames: string[] = [];
   coreFunctionsParams: {[key: string]: PropInfo[]} = {};
   packageFunctionsNames: {[key: string]: string[]} = {};
@@ -106,6 +107,7 @@ export class AddNewColumnDialog {
 
     if (this.sourceDf) {
       this.columnNames = this.sourceDf.columns.names();
+      this.columnNamesLowerCase = this.sourceDf.columns.names().map((it) => it.toLowerCase());
       this.init();
     }
     else
@@ -456,7 +458,7 @@ export class AddNewColumnDialog {
     const unmatchedCols: string[] = [];
     if (matchesAll.length) {
       for (const match of matchesAll)
-        if (!this.columnNames.includes(match[1]))
+        if (!this.columnNamesLowerCase.includes(match[1].toLowerCase()))
           unmatchedCols.push(match[1]);
     }
     if (unmatchedCols.length)
@@ -840,7 +842,7 @@ export class AddNewColumnDialog {
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
     packageFunctionsParams: {[key: string]: PropInfo[]}, coreFunctionsParams:  {[key: string]: PropInfo[]}) {
     return (context: CompletionContext) => {
-      let word = context.matchBefore(/[\w|:|$]*/);
+      let word = context.matchBefore(/[\w|:|$|${]*/);
       if (!word || word?.from === word?.to && !context.explicit)
         return null;
       let options: Completion[] = [];
@@ -856,17 +858,18 @@ export class AddNewColumnDialog {
           });
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
-      } else if (word.text.includes('$')) {
+      } else if (word.text.includes('$') || word.text.includes('${')) {
         colNames.forEach((name: string) => options.push({ label: name, type: "variable", apply: `{${name}}` }));
-        index = word!.from + word.text.indexOf("$") + 1;
-        filter = !word.text.endsWith('$');
+        const bracketIdx = word.text.indexOf("{");
+        index = word!.from + bracketIdx === -1 ? word.text.indexOf("$") + 1 : bracketIdx + 1;
+        filter = !word.text.endsWith('$') && !word.text.endsWith('{');
       } else
         coreFunctionsNames.concat(packageNames)
           .forEach((name: string, idx: number) => options.push({
             label: name, type: "variable",
             apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name].map((it)=> it.propType).join(',')})` : `${name}:`,
             detail: idx < coreFunctionsNames.length ? '' : 'package'
-          }));;
+          }));
       return {
         from: index,
         options: options,
