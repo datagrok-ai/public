@@ -632,7 +632,7 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predict_column: s
 }
 
 //name: trainPLSRegression
-//meta.mlname: PLS
+//meta.mlname: PLS Regression
 //meta.mlrole: train
 //input: dataframe df
 //input: string predict_column
@@ -646,35 +646,31 @@ export async function trainPLSRegression(df: DG.DataFrame, predict_column: strin
   if (components > features.length)
     throw new Error('Number of components is greater than features count');
 
-  const params = await getLinearRegressionParams(features, target);
+  const plsModel = new PLSmodel();
+  await plsModel.fit(features, target, components);
 
-  return new Uint8Array(params.buffer);
+  return plsModel.toBytes();
 }
 
 //name: applyLinearRegression
-//meta.mlname: PLS
+//meta.mlname: PLS Regression
 //meta.mlrole: apply
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
 export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
-  const features = df.columns;
-  const params = new Float32Array((model as Uint8Array).buffer);
-  return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
+  const plsModel = new PLSmodel(model);
+  return DG.DataFrame.fromColumns([plsModel.predict(df.columns)]);
 }
 
 //name: isApplicablePLSRegression
-//meta.mlname: PLS
+//meta.mlname: PLS Regression
 //meta.mlrole: isApplicable
 //input: dataframe df
 //input: string predict_column
 //output: bool result
 export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: string): boolean {
-  for (const col of df.columns) {
-    if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.QNUM) && (col.type !== DG.COLUMN_TYPE.BIG_INT))
-      return false;
-  }
-  return true;
+  return PLSmodel.isApplicable(df.columns);
 }
 
 //top-menu: ML | PLS ML demo...
