@@ -320,9 +320,9 @@ jobs:
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "sequencetranslator" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "charts" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "curves" ]]; then
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
+            DATAGROK_VERSION='1.19.2-rc'
+            #            export GROK_SPAWNER_VERSION='bleeding-edge'
+            #            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
 
