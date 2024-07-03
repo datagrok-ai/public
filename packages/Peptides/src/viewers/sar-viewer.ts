@@ -899,8 +899,8 @@ export class MonomerPosition extends SARViewer {
     $(this.root).empty();
     let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
     if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
-      const mutationCliffsMode = ui.boolInput(SELECTION_MODE.MUTATION_CLIFFS,
-        this.mode === SELECTION_MODE.MUTATION_CLIFFS);
+      const mutationCliffsMode = ui.input.bool(SELECTION_MODE.MUTATION_CLIFFS,
+        {value: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
       mutationCliffsMode.root.addEventListener('click', () => {
         invariantMapMode.value = false;
         mutationCliffsMode.value = true;
@@ -908,7 +908,7 @@ export class MonomerPosition extends SARViewer {
         this.showHelp();
       });
       mutationCliffsMode.setTooltip('Statistically significant changes in activity');
-      const invariantMapMode = ui.boolInput(SELECTION_MODE.INVARIANT_MAP, this.mode === SELECTION_MODE.INVARIANT_MAP);
+      const invariantMapMode = ui.input.bool(SELECTION_MODE.INVARIANT_MAP, {value: this.mode === SELECTION_MODE.INVARIANT_MAP});
       invariantMapMode.root.addEventListener('click', () => {
         mutationCliffsMode.value = false;
         invariantMapMode.value = true;

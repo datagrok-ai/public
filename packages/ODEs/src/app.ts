@@ -540,7 +540,7 @@ export class DiffStudio {
   /** Overwrite the editor content */
   private async overwrite(state?: EDITOR_STATE): Promise<void> {
     if (this.toShowWarning && this.isModelChanged) {
-      const boolInput = ui.boolInput(WARNING.CHECK, true, () => this.toShowWarning = !this.toShowWarning);
+      const boolInput = ui.input.bool(WARNING.CHECK, {value: true, onValueChanged: () => this.toShowWarning = !this.toShowWarning});
       const dlg = ui.dialog({title: WARNING.TITLE, helpUrl: LINK.DIF_STUDIO_REL});
       this.solverView.append(dlg);
 

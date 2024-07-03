@@ -348,17 +348,17 @@ export class TestManager extends DG.ViewBase {
     });
     runTestsButton.classList.add('ui-btn-outline');
 
-    const debugButton = ui.boolInput('Debug', this.debugMode, () => { this.debugMode = !this.debugMode; });
+    const debugButton = ui.input.bool('Debug', {value: this.debugMode, onValueChanged: () => {this.debugMode = !this.debugMode;}});
     debugButton.classList.add('tm-button');
 
-    const benchmarkButton = ui.boolInput('Benchmark', this.benchmarkMode, () => {
+    const benchmarkButton = ui.input.bool('Benchmark', {value: this.benchmarkMode, onValueChanged: () => {
       this.benchmarkMode = !this.benchmarkMode;
       DG.Test.isInBenchmark = this.benchmarkMode;
-    });
+    }});
     benchmarkButton.classList.add('tm-button');
 
-    const runSkippedButton = ui.boolInput('Run skipped', this.runSkippedMode,
-      () => { this.runSkippedMode = !this.runSkippedMode; });
+    const runSkippedButton = ui.input.bool('Run skipped', {value: this.runSkippedMode,
+      onValueChanged: () => {this.runSkippedMode = !this.runSkippedMode;}});
     runSkippedButton.classList.add('tm-button');
 
     return {

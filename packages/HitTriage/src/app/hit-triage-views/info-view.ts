@@ -86,10 +86,10 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
-    const templatesInput = ui.choiceInput(i18n.selectTemplate, presetTemplate?.name ?? templates[0], templates,
-      async () => {
+    const templatesInput = ui.input.choice(i18n.selectTemplate, {value: presetTemplate?.name ?? templates[0], items: templates,
+      onValueChanged: async () => {
         await onTemmplateChange();
-      });
+      }});
     const createNewtemplateButton = ui.icons.add(async () => {
       ui.setUpdateIndicator(this.root, true);
       await this.createNewTemplate();

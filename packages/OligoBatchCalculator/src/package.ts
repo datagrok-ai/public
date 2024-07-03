@@ -302,8 +302,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   }
 
   const inputSequences = ui.textInput('', DEFAULT_INPUT, (txt: string) => render(txt));
-  const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
-  const units = ui.choiceInput('', UNITS.OPTICAL_DENSITY, Object.values(UNITS), () => render(inputSequences.value));
+  const yieldAmount = ui.input.float('', {value: 1, onValueChanged: () => render(inputSequences.value)});
+  const units = ui.input.choice('', {value: UNITS.OPTICAL_DENSITY, items: Object.values(UNITS), onValueChanged: () => render(inputSequences.value)});
 
   await render(DEFAULT_INPUT);
 

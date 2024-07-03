@@ -36,8 +36,8 @@ class StructureAppLayout {
         (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
       )
     );
-    this.useChiralInput = ui.boolInput('Use chiral', true);
-    this.saveAllStrandsInput = ui.boolInput('Save as one entity', true);
+    this.useChiralInput = ui.input.bool('Use chiral', {value: true});
+    this.saveAllStrandsInput = ui.input.bool('Save as one entity', {value: true});
     ui.tooltip.bind(this.saveAllStrandsInput.root, 'Save SDF with all strands in one molfile');
     this.directionInversion = Object.fromEntries(
       STRANDS.map((key) => [key, false])
@@ -102,8 +102,8 @@ class StructureAppLayout {
       STRANDS.map(
         (key, idx) => {
           const selected = (idx === 0) ? DIRECTION.STRAIGHT : DIRECTION.INVERSE;
-          return [key, ui.choiceInput(
-            `${key.toUpperCase()} direction`, selected, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+          return [key, ui.input.choice(
+            `${key.toUpperCase()} direction`, {value: selected, items: [DIRECTION.STRAIGHT, DIRECTION.INVERSE]}
           )];
         }
       )

@@ -73,9 +73,9 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     funcEditorDiv.appendChild(editor);
   };
   const funcEditorDiv = ui.div([]);
-  const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
-    Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
+  const dataSourceFunctionInput = ui.input.choice(
+    C.i18n.dataSourceFunction, {value: template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
+      items: Object.keys(dataSourceFunctionsMap), onValueChanged: onDataFunctionChange});
   // call the onchange function to create an editor for the first function
   await onDataFunctionChange();
   if (template.queryFunctionName)

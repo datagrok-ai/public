@@ -47,11 +47,11 @@ class TranslatorAppLayout {
     this.moleculeImgDiv.style.marginTop = '12px';
 
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.choiceInput('', DEFAULT_FORMATS.HELM, this.inputFormats, async () => {
+    this.formatChoiceInput = ui.input.choice('', {value: DEFAULT_FORMATS.HELM, items: this.inputFormats, onValueChanged: async () => {
       this.format = this.formatChoiceInput.value;
       this.updateTable();
       await this.updateMolImg();
-    });
+    }});
     this.sequenceInputBase = ui.textInput('', DEFAULT_AXOLABS_INPUT,
       () => { this.onInput.next(); });
 

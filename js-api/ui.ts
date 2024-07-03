@@ -791,7 +791,7 @@ export namespace input {
   }
 
   interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
-    size: Size;
+    size?: Size;
   }
 
   interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {

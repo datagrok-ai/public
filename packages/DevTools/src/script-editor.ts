@@ -207,40 +207,40 @@ function setScriptRibbon(v: DG.View, doc: any) {
       const cursor = doc.getCursor();
       switch (item) {
       case 'Int':
-        doc.replaceRange('ui.intInput(\'Label\',0, (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.int(\'Label\', {value: 0})\n', cursor);
         break;
       case 'String':
-        doc.replaceRange('ui.stringInput(\'Label\',\'Value\', (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.string(\'Label\', {value: \'Value\'})\n', cursor);
         break;
       case 'Date':
-        doc.replaceRange('ui.dateInput(\'Label\', dayjs(\'1970-05-10\'), (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.date(\'Label\', {value: dayjs(\'1970-05-10\')})\n', cursor);
         break;
       case 'Bool':
-        doc.replaceRange('ui.boolInput(\'Label\',true, (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.bool(\'Label\', {value: true})\n', cursor);
         break;
       case 'Choice':
-        doc.replaceRange('ui.choiceInput(\'Label\',\'Val 1\', [\'Val 1\', \'Val 2\', \'Val 3\'], (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.choice(\'Label\', {value: \'Val 1\', items: [\'Val 1\', \'Val 2\', \'Val 3\']})\n', cursor);
         break;
       case 'Multi Choice':
-        doc.replaceRange('ui.multiChoiceInput(\'Label\', [\'Val 1\', \'Val 2\'], [\'Val 1\', \'Val 2\', \'Val 3\'], (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.multiChoice(\'Label\', {value: [\'Val 1\', \'Val 2\'], items: [\'Val 1\', \'Val 2\', \'Val 3\']})\n', cursor);
         break;
       case 'Text Area':
-        doc.replaceRange('ui.textInput(\'Label\', \'Value\', (value)=>{})\n', cursor);
+        doc.replaceRange('ui.input.textArea(\'Label\', {value: \'Value\'})\n', cursor);
         break;
       case 'Switch':
-        doc.replaceRange('ui.switchInput(\'demo\', false, ()=>{})\n', cursor);
+        doc.replaceRange('ui.input.toggle(\'demo\', {value: false})\n', cursor);
         break;
       case 'Column':
-        doc.replaceRange('ui.columnInput(\'Label\', table, table.col(\'age\'))\n', cursor);
+        doc.replaceRange('ui.input.column(\'Label\', {table: table, value: table.col(\'age\')})\n', cursor);
         break;
       case 'Columns':
-        doc.replaceRange('ui.columnsInput(\'Lable\', table)\n', cursor);
+        doc.replaceRange('ui.input.columns(\'Label\', {table: table})\n', cursor);
         break;
       case 'Table':
         doc.replaceRange('ui.tableInput(\'Label\', tables[0], tables, (t) => grok.shell.info(t.name))\n', cursor);
         break;
       case 'Molecule':
-        doc.replaceRange('ui.moleculeInput(\'Label\', \'CN1CCC(O)(CC1)c2ccccc2\')\n', cursor);
+        doc.replaceRange('ui.input.molecule(\'Label\', {value: \'CN1CCC(O)(CC1)c2ccccc2\'})\n', cursor);
         break;
       }
     };

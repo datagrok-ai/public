@@ -91,12 +91,12 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   //General fields
   const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
-  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
-  const columnPrefixInput = ui.stringInput('Column prefix', 'R');
+  const columnInput = ui.input.choice('Molecules', {value: col.name, items: molColNames});
+  const columnPrefixInput = ui.input.string('Column prefix', {value: 'R'});
   ui.tooltip.bind(columnPrefixInput.captionLabel, 'Prefix for R Group columns');
-  const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+  const visualAnalysisCheck = ui.input.bool('Visual analysis', {value: true});
   ui.tooltip.bind(visualAnalysisCheck.captionLabel, 'Add trellis plot after analysis is completed');
-  const replaceLatest = ui.boolInput('Replace latest', true);
+  const replaceLatest = ui.input.bool('Replace latest', {value: true});
   replaceLatest.root.classList.add('chem-rgroup-replace-latest');
   ui.tooltip.bind(replaceLatest.captionLabel, 'Overwrite latest analysis results by new one');
 
@@ -121,22 +121,22 @@ export function rGroupAnalysis(col: DG.Column): void {
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
   mcsButton.classList.add('chem-mcs-button');
-  const mcsExactAtomsCheck = ui.boolInput('Exact atoms', true);
-  const mcsExactBondsCheck = ui.boolInput('Exact bonds', true);
+  const mcsExactAtomsCheck = ui.input.bool('Exact atoms', {value: true});
+  const mcsExactBondsCheck = ui.input.bool('Exact bonds', {value: true});
   mcsExactBondsCheck.captionLabel.classList.add('chem-mcs-settings-label');
 
   //R groups fields
-  const rGroupMatchingStrategy = ui.choiceInput('Matching strategy',
-    rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, matchingStrategies,
-    () => {
+  const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
+    value: rGroupSettings?.rGroupMatchingStrategy ?? RGroupMatchingStrategy.Greedy, items: matchingStrategies,
+    onValueChanged: () => {
       rGroupSettings!.rGroupMatchingStrategy = rGroupMatchingStrategy.value!;
       saveRGroupUserSettings();
-    });
-  const onlyMatchAtRGroupsInput = ui.boolInput('Only match at R groups',
-    rGroupSettings?.onlyMatchAtRGroups ?? false, () => {
+    }});
+  const onlyMatchAtRGroupsInput = ui.input.bool('Only match at R groups', {
+    value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: () => {
       rGroupSettings!.onlyMatchAtRGroups = onlyMatchAtRGroupsInput.value!;
       saveRGroupUserSettings();
-    });
+    }});
   ui.tooltip.bind(onlyMatchAtRGroupsInput.captionLabel, 'Return matches only for labelled R groups');
 
   //settings button to adjust mcs and r-groups settings

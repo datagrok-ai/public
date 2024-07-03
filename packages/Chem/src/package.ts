@@ -467,7 +467,7 @@ export function searchSubstructureEditor(call: DG.FuncCall): void {
   } else if (molColumns.length === 1)
     call.func.prepare({molecules: molColumns[0]}).call(true);
   else {
-    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0]);
+    const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0]});
     ui.dialog({title: 'Substructure search'});
     ui.dialog({title: 'Substructure search'})
       .add(colInput)

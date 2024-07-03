@@ -25,15 +25,15 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   if (!targetColumns)
     throw new Error(PT_ERROR_DATAFRAME);
 
-  const targetColumnInput = ui.columnInput(
-    'Column', grok.shell.t, targetColumns[0], null,
-    {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
+  const targetColumnInput = ui.input.column(
+    'Column', {table: grok.shell.t, value: targetColumns[0],
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
   );
 
-  const generateHelmChoiceInput = ui.boolInput(PT_UI_GET_HELM, true);
+  const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
   ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
 
-  const chiralityEngineInput = ui.boolInput(PT_UI_USE_CHIRALITY, false);
+  const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
   const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json');
   const rulesHeader = ui.inlineText([PT_UI_RULES_USED]);
   ui.tooltip.bind(rulesHeader, 'Add or specify rules to use');
@@ -78,7 +78,7 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
   const helmInput = await HelmInput.init();
 
   const libList = await getLibrariesList();
-  const screenLibrary = ui.choiceInput('Library to use', null, libList);
+  const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
 
   screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
 

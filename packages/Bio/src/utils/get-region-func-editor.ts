@@ -43,19 +43,16 @@ export class GetRegionFuncEditor {
 
     const seqColValue = this.call.inputParams['sequence'].value ??
       this.inputs.table.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-    const seqColOptions = {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE};
-    this.inputs.sequence = ui.columnInput('Sequence', grok.shell.tv.dataFrame, seqColValue,
-      this.sequenceInputChanged.bind(this), seqColOptions);
-    this.inputs.start = ui.choiceInput(
-      'Start', undefined, [], this.startInputChanged.bind(this)) as unknown as DG.InputBase<string>;
-    this.inputs.end = ui.choiceInput(
-      'End', undefined, [], this.endInputChanged.bind(this)) as unknown as DG.InputBase<string>;
+    this.inputs.sequence = ui.input.column('Sequence', {table: grok.shell.tv.dataFrame, value: seqColValue,
+      onValueChanged: this.sequenceInputChanged.bind(this), filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    this.inputs.start = ui.input.choice('Start', {onValueChanged: this.startInputChanged.bind(this)}) as unknown as DG.InputBase<string>;
+    this.inputs.end = ui.input.choice('End', {onValueChanged: this.endInputChanged.bind(this)}) as unknown as DG.InputBase<string>;
 
-    this.inputs.region = ui.choiceInput<SeqRegion>('Region', null as unknown as SeqRegion, [],
-      this.regionInputChanged.bind(this)) as DG.InputBase<SeqRegion>;
+    this.inputs.region = ui.input.choice<SeqRegion>('Region', {value: null as unknown as SeqRegion, items: [],
+      onValueChanged: this.regionInputChanged.bind(this)}) as DG.InputBase<SeqRegion>;
 
-    this.inputs.name = ui.stringInput('Column name', this.getDefaultName(),
-      this.nameInputChanged.bind(this), {clearIcon: true});
+    this.inputs.name = ui.input.string('Column name', {value: this.getDefaultName(),
+      onValueChanged: this.nameInputChanged.bind(this), clearIcon: true});
     this.inputs.name.onInput(this.nameInputInput.bind(this)); // To catch clear event
 
     // tooltips

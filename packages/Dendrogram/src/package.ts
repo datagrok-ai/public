@@ -66,8 +66,8 @@ export function getDendrogramService(): IDendrogramService {
 
 //name: generateTreeDialog
 export function generateTreeDialog() {
-  const sizeInput = ui.intInput('Tree size (node count)', 10000);
-  const filenameInput = ui.stringInput('File name', 'tree-gen-10000');
+  const sizeInput = ui.input.int('Tree size (node count)', {value: 10000});
+  const filenameInput = ui.input.string('File name', {value: 'tree-gen-10000'});
 
   return ui.dialog('Generate tree')
     .add(ui.divV([sizeInput, filenameInput]))

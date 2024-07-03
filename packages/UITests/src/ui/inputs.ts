@@ -14,20 +14,20 @@ category('UI: Inputs', () => {
 
   before(async () => {
     inputs = {
-      'stringInput': ui.stringInput('', ''),
-      'intInput': ui.intInput('', 0),
-      'floatInput': ui.floatInput('', 0.00),
-      'boolInput': ui.boolInput('', true),
-      'switchInput': ui.switchInput('', true),
-      'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
-      'multiChoiceInput': ui.multiChoiceInput('', [], []),
-      // 'dateInput': ui.dateInput('', dayjs('2001-01-01')),
+      'stringInput': ui.input.string('', {value: ''}),
+      'intInput': ui.input.int('', {value: 0}),
+      'floatInput': ui.input.float('', {value: 0.00}),
+      'boolInput': ui.input.bool('', {value: true}),
+      'switchInput': ui.input.toggle('', {value: true}),
+      'choiceInput': ui.input.choice('', {value: '1', items: ['1', '2', '3']}),
+      'multiChoiceInput': ui.input.multiChoice('', {value: [], items: []}),
+      // 'dateInput': ui.input.date('', {value: dayjs('2001-01-01')}),
       'textInput': ui.textInput('', ''),
-      'searchInput': ui.searchInput('', ''),
-      'columnInput': ui.columnInput('', t, t.col('age')),
-      'columnsInput': ui.columnsInput('', t, () => null),
+      'searchInput': ui.input.search('', {value: ''}),
+      'columnInput': ui.input.column('', {table: t, value: t.col('age')!}),
+      'columnsInput': ui.input.columns('', {table: t, onValueChanged: () => null}),
       'tableInput': ui.tableInput('', tables[0], tables),
-      'colorInput': ui.colorInput('', '#ff0000'),
+      'colorInput': ui.input.color('', {value: '#ff0000'}),
     };
     v = grok.shell.newView('');
     grok.shell.windows.showContextPanel = true;
@@ -105,7 +105,7 @@ category('UI: Inputs', () => {
   });
 
   test('floatInput', async () => {
-    const t = ui.floatInput('Label', 0.003567);
+    const t = ui.input.float('Label', {value: 0.003567});
     t.format = '0.0000';
     const v = grok.shell.newView('Test', [t]);
     const input = t.input as HTMLInputElement;
@@ -162,7 +162,7 @@ category('UI: Inputs', () => {
 
 category('UI: Choice input', () => {
   test('nullable', async () => {
-    const t = ui.choiceInput('test', '1', ['1', '2'], null, {nullable: true});
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: true});
 
     const view = grok.shell.newView();
     view.append(t);
@@ -176,7 +176,7 @@ category('UI: Choice input', () => {
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15799'});
 
   test('non-nullable', async () => {
-    const t = ui.choiceInput('test', '1', ['1', '2'], null, {nullable: false});
+    const t = ui.input.choice('test', {value: '1', items: ['1', '2'], nullable: false});
 
     const view = grok.shell.newView();
     view.append(t);
@@ -190,9 +190,10 @@ category('UI: Choice input', () => {
 
   test('fromFunction', async () => {
     const view = grok.shell.newView();
-    const input = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
+    const input = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
     view.root.appendChild(input.root);
 
+    //@ts-ignore
     input.value = null;
     expect(input.value == null);
     input.value = 'Male';

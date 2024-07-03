@@ -135,7 +135,7 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
-    const control = ui.stringInput('', '');
+    const control = ui.input.string('', {value: ''});
     control.onInput(async () => await this.updatePreview());
     control.setTooltip(this.tooltips['name']);
 
@@ -150,12 +150,12 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Column Type" input field. */
   initInputType(): DG.InputBase {
-    const defaultChoise = `${this.autoType} (${this.defaultType})`;
-    this.supportedTypes.unshift(defaultChoise); // The first item of the ChoiceBox will be "Auto".
+    const defaultChoice = `${this.autoType} (${this.defaultType})`;
+    this.supportedTypes.unshift(defaultChoice); // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType); // The last item of the ChoiceBox will be "Treat As String".
 
-    const control = ui.choiceInput('', this.call ?
-      this.call.getParamValue('type') : defaultChoise, this.supportedTypes);
+    const control = ui.input.choice('', {value: this.call ?
+      this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput(async () => await this.updatePreview());
     control.setTooltip(this.tooltips['type']);
 

@@ -70,7 +70,7 @@ export class SubstructureSearchDialog {
       this.updateInputs();
     }, seqColOptions);
 
-    this.substructureInput = ui.stringInput('Substructure', '');
+    this.substructureInput = ui.input.string('Substructure', {value: ''});
 
     this.editHelmLink = ui.link('Edit helm', () => this.editHelmLinkAction(), undefined, {style: {position: 'relative', left: '95px'}});
 
@@ -79,7 +79,7 @@ export class SubstructureSearchDialog {
     df.col(SUBSTR_HELM_COL_NAME)!.semType = this.col.semType;
     df.col(SUBSTR_HELM_COL_NAME)!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     this.grid = df.plot.grid();
-    this.separatorInput = ui.stringInput('Separator', this.separator);
+    this.separatorInput = ui.input.string('Separator', {value: this.separator});
 
     this.inputsDiv = ui.div();
     this.units = this.col.getTag(DG.TAGS.UNITS);

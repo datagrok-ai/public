@@ -205,8 +205,8 @@ export function describeCurrentObj(): void {
 export function createJiraTicket(msg: string): DG.Widget {
   const root = ui.div();
 
-  const summary = ui.stringInput('Summary', '');
-  const description = ui.stringInput('Description', msg);
+  const summary = ui.input.string('Summary', {value: ''});
+  const description = ui.input.string('Description', {value: msg});
 
   const button = ui.bigButton('CREATE', () => {
     grok.data.query('Vnerozin:JiraCreateIssue', {

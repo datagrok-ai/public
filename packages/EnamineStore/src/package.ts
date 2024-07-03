@@ -76,13 +76,13 @@ const HEIGHT = 75;
 //tags: app
 //name: Enamine Store
 export function enamineStoreApp(): void {
-  const molecule = ui.moleculeInput('', 'c1ccccc1O');
+  const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
   const searchMode =
-    ui.choiceInput('Mode', SEARCH_MODE.SIMILAR, Object.keys(searchModeToCommandMap)) as DG.InputBase<SEARCH_MODE>;
-  const currency = ui.choiceInput('Currency', CURRENCY.USD, Object.values(CURRENCY)) as DG.InputBase<string>;
-  const similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
+    ui.input.choice('Mode', {value: SEARCH_MODE.SIMILAR, items: Object.keys(searchModeToCommandMap)}) as DG.InputBase<SEARCH_MODE>;
+  const currency = ui.input.choice('Currency', {value: CURRENCY.USD, items: Object.values(CURRENCY)}) as DG.InputBase<string>;
+  const similarity = ui.input.choice('Similarity', {value: '0.8', items: ['0.2', '0.4', '0.6', '0.8']}) as DG.InputBase<string>;
   const catalog =
-    ui.choiceInput('Catalog', CATALOG_TYPE.BB, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
+    ui.input.choice('Catalog', {value: CATALOG_TYPE.BB, items: Object.values(CATALOG_TYPE)}) as DG.InputBase<CATALOG_TYPE>;
   const filterForm = ui.form([molecule, searchMode, currency, similarity, catalog]);
   const filtersHost = ui.div([filterForm], 'enamine-store-controls,pure-form');
 
@@ -153,34 +153,35 @@ export function enamineStorePanel(smiles: string): DG.Widget {
     smiles = DG.chem.convert(smiles, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
-  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE), () => {
-    const exactPanel = acc.getPane(SEARCH_MODE.EXACT);
-    const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
-    const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
-    const exactExpanded = exactPanel?.expanded ?? false;
-    const similarExpanded = similarPanel?.expanded ?? false;
-    const substructureExpanded = substructurePanel?.expanded ?? false;
-    for (const pane of acc.panes)
-      acc.removePane(pane);
+  const catalog = ui.input.choice('Catalog', {value: CATALOG_TYPE.SCR, items: Object.values(CATALOG_TYPE),
+    onValueChanged: () => {
+      const exactPanel = acc.getPane(SEARCH_MODE.EXACT);
+      const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
+      const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
+      const exactExpanded = exactPanel?.expanded ?? false;
+      const similarExpanded = similarPanel?.expanded ?? false;
+      const substructureExpanded = substructurePanel?.expanded ?? false;
+      for (const pane of acc.panes)
+        acc.removePane(pane);
 
-    acc.addPane(SEARCH_MODE.EXACT, () => {
-      catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, catalog.value);
-      return catalogToData[catalog.value]![SEARCH_MODE.EXACT]!;
-    }, exactExpanded);
-    acc.addPane(SEARCH_MODE.SIMILAR, () => {
-      catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
-        createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
-      return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
-    }, similarExpanded);
-    acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
-      catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
-        createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
-      return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
-    }, substructureExpanded);
-  }) as DG.InputBase<CATALOG_TYPE>;
+      acc.addPane(SEARCH_MODE.EXACT, () => {
+        catalogToData[catalog.value] ??= {};
+        catalogToData[catalog.value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, catalog.value);
+        return catalogToData[catalog.value]![SEARCH_MODE.EXACT]!;
+      }, exactExpanded);
+      acc.addPane(SEARCH_MODE.SIMILAR, () => {
+        catalogToData[catalog.value] ??= {};
+        catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
+          createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
+        return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
+      }, similarExpanded);
+      acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
+        catalogToData[catalog.value] ??= {};
+        catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
+          createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
+        return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
+      }, substructureExpanded);
+    }}) as DG.InputBase<CATALOG_TYPE>;
   catalog.fireChanged();
 
   const form = ui.form([catalog]);

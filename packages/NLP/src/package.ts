@@ -18,8 +18,8 @@ let translate: AWS.Translate;
 //let comprehendMedical;
 
 // UI components for the `Translation` panel
-const sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
-const targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
+const sourceLangInput = ui.input.choice('', {value: 'Undetermined', items: [...Object.keys(lang2code), 'Undetermined', 'Other']});
+const targetLangInput = ui.input.choice('', {value: 'English', items: [...Object.keys(lang2code), 'Choose...']});
 const headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
 const translationArea = ui.textInput('', '');
 translationArea.input.classList.add('nlp-translation-area');

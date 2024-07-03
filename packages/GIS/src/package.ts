@@ -65,9 +65,9 @@ function uiCensusDialog(): DG.Dialog {
 
   const inputGrid = DG.Viewer.grid(data2, inputGridStyle);
 
-  const inpSearch: DG.InputBase<string> = ui.stringInput('Search', '');
-  const inpLocation: DG.InputBase<string> = ui.stringInput('Location', '');
-  const choinpPeriod: DG.InputBase<string | null> = ui.choiceInput('Period', '', ['1990', '1991']);
+  const inpSearch: DG.InputBase<string> = ui.input.string('Search', {value: ''});
+  const inpLocation: DG.InputBase<string> = ui.input.string('Location', {value: ''});
+  const choinpPeriod: DG.InputBase<string | null> = ui.input.choice('Period', {value: '', items: ['1990', '1991']});
   const txtDatasets = ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}});
   const arr = [inpSearch, inpLocation, choinpPeriod, txtDatasets, inputGrid.root];
 

@@ -462,7 +462,7 @@ export class TestTrack extends DG.ViewBase {
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? node.value.fullReason : '';
-    const stringInput = ui.stringInput(status === FAILED ? 'Key' : 'Reason', value, () => { });
+    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', {value: value});
     stringInput.nullable = false;
     const textInput = ui.textInput(status === FAILED ? 'Keys' : 'Reasons', value, () => { });
     textInput.nullable = false;
@@ -544,7 +544,7 @@ export class TestTrack extends DG.ViewBase {
   showStartNewTestingDialog(): void {
     const dialog = ui.dialog('Start new testing');
     dialog.root.classList.add('tt-dialog');
-    const input = ui.stringInput('Name', NEW_TESTING);
+    const input = ui.input.string('Name', {value: NEW_TESTING});
     input.nullable = false;
     dialog.add(ui.divText('Enter name of the new testing:'));
     dialog.add(input);
@@ -562,7 +562,7 @@ export class TestTrack extends DG.ViewBase {
   showEditTestingNameDialog(): void {
     const dialog = ui.dialog('Edit testing name');
     dialog.root.classList.add('tt-dialog');
-    const input = ui.stringInput('Name', this.testingName);
+    const input = ui.input.string('Name', {value: this.testingName});
     dialog.add(input);
     dialog.onOK(() => {
       this.testingName = input.value;

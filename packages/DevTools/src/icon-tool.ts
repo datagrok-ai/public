@@ -10,7 +10,7 @@ export class IconTool extends DG.ViewBase {
 
     this.name = name;
 
-    const fileUrl = ui.stringInput('', '');
+    const fileUrl = ui.input.string('', {value: ''});
     fileUrl.readOnly = true;
     fileUrl.enabled = false;
     //@ts-ignore
@@ -56,7 +56,8 @@ export class IconTool extends DG.ViewBase {
     $(textY).attr('value', '00');
     $(textY).css('margin-left', '5px');
     //@ts-ignore
-    const imageMargin = ui.intInput('Margins', '0', (value) => setImage(image, imageRange.value, imageMargin.value));
+    const imageMargin = ui.input.int('Margins', {value: 0,
+      onValueChanged: () => setImage(image, imageRange.value, imageMargin.value)});
     $(imageMargin.input).attr('type', 'number');
     const imageRange = ui.element('input', 'imageRange');
     $(imageRange).attr('type', 'range');

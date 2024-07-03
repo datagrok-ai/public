@@ -84,53 +84,55 @@ export function runKNNImputer(): void {
 
   // In-place components
   let inPlace = DEFAULT.IN_PLACE > 0;
-  const inPlaceInput = ui.boolInput(TITLE.IN_PLACE, inPlace, () => { inPlace = inPlaceInput.value ?? false;});
+  const inPlaceInput = ui.input.bool(TITLE.IN_PLACE, {value: inPlace,
+    onValueChanged: () => {inPlace = inPlaceInput.value ?? false;}});
   inPlaceInput.setTooltip(HINT.IN_PLACE);
 
   // Keep empty feature
   let keepEmpty = DEFAULT.KEEP_EMPTY > 0;
-  const keepEmptyInput = ui.boolInput(TITLE.KEEP_EMPTY, keepEmpty, () => { keepEmpty = keepEmptyInput.value ?? false });
+  const keepEmptyInput = ui.input.bool(TITLE.KEEP_EMPTY, {value: keepEmpty,
+    onValueChanged: () => {keepEmpty = keepEmptyInput.value ?? false;}});
   keepEmptyInput.setTooltip(HINT.KEEP_EMPTY);
 
   // Neighbors components
   let neighbors = DEFAULT.NEIGHBORS;
-  const neighborsInput = ui.intInput(TITLE.NEIGHBORS, neighbors, () => {
+  const neighborsInput = ui.input.int(TITLE.NEIGHBORS, {value: neighbors, onValueChanged: () => {
     const val = neighborsInput.value;
     if (val === null)
       neighborsInput.value = neighbors;
-    else if (val >= MIN_NEIGHBORS) 
+    else if (val >= MIN_NEIGHBORS)
       neighbors = val;
     else
       neighborsInput.value = neighbors;
-  });
+  }});
   neighborsInput.setTooltip(HINT.NEIGHBORS);
 
   // Distance components
   let distType = DISTANCE_TYPE.EUCLIDEAN;
-  const distTypeInput = ui.choiceInput(TITLE.DISTANCE, distType, [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], 
-    () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN);
+  const distTypeInput: DG.ChoiceInput<DISTANCE_TYPE> = ui.input.choice(TITLE.DISTANCE, {value: distType,
+    items: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], onValueChanged: () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN});
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)
   let targetColNames = colsWithMissingVals.map((col) => col.name);
-  const targetColInput = ui.columnsInput(TITLE.COLUMNS, df, () => {
-    targetColNames = targetColInput.value.map((col) => col.name);    
+  const targetColInput = ui.input.columns(TITLE.COLUMNS, {table: df, onValueChanged: () => {
+    targetColNames = targetColInput.value.map((col) => col.name);
     checkApplicability();
-  }, {available: availableTargetColsNames, checked: availableTargetColsNames});
+  }, available: availableTargetColsNames, checked: availableTargetColsNames});
   targetColInput.setTooltip(HINT.TARGET);
 
   // Feature columns components
   let selectedFeatureColNames = availableFeatureColsNames as string[];
-  const featuresInput = ui.columnsInput(TITLE.FEATURES, df, () => {    
+  const featuresInput = ui.input.columns(TITLE.FEATURES, {table: df, onValueChanged: () => {
     selectedFeatureColNames = featuresInput.value.map((col) => col.name);
 
     if (selectedFeatureColNames.length > 0) {
       checkApplicability();
-      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));      
+      metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
     }
     else
       hideWidgets();
-  }, {available: availableFeatureColsNames, checked: availableFeatureColsNames});
+  }, available: availableFeatureColsNames, checked: availableFeatureColsNames});
   featuresInput.setTooltip(HINT.FEATURES);
 
   /** Hide widgets (use if run is not applicable) */
@@ -155,15 +157,15 @@ export function runKNNImputer(): void {
 
   /** Check applicability of the imputation */
   const checkApplicability = () => {
-    showWidgets();    
-    
-    if (selectedFeatureColNames.length === 1) {
+    showWidgets();
+
+    if (selectedFeatureColNames.length === 1)
       targetColNames.forEach((name) => {
         if (selectedFeatureColNames[0] === name) {
           hideWidgets();
           grok.shell.warning(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
-      }});
-    }
+        }
+      });
   };
 
   // Metrics components
@@ -173,18 +175,19 @@ export function runKNNImputer(): void {
   metricsDiv.style.overflow = 'auto';
 
   // Create metrics UI
-  availableFeatureColsNames.forEach((name) => {    
+  availableFeatureColsNames.forEach((name) => {
     // initialization
     const type = df!.col(name)!.type as DG.COLUMN_TYPE;
     const settings = getFeatureInputSettings(type);
     featuresMetrics.set(name, {weight: settings.defaultWeight, type: settings.defaultMetric});
 
     // distance input
-    const distTypeInput = ui.choiceInput(name, settings.defaultMetric, settings.availableMetrics, () => {
-      const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
-      distInfo.type = distTypeInput.value ?? settings.defaultMetric;
-      featuresMetrics.set(name, distInfo);
-    });
+    const distTypeInput = ui.input.choice(name, {value: settings.defaultMetric,
+      items: settings.availableMetrics, onValueChanged: () => {
+        const distInfo = featuresMetrics.get(name) ?? {weight: settings.defaultWeight, type: settings.defaultMetric};
+        distInfo.type = distTypeInput.value ?? settings.defaultMetric;
+        featuresMetrics.set(name, distInfo);
+      }});
     distTypeInput.root.style.width = '50%';
     distTypeInput.setTooltip(HINT.METRIC);
     distTypeInput.root.hidden = true; // this input will be used further

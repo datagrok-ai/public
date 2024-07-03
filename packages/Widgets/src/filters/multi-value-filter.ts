@@ -10,7 +10,7 @@ export class MultiValueFilter extends DG.Filter {
   constructor() {
     super();
     this.valuesHost = ui.divV([]);
-    //this.typeSelect = ui.choiceInput('Type', 'any', ['any', 'all']);
+    //this.typeSelect = ui.input.choice('Type', {value: 'any', items: ['any', 'all']});
     this.root = ui.divV([this.valuesHost]);
     this.subs = [];
   }

@@ -665,8 +665,8 @@ export async function compositionAnalysis(): Promise<void> {
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
     const selectedCol = colList.find((c) => { return SeqHandler.forColumn(c).isMsa(); });
-    const colInput: DG.InputBase = ui.choiceInput(
-      'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
+    const colInput: DG.InputBase = ui.input.choice(
+      'Column', {value: selectedCol ? selectedCol.name : colListNames[0], items: colListNames});
     ui.dialog({
       title: 'Composition Analysis',
       helpUrl: 'https://datagrok.ai/help/datagrok/solutions/domains/bio/#sequence-composition',

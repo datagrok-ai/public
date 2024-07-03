@@ -132,7 +132,7 @@ export class PatternLoadControlsManager {
     }
 
     const defaultValue = this.getPatternName(patternList);
-    const choiceInput = ui.choiceInput('Pattern', defaultValue, patternList);
+    const choiceInput = ui.input.choice('Pattern', {value: defaultValue, items: patternList});
     choiceInput.setTooltip('Select pattern to load');
 
     $(choiceInput.input).css({

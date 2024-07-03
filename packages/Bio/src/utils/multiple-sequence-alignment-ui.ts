@@ -38,18 +38,18 @@ export async function multipleSequenceAlignmentUI(
     }
 
     // UI for PepSea alignment
-    const methodInput = ui.choiceInput('Method', options.pepsea.method, pepseaMethods);
+    const methodInput = ui.input.choice('Method', {value: options.pepsea.method, items: pepseaMethods});
     methodInput.setTooltip('Alignment method');
 
     // UI for Kalign alignment
-    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
+    const terminalGapInput = ui.input.float('Terminal gap', {value: options?.kalign?.terminalGap});
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
     const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
     // shared UI
-    const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
+    const gapOpenInput = ui.input.float('Gap open', {value: options.pepsea.gapOpen});
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-    const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
+    const gapExtendInput = ui.input.float('Gap extend', {value: options.pepsea.gapExtend});
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
 
     const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);

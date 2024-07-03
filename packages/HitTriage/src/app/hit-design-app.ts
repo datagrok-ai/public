@@ -493,7 +493,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const getPathEditor = () => {
       const editIcon = ui.icons.edit(() => {
         const folderPath = getFolderPath();
-        const newPathInput = ui.stringInput('Path', folderPath);
+        const newPathInput = ui.input.string('Path', {value: folderPath});
         const labelElement = newPathInput.root.getElementsByTagName('label').item(0);
         if (labelElement)
           labelElement.remove();

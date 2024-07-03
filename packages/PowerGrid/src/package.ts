@@ -145,13 +145,13 @@ export function tagsCellRenderer() {
 //meta.action: Sparklines...
 export function summarizeColumns(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
-  const name = ui.stringInput('Name', table.columns.getUnusedName('Summary'));
-  const sparklineType = ui.choiceInput('Type', SparklineType.Sparkline, sparklineTypes);
-  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+  const name = ui.input.string('Name', {value: table.columns.getUnusedName('Summary')});
+  const sparklineType = ui.input.choice('Type', {value: SparklineType.Sparkline, items: sparklineTypes});
+  const columnsSelector = ui.input.columns('Columns', {table: table,
     available: names(table.columns.numerical),
     checked: names(columns),
   });
-  const hide = ui.boolInput('Hide', false);
+  const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 
   function addSummaryColumn() {
@@ -188,11 +188,11 @@ export function summarizeColumns(columns: DG.Column[]) {
 //meta.action: Smart form...
 export function addFormColumn(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
-  const name = ui.stringInput('Name', table.columns.getUnusedName('Form'));
-  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+  const name = ui.input.string('Name', {value: table.columns.getUnusedName('Form')});
+  const columnsSelector = ui.input.columns('Columns', {table: table,
     checked: names(columns),
   });
-  const hide = ui.boolInput('Hide', false);
+  const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 
   function addSummaryColumn() {

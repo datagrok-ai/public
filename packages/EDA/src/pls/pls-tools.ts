@@ -283,17 +283,16 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.columnInput(TITLE.PREDICT, table, predict, () => {
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: () => {
     predict = predictInput.value!;
     updateIputs();
-  },
-  {filter: (col: DG.Column) => isValidNumeric(col)},
+  }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
   predictInput.setTooltip(HINT.PREDICT);
 
   // predictors (features)
   let features: DG.Column[];
-  const featuresInput = ui.columnsInput(TITLE.USING, table, () => {}, {available: numColNames});
+  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
   featuresInput.onInput(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
@@ -336,8 +335,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // names of samples
   let names = (strCols.length > 0) ? strCols[0] : null;
-  const namesInputs = ui.columnInput(TITLE.NAMES, table, names, () => names = predictInput.value,
-    {filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
+  const namesInputs = ui.input.column(TITLE.NAMES, {table: table, value: names, onValueChanged: () => names = predictInput.value,
+    filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);

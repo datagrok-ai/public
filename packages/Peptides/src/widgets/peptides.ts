@@ -32,7 +32,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
 
-    seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
+    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: () => {
       const seqCol = seqColInput!.value;
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: seqCol.name});
@@ -41,7 +41,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       }));
       if (seqCol.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
-    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
@@ -96,21 +96,22 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
     {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
-  const clustersColumnChoice = ui.columnInput('Clusters', df, null, () => {
+  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: () => {
     if (clustersColumnChoice.value) {
       generateClustersInput.value = false;
       generateClustersInput.fireChanged();
     }
-  });
+  }});
   clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
   // clustering input
-  const generateClustersInput = ui.boolInput('Generate clusters', true, () => {
+  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: () => {
     if (generateClustersInput.value) {
+      //@ts-ignore
       clustersColumnChoice.value = null;
       clustersColumnChoice.fireChanged();
     }
-  });
+  }});
   generateClustersInput
     .setTooltip('Generate clusters column based on sequence space embeddings for Logo Summary Table');
   activityColumnChoice.fireChanged();

@@ -129,20 +129,19 @@ async function openFse(v: DG.View, functionCode: string) {
   const functionPropsInput = (prop: DG.Property) => {
     switch (prop.name) {
       case FUNC_PROPS_FIELD.LANGUAGE:
-        return ui.choiceInput(
+        return ui.input.choice(
           functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-          prop.choices,
-        );
+          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+          items: prop.choices});
       // case FUNC_PROPS_FIELDS.TAGS:
-      //   return ui.multiChoiceInput(
+      //   return ui.input.multiChoice(
       //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-      //     prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-      //     prop.choices,
+      //     {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+      //     items: prop.choices}
       //   );
       default:
-        return ui.stringInput(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
+        return ui.input.string(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
+          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]});
     }
   };
 

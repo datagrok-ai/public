@@ -9,7 +9,10 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
-import {MmDistanceFunctionsNames as distFNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {
+  MmDistanceFunctionsNames,
+  MmDistanceFunctionsNames as distFNames
+} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 type PaneInputs = { [paneName: string]: DG.InputBase[] };
 type SettingsElements = { dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs };
@@ -83,16 +86,14 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const seqSpaceParams = settings?.sequenceSpaceParams ?? new type.SequenceSpaceParams();
   const mclParams = settings?.mclSettings ?? new type.MCLSettings();
   // General pane options
-  const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
-    model.df.getCol(model.settings!.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
-    {
-      filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
-        col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0,
-    });
+  const activityCol = ui.input.column(GENERAL_INPUTS.ACTIVITY, {table: model.df,
+    value: model.df.getCol(model.settings!.activityColumnName!), onValueChanged: () => result.activityColumnName = activityCol.value!.name,
+    filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
+      col.name !== C.COLUMNS_NAMES.ACTIVITY && col.stats.missingValueCount === 0});
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
-    ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
-      () => result.activityScaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
+    ui.input.choice(GENERAL_INPUTS.ACTIVITY_SCALING, {value: currentScaling, items: Object.values(C.SCALING_METHODS),
+      onValueChanged: () => result.activityScaling = activityScaling.value as C.SCALING_METHODS}) as DG.InputBase<C.SCALING_METHODS>;
   activityScaling.setTooltip('Activity column transformation method');
 
   accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling]), true);
@@ -101,35 +102,35 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // Viewers pane options
   /* FIXME: combinations of adding and deleting viewers are not working properly
   const isMPEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.MONOMER_POSITION);
-  const monomerPosition = ui.boolInput(VIEWER_TYPE.MONOMER_POSITION, isMPEnabled ?? false,
-    () => result.showMostPotentResidues = monomerPosition.value!);
+  const monomerPosition = ui.input.bool(VIEWER_TYPE.MONOMER_POSITION, {value: isMPEnabled ?? false,
+    onValueChanged: () => result.showMostPotentResidues = monomerPosition.value!});
   const isMPREnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.MOST_POTENT_RESIDUES);
-  const mostPotentResidues = ui.boolInput(VIEWER_TYPE.MOST_POTENT_RESIDUES, isMPREnabled ?? false,
-    () => result.showMonomerPosition = mostPotentResidues.value!);
+  const mostPotentResidues = ui.input.bool(VIEWER_TYPE.MOST_POTENT_RESIDUES, {value: isMPREnabled ?? false,
+    onValueChanged: () => result.showMonomerPosition = mostPotentResidues.value!});
   const isLSTEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.LOGO_SUMMARY_TABLE);
-  const logoSummaryTable = ui.boolInput(VIEWER_TYPE.LOGO_SUMMARY_TABLE, isLSTEnabled ?? false,
-    () => result.showLogoSummaryTable = logoSummaryTable.value!);
+  const logoSummaryTable = ui.input.bool(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {value: isLSTEnabled ?? false,
+    onValueChanged: () => result.showLogoSummaryTable = logoSummaryTable.value!});
   logoSummaryTable.enabled = typeof settings.clustersColumnName !== 'undefined';
   */
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
-  const dendrogram = ui.boolInput(VIEWER_TYPE.DENDROGRAM, isDendrogramEnabled ?? false,
-    () => result.showDendrogram = dendrogram.value) as DG.InputBase<boolean>;
-  const clusterMaxActivity = ui.boolInput(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, !!settings?.showClusterMaxActivity, () => {
-    result.showClusterMaxActivity = clusterMaxActivity.value ?? undefined;
-  });
-  const showSeqSpace = ui.boolInput('Sequence space', !!settings?.showSequenceSpace, () => {
-    result.showSequenceSpace = showSeqSpace.value ?? undefined;
-    if (showSeqSpace.value) {
-      seqSpacePane.root.style.display = 'flex';
-      if (!settings?.showSequenceSpace)
-        result.sequenceSpaceParams = seqSpaceParams;
-    } else {
-      seqSpacePane.root.style.display = 'none';
-      delete result.sequenceSpaceParams;
-    }
-    if (result.showSequenceSpace === settings?.showSequenceSpace)
-      delete result.showSequenceSpace;
-  });
+  const dendrogram = ui.input.bool(VIEWER_TYPE.DENDROGRAM, {value: isDendrogramEnabled ?? false,
+    onValueChanged: () => result.showDendrogram = dendrogram.value}) as DG.InputBase<boolean>;
+  const clusterMaxActivity = ui.input.bool(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY, {value: !!settings?.showClusterMaxActivity,
+    onValueChanged: () => {result.showClusterMaxActivity = clusterMaxActivity.value ?? undefined;}});
+  const showSeqSpace = ui.input.bool('Sequence space', {value: !!settings?.showSequenceSpace,
+    onValueChanged: () => {
+      result.showSequenceSpace = showSeqSpace.value ?? undefined;
+      if (showSeqSpace.value) {
+        seqSpacePane.root.style.display = 'flex';
+        if (!settings?.showSequenceSpace)
+          result.sequenceSpaceParams = seqSpaceParams;
+      } else {
+        seqSpacePane.root.style.display = 'none';
+        delete result.sequenceSpaceParams;
+      }
+      if (result.showSequenceSpace === settings?.showSequenceSpace)
+        delete result.showSequenceSpace;
+  }});
   clusterMaxActivity.setTooltip('Show cluster max activity viewer');
   dendrogram.setTooltip('Show dendrogram viewer');
   dendrogram.enabled = getTreeHelperInstance() !== null;
@@ -146,8 +147,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       continue;
 
 
-    const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
-      () => {
+    const isIncludedInput = ui.input.bool(COLUMNS_INPUTS.IS_INCLUDED, {value: typeof (currentColumns)[colName] !== 'undefined',
+      onValueChanged: () => {
         result.columns ??= {};
         if (isIncludedInput.value)
           result.columns[colName] = aggregationInput.value;
@@ -156,12 +157,12 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
           if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
             delete result.columns;
         }
-      }) as DG.InputBase<boolean>;
+      }}) as DG.InputBase<boolean>;
     isIncludedInput.setTooltip('Include aggregated column value in tooltips, Logo Summary Table and ' +
       'Distribution panel');
 
-    const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION, (currentColumns)[colName] ?? DG.AGG.AVG,
-      Object.values(DG.STATS), () => {
+    const aggregationInput = ui.input.choice(COLUMNS_INPUTS.AGGREGATION, {value: (currentColumns)[colName] ?? DG.AGG.AVG,
+      items: Object.values(DG.STATS), onValueChanged: () => {
         result.columns ??= {};
         if (isIncludedInput.value)
           result.columns[colName] = aggregationInput.value;
@@ -170,7 +171,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
           if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
             delete result.columns;
         }
-      }) as DG.InputBase<DG.AggregationType>;
+      }}) as DG.InputBase<DG.AggregationType>;
     aggregationInput.setTooltip('Aggregation method');
     $(aggregationInput.root).find('label').css('width', 'auto');
     const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
@@ -212,28 +213,28 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     });
   }
   // SEQ SPACE INPUTS
-  const distanceFunctionInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION, seqSpaceParams.distanceF,
-    [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
-    () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value));
+  const distanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION,
+    {value: seqSpaceParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
+    onValueChanged: () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value)});
   distanceFunctionInput.setTooltip('Distance function for sequences');
-  const gapOpenInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_OPEN, seqSpaceParams.gapOpen,
-    () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value));
-  const gapExtendInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, seqSpaceParams.gapExtend,
-    () => onSeqSpaceParamsChange('gapExtend', gapExtendInput.value));
+  const gapOpenInput = ui.input.float(SEQUENCE_SPACE_INPUTS.GAP_OPEN, {value: seqSpaceParams.gapOpen,
+    onValueChanged: () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value)});
+  const gapExtendInput = ui.input.float(SEQUENCE_SPACE_INPUTS.GAP_EXTEND, {value: seqSpaceParams.gapExtend,
+    onValueChanged: () => onSeqSpaceParamsChange('gapExtend', gapExtendInput.value)});
   const clusterEmbeddingsInput =
-    ui.boolInput(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, seqSpaceParams.clusterEmbeddings ?? false,
-      () => onSeqSpaceParamsChange('clusterEmbeddings', clusterEmbeddingsInput.value));
+    ui.input.bool(SEQUENCE_SPACE_INPUTS.CLUSTER_EMBEDDINGS, {value: seqSpaceParams.clusterEmbeddings ?? false,
+      onValueChanged: () => onSeqSpaceParamsChange('clusterEmbeddings', clusterEmbeddingsInput.value)});
   clusterEmbeddingsInput.setTooltip('Cluster embeddings using DBSCAN algorithm');
-  const epsilonInput = ui.floatInput(SEQUENCE_SPACE_INPUTS.EPSILON, seqSpaceParams.epsilon,
-    () => onSeqSpaceParamsChange('epsilon', epsilonInput.value));
+  const epsilonInput = ui.input.float(SEQUENCE_SPACE_INPUTS.EPSILON, {value: seqSpaceParams.epsilon,
+    onValueChanged: () => onSeqSpaceParamsChange('epsilon', epsilonInput.value)});
   epsilonInput.setTooltip(
     'Epsilon parameter for DBSCAN. Minimum distance between two points to be considered as a cluster');
-  const minPtsInput = ui.intInput(SEQUENCE_SPACE_INPUTS.MIN_PTS, seqSpaceParams.minPts,
-    () => onSeqSpaceParamsChange('minPts', minPtsInput.value));
+  const minPtsInput = ui.input.int(SEQUENCE_SPACE_INPUTS.MIN_PTS, {value: seqSpaceParams.minPts,
+    onValueChanged: () => onSeqSpaceParamsChange('minPts', minPtsInput.value)});
   minPtsInput.setTooltip('Minimum number of points in a cluster');
-  const fingerprintTypesInput = ui.choiceInput(SEQUENCE_SPACE_INPUTS.FINGERPRINT_TYPE, seqSpaceParams.fingerprintType,
-    ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
-    () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value));
+  const fingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(SEQUENCE_SPACE_INPUTS.FINGERPRINT_TYPE, {value: seqSpaceParams.fingerprintType,
+    items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+    onValueChanged: () => onSeqSpaceParamsChange('fingerprintType', fingerprintTypesInput.value)});
   function correctSeqSpaceInputs(): void {
     toggleInputs([gapOpenInput, gapExtendInput], distanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
     toggleInputs([epsilonInput, minPtsInput], clusterEmbeddingsInput.value === true);
@@ -273,23 +274,22 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       mclDistanceFunctionInput.value === distFNames.NEEDLEMANN_WUNSCH);
   }
 
-  const mclDistanceFunctionInput = ui.choiceInput(MCL_INPUTS.DISTANCE_FUNCTION, mclParams.distanceF,
-    [distFNames.NEEDLEMANN_WUNSCH, distFNames.MONOMER_CHEMICAL_DISTANCE, distFNames.HAMMING, distFNames.LEVENSHTEIN],
-    () => onMCLParamsChange('distanceF', mclDistanceFunctionInput.value));
-  const mclGapOpenInput = ui.floatInput(MCL_INPUTS.GAP_OPEN, mclParams.gapOpen,
-    () => onMCLParamsChange('gapOpen', mclGapOpenInput.value));
-  const mclGapExtendInput = ui.floatInput(MCL_INPUTS.GAP_EXTEND, mclParams.gapExtend,
-    () => onMCLParamsChange('gapExtend', mclGapExtendInput.value));
-  const mclFingerprintTypesInput = ui.choiceInput(MCL_INPUTS.FINGERPRINT_TYPE, mclParams.fingerprintType,
-    ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
-    () => onMCLParamsChange('fingerprintType', mclFingerprintTypesInput.value));
-  const mclThresholdInput = ui.intInput(MCL_INPUTS.THRESHOLD, mclParams.threshold ?? 80,
-    () => onMCLParamsChange('threshold', mclThresholdInput.value));
-  const mclMaxIterationsInput = ui.intInput(MCL_INPUTS.MAX_ITERATIONS, mclParams.maxIterations ?? 5,
-    () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value));
-  const mclInflationInput = ui.floatInput(MCL_INPUTS.INFLATION, mclParams.inflation ?? 1.4, () => {
-    onMCLParamsChange('inflation', mclInflationInput.value);
-  });
+  const mclDistanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
+    {value: mclParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.MONOMER_CHEMICAL_DISTANCE, distFNames.HAMMING, distFNames.LEVENSHTEIN],
+    onValueChanged: () => onMCLParamsChange('distanceF', mclDistanceFunctionInput.value)});
+  const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclParams.gapOpen,
+    onValueChanged: () => onMCLParamsChange('gapOpen', mclGapOpenInput.value)});
+  const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclParams.gapExtend,
+    onValueChanged: () => onMCLParamsChange('gapExtend', mclGapExtendInput.value)});
+  const mclFingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(MCL_INPUTS.FINGERPRINT_TYPE, {value: mclParams.fingerprintType,
+    items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+    onValueChanged: () => onMCLParamsChange('fingerprintType', mclFingerprintTypesInput.value)});
+  const mclThresholdInput = ui.input.int(MCL_INPUTS.THRESHOLD, {value: mclParams.threshold ?? 80,
+    onValueChanged: () => onMCLParamsChange('threshold', mclThresholdInput.value)});
+  const mclMaxIterationsInput = ui.input.int(MCL_INPUTS.MAX_ITERATIONS, {value: mclParams.maxIterations ?? 5,
+    onValueChanged: () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value)});
+  const mclInflationInput = ui.input.float(MCL_INPUTS.INFLATION, {value: mclParams.inflation ?? 1.4,
+    onValueChanged: () => {onMCLParamsChange('inflation', mclInflationInput.value);}});
   correctMCLInputs();
 
   const mclInputs = [mclThresholdInput, mclDistanceFunctionInput, mclFingerprintTypesInput,
