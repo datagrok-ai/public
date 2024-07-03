@@ -1267,6 +1267,9 @@ export class tools {
           if (calc > width)
             width = calc;
         });
+        let e = $(element).find('select')[0];
+        if (e != undefined)
+          e.style.maxWidth = `${width + 30}px`;
       }
       // todo: analyze content(?) and metadata
       // todo: analyze more types
