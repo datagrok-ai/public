@@ -91,6 +91,7 @@ export class AddNewColumnDialog {
   packageNames: string[] = [];
   packageAutocomplete = false;
   functionAutocomplete = false;
+  autocompleteEnter = false;
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -136,6 +137,12 @@ export class AddNewColumnDialog {
     );
 
     this.codeMirror = this.initCodeMirror();
+    this.codeMirrorDiv.onkeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && this.autocompleteEnter) {
+        e.stopImmediatePropagation();
+        this.autocompleteEnter = false;
+      }
+    }
 
     this.prepareForSeleniumTests();
     await this.updatePreview(this.codeMirror!.state.doc.toString());
@@ -259,6 +266,7 @@ export class AddNewColumnDialog {
       activateOnCompletion: ({ apply }) => {
         this.packageAutocomplete = typeof apply === 'string' && apply.slice(-1) === ':';
         this.functionAutocomplete = !this.packageAutocomplete;
+        this.autocompleteEnter = true;
         return this.packageAutocomplete;
       }
     });
