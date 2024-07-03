@@ -622,7 +622,10 @@ class TerminalModificationLabels extends SVGBlockBase {
       terminalModification,
       position,
       SVG_TEXT_FONT_SIZES.NUCLEOBASE,
-      SVG_ELEMENT_COLORS.MODIFICATION_TEXT
+      SVG_ELEMENT_COLORS.MODIFICATION_TEXT,
+      'normal',
+      '1.0',
+      'default'
     );
   }
 
