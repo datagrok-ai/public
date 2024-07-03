@@ -101,7 +101,6 @@ Metadata:
       - GrokSpawnerVersion
       - JKGVersion
       - JNVersion
-      - GrokComputeVersion
       - H2oVersion
     ParameterLabels:
       CIDR:
@@ -128,8 +127,6 @@ Metadata:
         default: VPC
       DatagrokVersion:
         default: Datagrok Version
-      GrokComputeVersion:
-        default: Grok Compute Version
       GrokConnectVersion:
         default: Grok Connect Version
       GrokSpawnerVersion:
