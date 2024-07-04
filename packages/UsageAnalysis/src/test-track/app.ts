@@ -14,9 +14,12 @@ interface TestCase extends Options {
   text: HTMLElement;
   status: Status | null;
   icon: HTMLDivElement;
+  history: HTMLDivElement;
   reason: HTMLDivElement;
   fullReason?: string;
-  history: HTMLDivElement;
+  datasets: string[];
+  projects: string[];
+  layouts: string[];
 }
 
 interface Category extends Options {
@@ -54,6 +57,10 @@ export class TestTrack extends DG.ViewBase {
   testingName: string;
   searchInput: DG.InputBase = ui.input.search('');
   testDescription: Map<string, string> = new Map<string, string>();
+  dataSetsToOpen: string[] = [];
+  projectsToOpen: string[] = [];
+  layoutsToOpen: any[] = [];
+
 
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
@@ -123,31 +130,37 @@ export class TestTrack extends DG.ViewBase {
 
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
-    const nameP: string | Promise<string> = this.testingName || grok.functions.call('UsageAnalysis:TestingName',
-      { id: `${this.version}_${this.start}_${this.uid}` });
+    const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
+      { uid: this.uid, version: this.version, start: this.start })) || '"New Testing"';
+    const nameP: string = this.testingName || namePFromDb.substring(1, namePFromDb.length - 1);
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
-      { version: this.version, uid: this.uid, start: this.start });
+      { batchName: `"${nameP}"` });
 
-    grok.dapi.users.find(this.uid).then((user) => {
-      for (const row of history.rows) {
-        const path = row.get('path');
-        const status: Status = row.get('status');
-        const reason: string = row.get('reason');
-        const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
-        this.map[path] = {
-          name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-          icon: icon, reason: ui.div(this.getReason(reason), 'tt-reason')
-        };
-        const map: StatusInfo = {
-          'User': user,
-          'Date': row.get('date'),
-          'Version': this.version,
-        };
-        if (reason)
-          map['Reason'] = this.getReason(reason);
-        ui.tooltip.bind(icon, () => ui.tableFromMap(map));
-      }
-    });
+
+    for (const row of history.rows) {
+      const path = (row.get('test') || '').replace('Unknown: ', '');
+      if (path.length === 0)
+        continue;
+
+      const status: Status = row.get('status');
+      const reason: string = row.get('reason');
+      const user = await grok.dapi.users.find(row.get('uid'));
+      const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
+      let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
+      this.map[path] = {
+        name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
+        icon: icon, reason: ui.div((reason.includes("\n") ? 'list' : reason), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
+      };
+      const map: StatusInfo = {
+        'User': user,
+        'Date': row.get('date'),
+        'Version': this.version
+      };
+      if (reason)
+        map['Reason'] = reasonTooltipValue;
+      ui.tooltip.bind(icon, () => ui.tableFromMap(map));
+    }
+
     const files = await filesP;
     const p: Promise<void>[] = [];
     for (const file of files) {
@@ -169,11 +182,32 @@ export class TestTrack extends DG.ViewBase {
         '_blank')?.focus();
     }, 'Test Track folder');
     gh.classList.add('tt-ribbon-button');
+    const loadBtn = ui.button(ui.iconFA('star-of-life'), async () => {
+      for (let dataset of this.dataSetsToOpen) {
+        try {
+          const df = (await (grok.functions.eval(`OpenServerFile("${dataset}")`)))[0];
+          grok.shell.addTableView(df);
+        }
+        catch (e) {
+          console.error("could not find dataset: " + dataset);
+        }
+      }
+
+      for (let project of this.projectsToOpen) {
+        try {
+          const p = await grok.dapi.projects.find(project);
+          p.open();
+        }
+        catch (e) {
+          console.error("could not find project: " + project);
+        }
+      }
+    }, 'Open DF');
     const report = ui.button(getIcon('tasks', { style: 'fas' }), () => {
       const list: { name: string, category: string, status: Status | null, reason: string }[] = [];
       Object.values(this.map).forEach((el) => {
         if ('children' in el) return;
-        list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.fullReason||'' });
+        list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.fullReason || '' });
       });
       const df = DG.DataFrame.fromObjects(list)!;
       df.getCol('status').colors.setCategorical(colors);
@@ -201,7 +235,7 @@ export class TestTrack extends DG.ViewBase {
       this.showEditTestingNameDialog();
       e.preventDefault();
     };
-    const ribbon = ui.divH([gh, report, ec, refresh, start, this.nameDiv]);
+    const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, start, this.nameDiv]);
     ribbon.style.flexGrow = '0';
 
     // Test case div
@@ -217,6 +251,11 @@ export class TestTrack extends DG.ViewBase {
         edit.disabled = true;
         return;
       }
+
+      this.dataSetsToOpen = node.value.datasets;
+      this.projectsToOpen = node.value.projects;
+      this.layoutsToOpen = node.value.layouts;
+
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
       node.value.history.style.display = 'flex';
@@ -338,8 +377,8 @@ export class TestTrack extends DG.ViewBase {
     const pathL = file.path.replace(/\.[^.]+$/, '').split('/').slice(2);
     if (pathL.length < 2)
       grok.shell.error('Root test case');
-    const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category;
-    const [textS, jsonS] = (await _package.files.readAsText(file)).split('---', 2);
+    const parent = this.map[pathL.slice(0, -1).join(': ') + ' C'] as Category
+    const [textS, jsonS] = (await _package.files.readAsText(file)).split('---', 3);
     const text = ui.markdown(textS);
     const path = pathL.join(': ');
     const name = file.name.replace(/\.[^.]+$/, '');
@@ -350,11 +389,15 @@ export class TestTrack extends DG.ViewBase {
     else {
       el = {
         name, path, text, status: null, history: ui.divH([], 'tt-history'),
-        icon: ui.div(), reason: ui.div('', 'tt-reason')
+        icon: ui.div(), reason: ui.div('', 'tt-reason'), datasets: [], projects: [], layouts: [],
       };
     }
+    var a = await _package.files.readAsText(file);
+    console.log(a);
+    if (name == "Case")
+      debugger
     if (jsonS)
-      el = { ...JSON.parse(jsonS), ...el };
+      el = { ...el, ...JSON.parse(jsonS) };
     parent.children.push(el);
     this.map[path] = el;
   }
@@ -415,10 +458,10 @@ export class TestTrack extends DG.ViewBase {
           { radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty') })
         .endGroup()
         .item('Edit', () => this.editTestCase(node))
-        .item('EditReason', () => { 
+        .item('Edit Reason', () => {
           this.showNodeDialog(node, data.dart.item.value.status, true);
-         }, null, {
-          isEnabled: () => { 
+        }, null, {
+          isEnabled: () => {
             return (data.dart.item.value.status ? (data.dart.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
           }
         });
@@ -461,7 +504,7 @@ export class TestTrack extends DG.ViewBase {
     const name = `${edit ? 'Edit' : 'Specify'} ${status === FAILED ? 'ticket' : 'skip reason'}`;
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
-    const value = edit ? node.value.fullReason : '';
+    const value = edit ? (node.value.fullReason) || '' : '';
     const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', {value: value});
     stringInput.nullable = false;
     const textInput = ui.textInput(status === FAILED ? 'Keys' : 'Reasons', value, () => { });
@@ -517,7 +560,7 @@ export class TestTrack extends DG.ViewBase {
       const map: StatusInfo = {
         'User': user,
         'Date': dayjs(),
-        'Version': params['version'],
+        'Version': params['version']
       };
 
       map['Reason'] = reasonTooltipValue;
@@ -532,12 +575,27 @@ export class TestTrack extends DG.ViewBase {
     }
     if (reason === node.value.reason.innerText) return;
     node.value.reason.innerHTML = '';
-    node.value.reason.append(this.getReason(reason));
+    node.value.fullReason = reason;
+    if (!reason!.includes('\n'))
+      node.value.reason.append(this.getReason(reason!));
+    else
+      node.value.reason.append(ui.label('list'));
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName
     };
 
+    let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
+    grok.dapi.users.find(params['uid']).then((user) => {
+      const map: StatusInfo = {
+        'User': user,
+        'Date': dayjs(),
+        'Version': params['version']
+      };
+
+      map['Reason'] = reasonTooltipValue;
+      ui.tooltip.bind(node.value.icon, () => ui.tableFromMap(map));
+    });
     grok.shell.reportTest('manual', params);
   }
 

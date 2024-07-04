@@ -121,62 +121,72 @@ left join filled f on f.date = e.date and f.status = e.status
 
 --name: TestTrack
 --connection: System:Datagrok
---input: string version
---input: string uid
---input: string start
-select
-distinct on (e.description)
-e.description as path,
-case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
-v2.value as reason,
-e.event_time as date
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
-left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
-left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
-left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
-left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
-where v3.value = @version and v5.value = @uid and v6.value = @start
-order by e.description, e.event_time desc
+--input: string batchName
+
+Select * from (
+   select distinct on (t.name)  
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.date_time as date,
+  t.name as test, 
+
+  r.params,	
+  r.params::json->'batchName' as batchName,
+  r.params::json->'version' as version,
+  r.params::json->'result' as reason,
+  r.params::json->'uid' as uid,
+  r.params::json->'start' as start
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' and not r.passed is null and (r.params::json->'batchName')::varchar(255) = @batchName
+order by   t.name, r.date_time desc  
+) as testsData
+order by testsData.date desc
 --end
 
 --name: LastStatuses
 --connection: System:Datagrok
 --input: string path
-select
-case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
-e.event_time as date,
-v5.value::uuid as uid,
-v3.value as version,
-v2.value as reason,
-v6.value as start
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
-left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
-left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
-left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
-left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
-where e.description = @path
-order by e.event_time desc
-limit 4
+Select * from (
+   select distinct on ( (r.params::json->'batchName')::varchar(255))  
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.date_time as date,
+  t.name as test, 
+
+  r.params,	
+  r.params::json->'batchName' as batchName,
+  r.params::json->'version' as version,
+  r.params::json->'result' as reason,
+  r.params::json->'uid' as uid, 
+  r.params::json->'start' as start
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' and t.name =  concat('Unknown: ', @path) and not r.passed is null
+order by   (r.params::json->'batchName')::varchar(255), r.date_time desc 
+limit 4 ) as testsData
+order by testsData.date desc
 --end
 
 --name: TestingName
---connection: System:Datagrok
---input: string id
+--connection: System:Datagrok 
+--input: string version
+--input: string uid
+--input: string start
 --output: string name
-select
-distinct on (e.description)
-v1.value as name
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name = 'tt-new-testing'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'name' on v1.event_id = e.id
-where e.description = @id
-order by e.description, e.event_time desc
+ 
+Select distinct on ((r.params::json->'batchName')::varchar(255))  
+  (r.params::json->'batchName')::varchar(255) as batchName,
+  (r.params::json->'version')::varchar(255) as version,
+   
+  (r.params::json->'start')::varchar(255) as start,
+    r.date_time as date
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' 
+  and (r.params::json->'uid')::varchar(255) = concat('"', @uid,'"')
+  and (r.params::json->'version')::varchar(255) = concat('"', @version,'"')
+  and (r.params::json->'start')::varchar(255) = concat('"', @start,'"')
+order by (r.params::json->'batchName')::varchar(255), r.date_time 
+limit 1
 --end
 
 --name: getServerStartsFor2Weeks
@@ -416,7 +426,7 @@ coalesce(v8.value, t.category) as category,
 case when e.id is null then 'did not run' when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
 v2.value as result,
 case when v3.value != 'null' then v3.value::int else null end as ms,
-coalesce(v5.value, t.type) as type
+coalesce(v5.value, t.type) as
 from
 types t
 left join event_parameters p1 on p1.event_type_id = t.id and p1.name = 'success'
