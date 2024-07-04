@@ -464,6 +464,11 @@ export class AddNewColumnDialog {
     if (unmatchedCols.length)
       return unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
         `Column ${unmatchedCols[0]} is missing`;
+    //check cases when only one column is entered
+    const singleColumnPattern = /^\${(.+?)}$/;
+    const found = formula.trim().match(singleColumnPattern);
+    if (found)
+      return '';
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
@@ -859,9 +864,9 @@ export class AddNewColumnDialog {
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${')) {
+        const openingBracketIdx = word.text.indexOf("{");
         colNames.forEach((name: string) => options.push({ label: name, type: "variable", apply: `{${name}}` }));
-        const bracketIdx = word.text.indexOf("{");
-        index = word!.from + bracketIdx === -1 ? word.text.indexOf("$") + 1 : bracketIdx + 1;
+        index = word!.from + openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1;
         filter = !word.text.endsWith('$') && !word.text.endsWith('{');
       } else
         coreFunctionsNames.concat(packageNames)
