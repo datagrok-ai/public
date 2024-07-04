@@ -420,6 +420,9 @@ export interface IDartApi {
   grok_Form_Get_State(form: any): any;
   grok_Form_Set_State(form: any, state: String): any;
   grok_LineChartViewer_activeFrame(s: any): any;
+  grok_LineChartViewer_ResetView(l: any): any;
+  grok_BarChartViewer_ResetView(b: any): any;
+  grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
@@ -1507,6 +1510,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
