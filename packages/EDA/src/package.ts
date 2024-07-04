@@ -33,7 +33,7 @@ import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/sr
 
 import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
-import {PLSmodel} from './pls/pls-ml';
+import {PlsModel} from './pls/pls-ml';
 
 export const _package = new DG.Package();
 
@@ -646,10 +646,10 @@ export async function trainPLSRegression(df: DG.DataFrame, predict_column: strin
   if (components > features.length)
     throw new Error('Number of components is greater than features count');
 
-  const plsModel = new PLSmodel();
-  await plsModel.fit(features, target, components);
+  const model = new PlsModel();
+  await model.fit(features, target, components);
 
-  return plsModel.toBytes();
+  return model.toBytes();
 }
 
 //name: applyLinearRegression
@@ -659,8 +659,8 @@ export async function trainPLSRegression(df: DG.DataFrame, predict_column: strin
 //input: dynamic model
 //output: dataframe table
 export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
-  const plsModel = new PLSmodel(model);
-  return DG.DataFrame.fromColumns([plsModel.predict(df.columns)]);
+  const unpackedModel = new PlsModel(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
 }
 
 //name: isApplicablePLSRegression
@@ -670,7 +670,7 @@ export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
 //input: string predict_column
 //output: bool result
 export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: string): boolean {
-  return PLSmodel.isApplicable(df.columns);
+  return PlsModel.isApplicable(df.columns);
 }
 
 //top-menu: ML | PLS ML demo...
@@ -680,13 +680,13 @@ export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: stri
 //input: column predict {type: numerical}
 //input: int components = 3
 export async function plsMLdemo(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number) {
-  const model = new PLSmodel();
+  const model = new PlsModel();
 
   await model.fit(features, predict, components);
 
   const packed = model.toBytes();
 
-  const unpacked = new PLSmodel(packed);
+  const unpacked = new PlsModel(packed);
 
   table.columns.add(unpacked.predict(features));
 
