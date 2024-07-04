@@ -38,6 +38,8 @@ const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
   'GetRowIndex': DG.TYPE.INT,
 }
 
+const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`
+
 export class AddNewColumnDialog {
   addColumnTitle: string = 'Add New Column';
   editColumnTitle: string = 'Edit Column Formula';
@@ -82,7 +84,8 @@ export class AddNewColumnDialog {
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
   codeMirrorDiv = ui.div('', { style: { height: '140px' } });
-  errorDiv = ui.div('', 'cm-error-div');
+  errorOrHintDiv = ui.div('', 'cm-error-hint-div');
+  hintDiv = ui.divText(DEFAULT_HINT);
   columnNames: string[] = [];
   columnNamesLowerCase: string[] = [];
   coreFunctionsNames: string[] = [];
@@ -108,6 +111,7 @@ export class AddNewColumnDialog {
     if (this.sourceDf) {
       this.columnNames = this.sourceDf.columns.names();
       this.columnNamesLowerCase = this.sourceDf.columns.names().map((it) => it.toLowerCase());
+      this.errorOrHintDiv!.append(this.hintDiv);
       this.init();
     }
     else
@@ -421,12 +425,18 @@ export class AddNewColumnDialog {
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            ui.empty(this.errorDiv!);
-            if (!error) {
-              await this.updatePreview(cmValue);
-            }
-            else {
-              this.errorDiv!.append(ui.divText(error));
+            await this.updatePreview(cmValue, error);
+            if (error) {
+              //need to wait for autocompletion to appear, in case autocoplete is opened - do not show error             
+              setTimeout(() => {
+                ui.empty(this.errorOrHintDiv!);
+                if (!this.codeMirrorDiv.getElementsByClassName('cm-tooltip-autocomplete').length) {
+                  this.errorOrHintDiv!.append(ui.divText(error, 'cm-error-div'));
+                }
+              }, 100);
+            } else {
+              ui.empty(this.errorOrHintDiv!);
+              this.errorOrHintDiv!.append(this.hintDiv);
             }
           }),
         ],
@@ -677,7 +687,7 @@ export class AddNewColumnDialog {
               ui.block([this.inputName!.root], {style: {width: '65%'}}),
               ui.block([this.inputType!.root], {style: {width: '35%'}}),
             ]),
-            ui.block([this.codeMirrorDiv!, this.errorDiv!]),
+            ui.block([this.codeMirrorDiv!, this.errorOrHintDiv!]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], {style: Object.assign({}, {paddingRight: '20px', flexDirection: 'column'}, flexStyle)}),
 
@@ -694,10 +704,18 @@ export class AddNewColumnDialog {
   }
 
   /** Updates the Preview Grid. Executed every time the controls are changed. */
-  async updatePreview(expression: string): Promise<void> {
+  async updatePreview(expression: string, error?: string): Promise<void> {
+    //get result column name
+    const colName = this.getResultColumnName();
+    //clearing preview df
+    if (error) {
+      const rowCount = this.gridPreview!.dataFrame.rowCount;
+      this.gridPreview!.dataFrame = DG.DataFrame.fromColumns([DG.Column.string(colName, rowCount)]);
+      this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
+      return;
+    }
     // Making the Column List for the Preview Grid:
     const columnIds = this.findUniqueColumnNamesInExpression(expression);
-    const colName = this.getResultColumnName();
     columnIds.push(colName);
 
     const type = this.getSelectedType()[0];
@@ -865,8 +883,10 @@ export class AddNewColumnDialog {
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${')) {
         const openingBracketIdx = word.text.indexOf("{");
-        colNames.forEach((name: string) => options.push({ label: name, type: "variable", apply: `{${name}}` }));
-        index = word!.from + openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1;
+        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === '}' : false;
+        colNames.forEach((name: string) => options.push({ label: name, type: "variable",
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${name}` : `${name}}` :  closingBracket ? `{${name}` : `{${name}}`}));
+        index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith('{');
       } else
         coreFunctionsNames.concat(packageNames)
