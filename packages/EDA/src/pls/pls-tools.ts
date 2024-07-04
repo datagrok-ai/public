@@ -33,6 +33,40 @@ export type PlsInput = {
   names : DG.Column | null,
 };
 
+/** Return lines */
+export function getLines(names: string[]): DG.FormulaLine[] {
+  const lines: DG.FormulaLine[] = [];
+
+  const addLine = (formula: string, radius: number) => {
+    lines.push({
+      type: 'line',
+      formula: formula,
+      width: LINE_WIDTH,
+      visible: true,
+      title: ' ',
+      min: -radius,
+      max: radius,
+      color: COLOR.CIRCLE,
+    });
+  };
+
+  names.forEach((xName) => {
+    const x = '${' + xName + '}';
+    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
+
+    names.forEach((yName) => {
+      const y = '${' + yName + '}';
+
+      RADIUS.forEach((r) => {
+        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
+        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
+      });
+    });
+  });
+
+  return lines;
+}
+
 /** Partial least square regression (PLS) */
 export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
   checkWasmDimensionReducerInputs(input.features, input.components);
@@ -149,36 +183,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.3) create lines & circles
-  const lines = [] as DG.FormulaLine[];
-
-  const addLine = (formula: string, radius: number) => {
-    lines.push({
-      type: 'line',
-      formula: formula,
-      width: LINE_WIDTH,
-      visible: true,
-      title: ' ',
-      min: -radius,
-      max: radius,
-      color: COLOR.CIRCLE,
-    });
-  };
-
-  scoreNames.forEach((xName) => {
-    const x = '${' + xName + '}';
-    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
-
-    scoreNames.forEach((yName) => {
-      const y = '${' + yName + '}';
-
-      RADIUS.forEach((r) => {
-        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
-        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
-      });
-    });
-  });
-
-  scoresScatter.meta.formulaLines.addAll(lines);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
   view.addViewer(scoresScatter);
 
   // 5. Explained Variances

@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getPlsAnalysis} from './pls-tools';
+import {TITLE, RESULT_NAMES} from './pls-constants';
+import {getPlsAnalysis, PlsOutput, getLines} from './pls-tools';
 import {LINK} from './pls-constants';
 import {getPredictionByLinearRegression} from '../regression';
 
@@ -18,13 +19,16 @@ const NUMERIC_TYPES = [
 
 // PLS ML specific constants
 const EXTRA_ROWS = 1;
-const SHIFT = 4;
+const SHIFT = 2;
 const MIN_LOADINGS = 1;
-const BYTES_PER_MODEL_SIZE = 4;
 const MIN_COLS_COUNT = SHIFT + MIN_LOADINGS;
+const SIZE_ARR_LEN = 2;
+const MODEL_IDX = 0;
+const SCORES_IDX = 1;
+const BYTES_PER_SIZES = SIZE_ARR_LEN * 4;
 
 /** Titles */
-enum TITLE {
+/*enum TITLE {
   FEATURES = 'Feature names',
   PARAMS = 'Regression Coefficients',
   X_LOADING = 'x.loading.p',
@@ -32,19 +36,19 @@ enum TITLE {
   COMP = 'component',
   COMPS = 'components',
   EXPL_VAR = 'explained variance',
-  AVG = 'average',
-  STDEV = 'sigma',
-};
+  X_SCORE = 'x.score.t',
+  Y_SCORE = 'y.score.u',
+  SCORES = 'Scores',
+};*/
 
 /** Model specification */
 type PlsModelSpecification = {
   params: Float32Array,
   names: string[],
   loadings: Float32Array[],
-  avgs: Float32Array,
-  stdevs: Float32Array,
   dim: number,
   components: number,
+  scores: DG.DataFrame,
 }
 
 /** PLS regression modeling tool */
@@ -66,17 +70,22 @@ export class PlsModel {
     if (packedModel) {
       try {
         // Extract model's bytes count
-        const sizeArr = new Uint32Array(packedModel.buffer, 0, 1); // 1-st element is a size of model bytes
-        const bytesCount = sizeArr[0];
+        const sizeArr = new Uint32Array(packedModel.buffer, 0, SIZE_ARR_LEN); // 1-st element is a size of model bytes
+        const modelDfBytesCount = sizeArr[MODEL_IDX];
+        const scoresDfBytesCount = sizeArr[SCORES_IDX];
 
         // Model's bytes
-        const bytes = new Uint8Array(packedModel.buffer, BYTES_PER_MODEL_SIZE, bytesCount);
+        const modelBytes = new Uint8Array(packedModel.buffer, BYTES_PER_SIZES, modelDfBytesCount);
 
         // Model as dataframe
-        const modelDf = DG.DataFrame.fromByteArray(bytes);
+        const modelDf = DG.DataFrame.fromByteArray(modelBytes);
         const rowCount = modelDf.rowCount;
         const columns = modelDf.columns;
         const colsCount = columns.length;
+
+        // Scores
+        const scoresBytes = new Uint8Array(packedModel.buffer, BYTES_PER_SIZES + modelDfBytesCount, scoresDfBytesCount);
+        const scores = DG.DataFrame.fromByteArray(scoresBytes);
 
         if (colsCount < MIN_COLS_COUNT)
           throw new Error('incorrect columns count');
@@ -86,11 +95,7 @@ export class PlsModel {
 
         // Extract parameters of the linear model
         const params = new Float32Array(rowCount);
-        params.set(columns.byName(TITLE.PARAMS).getRawData());
-
-        // Extract averages & stdevs
-        const featuresAvgs = columns.byName(TITLE.AVG).getRawData() as Float32Array;
-        const featuresStdevs = columns.byName(TITLE.STDEV).getRawData() as Float32Array;
+        params.set(columns.byName(TITLE.REGR_COEFS).getRawData());
 
         // Extract loadings
         const components = colsCount - SHIFT;
@@ -105,10 +110,9 @@ export class PlsModel {
           params: params,
           loadings: loadings,
           names: featureNames,
-          avgs: featuresAvgs,
-          stdevs: featuresStdevs,
           dim: rowCount - EXTRA_ROWS,
           components: colsCount - SHIFT,
+          scores: scores,
         };
       } catch (error) {
         throw new Error(`Failed to load model: ${(error instanceof Error ? error.message : 'the platform issue')}`);
@@ -136,18 +140,14 @@ export class PlsModel {
     // 3. Loadings
     const loadings = this.getLoadings(components, analysis.xLoadings);
 
-    // 4. Features stats
-    const stats = this.extractStats(features);
-
-    // 5. Model specification
+    // 4. Model specification
     this.specn = {
       names: featureNames,
       params: params,
-      avgs: stats.avgs,
-      stdevs: stats.stdevs,
       loadings: loadings,
       components: components,
       dim: features.length,
+      scores: this.getScoresDf(analysis),
     };
 
     // 4. Compute explained variances
@@ -210,34 +210,39 @@ export class PlsModel {
     if (this.specn === null)
       throw new Error('Failed to pack untrained model');
 
-    // 1. Store model in dataframe
-    const df = DG.DataFrame.fromColumns([
+    // 1. Store model params in dataframe
+    const modelDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(TITLE.FEATURES, this.specn.names),
-      DG.Column.fromFloat32Array(TITLE.PARAMS, this.specn.params),
-      DG.Column.fromFloat32Array(TITLE.AVG, this.specn.avgs),
-      DG.Column.fromFloat32Array(TITLE.STDEV, this.specn.stdevs),
+      DG.Column.fromFloat32Array(TITLE.REGR_COEFS, this.specn.params),
     ]);
 
-    this.specn.loadings.forEach((array, idx) => df.columns.add(DG.Column.fromFloat32Array(
-      `${TITLE.X_LOADING} ${idx + 1}`,
+    this.specn.loadings.forEach((array, idx) => modelDf.columns.add(DG.Column.fromFloat32Array(
+      `${TITLE.XLOADING}${idx + 1}`,
       array,
     )));
 
     // 2. Pack model dataframe
-    const modelBytes = df.toByteArray();
-    const bytesCount = modelBytes.length;
+    const modelDfBytes = modelDf.toByteArray();
+    const modelDfBytesCount = modelDfBytes.length;
 
-    const packedModel = new Uint8Array(bytesCount + BYTES_PER_MODEL_SIZE);
+    const scoresBytes = this.specn.scores.toByteArray();
+    const scoresBytesCount = scoresBytes.length;
+
+    const packedModel = new Uint8Array(modelDfBytesCount + scoresBytesCount + BYTES_PER_SIZES);
 
     // 4 bytes for storing model's bytes count
-    const sizeArr = new Uint32Array(packedModel.buffer, 0, 1);
-    sizeArr[0] = bytesCount;
+    const sizeArr = new Uint32Array(packedModel.buffer, 0, SIZE_ARR_LEN);
+    sizeArr[MODEL_IDX] = modelDfBytesCount;
+    sizeArr[SCORES_IDX] = scoresBytesCount;
 
     // Store model's bytes
-    packedModel.set(modelBytes, BYTES_PER_MODEL_SIZE);
+    packedModel.set(modelDfBytes, BYTES_PER_SIZES);
+
+    // Store scores bytes
+    packedModel.set(scoresBytes, BYTES_PER_SIZES + modelDfBytesCount);
 
     return packedModel;
-  }
+  } // toBytes
 
   /** Return prediction */
   public predict(features: DG.ColumnList): DG.Column {
@@ -259,7 +264,7 @@ export class PlsModel {
     // Parameters and loadings dataframe
     const loadingsDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings(TITLE.FEATURES, this.specn.names.slice(0, -1)),
-      DG.Column.fromFloat32Array(TITLE.PARAMS, this.specn.params, dim),
+      DG.Column.fromFloat32Array(TITLE.REGR_COEFS, this.specn.params, dim),
     ]);
 
     const columns = loadingsDf.columns;
@@ -267,7 +272,7 @@ export class PlsModel {
     const components = this.specn.components;
 
     this.specn.loadings.forEach((arr, idx) => loadingsDf.columns.add(
-      DG.Column.fromFloat32Array(`${TITLE.X_LOADING} ${idx + 1}`, arr, dim),
+      DG.Column.fromFloat32Array(`${TITLE.XLOADING}${idx + 1}`, arr, dim),
     ));
 
     // Loading scatterplot
@@ -282,9 +287,9 @@ export class PlsModel {
 
     // Regression coefficients barchart
     viewers.push(DG.Viewer.barChart(loadingsDf, {
-      title: TITLE.PARAMS,
+      title: TITLE.REGR_COEFS,
       splitColumnName: TITLE.FEATURES,
-      valueColumnName: TITLE.PARAMS,
+      valueColumnName: TITLE.REGR_COEFS,
       valueAggrType: DG.AGG.AVG,
       help: LINK.COEFFS,
       showValueSelector: false,
@@ -305,20 +310,20 @@ export class PlsModel {
     const compNames = new Array<string>(components);
     const explVars = new Float32Array(components);
 
-    compNames[0] = `${TITLE.COMP} 1`;
+    compNames[0] = `${RESULT_NAMES.COMP} 1`;
     explVars[0] = this.specn.loadings[0][dim];
 
     for (let i = 1; i < components; ++i) {
-      compNames[i] = `${TITLE.COMPS} ${i + 1}`;
+      compNames[i] = `${RESULT_NAMES.COMPS} ${i + 1}`;
       explVars[i] = this.specn.loadings[i][dim];
     }
 
     return DG.Viewer.barChart(DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.COMPS, compNames),
+      DG.Column.fromStrings(RESULT_NAMES.COMPS, compNames),
       DG.Column.fromFloat32Array(TITLE.EXPL_VAR, explVars),
     ]), {
       title: TITLE.EXPL_VAR,
-      splitColumnName: TITLE.COMPS,
+      splitColumnName: RESULT_NAMES.COMPS,
       valueColumnName: TITLE.EXPL_VAR,
       valueAggrType: DG.AGG.AVG,
       help: LINK.EXPL_VARS,
@@ -334,31 +339,43 @@ export class PlsModel {
       throw new Error('Failed to create viewers: untrained model');
 
     const viewers = this.loadingsParamsViewers();
-    viewers.push(this.explVarsViewer());
+    viewers.push(
+      this.explVarsViewer(),
+      this.getScoresScatter(),
+    );
 
     return viewers;
   }
 
-  /** Extract average & standard deviations of features */
-  private extractStats(features: DG.ColumnList) {
-    const lenght = features.length + EXTRA_ROWS;
+  /** Return dataframe with scores */
+  private getScoresDf(analysis: PlsOutput): DG.DataFrame {
+    const tScores = analysis.tScores;
+    const uScores = analysis.uScores;
 
-    const avgs = new Float32Array(lenght);
-    const stdevs = new Float32Array(lenght);
+    tScores.forEach((col, idx) => col.name = `${TITLE.XSCORE}${idx + 1}`);
+    uScores.forEach((col, idx) => col.name = `${TITLE.YSCORE}${idx + 1}`);
 
-    let i = 0;
-    let stats: DG.Stats;
+    return DG.DataFrame.fromColumns(tScores.concat(uScores));
+  }
 
-    for (const col of features) {
-      stats = col.stats;
-      avgs[i] = stats.avg;
-      stdevs[i] = stats.stdev;
-      ++i;
-    }
+  /** Return scores scatter */
+  private getScoresScatter(): DG.Viewer {
+    if (this.specn === null)
+      throw new Error('Failed to create scores scatter: untrained model');
 
-    return {
-      avgs: avgs,
-      stdevs: stdevs,
-    };
+    const names = this.specn.scores.columns.names();
+
+    const scatter = DG.Viewer.scatterPlot(this.specn.scores, {
+      title: TITLE.SCORES,
+      xColumnName: names[0],
+      yColumnName: names[1],
+      markerType: DG.MARKER_TYPE.CIRCLE,
+      help: LINK.SCORES,
+      showViewerFormulaLines: true,
+    });
+
+    scatter.meta.formulaLines.addAll(getLines(names));
+
+    return scatter;
   }
 };
