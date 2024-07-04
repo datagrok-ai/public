@@ -26,6 +26,7 @@ const SIZE_ARR_LEN = 2;
 const MODEL_IDX = 0;
 const SCORES_IDX = 1;
 const BYTES_PER_SIZES = SIZE_ARR_LEN * 4;
+const BLOCK_SIZE = 64;
 
 /** Titles */
 /*enum TITLE {
@@ -228,7 +229,9 @@ export class PlsModel {
     const scoresBytes = this.specn.scores.toByteArray();
     const scoresBytesCount = scoresBytes.length;
 
-    const packedModel = new Uint8Array(modelDfBytesCount + scoresBytesCount + BYTES_PER_SIZES);
+    const requiredBytes = modelDfBytesCount + scoresBytesCount + BYTES_PER_SIZES;
+
+    const packedModel = new Uint8Array((Math.ceil(requiredBytes / BLOCK_SIZE) + 1) * BLOCK_SIZE);
 
     // 4 bytes for storing model's bytes count
     const sizeArr = new Uint32Array(packedModel.buffer, 0, SIZE_ARR_LEN);

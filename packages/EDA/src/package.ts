@@ -673,6 +673,24 @@ export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: stri
   return PlsModel.isApplicable(df.columns);
 }
 
+//name: visualizePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: visualize
+//input: dataframe df
+//input: string target_column
+//input: string predict_column
+//input: dynamic model
+//output: dynamic widget
+export async function visualizePLSRegression(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+  const unpackedModel = new PlsModel(model);
+  const viewers = unpackedModel.viewers();
+
+  return ui.divV([
+    ui.divH([viewers[0].root, viewers[1].root]),
+    ui.divH([viewers[2].root, viewers[3].root]),
+  ]);
+}
+
 //top-menu: ML | PLS ML demo...
 //name: PLS demo
 //input: dataframe table
