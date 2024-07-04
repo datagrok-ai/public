@@ -1509,6 +1509,8 @@ export interface IDartApi {
   grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_InputType_Create(): any;
