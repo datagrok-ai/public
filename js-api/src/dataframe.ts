@@ -764,6 +764,18 @@ export class Column<T = any> {
     return col;
   }
 
+  /** Is the column numerical (float, int, bigint, qnum)
+  * @type {boolean}*/
+  get isNumerical(): boolean {
+    return api.grok_Column_Get_Is_Numerical(this.dart);
+  }
+
+  /** Is the column categorical (string, boolean)
+  * @type {boolean}*/
+  get isCategorical(): boolean {
+    return api.grok_Column_Get_Is_Categorical(this.dart);
+  }
+
   /** Column data type.
    * @type {string} */
   get type(): ColumnType {

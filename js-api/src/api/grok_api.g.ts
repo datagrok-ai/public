@@ -581,6 +581,8 @@ export interface IDartApi {
   grok_Column_GetColors(column: any): any;
   grok_Column_GetColor(column: any, index: Num): any;
   grok_Column_GetAutoFormat(column: any): any;
+  grok_Column_Get_Is_Categorical(column: any): any;
+  grok_Column_Get_Is_Numerical(column: any): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
