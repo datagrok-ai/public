@@ -618,7 +618,7 @@ export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
   get onSegmentClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
 }
 
-export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
+export class PcPlot extends Viewer<interfaces.IPcPlotSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -627,7 +627,7 @@ export class PcPlotViewer extends Viewer<interfaces.IPcPlotSettings> {
   get onLineHovered(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
 }
 
-export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
+export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -643,7 +643,7 @@ export class BoxPlotViewer extends Viewer<interfaces.IBoxPlotSettings> {
 }
 
 
-export class CorrelationPlotViewer extends Viewer<interfaces.ICorrelationPlotSettings> {
+export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings> {
   constructor(dart: any) {
     super(dart);
   }
