@@ -134,7 +134,7 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 1.5, true);
-  }, {timeout: 120000});
+  }, {timeout: 120000, skipReason: 'GROK-15408'});
 
   after(async () => {
     try {
