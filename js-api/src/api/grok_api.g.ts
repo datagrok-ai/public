@@ -357,6 +357,7 @@ export interface IDartApi {
   grok_DockManager_UndockNode(m: any, n: any): any;
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
+  grok_DockManager_OnElementClosed(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
   grok_Viewer_Get_Type(v: any): any;
@@ -1509,8 +1510,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_mouseEvent(x: any): any;
-  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_InputType_Create(): any;

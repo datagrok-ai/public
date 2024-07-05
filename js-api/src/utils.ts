@@ -3,6 +3,8 @@ import {toDart, toJs} from './wrappers';
 import {MARKER_TYPE} from "./const";
 import {Point, Rect, GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
+import * as rxjs from "rxjs";
+import {StreamSubscription} from "./events";
 
 const api: IDartApi = <any>window;
 
@@ -201,6 +203,19 @@ export class Utils {
    * Example: `loadJsCss(['common/exceljs.min.js', 'common/exceljs.min.css'])` */
   static async loadJsCss(files: string[]): Promise<null> {
     return toJs(api.grok_Utils_LoadJsCss(files));
+  }
+
+  static streamToObservable<T = any>(dartStream: any): rxjs.Observable<T> {
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_Stream_Listen(dartStream, function (x: any) {
+          handler(x);
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
   }
 }
 
