@@ -714,7 +714,7 @@ export namespace input {
     property: (input, inputType, x) => input.property = x,
     tooltipText: (input, inputType, x) => input.setTooltip(x),
     onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input.value)),
+    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
     clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
     escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
     size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
@@ -756,7 +756,7 @@ export namespace input {
     }
   }
 
-  interface IInputInitOptions<T = any> {
+  export interface IInputInitOptions<T = any> {
     value?: T;
     property?: Property;
     nullable?: boolean;
@@ -766,7 +766,7 @@ export namespace input {
     onValueChanged?: (input: InputBase<T>) => void;
   }
 
-  interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
     min?: number;
     max?: number;
     step?: number;
@@ -774,15 +774,15 @@ export namespace input {
     showPlusMinus?: boolean;
   }
 
-  interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
 
-  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+  export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
   }
 
-  interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
     clearIcon?: boolean;
     escClears?: boolean;
     icon?: string | HTMLElement;
@@ -790,16 +790,16 @@ export namespace input {
     // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
   }
 
-  interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
     size?: Size;
   }
 
-  interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
     filter?: Function;
   }
 
-  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+  export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
   }
