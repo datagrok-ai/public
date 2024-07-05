@@ -84,8 +84,8 @@ export class AddNewColumnDialog {
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
   codeMirrorDiv = ui.div('', { style: { height: '140px' } });
-  errorOrHintDiv = ui.div('', 'cm-error-hint-div');
-  hintDiv = ui.divText(DEFAULT_HINT);
+  errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
+  hintDiv = ui.div('', 'cm-hint-div');
   columnNames: string[] = [];
   columnNamesLowerCase: string[] = [];
   coreFunctionsNames: string[] = [];
@@ -111,7 +111,7 @@ export class AddNewColumnDialog {
     if (this.sourceDf) {
       this.columnNames = this.sourceDf.columns.names();
       this.columnNamesLowerCase = this.sourceDf.columns.names().map((it) => it.toLowerCase());
-      this.errorOrHintDiv!.append(this.hintDiv);
+      this.hintDiv.append(ui.divText(DEFAULT_HINT));
       this.init();
     }
     else
@@ -356,8 +356,19 @@ export class AddNewColumnDialog {
           bracketMatching({brackets : "()[]{}"}),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
             this.setCodeMirrorFocus();
+
+            //update hint
+            ui.empty(this.hintDiv);
+            let fullFuncName: string | undefined = '';
+            fullFuncName = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1,
+              this.packageFunctionsParams, this.coreFunctionsParams)?.funcName;
+            this.hintDiv.append(ui.divText(fullFuncName ?? DEFAULT_HINT));
+
+            //return in case formula hasn't been changed
             if (!e.docChanged)
               return;
+
+            ui.empty(this.errorDiv);
             const cmValue = cm.state.doc.toString();
 
             //remove highlight
@@ -402,7 +413,6 @@ export class AddNewColumnDialog {
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
             let error = '';
             if (cmValue) {
-              const fullFuncName = this.getFunctionNameAtPosition(cm, cm.state.selection.main.head, -1)?.funcName;
               if (this.packageAutocomplete)
                 setTimeout(() => {
                   startCompletion(cm);
@@ -429,14 +439,11 @@ export class AddNewColumnDialog {
             if (error) {
               //need to wait for autocompletion to appear, in case autocoplete is opened - do not show error             
               setTimeout(() => {
-                ui.empty(this.errorOrHintDiv!);
+                ui.empty(this.errorDiv);
                 if (!this.codeMirrorDiv.getElementsByClassName('cm-tooltip-autocomplete').length) {
-                  this.errorOrHintDiv!.append(ui.divText(error, 'cm-error-div'));
+                  this.errorDiv.append(ui.divText(error, 'cm-error-div'));
                 }
               }, 100);
-            } else {
-              ui.empty(this.errorOrHintDiv!);
-              this.errorOrHintDiv!.append(this.hintDiv);
             }
           }),
         ],
@@ -555,8 +562,9 @@ export class AddNewColumnDialog {
     }
   }
 
-  getFunctionNameAtPosition(view: EditorView, pos: number, side: number):
-    { funcName: string, start: number, end: number } | null {
+  getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
+    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] }):
+      { funcName: string, start: number, end: number } | null {
     let { from, to, text } = view.state.doc.lineAt(pos)
     let start = pos, end = pos
     while (start > from && /\w|:/.test(text[start - from - 1]))
@@ -565,8 +573,12 @@ export class AddNewColumnDialog {
       end++;
     if (start == pos && side < 0 || end == pos && side > 0)
       return null;
+    const funcName = text.slice(start - from, end - from);
+    if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
+      return null;
+    const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
     return {
-      funcName: text.slice(start - from, end - from),
+      funcName: `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}`,
       start: start,
       end: end
     }
@@ -575,7 +587,7 @@ export class AddNewColumnDialog {
   hoverTooltipCustom(packageFunctionsParams: { [key: string]: PropInfo[] },
     coreFunctionsParams: { [key: string]: PropInfo[] }): Extension {
     return hoverTooltip((view: EditorView, pos: number, side: number) => {
-      const res = this.getFunctionNameAtPosition(view, pos, side);
+      const res = this.getFunctionNameAtPosition(view, pos, side, packageFunctionsParams, coreFunctionsParams);
       if (!res)
         return null;
       return {
@@ -583,10 +595,8 @@ export class AddNewColumnDialog {
         end: res.end,
         above: true,
         create(view) {
-          let dom = document.createElement("div");
-          const funcName = res.funcName;
-          const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName]; 
-          dom.textContent = `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}`;
+          let dom = document.createElement("div");          
+          dom.textContent = res.funcName;
           return {dom}
         }
       }
@@ -687,7 +697,7 @@ export class AddNewColumnDialog {
               ui.block([this.inputName!.root], {style: {width: '65%'}}),
               ui.block([this.inputType!.root], {style: {width: '35%'}}),
             ]),
-            ui.block([this.codeMirrorDiv!, this.errorOrHintDiv!]),
+            ui.block([this.codeMirrorDiv!, this.hintDiv, this.errorDiv]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], {style: Object.assign({}, {paddingRight: '20px', flexDirection: 'column'}, flexStyle)}),
 
