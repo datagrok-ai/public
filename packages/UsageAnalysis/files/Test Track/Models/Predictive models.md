@@ -10,7 +10,7 @@
 * Components: 3
 
 3. The result of modeling should appear. Press "Train" button.
-4. Save Predictive model with name "Accelerometer model PLS"
+4. Save Predictive model with name "Accelerometer model PLS".
 5. Go to Toolbox menu > Models. Press "Train" button.
 6. Fill the form according to sample:
 
@@ -18,9 +18,10 @@
 * for Predict set: accel_x
 * for Features set: accel_y, accel_z, time_offset
 * Model Engine: EDA: Linnear Regression
+
 7. The result of modeling should appear. Press "Train" button. 
-8. Save Predictive model with name "Accelerometer model LR"
-9. File > Close All
+8. Save Predictive model with name "Accelerometer model LR".
+9. File > Close All.
 
 **Apply**
 
