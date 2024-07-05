@@ -146,6 +146,7 @@ order by testsData.date desc
 --name: LastStatuses
 --connection: System:Datagrok
 --input: string path
+--input: string batchToExclude
 Select * from (
    select distinct on ( (r.params::json->'batchName')::varchar(255))  
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
@@ -160,9 +161,9 @@ Select * from (
   r.params::json->'start' as start
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' and t.name =  concat('Unknown: ', @path) and not r.passed is null
+where t.type = 'manual' and t.name =  concat('Unknown: ', @path) and NOT (r.params::json->'batchName')::varchar(255) = concat('"', @batchToExclude, '"') and NOT (r.params::json->'batchName')::varchar(255) =  @batchToExclude   and not r.passed is null
 order by   (r.params::json->'batchName')::varchar(255), r.date_time desc 
-limit 4 ) as testsData
+limit 5 ) as testsData
 order by testsData.date desc
 --end
 
