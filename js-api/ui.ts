@@ -1199,7 +1199,7 @@ export class tools {
           }
         }
         if (form.classList.contains('d4-dialog-contents')) {
-          let dialogFormWidth = labelMaxWidth + minInputWidth;
+          let dialogFormWidth = labelMaxWidth + minInputWidth + 40;
           form.style.minWidth = `${dialogFormWidth}px`;
         } else {
           if (form.clientWidth - labelWidth < minInputWidth) {
