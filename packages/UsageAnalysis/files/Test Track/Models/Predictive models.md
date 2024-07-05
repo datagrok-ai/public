@@ -1,39 +1,38 @@
-You can train models using different methods and servers "H2o" or "OpenCPU". Previously created models can be applied with data similar in structure to training
+**Train**
 
-1. Open "demog.csv" file.
+1. Open demo file: Browse > Files > Demo > Sensors > accelerometer.csv
+2. Top menu > ML > Models > Train Model... Predictive model form opens. Fill it according to sample:
 
-2. Top menu > ML > Use "Missing Values Imtutation" for select and delete all nulls.
+* Table field: accelerometer
+* for Predict set: accel_x
+* for Features set: accel_y, accel_z, time_offset
+* Model Engine: EDA: PLS
+* Components: 3
 
-3. Top menu > Select > Use "Random" for select 50% random values. 
-* Press "Extract Selected Ros". Extract 50% random values to new table. 
-* Rename this table to "Train Data".
-* 50% of the random values are extracted into a new table with name "Train Data".
+3. The result of modeling should appear. Press "Train" button.
+4. Save Predictive model with name "Accelerometer model PLS"
+5. Go to Toolbox menu > Models. Press "Train" button.
+6. Fill the form according to sample:
 
-4. Delete extracted rows from table "demog" (Edit > Remove > Selected rows) and rename this table to "Test Data".
-Input table "demog" is divided into two tables "Train Data" and "Test Data".
+* Table field: accelerometer
+* for Predict set: accel_x
+* for Features set: accel_y, accel_z, time_offset
+* Model Engine: EDA: Linnear Regression
+7. The result of modeling should appear. Press "Train" button. 
+8. Save Predictive model with name "Accelerometer model LR"
+9. File > Close All
 
-5. Open "Train" from ML > Models menu.
+**Apply**
 
-6. Enter the following parameters:
+10. Open demo file once again: Browse > Files > Demo > Sensors > accelerometer.csv
+11. Top menu > ML > Models > Apply Model... Apply predictive model form opens. Choose "Accelerometer model PLS" model. Inputs in "Apply predictive model" form should be set correctly (accel_x - accel_x). Press OK button. The predictive model result should appear.
+12. Toolbox > Models. Run prediction "Accelerometer model LR". Inputs in "Apply predictive model" form should be set correctly (accel_x - accel_x). The predictive model result should appear.
+13. Go to Top menu > Tools > Dev > Open test dataset. Set 1000 rows, 10 cols and "random walk as demo table". Preaa OK button. 
+14. Go to ML > Models > Apply model. Choose "Accelerometer model LR" for new table and run it. The predictive model result should appear.
 
-* Name: Deep_Learning_H2o_Test
-* Description: Test model with using method "Deep Learning" on H2o server
-* Method: Deep Learning
-* Table: "Train Data"
-* Features: HEIGHT, WEIGHT (columns)
-* Outcome: AGE (column)
+**Delete** 
 
-7. The new model is trained. During training, the status bar is shown. When completed, a notification of the successful completion of the new model creation is shown.
-
-8. Use all available methods for training new models on OpenCPU server. When creating new models, use the following rules:
-
-* Name: {method_name}_OpenCPU_Test
-* Description: Test model with using method {method_name} on OpenCPU server
-* Remaining parameters is default
-
-9. Open "Test Data" table. Apply all created models. 
-* This can be done from different places, "Models" tab on toolbox, "Models" tab in table context panel or "Apply Model" dialog from "Train" from ML > Models menu.
-* All created models should apply successfully and correctly.
+15. Delete "Accelerometer model LR" and "Accelerometer model PLS" models in Toolbox. 
 
 ---
 {
