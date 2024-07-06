@@ -1207,7 +1207,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 //input: grid_cell cell
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher(undefined, validateMolecule);
-  const unit = cell.cell.column.tags[DG.TAGS.UNITS];
+  const unit = cell.cell.column.meta.units;
   let molecule = cell.cell.value;
   if (unit === DG.chem.Notation.Smiles) {
     //convert to molFile to draw in coordinates similar to dataframe cell
@@ -1372,7 +1372,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   let molblock;
 
   //in case molecule is smiles setting correct coordinates to save molecule orientation in filter
-  if (value.cell.column.tags[DG.TAGS.UNITS] == DG.chem.Notation.Smiles)
+  if (value.cell.column.meta.units == DG.chem.Notation.Smiles)
     molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   else
     molblock = molToMolblock(molecule, getRdKitModule());
@@ -1458,7 +1458,7 @@ export function isSmarts(s: string): boolean {
 //input: int min
 export function detectSmiles(col: DG.Column, min: number) : void {
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
-    col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+    col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
   }
 }
@@ -1606,7 +1606,7 @@ export async function getScaffoldTree(data: DG.DataFrame,
 ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
-  const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+  const smiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
@@ -1711,7 +1711,7 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<string>
   const namesList = names.toList();
   const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
   const col = res.col('canonical_smiles');
-  col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+  col.meta.units = DG.UNITS.Molecule.SMILES;
   col.semType = DG.SEMTYPE.MOLECULE;
   data.columns.add(col);
 }
@@ -1733,10 +1733,10 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<s
   if (overwrite) {
     for (let i = 0; i < molecules.length; i++)
       molecules.set(i, res[i], false);
-    molecules.tags[DG.TAGS.UNITS] = units;
+    molecules.meta.units = units;
   } else {
     const col = DG.Column.fromStrings(`${molecules.name}_${targetNotation}`, res);
-    col.tags[DG.TAGS.UNITS] = units;
+    col.meta.units = units;
     col.semType = DG.SEMTYPE.MOLECULE;
     if (!join)
       return col;

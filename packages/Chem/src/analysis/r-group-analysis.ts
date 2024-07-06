@@ -302,7 +302,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         resCol.name = rColName;
         const rCol = DG.Column.fromStrings(rColName, molsArray);
         rCol.semType = DG.SEMTYPE.MOLECULE;
-        rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+        rCol.meta.units = DG.chem.Notation.MolBlock;
         col.dataFrame.columns.add(rCol);
         latestAnalysisCols[col.dataFrame.name].push(rColName);
       }
@@ -405,7 +405,7 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       }
       const rCol = DG.Column.fromStrings(resCol.name, molsArray);
       rCol.semType = DG.SEMTYPE.MOLECULE;
-      rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+      rCol.meta.units = DG.chem.Notation.MolBlock;
       resCols.push(rCol);
     }
   }

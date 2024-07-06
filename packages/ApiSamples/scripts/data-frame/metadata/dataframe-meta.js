@@ -2,5 +2,5 @@
 
 const demog = grok.data.demo.demog();
 demog.col('sex').tags.friendlyName = 'GENDER';
-demog.col('weight').tags.format = '0.0';
+demog.col('weight').meta.format = '0.0';
 grok.shell.addTableView(demog);

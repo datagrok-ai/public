@@ -16,4 +16,4 @@ grok.shell.addTableView(df);
 col = await col.applyFormula('${x}+${y}-${z}');
 
 // Opens a dialog to edit a calculated column
-col.dialogs.editFormula();
+col.meta.dialogs.editFormula();

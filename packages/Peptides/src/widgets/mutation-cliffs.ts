@@ -137,7 +137,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   setGridProps(pairsGrid, true);
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
-  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
+  substCol.meta.units = alignedSeqCol.meta.units;
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
 
   let keyPress = false;

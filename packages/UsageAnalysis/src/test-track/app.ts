@@ -231,7 +231,7 @@ export class TestTrack extends DG.ViewBase {
         list.push({ name: el.name, category: el.path.replace(/:\s[^:]+$/, ''), status: el.status, reason: el.fullReason || '' });
       });
       const df = DG.DataFrame.fromObjects(list)!;
-      df.getCol('status').colors.setCategorical(colors);
+      df.getCol('status').meta.colors.setCategorical(colors);
       const tv = grok.shell.addTableView(df);
       tv.grid.sort(['category', 'name']);
       tv.name = 'Report';

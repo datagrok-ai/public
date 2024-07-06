@@ -606,7 +606,6 @@ export class Column<T = any> {
   public dart: any;
   public temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper | undefined;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -835,10 +834,9 @@ export class Column<T = any> {
     return api.grok_Column_Get_Version(this.dart);
   }
 
+  // Obsolete. Recommended method is "meta.dialogs".
   get dialogs(): ColumnDialogHelper {
-    if (this._dialogs == undefined)
-      this._dialogs = new ColumnDialogHelper(this);
-    return this._dialogs;
+    return this.meta.dialogs;
   }
 
   // Obsolete. Recommended method is "meta.colors".
@@ -2440,11 +2438,18 @@ export class ColumnMarkerHelper {
 
 export class ColumnMetaHelper {
   private readonly column: Column;
+  private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
+  }
+
+  get dialogs(): ColumnDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new ColumnDialogHelper(this.column);
+    return this._dialogs;
   }
 
   get colors(): ColumnColorHelper {

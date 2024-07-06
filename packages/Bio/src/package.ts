@@ -447,7 +447,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
     return;
   const axesNames = getEmbeddingColsNames(table);
   const tags = {
-    'units': molecules.getTag(DG.TAGS.UNITS),
+    'units': molecules.meta.units,
     'aligned': molecules.getTag(bioTAGS.aligned),
     'separator': molecules.getTag(bioTAGS.separator),
     'alphabet': molecules.getTag(bioTAGS.alphabet),
@@ -750,13 +750,13 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
         const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
         if (semType === DG.SEMTYPE.MACROMOLECULE) {
           //console.warn(`file: ${fileInfo.path}, column: ${col.name}, ` +
-          //  `semType: ${semType}, units: ${col.getTag(DG.TAGS.UNITS)}`);
+          //  `semType: ${semType}, units: ${col.meta.units}`);
           // console.warn('file: "' + fileInfo.path + '", semType: "' + semType + '", ' +
-          //   'units: "' + col.getTag(DG.TAGS.UNITS) + '"');
+          //   'units: "' + col.meta.units + '"');
 
           res.push({
             file: fileInfo.path, result: 'detected', column: col.name,
-            message: `units: ${col.getTag(DG.TAGS.UNITS)}`,
+            message: `units: ${col.meta.units}`,
           });
         }
       }

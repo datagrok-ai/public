@@ -54,7 +54,7 @@ export class SubstructureSearchDialog {
   }
 
   updateNotationDiv(): void {
-    this.units = this.col.getTag(DG.TAGS.UNITS);
+    this.units = this.col.meta.units!;
     this.separator = this.col.getTag(bioTAGS.separator);
     const notationDiv = this.dialog.root.getElementsByClassName('notation-text')[0];
     if (notationDiv)
@@ -76,12 +76,12 @@ export class SubstructureSearchDialog {
     const df = DG.DataFrame.create(1);
     df.columns.addNewString(SUBSTR_HELM_COL_NAME).init((_i) => '');
     df.col(SUBSTR_HELM_COL_NAME)!.semType = this.col.semType;
-    df.col(SUBSTR_HELM_COL_NAME)!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    df.col(SUBSTR_HELM_COL_NAME)!.meta.units = NOTATION.HELM;
     this.grid = df.plot.grid();
     this.separatorInput = ui.input.string('Separator', {value: this.separator});
 
     this.inputsDiv = ui.div();
-    this.units = this.col.getTag(DG.TAGS.UNITS);
+    this.units = this.col.meta.units!;
     this.separator = this.col.getTag(bioTAGS.separator);
     this.updateInputs();
 
@@ -134,7 +134,7 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
     await invalidateMols(col, true);
   const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((_i) => substructure);
   substructureCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  substructureCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  substructureCol.meta.units = NOTATION.HELM;
   const substructureMolsCol =
     await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
   const matchesCol = await grok.functions.call('Chem:searchSubstructure', {

@@ -162,7 +162,7 @@ class TranslatorAppLayout {
     if (outputFormat === NUCLEOTIDES_FORMAT || outputFormat === DEFAULT_FORMATS.HELM) {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
-      translatedColumn.setTag(DG.TAGS.UNITS, units);
+      translatedColumn.meta.units = units;
       const seqHandler = SeqHandler.forColumn(translatedColumn as DG.Column<string>);
       const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? SeqHandler.setUnitsToFastaColumn :
         SeqHandler.setUnitsToHelmColumn;

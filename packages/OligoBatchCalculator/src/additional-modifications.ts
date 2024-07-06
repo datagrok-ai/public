@@ -114,7 +114,7 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
 
   // Set dropdown list for values in BASE_MODIFICATION columns
   additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION)
-    .setTag(DG.TAGS.CHOICES, stringify(Object.values(BASE_MODIFICATIONS)));
+    .meta.choices = Object.values(BASE_MODIFICATIONS);
 
   // Add trash icons to 'Action' column
   const col = additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.ACTION)!;

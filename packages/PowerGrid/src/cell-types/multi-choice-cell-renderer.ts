@@ -4,11 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import {GridColumn} from 'datagrok-api/dg';
 
 export function getChoices(column: DG.Column): string[] | null {
-  const choicesStr = column?.getTag(DG.TAGS.CHOICES);
-  if (!choicesStr)
+  const choices = column?.meta.choices;
+  if (!choices || choices.length === 0)
     return null;
 
-  return JSON.parse(choicesStr);
+  return choices;
 }
 
 

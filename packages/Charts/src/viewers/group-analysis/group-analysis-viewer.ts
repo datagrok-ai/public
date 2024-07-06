@@ -264,7 +264,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   getStatisticsCol(column: IAnalyzedColumn, length: number) {
     const col = DG.Column.float(`pValue(${column.colName}`, length).init((i) => this.performTTest(column.colName, i));
-    col.tags[DG.TAGS.FORMAT] = '#.0000000';
+    col.meta.format = '#.0000000';
     return col;
   }
 

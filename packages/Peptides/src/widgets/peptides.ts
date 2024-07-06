@@ -44,7 +44,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
-    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
+    col.meta.units !== NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
       callback: async (): Promise<boolean> => false,

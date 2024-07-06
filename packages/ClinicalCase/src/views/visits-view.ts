@@ -84,7 +84,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT_NAME, VISIT_START_DATE, []);
     this.pivotedSv.columns.names().forEach((col) => {
       if (this.pivotedSv.getCol(col).name !== VISIT_START_DATE)
-        this.pivotedSv.getCol(col).tags.format = 'yyyy-MM-dd';
+        this.pivotedSv.getCol(col).meta.format = 'yyyy-MM-dd';
 
       this.pivotedSv.getCol(col).name = col.replace(` first(${VISIT_START_DATE})`, '');
     });

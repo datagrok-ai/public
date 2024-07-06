@@ -121,7 +121,7 @@ function testPropertiesDict(
 ) {
   const col = DG.Column.fromStrings('seq', [seq]) as DG.Column<string>;
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, units);
+  col.meta.units = units;
   if (separator) col.setTag(bioTAGS.separator, separator);
   if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
   const sh = SeqHandler.forColumn(col);

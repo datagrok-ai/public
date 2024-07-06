@@ -329,11 +329,11 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const paramsGrid = DG.Grid.create(paramsDF);
   paramsGrid.root.style.width = '100%';
-  paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
-    .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
-  paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
-    .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
-  paramsGrid.setOptions({ 'showColumnGridlines': false });
+  paramsGrid.dataFrame.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
+    .meta.choices = funcParamTypes;
+  paramsGrid.dataFrame.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
+    .meta.choices = [DIRECTION.INPUT, DIRECTION.OUTPUT];
+  paramsGrid.setOptions({'showColumnGridlines': false});
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';

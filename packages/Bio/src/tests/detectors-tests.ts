@@ -496,7 +496,7 @@ export async function _testNegList(list: string[]): Promise<void> {
   const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'col1', list);
   const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    const msg = `Negative test detected semType='${col.semType}', units='${col.meta.units}'.`;
     throw new Error(msg);
   }
 }
@@ -510,7 +510,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
     col.semType = semType;
 
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    const msg = `Negative test detected semType='${col.semType}', units='${col.meta.units}'.`;
     throw new Error(msg);
   }
 }
@@ -525,7 +525,7 @@ export async function _testPosList(list: string[], units: NOTATION,
     col.semType = semType;
 
   expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.meta.units, units);
   expect(col.getTag(bioTAGS.aligned), aligned);
   expect(col.getTag(bioTAGS.alphabet), alphabet);
   if (separator)
@@ -553,7 +553,7 @@ export async function _testPos(
     col.semType = semType;
 
   expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.meta.units, units);
   expect(col.getTag(bioTAGS.aligned), aligned);
   expect(col.getTag(bioTAGS.alphabet), alphabet);
   if (separator)

@@ -222,7 +222,7 @@ export class Pdbqt {
     const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, molColName, len)
       .init((rowI) => this.models[rowI].toPdb());
     molCol.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
-    molCol.setTag(DG.TAGS.UNITS, Molecule3DUnits.pdb);
+    molCol.meta.units = Molecule3DUnits.pdb;
     molCol.setTag(DockingTags.dockingRole, DockingRole.ligand);
     const nameCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'name', len)
       .init((rowI) => this.models[rowI].name);

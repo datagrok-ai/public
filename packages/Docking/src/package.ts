@@ -205,7 +205,7 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
 
 function formatColumns(autodockResults: DG.DataFrame) {
   for (let col of autodockResults.columns.numerical)
-    col.setTag(DG.TAGS.FORMAT, '0.00');
+    col.meta.format = '0.00';
 }
 
 export function addColorCoding(column: DG.GridColumn) {

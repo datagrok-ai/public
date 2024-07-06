@@ -128,7 +128,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
       }
       const sh = SeqHandler.forColumn(this.column!);
       this.columnName ??= this.column?.name;
-      this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
+      this.notation ??= this.column?.meta.units!;
 
       this.bioFilter = this.notation === NOTATION.FASTA ?
         new FastaBioFilter() : this.notation === NOTATION.SEPARATOR ?

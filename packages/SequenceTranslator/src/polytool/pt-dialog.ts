@@ -90,7 +90,7 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
   const cccSubs = grok.events.onCurrentCellChanged.subscribe(() => {
     const cell = grok.shell.tv.dataFrame.currentCell;
 
-    if (cell.column.semType === DG.SEMTYPE.MACROMOLECULE && cell.column.tags[DG.TAGS.UNITS] === NOTATION.HELM)
+    if (cell.column.semType === DG.SEMTYPE.MACROMOLECULE && cell.column.meta.units === NOTATION.HELM)
       helmInput.setHelmString(cell.value);
   });
 

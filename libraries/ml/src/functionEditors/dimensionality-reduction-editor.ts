@@ -230,7 +230,7 @@ export class DimReductionBaseEditor {
           const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
           const typeSuported = !types.length || types.includes(col.type);
           const unitsSupported = !units.length ||
-            (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+            (col.meta.units && units.includes(col.meta.units));
           if (semTypeSupported && typeSuported && unitsSupported) {
             if (!this.columnFunctionsMap[col.name])
               this.columnFunctionsMap[col.name] = [];

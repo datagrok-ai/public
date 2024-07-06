@@ -52,7 +52,7 @@ export function _importTripos(bytes: Uint8Array): DG.DataFrame[] {
   const molCol = DG.Column.fromStrings('molecules', molfileArray);
 
   molCol.semType = DG.SEMTYPE.MOLECULE;
-  molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
+  molCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
 
   return [DG.DataFrame.fromColumns([molCol])];
 }

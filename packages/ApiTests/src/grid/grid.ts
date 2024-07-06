@@ -90,16 +90,11 @@ category('Grid', () => {
   });
 
   test('columnControlledValues', async () => {
-    demog.col('site')!.tags[DG.TAGS.CHOICES] = '["New York", "Buffalo"]';
-    demog.col('site')!.tags[DG.TAGS.AUTO_CHOICES] = 'New York';
+    const col = demog.col('site');
+    col!.meta.choices = ['New York', 'Buffalo'];
+    col!.meta.autoChoices = false;
 
-    const siteTags: string[] = Array.from(demog.col('site')!.tags);
-
-    if (!hasTag(siteTags, '.choices') ||
-      !hasTag(siteTags, '["New York", "Buffalo"]') ||
-      !hasTag(siteTags, '.auto-choices') ||
-      !hasTag(siteTags, 'New York'))
-      
+    if (JSON.stringify(col?.meta.choices) !== '["New York", "Buffalo"]' || col?.meta.autoChoices !== false)
       throw new Error('Column Controlled Values (Choices) error');
   });
 

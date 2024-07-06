@@ -167,7 +167,7 @@ class BioPackageDetectors extends DG.Package {
       ) {
         const statsAsHelm = this.getStats(categoriesSample, 2,
           this.getSplitterAsHelm(SEQ_SAMPLE_LENGTH_LIMIT));
-        col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+        col.meta.units = NOTATION.HELM;
 
         // alphabetSize calculated on (sub)sample of data is incorrect
         // const alphabetSize = Object.keys(statsAsHelm.freq).length;
@@ -246,7 +246,7 @@ class BioPackageDetectors extends DG.Package {
           return null;
         }
 
-        col.setTag(DG.TAGS.UNITS, units);
+        col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
@@ -293,8 +293,9 @@ class BioPackageDetectors extends DG.Package {
         }
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
-        col.setTag(DG.TAGS.UNITS, units);
-        if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
+        col.meta.units = units;
+        if (separator)
+          col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, aligned);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
         if (alphabet === ALPHABET.UN) {

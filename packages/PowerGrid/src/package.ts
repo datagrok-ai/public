@@ -294,7 +294,7 @@ export function demoCellTypes() {
   const dis = t.col('disease')!;
   dis.set(0, 'Anxiety, Glaucoma');
   dis.set(1, 'Hepatitis A, Glaucoma');
-  dis.setTag(DG.TAGS.CHOICES, JSON.stringify(['Anxiety', 'Hepatitis A', 'Glaucoma']));
+  dis.meta.choices = ['Anxiety', 'Hepatitis A', 'Glaucoma'];
   dis.setTag(DG.TAGS.CELL_RENDERER, 'MultiChoice');
 
   const site = t.col('site')!;

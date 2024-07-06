@@ -12,10 +12,10 @@ category('Grid: Color Coding', () => {
   test('colorCoding.api', async () => {
     v = grok.shell.addTableView(demog);
     grid = v.grid;
-    demog.col('age')!.colors.setLinear();
-    demog.col('age')!.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
-    demog.col('sex')!.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
-    demog.col('started')!.colors.setLinear([DG.Color.white, DG.Color.red]);
+    demog.col('age')!.meta.colors.setLinear();
+    demog.col('age')!.meta.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
+    demog.col('sex')!.meta.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
+    demog.col('started')!.meta.colors.setLinear([DG.Color.white, DG.Color.red]);
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
