@@ -374,7 +374,7 @@ class TableInputManager {
   private createTableInput(): DG.InputBase<DG.DataFrame | null> {
     const currentlySelectedTable = this.eventBus.getSelectedTable();
 
-    const tableInput = ui.input.table('Table', {table: currentlySelectedTable, items: this.availableTables,
+    const tableInput = ui.input.table('Table', {value: currentlySelectedTable!, items: this.availableTables,
       onValueChanged: (input) => {
         // WARNING: non-null check necessary to prevent resetting columns to
         // null upon handling onTableAdded

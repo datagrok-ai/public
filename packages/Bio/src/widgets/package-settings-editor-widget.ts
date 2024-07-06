@@ -35,7 +35,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
       value: _package.properties.tooltipWebLogo,
       nullable: false,
       onValueChanged: () => {
-        _package.properties.tooltipWebLogo = tooltipWebLogoInput.value;
+        _package.properties.tooltipWebLogo = tooltipWebLogoInput.value!;
       },
       tooltipText: this.tooltipWebLogo.description,
     });
@@ -44,7 +44,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
       value: _package.properties.defaultSeparator,
       items: ['.', '/', '-'],
       onValueChanged: () => {
-        _package.properties.defaultSeparator = defaultSeparatorInput.value;
+        _package.properties.defaultSeparator = defaultSeparatorInput.value!;
       },
       tooltipText: this.defaultSeparator.description,
     });
