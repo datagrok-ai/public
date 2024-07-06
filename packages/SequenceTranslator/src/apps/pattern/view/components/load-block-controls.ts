@@ -93,14 +93,12 @@ export class PatternLoadControlsManager {
     if (this.dataManager.getOtherUsersPatternNames().length > 0)
       possibleValues.push(this.dataManager.getOtherUsersAuthorshipCategory());
 
-    const authorChoiceInput = ui.choiceInput(
-      'Author',
-      this.eventBus.getSelectedAuthor(),
-      possibleValues,
-      (userName: string) => {
-        this.authorSelectedByUser = true;
-        this.eventBus.selectAuthor(userName);
-      }
+    const authorChoiceInput = ui.input.choice(
+      'Author', {value: this.eventBus.getSelectedAuthor(), items: possibleValues,
+        onValueChanged: (input) => {
+          this.authorSelectedByUser = true;
+          this.eventBus.selectAuthor(input.value);
+        }}
     );
     this.setAuthorChoiceInputStyle(authorChoiceInput);
     authorChoiceInput.setTooltip('Select pattern author');

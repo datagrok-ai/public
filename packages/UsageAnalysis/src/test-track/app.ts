@@ -540,9 +540,9 @@ export class TestTrack extends DG.ViewBase {
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
-    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', { value: value });
+    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', {value: value});
     stringInput.nullable = false;
-    const textInput = ui.textInput(status === FAILED ? 'Keys' : 'Reasons', value, () => { });
+    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', {value: value});
     textInput.nullable = false;
     let input = stringInput;
     const tabControl = ui.tabControl({

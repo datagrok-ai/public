@@ -37,9 +37,7 @@ export class GetRegionFuncEditor {
   ) {
     const getDesc = (paramName: string) => this.call.inputParams[paramName].property.description;
 
-    this.inputs.table = ui.tableInput('Table',
-      this.call.inputParams['table'].value ?? grok.shell.tv.dataFrame, undefined,
-      () => {});
+    this.inputs.table = ui.input.table('Table', {value: this.call.inputParams['table'].value ?? grok.shell.tv.dataFrame});
 
     const seqColValue = this.call.inputParams['sequence'].value ??
       this.inputs.table.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);

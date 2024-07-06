@@ -366,7 +366,7 @@ async function openFse(v: DG.View, functionCode: string) {
       gc.customText = '';
   });
 
-  const codeArea = ui.textInput('', '');
+  const codeArea = ui.input.textArea('', {value: ''});
   const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang[language] });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);

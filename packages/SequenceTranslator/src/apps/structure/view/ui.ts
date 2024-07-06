@@ -33,7 +33,7 @@ class StructureAppLayout {
     this.onInvalidInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
+        (key) => [key, ui.input.textArea('', {value: '', onValueChanged: () => { this.onInput.next(); }})]
       )
     );
     this.useChiralInput = ui.input.bool('Use chiral', {value: true});

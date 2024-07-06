@@ -494,7 +494,7 @@ export async function _demoDatabases3(): Promise<void> {
 
   const loadNewQuery = (id: string) => {
     ui.empty(queryPanel);
-    const queryDiv = ui.textInput(`Compound activity details for target = ${id}`, query.replace(`~id~`, id));
+    const queryDiv = ui.input.textArea(`Compound activity details for target = ${id}`, {value: query.replace(`~id~`, id)});
     queryDiv.input.style.height = '100%';
     queryPanel.append(queryDiv.root);
     const dBQuery = connection!.query('', query.replace(`~id~`, id));
@@ -572,7 +572,7 @@ LIMIT 50
   runButton.style.width = '150px';
   runButton.style.marginLeft = '80px';
 
-  const queryPanel = ui.textInput('', query);
+  const queryPanel = ui.input.textArea('', {value: query});
   queryPanel.input.style.width = '100%';
   queryPanel.input.style.minHeight = '350px';
   const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});

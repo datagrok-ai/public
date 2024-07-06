@@ -31,15 +31,11 @@ export class IconTool extends DG.ViewBase {
     $(fileButtons).css('margin', '0');
     $(fileButtons).children('label').text('Add image');
 
-    const blendMode = ui.choiceInput('Blend mode', 'normal', ['normal', 'multiply', 'darken', 'lighter', 'screen', 'overlay', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'color', 'luminosity'], (value)=>setBlendMode(value));
-    //@ts-ignore
-    const text = ui.stringInput('Add text', '', (value) => setText(value, fontColorPicker.value, fontSize.value, fontWeight.value));
-    //@ts-ignore
-    const fontSize = ui.intInput('Text size', '60', (value) => setText(text.value, fontColorPicker.value, value, fontWeight.value));
+    const blendMode = ui.input.choice('Blend mode', {value: 'normal', items: ['normal', 'multiply', 'darken', 'lighter', 'screen', 'overlay', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'color', 'luminosity'], onValueChanged: (input) => setBlendMode(input.value)});
+    const text = ui.input.string('Add text', {value: '', onValueChanged: (input) => setText(input.value, fontColorPicker.value, fontSize.value, fontWeight.value)});
+    const fontSize = ui.input.int('Text size', {value: 60, onValueChanged: (input) => setText(text.value, fontColorPicker.value, input.value, fontWeight.value)});
     $(fontSize.input).attr('type', 'number');
-    //@ts-ignore
-    const fontWeight = ui.choiceInput('Font weight', 'normal', ['lighter', 'normal', 'bold'], (value) => setText(text.value, fontColorPicker.value, fontSize.value, value));
-    //@ts-ignore
+    const fontWeight = ui.input.choice('Font weight', {value: 'normal', items: ['lighter', 'normal', 'bold'], onValueChanged: (input) => setText(text.value, fontColorPicker.value, fontSize.value, input.value)});
     fontWeight.input.style.width='100%';
 
     const textX = ui.element('input', 'textX');

@@ -169,14 +169,14 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Expression" input field. */
   initInputExpression(): DG.InputBase {
-    const control = ui.textInput('', '', async () => {
+    const control = ui.input.textArea('', {value: '', onValueChanged: async () => {
       // The first characters of the Expression become the default name of the new column:
       (this.inputName!.input as HTMLInputElement).placeholder =
           ((!control.value || (control.value.length > this.maxAutoNameLength)) ?
             this.placeholderName :
             control.value).trim();
       await this.updatePreview();
-    });
+    }});
     control.setTooltip(this.tooltips['expression']);
 
     const input = control.input as HTMLInputElement;

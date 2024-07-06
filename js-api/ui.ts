@@ -836,27 +836,27 @@ export namespace input {
     return input;
   }
 
-  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Int, name, options);
   }
 
-  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt> {
+  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt | null> {
     return _create(d4.InputType.BigInt, name, options);
   }
 
-  export function qNum(name: string, options?: IInputInitOptions): InputBase<number> {
+  export function qNum(name: string, options?: IInputInitOptions): InputBase<number | null> {
     return _create(d4.InputType.QNum, name, options);
   }
 
-  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Slider, name, options);
   }
 
-  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T | null> {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
     return _create(d4.InputType.MultiChoice, name, options);
   }
 
@@ -868,7 +868,7 @@ export namespace input {
     return _create(d4.InputType.Search, name, options);
   }
 
-  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Float, name, options);
   }
 
@@ -876,11 +876,11 @@ export namespace input {
     return _create(d4.InputType.Date, name, options);
   }
 
-  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string>> {
+  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string> | null> {
     return _create(d4.InputType.Map, name, options);
   }
 
-  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
+  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean | null> {
     return _create(d4.InputType.Bool, name, options);
   }
 
@@ -888,11 +888,11 @@ export namespace input {
     return _create(d4.InputType.Switch, name, options);
   }
 
-  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo> {
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any>> {
+  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
 
@@ -900,7 +900,7 @@ export namespace input {
     return _create(d4.InputType.Molecule, name, options);
   }
 
-  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column | null> {
     return _create(d4.InputType.Column, name, options);
   }
 
@@ -908,7 +908,7 @@ export namespace input {
     return _create(d4.InputType.Columns, name, options);
   }
 
-  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame> {
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame | null> {
     return _create(d4.InputType.Table, name, options);
   }
 
@@ -920,19 +920,19 @@ export namespace input {
     return _create(d4.InputType.Color, name, options);
   }
 
-  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
-  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Image, name, options);
   }
 

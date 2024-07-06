@@ -152,10 +152,7 @@ export class PatternEditControlsManager {
   }
 
   private createPatternCommentInput(): StringInput {
-    const patternCommentInput = ui.textInput(
-      'Comment',
-      this.eventBus.getComment()
-    );
+    const patternCommentInput = ui.input.textArea('Comment', {value: this.eventBus.getComment()});
 
     $(patternCommentInput.root).addClass('st-pattern-text-input');
 
@@ -171,10 +168,7 @@ export class PatternEditControlsManager {
   }
 
   private createPatternNameInputBlock(): HTMLElement {
-    const patternNameInput = ui.textInput(
-      'Pattern name',
-      this.eventBus.getPatternName()
-    );
+    const patternNameInput = ui.input.textArea('Pattern name', {value: this.eventBus.getPatternName()});
 
     $(patternNameInput.root).addClass('st-pattern-text-input');
 

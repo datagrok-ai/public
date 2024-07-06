@@ -127,9 +127,9 @@ export class DimReductionBaseEditor {
         };
       });
 
-      this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
+      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
         this.onTableInputChanged();
-      });
+      }});
       this.onTableInputChanged();
 
       this.regenerateColInput();
@@ -197,8 +197,8 @@ export class DimReductionBaseEditor {
     private getColInput() {
       const firstSupportedColumn = this.tableInput.value?.columns.toList()
         .find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
-      const input = ui.columnInput('Column', this.tableInput.value!, firstSupportedColumn,
-        () => this.onColumnInputChanged(), {filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
+      const input = ui.input.column('Column', {table: this.tableInput.value!, value: firstSupportedColumn!,
+        onValueChanged: () => this.onColumnInputChanged(), filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
       if (!this.colInputRoot)
         this.colInputRoot = input.root;
       return input;

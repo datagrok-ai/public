@@ -63,12 +63,11 @@ export class SubstructureSearchDialog {
 
   createUI(): void {
     const dataframe = grok.shell.tv.dataFrame;
-    const seqColOptions = {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE};
-    this.columnsInput = ui.columnInput('Column', dataframe, this.col, (column: DG.Column) => {
-      this.col = column;
+    this.columnsInput = ui.input.column('Column', {table: dataframe, value: this.col, onValueChanged: (input) => {
+      this.col = input.value;
       this.updateNotationDiv();
       this.updateInputs();
-    }, seqColOptions);
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
 
     this.substructureInput = ui.input.string('Substructure', {value: ''});
 

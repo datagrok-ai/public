@@ -22,11 +22,11 @@ category('UI: Inputs', () => {
       'choiceInput': ui.input.choice('', {value: '1', items: ['1', '2', '3']}),
       'multiChoiceInput': ui.input.multiChoice('', {value: [], items: []}),
       // 'dateInput': ui.input.date('', {value: dayjs('2001-01-01')}),
-      'textInput': ui.textInput('', ''),
+      'textInput': ui.input.textArea('', {value: ''}),
       'searchInput': ui.input.search('', {value: ''}),
       'columnInput': ui.input.column('', {table: t, value: t.col('age')!}),
       'columnsInput': ui.input.columns('', {table: t, onValueChanged: () => null}),
-      'tableInput': ui.tableInput('', tables[0], tables),
+      'tableInput': ui.input.table('', {value: tables[0], items: tables}),
       'colorInput': ui.input.color('', {value: '#ff0000'}),
     };
     v = grok.shell.newView('');
@@ -193,7 +193,6 @@ category('UI: Choice input', () => {
     const input = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
     view.root.appendChild(input.root);
 
-    //@ts-ignore
     input.value = null;
     expect(input.value == null);
     input.value = 'Male';

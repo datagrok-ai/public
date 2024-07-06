@@ -69,25 +69,24 @@ export async function multipleSequenceAlignmentUI(
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
     let prevSeqCol = seqCol;
-    const colInput = ui.columnInput(
-      'Sequence', table, seqCol,
-      async (valueCol: DG.Column) => {
-        if (!valueCol || valueCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+    const colInput = ui.input.column(
+      'Sequence', {table: table, value: seqCol, onValueChanged: async (input: DG.InputBase<DG.Column<string>>): Promise<void> => {
+        if (!input.value || input.value.semType !== DG.SEMTYPE.MACROMOLECULE) {
           okBtn.disabled = true;
           await delay(0); // to
           colInput.value = prevSeqCol as DG.Column<string>;
           return;
         }
-        prevSeqCol = valueCol;
+        prevSeqCol = input.value;
         okBtn.disabled = false;
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
           methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
         );
-      }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
+      }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
+    const clustersColInput = ui.input.column('Clusters', {table: table, value: options.clustersCol!});
     clustersColInput.nullable = true;
 
     const dlg = ui.dialog('MSA')

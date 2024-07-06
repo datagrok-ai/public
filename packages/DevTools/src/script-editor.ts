@@ -237,7 +237,7 @@ function setScriptRibbon(v: DG.View, doc: any) {
         doc.replaceRange('ui.input.columns(\'Label\', {table: table})\n', cursor);
         break;
       case 'Table':
-        doc.replaceRange('ui.tableInput(\'Label\', tables[0], tables, (t) => grok.shell.info(t.name))\n', cursor);
+        doc.replaceRange('ui.input.table(\'Label\', {value: tables[0], items: tables, onValueChanged: (input) => grok.shell.info(input.value.name))\n', cursor);
         break;
       case 'Molecule':
         doc.replaceRange('ui.input.molecule(\'Label\', {value: \'CN1CCC(O)(CC1)c2ccccc2\'})\n', cursor);

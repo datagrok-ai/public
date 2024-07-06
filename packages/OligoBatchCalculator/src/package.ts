@@ -301,7 +301,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     });
   }
 
-  const inputSequences = ui.textInput('', DEFAULT_INPUT, (txt: string) => render(txt));
+  const inputSequences = ui.input.textArea('', {value: DEFAULT_INPUT, onValueChanged: (input) => render(input.value)});
   const yieldAmount = ui.input.float('', {value: 1, onValueChanged: () => render(inputSequences.value)});
   const units = ui.input.choice('', {value: UNITS.OPTICAL_DENSITY, items: Object.values(UNITS), onValueChanged: () => render(inputSequences.value)});
 
@@ -370,9 +370,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   view.box = true;
   view.path = '/apps/OligoBatchCalculator/';
   view.setRibbonPanels([[
-    ui.switchInput('Show additional modifications', true, (v: boolean) => {
-      (v) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide();
-    }).root,
+    ui.input.toggle('Show additional modifications', {value: true, onValueChanged: (input) => {
+      (input.value) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide();
+    }}).root,
   ]]);
 
   editModification(additionalModsDf, additionaModifsGrid);

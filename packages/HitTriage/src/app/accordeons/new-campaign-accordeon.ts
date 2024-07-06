@@ -45,7 +45,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     }
   };
 
-  const dfInput = ui.tableInput('Dataframe', null, undefined, onFileChange);
+  const dfInput = ui.input.table('Dataframe', {onValueChanged: onFileChange});
   await onFileChange();
   const fileInputDiv = ui.div([dfInput, errorDiv]);
   if (Object.keys(dataSourceFunctionsMap).length === 0) {

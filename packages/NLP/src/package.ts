@@ -21,7 +21,7 @@ let translate: AWS.Translate;
 const sourceLangInput = ui.input.choice('', {value: 'Undetermined', items: [...Object.keys(lang2code), 'Undetermined', 'Other']});
 const targetLangInput = ui.input.choice('', {value: 'English', items: [...Object.keys(lang2code), 'Choose...']});
 const headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
-const translationArea = ui.textInput('', '');
+const translationArea = ui.input.textArea('', {value: ''});
 translationArea.input.classList.add('nlp-translation-area');
 const mainDiv = ui.divV([headerDiv, translationArea.root], 'nlp-main-div');
 const mainWidget = new DG.Widget(mainDiv);

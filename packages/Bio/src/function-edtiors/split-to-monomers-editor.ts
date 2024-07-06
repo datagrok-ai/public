@@ -20,9 +20,9 @@ export class SplitToMonomersFunctionEditor {
   }
 
   constructor() {
-    this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
+    this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => {
       this.onTableInputChanged();
-    });
+    }});
     //TODO: remove when the new version of datagrok-api is available
     const seqColValue = this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     this.seqColInput = ui.input.column('Sequence', {table: this.tableInput.value!, value: seqColValue,

@@ -64,7 +64,8 @@ export function convert(col?: DG.Column): void {
     ]));
   };
 
-  const targetColumnInput = ui.columnInput('Column', grok.shell.t, srcCol, toggleColumn);
+  const targetColumnInput = ui.input.column('Column', {table: grok.shell.t, value: srcCol,
+    onValueChanged: (input) => toggleColumn(input.value)});
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);

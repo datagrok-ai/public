@@ -139,12 +139,9 @@ class LibraryControlsManager {
     const logPrefix = `${this.toLog()}.createLibInput()`;
     _package.logger.debug(`${logPrefix}, libFileName = '${libFileName}', start`);
     const isMonomerLibrarySelected = !this.userLibSettings.exclude.includes(libFileName);
-    const libInput = ui.boolInput(
-      libFileName,
-      isMonomerLibrarySelected,
-      (isSelected: boolean) => {
-        this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, isSelected);
-      });
+    const libInput = ui.input.bool(libFileName, {value: isMonomerLibrarySelected, onValueChanged: (input) => {
+      this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, input.value);
+    }});
     ui.tooltip.bind(libInput.root, `Include monomers from ${libFileName}`);
     const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
     ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);

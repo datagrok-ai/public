@@ -73,10 +73,10 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     DG.Utils.firstOrNull(df.columns.numerical);
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
-  const activityScalingMethod = ui.choiceInput(
-    'Scaling', C.SCALING_METHODS.NONE, Object.values(C.SCALING_METHODS),
-    async (currentMethod: C.SCALING_METHODS): Promise<void> => {
-      scaledCol = scaleActivity(activityColumnChoice.value!, currentMethod);
+  const activityScalingMethod = ui.input.choice(
+    'Scaling', {value: C.SCALING_METHODS.NONE, items: Object.values(C.SCALING_METHODS),
+    onValueChanged: async (input): Promise<void> => {
+      scaledCol = scaleActivity(activityColumnChoice.value!, input.value);
 
       const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
         filteringEnabled: false, valueColumnName: C.COLUMNS_NAMES.ACTIVITY, legendVisibility: 'Never', showXAxis: true,
@@ -84,7 +84,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       });
       histogramHost.lastChild?.remove();
       histogramHost.appendChild(hist.root);
-    }) as DG.InputBase<C.SCALING_METHODS | null>;
+    }}) as DG.InputBase<C.SCALING_METHODS | null>;
   activityScalingMethod.setTooltip('Activity column transformation method');
 
   const activityScalingMethodState = (): void => {
@@ -93,8 +93,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
+  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
+    onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: () => {
     if (clustersColumnChoice.value) {

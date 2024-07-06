@@ -136,9 +136,9 @@ export class MultiColumnDimReductionEditor {
 
       this.postProcessingEditor = new PostProcessingFuncEditor();
 
-      this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
+      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
         this.onTableInputChanged();
-      });
+      }});
       this.onTableInputChanged();
       let settingsOpened = false;
 
