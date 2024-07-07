@@ -56,8 +56,8 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
   const showStructures = ui.input.bool('Structures',
-    {value: col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
-      onValueChanged: (input) => col.tags['cell.renderer'] = input.value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
+    {value: col.tags[DG.TAGS.CELL_RENDERER] == DG.SEMTYPE.MOLECULE,
+      onValueChanged: (input) => col.tags[DG.TAGS.CELL_RENDERER] = input.value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
   const rdKitInputs = ui.form([
     showStructures,

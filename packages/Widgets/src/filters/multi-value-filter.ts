@@ -69,7 +69,7 @@ export class MultiValueFilter extends DG.Filter {
 
   render() {
     const values = new Set();
-    const separator = ' | '; //;this.column.tags[DG.TAGS.MULTI_VALUE_SEPARATOR];
+    const separator = ' | '; //; this.column.meta.multiValueSeparator;
 
     for (let i = 0; i < this.column!.length; i++) {
       const vv = this.column!.get(i).split(separator);

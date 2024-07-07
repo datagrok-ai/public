@@ -250,9 +250,11 @@ export function addPinnedColumn(gridCol: DG.GridColumn) : PinnedColumn {
 
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
-  const col1 = DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar');
+  const col1 = DG.Column.fromStrings('kg', ['a', 'b']).setTag('foo', 'bar');
   col1.meta.units = 'kg';
-  const col2 = DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar');
+  col1.semType = 'test';
+  const col2 = DG.Column.fromStrings('ton', ['a', 'b']).setTag('foo', 'bar');
+  col2.semType = 'test';
   col2.meta.units = 'ton';
   const t = DG.DataFrame.fromColumns([col1, col2]);
 

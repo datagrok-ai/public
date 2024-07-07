@@ -14,7 +14,7 @@ export function _setPeptideColumn(col: DG.Column): void {
 }
 
 function addCommonTags(col: DG.Column<any>) {
-  col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
+  col.semType =DG.SEMTYPE.MACROMOLECULE;
   col.setTag('aligned', ALIGNMENT.SEQ);
   col.setTag('alphabet', ALPHABET.PT);
 }
