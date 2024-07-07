@@ -123,8 +123,8 @@ export class TreeUtils {
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
-        const colorCodingType = columns[colIdx].getTag(DG.TAGS.COLOR_CODING_TYPE);
-        if (colorCodingType !== 'Off' && colorCodingType !== null && inherit) {
+        const colorCodingType = columns[colIdx].meta.colors.getType();
+        if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
           node.itemStyle = {
             color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
           };

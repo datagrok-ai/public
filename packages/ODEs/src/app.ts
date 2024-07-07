@@ -133,7 +133,7 @@ function contrCompletions(context: any) {
 }
 
 /** Return options of line chart */
-function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartLookSettings> {
+function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings> {
   const count = colNames.length;
   return {
     xColumnName: colNames[0],

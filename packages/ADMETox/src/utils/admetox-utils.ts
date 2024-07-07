@@ -106,8 +106,8 @@ function applyColorCoding(col: DG.GridColumn, model: Model): void {
   if (!model.coloring) return;
   col.isTextColorCoded = true;
   const { type, min, max, colors } = model.coloring;
-  if (type === 'Linear') {
-    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+  if (type === DG.COLOR_CODING_TYPE.LINEAR) {
+    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;

@@ -243,7 +243,7 @@ function pricesDataToTable(items: Price[]): DG.DataFrame {
   for (const name of Array.from(packsArrays.keys()).sort()) {
     const column = DG.Column.fromList(DG.TYPE.FLOAT, name, packsArrays.get(name));
     column.semType = 'Money';
-    column.setTag('format', 'money($)');
+    column.meta.format = 'money($)';
     table.columns.add(column);
   }
   return table;

@@ -290,7 +290,7 @@ export async function addTransformedColumn(
   const targetHelmCol = DG.Column.fromList('string', helmColName, targetList);
 
   addCommonTags(targetHelmCol);
-  targetHelmCol.setTag('units', NOTATION.HELM);
+  targetHelmCol.meta.units = NOTATION.HELM;
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');

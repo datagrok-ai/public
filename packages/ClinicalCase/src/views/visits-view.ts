@@ -257,10 +257,8 @@ export class VisitsView extends ClinicalCaseViewBase {
 
   private setColorPaletteForHeatMap(df: DG.DataFrame) {
     df.columns.names().forEach((col) => {
-      if (col !== SUBJECT_ID && col !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
-        df.col(col).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-        df.col(col).tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.white}, ${DG.Color.blue}]`;
-      }
+      if (col !== SUBJECT_ID && col !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD])
+        df.col(col).meta.colors.setLinear([DG.Color.white, DG.Color.blue]);
     });
   }
 
@@ -455,7 +453,7 @@ export class VisitsView extends ClinicalCaseViewBase {
             const plot = DG.Viewer.boxPlot(valueDf, {
               value: `${valCol}`,
               category: `${catCol}`,
-              labelOrientation: 'Horz',
+              labelOrientation: DG.TextOrientation.Horz,
               showCategorySelector: false,
               showValueSelector: false,
             });

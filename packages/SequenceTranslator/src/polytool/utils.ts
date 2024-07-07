@@ -8,7 +8,7 @@ import {ALPHABET, ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/m
 
 export function _setPeptideColumn(col: DG.Column): void {
   addCommonTags(col);
-  col.setTag('units', NOTATION.SEPARATOR);
+  col.meta.units = NOTATION.SEPARATOR;
   col.setTag('separator', '-');
   // col.setTag('cell.renderer', 'sequence');
 }

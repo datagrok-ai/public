@@ -250,10 +250,11 @@ export function addPinnedColumn(gridCol: DG.GridColumn) : PinnedColumn {
 
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
-  const t = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'kg'),
-    DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'ton')
-  ]);
+  const col1 = DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar');
+  col1.meta.units = 'kg';
+  const col2 = DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar');
+  col2.meta.units = 'ton';
+  const t = DG.DataFrame.fromColumns([col1, col2]);
 
   grok.shell.addTableView(t);
   grok.shell.info('Different renderers even though semantic types are the same');

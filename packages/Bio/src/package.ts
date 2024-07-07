@@ -447,7 +447,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
     return;
   const axesNames = getEmbeddingColsNames(table);
   const tags = {
-    'units': molecules.meta.units,
+    'units': molecules.meta.units!,
     'aligned': molecules.getTag(bioTAGS.aligned),
     'separator': molecules.getTag(bioTAGS.separator),
     'alphabet': molecules.getTag(bioTAGS.alphabet),

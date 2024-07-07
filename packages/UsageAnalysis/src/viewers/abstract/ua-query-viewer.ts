@@ -46,7 +46,7 @@ export abstract class UaQueryViewer extends UaViewer {
       }
       grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
         if (dataFrame.columns.byName('count') != null)
-          dataFrame.columns.byName('count').tags['format'] = '#';
+          dataFrame.columns.byName('count').meta.format = '#';
         const userColumn = dataFrame.columns.byName('user');
         if (userColumn != null) {
           const users: {[key: string]: string} = {};

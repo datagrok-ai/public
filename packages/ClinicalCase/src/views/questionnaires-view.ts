@@ -135,8 +135,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
         const pValue = this.getPValue(questionVisitNumDf);
         return pValue;
       });
-      df.col(`${it}`).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-      df.col(`${it}`).tags['.color-coding-conditional'] = `{"0-0.05":"#00FF00"}`;
+      df.col(`${it}`).meta.colors.setConditional({'0-0.05': '#00FF00'});
     });
     this.subscribeToGridCurrentRow(df);
     let grid = df.plot.grid();

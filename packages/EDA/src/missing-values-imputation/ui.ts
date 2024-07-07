@@ -110,7 +110,7 @@ export function runKNNImputer(): void {
   // Distance components
   let distType = DISTANCE_TYPE.EUCLIDEAN;
   const distTypeInput: DG.ChoiceInput<DISTANCE_TYPE> = ui.input.choice(TITLE.DISTANCE, {value: distType,
-    items: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], onValueChanged: () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN});
+    items: [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN], onValueChanged: () => distType = distTypeInput.value ?? DISTANCE_TYPE.EUCLIDEAN}) as DG.ChoiceInput<DISTANCE_TYPE>;
   distTypeInput.setTooltip(HINT.DISTANCE);
 
   // Target columns components (cols with missing values to be imputed)

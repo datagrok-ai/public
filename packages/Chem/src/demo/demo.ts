@@ -131,11 +131,9 @@ export async function _demoChemOverview(): Promise<void> {
       tv.grid.scrollToCell('MolWt', 0);
     })
     .step('Add color coding', async () => {
-            table.col('MolWt')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL,
-              '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');
-            table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
+            table.col('MolWt')!.meta.colors.setLinear();
+            table.col('NOCount')!.meta.colors.setConditional({'0 - 6.25': '#73aff5', '6.25 - 12.50': '#ffa500', '12.50 - 18.75': '#ff5140', '18.75 - 25': '#50af28'});
+            table.col('RingCount')!.meta.colors.setConditional();
             grok.shell.windows.showHelp = true;
             //@ts-ignore
             grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
@@ -294,7 +292,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
       scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
         table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
+        DG.SEMTYPE.MOLECULE, {'units': molecules.meta.units!}, encodingFunc,
         createTooltipElement, createPropPanelElement, undefined, 0.5);
       progressBar.close();
       await delay(1000);
