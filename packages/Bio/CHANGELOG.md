@@ -1,5 +1,14 @@
 # Bio changelog
 
+## 2.13.5 (2024-07-05)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+
 ## 2.13.4 (2024-07-02)
 
 ### Bug fixes
