@@ -67,7 +67,7 @@ Similarly to the text filter, you can control the logical operation between the 
 
 ### Free-text filter mode
 
-To switch expression filter to free-text mode, click the `Free text` icon on the filter. In this mode, you can enter custom search terms in a text form. The filter will parse the text and create expressions based on the entered search terms. It is also possible to use logical conditions to combine simple expressions, for example:
+To switch the expression filter to free-text mode, click the `Free text` icon on the filter. In this mode, you can enter custom search terms in a text form. The filter will parse the text and create expressions based on the entered search terms. It is also possible to use logical conditions to combine simple expressions, for example:
 
 * `age > 30 and height > 190`
 * `age > 30 and sex = F`
@@ -80,11 +80,11 @@ In case if column name contains spaces, you can put the column name inside of es
 
 ## Hierarchical filter
 
-Hierarchical filter can be used to organize column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, Sex and name, the hierarchical filter will show the values of the Name column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off.
+A hierarchical filter organizes column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, _Sex_ and _Name_, the hierarchical filter shows the values of the _Name_ column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off.
 
-Hierarchical filter can be added from filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
+The hierarchical filter can be added from the filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
 
-* To rearrange, add or remove columns, click on the 'tree' icon in the filter, enable needed columns and arrange them in desired order.
+* To rearrange, add or remove columns, click on the 'tree' icon in the filter, enable needed columns and arrange them in the desired order.
 * To navigate around the categories/subcategories, you can use your mouse or up/down arrows.
 * To expand/collapse the categories, click on the `>` icon on the left of the category name or use the right/left arrow buttons.
 * To toggle the category, click on the checkbox on the left of the category name or use the space bar.
@@ -118,12 +118,12 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
     values as categories in the filter group.
 
 * For [**multi-value columns**](https://community.datagrok.ai/t/visualization-related-updates/521/12?u=skalkin),
- use the **.multi-value-separator** column tag to
+ use the **column.meta.multiValueSeparator** to
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
   <details>
   <summary>Example</summary>
-  <pre> t.col('languages').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n'); </pre>
+  <pre> t.col('languages')meta.multiValueSeparator = '\n'; </pre>
   <img src="img/filters-multi-values.gif" alt="Filtering of multi-value cells"/>
   </details>
 

@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.35.8 (2024-07-03)
+
+- PLV: Fixed run loading to load author
+
 ## 1.35.7 (2024-07-01)
 
 - HistoryList: Fixed bug on batch deletion

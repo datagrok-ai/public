@@ -80,7 +80,7 @@ export async function _toAtomicLevel(
   const resColName = df.columns.getUnusedName(name);
   const resCol = DG.Column.fromStrings(resColName, molfileList);
   resCol.semType = DG.SEMTYPE.MOLECULE;
-  resCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
+  resCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
 
   return {col: resCol, warnings: molfileWarningList};
 }

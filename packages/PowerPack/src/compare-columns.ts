@@ -62,7 +62,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
   let firstColumnAdded = false;
   let secondColumnAdded = false;
 
-  const c1 = ui.choiceInput('Columns', '', grok.shell.table(t1.value).columns.names(), () => {
+  const c1 = ui.input.choice('Columns', {value: '', items: grok.shell.table(t1.value).columns.names(), onValueChanged: () => {
     firstColumnAdded = true;
     if (secondColumnAdded)
       showOutputs(t1, t2, c1, c2, outputs);
@@ -70,9 +70,9 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
       const columnsNames = grok.shell.table(t1.value).columns.names();
       c2.value = (columnsNames.indexOf(c1.value!) === 0) ? columnsNames[1] : columnsNames[0];
     }
-  });
+  }});
 
-  const c2 = ui.choiceInput('', '', grok.shell.table(t2.value).columns.names(), () => {
+  const c2 = ui.input.choice('', {value: '', items: grok.shell.table(t2.value).columns.names(), onValueChanged: () => {
     secondColumnAdded = true;
     if (firstColumnAdded)
       showOutputs(t1, t2, c1, c2, outputs);
@@ -80,7 +80,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
       const columnsNames = grok.shell.table(t2.value).columns.names();
       c1.value = (columnsNames.indexOf(c2.value!) === 0) ? columnsNames[1] : columnsNames[0];
     }
-  });
+  }});
 
   return ui.divH([c1.root, c2.root]);
 }
@@ -93,23 +93,23 @@ export function compareColumns() {
   let firstTableAdded = false;
   let secondTableAdded = false;
 
-  const t1 = ui.choiceInput('Tables', '', tablesNames, () => {
+  const t1 = ui.input.choice('Tables', {value: '', items: tablesNames, onValueChanged: () => {
     firstTableAdded = true;
     if (secondTableAdded) {
       columnsInputs.innerHTML = '';
       columnsInputs.append(addCols(t1, t2, outputs));
     } else if (tablesNames.length === 1)
       t2.value = t1.value;
-  });
+  }});
 
-  const t2 = ui.choiceInput('', '', tablesNames, () => {
+  const t2 = ui.input.choice('', {value: '', items: tablesNames, onValueChanged: () => {
     secondTableAdded = true;
     if (firstTableAdded) {
       columnsInputs.innerHTML = '';
       columnsInputs.append(addCols(t1, t2, outputs));
     } else if (tablesNames.length === 1)
       t1.value = t2.value;
-  });
+  }});
 
   const columnsInputs = ui.div([]);
   const outputs = ui.div([]);

@@ -17,6 +17,7 @@ with their specific parameters are the following:
 | [Git](./git.md)                  |                |          | [See the list](./git.md#connection-parameters)         |
 | [Google Cloud](./googlecloud.md) |                |          | [See the list](./googlecloud.md#connection-parameters) |
 | [S3](./s3.md)                    |                |          | [See the list](./s3.md#connection-parameters)          |
+| [Sharepoint / OneDrive](./sharepoint.md)                    |                |          | [See the list](./sharepoint.md#connection-parameters)          |
 
 
 See also:

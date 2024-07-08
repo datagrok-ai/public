@@ -2082,7 +2082,7 @@ export class DropDown {
 
 export class TypeAhead extends InputBase {
   constructor(name: string, config: TypeAheadConfig) {
-    const inputElement = ui.stringInput(name, '');
+    const inputElement = ui.input.string(name, {value: ''});
     super(inputElement.dart);
 
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
@@ -2110,7 +2110,7 @@ export class TagsInput extends InputBase {
 
 
   constructor(name: string, config?: TagsInputConfig) {
-    super(ui.stringInput(name, '').dart);
+    super(ui.input.string(name, {value: ''}).dart);
 
     this._addTagIcon = (config?.showButton ?? true) ?
       ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :

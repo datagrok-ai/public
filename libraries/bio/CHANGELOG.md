@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.4 (2024-07-02)
+
+Fix types ISeqMonomer from Helm
+
 ## 5.42.3 (2024-06-26)
 
 ### Bug fixes

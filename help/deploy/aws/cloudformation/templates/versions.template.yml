@@ -11,7 +11,6 @@ Metadata:
           - GrokSpawnerVersion
           - JKGVersion
           - JNVersion
-          - GrokComputeVersion
           - H2oVersion
     ParameterLabels:
       DatagrokVersion:
@@ -24,8 +23,6 @@ Metadata:
         default: 'Jupyter Kernel Gateway Version'
       JNVersion:
         default: 'Jupyter Notebook Version'
-      GrokComputeVersion:
-        default: 'Grok Compute Version'
       H2oVersion:
         default: 'H2O Version'
 Parameters:

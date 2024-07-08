@@ -238,9 +238,9 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
   const dialog = ui.dialog('Descriptors');
   let columnSelector: DG.InputBase;
   if (dataFrame) {
-    columnSelector = ui.columnInput('Molecules', dataFrame,
-      dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).find((_) => true) ?? null, null,
-      {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+    //@ts-ignore
+    columnSelector = ui.input.column('Molecules', {table: dataFrame, value: dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)
+      .find((_) => true) ?? null, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
     columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
     dialog.add(columnSelector.root);
   }

@@ -46,7 +46,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
       return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
   scaledCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-  scaledCol.setTag(DG.TAGS.FORMULA, scaling);
+  scaledCol.meta.formula = scaling;
   return scaledCol;
 }
 
@@ -116,7 +116,7 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
       continue;
 
 
-    const color = DG.Color.toHtml(splitCol.colors.getColor(rawData.indexOf(categoryIdx)));
+    const color = DG.Color.toHtml(splitCol.meta.colors.getColor(rawData.indexOf(categoryIdx)));
     const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
     labels.push(label);
   }
@@ -165,7 +165,7 @@ export function getDistributionTable(activityCol: DG.Column<number>, selection: 
 
 
   splitCol.setCategoryOrder(categoryOrder);
-  splitCol.colors.setCategorical();
+  splitCol.meta.colors.setCategorical();
   return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
 }
 

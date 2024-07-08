@@ -111,7 +111,7 @@ export class ReportingApp {
         gc.cell.style.textColor = 0xFFB8BAC0;
     });
 
-    table.getCol('labels').setTag(DG.Tags.MultiValueSeparator, ',');
+    table.getCol('labels').meta.multiValueSeparator = ',';
     table.onCurrentRowChanged.subscribe(async (_: any) => await this.showPropertyPanel(table));
     table.onValuesChanged.subscribe(async () => {
       grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);

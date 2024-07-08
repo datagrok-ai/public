@@ -145,13 +145,13 @@ export function tagsCellRenderer() {
 //meta.action: Sparklines...
 export function summarizeColumns(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
-  const name = ui.stringInput('Name', table.columns.getUnusedName('Summary'));
-  const sparklineType = ui.choiceInput('Type', SparklineType.Sparkline, sparklineTypes);
-  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+  const name = ui.input.string('Name', {value: table.columns.getUnusedName('Summary')});
+  const sparklineType = ui.input.choice('Type', {value: SparklineType.Sparkline, items: sparklineTypes});
+  const columnsSelector = ui.input.columns('Columns', {table: table,
     available: names(table.columns.numerical),
     checked: names(columns),
   });
-  const hide = ui.boolInput('Hide', false);
+  const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 
   function addSummaryColumn() {
@@ -188,11 +188,11 @@ export function summarizeColumns(columns: DG.Column[]) {
 //meta.action: Smart form...
 export function addFormColumn(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
-  const name = ui.stringInput('Name', table.columns.getUnusedName('Form'));
-  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+  const name = ui.input.string('Name', {value: table.columns.getUnusedName('Form')});
+  const columnsSelector = ui.input.columns('Columns', {table: table,
     checked: names(columns),
   });
-  const hide = ui.boolInput('Hide', false);
+  const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 
   function addSummaryColumn() {
@@ -250,10 +250,13 @@ export function addPinnedColumn(gridCol: DG.GridColumn) : PinnedColumn {
 
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
-  const t = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'kg'),
-    DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'ton')
-  ]);
+  const col1 = DG.Column.fromStrings('kg', ['a', 'b']).setTag('foo', 'bar');
+  col1.meta.units = 'kg';
+  col1.semType = 'test';
+  const col2 = DG.Column.fromStrings('ton', ['a', 'b']).setTag('foo', 'bar');
+  col2.semType = 'test';
+  col2.meta.units = 'ton';
+  const t = DG.DataFrame.fromColumns([col1, col2]);
 
   grok.shell.addTableView(t);
   grok.shell.info('Different renderers even though semantic types are the same');
@@ -294,7 +297,7 @@ export function demoCellTypes() {
   const dis = t.col('disease')!;
   dis.set(0, 'Anxiety, Glaucoma');
   dis.set(1, 'Hepatitis A, Glaucoma');
-  dis.setTag(DG.TAGS.CHOICES, JSON.stringify(['Anxiety', 'Hepatitis A', 'Glaucoma']));
+  dis.meta.choices = ['Anxiety', 'Hepatitis A', 'Glaucoma'];
   dis.setTag(DG.TAGS.CELL_RENDERER, 'MultiChoice');
 
   const site = t.col('site')!;

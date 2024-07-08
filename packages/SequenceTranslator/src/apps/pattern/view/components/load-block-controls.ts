@@ -93,14 +93,12 @@ export class PatternLoadControlsManager {
     if (this.dataManager.getOtherUsersPatternNames().length > 0)
       possibleValues.push(this.dataManager.getOtherUsersAuthorshipCategory());
 
-    const authorChoiceInput = ui.choiceInput(
-      'Author',
-      this.eventBus.getSelectedAuthor(),
-      possibleValues,
-      (userName: string) => {
-        this.authorSelectedByUser = true;
-        this.eventBus.selectAuthor(userName);
-      }
+    const authorChoiceInput = ui.input.choice(
+      'Author', {value: this.eventBus.getSelectedAuthor(), items: possibleValues,
+        onValueChanged: (input) => {
+          this.authorSelectedByUser = true;
+          this.eventBus.selectAuthor(input.value);
+        }}
     );
     this.setAuthorChoiceInputStyle(authorChoiceInput);
     authorChoiceInput.setTooltip('Select pattern author');
@@ -132,7 +130,7 @@ export class PatternLoadControlsManager {
     }
 
     const defaultValue = this.getPatternName(patternList);
-    const choiceInput = ui.choiceInput('Pattern', defaultValue, patternList);
+    const choiceInput = ui.input.choice('Pattern', {value: defaultValue, items: patternList});
     choiceInput.setTooltip('Select pattern to load');
 
     $(choiceInput.input).css({

@@ -41,8 +41,8 @@ export class CalculatedColumnsTutorial extends Tutorial {
     await this.dlgInputAction(addNCDlg, `Enter the expression "${simpleFormula}"`, '', simpleFormula, '', false, 2);
 
     await this.action('Click "OK"', this.t!.onColumnsAdded.pipe(filter((data) =>
-      data.args.columns.some((col: DG.Column) => col.name === columnName && col.tags.has(DG.TAGS.FORMULA) &&
-      col.tags[DG.TAGS.FORMULA] === simpleFormula))), addNCDlg.getButton('OK'), 'Once a valid expression is entered, ' +
+      data.args.columns.some((col: DG.Column) => col.name === columnName && col.meta.formula !== null &&
+      col.meta.formula === simpleFormula))), addNCDlg.getButton('OK'), 'Once a valid expression is entered, ' +
       'a new column will appear in the preview. Note that the column type is set automatically to "double". The type is ' +
       'determined based on the function output parameter type. You can change the column type manually, if necessary. For ' +
       'convenience, we\'ll automatically change the number formatting to match the format of the original column. You ' +
@@ -50,7 +50,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
 
     const heightCol = this.t!.getCol('height');
     const heightInMetersCol = this.t!.getCol(columnName);
-    heightInMetersCol.tags[DG.TAGS.FORMAT] = heightCol.tags[DG.TAGS.FORMAT];
+    heightInMetersCol.meta.format = heightCol.meta.format;
 
     this.describe('Now you should see a new column added to the grid. Let\'s learn how to edit a formula to replace ' +
       'the constant value with the actual patient height from the corresponding column.');

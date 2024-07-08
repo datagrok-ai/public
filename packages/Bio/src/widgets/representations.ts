@@ -25,7 +25,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   const columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
-  let maxMonomerLength: number | null = (_package.properties ? _package.properties.MaxMonomerLength : 4);
+  let maxMonomerLength: number | null = (_package.properties ? _package.properties.maxMonomerLength : 4);
   if (mmcrTAGS.maxMonomerLength in col.tags) {
     const v = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
     maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;

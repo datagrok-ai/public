@@ -122,12 +122,11 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
 
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Columns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
+      ui.input.columns('Columns', {table: gc.grid.dataFrame, onValueChanged: (input) => {
+        settings.columnNames = names(input.value);
         gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      }, available: names(gc.grid.dataFrame.columns.numerical),
+      checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput
     ]);

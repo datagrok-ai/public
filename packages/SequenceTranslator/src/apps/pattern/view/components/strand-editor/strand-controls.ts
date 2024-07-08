@@ -78,7 +78,7 @@ export class StrandControls {
       );
     const nucleotides = this.eventBus.getNucleotideSequences()[strand];
     const choiceInputs = nucleotides.map((nucleotide, index) => {
-      const input = ui.choiceInput<string>('', nucleotide, nucleotideBaseChoices);
+      const input = ui.input.choice<string>('', {value: nucleotide, items: nucleotideBaseChoices});
       input.onInput(() => {
         const newValue = input.value!;
         this.eventBus.setNucleotide(strand, index, newValue);
@@ -92,7 +92,7 @@ export class StrandControls {
   private createPTOFlagInputs(strand: StrandType): BooleanInput[] {
     const ptoLinkageFlags = this.eventBus.getPhosphorothioateLinkageFlags()[strand].slice(1);
     const ptoLinkageInputs = ptoLinkageFlags.map((flag, index) => {
-      const input = ui.boolInput('', flag);
+      const input = ui.input.bool('', {value: flag});
       input.onInput(() => {
         const newValue = input.value!;
         this.eventBus.setPhosphorothioateLinkageFlag(strand, index + 1, newValue);

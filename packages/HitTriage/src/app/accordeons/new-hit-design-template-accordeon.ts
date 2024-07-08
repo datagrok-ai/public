@@ -33,7 +33,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.choiceInput('Submit function', null, [null, ...Object.keys(submitFunctionsMap)]);
+  const submitFunctionInput = ui.input.choice('Submit function', {value: null, items: [null, ...Object.keys(submitFunctionsMap)]});
   submitFunctionInput.nullable = true;
   submitFunctionInput.value = preset?.submit?.fName ?? null;
   submitFunctionInput.setTooltip('Select function to be called upon submitting');
@@ -58,7 +58,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
       hasNameError = false;
     }
   }
-  const templateNameInput = ui.stringInput('Name', preset?.name ?? '', onTemplateNameChanged);
+  const templateNameInput = ui.input.string('Name', {value: preset?.name ?? '', onValueChanged: onTemplateNameChanged});
 
   // ######### TEMPLATE KEY INPUT #########
   function onTemplateKeyChange() {
@@ -79,7 +79,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
     }
   }
 
-  const templateKeyInput = ui.stringInput('Key', preset?.key ?? '', onTemplateKeyChange);
+  const templateKeyInput = ui.input.string('Key', {value: preset?.key ?? '', onValueChanged: onTemplateKeyChange});
   templateKeyInput.setTooltip('Template key used for campaign prefix');
   templateNameInput.setTooltip('Template name');
   templateNameInput.root.style.borderBottom = 'none';

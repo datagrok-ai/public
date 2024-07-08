@@ -35,6 +35,11 @@ export {DojoType, DojoxType};
 export {HweWindow, ScilModuleType, JSDraw2ModuleType, OrgType};
 
 
+export interface ISeqMonomer {
+  polymerType: PolymerType;
+  symbol: string;
+}
+
 export interface IHelmWebEditor {
   get editor(): Editor<HelmType>;
   get host(): HTMLDivElement;

@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.13.4 (2024-07-02)
+
+### Bug fixes
+
+* GROK-15798: Fix To Atomic Level for units FASTA, UN alphabet
+* Fix detectMacromolecule to check for bad monomers on separator
+* Fix for review camelCase properties
+
 ## 2.13.3 (2024-06-28)
 
 ### Bug fixes

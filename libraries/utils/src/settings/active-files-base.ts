@@ -55,11 +55,10 @@ export class ActiveFiles {
   }
 
   protected createInput(available: string, isChecked: boolean): DG.InputBase<boolean> {
-    const cb = ui.boolInput(
-      available,
-      isChecked,
-      (isChecked: boolean) => this.updateSelectionStatus(available, isChecked)
-    ) as DG.InputBase<boolean>;
+    const cb = ui.input.bool(available, {
+      value: isChecked,
+      onValueChanged: (input) => this.updateSelectionStatus(available, input.value)
+    }) as DG.InputBase<boolean>;
     cb.addOptions(ui.button(ui.iconFA('trash'), () => {
       const remDialog = ui.dialog({title: 'Warning'}).add(ui.divText(`Delete file '${available}'?`)).onOK(() => {
         cb.root.remove();
