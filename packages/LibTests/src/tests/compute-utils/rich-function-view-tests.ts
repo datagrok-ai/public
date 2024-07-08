@@ -13,7 +13,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Simple inputs setParamValue', async () => {
-    const view = new RichFunctionView('Libtests:simpleInputs');
+    const view = new RichFunctionView('Libtests:simpleInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 1,
       b: 2.2,
@@ -66,7 +66,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Simple inputs inputs tweak', async () => {
-    const view = new RichFunctionView('Libtests:simpleInputs');
+    const view = new RichFunctionView('Libtests:simpleInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 1,
       b: 2.2,
@@ -120,7 +120,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Simple inputs setParamValue rerun', async () => {
-    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2,
       b: 3.2,
@@ -175,7 +175,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Simple inputs inputs tweak rerun', async () => {
-    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2,
       b: 3.2,
@@ -231,7 +231,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Simple inputs default values', async () => {
-    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
     
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
@@ -255,7 +255,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Complex inputs setParamValue', async () => {
-    const view = new RichFunctionView('Libtests:complexInputs');
+    const view = new RichFunctionView('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
@@ -276,7 +276,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Complex inputs inputs tweak', async () => {
-    const view = new RichFunctionView('Libtests:complexInputs');
+    const view = new RichFunctionView('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
@@ -330,7 +330,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
   });
 
   test('Complex inputs inputs tweak rerun', async () => {
-    const view = new RichFunctionView('Libtests:complexInputs');
+    const view = new RichFunctionView('Libtests:complexInputs', {historyEnabled: false, isTabbed: false});
     const inputValuesPre: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
         DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),
@@ -371,7 +371,7 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
   });
 
   test('Validate on start', async () => {
-    const view = new RichFunctionView('Libtests:validationTest');
+    const view = new RichFunctionView('Libtests:validationTest', {historyEnabled: false, isTabbed: false});
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(1500);
     const results = view.getValidationState();
@@ -422,7 +422,7 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
   });
 
   test('Validate on input', async () => {
-    const view = new RichFunctionView('Libtests:validationTest');
+    const view = new RichFunctionView('Libtests:validationTest', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 2.3,
       b: 3.2,
@@ -457,7 +457,7 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
   });
 
   test('Revalidation sequence', async () => {
-    const view = new RichFunctionView('Libtests:globalValidationTest');
+    const view = new RichFunctionView('Libtests:globalValidationTest', {historyEnabled: false, isTabbed: false});
     const inputValues: Record<string, any> = {
       a: 30,
       b: 40,
@@ -474,7 +474,7 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(500);
+    await delay(1000);
     const results = view.getValidationState();
     expectDeepEqual(
       results,

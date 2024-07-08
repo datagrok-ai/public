@@ -1700,7 +1700,7 @@ export class RichFunctionView extends FunctionView {
     if (name.length > 31)
       name = `${name.slice(0, 31)}`;
     let i = 1;
-    while (wb.worksheets.some((sheet) => sheet.name === name)) {
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
       let truncatedName = `${initialName}`;
       if (truncatedName.length > (31 - `-${i}`.length))
         truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;

@@ -40,7 +40,8 @@ import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
 import * as d4 from './src/api/d4.api.g';
 import {IDartApi} from "./src/api/grok_api.g";
-
+// import {Dictionary, typeaheadConfig} from "typeahead-standalone/dist/types";
+// import typeahead from "typeahead-standalone";
 
 let api: IDartApi = <any>window;
 declare let grok: any;
@@ -880,7 +881,7 @@ export namespace input {
     return _create(d4.InputType.Map, name, options);
   }
 
-  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean | null> {
+  export function bool(name: string, options?: IInputInitOptions<boolean>): InputBase<boolean> {
     return _create(d4.InputType.Bool, name, options);
   }
 
@@ -2005,6 +2006,13 @@ export function breadcrumbs(path: string[]): Breadcrumbs {
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
+
+// export function makeInputTypeAhead(input: HTMLInputElement, config: TypeAheadConfig): void {
+//   const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+//       {input: <HTMLInputElement> input}, config);
+//
+//   typeahead(typeAheadConfig);
+// }
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);

@@ -1,3 +1,4 @@
+'use strict';
 /**
  * The class contains semantic type detectors.
  * Detectors are functions tagged with `DG.FUNC_TYPES.SEM_TYPE_DETECTOR`.
@@ -73,6 +74,12 @@ class BioPackageDetectors extends DG.Package {
 
   constructor() {
     super();
+
+    this.forbiddenMulticharAll = ' .:';
+    this.forbiddenMulticharFirst = ']' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharMiddle = '][' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharLast = '[' + this.forbiddenMulticharAll;
+
     // replace super._logger
     this._logger = new LoggerWrapper(this, this.logger, 'detectors');
   }
@@ -265,24 +272,12 @@ class BioPackageDetectors extends DG.Package {
         }
         // Single- and multi-char monomer names for sequences with separators have constraints
         if (units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) {
-          const badSet = this.checkBadMultichar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden multi-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
+          const badSymbol /*: string | null*/ = this.checkBadMultichar(stats.freq);
+          if (badSymbol) {
+            last.rejectReason = `Forbidden multi-char monomer: '${badSymbol}'.`;
             return null;
           }
         }
-        if (units === NOTATION.FASTA && !alphabetIsMultichar) {
-          const badSet = this.checkBadSinglechar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden single-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
-            return null;
-          }
-        }
-
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
@@ -294,8 +289,7 @@ class BioPackageDetectors extends DG.Package {
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.meta.units = units;
-        if (separator)
-          col.setTag(SeqHandler.TAGS.separator, separator);
+        if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, aligned);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
         if (alphabet === ALPHABET.UN) {
@@ -358,8 +352,8 @@ class BioPackageDetectors extends DG.Package {
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
     const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-    const badSet = this.checkBadMultichar(stats.freq);
-    if (badSet.size > 0) return 0;
+    const badSymbol = this.checkBadMultichar(stats.freq);
+    if (badSymbol) return null;
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
     const mLengthAvg = wu.entries(stats.freq)
@@ -386,15 +380,22 @@ class BioPackageDetectors extends DG.Package {
   /** Dots and colons are nor allowed in multichar monomer names (but space is allowed).
    * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
-  checkBadMultichar(freq) {
-    const badRe = /[ .:\[\]]|^\d+$/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
-  }
+  checkBadMultichar(freq) /* : string | null */ {
+    for (const symbol of Object.keys(freq)) {
+      if (symbol && !isNaN(symbol)) return symbol; // performance evaluated better with RegExp
 
-  /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
-  checkBadSinglechar(freq) {
-    const badRe = /[ .:;\d_]/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
+      const symbolLen = symbol.length;
+      if (this.forbiddenMulticharFirst.includes(symbol[0]))
+        return symbol;
+      if (this.forbiddenMulticharLast.includes(symbol[symbolLen - 1]))
+        return symbol;
+      for (let cI = 1; cI < symbolLen - 1; ++cI) {
+        const c = symbol[cI];
+        if (this.forbiddenMulticharMiddle.includes(c))
+          return symbol;
+      }
+    }
+    return null;
   }
 
   calcBad(freq, forbiddenSet) {

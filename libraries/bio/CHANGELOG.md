@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.42.5 (2024-07-05)
+
+Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
 ## 5.42.4 (2024-07-02)
 
 Fix types ISeqMonomer from Helm
