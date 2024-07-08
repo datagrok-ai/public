@@ -96,7 +96,7 @@ category('DataFrame: Calculated columns', () => {
     const t = df.clone();
     subs.push(t.onColumnsAdded.subscribe((data) =>
       data.args.columns.forEach((column: DG.Column) => {
-        if (column.tags.meta.formula !== null && column.name === 'calculated column')
+        if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 
