@@ -8,7 +8,6 @@ import * as DG from 'datagrok-api/dg';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
-import {testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, isApplicableSVM, showTrainReport, getPackedModel} from './svm';
 
@@ -31,7 +30,7 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
 
 import {PlsModel} from './pls/pls-ml';
 
@@ -301,37 +300,6 @@ export async function demoMultivariateAnalysis(): Promise<any> {
   runDemoMVA();
 }
 
-//name: Generate linear separable dataset
-//description: Generates linear separble dataset for testing binary classificators
-//input: string name = 'Data' {caption: name; category: Dataset}
-//input: int samplesCount = 1000 {caption: samples; category: Size}
-//input: int featuresCount = 2 {caption: features; category: Size}
-//input: double min = -39 {caption: min; category: Range}
-//input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
-//output: dataframe df
-export async function testDataLinearSeparable(name: string, samplesCount: number, featuresCount: number,
-  min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-  return await testDataForBinaryClassification(LINEAR, [0, 0], name, samplesCount, featuresCount,
-    min, max, violatorsPercentage);
-}
-
-//name: Generate linear non-separable dataset
-//description: Generates linear non-separble dataset for testing binary classificators
-//input: string name = 'Data' {caption: name; category: Dataset}
-//input: double sigma = 90  {caption: sigma; category: Hyperparameters} [RBF-kernel paramater]
-//input: int samplesCount = 1000 {caption: samples; category: Size}
-//input: int featuresCount = 2 {caption: features; category: Size}
-//input: double min = -39 {caption: min; category: Range}
-//input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
-//output: dataframe df
-export async function testDataLinearNonSeparable(name: string, sigma: number, samplesCount: number,
-  featuresCount: number, min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-  return await testDataForBinaryClassification(RBF, [sigma, 0], name, samplesCount, featuresCount,
-    min, max, violatorsPercentage);
-}
-
 //name: trainLinearKernelSVM
 //meta.mlname: linear kernel LS-SVM
 //meta.mlrole: train
@@ -547,48 +515,6 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
-//name: linearRegression
-//description: Linear Regression demo
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: column target {type: numerical}
-//input: bool plot = true {caption: plot}
-export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): Promise<void> {
-  const t1 = performance.now();
-  const params = await getLinearRegressionParams(features, target);
-  const t2 = performance.now();
-  console.log(`Fit: ${t2 - t1} ms.`);
-  const prediction = getPredictionByLinearRegression(features, params);
-  console.log(`Predict: ${performance.now() - t2} ms.`);
-
-  prediction.name = table.columns.getUnusedName(prediction.name);
-
-  table.columns.add(prediction);
-
-  if (plot) {
-    const view = grok.shell.tableView(table.name);
-    view.addViewer(DG.VIEWER.SCATTER_PLOT, {
-      xColumnName: target.name,
-      yColumnName: prediction.name,
-      showRegressionLine: true,
-    });
-  }
-}
-
-//name: generateDatasetForLinearRegressionTest
-//description: Create demo dataset for linear regression
-//input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
-//input: int colCount = 10 {min: 1; max: 1000; step: 10}
-//input: double featuresScale = 10 {min: -1000; max: 1000; step: 10}
-//input: double featuresBias = 10 {min: -1000; max: 1000; step: 10}
-//input: double paramsScale = 10 {min: -1000; max: 1000; step: 10}
-//input: double paramsBias = 10 {min: -1000; max: 1000; step: 10}
-//output: dataframe table
-export function generateDatasetForLinearRegressionTest(rowCount: number, colCount: number,
-  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
-  return getTestDatasetForLinearRegression(rowCount, colCount, featuresScale, featuresBias, paramsScale, paramsBias);
-}
-
 //name: trainLinearRegression
 //meta.mlname: Linear Regression
 //meta.mlrole: train
@@ -675,35 +601,13 @@ export function isApplicablePLSRegression(df: DG.DataFrame, predictColumn: DG.Co
 //meta.mlname: PLS Regression
 //meta.mlrole: visualize
 //input: dataframe df
-//input: string target_column
-//input: string predict_column
+//input: column targetColumn
+//input: column predictColumn
 //input: dynamic model
 //output: dynamic widget
-export async function visualizePLSRegression(df: DG.DataFrame, target_column: string, predict_column: string, model: any): Promise<any> {
+export async function visualizePLSRegression(df: DG.DataFrame, targetColumn: DG.Column, predictColumn: DG.Column, model: any): Promise<any> {
   const unpackedModel = new PlsModel(model);
   const viewers = unpackedModel.viewers();
 
   return viewers.map((v) => v.root);
-}
-
-//top-menu: ML | PLS ML demo...
-//name: PLS demo
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: column predict {type: numerical}
-//input: int components = 3
-export async function plsMLdemo(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number) {
-  const model = new PlsModel();
-
-  await model.fit(features, predict, components);
-
-  const packed = model.toBytes();
-
-  const unpacked = new PlsModel(packed);
-
-  table.columns.add(unpacked.predict(features));
-
-  const view = grok.shell.tableView(table.name);
-
-  unpacked.viewers().forEach((v) => view.addViewer(v));
 }
