@@ -201,6 +201,7 @@ export function runKNNImputer(): void {
       'inputType': 'Float',
       'min': 0,
       'max': 10,
+      //@ts-ignore
       'showSlider': true,
       'step': 1,
     });

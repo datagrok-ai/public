@@ -30,7 +30,7 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
-  names : DG.Column | null,
+  names : DG.Column | undefined,
 };
 
 /** Return lines */
@@ -339,8 +339,11 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   };
 
   // names of samples
-  let names = (strCols.length > 0) ? strCols[0] : null;
-  const namesInputs = ui.input.column(TITLE.NAMES, {table: table, value: names, onValueChanged: () => names = predictInput.value,
+  let names = (strCols.length > 0) ? strCols[0] : undefined;
+  const namesInputs = ui.input.column(TITLE.NAMES, {
+    table: table,
+    value: names,
+    onValueChanged: () => names = predictInput.value,
     filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);

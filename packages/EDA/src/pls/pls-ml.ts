@@ -122,7 +122,7 @@ export class PlsModel {
       features: features,
       predict: target,
       components: components,
-      names: null,
+      names: undefined,
     });
 
     // 1. Names of features
