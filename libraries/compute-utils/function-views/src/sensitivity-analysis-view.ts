@@ -148,7 +148,7 @@ export class SensitivityAnalysisView {
             (() => {
               const inp = ui.input.float(inputProp.caption ?? inputProp.name, {
                 value: getDefaultValue(inputProp),
-                onValueChanged: () => ref.const.value = inp.value,
+                onValueChanged: () => ref.const.value = inp.value!,
               });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
@@ -161,7 +161,7 @@ export class SensitivityAnalysisView {
               (() => {
                 const inp = ui.input.float(`${inputProp.caption ?? inputProp.name} min`, {
                   value: getInputValue(inputProp, 'min'),
-                  onValueChanged: () => (ref as SensitivityNumericStore).min.value = inp.value,
+                  onValueChanged: () => (ref as SensitivityNumericStore).min.value = inp.value!,
                 });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
                 inp.addPostfix(inputProp.options['units']);
@@ -174,7 +174,7 @@ export class SensitivityAnalysisView {
               const inp = ui.input.float(`${inputProp.caption ?? inputProp.name} max`,
                 {
                   value: getInputValue(inputProp, 'max'),
-                  onValueChanged: () => (ref as SensitivityNumericStore).max.value = inp.value,
+                  onValueChanged: () => (ref as SensitivityNumericStore).max.value = inp.value!,
                 });
               inp.addPostfix(inputProp.options['units']);
               return inp;
@@ -184,7 +184,7 @@ export class SensitivityAnalysisView {
           lvl: {
             input: ui.input.int('Samples', {value: 3, onValueChanged: () => {
               const v = temp.lvl.input.value;
-              (ref as SensitivityNumericStore).lvl.value = v;
+              (ref as SensitivityNumericStore).lvl.value = v!;
               this.updateRunWidgetsState();
             }}),
             value: 3,
@@ -359,7 +359,7 @@ export class SensitivityAnalysisView {
             return input;
           })(),
           (() => {
-            const input = ui.input.float('Value', {value: 0, onValueChanged: () => {temp.value.colValue = input.value;}});
+            const input = ui.input.float('Value', {value: 0, onValueChanged: () => {temp.value.colValue = input.value!;}});
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
             input.root.hidden = true;
             input.setTooltip(`Value specifying the '${outputProp.caption ?? outputProp.name}' dataframe row`);

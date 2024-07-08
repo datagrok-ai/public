@@ -99,6 +99,15 @@ C1CCCCC1
 CCCCCC`,
       neg: ['col1'],
     },
+    'negFastaUnSingleChar': {
+      csv: `col1
+Alanine
+Cysteine
+Aspartic acid
+Glutamic acid
+Phenylalanine`,
+      neg: ['col1']
+    },
 
     // Same length
     'fastaMsaSameLength': {

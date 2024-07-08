@@ -1,13 +1,17 @@
+import {_TagsCellRenderer} from './package.g';
+import {_MultiChoiceCellRenderer} from './package.g';
+import {_ScatterPlotCellRenderer} from './package.g';
+import {_HtmlTestCellRenderer} from './package.g';
+import {_HyperlinkCellRenderer} from './package.g';
+import {_BinaryImageCellRenderer} from './package.g';
+import {_ImageCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ImageCellRenderer} from './cell-types/image-cell-renderer';
-import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
 import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-renderer';
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
-import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
 import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
@@ -19,42 +23,8 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
-import {MultiChoiceCellRenderer} from "./cell-types/multi-choice-cell-renderer";
-import {TagsCellRenderer} from "./cell-types/tags-cell-renderer";
 
 export const _package = new DG.Package();
-
-//name: imageUrlCellRenderer
-//tags: cellRenderer
-//meta.cellType: ImageUrl
-//output: grid_cell_renderer result
-export function imageUrlCellRenderer() {
-  return new ImageCellRenderer();
-}
-
-//name: binaryImageCellRenderer
-//tags: cellRenderer
-//meta.cellType: BinaryImage
-//output: grid_cell_renderer result
-export function binaryImageCellRenderer() {
-  return new BinaryImageCellRenderer();
-}
-
-//name: hyperlinkCellRenderer
-//tags: cellRenderer
-//meta.cellType: Hyperlink
-//output: grid_cell_renderer result
-export function hyperlinkCellRenderer() {
-  return new HyperlinkCellRenderer();
-}
-
-//name: htestCellRenderer
-//tags: cellRenderer
-//meta.cellType: htest
-//output: grid_cell_renderer result
-export function htestCellRenderer() {
-  return new HtmlTestCellRenderer();
-}
 
 //name: barCellRenderer
 //tags: cellRenderer
@@ -73,15 +43,6 @@ export function barCellRenderer() {
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
-}
-
-//name: Scatter Plot
-//tags: cellRenderer
-//meta.cellType: scatterplot
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function scatterPlotRenderer() {
-  return new ScatterPlotCellRenderer();
 }
 
 //name: Bar Chart
@@ -122,22 +83,6 @@ export function radarCellRenderer() {
 //output: grid_cell_renderer result
 export function smartFormCellRenderer() {
   return new FormCellRenderer();
-}
-
-//name: Multi Choice
-//tags: cellRenderer
-//meta.cellType: MultiChoice
-//output: grid_cell_renderer result
-export function multiChoiceCellRenderer() {
-  return new MultiChoiceCellRenderer();
-}
-
-//name: Tags
-//tags: cellRenderer
-//meta.cellType: Tags
-//output: grid_cell_renderer result
-export function tagsCellRenderer() {
-  return new TagsCellRenderer();
 }
 
 //description: Adds a sparkline column for the selected columns
@@ -307,3 +252,11 @@ export function demoCellTypes() {
 
   grok.shell.addTableView(t);
 }
+
+export {_ImageCellRenderer};
+export {_BinaryImageCellRenderer};
+export {_HyperlinkCellRenderer};
+export {_HtmlTestCellRenderer};
+export {_ScatterPlotCellRenderer};
+export {_MultiChoiceCellRenderer};
+export {_TagsCellRenderer};

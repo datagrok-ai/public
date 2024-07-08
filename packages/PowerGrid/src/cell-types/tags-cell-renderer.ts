@@ -1,8 +1,12 @@
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 
 
+@grok.decorators.cellRenderer({
+  name: 'Tags',
+  cellType: 'Tags',
+})
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved
  * from the column's `.choices` tag.

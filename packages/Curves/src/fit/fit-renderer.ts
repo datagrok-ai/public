@@ -224,6 +224,11 @@ export function substituteZeroes(data: IFitChartData): void {
   }
 }
 
+@grok.decorators.cellRenderer({
+  name: 'Fit',
+  cellType: 'fit',
+  virtual: true,
+})
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return FitConstants.FIT_CELL_TYPE; }
 

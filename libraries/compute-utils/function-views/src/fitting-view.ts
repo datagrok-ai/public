@@ -109,7 +109,7 @@ export class FittingView {
             input:
             (() => {
               const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: () => {
-                ref.const.value = inp.value;
+                ref.const.value = inp.value!;
                 this.updateApplicabilityState();
               }});
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
@@ -124,7 +124,7 @@ export class FittingView {
             input:
               (() => {
                 const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: () => {
-                  (ref as FittingNumericStore).min.value = inp.value;
+                  (ref as FittingNumericStore).min.value = inp.value!;
                   this.updateApplicabilityState();
                 }});
                 inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
@@ -139,7 +139,7 @@ export class FittingView {
           max: {
             input: (() => {
               const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: () => {
-                (ref as FittingNumericStore).max.value = inp.value;
+                (ref as FittingNumericStore).max.value = inp.value!;
                 this.updateApplicabilityState();
               }});
               inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
@@ -886,8 +886,8 @@ export class FittingView {
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
         const propConfig = this.store.inputs[name] as FittingNumericStore;
-        minVals[idx] = propConfig.min.value;
-        maxVals[idx] = propConfig.max.value;
+        minVals[idx] = propConfig.min.value ?? 0;
+        maxVals[idx] = propConfig.max.value ?? 0;
         variedInputNames.push(name);
         variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
       });
