@@ -9,14 +9,6 @@ import {getPlsAnalysis, PlsOutput, getLines} from './pls-tools';
 import {LINK} from './pls-constants';
 import {getPredictionByLinearRegression} from '../regression';
 
-/** Acceptable column types */
-const NUMERIC_TYPES = [
-  DG.COLUMN_TYPE.INT,
-  DG.COLUMN_TYPE.FLOAT,
-  DG.COLUMN_TYPE.BIG_INT,
-  DG.COLUMN_TYPE.QNUM,
-];
-
 // PLS ML specific constants
 const EXTRA_ROWS = 1;
 const SHIFT = 2;
@@ -55,11 +47,13 @@ type PlsModelSpecification = {
 /** PLS regression modeling tool */
 export class PlsModel {
   /** Check applicability */
-  static isApplicable(features: DG.ColumnList): boolean {
+  static isApplicable(features: DG.ColumnList, predictColumn: DG.Column): boolean {
     for (const col of features) {
-      if (!NUMERIC_TYPES.includes(col.type as DG.COLUMN_TYPE))
+      if (!col.matches('numerical'))
         return false;
     }
+    if (!predictColumn.matches('numerical'))
+      return false;
 
     return true;
   }

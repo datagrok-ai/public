@@ -635,19 +635,17 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
 //meta.mlname: PLS Regression
 //meta.mlrole: train
 //input: dataframe df
-//input: string predict_column
+//input: column predictColumn
 //input: int components = 3 {min: 1; max: 10} [Number of latent components]
 //output: dynamic model
-export async function trainPLSRegression(df: DG.DataFrame, predict_column: string, components: number): Promise<Uint8Array> {
+export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number): Promise<Uint8Array> {
   const features = df.columns;
-  const target = features.byName(predict_column);
-  features.remove(predict_column);
 
   if (components > features.length)
     throw new Error('Number of components is greater than features count');
 
   const model = new PlsModel();
-  await model.fit(features, target, components);
+  await model.fit(features, predictColumn, components);
 
   return model.toBytes();
 }
@@ -667,10 +665,10 @@ export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
 //meta.mlname: PLS Regression
 //meta.mlrole: isApplicable
 //input: dataframe df
-//input: string predict_column
+//input: column predictColumn
 //output: bool result
-export function isApplicablePLSRegression(df: DG.DataFrame, predict_column: string): boolean {
-  return PlsModel.isApplicable(df.columns);
+export function isApplicablePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isApplicable(df.columns, predictColumn);
 }
 
 //name: visualizePLSRegression
@@ -685,10 +683,7 @@ export async function visualizePLSRegression(df: DG.DataFrame, target_column: st
   const unpackedModel = new PlsModel(model);
   const viewers = unpackedModel.viewers();
 
-  return ui.divV([
-    ui.divH([viewers[0].root, viewers[1].root]),
-    ui.divH([viewers[2].root, viewers[3].root]),
-  ]);
+  return viewers.map((v) => v.root);
 }
 
 //top-menu: ML | PLS ML demo...

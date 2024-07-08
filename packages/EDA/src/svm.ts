@@ -277,11 +277,11 @@ export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, la
 
   if (labels.categories.length != 2)
     throw new Error(WRONG_LABELS_MESSAGE);
-  let labelNumeric : DG.Column = DG.Column.float(labels.name, labels.length);
-  for (var i = 0; i < labels.length; i++)
+  const labelNumeric : DG.Column = DG.Column.float(labels.name, labels.length);
+  for (let i = 0; i < labels.length; i++)
     labelNumeric.set(i, labels.get(i) == labels.categories[0] ? -1.0 : 1.0, false);
 
-  let model = await trainAndAnalyzeModel(hyperparameters, columns, labelNumeric);
+  const model = await trainAndAnalyzeModel(hyperparameters, columns, labelNumeric);
   model.realLabels = labels;
   return model;
 }
@@ -335,7 +335,7 @@ export function getPackedModel(model: any): any {
   const realLabelsSize = BYTES + realLabelsBuffer.length + 4 - realLabelsBuffer.length % 4;
   const modelInfoBuffer = getModelInfo(model).toByteArray();
   const modelInfoSize = BYTES + modelInfoBuffer.length + 4 - modelInfoBuffer.length % 4;
-  
+
   /*let bufferSize = BYTES * (7 + featuresCount * samplesCount
     + 3 * featuresCount + 2 * samplesCount);*/
 
@@ -472,7 +472,7 @@ function getUnpackedModel(packedModel: any): any {
   offset += BYTES;
   const modelInfo = DG.DataFrame.fromByteArray(new Uint8Array(modelBytes, offset, modelInfoSize));
   offset += modelInfoBytesSize;
-  
+
   const model = {kernelType: header[MODEL_KERNEL_INDEX],
     kernelParams: kernelParams,
     trainLabels: trainLabels,
@@ -482,7 +482,7 @@ function getUnpackedModel(packedModel: any): any {
     modelParams: modelParams,
     modelWeights: modelWeights,
     normalizedTrainData: normalizedTrainData,
-    modelInfo: modelInfo
+    modelInfo: modelInfo,
   };
 
   return model;
@@ -495,9 +495,9 @@ export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise
   const resNumeric = await predict(model, df.columns);
   const res = DG.Column.string(PREDICTION, resNumeric.length);
   const categories = model.realLabels.categories;
-  for (var i = 0; i < res.length; i++) {
+  for (let i = 0; i < res.length; i++)
     res.set(i, resNumeric.get(i) == -1 ? categories[0] : categories[1]);
-  }
+
 
   return DG.DataFrame.fromColumns([res]);
 } // getPrediction
@@ -507,8 +507,8 @@ export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
   const columns = df.columns;
   if (!labels.matches('categorical') || labels.categories.length > 2)
     return false;
-  var res: boolean = true;
-  for (var i = 0; i < columns.length; i++)
+  let res: boolean = true;
+  for (let i = 0; i < columns.length; i++)
     res = res && (columns.byIndex(i).matches('numerical'));
   return res;
 }
