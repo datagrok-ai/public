@@ -83,10 +83,10 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
-    const templatesInput = ui.choiceInput('Template', presetTemplate?.name ?? templates[0], templates,
-      async () => {
+    const templatesInput = ui.input.choice('Template', {value: presetTemplate?.name ?? templates[0], items: templates,
+      onValueChanged: async () => {
         await onTemmplateChange();
-      });
+      }});
     templatesInput.root.style.width = '100%';
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate();

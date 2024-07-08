@@ -24,7 +24,7 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
   );
   /* eslint-enable max-len */
   const seqCol: DG.Column<string> = table.getCol(sequence);
-  seqCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  seqCol.meta.units = NOTATION.HELM;
   seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
   const reference = seqCol.get(0)!;
 

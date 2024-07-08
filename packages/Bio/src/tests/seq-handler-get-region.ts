@@ -82,8 +82,8 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
       const tgtDf = DG.DataFrame.fromCsv(testData.tgtCsv);
       const tgtSeqCol = tgtDf.getCol('seq');
 
-      expect(srcSeqCol.getTag(DG.TAGS.UNITS), testData.units);
-      expect(resSeqCol.getTag(DG.TAGS.UNITS), testData.units);
+      expect(srcSeqCol.meta.units, testData.units);
+      expect(resSeqCol.meta.units, testData.units);
       expect(srcSeqCol.getTag(TAGS.alphabet), testData.alphabet);
       expect(resSeqCol.getTag(TAGS.alphabet), testData.alphabet);
       expectArray(resSeqCol.toList(), tgtSeqCol.toList());
@@ -105,8 +105,8 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
         const tgtDf = DG.DataFrame.fromCsv(testData.tgtCsv);
         const tgtSeqCol = tgtDf.getCol('seq');
 
-        expect(srcSeqCol.getTag(DG.TAGS.UNITS), testData.units);
-        expect(resSeqCol.getTag(DG.TAGS.UNITS), testData.units);
+        expect(srcSeqCol.meta.units, testData.units);
+        expect(resSeqCol.meta.units, testData.units);
         expect(srcSeqCol.getTag(TAGS.alphabet), testData.alphabet);
         expect(resSeqCol.getTag(TAGS.alphabet), testData.alphabet);
         expectArray(resSeqCol.toList(), tgtSeqCol.toList());

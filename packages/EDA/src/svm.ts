@@ -264,10 +264,8 @@ async function trainAndAnalyzeModel(hyperparameters: any, dataset: DG.ColumnList
 } // trainAndAnalyzeModel
 
 // Wrapper for combining the function "trainAndAnalyzeModel" with Datagrok predicitve tools
-export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, predictColumn: string): Promise<any> {
+export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, labels: DG.Column): Promise<any> {
   const columns = df.columns;
-  const labels = columns.byName(predictColumn);
-  columns.remove(predictColumn);
 
   if (labels.categories.length != 2)
     throw new Error(WRONG_LABELS_MESSAGE);
@@ -482,18 +480,13 @@ export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise
   return DG.DataFrame.fromColumns([res]);
 } // getPrediction
 
-export function isApplicableSVM(df: DG.DataFrame, predictColumn: string): boolean {
+
+export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
   const columns = df.columns;
-  const labels = columns.byName(predictColumn);
-  columns.remove(predictColumn);
-
-  if ((labels.type !== DG.COLUMN_TYPE.STRING) || (labels.categories.length > 2))
+  if (!labels.matches('categorical') || labels.categories.length > 2)
     return false;
-
-  for (const col of columns) {
-    if ((col.type !== DG.COLUMN_TYPE.FLOAT) && (col.type !== DG.COLUMN_TYPE.INT))
-      return false;
-  }
-
-  return true;
+  var res: boolean = true;
+  for (var i = 0; i < columns.length; i++)
+    res = res && (columns.byIndex(i).matches('numerical'));
+  return res;
 }

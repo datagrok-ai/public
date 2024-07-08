@@ -311,9 +311,9 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
   let tableInfo = tv.dataFrame.getTableInfo();
   if (dataSync) {
     //@ts-ignore
-    tableInfo.tags['.data-sync'] = 'sync';
+    tableInfo.tags[DG.Tags.DataSync] = 'sync';
     //@ts-ignore
-    tableInfo.tags['.script'] = grok.shell.tv.dataFrame.getTag('.script');  
+    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);  
   }
   let layoutInfo = tv.getInfo();
   project.addChild(tableInfo);

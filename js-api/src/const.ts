@@ -294,6 +294,11 @@ export const TAGS = {
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
 
+export enum LINK_CLICK_BEHAVIOR {
+  OPEN_IN_NEW_TAB = 'Open in new tab',
+  OPEN_IN_CONTEXT_PANEL = 'Open in context panel',
+  CUSTOM = 'Custom',
+}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.

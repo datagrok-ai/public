@@ -21,7 +21,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
   const df = DG.DataFrame.create(1);
   const molCol = df.columns.addNew(HitDesignMolColName, DG.TYPE.STRING);
   molCol.semType = DG.SEMTYPE.MOLECULE;
-  molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.SMILES);
+  molCol.meta.units = DG.UNITS.Molecule.SMILES;
   molCol.set(0, null);
   if (template?.stages?.length > 0) {
     const tileCategoryCol = df.columns.addNew(TileCategoriesColName, DG.TYPE.STRING);

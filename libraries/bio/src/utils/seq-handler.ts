@@ -51,7 +51,7 @@ export class SeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units = this._column.getTag(DG.TAGS.UNITS);
+    const units = this._column.meta.units;
     if (units !== null && units !== undefined)
       this._units = units;
     else
@@ -74,7 +74,7 @@ export class SeqHandler {
       } else if (this.isHelm())
         SeqHandler.setUnitsToHelmColumn(this);
       else
-        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
+        throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {
@@ -100,20 +100,20 @@ export class SeqHandler {
   }
 
   public static setUnitsToFastaColumn(uh: SeqHandler) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    uh.column.meta.units = NOTATION.FASTA;
     SeqHandler.setTags(uh);
   }
 
   public static setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
-    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.SEPARATOR)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    uh.column.meta.units = NOTATION.SEPARATOR;
     uh.column.setTag(TAGS.separator, separator);
     SeqHandler.setTags(uh);
   }
@@ -122,13 +122,13 @@ export class SeqHandler {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
 
-    uh.column.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    uh.column.meta.units = NOTATION.HELM;
     SeqHandler.setTags(uh);
   }
 
   /** From detectMacromolecule */
   public static setTags(uh: SeqHandler): void {
-    const units = uh.column.getTag(DG.TAGS.UNITS) as NOTATION;
+    const units = uh.column.meta.units as NOTATION;
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
@@ -391,7 +391,7 @@ export class SeqHandler {
     const newColName = colName ?? col.dataFrame.columns.getUnusedName(name);
     const newColumn = DG.Column.fromList('string', newColName, data ?? new Array(this.column.length).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
+    newColumn.meta.units = tgtNotation;
     if (tgtNotation === NOTATION.SEPARATOR) {
       if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, tgtSeparator);
@@ -478,7 +478,7 @@ export class SeqHandler {
       throw new Error('Invalid format of \'units\' parameter');
     const newColumn = DG.Column.fromList('string', name, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, units);
+    newColumn.meta.units = units;
     return newColumn;
   }
 

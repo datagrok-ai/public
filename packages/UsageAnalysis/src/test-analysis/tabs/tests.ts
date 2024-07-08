@@ -123,7 +123,7 @@ export class TestsView extends TATab {
     }
 
     updateGrid(df: DG.DataFrame): void {
-        df.getCol('status').colors.setCategorical(colors);
+        df.getCol('status').meta.colors.setCategorical(colors);
 
         if (this.grid === undefined)
             this.grid = df.plot.grid();

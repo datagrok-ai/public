@@ -135,12 +135,11 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
       gc.settings[SparklineType.Radar] ??= getSettings(gc);
 
     return ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
+      ui.input.columns('Сolumns', {table: gc.grid.dataFrame, onValueChanged: (input) => {
+        settings.columnNames = names(input.value);
         gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      }, available: names(gc.grid.dataFrame.columns.numerical),
+      checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
     ]);
   }

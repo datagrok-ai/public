@@ -168,13 +168,13 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   host.appendChild(tc.root);
   // add checkboxes to each hader
   tc.panes.forEach((pane)=> {
-    const functionCheck = ui.boolInput('', calculatedFunctions[funcNamesMap[pane.name]], (v:boolean) => {
+    const functionCheck = ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (input) => {
       calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
-      if (!v)
+      if (!input.value)
         $(pane.content).find('input').attr('disabled', 'true');
       else
         $(pane.content).find('input').removeAttr('disabled');
-    });
+    }});
     functionCheck.setTooltip('Toggle calculation of this function');
     pane.header.appendChild(functionCheck.root);
     pane.header.classList.add('hit-triage-compute-dialog-pane-header');

@@ -43,7 +43,7 @@ export class HeaderControls {
   private createAllPtoActivationInput(): BooleanInput {
     const flags = this.initialPatternConfig.phosphorothioateLinkageFlags;
     const initialValue = this.areAllPtoLinkagesSet(flags);
-    const allPtoActivationInput = ui.boolInput('All PTO', initialValue);
+    const allPtoActivationInput = ui.input.bool('All PTO', {value: initialValue});
 
     allPtoActivationInput.onInput(() => {
       const value = allPtoActivationInput.value!;
@@ -79,7 +79,7 @@ export class HeaderControls {
       if (!this.eventBus.isAntisenseStrandActive() && strand === STRAND.ANTISENSE)
         return;
       const initialValue = this.isFirstPtoActive(strand);
-      const firstPtoInput = ui.boolInput(`First ${strand} PTO`, initialValue);
+      const firstPtoInput = ui.input.bool(`First ${strand} PTO`, {value: initialValue});
 
       firstPtoInput.onInput(() => {
         const value = firstPtoInput.value!;

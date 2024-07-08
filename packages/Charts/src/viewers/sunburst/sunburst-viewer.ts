@@ -133,7 +133,7 @@ export class SunburstViewer extends EChartViewer {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
           const column = dataFrame.getCol(hierarchyColumnNames[j]);
-          const format = column.getTag(DG.TAGS.FORMAT);
+          const format = column.meta.format;
           if (format) {
             const number = format.indexOf('.');
             const len = format.length - number - 1;

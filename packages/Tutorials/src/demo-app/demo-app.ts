@@ -25,7 +25,7 @@ let treeNodeY: number = 0;
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
-  searchInput: DG.InputBase = ui.searchInput('', '');
+  searchInput: DG.InputBase = ui.input.search('', {value: ''});
   funcs: DemoFunc[] = [];
   subCategories: String[] = [];
 

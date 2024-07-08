@@ -113,6 +113,10 @@ export class Logger {
     console.warn = intercept(console.warn);
     console.error = intercept(console.error);
   }
+
+  static set reportPrefix(prefix: string) {
+    api.grok_Set_AutoReports_Prefix(prefix);
+  }
 }
 
 

@@ -9,9 +9,9 @@ grok.shell.addTableView(df);
 
 // Setting the column tags
 
-df.col('open in new tab').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Open in new tab';
-df.col('open in context panel').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Open in context panel';
-df.col('custom').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Custom';
+df.col('open in new tab').meta.linkClickBehavior = DG.LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+df.col('open in context panel').meta.linkClickBehavior = DG.LINK_CLICK_BEHAVIOR.OPEN_IN_CONTEXT_PANEL;
+df.col('custom').meta.linkClickBehavior = DG.LINK_CLICK_BEHAVIOR.CUSTOM;
 
 // Displaying the clicked link - global and local grid events
 

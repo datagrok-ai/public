@@ -1,5 +1,22 @@
 # Bio changelog
 
+## 2.13.5 (2024-07-05)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+
+## 2.13.4 (2024-07-02)
+
+### Bug fixes
+
+* GROK-15798: Fix To Atomic Level for units FASTA, UN alphabet
+* Fix detectMacromolecule to check for bad monomers on separator
+* Fix for review camelCase properties
+
 ## 2.13.3 (2024-06-28)
 
 ### Bug fixes

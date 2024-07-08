@@ -131,11 +131,9 @@ export async function _demoChemOverview(): Promise<void> {
       tv.grid.scrollToCell('MolWt', 0);
     })
     .step('Add color coding', async () => {
-            table.col('MolWt')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.LINEAR);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL,
-              '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');
-            table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
+            table.col('MolWt')!.meta.colors.setLinear();
+            table.col('NOCount')!.meta.colors.setConditional({'0 - 6.25': '#73aff5', '6.25 - 12.50': '#ffa500', '12.50 - 18.75': '#ff5140', '18.75 - 25': '#50af28'});
+            table.col('RingCount')!.meta.colors.setConditional();
             grok.shell.windows.showHelp = true;
             //@ts-ignore
             grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem');
@@ -294,7 +292,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
       scatterPlot = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs',
         table.col('In-vivo Activity')!, 78, BitArrayMetricsNames.Tanimoto, DimReductionMethods.T_SNE, {},
-        DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, encodingFunc,
+        DG.SEMTYPE.MOLECULE, {'units': molecules.meta.units!}, encodingFunc,
         createTooltipElement, createPropPanelElement, undefined, 0.5);
       progressBar.close();
       await delay(1000);
@@ -494,7 +492,7 @@ export async function _demoDatabases3(): Promise<void> {
 
   const loadNewQuery = (id: string) => {
     ui.empty(queryPanel);
-    const queryDiv = ui.textInput(`Compound activity details for target = ${id}`, query.replace(`~id~`, id));
+    const queryDiv = ui.input.textArea(`Compound activity details for target = ${id}`, {value: query.replace(`~id~`, id)});
     queryDiv.input.style.height = '100%';
     queryPanel.append(queryDiv.root);
     const dBQuery = connection!.query('', query.replace(`~id~`, id));
@@ -572,7 +570,7 @@ LIMIT 50
   runButton.style.width = '150px';
   runButton.style.marginLeft = '80px';
 
-  const queryPanel = ui.textInput('', query);
+  const queryPanel = ui.input.textArea('', {value: query});
   queryPanel.input.style.width = '100%';
   queryPanel.input.style.minHeight = '350px';
   const gridDiv = ui.div('', {style: {position: 'relative', height: '100%'}});

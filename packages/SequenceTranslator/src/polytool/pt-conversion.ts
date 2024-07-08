@@ -10,7 +10,7 @@ export const RULES_DIMER = '(#2)';
 export const RULES_HETERODIMER = '($2)';
 
 function addCommonTags(col: DG.Column): void {
-  col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
+  col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag('aligned', ALIGNMENT.SEQ);
   col.setTag('alphabet', ALPHABET.PT);
 }
@@ -290,7 +290,7 @@ export async function addTransformedColumn(
   const targetHelmCol = DG.Column.fromList('string', helmColName, targetList);
 
   addCommonTags(targetHelmCol);
-  targetHelmCol.setTag('units', NOTATION.HELM);
+  targetHelmCol.meta.units = NOTATION.HELM;
 
   if (addHelm) {
     targetHelmCol.setTag('cell.renderer', 'helm');

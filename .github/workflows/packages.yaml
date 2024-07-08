@@ -308,16 +308,8 @@ jobs:
           # docker system prune -af --volumes
 
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
+            DATAGROK_VERSION='1.19.2-rc'
           else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-          fi
-                    
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "bio" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "helm" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "st" ]]; then
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
             export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
@@ -379,7 +371,7 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         run: |
-          npm install -g datagrok-tools@4.12.27
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5

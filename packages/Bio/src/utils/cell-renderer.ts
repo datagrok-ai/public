@@ -154,7 +154,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const msaGapLength = 8;
 
     // Cell renderer settings
-    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.MaxMonomerLength : 4) ?? 50;
+    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.maxMonomerLength : 4) ?? 50;
     if (mmcrTAGS.maxMonomerLength in tableCol.tags) {
       const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
@@ -209,7 +209,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g.textBaseline = 'top';
 
       //TODO: can this be replaced/merged with splitSequence?
-      const units = tableCol.getTag(DG.TAGS.UNITS);
+      const units = tableCol.meta.units;
       const aligned: string = tableCol.getTag(bioTAGS.aligned);
 
       const palette = getPaletteByType(paletteType);
@@ -298,7 +298,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const tableCol = gridCell.tableColumn as DG.Column<string>;
     const s: string = cell.value ?? '';
     const separator = tableCol.tags[bioTAGS.separator];
-    const units: string = tableCol.tags[DG.TAGS.UNITS];
+    const units: string = tableCol.meta.units!;
     w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
@@ -345,7 +345,7 @@ export function drawMoleculeDifferenceOnCanvas(
   g.textBaseline = 'top';
 
   let palette: SeqPalette = UnknownSeqPalettes.Color;
-  if (units != 'HELM')
+  if (units !== 'HELM')
     palette = getPaletteByType(units.substring(units.length - 2));
 
   const vShift = 7;

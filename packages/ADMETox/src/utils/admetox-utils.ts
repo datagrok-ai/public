@@ -80,7 +80,7 @@ export async function performChemicalPropertyPredictions(molColumn: DG.Column, v
 }
 
 async function extractSmilesColumn(molColumn: DG.Column): Promise<DG.Column> {
-  const isSmiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+  const isSmiles = molColumn?.meta.units === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = new Array<string>(molColumn.length);
   for (let rowIndex = 0; rowIndex < molColumn.length; rowIndex++) {
     let el: string = molColumn?.get(rowIndex);
@@ -106,8 +106,8 @@ function applyColorCoding(col: DG.GridColumn, model: Model): void {
   if (!model.coloring) return;
   col.isTextColorCoded = true;
   const { type, min, max, colors } = model.coloring;
-  if (type === 'Linear') {
-    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+  if (type === DG.COLOR_CODING_TYPE.LINEAR) {
+    col.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     col.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = colors;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = min;
     col.column!.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = max;
@@ -260,9 +260,9 @@ export function addCustomTooltip(table: string): void {
 function updateColumnProperties(column: DG.Column, model: any, viewTable: DG.DataFrame): void {
   const newColumnName = viewTable.columns.getUnusedName(column.name);
   column.name = newColumnName;
-  column.setTag(DG.TAGS.FORMAT, '0.00');
+  column.meta.format = '0.00';
   column.setTag(DG.TAGS.DESCRIPTION, model.properties.find((prop: any) => prop.property.name === 'description').object.description);
-  column.setTag(DG.TAGS.UNITS, model.units);
+  column.meta.units = model.units;
 }
 
 export function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, addPiechart: boolean = true): void {

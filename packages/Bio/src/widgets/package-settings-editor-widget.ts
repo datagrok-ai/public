@@ -22,29 +22,29 @@ export class PackageSettingsEditorWidget extends DG.Widget {
 
   async init(): Promise<void> {
     const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
-      value: _package.properties.MaxMonomerLength!,
+      value: _package.properties.maxMonomerLength!,
       nullable: true, min: 0,
       onValueChanged: () => {
         // Handle user changed value
-        _package.properties.MaxMonomerLength = maxMonomerLengthInput.value ?? null;
+        _package.properties.maxMonomerLength = maxMonomerLengthInput.value ?? null;
       },
       tooltipText: this.maxMonomerLengthProp.description,
     });
 
     const tooltipWebLogoInput = ui.input.bool('Tooltip WebLogo', {
-      value: _package.properties.TooltipWebLogo,
+      value: _package.properties.tooltipWebLogo,
       nullable: false,
       onValueChanged: () => {
-        _package.properties.TooltipWebLogo = tooltipWebLogoInput.value;
+        _package.properties.tooltipWebLogo = tooltipWebLogoInput.value!;
       },
       tooltipText: this.tooltipWebLogo.description,
     });
 
     const defaultSeparatorInput = ui.input.choice('Default Separator', {
-      value: _package.properties.DefaultSeparator,
+      value: _package.properties.defaultSeparator,
       items: ['.', '/', '-'],
       onValueChanged: () => {
-        _package.properties.DefaultSeparator = defaultSeparatorInput.value;
+        _package.properties.defaultSeparator = defaultSeparatorInput.value!;
       },
       tooltipText: this.defaultSeparator.description,
     });

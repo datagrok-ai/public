@@ -1,3 +1,4 @@
+'use strict';
 /**
  * The class contains semantic type detectors.
  * Detectors are functions tagged with `DG.FUNC_TYPES.SEM_TYPE_DETECTOR`.
@@ -73,6 +74,12 @@ class BioPackageDetectors extends DG.Package {
 
   constructor() {
     super();
+
+    this.forbiddenMulticharAll = ' .:';
+    this.forbiddenMulticharFirst = ']' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharMiddle = '][' + this.forbiddenMulticharAll;
+    this.forbiddenMulticharLast = '[' + this.forbiddenMulticharAll;
+
     // replace super._logger
     this._logger = new LoggerWrapper(this, this.logger, 'detectors');
   }
@@ -167,7 +174,7 @@ class BioPackageDetectors extends DG.Package {
       ) {
         const statsAsHelm = this.getStats(categoriesSample, 2,
           this.getSplitterAsHelm(SEQ_SAMPLE_LENGTH_LIMIT));
-        col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+        col.meta.units = NOTATION.HELM;
 
         // alphabetSize calculated on (sub)sample of data is incorrect
         // const alphabetSize = Object.keys(statsAsHelm.freq).length;
@@ -246,7 +253,7 @@ class BioPackageDetectors extends DG.Package {
           return null;
         }
 
-        col.setTag(DG.TAGS.UNITS, units);
+        col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
@@ -265,24 +272,12 @@ class BioPackageDetectors extends DG.Package {
         }
         // Single- and multi-char monomer names for sequences with separators have constraints
         if (units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) {
-          const badSet = this.checkBadMultichar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden multi-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
+          const badSymbol /*: string | null*/ = this.checkBadMultichar(stats.freq);
+          if (badSymbol) {
+            last.rejectReason = `Forbidden multi-char monomer: '${badSymbol}'.`;
             return null;
           }
         }
-        if (units === NOTATION.FASTA && !alphabetIsMultichar) {
-          const badSet = this.checkBadSinglechar(stats.freq);
-          const [badCount, allCount] = this.calcBad(stats.freq, badSet);
-          if (badCount / allCount > maxBadRatio) {
-            last.rejectReason = `Forbidden single-char monomers: ` +
-              `${wu(badSet.keys()).map((m) => `'${m}'`).toArray().join(', ')}`;
-            return null;
-          }
-        }
-
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
@@ -293,7 +288,7 @@ class BioPackageDetectors extends DG.Package {
         }
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
-        col.setTag(DG.TAGS.UNITS, units);
+        col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
         col.setTag(SeqHandler.TAGS.aligned, aligned);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
@@ -357,6 +352,8 @@ class BioPackageDetectors extends DG.Package {
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
     const stats = this.getStats(categoriesSample, seqMinLength, splitter);
+    const badSymbol = this.checkBadMultichar(stats.freq);
+    if (badSymbol) return null;
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
     const mLengthAvg = wu.entries(stats.freq)
@@ -383,15 +380,22 @@ class BioPackageDetectors extends DG.Package {
   /** Dots and colons are nor allowed in multichar monomer names (but space is allowed).
    * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
-  checkBadMultichar(freq) {
-    const badRe = /[ .:]|^\d+$/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
-  }
+  checkBadMultichar(freq) /* : string | null */ {
+    for (const symbol of Object.keys(freq)) {
+      if (symbol && !isNaN(symbol)) return symbol; // performance evaluated better with RegExp
 
-  /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
-  checkBadSinglechar(freq) {
-    const badRe = /[ .:;\d_]/i;
-    return new Set(Object.keys(freq).filter((m) => badRe.test(m)));
+      const symbolLen = symbol.length;
+      if (this.forbiddenMulticharFirst.includes(symbol[0]))
+        return symbol;
+      if (this.forbiddenMulticharLast.includes(symbol[symbolLen - 1]))
+        return symbol;
+      for (let cI = 1; cI < symbolLen - 1; ++cI) {
+        const c = symbol[cI];
+        if (this.forbiddenMulticharMiddle.includes(c))
+          return symbol;
+      }
+    }
+    return null;
   }
 
   calcBad(freq, forbiddenSet) {
@@ -490,23 +494,27 @@ class BioPackageDetectors extends DG.Package {
 
   /** For trivial checks split by single chars*/
   getSplitterAsChars(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       return seq.split('', lengthLimit);
     };
+    resFunc.T = 'splitterAsChars';
+    return resFunc;
   }
 
   getSplitterWithSeparator(separator, limit) {
-    return (seq) => {
+    const resFunc = function(seq) {
       return !seq ? [] : seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
     };
+    resFunc.T = 'splitterWithSeparator';
+    return resFunc;
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  monomerRe = /\[(\w+)\]|(.)/g;
+  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|([A-Za-z-])/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
   getSplitterAsFasta(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       const res = wu(seq.toString().matchAll(this.monomerRe))
         .take(lengthLimit)
         .map((ma) => {
@@ -522,6 +530,8 @@ class BioPackageDetectors extends DG.Package {
 
       return res;
     }.bind(this);
+    resFunc.T = 'splitterAsFasta';
+    return resFunc;
   }
 
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
@@ -535,7 +545,7 @@ class BioPackageDetectors extends DG.Package {
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA). */
   getSplitterAsHelm(lengthLimit) {
-    return function(seq) {
+    const resFunc = function(seq) {
       this.helmRe.lastIndex = 0;
       const ea = this.helmRe.exec(seq.toString());
       const inSeq = ea ? ea[2] : null;
@@ -553,6 +563,8 @@ class BioPackageDetectors extends DG.Package {
       const mmListRes = mmList.map(mmPostProcess);
       return mmListRes;
     }.bind(this);
+    resFunc.T = 'splitterAsHelm';
+    return resFunc;
   }
 
   sample(col, n) {

@@ -49,7 +49,7 @@ category('Helm', () => {
   //   const df = DG.DataFrame.fromCsv(file);
   //   const col = df.columns.byName('HELM string');
   //   await grok.data.detectSemanticTypes(df);
-  //   expect(col.tags[DG.TAGS.UNITS], 'HELM');
+  //   expect(col.meta.units, 'HELM');
   // });
 
   const complexMonomers = [

@@ -79,7 +79,7 @@ category('Benchmarks: Analysis start', () => {
       const clustersCol = df.getCol('cluster');
       const sequenceCol = df.getCol('sequence');
       sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-      sequenceCol.setTag(DG.TAGS.UNITS, size === benchmarkDatasetSizes[0] ? NOTATION.HELM : NOTATION.FASTA);
+      sequenceCol.meta.units = size === benchmarkDatasetSizes[0] ? NOTATION.HELM : NOTATION.FASTA;
 
       await DG.timeAsync('Analysis start', async () => {
         const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol,
