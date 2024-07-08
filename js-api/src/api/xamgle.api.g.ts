@@ -126,6 +126,8 @@ export interface SettingsInterface {
 
   clientFuncCacheEnabled: boolean;
 
+  clientFilesCacheEnabled: boolean;
+
   dataFrameBatchSize: number;
 
 

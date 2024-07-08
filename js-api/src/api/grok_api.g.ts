@@ -357,6 +357,7 @@ export interface IDartApi {
   grok_DockManager_UndockNode(m: any, n: any): any;
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
+  grok_DockManager_OnElementClosed(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
   grok_Viewer_Get_Type(v: any): any;

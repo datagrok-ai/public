@@ -1351,6 +1351,8 @@ export interface IBoxPlotSettings {
 
   autoLayout: boolean;
 
+  plotStyle: string;
+
   axisFont: string;
 
   categoryFont: string;
@@ -1369,8 +1371,6 @@ export interface IBoxPlotSettings {
 
   /// Number of KDE bins to display a violin plot
   bins: number;
-
-  plotStyle: string;
 
   whiskerColor: number;
 
