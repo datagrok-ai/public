@@ -1,8 +1,11 @@
 # compute-utils changelog
 
-## 1.35.9 (2024-07-08)
+## 1.35.10 (2024-07-08)
 
 - CompositionPipeline: Exposed options to public interface
+
+## 1.35.9 (2024-07-08)
+
 - PLV: Fixed names conflict in single excel export
 
 ## 1.35.8 (2024-07-03)
