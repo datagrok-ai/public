@@ -512,3 +512,7 @@ export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
     res = res && (columns.byIndex(i).matches('numerical'));
   return res;
 }
+
+export function isInteractiveSVM(df: DG.DataFrame, labels: DG.Column): boolean {
+  return df.rowCount <= 1000;
+}
