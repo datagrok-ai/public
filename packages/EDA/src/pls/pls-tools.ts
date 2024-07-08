@@ -343,7 +343,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const namesInputs = ui.input.column(TITLE.NAMES, {
     table: table,
     value: names,
-    onValueChanged: () => names = predictInput.value,
+    onValueChanged: () => names = predictInput.value ?? undefined,
     filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
