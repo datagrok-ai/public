@@ -19,7 +19,7 @@ public class DbCredentials
     public static final String CONNECTION_STRING = "connString";
     public static final String SSL = "ssl";
     public static final String CACHE_SCHEMA = "cacheSchema";
-    public static final String CACHE_RESULTS = "cacheResults";
+    public static final String CACHE_RESULTS = "cache";
     public static final String CACHE_INVALIDATE_SCHEDULE = "cacheInvalidateSchedule";
     public static final String DB_DESCRIPTION = "Database name";
     public static final String CONNECTION_STRING_DESCRIPTION = "When specified, this connection string overrides " +
@@ -59,9 +59,6 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
         add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                 DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-        add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
     }};
 
     public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{

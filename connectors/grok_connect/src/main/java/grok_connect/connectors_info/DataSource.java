@@ -24,6 +24,13 @@ public class DataSource
 
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
+    public List<Property> cacheTemplate = new ArrayList<Property>() {{
+        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA, "Cache results of schema browsing"));
+        add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS, "Cache query results"));
+        add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE,
+                "Invalidation schedule for cache. Use cron expression to set valid invalidation schedule"));
+    }};
+
     public List<Property> queryTemplate;
 
     public List<AggrFunctionInfo> aggregations = new ArrayList<AggrFunctionInfo>() {{
