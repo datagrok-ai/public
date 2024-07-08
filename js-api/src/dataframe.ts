@@ -2427,7 +2427,7 @@ export class ColumnMarkerHelper {
     return this;
   }
 
-  setMarkerCoding(category: string, marker: string): void {
+  setMarkerCoding(category: string, marker: MarkerCodingType): void {
     let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
     let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
     jsonMap[category] = marker;
