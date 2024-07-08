@@ -139,50 +139,6 @@ export function getPredictionByLinearRegression(features: DG.ColumnList, params:
   );
 } // getPredictionByLinearRegression
 
-/** Generate test dataset */
-export function getTestDatasetForLinearRegression(rowCount: number, colCount: number,
-  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
-  const df = grok.data.demo.randomWalk(rowCount, colCount + 1);
-  const cols = df.columns;
-  const noiseCol = cols.byIndex(colCount);
-  noiseCol.name = 'y (noisy)';
-  const yNoisy = noiseCol.getRawData();
-  const y = new Float32Array(rowCount).fill(paramsBias);
-
-  let idx = 0;
-  let scale = 0;
-  let bias = 0;
-  let weight = 0;
-
-  for (const col of cols) {
-    col.name = `x${idx}`;
-    scale = Math.random() * featuresScale;
-    bias = Math.random() * featuresBias;
-    const arr = col.getRawData();
-    weight = Math.random() * paramsScale;
-
-    for (let j = 0; j < rowCount; ++j) {
-      arr[j] = scale * arr[j] + bias;
-      y[j] += arr[j] * weight;
-    }
-
-    ++idx;
-
-    if (idx === colCount)
-      break;
-  }
-
-  scale = Math.random() * featuresScale;
-  bias = Math.random() * featuresBias;
-
-  for (let j = 0; j < rowCount; ++j)
-    yNoisy[j] = scale * yNoisy[j] + y[j];
-
-  cols.add(DG.Column.fromFloat32Array('y', y, rowCount));
-
-  return df;
-} // getTestDatasetForLinearRegression
-
 /** Reteurn linear regression params using the PLS method */
 async function getLinearRegressionParamsUsingPLS(features: DG.ColumnList,
   targets: DG.Column, components: number): Promise<Float32Array> {

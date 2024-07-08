@@ -121,8 +121,10 @@ namespace softmax {
 
             // Copmute loss
             loss = 0;
+
 			for (int i = 0; i < m; ++i)
 				loss += -log(Z(target[i], i));
+				
 			loss /= m;
 
             // Check loss

@@ -88,13 +88,13 @@ export class SoftmaxClassifier {
         this.categories = new Array<string>(modelDf.rowCount);
 
         for (let i = 0; i < c; ++i) {
-          const c = columns.byIndex(i);
-          this.categories[i] = c.name;
+          const col = columns.byIndex(i);
+          this.categories[i] = col.name;
 
-          if (c.type !== DG.COLUMN_TYPE.FLOAT)
-            throw new Error('incorrect params columns type');
+          if (col.type !== DG.COLUMN_TYPE.FLOAT)
+            throw new Error(`Incorrect input column type. Expected: float, passed: ${col.type}`);
 
-          this.params[i] = c.getRawData() as Float32Array;
+          this.params[i] = col.getRawData() as Float32Array;
         }
 
         // extract averages

@@ -6,16 +6,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {checkGeneratorSVMinputs} from './utils';
-import {_generateDatasetInWebWorker} from '../wasm/EDAAPI';
-
-const SVM_GEN_FEATURES_INDEX = 0;
-const SVM_GEN_LABELS_INDEX = 1;
-const SVM_FEATURE_NAME = 'Feature #';
-const SVM_LABEL_NAME = 'Label';
-const BOOL_TRESHOLD_SCALE = 0.5;
-const TYPE_TRESHOLD = 0.5;
-
 /**  Returns the dataframe "cars" */
 export function carsDataframe(): DG.DataFrame {
   return DG.DataFrame.fromColumns(
@@ -39,89 +29,3 @@ export function carsDataframe(): DG.DataFrame {
       DG.Column.fromInt32Array('price', new Int32Array([16500, 17710, 16430, 6575, 7957, 6229, 7129, 8845, 6785, 35550, 7395, 31600, 16503, 5389, 7349, 7299, 6229, 13860, 37028, 12170, 7775, 5348, 7898, 9989, 10698, 7775, 13295, 12940, 19045, 22470])),
     ]);
 } // carsDataframe
-
-/** Generate dataset for testing binary classifiers */
-export async function testDataForBinaryClassification(kernel: number, kernelParams: Array<number>,
-  name: string, samplesCount: number, featuresCount: number, min: number,
-  max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-  // check inputs
-  checkGeneratorSVMinputs(samplesCount, featuresCount, min, max, violatorsPercentage);
-
-  // kernel params column
-  const kernelParamsCol = DG.Column.fromList('double', 'kernelParams', kernelParams);
-
-  // CALL WASM-COMPUTATIONS
-  let _output: any;
-  const _promise = _generateDatasetInWebWorker(kernel, kernelParamsCol,
-    samplesCount, featuresCount, min, max, violatorsPercentage);
-
-  await _promise.then(
-    (_result) => {_output = _result;},
-    (_error) => {throw new Error(`Error: ${_error}`);},
-  );
-
-  // Rename labels column
-  _output[SVM_GEN_LABELS_INDEX].name = SVM_LABEL_NAME;
-
-  // Rename feature columns
-  for (const col of _output[SVM_GEN_FEATURES_INDEX])
-    col.name = SVM_FEATURE_NAME + col.name;
-
-  // Create dataframe
-  const df = DG.DataFrame.fromColumns(_output[SVM_GEN_FEATURES_INDEX]);
-  df.name = name;
-  df.columns.add(_output[SVM_GEN_LABELS_INDEX]);
-
-  return df;
-} // testDataForMachineLearning
-
-/** Generate dataset for testing multiclass classifiers */
-export function testDataForClassifiers(featureCount: number, samplesCount: number, useInts: boolean, violatorsRatio: number, min: number, max: number): DG.DataFrame {
-  if ((min >= max) || (featureCount < 1) || (samplesCount < 1) || (violatorsRatio < 0) || (violatorsRatio > 1))
-    throw new Error('Incorrect data generation inputs');
-
-  const features = Array<Float32Array | Int32Array>(featureCount);
-  const step = max - min;
-  const threshold = featureCount * BOOL_TRESHOLD_SCALE;
-
-  for (let i = 0; i < featureCount; ++i) {
-    const arr = useInts ? ((Math.random() > TYPE_TRESHOLD) ? new Int32Array(samplesCount) : new Float32Array(samplesCount)) : new Float32Array(samplesCount);
-
-    for (let j = 0; j < samplesCount; ++j)
-      arr[j] = min + Math.random() * step;
-
-    features[i] = arr;
-  }
-
-  const boolLabels = Array<boolean>(samplesCount);
-  const strLabels = Array<string>(samplesCount);
-
-  let sum = 0;
-  for (let i = 0; i < samplesCount; ++i) {
-    sum = 0;
-    for (let j = 0; j < featureCount; ++j)
-      sum += (features[j][i] - min) / step;
-
-
-    if (sum > threshold) {
-      boolLabels[i] = true;
-      strLabels[i] = `A${features[0][i] > threshold ? 1 : 2}`;
-    } else {
-      boolLabels[i] = false;
-      strLabels[i] = `B${features[0][i] > threshold ? 1 : 2}`;
-    }
-
-    if (Math.random() < violatorsRatio) {
-      boolLabels[i] = !boolLabels[i];
-      strLabels[i] = 'A1';
-    }
-  }
-
-  const cols = features.map((arr, idx) =>
-    (arr instanceof Int32Array) ? DG.Column.fromInt32Array(`${SVM_FEATURE_NAME}${idx}`, arr) : DG.Column.fromFloat32Array(`${SVM_FEATURE_NAME}${idx}`, arr));
-
-  cols.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, `${SVM_LABEL_NAME} (binary)`, boolLabels));
-  cols.push(DG.Column.fromStrings(`${SVM_LABEL_NAME} (multi)`, strLabels));
-
-  return DG.DataFrame.fromColumns(cols);
-}
