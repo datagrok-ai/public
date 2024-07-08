@@ -66,7 +66,7 @@ category('Grid', () => {
     //numerical AGE column check for Linear ColorCoding
     const ageCol = demog.col('age')!;
     if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
-      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000, 4278255360]')
+      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]')
       throw new Error('Linear Color Coding error');
   });
 
@@ -83,7 +83,7 @@ category('Grid', () => {
     col!.meta.choices = ['New York', 'Buffalo'];
     col!.meta.autoChoices = false;
 
-    if (JSON.stringify(col?.meta.choices) !== '["New York", "Buffalo"]' || col?.meta.autoChoices !== false)
+    if (JSON.stringify(col?.meta.choices) !== '["New York","Buffalo"]' || col?.meta.autoChoices !== false)
       throw new Error('Column Controlled Values (Choices) error');
   });
 
