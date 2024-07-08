@@ -101,6 +101,41 @@ category('Dapi: connection cache', () => {
     expect(second * 2 < first);
   }, {skipReason: 'GROK-15408'});
 
+  test('Sequential stress test', async () => {
+    const times = DG.Test.isInBenchmark ? 1000 : 100;
+    let demogCsvReads1 = [];
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+    for (let i = 0; i < times; i++)
+      demogCsvReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+
+    let carsReads1 = [];
+    for (let i = 0; i < times; i++)
+      carsReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+
+    let carsReads2 = [];
+    let demogCsvReads2 = [];
+    for (let i = 0; i < times; i++) {
+      demogCsvReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+      carsReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+    }
+    const demog1Median = median(demogCsvReads1);
+    const demog2Median = median(demogCsvReads2);
+    expect(demog2Median < demog1Median * 1.5, true);
+
+    const cars1Median = median(carsReads1);
+    const cars2Median = median(carsReads2);
+    expect(cars2Median < cars1Median * 1.5, true);
+  }, {timeout: 120000, skipReason: 'GROK-15408'});
+
   after(async () => {
     try {
       await grok.dapi.files.delete(testFilePath1);
@@ -279,4 +314,12 @@ async function getExecutionTime(f: () => any) {
   const start = Date.now();
   await f();
   return Date.now() - start;
+}
+
+function median(numbers: number[]) {
+  const sorted = Array.from(numbers).sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0)
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  return sorted[middle];
 }

@@ -91,7 +91,7 @@ export async function testIntAsync(a: number): Promise<number> {
 //input: object params
 //output: object input
 export function CustomStringInput(params: any) {
-  const defaultInput = ui.stringInput('Custom input', '');
+  const defaultInput = ui.input.string('Custom input', {value: ''});
   defaultInput.root.style.backgroundColor = 'aqua';
   defaultInput.input.style.backgroundColor = 'aqua';
   return defaultInput;

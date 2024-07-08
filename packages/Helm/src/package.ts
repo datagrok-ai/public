@@ -175,12 +175,12 @@ export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
   const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
   const colSh = SeqHandler.forColumn(col);
-  const colUnits = col.getTag(DG.TAGS.UNITS);
+  const colUnits = col.meta.units;
   if (colUnits === NOTATION.HELM)
     checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
   const convert = colSh.getConverter(NOTATION.HELM);
   const helmMol = convert(mol);
-  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.getTag(DG.TAGS.UNITS));
+  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.meta.units!);
 }
 
 //name: Properties

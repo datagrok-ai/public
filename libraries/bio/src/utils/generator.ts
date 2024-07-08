@@ -24,7 +24,7 @@ export function generateLongSequence(length: number = 10 ** 5): DG.Column[] {
     `meI/hHis/Aca/N//dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe`.repeat(Math.ceil(length / 10)).slice(0, -1);
   const msaCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MSA', new Array(10 ** 2).fill(longSequence));
   msaCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  msaCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  msaCol.meta.units = NOTATION.SEPARATOR;
   msaCol.setTag(TAGS.separator, '/');
   msaCol.setTag(TAGS.alphabet, ALPHABET.UN);
   msaCol.setTag(TAGS.alphabetIsMultichar, 'true');
@@ -47,7 +47,7 @@ export function generateLongSequence2(
 
   const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, rowCount);
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag(DG.TAGS.UNITS, notation);
+  col.meta.units = notation;
   col.setTag(TAGS.alphabet, alphabet);
   if (notation == NOTATION.SEPARATOR) col.setTag(TAGS.separator, separator!);
 

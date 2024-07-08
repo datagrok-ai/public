@@ -99,8 +99,8 @@ category('DataFrame: Methods', () => {
 
   test('getTag | setTag', async () => {
     const df1 = createDf();
-    df1.columns.byName('population').setTag('units', 'm');
-    expect('m', df1.columns.byName('population').getTag('units'));
+    df1.columns.byName('population').meta.units = 'm';
+    expect('m', df1.columns.byName('population').meta.units);
   });
 
   test('groupBy', async () => {

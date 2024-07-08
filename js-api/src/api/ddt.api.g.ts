@@ -234,16 +234,6 @@ export class Tags {
   static DbPropertyReferenceType = 'dbPropertyReferenceType';
 
 }
-export class TagValues {
-  static LINK_CLICK_BEHAVIOR_OPEN_IN_NEW_TAB = 'Open in new tab';
-
-  static LINK_CLICK_BEHAVIOR_OPEN_IN_CONTEXT_PANEL = 'Open in context panel';
-
-  static LINK_CLICK_BEHAVIOR_CUSTOM = 'Custom';
-
-  static LINK_CLICK_BEHAVIOR_VALUES = ['Open in new tab', 'Open in context panel', 'Custom'];
-
-}
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
   static Editor = 'editor';

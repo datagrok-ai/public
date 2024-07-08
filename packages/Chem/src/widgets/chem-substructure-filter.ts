@@ -127,18 +127,18 @@ export class SubstructureFilter extends DG.Filter {
     this.root = ui.divV([]);
     this.calculating = false;
 
-    this.searchTypeInput = ui.choiceInput('', this.searchType, this.searchTypes, () => { 
+    this.searchTypeInput = ui.input.choice('', {value: this.searchType, items: this.searchTypes, onValueChanged: () => {
       this.onSearchTypeChanged();
-    });
+    }});
     ui.tooltip.bind(this.searchTypeInput.input, () => {
       return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType]
     });
     this.searchTypeInput.root.classList.add('chem-filter-search-type');
 
-    this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
+    this.fpInput = ui.input.choice('FP', {value: this.fp, items: this.fpsTypes, onValueChanged: () => {
       this.fp = this.fpInput.value;
       !this.fpSync ? this.searchTypeChanged.next() : this.fpSync = false;
-    });
+    }});
     this.fpInput.input.classList.add('chem-filter-fp-editor');
     this.fpInput.captionLabel.classList.add('chem-filter-fp-label');
 

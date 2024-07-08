@@ -103,7 +103,7 @@ category('renderers', () => {
   async function _rendererMacromoleculeDifference() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.meta.units = NOTATION.SEPARATOR;
     seqDiffCol.setTag(bioTAGS.separator, '/');
     seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
     seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
@@ -140,10 +140,10 @@ category('renderers', () => {
     expect(tv.grid.dataFrame.id, df.id);
 
     console.log('Bio: tests/renderers/afterMsa, src before test ' +
-      `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
+      `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.meta.units}", ` +
       `cell.renderer="${srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER)}"`);
     expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(srcSeqCol.meta.units, NOTATION.FASTA);
     expect(srcSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ);
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
@@ -153,7 +153,7 @@ category('renderers', () => {
     expect(tv.grid.dataFrame.id, df.id);
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(msaSeqCol.meta.units, NOTATION.FASTA);
     expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
     expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
@@ -205,7 +205,7 @@ category('renderers', () => {
     /**/
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.meta.units = NOTATION.SEPARATOR;
     seqDiffCol.setTag(bioTAGS.separator, '/');
     seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
     seqDiffCol.setTag(bioTAGS.alphabet, 'UN');

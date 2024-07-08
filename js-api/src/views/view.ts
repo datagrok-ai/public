@@ -780,7 +780,7 @@ export class VirtualView {
   }
 
   /** Sets the number of elements, and a function that renders i-th element. */
-  setData(length: number, renderer: any): void {
+  setData(length: number, renderer: (index: number) => HTMLElement): void {
     api.grok_VirtualItemView_SetData(this.dart, length, renderer);
   }
 

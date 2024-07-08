@@ -124,20 +124,20 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
-  const aminoToInput = ui.stringInput('Mutated to:', '', () => {
+  const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: () => {
     const substitutedToAar = aminoToInput.stringValue;
     if (substitutedToAar !== '')
       pairsTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       pairsTable.filter.setAll(true);
-  });
+  }});
   aminoToInput.setTooltip('Filter the rows by the monomer that the mutation was substituted to');
 
   const pairsGrid = pairsTable.plot.grid();
   setGridProps(pairsGrid, true);
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
-  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
+  substCol.meta.units = alignedSeqCol.meta.units;
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
 
   let keyPress = false;

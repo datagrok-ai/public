@@ -57,7 +57,7 @@ category('renderers', () => {
     }, 'Table view canvas not found', 100);
 
     expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(helmCol.getTag(DG.TAGS.UNITS), NOTATION.HELM);
+    expect(helmCol.meta.units, NOTATION.HELM);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
 
     const cellRendererErrorJson: string = helmCol.getTag(helmTAGS.cellRendererRenderError);

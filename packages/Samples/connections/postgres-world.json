@@ -3,6 +3,8 @@
   "name": "PostgresWorld",
   "friendlyName": "World",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "port": 54323,
     "db": "world"

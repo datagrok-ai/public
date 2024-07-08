@@ -22,7 +22,7 @@ category('Core', () => {
     const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
-    simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    simpleAlignedSeqCol.meta.units = NOTATION.FASTA;
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
@@ -42,7 +42,7 @@ category('Core', () => {
     const complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
-    complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    complexAlignedSeqCol.meta.units = NOTATION.SEPARATOR;
     complexAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.setTag(C.TAGS.SEPARATOR, '/');
     const complexScaledCol = scaleActivity(complexActivityCol, C.SCALING_METHODS.MINUS_LG);
@@ -63,7 +63,7 @@ category('Core', () => {
     const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
-    simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    simpleAlignedSeqCol.meta.units = NOTATION.FASTA;
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 

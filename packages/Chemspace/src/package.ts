@@ -30,11 +30,11 @@ const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: '
 export async function app(): Promise<void> {
   const token = await getApiToken();
 
-  const molecule = ui.moleculeInput('', 'c1ccccc1O');
-  const mode = ui.choiceInput('Mode', SEARCH_MODE.SIMILAR, Object.values(SEARCH_MODE)) as DG.InputBase<SEARCH_MODE>;
-  const similarity = ui.choiceInput('Similarity', '0.6', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
+  const molecule = ui.input.molecule('', {value: 'c1ccccc1O'});
+  const mode = ui.input.choice('Mode', {value: SEARCH_MODE.SIMILAR, items: Object.values(SEARCH_MODE)}) as DG.InputBase<SEARCH_MODE>;
+  const similarity = ui.input.choice('Similarity', {value: '0.6', items: ['0.2', '0.4', '0.6', '0.8']}) as DG.InputBase<string>;
   const catalog =
-    ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
+    ui.input.choice('Catalog', {value: CATALOG_TYPE.SCR, items: Object.values(CATALOG_TYPE)}) as DG.InputBase<CATALOG_TYPE>;
   const filterForm = ui.form([mode, similarity, catalog]);
   const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls,pure-form');
 
@@ -91,27 +91,28 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
   await getApiToken();
   const acc = ui.accordion();
   const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
-  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE), () => {
-    const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
-    const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
-    const similarExpanded = similarPanel?.expanded ?? false;
-    const substructureExpanded = substructurePanel?.expanded ?? false;
-    for (const pane of acc.panes)
-      acc.removePane(pane);
+  const catalog = ui.input.choice('Catalog', {value: CATALOG_TYPE.SCR, items: Object.values(CATALOG_TYPE),
+    onValueChanged: () => {
+      const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
+      const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
+      const similarExpanded = similarPanel?.expanded ?? false;
+      const substructureExpanded = substructurePanel?.expanded ?? false;
+      for (const pane of acc.panes)
+        acc.removePane(pane);
 
-    acc.addPane(SEARCH_MODE.SIMILAR, () => {
-      catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
-        createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
-      return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
-    }, similarExpanded);
-    acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
-      catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
-        createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
-      return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
-    }, substructureExpanded);
-  }) as DG.InputBase<CATALOG_TYPE>;
+      acc.addPane(SEARCH_MODE.SIMILAR, () => {
+        catalogToData[catalog.value] ??= {};
+        catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
+          createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
+        return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
+      }, similarExpanded);
+      acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
+        catalogToData[catalog.value] ??= {};
+        catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
+          createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
+        return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
+      }, substructureExpanded);
+    }}) as DG.InputBase<CATALOG_TYPE>;
   catalog.fireChanged();
 
   const form = ui.form([catalog]);
@@ -242,7 +243,7 @@ function pricesDataToTable(items: Price[]): DG.DataFrame {
   for (const name of Array.from(packsArrays.keys()).sort()) {
     const column = DG.Column.fromList(DG.TYPE.FLOAT, name, packsArrays.get(name));
     column.semType = 'Money';
-    column.setTag('format', 'money($)');
+    column.meta.format = 'money($)';
     table.columns.add(column);
   }
   return table;

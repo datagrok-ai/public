@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE, LINK_CLICK_BEHAVIOR
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -606,7 +606,6 @@ export class Column<T = any> {
   public dart: any;
   public temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper | undefined;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -764,6 +763,18 @@ export class Column<T = any> {
     return col;
   }
 
+  /** Is the column numerical (float, int, bigint, qnum)
+  * @type {boolean}*/
+  get isNumerical(): boolean {
+    return api.grok_Column_Get_Is_Numerical(this.dart);
+  }
+
+  /** Is the column categorical (string, boolean)
+  * @type {boolean}*/
+  get isCategorical(): boolean {
+    return api.grok_Column_Get_Is_Categorical(this.dart);
+  }
+
   /** Column data type.
    * @type {string} */
   get type(): ColumnType {
@@ -823,10 +834,9 @@ export class Column<T = any> {
     return api.grok_Column_Get_Version(this.dart);
   }
 
+  // Obsolete. Recommended method is "meta.dialogs".
   get dialogs(): ColumnDialogHelper {
-    if (this._dialogs == undefined)
-      this._dialogs = new ColumnDialogHelper(this);
-    return this._dialogs;
+    return this.meta.dialogs;
   }
 
   // Obsolete. Recommended method is "meta.colors".
@@ -2310,7 +2320,7 @@ export class ColumnDialogHelper {
 
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
-    let formula = this.column.getTag('formula');
+    let formula = this.column.meta.formula;
     // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
@@ -2383,6 +2393,10 @@ export class ColumnColorHelper {
     }
   }
 
+  setDisabled(): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.OFF;
+  }
+
   getColor(i: number): number {
     return api.grok_Column_GetColor(this.column.dart, i);
   }
@@ -2424,11 +2438,18 @@ export class ColumnMarkerHelper {
 
 export class ColumnMetaHelper {
   private readonly column: Column;
+  private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
+  }
+
+  get dialogs(): ColumnDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new ColumnDialogHelper(this.column);
+    return this._dialogs;
   }
 
   get colors(): ColumnColorHelper {
@@ -2443,14 +2464,49 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
 
+  /** Returns the maximum amount of significant digits detected in the column. */
+  get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
+
+  /** When set, uses the formula to calculate the column values. */
+  get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
+  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+
+  /** Specifies the units of the dataframe column. */
+  get units(): string | null { return this.column.getTag(TAGS.UNITS); }
+  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
+
+
+  /** When set, switches the cell editor to a combo box that only allows to choose specified values.
+   * Applicable for string columns only.
+   * See also {@link autoChoices}. */
+  get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
+  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also {@link choices}. */
+  get autoChoices(): boolean { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? false :
+    this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
+  set autoChoices(x: boolean) { this.column.setTag(TAGS.AUTO_CHOICES, x.toString()); }
+
+  /** Specifies the behavior of link click (open in new tab, open in context panel, custom). Open in new tab is used by default. */
+  get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
+    return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+  }
+  set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
+
+  /** Specifies whether the column is exported as part of the CSV file. Defaults to true. */
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
 
+  /** Specifies whether the column is exported as part of the binary file. Defaults to true. */
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
 

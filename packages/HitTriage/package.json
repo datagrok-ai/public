@@ -20,7 +20,7 @@
     "@datagrok-libraries/utils": "^4.2.11",
     "cash-dom": "latest",
     "css-loader": "^6.5.1",
-    "datagrok-api": "^1.18.4",
+    "datagrok-api": "../../js-api",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "latest",

@@ -3,6 +3,8 @@
   "name": "AthenaNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "athena.us-east-2.amazonaws.com",
     "db": "northwind",
     "port": 443,
