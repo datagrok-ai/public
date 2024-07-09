@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-const INIT_COL_IDX = 1;
+import {STAGE, INIT_COL_IDX} from './constants';
+
 const MIN_COLS_COUNT = 3;
 
 export async function solve(df: DG.DataFrame): Promise<DG.DataFrame> {
@@ -190,7 +191,7 @@ export async function solve(df: DG.DataFrame): Promise<DG.DataFrame> {
       stages.push(...new Array<string>(stageSol.rowCount).fill(`Stage ${k + 1}`));
     }
 
-    solutionCols.add(DG.Column.fromStrings('_Stage', stages));
+    solutionCols.add(DG.Column.fromStrings(STAGE, stages));
 
     return result;
 }

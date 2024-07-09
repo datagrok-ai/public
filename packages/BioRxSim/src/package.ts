@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {solve} from './solver';
+import {BioRxSim} from './ui';
 
 export const _package = new DG.Package();
 
@@ -12,7 +13,7 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: BioRxSim
+//name: BioRx
 //tags: model
 //description: BioRx demo simulation
 //input: dataframe inputs
@@ -22,6 +23,14 @@ export function info() {
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
-export async function BioRxSim(inputs: DG.DataFrame): Promise<DG.DataFrame> {
+export async function BioRx(inputs: DG.DataFrame): Promise<DG.DataFrame> {
   return await solve(inputs);
+}
+
+//name: BioRxSimulation
+//tags: app
+//description: BioRx demo simulation
+export async function BioRxSimulation() {
+  const view = new BioRxSim();
+  await view.run();
 }
