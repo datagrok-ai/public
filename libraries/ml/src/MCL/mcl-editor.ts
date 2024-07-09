@@ -14,10 +14,10 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
     public inflateInput: DG.InputBase<number | null>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       super(editorSettings);
-      this.similarityThresholdInput = ui.input.int('Similarity Threshold', {value: 80});
-      this.maxIterationsInput = ui.input.int('Max Iterations', {value: 5});
-      this.useWebGPUInput = ui.input.bool('Use WebGPU', {value: false});
-      this.inflateInput = ui.input.float('Inflation Factor', {value: defaultMCLOptions.inflateFactor});
+      this.similarityThresholdInput = ui.intInput('Similarity Threshold', 80);
+      this.maxIterationsInput = ui.intInput('Max Iterations', 5);
+      this.useWebGPUInput = ui.boolInput('Use WebGPU', false);
+      this.inflateInput = ui.floatInput('Inflation Factor', defaultMCLOptions.inflateFactor);
       getGPUAdapterDescription().then((desc) => {
         if (desc) {
           this.useWebGPUInput.setTooltip(`Use webGPU for MCL calculation (${desc})`);
