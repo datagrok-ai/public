@@ -160,7 +160,7 @@ export class AddNewColumnDialog {
     const allFunctionsList = DG.Func.find().filter((it) => it.outputs.length === 1);
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
-        return {propName: it.name, propType: it.propertyType};
+        return {propName: it.name, propType: it.semType ?? it.propertyType};
       });
       try {
         const packageName = func.package.name;
@@ -663,6 +663,13 @@ export class AddNewColumnDialog {
     this.widgetColumns = await DG.Func.byName('ColumnGridWidget').apply({df: this.sourceDf});
 
     this.columnsDf = DG.toJs(this.widgetColumns!.props.dfColumns);
+    this.columnsDf?.onCurrentRowChanged.subscribe(() => {
+      if (this.columnsDf && this.columnsDf!.currentRowIdx !== -1) {
+        const colName = this.columnsDf!.get('name', this.columnsDf!.currentRowIdx);
+        if (this.sourceDf)
+          this.widgetFunctions!.props.sortByColType = this.sourceDf.col(colName);
+      }
+    })
 
     const control = ui.box();
     control.append(this.widgetColumns!.root);
@@ -673,8 +680,8 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Function List Widget". */
   async initUiFunctions(): Promise<HTMLDivElement> {
-    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply();
-    this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
+    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({scalarOnly: true});
+    //this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
     this.widgetFunctions!.props.showSignature = true;
     const control = ui.box();
     control.append(this.widgetFunctions!.root);
@@ -769,7 +776,7 @@ export class AddNewColumnDialog {
     if (this.typeOf(x, DG.Column))
       snippet = `\${${x.name}}`;
     else if (this.typeOf(x, DG.Func)) {
-      const paramsStr = (x as DG.Func).inputs.map((it) =>it.propertyType).join(', ');
+      const paramsStr = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType).join(', ');
       snippet = `${x.name}(${paramsStr})`;
     }
     else
