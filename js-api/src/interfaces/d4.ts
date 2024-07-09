@@ -1927,6 +1927,12 @@ export interface IGridSettings {
 
   marginBottom: number;
 
+  /// Heatmap horizontal scroll positions (minRangeValue, maxRangeValue, minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (minRangeValue, maxRangeValue, minValue, maxValue)
+  heatmapVertScroll: Array<number>;
+
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
