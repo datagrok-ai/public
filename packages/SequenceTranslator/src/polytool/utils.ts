@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {_package} from '../package';
 
 import {ALPHABET, ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -14,7 +15,7 @@ export function _setPeptideColumn(col: DG.Column): void {
 }
 
 function addCommonTags(col: DG.Column<any>) {
-  col.semType =DG.SEMTYPE.MACROMOLECULE;
+  col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag('aligned', ALIGNMENT.SEQ);
   col.setTag('alphabet', ALPHABET.PT);
 }

@@ -20,6 +20,8 @@ import {getPolyToolConversionDialog, getPolyToolEnumerationDialog} from './polyt
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
+import {polyToolEnumerateUI} from './polytool/pt-ui';
+import {addContextMenuUI} from './utils/context-menu';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
@@ -167,13 +169,7 @@ export async function polyToolConvert(): Promise<void> {
 //name: polyToolEnumerate
 //description: Perform cyclization of polymers
 export async function polyToolEnumerate(): Promise<void> {
-  let dialog: DG.Dialog;
-  try {
-    dialog = await getPolyToolEnumerationDialog();
-    dialog.show();
-  } catch (err: any) {
-    grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
-  }
+  polyToolEnumerateUI();
 }
 
 //name: polyToolColumnChoice
@@ -194,3 +190,12 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
   const jsonFileContent = JSON.stringify(libObject, null, 2);
   DG.Utils.download(jsonFileName, jsonFileContent);
 }
+
+// -- Handle context menu --
+
+//name: addContextMenu
+//input: object event
+export function addContextMenu(event: DG.EventData): void {
+  addContextMenuUI(event);
+}
+
