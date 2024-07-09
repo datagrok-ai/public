@@ -4,11 +4,11 @@
     "access": "public"
   },
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.6.12",
+  "version": "6.6.13",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.1.9",
