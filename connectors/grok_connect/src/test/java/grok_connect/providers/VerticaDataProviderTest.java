@@ -176,7 +176,10 @@ class VerticaDataProviderTest {
     private void initContainer() {
         try {
             Thread.sleep(60000);
-            container.execInContainer("/opt/vertica/bin/vsql", "-f", CONTAINER_SCRIPT_PATH);
+            org.testcontainers.containers.Container.ExecResult execResult =
+                    container.execInContainer("/opt/vertica/bin/vsql", "-f", CONTAINER_SCRIPT_PATH);
+            System.out.println("STDOUT:\n" + execResult.getStdout());
+            System.out.println("STDERR:\n" + execResult.getStderr());
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Something went wrong when executing init script", e);
         }
