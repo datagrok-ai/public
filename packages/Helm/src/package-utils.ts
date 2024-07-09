@@ -9,6 +9,8 @@ import type {
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
+import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {HelmHelper} from './helm-helper';
 import {HelmService} from './utils/helm-service';
@@ -48,8 +50,10 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
       // {module: 'dojo.request.iframe', checker: () => !!dojo?.request?.iframe},
       {module: 'dojo.dom', checker: () => !!dojo?.dom},
       {module: 'dojox.gfx', checker: () => !!dojox?.gfx},
-      {module: 'dojox.gfx.svg', checker: () => !!dojox?.gfx?.svg},
+      {module: 'dojox.gfx.svg', checker: () => !!dojox?.gfx?.svg && !!dojox?.gfx?.createSurface},
       {module: 'dojox.gfx.shape', checker: () => !!dojox?.gfx?.shape},
+      // {module: 'dojox.storage.Provider', checker: () => !!dojox?.storage?.Provider},
+      // {module: 'dojox.storage.LocalStorageProvider', checker: () => !!dojox?.storage?.LocalStorageProvider},
     ];
     for (const dojoTarget of dojoTargetList) {
       try { dojo.require(dojoTarget.module); } catch (err: any) {
@@ -111,11 +115,19 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 
 export class HelmPackage extends DG.Package {
   public alertOriginal: (s: string) => void;
-  public readonly hh: HelmHelper;
+  public readonly helmHelper: HelmHelper;
+  public libHelper: IMonomerLibHelper;
 
-  constructor() {
+  constructor(opts: { debug: boolean } = {debug: false}) {
     super();
-    this.hh = new HelmHelper(this.logger);
+    // @ts-ignore
+    super._logger = new LoggerWrapper(super.logger, opts.debug);
+
+    this.helmHelper = new HelmHelper(this.logger);
+  }
+
+  setLibHelper(libHelper: IMonomerLibHelper) {
+    this.libHelper = libHelper;
   }
 
   public initHelmPatchScilAlert(): void {
@@ -133,7 +145,7 @@ export class HelmPackage extends DG.Package {
 
     this.logger.debug(`${logPrefix}, this.getMonomerOriginal stored`);
 
-    this.hh.overrideGetMonomer(this.hh.buildGetMonomerFromLib(monomerLib));
+    this.helmHelper.overrideGetMonomer(this.helmHelper.buildGetMonomerFromLib(monomerLib));
 
     // @ts-ignore, intercept with proxy to observe access and usage
     org.helm.webeditor.Monomers = new class {

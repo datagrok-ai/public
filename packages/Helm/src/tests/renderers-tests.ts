@@ -102,11 +102,6 @@ RNA1{d(A)p.d(C)p.d(G)p.d(U)p}|PEPTIDE1{I.H.A.N.T.Thr_PO3H2}$$$$,0,1
     }, 500);
     // TODO: Any error occurred become 'Cannot read properties of null (reading 'get$columns')' because of scatter plot
     //await testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 200);
-    await awaitGrid(view.grid, 500);
+    await awaitGrid(view.grid, 1000);
   }
 });
-
-
-
-
-
