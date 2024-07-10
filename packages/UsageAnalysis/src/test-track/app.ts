@@ -127,9 +127,9 @@ export class TestTrack extends DG.ViewBase {
       this.addReporterSync();
       if (this.pauseReportSync)
         this.pauseReportSync.style.display = 'none';
-      if (this.runReportSync) 
+      if (this.runReportSync)
         this.runReportSync!.style.display = 'block';
-      
+
       this.isReporting = false;
     }
   }
@@ -181,9 +181,9 @@ export class TestTrack extends DG.ViewBase {
 
     let searchInvoked = false
 
-    //searchInput 
+    //searchInput
     this.searchInput.onChanged(() => {
-      // this._searchItem(); 
+      // this._searchItem();
       if (this.searchInput.value.length > 0) {
         this.searchTreeItems(this.searchInput.value);
         searchInvoked = true;
@@ -261,7 +261,7 @@ export class TestTrack extends DG.ViewBase {
           grok.shell.addTableView(df);
         }
         catch (e) {
-          grok.shell.error("could not find dataset: " + dataset);
+          grok.shell.error("Could not find dataset: " + dataset);
         }
       }
 
@@ -271,7 +271,7 @@ export class TestTrack extends DG.ViewBase {
           p.open();
         }
         catch (e) {
-          console.error("could not find project: " + project);
+          grok.shell.error("Could not find project: " + project);
         }
       }
     }, 'Open test data');
@@ -300,7 +300,7 @@ export class TestTrack extends DG.ViewBase {
     const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), () => this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
     ec.classList.add('tt-ribbon-button');
-    const start = ui.button(getIcon('plus', { style: 'fas' }), () => this.showStartNewTestingDialog(), 'Start new testing');
+    const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Start new testing');
     start.classList.add('tt-ribbon-button');
     this.testingName = (await nameP) ?? NEW_TESTING;
     this.nameDiv.innerText = this.testingName;
@@ -356,7 +356,7 @@ export class TestTrack extends DG.ViewBase {
         const first = df.row(0);
         if (first.get('version') === this.version && first.get('uid') === this.uid && first.get('start') === this.start)
           df.rows.removeAt(0);
-        else if (df.rowCount === 5)
+        else if (df.rowCount === 20)
           df.rows.removeAt(4);
         const n = Math.min(df.rowCount, 5 - node.value.history.children.length);
         for (const row of df.rows) {
@@ -596,9 +596,9 @@ export class TestTrack extends DG.ViewBase {
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
-    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', {value: value});
+    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', { value: value });
     stringInput.nullable = false;
-    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', {value: value});
+    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', { value: value });
     textInput.nullable = false;
     let input = stringInput;
     const tabControl = ui.tabControl({
@@ -694,22 +694,83 @@ export class TestTrack extends DG.ViewBase {
       grok.shell.reportTest('manual', params);
   }
 
-  showStartNewTestingDialog(): void {
-    const dialog = ui.dialog('Start new testing');
+  async showStartNewTestingDialog(): Promise<void> {
+    const dialog = ui.dialog('Select testing');
     dialog.root.classList.add('tt-dialog');
-    const input = ui.input.string('Name', { value: NEW_TESTING });
-    input.nullable = false;
-    dialog.add(ui.divText('Enter name of the new testing:'));
-    dialog.add(input);
+    const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
+    const check = ui.input.bool('New testing:');
+    const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
+
+    const allTestingNames: string[] = [];
+    const testingToOpen: string[] = [""];
+    const testingToOpenLimit = 5;
+    let i = 0;
+    for (const row of testingNames.rows) {
+      allTestingNames.push(row['batchName']);
+      if (i < testingToOpenLimit)
+        testingToOpen.push(row['batchName']);
+      i++;
+    }
+
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen });
+    check.onChanged(() => {
+      if (check.value) {
+        versionSelector.enabled = false;
+        newNameInput.enabled = true;
+      }
+      else {
+        newNameInput.enabled = false;
+        versionSelector.enabled = true;
+      }
+      okButton.classList.remove('enabled');
+      okButton.classList.add('disabled');
+    });
+
+
+    versionSelector.onChanged(() => {
+      if (versionSelector.value === '' || check.value) {
+        okButton.classList.remove('enabled');
+        okButton.classList.add('disabled');
+      }
+      else {
+        okButton.classList.remove('disabled');
+        okButton.classList.add('enabled');
+      }
+    })
+    newNameInput.nullable = false;
+    newNameInput.enabled = false;
+    dialog.add(check);
+    dialog.add(versionSelector);
+    dialog.add(newNameInput);
     dialog.onOK(() => {
-      const start = Date.now().toString();
-      this.testingName = input.value;
-      localStorage.setItem('TTState', start);
-      grok.log.usage(`${this.version}_${start}_${this.uid}`,
-        { name: this.testingName, version: this.version, uid: this.uid, start: this.start }, `tt-new-testing`);
-      this.reload();
+      let testingToOpen : string | undefined | null= undefined;
+
+      if (check.value) {
+        if (allTestingNames.indexOf(`"${newNameInput.value}"`) === -1) {
+          testingToOpen = newNameInput.value;
+        }
+      }
+      else {
+        if (versionSelector.value !== '') {
+          testingToOpen = versionSelector.value;
+        }
+      }
+
+      if (testingToOpen && testingNames !== null) {
+        const start = Date.now().toString();
+        this.testingName = testingToOpen;
+        localStorage.setItem('TTState', start);
+        this.reload();
+      }
+      else{
+        grok.shell.error('Testing Name is not valid');
+      }
     });
     dialog.show();
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
+    okButton.classList.remove('enabled');
+    okButton.classList.add('disabled');
+
   }
 
   showEditTestingNameDialog(): void {
