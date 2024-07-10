@@ -2426,6 +2426,15 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
+  // Obsolete. Recommended method is "assign".
+  setMarkerCoding(category: string, marker: MarkerCodingType): void {
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
+  }
+
   setAll(categoryMarkerMap: {[key: string]: MarkerCodingType}): ColumnMarkerHelper {
     for (const [category, marker] of Object.entries(categoryMarkerMap))
       this.assign(category, marker);
