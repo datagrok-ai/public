@@ -29,34 +29,61 @@ export class BioRxSim {
   public async run() {
     const div = ui.div([]);
 
-    const dfInp = ui.input.table('Inputs');
+    const dfInp = ui.input.table('Input matrix', {value: [this.solution]});
     dfInp.onChanged(async () => {
       try {
-        const df = dfInp.value;
-        const inpCount = df.rowCount;        
+        const df = dfInp.value;        
         dfInp.root.hidden = true;
+        div.classList.remove('ui-form');
         const cols = df.columns;
         const timeItems = cols.names().slice(INIT_COL_IDX, -1);
+        const timesCount = timeItems.length;
         const names = cols.byIndex(INPUT_NAMES_IDX).toList() as string[];
 
         const initCol = cols.byIndex(INIT_COL_IDX);
         let arr = initCol.getRawData() as Float32Array;
 
-        const timeInp = ui.input.choice<string>('Time', {
-          items: timeItems,
-          value: initCol.name,
-          nullable: false,
-          onValueChanged: () => {
-            valuesInps.forEach((inps, time) => {
-              inps.forEach((inp) => inp.root.hidden = time !== timeInp.value);
-            })
-          },
-        });
-
-        div.append(timeInp.root);
-
         const valuesInps = new Map<string, DG.InputBase[]>();
 
+        let currentTimeIdx = 0;
+
+        const updateInputs = () => valuesInps.forEach((inps, time) => {
+          inps.forEach((inp) => inp.root.hidden = time !== timeItems[currentTimeIdx]);
+        });
+
+        const updateBtns = () => {
+          forwardBtn.disabled = currentTimeIdx === timesCount - 1;
+          backBtn.disabled = currentTimeIdx === 0;
+        };
+
+        const updateCtrls = () => {
+          updateInputs();
+          updateBtns();
+          timeInput.value = timeItems[currentTimeIdx];
+        };
+
+        const timeInput = ui.input.string('', {value: timeItems[currentTimeIdx]});
+        timeInput.input.style.alignContent = 'center';
+
+        const forwardBtn = ui.button('>', () => {
+          if (currentTimeIdx < timesCount - 1) {
+            ++currentTimeIdx;
+            updateCtrls();
+          }
+        }, 'Next stage');        
+
+        const backBtn = ui.button('<', () => {
+          if (currentTimeIdx > 0) {
+            --currentTimeIdx;
+            updateCtrls();
+          }
+        }, 'Previous stage');
+
+        div.append(ui.h2('Time'));
+        div.append(ui.divH([backBtn, timeInput.root, forwardBtn]));
+        updateBtns();
+
+        const inputsForm = ui.div([ui.h2('Inputs')]);
         timeItems.forEach((time) => {
           arr = cols.byName(time).getRawData() as Float32Array;          
           const inps = names.map((name, idx) => ui.input.float(
@@ -64,7 +91,7 @@ export class BioRxSim {
             {
               value: arr[idx],
               onValueChanged: async () => {
-                df.set(timeInp.value, idx, inps[idx].value);
+                df.set(timeItems[currentTimeIdx], idx, inps[idx].value);
                 this.view.dataFrame = await solve(df);                
               },
             }
@@ -74,8 +101,11 @@ export class BioRxSim {
 
           valuesInps.set(time, inps);
 
-          div.append(...inps.map((inp) => inp.root));
-        });                
+          inputsForm.append(...inps.map((inp) => inp.root));
+        });
+        inputsForm.classList.add('ui-form');
+        inputsForm.style.overflowY = 'scroll';
+        div.append(inputsForm);
         
         this.view.dataFrame = await solve(df);
       } catch (e) {
@@ -85,6 +115,7 @@ export class BioRxSim {
 
     div.append(dfInp.root);
     div.classList.add('ui-form');
+    div.style.overflowY = 'scroll';
     this.view.dockManager.dock(div, DG.DOCK_TYPE.LEFT, null, undefined, 0.25);    
   }
 }
