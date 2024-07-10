@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.13.5 (2024-07-05)
+## 2.13.5 (WIP)
 
 ### Bug fixes
 
@@ -8,6 +8,7 @@
 * Add detectMacromolecule tests for fasta single char unknown alphabet
 * Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
 * Fix use allowUnionTypes to allow union types in JSON schema
+* GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
 
 ## 2.13.4 (2024-07-02)
 
