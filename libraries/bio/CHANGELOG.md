@@ -1,8 +1,14 @@
 # bio changelog
 
-## 5.42.5 (2024-07-05)
+## 5.42.5 (WIP)
 
-Add IHelmHelper.createHelmInput, ui.input.helmAsync
+### Features
+
+* Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
+### Bug fixes
+
+* Fix identity scoring for seqs of different lengths
 
 ## 5.42.4 (2024-07-02)
 
