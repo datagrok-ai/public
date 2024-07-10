@@ -2414,7 +2414,11 @@ export class ColumnMarkerHelper {
   }
 
   assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
-    this.setMarkerCoding(category, marker);
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
     return this;
   }
 
@@ -2422,17 +2426,15 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  reset(): ColumnMarkerHelper {
-    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
+  setAll(categoryMarkerMap: {[key: string]: MarkerCodingType}): ColumnMarkerHelper {
+    for (const [category, marker] of Object.entries(categoryMarkerMap))
+      this.assign(category, marker);
     return this;
   }
 
-  setMarkerCoding(category: string, marker: MarkerCodingType): void {
-    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
-    let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
-    jsonMap[category] = marker;
-    jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
+  reset(): ColumnMarkerHelper {
+    this.column.tags[TAGS.MARKER_CODING] = '{}';
+    return this;
   }
 }
 
