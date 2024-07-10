@@ -9,6 +9,7 @@
 * Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
 * Fix use allowUnionTypes to allow union types in JSON schema
 * GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
+* Add progress indicator for loading monomer libraries
 
 ## 2.13.4 (2024-07-02)
 
