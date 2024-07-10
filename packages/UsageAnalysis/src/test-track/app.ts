@@ -696,23 +696,36 @@ export class TestTrack extends DG.ViewBase {
 
   async showStartNewTestingDialog(): Promise<void> {
     const dialog = ui.dialog('Select testing');
-    dialog.root.classList.add('tt-dialog');
     const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
     const check = ui.input.bool('New testing:');
     const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
 
     const allTestingNames: string[] = [];
-    const testingToOpen: string[] = [""];
+    const testingToOpen: string[] = [];
     const testingToOpenLimit = 5;
     let i = 0;
     for (const row of testingNames.rows) {
-      allTestingNames.push(row['batchName']);
+      let batch = row['batchName'];
+      if (batch[0] === '"' && batch[batch.length - 1] === '"')
+        batch = batch.substring(1, batch.length - 1)
+      allTestingNames.push(batch);
       if (i < testingToOpenLimit)
-        testingToOpen.push(row['batchName']);
+        testingToOpen.push(batch);
       i++;
     }
 
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen });
+    newNameInput.addValidator((e: string) => {
+      if (allTestingNames.includes(`${newNameInput.value}`)) {
+        if (!check.value)
+          return null
+        return `${e} is already exists`;
+      }
+      return null;
+    });
+
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false });
+    const form = DG.InputForm.forInputs([check, versionSelector, newNameInput]);
+
     check.onChanged(() => {
       if (check.value) {
         versionSelector.enabled = false;
@@ -721,32 +734,27 @@ export class TestTrack extends DG.ViewBase {
       else {
         newNameInput.enabled = false;
         versionSelector.enabled = true;
-      }
-      okButton.classList.remove('enabled');
-      okButton.classList.add('disabled');
-    });
+      } 
+    }); 
 
-
-    versionSelector.onChanged(() => {
-      if (versionSelector.value === '' || check.value) {
-        okButton.classList.remove('enabled');
-        okButton.classList.add('disabled');
-      }
-      else {
+    form.onValidationCompleted.subscribe((e) => {
+      if (form.isValid) {
         okButton.classList.remove('disabled');
         okButton.classList.add('enabled');
+      }
+      else {
+        okButton.classList.remove('enabled');
+        okButton.classList.add('disabled');
       }
     })
     newNameInput.nullable = false;
     newNameInput.enabled = false;
-    dialog.add(check);
-    dialog.add(versionSelector);
-    dialog.add(newNameInput);
+    dialog.add(form.root);
     dialog.onOK(() => {
-      let testingToOpen : string | undefined | null= undefined;
+      let testingToOpen: string | undefined | null = undefined;
 
       if (check.value) {
-        if (allTestingNames.indexOf(`"${newNameInput.value}"`) === -1) {
+        if (allTestingNames.indexOf(`${newNameInput.value}`) === -1) {
           testingToOpen = newNameInput.value;
         }
       }
@@ -762,15 +770,12 @@ export class TestTrack extends DG.ViewBase {
         localStorage.setItem('TTState', start);
         this.reload();
       }
-      else{
+      else {
         grok.shell.error('Testing Name is not valid');
       }
     });
     dialog.show();
-    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
-    okButton.classList.remove('enabled');
-    okButton.classList.add('disabled');
-
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];  
   }
 
   showEditTestingNameDialog(): void {
