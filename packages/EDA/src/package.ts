@@ -611,3 +611,13 @@ export async function visualizePLSRegression(df: DG.DataFrame, targetColumn: DG.
 
   return viewers.map((v) => v.root);
 }
+
+//name: isInteractivePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isInteractive(df.columns, predictColumn);
+}

@@ -20,19 +20,11 @@ const SCORES_IDX = 1;
 const BYTES_PER_SIZES = SIZE_ARR_LEN * 4;
 const BLOCK_SIZE = 64;
 
-/** Titles */
-/*enum TITLE {
-  FEATURES = 'Feature names',
-  PARAMS = 'Regression Coefficients',
-  X_LOADING = 'x.loading.p',
-  LOADINGS = 'Loadings',
-  COMP = 'component',
-  COMPS = 'components',
-  EXPL_VAR = 'explained variance',
-  X_SCORE = 'x.score.t',
-  Y_SCORE = 'y.score.u',
-  SCORES = 'Scores',
-};*/
+/** Interactivity tresholds */
+enum INTERACTIVITY {
+  MAX_SAMLPES = 100000,
+  MAX_FEATURES = 1000,
+};
 
 /** Model specification */
 type PlsModelSpecification = {
@@ -56,6 +48,12 @@ export class PlsModel {
       return false;
 
     return true;
+  }
+
+  /** Check interactivity */
+  static isInteractive(features: DG.ColumnList, predictColumn: DG.Column): boolean {
+    return (features.length <= INTERACTIVITY.MAX_FEATURES) &&
+      (predictColumn.length <= INTERACTIVITY.MAX_SAMLPES);
   }
 
   /** Specification of the PLS model */
