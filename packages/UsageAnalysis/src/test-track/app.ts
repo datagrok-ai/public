@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 
 import { colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status } from './utils';
 import { _package } from '../package';
+import { Subscription } from 'rxjs';
 
 const NEW_TESTING = 'New Testing';
 
@@ -63,11 +64,14 @@ export class TestTrack extends DG.ViewBase {
   testDescription: Map<string, string> = new Map<string, string>();
   dataSetsToOpen: string[] = [];
   projectsToOpen: string[] = [];
-  layoutsToOpen: any[] = [];
 
-  PauseReportSync: HTMLButtonElement | undefined;
-  RunReportSync: HTMLButtonElement | undefined;
+  pauseReportSync: HTMLButtonElement | undefined;
+  runReportSync: HTMLButtonElement | undefined;
+  isReporting: boolean = false;
+  onRemoveSubForCollabTestingSync?: any;
+  onRemoveSubForReportiingSync?: any;
 
+  isReportSyncActive: boolean = false;
   public static getInstance(): TestTrack {
     if (!TestTrack.instance)
       TestTrack.instance = new TestTrack();
@@ -111,27 +115,75 @@ export class TestTrack extends DG.ViewBase {
       this.isInitializing = false;
     });
 
-    const updateBatchInterval = setInterval(() => {
-      this.UpdateBatchData();
-    }, 10000)
+    this.addCollabTestingSync();
+    this.addReporterSync();
+  }
 
-    const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
-      if (v.name === this.name) {
+  public reopen() {
+    if (!this.onRemoveSubForCollabTestingSync) {
+      this.addCollabTestingSync()
+    }
+    if (!this.onRemoveSubForReportiingSync) {
+      this.addReporterSync();
+      if (this.pauseReportSync)
+        this.pauseReportSync.style.display = 'none';
+      if (this.runReportSync)
+        this.runReportSync!.style.display = 'block';
+
+      this.isReporting = false;
+    }
+  }
+
+  private addReporterSync() {
+    this.isReportSyncActive = true;
+    this.onRemoveSubForReportiingSync = grok.shell.dockManager.onClosed.subscribe((v) => {
+      if (v === this.root)
+        this.isReportSyncActive = false;
+      if (this.onRemoveSubForReportiingSync)
+        this.onRemoveSubForReportiingSync.unsubscribe();
+
+      this.onRemoveSubForReportiingSync = undefined
+    });
+  }
+
+  private addCollabTestingSync() {
+    this.onRemoveSubForCollabTestingSync = grok.shell.dockManager.onClosed.subscribe((v) => {
+
+      const updateBatchInterval = setInterval(() => {
+        this.UpdateBatchData();
+      }, 10000)
+
+      if (v === this.root) {
         clearInterval(updateBatchInterval);
-        console.log(":close:");
-        onRemoveSub.unsubscribe();
+        if (this.onRemoveSubForCollabTestingSync)
+          this.onRemoveSubForCollabTestingSync.unsubscribe();
+
+        this.onRemoveSubForCollabTestingSync = undefined
       }
     });
   }
 
 
+  private updateReportsPrefix() {
+    if (this.currentNode.value && !('children' in this.currentNode.value) && this.isReporting) {
+      const currentDateTime: Date = new Date();
+      DG.Logger.reportPrefix = `Test Track Report \n Test Case: ${this.currentNode.value.path} \n  Test Case selection time: ${currentDateTime.toISOString()} \n`;
+    }
+    else
+      this.resetReportsPrefix();
+  }
+
+  private resetReportsPrefix() {
+    DG.Logger.reportPrefix = '';
+  }
+
   private async initTreeView(): Promise<void> {
 
     let searchInvoked = false
 
-    //searchInput 
+    //searchInput
     this.searchInput.onChanged(() => {
-      // this._searchItem(); 
+      // this._searchItem();
       if (this.searchInput.value.length > 0) {
         this.searchTreeItems(this.searchInput.value);
         searchInvoked = true;
@@ -202,24 +254,24 @@ export class TestTrack extends DG.ViewBase {
         '_blank')?.focus();
     }, 'Test Track folder');
     gh.classList.add('tt-ribbon-button');
-    const loadBtn = ui.button(ui.iconFA('star-of-life'), async () => {
-      for (let dataset of this.dataSetsToOpen) {
+    const loadBtn = ui.button(getIcon('star-of-life', { style: 'fas' }), async () => {
+      for (let dataset of this.dataSetsToOpen || []) {
         try {
           const df = (await (grok.functions.eval(`OpenServerFile("${dataset}")`)))[0];
           grok.shell.addTableView(df);
         }
         catch (e) {
-          grok.shell.error("could not find dataset: " + dataset);
+          grok.shell.error("Could not find dataset: " + dataset);
         }
       }
 
-      for (let project of this.projectsToOpen) {
+      for (let project of this.projectsToOpen || []) {
         try {
           const p = await grok.dapi.projects.find(project);
           p.open();
         }
         catch (e) {
-          console.error("could not find project: " + project);
+          grok.shell.error("Could not find project: " + project);
         }
       }
     }, 'Open test data');
@@ -248,7 +300,7 @@ export class TestTrack extends DG.ViewBase {
     const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), () => this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
     ec.classList.add('tt-ribbon-button');
-    const start = ui.button(getIcon('plus', { style: 'fas' }), () => this.showStartNewTestingDialog(), 'Start new testing');
+    const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Start new testing');
     start.classList.add('tt-ribbon-button');
     this.testingName = (await nameP) ?? NEW_TESTING;
     this.nameDiv.innerText = this.testingName;
@@ -256,21 +308,25 @@ export class TestTrack extends DG.ViewBase {
       this.showEditTestingNameDialog();
       e.preventDefault();
     };
-    this.PauseReportSync = ui.button(ui.iconFA('pause'), () => {
-      this.RunReportSync!.style.display = 'block';
-      this.PauseReportSync!.style.display = 'none';
-    }, "Synchronize reports with Test Track");
-    this.RunReportSync = ui.button(ui.iconFA('play'), () => {
-      this.RunReportSync!.style.display = 'none';
-      this.PauseReportSync!.style.display = 'block';
-    }, "Pause reports synchronization with Test Track");
-    this.PauseReportSync.classList.add('tt-ribbon-button');
-    this.RunReportSync.classList.add('tt-ribbon-button');
+    this.pauseReportSync = ui.button(getIcon('pause', { style: 'fas' }), () => {
+      this.runReportSync!.style.display = 'block';
+      this.pauseReportSync!.style.display = 'none';
+      this.isReporting = false;
+      this.resetReportsPrefix();
+    }, "Reports synchronization is running");
+    this.runReportSync = ui.button(getIcon('play', { style: 'fas' }), () => {
+      this.runReportSync!.style.display = 'none';
+      this.pauseReportSync!.style.display = 'block';
+      this.isReporting = true;
+      this.updateReportsPrefix();
+    }, "Reports synchronization is paused");
+    this.pauseReportSync.classList.add('tt-ribbon-button');
+    this.runReportSync.classList.add('tt-ribbon-button');
 
-    this.PauseReportSync.style.display = 'none';
+    this.pauseReportSync.style.display = 'none';
+    this.isReporting = false;
 
-    // const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, start, this.PauseReportSync, this.RunReportSync, this.nameDiv]);
-    const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, start, this.nameDiv]);
+    const ribbon = ui.divH([gh, report, ec, refresh, loadBtn, start, this.pauseReportSync, this.runReportSync, this.nameDiv]);
     ribbon.style.flexGrow = '0';
 
     // Test case div
@@ -282,14 +338,13 @@ export class TestTrack extends DG.ViewBase {
         this.currentNode.value.history.style.display = 'none';
       this.currentNode = node;
       this.testCaseDiv.innerHTML = '';
+      this.updateReportsPrefix();
       if (node?.value && 'children' in node.value) {
         edit.disabled = true;
         return;
       }
-
-      this.dataSetsToOpen = node.value.datasets;
-      this.projectsToOpen = node.value.projects;
-      this.layoutsToOpen = node.value.layouts;
+      this.dataSetsToOpen = node?.value?.datasets || [];
+      this.projectsToOpen = node?.value?.projects || [];
 
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
@@ -301,7 +356,7 @@ export class TestTrack extends DG.ViewBase {
         const first = df.row(0);
         if (first.get('version') === this.version && first.get('uid') === this.uid && first.get('start') === this.start)
           df.rows.removeAt(0);
-        else if (df.rowCount === 5)
+        else if (df.rowCount === 20)
           df.rows.removeAt(4);
         const n = Math.min(df.rowCount, 5 - node.value.history.children.length);
         for (const row of df.rows) {
@@ -341,7 +396,8 @@ export class TestTrack extends DG.ViewBase {
 
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
-      item.classList.remove('hidden');
+      if (item)
+        item.classList.remove('hidden');
     }
     for (const title of categoriesTitles)
       title.classList.remove('d4-tree-view-tri-expanded');
@@ -476,8 +532,8 @@ export class TestTrack extends DG.ViewBase {
 
   setContextMenu(): void {
     this.tree.onNodeContextMenu.subscribe((data: any) => {
-      const node = data.args.item;
-      if (node.constructor === DG.TreeViewGroup) return;
+      const node = data?.args?.item;
+      if (node?.constructor === DG.TreeViewGroup) return;
       (data.args.menu as DG.Menu)
         .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
@@ -540,9 +596,9 @@ export class TestTrack extends DG.ViewBase {
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
-    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', {value: value});
+    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', { value: value });
     stringInput.nullable = false;
-    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', {value: value});
+    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', { value: value });
     textInput.nullable = false;
     let input = stringInput;
     const tabControl = ui.tabControl({
@@ -638,22 +694,88 @@ export class TestTrack extends DG.ViewBase {
       grok.shell.reportTest('manual', params);
   }
 
-  showStartNewTestingDialog(): void {
-    const dialog = ui.dialog('Start new testing');
-    dialog.root.classList.add('tt-dialog');
-    const input = ui.input.string('Name', { value: NEW_TESTING });
-    input.nullable = false;
-    dialog.add(ui.divText('Enter name of the new testing:'));
-    dialog.add(input);
+  async showStartNewTestingDialog(): Promise<void> {
+    const dialog = ui.dialog('Select testing');
+    const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
+    const check = ui.input.bool('New testing:');
+    const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
+
+    const allTestingNames: string[] = [];
+    const testingToOpen: string[] = [];
+    const testingToOpenLimit = 5;
+    let i = 0;
+    for (const row of testingNames.rows) {
+      let batch = row['batchName'];
+      if (batch[0] === '"' && batch[batch.length - 1] === '"')
+        batch = batch.substring(1, batch.length - 1)
+      allTestingNames.push(batch);
+      if (i < testingToOpenLimit)
+        testingToOpen.push(batch);
+      i++;
+    }
+
+    newNameInput.addValidator((e: string) => {
+      if (allTestingNames.includes(`${newNameInput.value}`)) {
+        if (!check.value)
+          return null
+        return `${e} is already exists`;
+      }
+      return null;
+    });
+
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false });
+    const form = DG.InputForm.forInputs([check, versionSelector, newNameInput]);
+
+    check.onChanged(() => {
+      if (check.value) {
+        versionSelector.enabled = false;
+        newNameInput.enabled = true;
+      }
+      else {
+        newNameInput.enabled = false;
+        versionSelector.enabled = true;
+      } 
+    }); 
+
+    form.onValidationCompleted.subscribe((e) => {
+      if (form.isValid) {
+        okButton.classList.remove('disabled');
+        okButton.classList.add('enabled');
+      }
+      else {
+        okButton.classList.remove('enabled');
+        okButton.classList.add('disabled');
+      }
+    })
+    newNameInput.nullable = false;
+    newNameInput.enabled = false;
+    dialog.add(form.root);
     dialog.onOK(() => {
-      const start = Date.now().toString();
-      this.testingName = input.value;
-      localStorage.setItem('TTState', start);
-      grok.log.usage(`${this.version}_${start}_${this.uid}`,
-        { name: this.testingName, version: this.version, uid: this.uid, start: this.start }, `tt-new-testing`);
-      this.reload();
+      let testingToOpen: string | undefined | null = undefined;
+
+      if (check.value) {
+        if (allTestingNames.indexOf(`${newNameInput.value}`) === -1) {
+          testingToOpen = newNameInput.value;
+        }
+      }
+      else {
+        if (versionSelector.value !== '') {
+          testingToOpen = versionSelector.value;
+        }
+      }
+
+      if (testingToOpen && testingNames !== null) {
+        const start = Date.now().toString();
+        this.testingName = testingToOpen;
+        localStorage.setItem('TTState', start);
+        this.reload();
+      }
+      else {
+        grok.shell.error('Testing Name is not valid');
+      }
     });
     dialog.show();
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];  
   }
 
   showEditTestingNameDialog(): void {

@@ -46,7 +46,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
       return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
   scaledCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-  scaledCol.meta.formula = scaling;
+  scaledCol.setTag(DG.TAGS.FORMULA, scaling);
   return scaledCol;
 }
 

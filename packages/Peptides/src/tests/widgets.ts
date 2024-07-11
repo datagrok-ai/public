@@ -29,7 +29,7 @@ category('Widgets: Settings', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
@@ -74,7 +74,7 @@ category('Widgets: Distribution panel', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
@@ -113,7 +113,7 @@ category('Widgets: Mutation cliffs', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
@@ -157,7 +157,7 @@ category('Widgets: Actions', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,

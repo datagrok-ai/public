@@ -8,6 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
+import './tests/_first-tests';
 import './tests/helm-tests';
 import './tests/findMonomers-tests';
 import './tests/helm-service-tests';
@@ -18,6 +19,7 @@ import './tests/get-all-parts-tests';
 import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
+import './tests/helm-input-tests';
 
 export const _package = new DG.Package();
 export {tests};

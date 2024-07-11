@@ -88,7 +88,16 @@ category('Dapi: connection cache', () => {
     await grok.dapi.files.delete(testFilePath2);
     list = await grok.dapi.files.list('System:AppData/ApiTests');
     expect(list.every((f) => f.name !== 'renamed_test_files.txt'));
-  }, {skipReason: 'GROK-15408'});
+  });
+
+  test('Dataframe: Ids', async () => {
+    // not from cache
+    const table1 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // from cache
+    const table2 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // id should be absent when we read as csv, and second time from cache
+    expect(!table1.id && !table2.id, true);
+  });
 
   test('Performance: read csv', async () => {
     const first = await getExecutionTime(async () => {
@@ -99,7 +108,7 @@ category('Dapi: connection cache', () => {
     });
     // second execution should be faster
     expect(second * 2 < first);
-  }, {skipReason: 'GROK-15408'});
+  });
 
   test('Sequential stress test', async () => {
     const times = DG.Test.isInBenchmark ? 1000 : 100;
@@ -134,7 +143,7 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 1.5, true);
-  }, {timeout: 120000, skipReason: 'GROK-15408'});
+  });
 
   after(async () => {
     try {

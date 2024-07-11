@@ -125,6 +125,8 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 export function testTrackApp(): void {
   if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
     TestTrack.getInstance().init();
+  else
+    TestTrack.getInstance().reopen(); 
 }
 
 //name: Reports

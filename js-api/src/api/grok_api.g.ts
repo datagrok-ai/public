@@ -21,7 +21,7 @@ export interface IDartApi {
   grok_JSON_decode(s: String): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
-  grok_CompleteError(c: any, result: any): any;
+  grok_CompleteError(c: any, result: any, stack: any): any;
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;

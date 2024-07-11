@@ -11,8 +11,8 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
-import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {App, HelmMol, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
+import {IHelmHelper, IInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
@@ -28,7 +28,7 @@ import {getRS} from './utils/get-monomer-dummy';
 import {buildWebEditorApp} from './helm-web-editor';
 import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage();
+export const _package = new HelmPackage({debug: false});
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -53,11 +53,6 @@ export async function initHelm(): Promise<void> {
   try {
     const [_, lib]: [void, IMonomerLib] = await Promise.all([
       Promise.all([
-        new Promise<void>((resolve, reject) => {
-          // @ts-ignore
-          // try { dojo.ready(function() { resolve(null); }); } catch (err: any) { reject(err); }
-          resolve();
-        }),
         (async () => {
           _package.logger.debug(`${logPrefix}, dependence loading …`);
           const t1: number = performance.now();
@@ -68,7 +63,7 @@ export async function initHelm(): Promise<void> {
 
           // Alternatively load old bundles by package.json/sources
           _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
-          require('vendor/helm-web-editor'); // through webpack.config.ts/alias
+          require('../node_modules/@datagrok-libraries/helm-web-editor/dist/package.js');
           await window.helmWebEditor$.initPromise;
           _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
 
@@ -86,6 +81,7 @@ export async function initHelm(): Promise<void> {
       }),
       (async () => {
         const libHelper = await getMonomerLibHelper();
+        _package.setLibHelper(libHelper);
         return libHelper.getBioLib();
       })()
     ]);
@@ -248,12 +244,26 @@ export function getMolfiles(col: DG.Column): DG.Column {
   }
 }
 
+// -- Inputs --
+
+//name: helmInput
+//tags: valueEditor
+//meta.propertyType: string
+//meta.semType: Macromolecule
+//input: string name =undefined {optional: true}
+//input: object options =undefined {optional: true}
+//output: object result
+export function helmInput(name: string, options: IInputInitOptions<HelmMol>): DG.InputBase<HelmMol> {
+  // TODO: Annotate for semType = 'Macromolecule' AND units = 'helm'
+  return _package.helmHelper.createHelmInput(name, options);
+}
+
 // -- Utils --
 
 //name: getHelmHelper
 //output: object result
 export async function getHelmHelper(): Promise<IHelmHelper> {
-  return _package.hh;
+  return _package.helmHelper;
 }
 
 //name: measureCellRenderer
