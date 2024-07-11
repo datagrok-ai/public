@@ -147,12 +147,10 @@ export class TestTrack extends DG.ViewBase {
   }
 
   private addCollabTestingSync() {
+    const updateBatchInterval = setInterval(() => {
+      this.UpdateBatchData();
+    }, 10000)
     this.onRemoveSubForCollabTestingSync = grok.shell.dockManager.onClosed.subscribe((v) => {
-
-      const updateBatchInterval = setInterval(() => {
-        this.UpdateBatchData();
-      }, 10000)
-
       if (v === this.root) {
         clearInterval(updateBatchInterval);
         if (this.onRemoveSubForCollabTestingSync)
@@ -533,7 +531,7 @@ export class TestTrack extends DG.ViewBase {
   setContextMenu(): void {
     this.tree.onNodeContextMenu.subscribe((data: any) => {
       const node = data?.args?.item;
-      if (node?.constructor === DG.TreeViewGroup) return;
+      if (node?.constructor === DG.TreeViewGroup || !data.args.menu) return;
       (data.args.menu as DG.Menu)
         .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
@@ -734,8 +732,8 @@ export class TestTrack extends DG.ViewBase {
       else {
         newNameInput.enabled = false;
         versionSelector.enabled = true;
-      } 
-    }); 
+      }
+    });
 
     form.onValidationCompleted.subscribe((e) => {
       if (form.isValid) {
@@ -775,7 +773,7 @@ export class TestTrack extends DG.ViewBase {
       }
     });
     dialog.show();
-    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];  
+    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
   showEditTestingNameDialog(): void {
