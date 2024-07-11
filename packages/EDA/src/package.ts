@@ -595,6 +595,16 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
   return predictColumn.matches('numerical');
 }
 
+//name: isInteractiveLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return df.rowCount <= 100000;
+}
+
 //name: trainSoftmax
 //meta.mlname: Softmax
 //meta.mlrole: train
@@ -639,20 +649,15 @@ export function applySoftmax(df: DG.DataFrame, model: any): DG.DataFrame {
 //input: column predictColumn
 //output: bool result
 export function isApplicableSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
-  for (const col of df.columns) {
-    if (!col.matches('numerical'))
-      return false;
-  }
-
-  return (predictColumn.type === DG.COLUMN_TYPE.STRING);
+  return SoftmaxClassifier.isApplicable(df.columns, predictColumn);
 }
 
-//name: isInteractiveLinearRegression
-//meta.mlname: Linear Regression
+//name: isInteractiveSoftmax
+//meta.mlname: Softmax
 //meta.mlrole: isInteractive
 //input: dataframe df
 //input: column predictColumn
 //output: bool result
-export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
-  return df.rowCount <= 100000;
+export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
 }

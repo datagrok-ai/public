@@ -30,8 +30,30 @@ type TargetLabelsData = {
   weights: Uint32Array,
 };
 
+/** Interactivity tresholds */
+enum INTERACTIVITY {
+  MAX_SAMLPES = 50000,
+  MAX_FEATURES = 100,
+};
+
 /** Softmax classifier */
 export class SoftmaxClassifier {
+  /** Check applicability */
+  static isApplicable(features: DG.ColumnList, predictColumn: DG.Column): boolean {
+    for (const col of features) {
+      if (!col.matches('numerical'))
+        return false;
+    }
+
+    return (predictColumn.type === DG.COLUMN_TYPE.STRING);
+  }
+
+  /** Check interactivity */
+  static isInteractive(features: DG.ColumnList, predictColumn: DG.Column): boolean {
+    return (features.length <= INTERACTIVITY.MAX_FEATURES) &&
+      (predictColumn.length <= INTERACTIVITY.MAX_SAMLPES);
+  }
+
   private avgs: Float32Array;
   private stdevs: Float32Array;
   private categories: string[];

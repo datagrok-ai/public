@@ -485,8 +485,8 @@ export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
   const columns = df.columns;
   if (!labels.matches('categorical') || labels.categories.length > 2)
     return false;
-  var res: boolean = true;
-  for (var i = 0; i < columns.length; i++)
+  let res: boolean = true;
+  for (let i = 0; i < columns.length; i++)
     res = res && (columns.byIndex(i).matches('numerical'));
   return res;
 }
