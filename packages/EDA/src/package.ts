@@ -9,7 +9,7 @@ import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
-  getTrainedModel, getPrediction, isApplicableSVM, showTrainReport, getPackedModel} from './svm';
+  getTrainedModel, getPrediction, isApplicableSVM, isInteractiveSVM, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
@@ -332,6 +332,16 @@ export async function isApplicableLinearKernelSVM(df: DG.DataFrame, predictColum
   return isApplicableSVM(df, predictColumn);
 }
 
+//name: isInteractiveLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveLinearKernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
+  return isInteractiveSVM(df, predictColumn);
+}
+
 //name: visualizeLinearKernelSVM
 //meta.mlname: linear kernel LS-SVM
 //meta.mlrole: visualize
@@ -381,6 +391,17 @@ export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<D
 export async function isApplicableRBFkernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
   return isApplicableSVM(df, predictColumn);
 }
+
+//name: isInteractiveRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveRBFkernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
+  return isInteractiveSVM(df, predictColumn);
+}
+
 
 //name: visualizeRBFkernelSVM
 //meta.mlname: RBF-kernel LS-SVM
@@ -432,6 +453,16 @@ export async function isApplicablePolynomialKernelSVM(df: DG.DataFrame, predictC
   return isApplicableSVM(df, predictColumn);
 }
 
+//name: isInteractivePolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractivePolynomialKernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
+  return isInteractiveSVM(df, predictColumn);
+}
+
 //name: visualizePolynomialKernelSVM
 //meta.mlname: polynomial kernel LS-SVM
 //meta.mlrole: visualize
@@ -480,6 +511,16 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //output: bool result
 export async function isApplicableSigmoidKernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
   return isApplicableSVM(df, predictColumn);
+}
+
+//name: isInteractiveSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isInteractiveSigmoidKernelSVM(df: DG.DataFrame, predictColumn: DG.Column): Promise<boolean> {
+  return isInteractiveSVM(df, predictColumn);
 }
 
 //name: visualizeSigmoidKernelSVM
@@ -604,4 +645,14 @@ export function isApplicableSoftmax(df: DG.DataFrame, predictColumn: DG.Column):
   }
 
   return (predictColumn.type === DG.COLUMN_TYPE.STRING);
+}
+
+//name: isInteractiveLinearRegression
+//meta.mlname: Linear Regression
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return df.rowCount <= 100000;
 }

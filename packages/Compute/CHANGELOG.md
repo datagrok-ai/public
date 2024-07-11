@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
 ## 1.35.10 (2024-07-08)
 
 - CompositionPipeline: Exposed options to public interface

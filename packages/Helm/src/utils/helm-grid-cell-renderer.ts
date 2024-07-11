@@ -4,13 +4,12 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {HelmType, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
 import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {HelmAux, HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
 
-import {ISeqMonomer} from '../helm-monomer-placer';
 import {getHoveredMonomerFromEditorMol} from './get-hovered';
 import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -143,7 +142,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
       return; // The gridCell is not rendered yet
     }
-    const seqMonomer: ISeqMonomer | null = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
+    const seqMonomer: ISeqMonomer | null =
+      getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
 
     if (seqMonomer) {
       const monomerLib = getMonomerLib();

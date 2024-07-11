@@ -167,6 +167,23 @@ limit 5 ) as testsData
 order by testsData.date desc
 --end
 
+--name: TestingNames
+--connection: System:Datagrok 
+--output: dataframe df
+select * from (
+Select distinct on ((r.params::json->'batchName')::varchar(255))  
+  (r.params::json->'batchName')::varchar(255) as batchName,
+  (r.params::json->'version')::varchar(255) as version, 
+  (r.params::json->'start')::varchar(255) as start,
+    r.date_time as date
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' 
+order by (r.params::json->'batchName')::varchar(255) ) as a
+order by a.date desc
+--end
+
+
 --name: TestingName
 --connection: System:Datagrok 
 --input: string version

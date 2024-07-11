@@ -1,5 +1,16 @@
 # Helm changelog
 
+## 2.3.2 (2024-07-08)
+
+### Features
+
+* Add HelmInput
+
+### Bug fixes
+
+* Add tooltip to HelmInput showing monomer of lib, test
+* Fix HelmInput to redraw on monomer lib changed
+
 ## 2.3.1 (2024-06-28)
 
 Fix cell renderer error before package initialized
