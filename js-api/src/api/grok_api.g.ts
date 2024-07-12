@@ -1342,6 +1342,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsFile(fi: any): any;
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
+  grok_FileInfo_Get_UpdatedOn(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
@@ -1510,8 +1511,9 @@ export interface IDartApi {
   grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_bitset(x: any): any;
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
