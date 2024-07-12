@@ -1,5 +1,45 @@
 # Bio changelog
 
+## 2.13.5 (2024-07-05)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+
+## 2.13.4 (2024-07-02)
+
+### Bug fixes
+
+* GROK-15798: Fix To Atomic Level for units FASTA, UN alphabet
+* Fix detectMacromolecule to check for bad monomers on separator
+* Fix for review camelCase properties
+
+## 2.13.3 (2024-06-28)
+
+### Bug fixes
+
+* Fix MaxMonomerLength package setting, and column setting
+* Fix loading monomer libs for explicit stuck from tests
+
+## 2.13.2 (2024-06-26)
+
+### Features
+
+* Add package settings for MonomerWidthMode
+
+### Bug fixes
+
+* Fix cell renderer for long mode
+* Fix Cell Renderer column widget for MonomerWidthMode
+* Enable package settings editor widget
+
+## 2.13.1 (2024-06-25)
+
+Bump dependencies versions JSDraw.Lite and HELMWebEditor
+
 ## 2.13.0 (2024-06-24)
 
 ### Bug fixes

@@ -31,7 +31,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -76,6 +76,8 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
+import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 export const _package = new BioPackage();
 
@@ -114,6 +116,12 @@ export async function initBio() {
   await Promise.all([
     (async () => {
       const monomerLibManager = await MonomerLibManager.getInstance();
+      // Fix user lib settings for explicit stuck from a terminated test
+      const libSettings = await getUserLibSettings();
+      if (libSettings.explicit) {
+        libSettings.explicit = [];
+        await setUserLibSettings(libSettings);
+      }
       await monomerLibManager.loadLibraries();
       monomerLib = monomerLibManager.getBioLib();
     })(),
@@ -439,7 +447,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
     return;
   const axesNames = getEmbeddingColsNames(table);
   const tags = {
-    'units': molecules.getTag(DG.TAGS.UNITS),
+    'units': molecules.meta.units!,
     'aligned': molecules.getTag(bioTAGS.aligned),
     'separator': molecules.getTag(bioTAGS.separator),
     'alphabet': molecules.getTag(bioTAGS.alphabet),
@@ -657,8 +665,8 @@ export async function compositionAnalysis(): Promise<void> {
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
     const selectedCol = colList.find((c) => { return SeqHandler.forColumn(c).isMsa(); });
-    const colInput: DG.InputBase = ui.choiceInput(
-      'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
+    const colInput: DG.InputBase = ui.input.choice(
+      'Column', {value: selectedCol ? selectedCol.name : colListNames[0], items: colListNames});
     ui.dialog({
       title: 'Composition Analysis',
       helpUrl: 'https://datagrok.ai/help/datagrok/solutions/domains/bio/#sequence-composition',
@@ -742,13 +750,13 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
         const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
         if (semType === DG.SEMTYPE.MACROMOLECULE) {
           //console.warn(`file: ${fileInfo.path}, column: ${col.name}, ` +
-          //  `semType: ${semType}, units: ${col.getTag(DG.TAGS.UNITS)}`);
+          //  `semType: ${semType}, units: ${col.meta.units}`);
           // console.warn('file: "' + fileInfo.path + '", semType: "' + semType + '", ' +
-          //   'units: "' + col.getTag(DG.TAGS.UNITS) + '"');
+          //   'units: "' + col.meta.units + '"');
 
           res.push({
             file: fileInfo.path, result: 'detected', column: col.name,
-            message: `units: ${col.getTag(DG.TAGS.UNITS)}`,
+            message: `units: ${col.meta.units}`,
           });
         }
       }

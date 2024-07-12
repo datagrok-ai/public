@@ -510,6 +510,8 @@ export interface IScatterPlotSettings {
 
   showColorSelector: boolean;
 
+  colorAxisType: keyof typeof AxisType;
+
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -1357,13 +1359,22 @@ export interface IBoxPlotSettings {
 
   whiskerLineWidth: number;
 
+  interquartileLineWidth: number;
+
   whiskerWidthRatio: number;
 
   maxBinWidth: number;
 
   axisUseColumnFormat: boolean;
 
+  /// Number of KDE bins to display a violin plot
+  bins: number;
+
+  plotStyle: string;
+
   whiskerColor: number;
+
+  violinWhiskerColor: number;
 
   backColor: number;
 
@@ -1915,6 +1926,12 @@ export interface IGridSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Heatmap horizontal scroll positions (minRangeValue, maxRangeValue, minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (minRangeValue, maxRangeValue, minValue, maxValue)
+  heatmapVertScroll: Array<number>;
 
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;

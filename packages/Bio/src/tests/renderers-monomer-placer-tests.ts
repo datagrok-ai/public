@@ -108,8 +108,6 @@ id3,QHIRE--LT
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`getPosition-${testName}`, async () => {
-      const libHelper = await getMonomerLibHelper();
-      const monomerLib = libHelper.getBioLib();
       const df: DG.DataFrame = DG.DataFrame.fromCsv(testData.csv);
       await grok.data.detectSemanticTypes(df);
       const seqCol: DG.Column = df.getCol('seq');
@@ -117,16 +115,16 @@ id3,QHIRE--LT
       const monLength: number = 3;
       const charWidth: number = 7;
       const sepWidth: number = 12;
-      const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, () => {
-        const sh = SeqHandler.forColumn(seqCol);
-        return {
-          seqHandler: sh,
-          monomerCharWidth: charWidth,
-          separatorWidth: sepWidth,
-          monomerToShort: monomerToShort,
-          monomerLengthLimit: monLength,
-        };
-      });
+      const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, monLength,
+        () => {
+          const sh = SeqHandler.forColumn(seqCol);
+          return {
+            seqHandler: sh,
+            monomerCharWidth: charWidth,
+            separatorWidth: sepWidth,
+            monomerToShort: monomerToShort,
+          };
+        });
 
       const width: number = 10000;
       const testList = testData.testList;

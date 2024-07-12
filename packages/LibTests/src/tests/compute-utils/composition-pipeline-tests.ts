@@ -52,7 +52,7 @@ category('ComputeUtils: CompositionPipeline single config', async () => {
       }],
     };
     const pipeline = new CompositionPipeline(config);
-    const view = pipeline.makePipelineView();
+    const view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(view);
     await pipeline.init();
@@ -119,7 +119,7 @@ category('ComputeUtils: CompositionPipeline single config', async () => {
       ],
     };
     const pipeline = new CompositionPipeline(config);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -362,7 +362,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('2 configs simple', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig2, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -377,7 +377,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('3 configs simple configs', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig3, [sconfig1, sconfig2]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -392,7 +392,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('3 configs simple nested composition', async () => {
     const composedConfig = CompositionPipeline.compose(sconfig3, [CompositionPipeline.compose(sconfig2, [sconfig1])]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -407,7 +407,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('2 configs', async () => {
     const composedConfig = CompositionPipeline.compose(conf2, [conf1]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -422,7 +422,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('3 configs', async () => {
     const composedConfig = CompositionPipeline.compose(conf3, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -437,7 +437,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
   test('3 configs nested composition', async () => {
     const composedConfig = CompositionPipeline.compose(conf3, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -461,7 +461,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
     };
     const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -485,7 +485,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
     };
     const composedConfig = CompositionPipeline.compose(cconf, [CompositionPipeline.compose(conf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -525,7 +525,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
     };
     const composedConfig = CompositionPipeline.compose(cconf, [conf1, conf2]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -568,7 +568,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
     };
     const composedConfig = CompositionPipeline.compose(cconf3, [CompositionPipeline.compose(cconf2, [conf1])]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -591,7 +591,7 @@ category('ComputeUtils: CompositionPipeline composition config', async () => {
     };
     const composedConfig = CompositionPipeline.compose(pconf, [sconfig1]);
     const pipeline = new CompositionPipeline(composedConfig);
-    const _view = pipeline.makePipelineView();
+    const _view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     if (ADD_VIEW)
       grok.shell.addView(_view);
     await pipeline.init();
@@ -625,7 +625,7 @@ category('ComputeUtils: CompositionPipeline reactivity', async () => {
         to: ['step2', 'a'],
       }],
     });
-    const view = pipeline.makePipelineView();
+    const view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     await pipeline.init();
     const rfv1 = view.getStepView('testPipeline/step1');
     rfv1.setInput('a', 2);
@@ -679,7 +679,7 @@ category('ComputeUtils: CompositionPipeline reactivity', async () => {
       ],
     };
     const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf1, [conf2]));
-    const view = pipeline.makePipelineView();
+    const view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     await pipeline.init();
 
     const rfv1 = view.getStepView('testPipeline1/step1');
@@ -744,7 +744,7 @@ category('ComputeUtils: CompositionPipeline reactivity', async () => {
       }],
     };
     const pipeline = new CompositionPipeline(CompositionPipeline.compose(conf2, [conf1]));
-    const view = pipeline.makePipelineView();
+    const view = pipeline.makePipelineView(undefined, {historyEnabled: false, isTabbed: false, skipInit: true});
     await pipeline.init();
 
     const rfv1 = view.getStepView('testPipeline2/step1');

@@ -22,7 +22,7 @@ const properties = [
   {'name': 'choice',      'inputType': 'Choice', choices: ['Apple', 'Banana']},
   {'name': 'multiChoice', 'inputType': 'MultiChoice', choices: ['Apple', 'Banana']},
   //{'name': 'file',        'inputType': 'File'},
-  {'name': 'users',       'inputType': 'Users'},
+  {'name': 'user',       'inputType': 'User'},
   {'name': 'userGroups',  'inputType': 'UserGroups'},
 ];
 

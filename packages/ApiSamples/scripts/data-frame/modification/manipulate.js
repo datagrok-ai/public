@@ -25,8 +25,8 @@ demog.selection.set(5, false);
 demog.selection.findNext(0, false);
 
 // tags
-demog.columns.byName('height').setTag('units', 'm');
-demog.columns.byName('weight').setTag('units', 'kg');
-foo = demog.columns.byName('height').getTag('units');
+demog.columns.byName('height').meta.units = 'm';
+demog.columns.byName('weight').meta.units = 'kg';
+foo = demog.columns.byName('height').meta.units;
 
 grok.shell.addTableView(demog);

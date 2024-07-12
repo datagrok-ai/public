@@ -20,14 +20,13 @@ export class SplitToMonomersFunctionEditor {
   }
 
   constructor() {
-    this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
+    this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, onValueChanged: () => {
       this.onTableInputChanged();
-    });
+    }});
     //TODO: remove when the new version of datagrok-api is available
     const seqColValue = this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-    const seqColOptions = {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE};
-    //@ts-ignore
-    this.seqColInput = ui.columnInput('Sequence', this.tableInput.value!, seqColValue, null, seqColOptions);
+    this.seqColInput = ui.input.column('Sequence', {table: this.tableInput.value!, value: seqColValue,
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
 
     this.funcParamsDiv = ui.inputs([
       this.tableInput,
@@ -36,7 +35,7 @@ export class SplitToMonomersFunctionEditor {
   }
 
   onTableInputChanged(): void {
-    this.seqColInput = ui.columnInput('Sequence', this.tableInput.value!,
-      this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE));
+    this.seqColInput = ui.input.column('Sequence', {table: this.tableInput.value!,
+      value: this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)});
   }
 }

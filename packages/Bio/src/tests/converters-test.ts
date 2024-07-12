@@ -135,7 +135,7 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
     return function(srcCol: DG.Column): DG.Column {
       const converterSh = SeqHandler.forColumn(srcCol);
       const resCol = converterSh.convert(tgtNotation, tgtSeparator);
-      expect(resCol.getTag(DG.TAGS.UNITS), tgtNotation);
+      expect(resCol.meta.units, tgtNotation);
       return resCol;
     };
   }

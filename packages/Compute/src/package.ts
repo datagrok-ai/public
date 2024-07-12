@@ -16,6 +16,7 @@ import {
   makeAdvice as makeAdviceInst, 
   makeValidationResult as makeValidationResultInst,
   makeRevalidation as makeRevalidationInst,
+  mergeValidationResults as mergeValidationResultsInst,
 } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
@@ -347,6 +348,7 @@ export const CompositionPipeline = CompositionPipelineViewInst;
 export const makeValidationResult = makeValidationResultInst;
 export const makeAdvice = makeAdviceInst;
 export const makeRevalidation = makeRevalidationInst;
+export const mergeValidationResults = mergeValidationResultsInst;
 export const fileInput = UiUtils.fileInput;
 export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;

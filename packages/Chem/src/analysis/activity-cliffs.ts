@@ -46,7 +46,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       mcsMol = rdkit.get_qmol(cashedData.get(`${molecules[0]}_${molecules[1]}`));
     molecules.forEach((molecule: string, index: number) => {
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
-      if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
+      if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
         molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
       }

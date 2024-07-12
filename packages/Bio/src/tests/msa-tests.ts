@@ -125,14 +125,14 @@ async function _testMSAOnColumn(
   const tgtCol = tgtDf.getCol('seq')!;
   const srcCol: DG.Column = srcDf.getCol('seq')!;
   expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(srcCol.getTag(DG.TAGS.UNITS), srcNotation);
+  expect(srcCol.meta.units, srcNotation);
   if (alphabet)
     expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
 
   const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}});
   expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
   expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(msaSeqCol.getTag(DG.TAGS.UNITS), tgtNotation);
+  expect(msaSeqCol.meta.units, tgtNotation);
   expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
   if (alphabet)
     expect(msaSeqCol.getTag(bioTAGS.alphabet), alphabet);

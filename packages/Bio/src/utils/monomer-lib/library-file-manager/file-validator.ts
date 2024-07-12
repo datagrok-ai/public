@@ -14,7 +14,8 @@ export class MonomerLibFileValidator {
   constructor(
     private helmMonomerSchema: JSONSchemaType<any>
   ) {
-    const ajv = new Ajv2020({allErrors: true, strictTuples: false});
+    // HELMMonomerSchema.json / #/properties/id uses a union type (string added by Maria Dolotova)
+    const ajv = new Ajv2020({allErrors: true, strictTuples: false, allowUnionTypes: true});
     addErrors(ajv);
     this.validateMonomerSchema = ajv.compile(this.helmMonomerSchema);
   }

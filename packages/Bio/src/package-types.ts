@@ -3,10 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {Observable, Subject} from 'rxjs';
+
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
+  MonomerWidthMode = 'MonomerWidthMode',
   MaxMonomerLength = 'MaxMonomerLength',
   TooltipWebLogo = 'TooltipWebLogo',
   DefaultSeparator = 'DefaultSeparator',
@@ -17,30 +20,32 @@ export class BioPackageProperties extends Map<string, any> {
   private _onPropertyChanged: Subject<string> = new Subject<string>();
   public get onPropertyChanged(): Observable<string> { return this._onPropertyChanged; }
 
-  /** Monomer name maximum length displayed in short mode. */
-  public get MaxMonomerLength(): number {
-    return super.get(BioPackagePropertiesNames.MaxMonomerLength) as number;
+  /** Monomer symbol maximum length displayed, null for unlimited. */
+  public get maxMonomerLength(): number | null {
+    const vs = super.get(BioPackagePropertiesNames.MaxMonomerLength);
+    return vs === 'long' ? null : parseInt(vs);
   }
 
-  public set MaxMonomerLength(value: number) {
-    super.set(BioPackagePropertiesNames.MaxMonomerLength, value);
+  public set maxMonomerLength(value: number | null) {
+    const vs = value === null ? 'long' : value.toString();
+    super.set(BioPackagePropertiesNames.MaxMonomerLength, vs);
     this._onPropertyChanged.next(BioPackagePropertiesNames.MaxMonomerLength);
   }
 
-  public get TooltipWebLogo(): boolean {
+  public get tooltipWebLogo(): boolean {
     return super.get(BioPackagePropertiesNames.TooltipWebLogo) as boolean;
   }
 
-  public set TooltipWebLogo(value: boolean) {
+  public set tooltipWebLogo(value: boolean) {
     super.set(BioPackagePropertiesNames.TooltipWebLogo, value);
     this._onPropertyChanged.next(BioPackagePropertiesNames.TooltipWebLogo);
   }
 
-  public get DefaultSeparator(): string {
+  public get defaultSeparator(): string {
     return super.get(BioPackagePropertiesNames.DefaultSeparator) as string;
   }
 
-  public set DefaultSeparator(value: string) {
+  public set defaultSeparator(value: string) {
     if (value.length !== 1) throw new Error('The separator must be of length one.');
     super.set(BioPackagePropertiesNames.DefaultSeparator, value);
     this._onPropertyChanged.next(BioPackagePropertiesNames.DefaultSeparator);
@@ -61,6 +66,12 @@ export class BioPackage extends DG.Package {
   private _initialized: boolean = false;
 
   public get initialized(): boolean { return this._initialized; }
+
+  constructor(opts: { debug: boolean } = {debug: false}) {
+    super();
+    // @ts-ignore
+    super._logger = new LoggerWrapper(super.logger, opts.debug);
+  }
 
   public completeInit(): void { this._initialized = true; }
 

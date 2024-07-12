@@ -272,10 +272,8 @@ async function trainAndAnalyzeModel(hyperparameters: any, dataset: DG.ColumnList
 } // trainAndAnalyzeModel
 
 // Wrapper for combining the function "trainAndAnalyzeModel" with Datagrok predicitve tools
-export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, predictColumn: string): Promise<any> {
+export async function getTrainedModel(hyperparameters: any, df: DG.DataFrame, labels: DG.Column): Promise<any> {
   const columns = df.columns;
-  const labels = columns.byName(predictColumn);
-  columns.remove(predictColumn);
 
   if (labels.categories.length != 2)
     throw new Error(WRONG_LABELS_MESSAGE);
@@ -505,12 +503,16 @@ export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise
 } // getPrediction
 
 
-export function isApplicableSVM(df: DG.DataFrame, predictColumn: string): boolean {
+export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
   const columns = df.columns;
-  const labels = columns.byName(predictColumn);
-  columns.remove(predictColumn);
-  var res: boolean = labels.type == 'string';
+  if (!labels.matches('categorical') || labels.categories.length > 2)
+    return false;
+  var res: boolean = true;
   for (var i = 0; i < columns.length; i++)
-    res = res && (columns.byIndex(i).type == 'double' || columns.byIndex(i).type == 'int');
+    res = res && (columns.byIndex(i).matches('numerical'));
   return res;
+}
+
+export function isInteractiveSVM(df: DG.DataFrame, labels: DG.Column): boolean {
+  return df.rowCount <= 1000;
 }

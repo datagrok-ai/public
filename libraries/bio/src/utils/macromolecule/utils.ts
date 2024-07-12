@@ -319,7 +319,7 @@ export function getPaletteByType(paletteType: string): SeqPalette {
 export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   let resCol: DG.Column | null = semTypeColList.find((col) => {
-    const units = col.getTag(DG.TAGS.UNITS);
+    const units = col.meta.units;
     return units ? units.indexOf('MSA') !== -1 : false;
   }) ?? null;
   if (!resCol && semTypeColList.length > 0)

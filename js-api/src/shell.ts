@@ -36,7 +36,7 @@ export class Shell {
   }
 
   async reportTest(type: String, params: object): Promise<void> {
-    await fetch(`${grok.dapi.root}/log/tests/${type}`, {
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       credentials: 'same-origin',
       body: api.grok_JSON_encode(toDart(params))

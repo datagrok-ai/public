@@ -1,7 +1,7 @@
 #file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate in new VPC"
+Description: "Datagrok template to deploy all components in new VPC"
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

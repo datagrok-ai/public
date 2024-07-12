@@ -719,12 +719,12 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutput() {
+  private showOutput(): void {
     ui.setDisplay(this.tabsElem.root, true);
     this._isOutputOutdated.next(false);
   }
 
-  public getViewers(propName: string) {
+  public getViewers(propName: string): DG.Viewer[] {
     return this.dfToViewerMapping[propName];
   }
 
@@ -1130,12 +1130,14 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getParamChanges<T = any>(name: string): Observable<T | null> {
-    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
     return this.funcCallReplaced.pipe(
       startWith(null),
       filter(() => !!this.funcCall),
-      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
-      map(() => this.funcCall[ptype][name].value as T),
+      map(() => this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams'),
+      switchMap((ptype) => this.funcCall[ptype][name].onChanged.pipe(
+        startWith(null),
+        map(() => this.funcCall[ptype][name].value as T),
+      )),
     );
   }
 
@@ -1698,7 +1700,7 @@ export class RichFunctionView extends FunctionView {
     if (name.length > 31)
       name = `${name.slice(0, 31)}`;
     let i = 1;
-    while (wb.worksheets.some((sheet) => sheet.name === name)) {
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
       let truncatedName = `${initialName}`;
       if (truncatedName.length > (31 - `-${i}`.length))
         truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;

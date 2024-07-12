@@ -116,7 +116,7 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
       continue;
 
 
-    const color = DG.Color.toHtml(splitCol.colors.getColor(rawData.indexOf(categoryIdx)));
+    const color = DG.Color.toHtml(splitCol.meta.colors.getColor(rawData.indexOf(categoryIdx)));
     const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
     labels.push(label);
   }
@@ -165,7 +165,7 @@ export function getDistributionTable(activityCol: DG.Column<number>, selection: 
 
 
   splitCol.setCategoryOrder(categoryOrder);
-  splitCol.colors.setCategorical();
+  splitCol.meta.colors.setCategorical();
   return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
 }
 

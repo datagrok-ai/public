@@ -357,6 +357,7 @@ export interface IDartApi {
   grok_DockManager_UndockNode(m: any, n: any): any;
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
+  grok_DockManager_OnElementClosed(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
   grok_Viewer_Get_Type(v: any): any;
@@ -420,6 +421,9 @@ export interface IDartApi {
   grok_Form_Get_State(form: any): any;
   grok_Form_Set_State(form: any, state: String): any;
   grok_LineChartViewer_activeFrame(s: any): any;
+  grok_LineChartViewer_ResetView(l: any): any;
+  grok_BarChartViewer_ResetView(b: any): any;
+  grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
@@ -581,6 +585,8 @@ export interface IDartApi {
   grok_Column_GetColors(column: any): any;
   grok_Column_GetColor(column: any, index: Num): any;
   grok_Column_GetAutoFormat(column: any): any;
+  grok_Column_Get_Is_Categorical(column: any): any;
+  grok_Column_Get_Is_Numerical(column: any): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
@@ -1326,8 +1332,8 @@ export interface IDartApi {
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
   grok_Rect_Unpack(bytes: any): any;
-  grok_FileInfo_FromBytes(data: any): any;
-  grok_FileInfo_FromString(data: String): any;
+  grok_FileInfo_FromBytes(path: String, data: any): any;
+  grok_FileInfo_FromString(path: String, data: String): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1450,6 +1456,8 @@ export interface IDartApi {
   grok_Get_StackTrace_Hash(stackTrace: String): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
+  grok_Parse_Command(command: String, safe: Bool): any;
+  grok_Set_AutoReports_Prefix(prefix: String): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1503,6 +1511,7 @@ export interface IDartApi {
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;

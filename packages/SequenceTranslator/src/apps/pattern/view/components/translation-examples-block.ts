@@ -125,7 +125,7 @@ class StrandExample {
   }
 
   private createTextInputForExamples(): StringInput {
-    const input = ui.textInput('', '');
+    const input = ui.input.textArea('', {value: ''});
     this.applyStylingToInput(input);
 
     return input;

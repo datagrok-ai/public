@@ -7,6 +7,7 @@ import {Subject} from 'rxjs';
 import {
   category, expect, test, awaitCheck, delay, testEvent, before, after
 } from '@datagrok-libraries/utils/src/test';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {
   getHelmService, HelmServiceBase, HelmAux, HelmProps
 } from '@datagrok-libraries/bio/src/viewers/helm-service';
@@ -17,6 +18,8 @@ import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+
+import {initHelmMainPackage} from './utils';
 
 import {_package} from '../package-test';
 
@@ -30,6 +33,7 @@ category('HelmService', () => {
   before(async () => {
     const logPrefix = `Helm: tests: HelmService: before`;
     _package.logger.debug(`${logPrefix}, start`);
+    await initHelmMainPackage();
     try {
       monomerLibHelper = await getMonomerLibHelper();
       userLibSettings = await getUserLibSettings();

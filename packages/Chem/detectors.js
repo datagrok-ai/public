@@ -39,7 +39,7 @@ class ChemPackageDetectors extends DG.Package {
   //output: string semType
   detectMolecules(col) {
     if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {
-      col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.MOLBLOCK;
+      col.meta.units = DG.UNITS.Molecule.MOLBLOCK;
       return DG.SEMTYPE.MOLECULE;
     }
 

@@ -120,7 +120,7 @@ const STORAGE_NAME = 'user-data-storage-demo';
 let v = grok.shell.newView('demo: user data storage');
 let age = ui.input.int('Age', {value: 30});
 let sex = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
-let music = ui.multiChoiceInput('Music genres', {value: null, items: ['Classic', 'Rock', 'Pop', 'Jazz']});
+let music = ui.input.multiChoice('Music genres', {value: null, items: ['Classic', 'Rock', 'Pop', 'Jazz']});
 let inputs = [age, sex, music];
 v.append(ui.inputs(inputs));
 

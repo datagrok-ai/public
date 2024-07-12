@@ -3,12 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
+
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
 import {addTransformedColumn} from './pt-conversion';
 
 import {handleError} from './utils';
-import {getLibrariesList, HelmInput, getEnumeration} from './pt-enumeration';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {defaultErrorHandler} from '../utils/err-info';
+import {getLibrariesList, getEnumeration, PT_HELM_EXAMPLE} from './pt-enumeration';
 
 const PT_ERROR_DATAFRAME = 'No dataframe with macromolecule columns open';
 const PT_WARNING_COLUMN = 'No marcomolecule column chosen!';
@@ -25,15 +31,15 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   if (!targetColumns)
     throw new Error(PT_ERROR_DATAFRAME);
 
-  const targetColumnInput = ui.columnInput(
-    'Column', grok.shell.t, targetColumns[0], null,
-    {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
+  const targetColumnInput = ui.input.column(
+    'Column', {table: grok.shell.t, value: targetColumns[0],
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
   );
 
-  const generateHelmChoiceInput = ui.boolInput(PT_UI_GET_HELM, true);
+  const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
   ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
 
-  const chiralityEngineInput = ui.boolInput(PT_UI_USE_CHIRALITY, false);
+  const chiralityEngineInput = ui.input.bool(PT_UI_USE_CHIRALITY, {value: false});
   const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json');
   const rulesHeader = ui.inlineText([PT_UI_RULES_USED]);
   ui.tooltip.bind(rulesHeader, 'Add or specify rules to use');
@@ -74,32 +80,38 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   return dialog;
 }
 
-export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
-  const helmInput = await HelmInput.init();
+export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.Dialog> {
+  const [libList, helmHelper] = await Promise.all([
+    getLibrariesList(), getHelmHelper()]);
 
-  const libList = await getLibrariesList();
-  const screenLibrary = ui.choiceInput('Library to use', null, libList);
+  const helmValue = cell ? cell.value : PT_HELM_EXAMPLE;
+
+  const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
+  const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
 
   screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
 
   const div = ui.div([
-    helmInput.getDiv(),
+    helmInput.root,
     screenLibrary.root
   ]);
 
   const cccSubs = grok.events.onCurrentCellChanged.subscribe(() => {
     const cell = grok.shell.tv.dataFrame.currentCell;
 
-    if (cell.column.semType === DG.SEMTYPE.MACROMOLECULE && cell.column.tags[DG.TAGS.UNITS] === NOTATION.HELM)
-      helmInput.setHelmString(cell.value);
+    if (cell.column.semType === DG.SEMTYPE.MACROMOLECULE && cell.column.meta.units === NOTATION.HELM)
+      helmInput.stringValue = cell.value;
   });
 
+  // Displays the molecule from a current cell (monitors changes)
   const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
     .add(div)
     .onOK(async () => {
       try {
-        const helmString = helmInput.getHelmString();
-        const helmSelections = helmInput.getHelmSelections();
+        const helmString = helmInput.stringValue;
+        const helmSelections: number[] = wu.enumerate<HelmAtom>(helmInput.value.atoms)
+          .filter(([a, aI]) => a.highlighted)
+          .map(([a, aI]) => aI).toArray();
         if (helmString === undefined || helmString === '') {
           grok.shell.warning('PolyTool: no molecule was provided');
         } else if (helmSelections === undefined || helmSelections.length < 1) {
@@ -111,7 +123,7 @@ export async function getPolyToolEnumerationDialog(): Promise<DG.Dialog> {
           grok.shell.addTableView(df);
         }
       } catch (err: any) {
-
+        defaultErrorHandler(err);
       } finally {
         cccSubs.unsubscribe();
       }

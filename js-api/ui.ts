@@ -40,7 +40,8 @@ import { Wizard, WizardPage } from './src/ui/wizard';
 import {ItemsGrid} from "./src/ui/items-grid";
 import * as d4 from './src/api/d4.api.g';
 import {IDartApi} from "./src/api/grok_api.g";
-
+// import {Dictionary, typeaheadConfig} from "typeahead-standalone/dist/types";
+// import typeahead from "typeahead-standalone";
 
 let api: IDartApi = <any>window;
 declare let grok: any;
@@ -609,7 +610,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
  * @returns {VirtualView} */
-export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
+export function virtualView(length: number, renderer: (index: number) => HTMLElement, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
   return view;
@@ -714,7 +715,7 @@ export namespace input {
     property: (input, inputType, x) => input.property = x,
     tooltipText: (input, inputType, x) => input.setTooltip(x),
     onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input.value)),
+    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
     clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
     escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
     size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
@@ -756,7 +757,7 @@ export namespace input {
     }
   }
 
-  interface IInputInitOptions<T = any> {
+  export interface IInputInitOptions<T = any> {
     value?: T;
     property?: Property;
     nullable?: boolean;
@@ -766,7 +767,7 @@ export namespace input {
     onValueChanged?: (input: InputBase<T>) => void;
   }
 
-  interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
     min?: number;
     max?: number;
     step?: number;
@@ -774,15 +775,15 @@ export namespace input {
     showPlusMinus?: boolean;
   }
 
-  interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
 
-  interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
+  export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
   }
 
-  interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IStringInputInitOptions<T> extends IInputInitOptions<T> {
     clearIcon?: boolean;
     escClears?: boolean;
     icon?: string | HTMLElement;
@@ -790,16 +791,16 @@ export namespace input {
     // typeAheadConfig?: typeaheadConfig<Dictionary>; // - if it is set - create TypeAhead - make it for text input
   }
 
-  interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
-    size: Size;
+  export interface ITextAreaInputInitOptions<T> extends IInputInitOptions<T> {
+    size?: Size;
   }
 
-  interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
+  export interface IColumnInputInitOptions<T> extends IInputInitOptions<T> {
     table?: DataFrame;
     filter?: Function;
   }
 
-  interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
+  export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
   }
@@ -836,27 +837,27 @@ export namespace input {
     return input;
   }
 
-  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function int(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Int, name, options);
   }
 
-  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt> {
+  export function bigInt(name: string, options?: IInputInitOptions<BigInt>): InputBase<BigInt | null> {
     return _create(d4.InputType.BigInt, name, options);
   }
 
-  export function qNum(name: string, options?: IInputInitOptions): InputBase<number> {
+  export function qNum(name: string, options?: IInputInitOptions): InputBase<number | null> {
     return _create(d4.InputType.QNum, name, options);
   }
 
-  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function slider(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Slider, name, options);
   }
 
-  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T> {
+  export function choice<T>(name: string, options?: IChoiceInputInitOptions<T>): ChoiceInput<T | null> {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[]> {
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
     return _create(d4.InputType.MultiChoice, name, options);
   }
 
@@ -868,7 +869,7 @@ export namespace input {
     return _create(d4.InputType.Search, name, options);
   }
 
-  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number> {
+  export function float(name: string, options?: INumberInputInitOptions<number>): InputBase<number | null> {
     return _create(d4.InputType.Float, name, options);
   }
 
@@ -876,7 +877,7 @@ export namespace input {
     return _create(d4.InputType.Date, name, options);
   }
 
-  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string>> {
+  export function map(name: string, options?: IInputInitOptions<Map<string, string>>): InputBase<Map<string, string> | null> {
     return _create(d4.InputType.Map, name, options);
   }
 
@@ -888,11 +889,11 @@ export namespace input {
     return _create(d4.InputType.Switch, name, options);
   }
 
-  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo> {
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any>> {
+  export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
 
@@ -900,7 +901,7 @@ export namespace input {
     return _create(d4.InputType.Molecule, name, options);
   }
 
-  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column> {
+  export function column(name: string, options?: IColumnInputInitOptions<Column>): InputBase<Column | null> {
     return _create(d4.InputType.Column, name, options);
   }
 
@@ -908,7 +909,7 @@ export namespace input {
     return _create(d4.InputType.Columns, name, options);
   }
 
-  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame> {
+  export function table(name: string, options?: IChoiceInputInitOptions<DataFrame>): InputBase<DataFrame | null> {
     return _create(d4.InputType.Table, name, options);
   }
 
@@ -920,19 +921,19 @@ export namespace input {
     return _create(d4.InputType.Color, name, options);
   }
 
-  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string> {
+  export function radio(name: string, options?: IChoiceInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[]> {
+  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
-  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string> {
+  export function image(name: string, options?: IInputInitOptions<string>): InputBase<string | null> {
     return _create(d4.InputType.Image, name, options);
   }
 
@@ -1199,7 +1200,7 @@ export class tools {
           }
         }
         if (form.classList.contains('d4-dialog-contents')) {
-          let dialogFormWidth = labelMaxWidth + minInputWidth;
+          let dialogFormWidth = labelMaxWidth + minInputWidth + 40;
           form.style.minWidth = `${dialogFormWidth}px`;
         } else {
           if (form.clientWidth - labelWidth < minInputWidth) {
@@ -1259,6 +1260,18 @@ export class tools {
         width = 140;
       if (element.classList.contains('ui-input-text'))
         width = 200;
+      if (element.classList.contains('ui-input-choice')) {
+        width = 200;
+        let options = $(element).find('select option');
+        options.each((i) => {
+          let calc = this.getLabelWidth(options[i] as HTMLElement);
+          if (calc > width)
+            width = calc;
+        });
+        let e = $(element).find('select')[0];
+        if (e != undefined)
+          e.style.maxWidth = `${width + 30}px`;
+      }
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
@@ -1272,19 +1285,28 @@ export class tools {
 
     elements.each((i) => {
       let element = elements[i] as HTMLElement;
-      let value = document.createElement('span');
-      value.style.visibility = 'hidden';
-      value.style.position = 'fixed';
-      value.style.padding = '0';
-      value.style.margin = '0';
-      value.textContent = element.textContent;
-      document.body.append(value);
-      let renderWidth = Math.ceil(value.getBoundingClientRect().width);
-      value.remove();
+      let renderWidth = this.getLabelWidth(element);
       widths.push(renderWidth);
-      api.grok_Tooltip_SetOn(element, element?.textContent);
     });
     return widths;
+  }
+
+  private static getLabelWidth(element: HTMLElement) {
+    let value = document.createElement('span');
+    value.style.visibility = 'hidden';
+    value.style.position = 'fixed';
+    value.style.padding = '0';
+    value.style.margin = '0';
+    value.textContent = element.textContent;
+    document.body.append(value);
+    let renderWidth = Math.ceil(value.getBoundingClientRect().width);
+    value.remove();
+    return renderWidth;
+  }
+
+  static scrollIntoViewIfNeeded(e: HTMLElement) {
+    // @ts-ignore
+    e.scrollIntoViewIfNeeded(false);
   }
 }
 
@@ -1984,6 +2006,13 @@ export function breadcrumbs(path: string[]): Breadcrumbs {
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
   return new DropDown(label, createElement);
 }
+
+// export function makeInputTypeAhead(input: HTMLInputElement, config: TypeAheadConfig): void {
+//   const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+//       {input: <HTMLInputElement> input}, config);
+//
+//   typeahead(typeAheadConfig);
+// }
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);

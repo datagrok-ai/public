@@ -205,7 +205,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     const srcDf = DG.DataFrame.fromCsv(srcCsv);
     const seqCol = srcDf.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
     const sh = SeqHandler.forColumn(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;

@@ -54,7 +54,7 @@ export class HistoricalRunEdit extends DG.Dialog {
     const descInput = ui.input.string('Description', {value: description,
       onValueChanged: () => description = descInput.value});
     const favInput = ui.input.bool('Favorites', {value: isFavorite,
-      onValueChanged: () => isFavorite = favInput.value});
+      onValueChanged: () => isFavorite = favInput.value!});
     this.add(ui.form([
       titleInput,
       descInput,
