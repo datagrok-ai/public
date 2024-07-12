@@ -1,4 +1,4 @@
-**PostgresDart**
+### **PostgresDart**
 
 1. Go to **Browse** > **Databases**.
 2. Expand **PostgresDart** > **NorthwindTest** > **Schemas** > **public**. A list of tables opens.
@@ -10,7 +10,7 @@
 8. Click **+** to add result table to workspace. Query result opens.
 9. File > Close all.
 
-**MySql**
+### **MySql**
 1. Go to **Browse** > **Databases**.
 2. Expand **MySql** > **Northwind** > **Tables**. A list of tables opens.
 3. Right-click the **products** DB table and select **Join DB tables…** from context menu.
@@ -20,7 +20,7 @@
 7. Close Querry builder dialog by pressing **X**.
 8. File > Close all.
 
-**MariaDB**
+### **MariaDB**
 1. Go to **Browse** > **Databases**.
 2. Expand **MariaDB** > **Northwind** > **Tables**. A list of tables opens.
 3. Right-click the **products** DB table and select **Join DB tables…** from context menu.
