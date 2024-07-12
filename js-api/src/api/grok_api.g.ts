@@ -1455,10 +1455,11 @@ export interface IDartApi {
   grok_UserReport_Description(report: any): any;
   grok_UserReport_CreatedOn(report: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
+  grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
   grok_Parse_Command(command: String, safe: Bool): any;
-  grok_Set_AutoReports_Prefix(prefix: String): any;
+  grok_Set_AutoReport_Options(options: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

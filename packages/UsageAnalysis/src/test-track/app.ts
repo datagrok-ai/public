@@ -5,7 +5,6 @@ import dayjs from 'dayjs';
 
 import { colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status } from './utils';
 import { _package } from '../package';
-import { Subscription } from 'rxjs';
 
 const NEW_TESTING = 'New Testing';
 
@@ -165,14 +164,14 @@ export class TestTrack extends DG.ViewBase {
   private updateReportsPrefix() {
     if (this.currentNode.value && !('children' in this.currentNode.value) && this.isReporting) {
       const currentDateTime: Date = new Date();
-      DG.Logger.reportPrefix = `Test Track Report \n Test Case: ${this.currentNode.value.path} \n  Test Case selection time: ${currentDateTime.toISOString()} \n`;
+      DG.Logger.autoReportOptions = {'test_case': this.currentNode.value.pat, 'selection_time': currentDateTime.toISOString()};
     }
     else
-      this.resetReportsPrefix();
+      this.resetReportsOptions();
   }
 
-  private resetReportsPrefix() {
-    DG.Logger.reportPrefix = '';
+  private resetReportsOptions() {
+    DG.Logger.autoReportOptions = {};
   }
 
   private async initTreeView(): Promise<void> {
@@ -310,7 +309,7 @@ export class TestTrack extends DG.ViewBase {
       this.runReportSync!.style.display = 'block';
       this.pauseReportSync!.style.display = 'none';
       this.isReporting = false;
-      this.resetReportsPrefix();
+      this.resetReportsOptions();
     }, "Reports synchronization is running");
     this.runReportSync = ui.button(getIcon('play', { style: 'fas' }), () => {
       this.runReportSync!.style.display = 'none';
