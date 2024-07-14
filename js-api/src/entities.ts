@@ -1361,10 +1361,7 @@ export class Property {
    * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
-    throw 'Not implemented';
-    // Andrew: looks like my commit got lost somewhere :(
-    // Will need to bring it back, it was a nice feature
-    // api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
   }
 }
 

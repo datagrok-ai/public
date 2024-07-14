@@ -553,6 +553,7 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
+  get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
