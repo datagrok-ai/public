@@ -2,7 +2,7 @@ import * as rxjs from 'rxjs';
 import {toJs} from './wrappers';
 import {_toIterable} from './utils';
 import {DockType} from './const';
-import {TypedEventArgs, Viewer} from './viewer';
+import {Viewer} from './viewer';
 import {IDartApi} from "./api/grok_api.g";
 import {StreamSubscription} from "./events";
 
