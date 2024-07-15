@@ -182,6 +182,12 @@
   flex-grow: 1;
 }
 
+.ui-widget-addnewcolumn-functions #categories-div {
+    overflow-y: scroll !important;
+    margin-bottom: 10px;
+    min-height: 70px;
+}
+
 .dlg-add-new-column{
     flex-direction: row;
     overflow: hidden;
