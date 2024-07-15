@@ -122,7 +122,7 @@ ATCGAATCGA`;
       const seq2 = Array(10000).fill('FYWRRY').join('');
       _testDistance(seq1, seq2, df, 0.667);
     } else { _testDistance(prot5, prot6, df, 1.143); }
-  });
+  }, {isEnabledBenchmarkMode: true});
 });
 
 async function _initMacromoleculeColumn(csv: string): Promise<SeqHandler> {

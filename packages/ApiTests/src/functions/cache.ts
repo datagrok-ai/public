@@ -39,18 +39,18 @@ category('Benchmarks: Client-side cache', () => {
   test('Tiny scalar calls no cache', async () => {
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return DG.toDart(await runLoop(false, tiny, getTinyGenerator(true, iterations)));
-  }, {timeout: 400000});
+  }, {timeout: 400000, isEnabledBenchmarkMode: true});
 
   test('Tiny scalar calls with cache', async () => {
     await tiny.apply({'x': 1});
     const iterations = DG.Test.isInBenchmark ? 100000 : 100;
     return DG.toDart(await runLoop(true, tiny, getTinyGenerator(true, iterations)));
-  }, {timeout: 400000});
+  }, {timeout: 400000, isEnabledBenchmarkMode: true});
 
   test('Cached dataframe', async () => {
     const type = DG.Test.isInBenchmark ? 'h' : 'l';
     return DG.toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
-  }, {timeout: 180000});
+  }, {timeout: 180000, isEnabledBenchmarkMode: true});
 
   test('Records limit, tiny', async () => {
     await grok.functions.clientCache.clear();

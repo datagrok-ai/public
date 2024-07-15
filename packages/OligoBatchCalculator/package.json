@@ -13,7 +13,7 @@
     "directory": "packages/OligoBatchCalculator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.12",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"

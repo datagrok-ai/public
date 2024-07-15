@@ -98,7 +98,7 @@ category('Admetox', () => {
     const mol10k = await runAdmetoxBenchmark(10000);
 
     return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
-}, {timeout: 10000000000});
+}, {timeout: 10000000000, isEnabledBenchmarkMode: true });
 
   test('Calculate.Benchmark cell', async () => {
     const smiles = `smiles
@@ -110,7 +110,7 @@ category('Admetox', () => {
     const args = [smiles, distributionModels, 'false'];
     const cellResults = await runInLoop(iterations, runAdmetox, ...args);
     return DG.toDart({"results": cellResults});
-  }, {timeout: 1000000});
+  }, {timeout: 1000000, isEnabledBenchmarkMode: true});
 });
 
 async function runInLoop(iterations: number, func: (...args: string[]) => Promise<string | null>, ...args: string[]) {

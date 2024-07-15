@@ -21,7 +21,7 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'sequence');
     //grok.shell.closeTable(testFastaDf);
     //testFastaTableView.close();
-  });
+  }, {isEnabledBenchmarkMode: true});
 
   test('sequenceSpaceWithEmptyRows', async () => {
     testHelmWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
