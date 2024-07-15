@@ -16,7 +16,8 @@ const stdError = console.error.bind(console);
 export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
-    beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number
+    beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number,
+    isAllTestsEnabledBenchmarkMode?: boolean
   }
 } = {};
 
@@ -45,6 +46,7 @@ export interface TestOptions {
 export interface CategoryOptions {
   clear?: boolean;
   timeout?: number;
+  isAllTestsEnabledBenchmarkMode?: boolean;
 }
 
 export class TestContext {
@@ -225,6 +227,7 @@ export function category(category: string, tests_: () => void, options?: Categor
   if (tests[currentCategory]) {
     tests[currentCategory].clear = options?.clear ?? true;
     tests[currentCategory].timeout = options?.timeout;
+    tests[currentCategory].isAllTestsEnabledBenchmarkMode = options?.isAllTestsEnabledBenchmarkMode;
   }
 }
 
@@ -397,6 +400,12 @@ export async function runTests(options?:
       const res = [];
       if (value.clear) {
         for (let i = 0; i < t.length; i++) {
+          if (t[i].options) {
+            if (t[i].options?.isEnabledBenchmarkMode === undefined) {
+              //@ts-ignore
+              t[i].options.isEnabledBenchmarkMode = value.isAllTestsEnabledBenchmarkMode || false;
+            }
+          }
           res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
           grok.shell.closeAll();
           DG.Balloon.closeAll();
