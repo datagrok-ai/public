@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.6 (2024-07-15)
+
+### Bug Fixes
+
+* Splitt warnings and errors in grok check command
+
 ## 4.13.4 (2024-06-25)
 
 ### Bug Fixes
