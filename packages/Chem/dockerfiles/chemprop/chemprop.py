@@ -63,7 +63,6 @@ class ChemProp(Engine):
         prediction = pd.read_csv(predictions_path, na_values=['Invalid SMILES'])
         if save_table:
             prediction = prediction.filter([c for c in list(prediction) if c not in list(table)])
-        shutil.rmtree(tmp_dir, ignore_errors=True)
         return prediction
 
     @staticmethod
