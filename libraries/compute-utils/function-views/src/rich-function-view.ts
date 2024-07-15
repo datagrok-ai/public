@@ -10,8 +10,8 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
-import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase} from '../../shared-utils/utils';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -78,8 +78,10 @@ const getNoDataStub = () => ui.divText('[No data to display]', {style: {
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class RichFunctionView extends FunctionView {
-  private validationRequests = new Subject<ValidationRequestPayload>();
-  private validationUpdates = new Subject<null>();
+  private inputValidationRequests = new Subject<ValidationRequestPayload>();
+  private outputValidationRequests = new Subject<ValidationRequestPayload>();
+  private inputValidationUpdates = new Subject<null>();
+  private outputValidationUpdates = new Subject<null>();
   private runRequests = new Subject<null>();
 
   // stores the running state
@@ -90,17 +92,20 @@ export class RichFunctionView extends FunctionView {
 
   private inputsOverride: Record<string, FuncCallInput | FuncCallInputValidated> = {};
   private inputsMap: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private outputValidationSigns: Record<string, readonly [HTMLElement, HTMLElement]> = {};
 
   // validators
-  private validators: Record<string, Validator> = {};
-  private validationState: Record<string, ValidationResult | undefined> = {};
+  private inputValidators: Record<string, Validator> = {};
+  private outputValidators: Record<string, Validator> = {};
+  private inputValidationState: Record<string, ValidationResult | undefined> = {};
+  private outputValidationState: Record<string, ValidationResult | undefined> = {};
 
   private externalValidatorsUpdates = new Subject<string>();
   private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
 
-  public pendingValidations = this.validationUpdates.pipe(
+  public pendingInputValidations = this.inputValidationUpdates.pipe(
     startWith(null),
-    map(() => this.validationState),
+    map(() => this.inputValidationState),
   );
 
   private _isOutputOutdated = new BehaviorSubject<boolean>(true);
@@ -126,51 +131,75 @@ export class RichFunctionView extends FunctionView {
 
   public async onFuncCallReady() {
     await this.loadInputsOverrides();
-    await this.loadInputsValidators();
+    await this.loadValidators(SYNC_FIELD.INPUTS);
+    await this.loadValidators(SYNC_FIELD.OUTPUTS);
     await super.onFuncCallReady();
 
-    const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
+    const fcReplacedSub = this.funcCallReplaced.subscribe(() => {
+      this.inputValidationRequests.next({isRevalidation: false});
+      this.outputValidationRequests.next({isRevalidation: false});
+    });
     this.subs.push(fcReplacedSub);
 
-    const validationSub = this.validationRequests.pipe(
-      groupBy((payload) => payload.field),
-      mergeMap((fieldValidations$) => {
-        return fieldValidations$.pipe(
-          tap((payload) => this.setValidationPending(payload.field)),
-          switchMap((payload) => {
-            const controller = new AbortController();
-            const signal = controller.signal;
-            let done = false;
-            const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
-              const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
-                done = true;
-                observer.next(val);
-              });
-              return () => {
-                if (!done)
-                  controller.abort();
-                sub.unsubscribe();
-              };
+    const mapValidations = (isInput: SyncFields) => mergeMap((fieldValidations$: Observable<ValidationRequestPayload>) => {
+      return fieldValidations$.pipe(
+        tap((payload) => {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.setInputValidationPending(payload.field);
+          else
+            this.setOutputValidationPending(payload.field);
+        }),
+        switchMap((payload) => {
+          const controller = new AbortController();
+          const signal = controller.signal;
+          let done = false;
+          const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+            const sub = from(this.runValidation({...payload}, signal, isInput)).subscribe((val) => {
+              done = true;
+              observer.next(val);
             });
-            return obs$.pipe(
-              tap((results) => {
-                this.setValidationResults(results);
-                this.runRevalidations(payload, results);
-                this.validationUpdates.next(null);
-              }),
-              mapTo(payload),
-            );
-          }));
-      }),
+            return () => {
+              if (!done)
+                controller.abort();
+              sub.unsubscribe();
+            };
+          });
+          return obs$.pipe(
+            tap((results) => {
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.setInputValidationResults(results);
+              else
+                this.setOutputValidationResults(results);
+              this.runRevalidations(payload, results, isInput);
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.inputValidationUpdates.next(null);
+              else
+                this.outputValidationUpdates.next(null);
+            }),
+            mapTo(payload),
+          );
+        }));
+    });
+
+    const inputValidationSub = this.inputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.INPUTS),
     ).subscribe((payload) => {
       if (payload.field && this.runningOnInput && this.isRunnable())
         this.doRun();
     });
 
-    this.subs.push(validationSub);
+    this.subs.push(inputValidationSub);
+
+    const outputValidationSub = this.outputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.OUTPUTS),
+    ).subscribe();
+
+    this.subs.push(outputValidationSub);
 
     const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
-      this.updateInputValidationReuslts(name);
+      this.updateInputValidationResults(name);
     });
 
     this.subs.push(externalValidationSub);
@@ -182,7 +211,7 @@ export class RichFunctionView extends FunctionView {
           delay(RUN_WAIT_TIME),
           startWith(true),
         ))),
-      this.validationUpdates.pipe(debounceTime(0)),
+      this.inputValidationUpdates.pipe(debounceTime(0)),
     ]).pipe(
       filter(([needToRun]) => needToRun && this.isRunnable()),
     ).subscribe(() => this.doRun());
@@ -210,9 +239,9 @@ export class RichFunctionView extends FunctionView {
       // run validations on start
       const controller = new AbortController();
       const results = await this.runValidation({isRevalidation: false}, controller.signal);
-      this.setValidationResults(results);
+      this.setInputValidationResults(results);
       this.runRevalidations({isRevalidation: false}, results);
-      this.validationUpdates.next(null);
+      this.inputValidationUpdates.next(null);
 
       if (this.runningOnStart && this.isRunnable())
         await this.doRun();
@@ -263,7 +292,7 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const validationSub = merge(this.validationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
+    const validationSub = merge(this.inputValidationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -284,14 +313,17 @@ export class RichFunctionView extends FunctionView {
     }));
   }
 
-  public async loadInputsValidators() {
-    const inputParams = [...this.funcCall.inputParams.values()];
-    await Promise.all(inputParams.map(async (param) => {
+  public async loadValidators(isInput: SyncFields = SYNC_FIELD.INPUTS) {
+    const params = [...this.funcCall[syncParams[isInput]].values()];
+    await Promise.all(params.map(async (param) => {
       if (param.property.options.validatorFunc) {
         const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
         const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
         await call.call();
-        this.validators[param.name] = call.outputs.validator;
+        if (isInput === SYNC_FIELD.INPUTS)
+          this.inputValidators[param.name] = call.outputs.validator;
+        else
+          this.outputValidators[param.name] = call.outputs.validator;
       }
     }));
   }
@@ -430,7 +462,7 @@ export class RichFunctionView extends FunctionView {
       'min-height': '50px',
     });
 
-    const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
+    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: () => this.isUploadMode.next(experimentalDataSwitch.value)});
     const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,
@@ -719,12 +751,12 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
-  private showOutput() {
+  private showOutput(): void {
     ui.setDisplay(this.tabsElem.root, true);
     this._isOutputOutdated.next(false);
   }
 
-  public getViewers(propName: string) {
+  public getViewers(propName: string): DG.Viewer[] {
     return this.dfToViewerMapping[propName];
   }
 
@@ -735,7 +767,7 @@ export class RichFunctionView extends FunctionView {
       const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
       const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
-      const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
+      const tabOutputScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -844,8 +876,16 @@ export class RichFunctionView extends FunctionView {
             'flex-grow': '1',
           });
 
+          const validationSign = getValidationIcon();
+          this.outputValidationSigns[dfProp.name] = validationSign;
+
           return ui.divV([
-            ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+            ui.divH([
+              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+              ...viewerIndex === 0 ? [ui.div([
+                this.outputValidationSigns[dfProp.name][0],
+                this.outputValidationSigns[dfProp.name][1],
+              ], {style: {'margin': '10.79px'}})]:[]]),
             viewerWithStubRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -900,9 +940,14 @@ export class RichFunctionView extends FunctionView {
         return acc;
       }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
 
+      tabOutputScalarProps.forEach((scalarProp) => {
+        const validationSign = getValidationIcon();
+        this.outputValidationSigns[scalarProp.name] = validationSign;
+      });
+
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
-          tabScalarProps,
+          tabOutputScalarProps,
           (scalarProp: DG.Property) => {
             const precision = scalarProp.options.precision;
 
@@ -915,6 +960,7 @@ export class RichFunctionView extends FunctionView {
             return [
               `${scalarProp.caption ?? scalarProp.name}${units}`,
               scalarValue ?? '[No value]',
+              ui.div([this.outputValidationSigns[scalarProp.name][0], this.outputValidationSigns[scalarProp.name][1]]),
             ];
           },
         ).root;
@@ -936,7 +982,7 @@ export class RichFunctionView extends FunctionView {
       this.tabsElem.addPane(tabLabel, () => {
         return ui.divV([
           ...tabDfProps.length ? [dfBlocks]: [],
-          ...tabScalarProps.length ? [scalarsTable]: [],
+          ...tabOutputScalarProps.length ? [scalarsTable]: [],
         ]);
       });
     });
@@ -1070,7 +1116,8 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
-      this.validationRequests.next({isRevalidation: false, isNewOutput: true});
+      this.inputValidationRequests.next({isRevalidation: false, isNewOutput: true});
+      this.outputValidationRequests.next({isRevalidation: false});
     }
   }
 
@@ -1130,12 +1177,14 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getParamChanges<T = any>(name: string): Observable<T | null> {
-    const ptype = this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams';
     return this.funcCallReplaced.pipe(
       startWith(null),
       filter(() => !!this.funcCall),
-      switchMap(() => this.funcCall[ptype][name].onChanged.pipe(startWith(null))),
-      map(() => this.funcCall[ptype][name].value as T),
+      map(() => this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams'),
+      switchMap((ptype) => this.funcCall[ptype][name].onChanged.pipe(
+        startWith(null),
+        map(() => this.funcCall[ptype][name].value as T),
+      )),
     );
   }
 
@@ -1294,8 +1343,13 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice)
-      return ui.choiceInput(prop.caption ?? prop.name, getDefaultValue(prop), JSON.parse(prop.options.choices));
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice) {
+      return ui.input.choice(prop.caption ?? prop.name, {
+        value: getDefaultValue(prop),
+        items: JSON.parse(prop.options.choices),
+        nullable: prop.nullable,
+      });
+    }
 
     switch (prop.propertyType as any) {
     case FILE_INPUT_TYPE:
@@ -1500,7 +1554,7 @@ export class RichFunctionView extends FunctionView {
         this.isHistorical.next(false);
 
         this.hideOutput();
-        this.validationRequests.next({field: newParam.name, isRevalidation: false});
+        this.inputValidationRequests.next({field: newParam.name, isRevalidation: false});
 
         const currentState = this.getInputLockState(newParam.name);
         if (currentState === 'restricted unlocked' || currentState === 'inconsistent') {
@@ -1524,7 +1578,10 @@ export class RichFunctionView extends FunctionView {
         (param) => param.value.onDataChanged.pipe(mapTo(param)),
       ),
     ).subscribe((param) => {
-      this.validationRequests.next({field: param.name, isRevalidation: false});
+      if (field === SYNC_FIELD.INPUTS)
+        this.inputValidationRequests.next({field: param.name, isRevalidation: false});
+      else
+        this.outputValidationRequests.next({field: param.name, isRevalidation: false});
     });
     this.subs.push(sub3);
 
@@ -1547,7 +1604,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public isValid() {
-    for (const [_, v] of Object.entries(this.validationState)) {
+    for (const [_, v] of Object.entries(this.inputValidationState)) {
       if (!isValidationPassed(v))
         return false;
     }
@@ -1560,24 +1617,24 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getValidationState() {
-    return this.validationState;
+    return this.inputValidationState;
   }
 
   public getValidationMessage() {
     const msgs: string[] = [];
-    for (const [name, v] of Object.entries(this.validationState)) {
+    for (const [name, v] of Object.entries(this.inputValidationState)) {
       if (!isValidationPassed(v))
         msgs.push(`${name}: ${getErrorMessage(v)}`);
     }
     return msgs.join('\n');
   }
 
-  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal) {
-    const inputName = payload.field;
-    const inputNames = this.getValidatedNames(inputName);
+  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal, isInput = SYNC_FIELD.INPUTS) {
+    const paramName = payload.field;
+    const paramNames = this.getValidatedNames(paramName, isInput);
 
-    const validationItems = await Promise.all(inputNames.map(async (name) => {
-      const v = this.funcCall.inputs[name];
+    const validationItems = await Promise.all(paramNames.map(async (name) => {
+      const v = isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs[name]: this.funcCall.outputs[name];
       // not allowing null anywhere
       const standardMsgs = await nonNullValidator(v, {
         param: name,
@@ -1589,7 +1646,7 @@ export class RichFunctionView extends FunctionView {
         view: this,
       });
       let customMsgs;
-      const customValidator = this.validators[name];
+      const customValidator = isInput === SYNC_FIELD.INPUTS ? this.inputValidators[name] : this.outputValidators[name];
       if (customValidator) {
         customMsgs = await customValidator(v, {
           param: name,
@@ -1602,53 +1659,88 @@ export class RichFunctionView extends FunctionView {
           view: this,
         });
       }
+      // output params could not be nulls, DG will complain
+      const isNullable = isInput === SYNC_FIELD.INPUTS && this.funcCall.inputParams[name].property.options.nullable;
       return [name, mergeValidationResults(
-        ...this.funcCall.inputParams[name].property.options.nullable ? []: [standardMsgs],
-        customMsgs),
-      ] as const;
+        ...isNullable ? []: [standardMsgs],
+        customMsgs,
+      )] as const;
     }));
     return Object.fromEntries(validationItems);
   }
 
-  private setValidationPending(inputName?: string) {
+  private setInputValidationPending(inputName?: string) {
     const inputNames = this.getValidatedNames(inputName);
     for (const name of inputNames) {
-      this.validationState[name] = makePendingValidationResult();
+      this.inputValidationState[name] = makePendingValidationResult();
       const input = this.inputsMap[name];
       if (isFuncCallInputValidated(input))
         input.setValidation(makePendingValidationResult());
     }
-    this.validationUpdates.next(null);
+    this.inputValidationUpdates.next(null);
   }
 
-  private setValidationResults(results: Record<string, ValidationResult | undefined>) {
+  private setOutputValidationPending(inputName?: string) {
+    const outputNames = this.getValidatedNames(inputName, SYNC_FIELD.OUTPUTS);
+    for (const name of outputNames) {
+      this.outputValidationState[name] = makePendingValidationResult();
+      const sign = this.outputValidationSigns[name];
+      if (sign) {
+        const newSign = getValidationIcon(makePendingValidationResult());
+        sign[0].replaceWith(newSign[0]);
+        sign[1].replaceWith(newSign[1]);
+        this.outputValidationSigns[name] = newSign;
+      }
+    }
+    this.outputValidationUpdates.next(null);
+  }
+
+  private setInputValidationResults(results: Record<string, ValidationResult | undefined>) {
     for (const [inputName, validationMessages] of Object.entries(results)) {
-      this.validationState[inputName] = validationMessages;
-      this.updateInputValidationReuslts(inputName);
+      this.inputValidationState[inputName] = validationMessages;
+      this.updateInputValidationResults(inputName);
     }
   }
 
-  private updateInputValidationReuslts(inputName: string) {
-    const results = mergeValidationResults(this.validationState[inputName], this.externalValidatorsState[inputName]);
+  private setOutputValidationResults(results: Record<string, ValidationResult | undefined>) {
+    for (const [outputName, validationMessages] of Object.entries(results)) {
+      this.outputValidationState[outputName] = validationMessages;
+      this.updateOutputValidationResults(outputName);
+    }
+  }
+
+  private updateOutputValidationResults(outputName: string) {
+    const results = this.outputValidationState[outputName];
+    const sign = this.outputValidationSigns[outputName];
+    if (sign)
+      this.outputValidationSigns[outputName] = updateOutputValidationSign(sign, results);
+  }
+
+  private updateInputValidationResults(inputName: string) {
+    const results = mergeValidationResults(this.inputValidationState[inputName], this.externalValidatorsState[inputName]);
     const input = this.inputsMap[inputName];
     if (isFuncCallInputValidated(input))
       input.setValidation(results);
   }
 
-  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {
+  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>, isInput = SYNC_FIELD.INPUTS) {
     // allow only 1 level of revalidations
     if (payload.isRevalidation)
       return;
     for (const [, result] of Object.entries(results)) {
       if (result?.revalidate) {
-        for (const field of result.revalidate)
-          this.validationRequests.next({field, context: result.context, isRevalidation: true});
+        for (const field of result.revalidate) {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.inputValidationRequests.next({field, context: result.context, isRevalidation: true});
+          else
+            this.outputValidationRequests.next({field, context: result.context, isRevalidation: true});
+        }
       }
     }
   }
 
-  private getValidatedNames(inputName?: string): string[] {
-    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()]);
+  private getValidatedNames(inputName?: string, isInput = SYNC_FIELD.INPUTS): string[] {
+    return (inputName ? [inputName]: [...isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs.keys(): this.funcCall.outputs.keys()]);
   }
 
   private async getValidExpRun(expFuncCall: DG.FuncCall) {
@@ -1693,7 +1785,7 @@ export class RichFunctionView extends FunctionView {
     if (name.length > 31)
       name = `${name.slice(0, 31)}`;
     let i = 1;
-    while (wb.worksheets.some((sheet) => sheet.name === name)) {
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
       let truncatedName = `${initialName}`;
       if (truncatedName.length > (31 - `-${i}`.length))
         truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;

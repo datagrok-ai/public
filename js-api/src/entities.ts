@@ -98,7 +98,10 @@ export class Entity {
   get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_Entity_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -698,6 +701,11 @@ export class FileInfo extends Entity {
   /** Checks if directory */
   get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
 
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_FileInfo_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
+
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
@@ -714,12 +722,16 @@ export class FileInfo extends Entity {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
   }
 
-  static fromBytes(data: Uint8Array): FileInfo {
-      return api.grok_FileInfo_FromBytes(data);
+  static fromBytes(path: string, data: Uint8Array): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromBytes(path, data);
   }
 
-  static fromString(data: string): FileInfo {
-    return api.grok_FileInfo_FromString(data);
+  static fromString(path: string, data: string): FileInfo {
+    if (!path)
+      throw new Error('Path can\'t be null or empty');
+    return api.grok_FileInfo_FromString(path, data);
   }
 }
 

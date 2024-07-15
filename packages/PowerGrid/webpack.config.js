@@ -1,4 +1,5 @@
 const path = require('path');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
@@ -25,6 +26,9 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader']}
     ],
   },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',

@@ -3,6 +3,8 @@
   "name": "AccessNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "db": "",
     "connString": "jdbc:ucanaccess:///home/grok/northwind/northwind.mdb;"
   },

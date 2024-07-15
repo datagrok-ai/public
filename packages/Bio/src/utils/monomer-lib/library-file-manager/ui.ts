@@ -14,6 +14,7 @@ import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper, IMonomerLibFileManager} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 import {MonomerLibFileEventManager} from './event-manager';
+import {_package} from '../../../package';
 
 export async function showManageLibrariesDialog(): Promise<void> {
   await DialogWrapper.showDialog();
@@ -89,7 +90,8 @@ class MonomerLibraryManagerWidget {
 
 class LibraryControlsManager {
   private constructor(
-    private fileManager: IMonomerLibFileManager
+    private fileManager: IMonomerLibFileManager,
+    private readonly userLibSettings: UserLibSettings,
   ) {
     this.fileManager.eventManager.updateUIControlsRequested$.subscribe(() => {
       this.updateControlsForm();
@@ -99,13 +101,18 @@ class LibraryControlsManager {
     });
   }
 
-  private userLibSettings: UserLibSettings;
+  private toLog(): string {
+    return `LibraryControlsManager<#>`;
+  }
 
   static async createControlsForm(): Promise<HTMLElement> {
-    const libHelper = await getMonomerLibHelper();
-    const fileManager = await libHelper.getFileManager();
-    const manager = new LibraryControlsManager(fileManager);
-    await manager.initialize();
+    const logPrefix = 'LibraryControlsForm.createControlsForm()';
+    _package.logger.debug(`${logPrefix}, start`);
+    const [fileManager, userLibSettings] = await Promise.all([
+      getMonomerLibHelper().then((libHelper) => libHelper.getFileManager()),
+      await getUserLibSettings(),
+    ]);
+    const manager = new LibraryControlsManager(fileManager, userLibSettings);
 
     return manager._createControlsForm();
   }
@@ -118,10 +125,6 @@ class LibraryControlsManager {
     return inputsForm;
   }
 
-  private async initialize(): Promise<void> {
-    this.userLibSettings = await getUserLibSettings();
-  };
-
   private updateControlsForm(): void {
     const updatedForm = this._createControlsForm();
     $('.monomer-lib-controls-form').replaceWith(updatedForm);
@@ -133,17 +136,17 @@ class LibraryControlsManager {
   }
 
   private createLibInput(libFileName: string): DG.InputBase<boolean | null> {
+    const logPrefix = `${this.toLog()}.createLibInput()`;
+    _package.logger.debug(`${logPrefix}, libFileName = '${libFileName}', start`);
     const isMonomerLibrarySelected = !this.userLibSettings.exclude.includes(libFileName);
-    const libInput = ui.boolInput(
-      libFileName,
-      isMonomerLibrarySelected,
-      (isSelected: boolean) => {
-        this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, isSelected);
-      });
+    const libInput = ui.input.bool(libFileName, {value: isMonomerLibrarySelected, onValueChanged: (input) => {
+      this.fileManager.eventManager.updateLibrarySelectionStatus(libFileName, input.value);
+    }});
     ui.tooltip.bind(libInput.root, `Include monomers from ${libFileName}`);
     const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
     ui.tooltip.bind(deleteIcon, `Delete ${libFileName}`);
     libInput.addOptions(deleteIcon);
+    _package.logger.debug(`${logPrefix}, libFileName = '${libFileName}', end`);
     return libInput;
   }
 

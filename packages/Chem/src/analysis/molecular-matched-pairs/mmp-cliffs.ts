@@ -41,7 +41,7 @@ export function getMmpScatterPlot(
 
   for (let i = 0; i < maxActs.length; i ++) {
     const actName = mmpInput.activities.byIndex(i).name;
-    const sliderInput = ui.sliderInput(mmpInput.activities.byIndex(i).name, 0, 0, maxActs[i]);
+    const sliderInput = ui.input.slider(mmpInput.activities.byIndex(i).name, {value: 0, min: 0, max: maxActs[i]});
     const sliderInputValueDiv = ui.divText(sliderInput.stringValue, 'ui-input-description');
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInput.root.classList.add('mmpa-slider-input');
@@ -49,10 +49,10 @@ export function getMmpScatterPlot(
     ui.tooltip.bind(sliderInput.input, `${actName} value cutoff`);
     sliderInputs[i] = sliderInput;
     sliderInputValueDivs[i] = sliderInputValueDiv;
-    const colorInput = ui.colorInput('', '#FF0000');
+    const colorInput = ui.input.color('', {value: '#FF0000'});
     colorInput.root.classList.add('mmpa-color-input');
     colorInputs[i] = colorInput;
-    const activeInput = ui.boolInput('', true);
+    const activeInput = ui.input.bool('', {value: true});
     activeInput.classList.add('mmpa-bool-input');
     activeInputs[i] = activeInput;
   }

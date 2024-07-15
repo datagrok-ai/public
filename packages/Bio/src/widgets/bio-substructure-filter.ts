@@ -128,7 +128,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
       }
       const sh = SeqHandler.forColumn(this.column!);
       this.columnName ??= this.column?.name;
-      this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
+      this.notation ??= this.column?.meta.units!;
 
       this.bioFilter = this.notation === NOTATION.FASTA ?
         new FastaBioFilter() : this.notation === NOTATION.SEPARATOR ?
@@ -296,10 +296,10 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
   constructor() {
     super();
 
-    this.substructureInput = ui.stringInput('', '', () => {
+    this.substructureInput = ui.input.string('', {value: '', onValueChanged: () => {
       this.props = new BioFilterProps(this.substructureInput.value);
       if (!this._propsChanging) this.onChanged.next();
-    }, {placeholder: 'Substructure'});
+    }, placeholder: 'Substructure'});
   }
 
   public applyProps() {
@@ -336,15 +336,15 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
   constructor(colSeparator: string) {
     super();
 
-    this.substructureInput = ui.stringInput('', '', () => {
+    this.substructureInput = ui.input.string('', {value: '', onValueChanged: () => {
       this.props = new SeparatorFilterProps(this.substructureInput.value, this.props.separator);
       if (!this._propsChanging) this.onChanged.next();
-    }, {placeholder: 'Substructure'});
-    this.separatorInput = ui.stringInput('', this.colSeparator = colSeparator, () => {
+    }, placeholder: 'Substructure'});
+    this.separatorInput = ui.input.string('', {value: this.colSeparator = colSeparator, onValueChanged: () => {
       const separator: string | undefined = !!this.separatorInput.value ? this.separatorInput.value : undefined;
       this.props = new SeparatorFilterProps(this.props.substructure, separator);
       if (!this._propsChanging) this.onChanged.next();
-    }, {placeholder: 'Separator'});
+    }, placeholder: 'Separator'});
   }
 
   applyProps(): void {

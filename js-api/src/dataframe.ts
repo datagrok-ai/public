@@ -11,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE, LINK_CLICK_BEHAVIOR
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -35,6 +35,7 @@ type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
+type MatchType = 'contains' | 'starts with' | 'ends with' | 'equals' | 'regex';
 
 
 /** Column name -> format */
@@ -605,7 +606,6 @@ export class Column<T = any> {
   public dart: any;
   public temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper | undefined;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -763,6 +763,18 @@ export class Column<T = any> {
     return col;
   }
 
+  /** Is the column numerical (float, int, bigint, qnum)
+  * @type {boolean}*/
+  get isNumerical(): boolean {
+    return api.grok_Column_Get_Is_Numerical(this.dart);
+  }
+
+  /** Is the column categorical (string, boolean)
+  * @type {boolean}*/
+  get isCategorical(): boolean {
+    return api.grok_Column_Get_Is_Categorical(this.dart);
+  }
+
   /** Column data type.
    * @type {string} */
   get type(): ColumnType {
@@ -822,10 +834,9 @@ export class Column<T = any> {
     return api.grok_Column_Get_Version(this.dart);
   }
 
+  // Obsolete. Recommended method is "meta.dialogs".
   get dialogs(): ColumnDialogHelper {
-    if (this._dialogs == undefined)
-      this._dialogs = new ColumnDialogHelper(this);
-    return this._dialogs;
+    return this.meta.dialogs;
   }
 
   // Obsolete. Recommended method is "meta.colors".
@@ -945,9 +956,7 @@ export class Column<T = any> {
     return api.grok_Column_IsNone(this.dart, i);
   }
 
-  /** Gets the value of the specified tag.
-   *  @param {string} tag
-   *  @returns {string} */
+  /** Returns the value of the specified tag, or null if the tag is not present. */
   getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.dart, tag);
   }
@@ -2311,7 +2320,7 @@ export class ColumnDialogHelper {
 
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
-    let formula = this.column.getTag('formula');
+    let formula = this.column.meta.formula;
     // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
@@ -2349,11 +2358,11 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column.
-   * @param range - list of palette colors.
+   * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2363,10 +2372,14 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.fallbackColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
+    if (options?.matchType != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
 
   setConditional(rules: {[index: string]: number | string}  | null = null): void {
@@ -2378,6 +2391,10 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  setDisabled(): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.OFF;
   }
 
   getColor(i: number): number {
@@ -2397,7 +2414,11 @@ export class ColumnMarkerHelper {
   }
 
   assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
-    this.setMarkerCoding(category, marker);
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
     return this;
   }
 
@@ -2405,27 +2426,41 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  reset(): ColumnMarkerHelper {
-    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
+  // Obsolete. Recommended method is "assign".
+  setMarkerCoding(category: string, marker: MarkerCodingType): void {
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
+  }
+
+  setAll(categoryMarkerMap: {[key: string]: MarkerCodingType}): ColumnMarkerHelper {
+    for (const [category, marker] of Object.entries(categoryMarkerMap))
+      this.assign(category, marker);
     return this;
   }
 
-  setMarkerCoding(category: string, marker: string): void {
-    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
-    let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
-    jsonMap[category] = marker;
-    jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
+  reset(): ColumnMarkerHelper {
+    this.column.tags[TAGS.MARKER_CODING] = '{}';
+    return this;
   }
 }
 
 export class ColumnMetaHelper {
   private readonly column: Column;
+  private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
+  }
+
+  get dialogs(): ColumnDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new ColumnDialogHelper(this.column);
+    return this._dialogs;
   }
 
   get colors(): ColumnColorHelper {
@@ -2440,14 +2475,54 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
 
+  /** Returns the maximum amount of significant digits detected in the column. */
+  get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
+
+  /** When set, uses the formula to calculate the column values. */
+  get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
+  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+
+  /** Specifies the units of the dataframe column. */
+  get units(): string | null { return this.column.getTag(TAGS.UNITS); }
+  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
+
+
+  /** When set, switches the cell editor to a combo box that only allows to choose specified values.
+   * Applicable for string columns only.
+   * See also {@link autoChoices}. */
+  get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
+  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also {@link choices}. */
+  get autoChoices(): boolean { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? false :
+    this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
+  set autoChoices(x: boolean) { this.column.setTag(TAGS.AUTO_CHOICES, x.toString()); }
+
+  /** Specifies the behavior of link click (open in new tab, open in context panel, custom). Open in new tab is used by default. */
+  get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
+    return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+  }
+  set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
+
+  /** Specifies whether the column is exported as part of the CSV file. Defaults to true. */
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
 
+  /** Specifies whether the column is exported as part of the binary file. Defaults to true. */
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
+
+  /** When specified, column filter treats the split strings as separate values.
+   * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
+  get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
+  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
 }

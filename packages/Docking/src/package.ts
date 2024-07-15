@@ -205,13 +205,12 @@ export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, targ
 
 function formatColumns(autodockResults: DG.DataFrame) {
   for (let col of autodockResults.columns.numerical)
-    col.setTag(DG.TAGS.FORMAT, '0.00');
+    col.meta.format = '0.00';
 }
 
 export function addColorCoding(column: DG.GridColumn) {
   column.isTextColorCoded = true;
-  column.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-  column.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.green}, ${DG.Color.red}]`;
+  column.column!.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
 }
 
 function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {
@@ -320,8 +319,8 @@ export async function demoDocking(): Promise<void> {
 //output: widget result
 export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
   const items = await getConfigFiles();
-  const target = ui.choiceInput('Target', items[0], items);
-  const conformations = ui.intInput('Conformations', 10);
+  const target = ui.input.choice('Target', {value: items[0], items: items})
+  const conformations = ui.input.int('Conformations', {value: 10});
 
   const resultsContainer = ui.div();
   const button = ui.button('Run', async () => {

@@ -12,7 +12,7 @@ category('Grid: MultiValuesColumn', () => {
     English"
     Cameroon, "English
     French"`);
-  table.col('Languages')!.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n');
+  table.col('Languages')!.meta.multiValueSeparator = '\n';
 
   test('grid.multiValuesColumn', async () => {
     grok.shell.addTableView(table);

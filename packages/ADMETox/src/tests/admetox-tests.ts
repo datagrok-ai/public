@@ -60,8 +60,8 @@ category('Admetox', () => {
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(molecules.col(newTableColumn)!.get(0), 0.6650083661079407, `Calculated value for ${newTableColumn} is incorrect`);
-    expect(molecules.col(newTableColumn)!.colors.getColor(0), 4280670464, 'Wrong color coding was added');
-    expect(molecules.col(newTableColumn)!.colors.getColor(4), 4293138944, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.meta.colors.getColor(0), 4280670464, 'Wrong color coding was added');
+    expect(molecules.col(newTableColumn)!.meta.colors.getColor(4), 4293138944, 'Wrong color coding was added');
   }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {

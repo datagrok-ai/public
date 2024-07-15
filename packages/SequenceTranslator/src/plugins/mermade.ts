@@ -41,7 +41,7 @@ export async function getExternalAppViewFactories(
 }
 
 function getMerMadeParameters(th: ITranslationHelper): { [name: string]: any } {
-  const base = ui.textInput('', '');
+  const base = ui.input.textArea('', {value: ''});
   const input = new ColoredTextInput(base, th.highlightInvalidSubsequence);
 
   return {

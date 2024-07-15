@@ -193,14 +193,14 @@ jobs:
         run: |
           echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
     name: "${{ matrix.package }}: ${{ matrix.job_name }}"
@@ -308,7 +308,7 @@ jobs:
           # docker system prune -af --volumes
 
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
+            DATAGROK_VERSION='1.19.2-rc'
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
@@ -371,7 +371,7 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         run: |
-          npm install -g datagrok-tools@4.12.27
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -689,19 +689,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          matrix: ${{ toJson(matrix) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          matrix: ${{ toJson(matrix) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed-Cancelled Notification
+#        if: failure() || cancelled()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

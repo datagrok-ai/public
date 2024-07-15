@@ -124,13 +124,13 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
-  const aminoToInput = ui.stringInput('Mutated to:', '', () => {
+  const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: () => {
     const substitutedToAar = aminoToInput.stringValue;
     if (substitutedToAar !== '')
       pairsTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       pairsTable.filter.setAll(true);
-  });
+  }});
   aminoToInput.setTooltip('Filter the rows by the monomer that the mutation was substituted to');
 
   const pairsGrid = pairsTable.plot.grid();

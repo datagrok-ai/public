@@ -113,6 +113,10 @@ export class Logger {
     console.warn = intercept(console.warn);
     console.error = intercept(console.error);
   }
+
+  static set autoReportOptions(options: {[key: string]: any}) {
+    api.grok_Set_AutoReport_Options(toDart(options));
+  }
 }
 
 

@@ -25,7 +25,7 @@ export class AddNewColumnDialog {
   placeholderType: string = 'Type'; // Used only for uniformity when saving inputs history.
   placeholderExpression: string = 'Expression';
   maxAutoNameLength: number = 25;
-  maxPreviwRowCount: number = 100;
+  maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)}/g;
   tooltips = {
@@ -135,7 +135,7 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
-    const control = ui.stringInput('', '');
+    const control = ui.input.string('', {value: ''});
     control.onInput(async () => await this.updatePreview());
     control.setTooltip(this.tooltips['name']);
 
@@ -150,12 +150,12 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Column Type" input field. */
   initInputType(): DG.InputBase {
-    const defaultChoise = `${this.autoType} (${this.defaultType})`;
-    this.supportedTypes.unshift(defaultChoise); // The first item of the ChoiceBox will be "Auto".
+    const defaultChoice = `${this.autoType} (${this.defaultType})`;
+    this.supportedTypes.unshift(defaultChoice); // The first item of the ChoiceBox will be "Auto".
     this.supportedTypes.push(this.plainTextType); // The last item of the ChoiceBox will be "Treat As String".
 
-    const control = ui.choiceInput('', this.call ?
-      this.call.getParamValue('type') : defaultChoise, this.supportedTypes);
+    const control = ui.input.choice('', {value: this.call ?
+      this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput(async () => await this.updatePreview());
     control.setTooltip(this.tooltips['type']);
 
@@ -169,14 +169,14 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Expression" input field. */
   initInputExpression(): DG.InputBase {
-    const control = ui.textInput('', '', async () => {
+    const control = ui.input.textArea('', {value: '', onValueChanged: async () => {
       // The first characters of the Expression become the default name of the new column:
       (this.inputName!.input as HTMLInputElement).placeholder =
           ((!control.value || (control.value.length > this.maxAutoNameLength)) ?
             this.placeholderName :
             control.value).trim();
       await this.updatePreview();
-    });
+    }});
     control.setTooltip(this.tooltips['expression']);
 
     const input = control.input as HTMLInputElement;
@@ -199,7 +199,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the Preview Grid. */
   initUiPreview(): HTMLDivElement {
     // Limiting the number of rows in the Preview Grid:
-    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviwRowCount);
+    const previewRowCount = Math.min(this.sourceDf!.rowCount, this.maxPreviewRowCount);
     this.previwDf = this.sourceDf!.clone(DG.BitSet.create(previewRowCount, (idx) => idx < previewRowCount));
     this.gridPreview = DG.Viewer.grid(this.previwDf!);
     this.gridPreview.root.classList.add('ui-grid-with-thin-scrollbars');

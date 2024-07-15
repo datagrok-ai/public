@@ -1,5 +1,28 @@
 # Sequence Translator changelog
 
+## 1.3.8 (2024-07-09)
+
+### Features
+
+* Add PolyTool-enumerate context menu for macromolecule cell
+
+### Bug fixes
+
+* Use HelmInput from Helm
+* Bump dependencies versions
+
+## 1.3.7 (2024-07-01)
+
+### Bug fixes
+
+* Fix style for colored text input
+
+## 1.3.6 (2024-06-26)
+
+### Bug fixes
+
+* Fix bulk input in Pattern app
+
 ## 1.3.5 (2024-06-13)
 
 ### Features

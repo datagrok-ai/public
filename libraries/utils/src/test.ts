@@ -470,7 +470,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
+      timeout_ = DG.Test.isInBenchmark ? BENCHMARK_TIMEOUT : timeout_;
       r = { success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {

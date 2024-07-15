@@ -1,5 +1,13 @@
 # ml changelog
 
+## 6.6.13 (2024-07-09)
+
+Reverse order of MCL Clusters
+
+## 6.6.12 (2024-06-24)
+
+Fix activity cliffs styles
+
 ## 6.6.11 (2024-06-11)
 
 * Fix dialog styles

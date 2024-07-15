@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY, DEMO_RESULTS} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -141,7 +141,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const scoresScatter = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.SCORES,
@@ -161,7 +161,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       min: -radius,
       max: radius,
       color: COLOR.CIRCLE,
-  })};
+    });
+  };
 
   scoreNames.forEach((xName) => {
     const x = '${' + xName + '}';
@@ -226,12 +227,13 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
-    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((viewer, idx) => {
-      return {
-        text: DEMO_RESULTS[idx].text,
-        showNextTo: viewer.root,
-      }
-    });
+    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar]
+      .map((viewer, idx) => {
+        return {
+          text: DEMO_RESULTS[idx].text,
+          showNextTo: viewer.root,
+        };
+      });
 
     const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
     wizard.helpUrl = LINK.MVA;
@@ -281,17 +283,16 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.columnInput(TITLE.PREDICT, table, predict, () => {
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: () => {
     predict = predictInput.value!;
     updateIputs();
-  },
-  {filter: (col: DG.Column) => isValidNumeric(col)},
+  }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
   predictInput.setTooltip(HINT.PREDICT);
 
   // predictors (features)
   let features: DG.Column[];
-  const featuresInput = ui.columnsInput(TITLE.USING, table, () => {}, {available: numColNames});
+  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
   featuresInput.onInput(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
@@ -334,8 +335,8 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // names of samples
   let names = (strCols.length > 0) ? strCols[0] : null;
-  const namesInputs = ui.columnInput(TITLE.NAMES, table, names, () => names = predictInput.value,
-    {filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
+  const namesInputs = ui.input.column(TITLE.NAMES, {table: table, value: names!, onValueChanged: () => names = predictInput.value,
+    filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);

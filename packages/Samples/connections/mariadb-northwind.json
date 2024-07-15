@@ -3,6 +3,8 @@
   "name": "MariaDBNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
     "server": "db.datagrok.ai",
     "db": "northwind",
     "port": 33061

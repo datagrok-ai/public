@@ -91,7 +91,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   }
 
   const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(unUsedName, alignedSequences);
-  alignedSequencesCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  alignedSequencesCol.meta.units = NOTATION.SEPARATOR;
   alignedSequencesCol.setTag(bioTAGS.separator, C.PEPSEA.SEPARATOR);
   alignedSequencesCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   alignedSequencesCol.setTag(bioTAGS.alphabet, ALPHABET.UN);

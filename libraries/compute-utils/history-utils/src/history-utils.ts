@@ -59,7 +59,7 @@ export namespace historyUtils {
   export async function loadChildRuns(
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
-    const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
+    const parentRun = await loadRun(funcCallId);
 
     await augmentCallWithFunc(parentRun);
 

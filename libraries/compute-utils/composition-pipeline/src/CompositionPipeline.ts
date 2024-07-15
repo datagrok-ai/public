@@ -66,7 +66,11 @@ export class CompositionPipeline {
     this.nqName = this.config.nqName;
   }
 
-  public makePipelineView(nqName = this.nqName) {
+  public makePipelineView(nqName = this.nqName, options?: {
+    historyEnabled: boolean,
+    isTabbed: boolean,
+    skipInit?: boolean,
+  }) {
     if (this.viewInst)
       throw new Error(`View has been already created for pipeline ${nqName}`);
 
@@ -76,7 +80,7 @@ export class CompositionPipeline {
     if (this.nqName && this.nqName !== nqName)
       throw new Error(`View different wrapper nqName ${nqName}, already set to ${this.nqName}`);
 
-    this.viewInst = new CompositionPipelineView(nqName);
+    this.viewInst = new CompositionPipelineView(nqName, options);
     this.nqName = nqName;
     return this.viewInst;
   }

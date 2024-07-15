@@ -12,7 +12,7 @@ category('Dapi: packages', () => {
 
   test('find', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
-    expect(apiTestsPackage.updatedOn.toString(), _package.updatedOn.toString());
+    expect(apiTestsPackage.updatedOn?.toString(), _package.updatedOn?.toString());
     await expectExceptionAsync(() => grok.dapi.packages.find('00000').then());
   });
 

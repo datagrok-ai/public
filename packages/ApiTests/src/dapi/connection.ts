@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
+import {delay, delayWhen} from "rxjs/operators";
 
 
 category('Dapi: connection', () => {
@@ -51,6 +52,107 @@ category('Dapi: connection', () => {
     await query.executeTable();
     await grok.dapi.queries.delete(query);
   }, {skipReason: 'GROK-11670'});
+});
+
+category('Dapi: connection cache', () => {
+  const testFilePath1: string = 'System:AppData/ApiTests/test_files.txt';
+  const testFilePath2: string = 'System:AppData/ApiTests/renamed_test_files.txt';
+
+  before(async () => {
+    const connection: DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
+    await grok.functions.call('DropConnectionCache', {'connection': connection});
+  });
+
+  test('Invalidation, performance', async () => {
+    // write file to trigger cache bump
+    await grok.dapi
+      .files.writeAsText(testFilePath1, 'Hello World!');
+    // measure first execution time
+    let start = Date.now();
+    let list = await grok.dapi.files.list('System:AppData/ApiTests');
+    const first = Date.now() - start;
+    // check if cache was bumped
+    expect(list.some((f) => f.name === 'test_files.txt'));
+    const second = await getExecutionTime(async () => {
+      await grok.dapi.files.list('System:AppData/ApiTests');
+    });
+    // second execution should be faster
+    expect(second * 10 < first);
+
+    // cache should be bumped after renaming
+    await grok.dapi.files.rename(testFilePath1, 'renamed_test_files.txt');
+    list = await grok.dapi.files.list('System:AppData/ApiTests');
+    expect(list.some((f) => f.name === 'renamed_test_files.txt'));
+
+    // cache should be bumped after delete
+    await grok.dapi.files.delete(testFilePath2);
+    list = await grok.dapi.files.list('System:AppData/ApiTests');
+    expect(list.every((f) => f.name !== 'renamed_test_files.txt'));
+  });
+
+  test('Dataframe: Ids', async () => {
+    // not from cache
+    const table1 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // from cache
+    const table2 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
+    // id should be absent when we read as csv, and second time from cache
+    expect(!table1.id && !table2.id, true);
+  });
+
+  test('Performance: read csv', async () => {
+    const first = await getExecutionTime(async () => {
+      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+    });
+    const second = await getExecutionTime(async () => {
+      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+    });
+    // second execution should be faster
+    expect(second * 2 < first);
+  });
+
+  test('Sequential stress test', async () => {
+    const times = DG.Test.isInBenchmark ? 1000 : 100;
+    let demogCsvReads1 = [];
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+    await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+    for (let i = 0; i < times; i++)
+      demogCsvReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+
+    let carsReads1 = [];
+    for (let i = 0; i < times; i++)
+      carsReads1.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+
+    let carsReads2 = [];
+    let demogCsvReads2 = [];
+    for (let i = 0; i < times; i++) {
+      demogCsvReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
+      }));
+      carsReads2.push(await getExecutionTime(async () => {
+        await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
+      }));
+    }
+    const demog1Median = median(demogCsvReads1);
+    const demog2Median = median(demogCsvReads2);
+    expect(demog2Median < demog1Median * 1.5, true);
+
+    const cars1Median = median(carsReads1);
+    const cars2Median = median(carsReads2);
+    expect(cars2Median < cars1Median * 1.5, true);
+  });
+
+  after(async () => {
+    try {
+      await grok.dapi.files.delete(testFilePath1);
+    } catch (_) {}
+    try {
+      await grok.dapi.files.delete(testFilePath2);
+    } catch (_) {}
+  });
 });
 
 category('Dapi: TableQuery', () => {
@@ -216,3 +318,17 @@ category('Dapi: TableQueryBuilder', () => {
   });
 });
 */
+
+async function getExecutionTime(f: () => any) {
+  const start = Date.now();
+  await f();
+  return Date.now() - start;
+}
+
+function median(numbers: number[]) {
+  const sorted = Array.from(numbers).sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0)
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  return sorted[middle];
+}

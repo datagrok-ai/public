@@ -49,7 +49,7 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
         let inputs = ui.inputs([]);
 
         Object.keys(this.choices).forEach(field => {
-            let fieldChoices = ui.choiceInput(`${field}`, this.choices[field][0], this.choices[field]);
+            let fieldChoices = ui.input.choice(`${field}`, {value: this.choices[field][0], items: this.choices[field]});
             fieldChoices.onChanged((v) => {
                 Object.keys(VIEWS_CONFIG).forEach(view => {
                     this.globalStudyConfig[field] = fieldChoices.value;

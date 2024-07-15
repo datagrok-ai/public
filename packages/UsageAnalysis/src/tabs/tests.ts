@@ -35,7 +35,7 @@ export class TestsView extends UaView {
     // Stacked Bar Chart
     const chart = ui.wait(async () => {
       const dfMonth: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestsMonth');
-      dfMonth.getCol('status').colors.setCategorical(colors);
+      dfMonth.getCol('status').meta.colors.setCategorical(colors);
       dfMonth.onSelectionChanged.subscribe(async () => {
         if (!this.grid) return;
         ui.setUpdateIndicator(this.grid.root);
@@ -136,7 +136,7 @@ export class TestsView extends UaView {
   }
 
   updateGrid(df: DG.DataFrame): void {
-    df.getCol('status').colors.setCategorical(colors);
+    df.getCol('status').meta.colors.setCategorical(colors);
     df.getCol('id').name = '~id';
     if (filters.children.length)
       filters.innerHTML = '';
@@ -186,7 +186,7 @@ export class TestsView extends UaView {
         return table;
       }, true);
       const hPane = acc.addPane('History', () => ui.waitBox(async () => {
-        history.getCol('status').colors.setCategorical(colors);
+        history.getCol('status').meta.colors.setCategorical(colors);
         // grid.col('status')!.isTextColorCoded = true;
         grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
         grid.col('date')!.width = 70;

@@ -49,8 +49,7 @@ export async function addRisksAsColumns(table: DG.DataFrame, col: DG.Column,
     const riskName = riskTypes[riskId];
     const toxCol = DG.Column.fromStrings(riskName, risks[riskId].map((risk) => riskLevels[risk]));
     table.columns.add(toxCol);
-    toxCol.colors.setCategorical(riskColorCoding);
-    toxCol.setTag(DG.TAGS.COLOR_CODING_TYPE, 'Categorical');
+    toxCol.meta.colors.setCategorical(riskColorCoding);
   });
 }
 

@@ -153,8 +153,8 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
   const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType, data.length);
 
   newCol.init((i) => data[i]);
-  newCol.setTag(DG.Tags.IncludeInCsvExport, 'false');
-  newCol.setTag(DG.Tags.IncludeInBinaryExport, 'false');
+  newCol.meta.includeInCsvExport = false;
+  newCol.meta.includeInBinaryExport = false;
 }
 
 /**

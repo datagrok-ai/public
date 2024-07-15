@@ -11,7 +11,6 @@ Metadata:
           - GrokSpawnerVersion
           - JKGVersion
           - JNVersion
-          - GrokComputeVersion
           - H2oVersion
     ParameterLabels:
       DatagrokVersion:
@@ -24,29 +23,27 @@ Metadata:
         default: 'Jupyter Kernel Gateway Version'
       JNVersion:
         default: 'Jupyter Notebook Version'
-      GrokComputeVersion:
-        default: 'Grok Compute Version'
       H2oVersion:
         default: 'H2O Version'
 Parameters:
   DatagrokVersion:
     Type: String
-    Default: 1.16.6
+    Default: 1.19.1
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable|bleeding-edge"
     Description: Enter Datagrok docker image version.
   GrokConnectVersion:
     Type: String
-    Default: 2.1.8
+    Default: 2.1.17
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Connect docker image version.
   GrokSpawnerVersion:
     Type: String
-    Default: 1.4.4
+    Default: 1.7.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Spawner docker image version.
   JKGVersion:
     Type: String
-    Default: 1.6.2
+    Default: 1.9.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
   JNVersion:
@@ -54,11 +51,6 @@ Parameters:
     Default: 1.1.1
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Datagrok Jupyter Notebook docker image version.
-  GrokComputeVersion:
-    Type: String
-    Default: 1.5.4
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Grok Compute docker image version.
   H2oVersion:
     Type: String
     Default: 1.1.1

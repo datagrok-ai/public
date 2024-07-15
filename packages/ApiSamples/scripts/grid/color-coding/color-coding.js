@@ -12,5 +12,4 @@ t.col('race').meta.colors.setCategorical({"Asian": 4278190335, "Black": 42865788
 grok.shell.addTableView(t);
 
 // To turn the color-coding off, use either approach:
-//t.col('height').tags[DG.TAGS.COLOR_CODING_TYPE] = 'Off';
-//delete t.col('height').tags[DG.TAGS.COLOR_CODING_TYPE];
+// t.col('height').meta.colors.setDisabled();

@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as org from 'org';
+import {
+  HelmType, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups
+} from '@datagrok-libraries/bio/src/helm/types';
 
 import {Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
@@ -33,56 +35,18 @@ export function getRS(smiles: string) {
   return res;
 }
 
-export class LibraryWebEditorMonomer implements org.helm.WebEditorMonomer {
-  public get rs(): number { return Object.keys(this.at).length; }
-
-  /* eslint-disable max-params */
-  protected constructor(
-    public readonly id: string,
-    public readonly m: string,
-    public readonly n: string,
-    public readonly na: string | undefined,
-    public readonly type: org.helm.PolymerType,
-    public readonly mt: org.helm.MonomerType,
-    public readonly at: org.helm.WebEditorRGroups,
-  ) /* eslint-enable max-params */ {}
-
-  static fromMonomer(biotype: org.helm.HelmType, monomer: Monomer): org.helm.WebEditorMonomer {
-    let at: org.helm.WebEditorRGroups = {};
-    const smiles = monomer[REQ.SMILES];
-    if (monomer.rgroups.length > 0) {
-      monomer.rgroups.forEach((it) => {
-        at[it[RGP.LABEL]] = it[RGP.CAP_GROUP_NAME];
-      });
-    } else if (smiles) {
-      // Generate R-Groups from SMILES
-      at = getRS(smiles);
-    } else {
-      // broken
-      return new BrokenWebEditorMonomer(biotype, monomer[REQ.SYMBOL]);
-    }
-
-    return new LibraryWebEditorMonomer(
-      monomer[REQ.SYMBOL],
-      monomer[REQ.MOLFILE],
-      monomer[REQ.NAME],
-      monomer[OPT.NATURAL_ANALOG],
-      monomer[REQ.POLYMER_TYPE],
-      monomer[REQ.MONOMER_TYPE],
-      at);
-  }
-}
-
 /* eslint-disable camelcase */
-export abstract class DummyWebEditorMonomer implements org.helm.WebEditorMonomer {
+export abstract class DummyWebEditorMonomer implements IWebEditorMonomer {
   //@formatter:off
   public abstract get backgroundcolor(): string | undefined;
   public abstract get linecolor(): string | undefined;
   public abstract get textcolor(): string | undefined;
   //@formatter:on
 
+  get issmiles(): boolean { return !!this.smiles; }
+
   /** R-Group index os single digit only is allowed in Pistoia code */
-  public readonly at: org.helm.WebEditorRGroups = {
+  public readonly at: WebEditorRGroups = {
     R1: 'H', R2: 'H', R3: 'H', R4: 'H', R5: 'H', R6: 'H', R7: 'H', R8: 'H', R9: 'H'
   };
 
@@ -94,8 +58,9 @@ export abstract class DummyWebEditorMonomer implements org.helm.WebEditorMonomer
     /** name */ public readonly n: string | undefined = 'missing',
     /** molfile */ public readonly m: string | undefined = undefined,
     /* Pistoia.HELM deletes .type and .mt in Monomers.addOneMonomer() */
-    /** polymer type */ public readonly type: org.helm.PolymerType | undefined = undefined,
-    /** monomer type */ public readonly mt: org.helm.MonomerType | undefined = undefined,
+    /** polymer type */ public readonly type: PolymerType | undefined = undefined,
+    /** monomer type */ public readonly mt: MonomerType | undefined = undefined,
+    public readonly smiles?: string,
   ) {
     if (!this.id)
       throw new Error('Invalid arg undefined [id].');
