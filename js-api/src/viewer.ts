@@ -467,13 +467,11 @@ export class FilterGroup extends Viewer {
 export type CategoryDataArgs = {
   matchCondition: {[key: string]: any},
   matchConditionStr: string,
-  mouseEvent: MouseEvent,
   options: {[key: string]: any}
 }
 
 export type RowDataArgs = {
   rowId: number,
-  mouseEvent: MouseEvent
 }
 
 export type LineChartLineArgs = {
