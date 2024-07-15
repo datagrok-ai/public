@@ -100,6 +100,17 @@ const config = {
                 routeBasePath: '/js-api',
             }
         ],
+        [
+            '@docusaurus/plugin-content-docs',
+            {
+                sidebarPath: require.resolve('./sidebars.js'),
+                editUrl: 'https://github.com/datagrok-ai/public/tree/master/legal',
+                path: '../legal',
+                routeBasePath: '/legal',
+                id: 'legal',
+                exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
+            }
+        ],
     ],
     themes: ['docusaurus-theme-search-typesense'],
 
@@ -144,6 +155,11 @@ const config = {
                     to: 'js-api',
                     label: 'API',
                     position: 'left',
+                },
+                {
+                    to: 'legal/legal',
+                    position: 'left',
+                    label: 'Legal docs',
                 },
                 {
                     href: 'https://public.datagrok.ai',
