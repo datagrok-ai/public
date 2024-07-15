@@ -680,6 +680,8 @@ export class FileInfo extends Entity {
     super(dart);
   }
 
+  get connection(): DataConnection { return api.grok_FileInfo_Get_Connection(toJs(this.dart)); }
+
   /** Returns path, i.e. `geo/dmv_offices.csv` */
   get path(): string { return api.grok_FileInfo_Get_Path(this.dart); }
 

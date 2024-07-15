@@ -1334,6 +1334,7 @@ export interface IDartApi {
   grok_Rect_Unpack(bytes: any): any;
   grok_FileInfo_FromBytes(path: String, data: any): any;
   grok_FileInfo_FromString(path: String, data: String): any;
+  grok_FileInfo_Get_Connection(fi: any): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
