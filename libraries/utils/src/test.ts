@@ -39,6 +39,7 @@ export interface TestOptions {
   unhandledExceptionTimeout?: number;
   skipReason?: string;
   isAggregated?: boolean;
+  isEnabledBenchmarkMode?: boolean;
 }
 
 export interface CategoryOptions {
@@ -261,8 +262,8 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       const name = arr.pop() ?? f.name;
       const cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
       if (moduleTests[cat] === undefined)
-        moduleTests[cat] = {tests: [], clear: true};
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, {isAggregated: false, timeout: STANDART_TIMEOUT}));
+        moduleTests[cat] = { tests: [], clear: true };
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: STANDART_TIMEOUT }));
     }
   }
   const moduleAutoTests = [];
@@ -406,7 +407,7 @@ export async function runTests(options?:
       }
       const data = res.filter((d) => d.result != 'skipped');
       try {
-        if (value.after && !skipped) { 
+        if (value.after && !skipped) {
           await timeout(async () => {
             await value.after!();
           }, 100000, `After ${options.category}: timeout error`);
@@ -440,7 +441,7 @@ export async function runTests(options?:
       await (<any>grok.shell).reportTest('package', params);
     else {
       await fetch(`${grok.dapi.root}/log/tests/package`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(params)
       });
@@ -459,10 +460,17 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
-  const skip = t.options?.skipReason || filter;
-  const skipReason = filter ? 'skipped' : t.options?.skipReason;
+  let skip = t.options?.skipReason || filter;
+  let skipReason = filter ? 'skipped' : t.options?.skipReason;
+
+  if (DG.Test.isInBenchmark && !t.options?.isEnabledBenchmarkMode) {
+    skipReason = `${t.category} ${t.name} doesnt available in benchmark mode`;
+    skip = true;
+  }
+
   if (!skip)
     stdLog(`Started ${t.category} ${t.name}`);
+
   const start = Date.now();
   try {
     if (skip)
@@ -508,7 +516,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       await (<any>grok.shell).reportTest(type, params);
     else {
       await fetch(`${grok.dapi.root}/log/tests/${type}`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(params)
       });
