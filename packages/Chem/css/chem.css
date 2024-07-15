@@ -462,7 +462,7 @@
 }
 
 .chem-filter-fp-editor {
-  width: 82px;
+  width: 82px!important;
 }
 
 .chem-filter-fp-label {
@@ -475,7 +475,11 @@
 }
 
 .chem-filter-sim-cutoff-editor {
-  width: 94px;
+  width: 94px!important;
+}
+
+.chem-filter-search-type .ui-input-editor {
+  width: auto!important;
 }
 
 .chem-search-options-icon {
