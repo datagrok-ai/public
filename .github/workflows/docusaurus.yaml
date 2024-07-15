@@ -28,6 +28,7 @@ on:
       - 'js-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
+      - 'legal/**'
   pull_request:
     paths:
       - 'help/**/*.md'
@@ -44,6 +45,7 @@ on:
       - 'js-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
+      - 'legal/**'
 
 jobs:
   common-check:
@@ -64,6 +66,7 @@ jobs:
         with:
           sparse-checkout: |
             help
+            legal
             .markdownlint.yaml
             .markdownlint-cli2.jsonc
       - uses: DavidAnson/markdownlint-cli2-action@v16.0.0
@@ -72,6 +75,8 @@ jobs:
           globs: |
             help/**/*.md
             help/**/*.mdx
+            legal/**/*.md
+            legal/**/*.mdx
             packages/*/CHANGELOG.md
           fix: true
 
@@ -86,6 +91,7 @@ jobs:
           sparse-checkout: |
             docusaurus
             help
+            legal
             packages
             js-api
       - uses: actions/setup-node@v4
