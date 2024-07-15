@@ -6,6 +6,7 @@ import * as color from '../utils/color-utils';
 import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
 import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
+import { error } from 'console';
 
 
 export function check(args: CheckArgs): boolean {
@@ -31,6 +32,7 @@ function runChecks(packagePath: string): boolean {
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const errors: string[] = [];
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
   const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
@@ -42,17 +44,25 @@ function runChecks(packagePath: string): boolean {
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     externals = extractExternals(content);
     if (externals)
-      warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
+      errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
-  warnings.push(...checkSourceMap(packagePath));
-  warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-  warnings.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
+  errors.push(...checkSourceMap(packagePath));
+  errors.push(...checkNpmIgnore(packagePath));
+  warnings.push(...checkScriptNames(packagePath));
+  errors.push(...checkFuncSignatures(packagePath, funcFiles));
+  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals }));
   warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
-    console.log(`Checking package ${path.basename(packagePath)}...`);
+    console.log(`${path.basename(packagePath)} warnings`);
     warn(warnings);
-    if (json.version.startsWith('0') || (warnings.every((w) => warns.some((ww) => w.includes(ww)))))
+
+  }
+
+  if (errors.length) {
+    console.log(`Checking package ${path.basename(packagePath)}...`);
+    showError(errors);
+    if (json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
     testUtils.exitWithCode(1);
   }
@@ -432,10 +442,67 @@ export function checkSourceMap(packagePath: string): string[] {
   return warnings;
 }
 
+
+export function checkNpmIgnore(packagePath: string): string[] {
+  const warnings: string[] = [];
+  if (fs.existsSync(packagePath + '\\.npmignore')) {
+    const npmIgnoreContent: string = fs.readFileSync(packagePath + '\\.npmignore', { encoding: 'utf-8' });
+    for (const row of npmIgnoreContent.split('\n')) {
+      if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
+        warnings.push('there is dist directory in .npmignore')
+        break;
+      }
+    }
+  }
+  else
+    warnings.push('.npmignore doesnt exists')
+
+  return warnings;
+}
+
+function checkScriptNames(packagePath: string): string[] {
+  const warnings: string[] = [];
+
+  try {
+    if (fs.existsSync(packagePath)) {
+      const filesInDirectory = getAllFilesInDirectory(packagePath);
+      for (const fileName of filesInDirectory) {
+        if (fileName.match(new RegExp('^[A-Za-z0-9._-]*$'))?.length !== 1)
+          warnings.push(`${fileName}: file name contains inappropriate symbols`);
+      }
+    }
+  } catch (err) {
+  }
+  return warnings;
+}
+
+
+function getAllFilesInDirectory(directoryPath: string): string[] {
+  const excludedFilesToCheck: string[] = ['node_modules', 'dist'];
+
+  let fileNames: string[] = [];
+  const entries = fs.readdirSync(directoryPath);
+  entries.forEach(entry => {
+    const entryPath = path.join(directoryPath, entry);
+    const stat = fs.statSync(entryPath);
+
+    if (stat.isFile()) {
+      fileNames.push(entry);
+    } else if (stat.isDirectory() && !excludedFilesToCheck.includes(entry)) {
+      const subDirectoryFiles = getAllFilesInDirectory(entryPath);
+      fileNames = fileNames.concat(subDirectoryFiles);
+    }
+  });
+  return fileNames;
+}
+
+function showError(errors: string[]): void {
+  errors.forEach((w) => color.error(w));
+}
+
 function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
-
 function getFuncMetadata(script: string): FuncMetadata[] {
   const funcData: FuncMetadata[] = [];
   let isHeader = false;
