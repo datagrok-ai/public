@@ -91,7 +91,7 @@ def modeling_predict():
         prediction = engine.predict(id, request.data, table_server_url, table_token)
         # TODO Return column list
         # TODO Add converter Pandas dataframe -> ColumnList or DataFrame
-        return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
+        return _make_response(json.dumps({'outcome': prediction['pred_0'].tolist()}),
                               headers=headers_app_json), 201
     except Exception as e:
         return _make_response(str(e)), 400

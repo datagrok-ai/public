@@ -44,7 +44,7 @@ category('Viewers: Monomer-Position', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(
@@ -103,7 +103,7 @@ category('Viewers: Most Potent Residues', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(
@@ -146,7 +146,7 @@ category('Viewers: Logo Summary Table', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(

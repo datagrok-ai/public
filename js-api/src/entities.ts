@@ -98,7 +98,10 @@ export class Entity {
   get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_Entity_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -677,6 +680,8 @@ export class FileInfo extends Entity {
     super(dart);
   }
 
+  get connection(): DataConnection { return api.grok_FileInfo_Get_Connection(toJs(this.dart)); }
+
   /** Returns path, i.e. `geo/dmv_offices.csv` */
   get path(): string { return api.grok_FileInfo_Get_Path(this.dart); }
 
@@ -697,6 +702,11 @@ export class FileInfo extends Entity {
 
   /** Checks if directory */
   get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
+
+  get updatedOn(): dayjs.Dayjs | null {
+    const d = api.grok_FileInfo_Get_UpdatedOn(this.dart);
+    return d ? dayjs(d) : null;
+  }
 
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {

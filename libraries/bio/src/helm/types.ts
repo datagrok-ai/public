@@ -26,6 +26,11 @@ import type {DojoType, DojoxType} from '@datagrok-libraries/js-draw-lite/src/typ
 export {HelmType, PolymerType, MonomerType, WebEditorRGroups};
 export {Atom, IJsAtom, Bond, Mol, Editor};
 
+export type HelmString = string;
+export type HelmAtom = Atom<HelmType>;
+export type HelmBond = Bond<HelmType>;
+export type HelmMol = Mol<HelmType>;
+
 export {
   IWebEditorMonomer, IMonomerColors, IOrgHelmWebEditor, IOrgHelmMonomers, App,
   Monomers, GetMonomerFunc, GetMonomerResType

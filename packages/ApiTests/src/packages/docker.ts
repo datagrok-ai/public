@@ -30,6 +30,6 @@ async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
   expect(response.status, 200, `Container response status was ${response.status}`);
-  const result = await response.json();
+  const result: { [key: string]: any } = await response.json() as { [key: string]: any };
   expectObject(result, {"result": 16});
 }

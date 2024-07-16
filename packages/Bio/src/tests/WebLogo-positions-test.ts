@@ -191,7 +191,7 @@ ATC-G-TTGC--
   test('empty', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([(() => {
       const col = DG.Column.fromStrings('seq', []);
-      col.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MACROMOLECULE);
+      col.semType = DG.SEMTYPE.MACROMOLECULE;
       col.meta.units = NOTATION.FASTA;
       col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
       return col;

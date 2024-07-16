@@ -104,9 +104,9 @@ export const nonNullValidator: Validator = async (value: any) => {
     return makeValidationResult({errors: ['Missing value']});
 };
 
-export function getValidationIcon(messages: ValidationResultBase | undefined) {
-  let popover: any;
-  let icon: any;
+export function getValidationIcon(messages?: ValidationResultBase) {
+  let popover!: HTMLElement;
+  let icon!: HTMLElement;
   if (messages?.pending)
     icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);});
 
@@ -126,7 +126,7 @@ export function getValidationIcon(messages: ValidationResultBase | undefined) {
     popover = addPopover(icon);
   }
 
-  return [icon, popover];
+  return [icon ?? ui.div(), popover ?? ui.div()] as const;
 }
 
 function addPopover(icon: HTMLElement) {

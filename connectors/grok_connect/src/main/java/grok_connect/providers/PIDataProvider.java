@@ -42,9 +42,6 @@ public class PIDataProvider extends JdbcDataProvider {
                     + "pilog, pimodule, pipoint, pisystem or piuser"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";

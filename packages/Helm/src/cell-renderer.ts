@@ -4,14 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {HelmType, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, ISeqMonomer, Mol} from '@datagrok-libraries/bio/src/helm/types';
 
-import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
-import {HelmMonomerPlacer, ISeqMonomer} from './helm-monomer-placer';
+import {HelmMonomerPlacer} from './helm-monomer-placer';
 import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 import {JSDraw2HelmModule} from './types';
 
@@ -54,7 +53,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
       if (editorMol)
-        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, gridCell, editorMol);
+        seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
       else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);

@@ -28,6 +28,34 @@ declare let ui: any;
 const api: IDartApi = <any>window;
 
 
+export class TypedEventArgs<TData> {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Event type id */
+  get type(): string {
+    return api.grok_TypedEventArgs_Get_Type(this.dart);
+  }
+
+  get data(): TData {
+    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
+    return toJs(data);
+  }
+
+  /** Event arguments. Only applies when data is EventData */
+  get args(): {[key: string]: any} | null {
+    // @ts-ignore
+    if (!this.data?.dart)
+      return null;
+
+    // @ts-ignore
+    return api.grok_EventData_Get_Args(this.data.dart);
+  }
+}
+
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
 export type SliderOptions = {
@@ -2313,4 +2341,31 @@ export class CodeInput extends InputBase {
   set value(x: string) { this.editor.value = x; }
 
   get onValueChanged(): Observable<any> { return this.editor.onValueChanged; }
+}
+
+export class FunctionsWidget extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+    /** Observes platform events with the specified eventId. */
+    onEvent(eventId: string | null = null): rxjs.Observable<any> {
+      if (eventId !== null)
+        return __obs(eventId, this.dart);
+  
+      let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
+      return rxjs.fromEventPattern(
+        function (handler) {
+          return api.grok_Stream_Listen(dartStream, function (x: any) {
+            handler(new TypedEventArgs(x));
+          });
+        },
+        function (handler, dart) {
+          new StreamSubscription(dart).cancel();
+        }
+      );
+    }
+
+  get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
+  get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }

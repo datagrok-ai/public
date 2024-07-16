@@ -65,8 +65,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
   updateRiskAssessmentDataframe() {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(this.aeDf.clone(this.aeDf.filter), study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"-100-0":"#0000FF","0-100":"#FF0000"}`;
+    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).meta.colors.setConditional({'-100-0': '#0000FF', '0-100': '#FF0000'});
     this.updateRiskAssessmentDfOnPropPanel();
   }
 

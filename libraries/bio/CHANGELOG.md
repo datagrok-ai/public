@@ -1,5 +1,15 @@
 # bio changelog
 
+## 5.42.5 (WIP)
+
+### Features
+
+* Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
+### Bug fixes
+
+* Fix identity scoring for seqs of different lengths
+
 ## 5.42.4 (2024-07-02)
 
 Fix types ISeqMonomer from Helm

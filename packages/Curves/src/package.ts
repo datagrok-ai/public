@@ -1,9 +1,10 @@
+import {_MultiCurveViewer} from './package.g';
+import {_FitChartCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
-import {FitChartCellRenderer, getChartData, substituteZeroes} from './fit/fit-renderer';
-import {MultiCurveViewer} from './fit/multi-curve-viewer';
+import {getChartData, substituteZeroes} from './fit/fit-renderer';
 import {curveDemo} from './fit/fit-demo';
 import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
@@ -17,24 +18,6 @@ const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 
-
-//name: Fit
-//tags: cellRenderer
-//meta.cellType: fit
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function fitCellRenderer(): FitChartCellRenderer {
-  return new FitChartCellRenderer();
-}
-
-//name: MultiCurveViewer
-//description: A viewer that superimposes multiple in-cell curves on one chart
-//tags: viewer
-//meta.icon: icons/multi-curve-viewer.png
-//output: viewer result
-export function _FitViewer(): MultiCurveViewer {
-  return new MultiCurveViewer();
-}
 
 //name: Curve fitting
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
@@ -114,3 +97,6 @@ export function addAggrStatisticsColumn(df: DG.DataFrame, colName: string, propN
     });
   df.columns.insert(column, chartColumn.idx);
 }
+
+export {_FitChartCellRenderer};
+export {_MultiCurveViewer};

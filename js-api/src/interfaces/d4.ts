@@ -1351,6 +1351,8 @@ export interface IBoxPlotSettings {
 
   autoLayout: boolean;
 
+  plotStyle: string;
+
   axisFont: string;
 
   categoryFont: string;
@@ -1369,8 +1371,6 @@ export interface IBoxPlotSettings {
 
   /// Number of KDE bins to display a violin plot
   bins: number;
-
-  plotStyle: string;
 
   whiskerColor: number;
 
@@ -1926,6 +1926,12 @@ export interface IGridSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Heatmap horizontal scroll positions (minValue, maxValue)
+  heatmapHorzScroll: Array<number>;
+
+  /// Heatmap vertical scroll positions (minValue, maxValue)
+  heatmapVertScroll: Array<number>;
 
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;

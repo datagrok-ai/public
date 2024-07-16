@@ -2320,7 +2320,7 @@ export class ColumnDialogHelper {
 
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
-    let formula = this.column.getTag('formula');
+    let formula = this.column.meta.formula;
     // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
@@ -2372,12 +2372,12 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
     if (options?.fallbackColor != null)
-      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = JSON.stringify(options.fallbackColor);
     if (options?.matchType != null)
       this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
@@ -2414,7 +2414,11 @@ export class ColumnMarkerHelper {
   }
 
   assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
-    this.setMarkerCoding(category, marker);
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
     return this;
   }
 
@@ -2422,17 +2426,24 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  reset(): ColumnMarkerHelper {
-    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
+  // Obsolete. Recommended method is "assign".
+  setMarkerCoding(category: string, marker: MarkerCodingType): void {
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
+  }
+
+  setAll(categoryMarkerMap: {[key: string]: MarkerCodingType}): ColumnMarkerHelper {
+    for (const [category, marker] of Object.entries(categoryMarkerMap))
+      this.assign(category, marker);
     return this;
   }
 
-  setMarkerCoding(category: string, marker: string): void {
-    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
-    let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
-    jsonMap[category] = marker;
-    jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
+  reset(): ColumnMarkerHelper {
+    this.column.tags[TAGS.MARKER_CODING] = '{}';
+    return this;
   }
 }
 

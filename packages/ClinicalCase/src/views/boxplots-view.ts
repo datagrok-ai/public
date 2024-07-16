@@ -170,7 +170,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           const plot = DG.Viewer.boxPlot(df, {
             category: category,
             value: `${it}_BL`,
-            labelOrientation: 'Horz',
+            labelOrientation: DG.TextOrientation.Horz,
             markerColor: category,
             showCategorySelector: false,
             showValueSelector: false,

@@ -118,12 +118,12 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
     values as categories in the filter group.
 
 * For [**multi-value columns**](https://community.datagrok.ai/t/visualization-related-updates/521/12?u=skalkin),
- use the **.multi-value-separator** column tag to
+ use the **column.meta.multiValueSeparator** to
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
   <details>
   <summary>Example</summary>
-  <pre> t.col('languages').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, '\n'); </pre>
+  <pre> t.col('languages')meta.multiValueSeparator = '\n'; </pre>
   <img src="img/filters-multi-values.gif" alt="Filtering of multi-value cells"/>
   </details>
 

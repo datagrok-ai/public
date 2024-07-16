@@ -66,14 +66,14 @@ const MEAN = 'mean';
 const STD_DEV = 'std dev';
 const MODEL_PARAMS_NAME = 'alpha';
 const MODEL_WEIGHTS_NAME = 'weight';
-const GAMMA = 'gamma';
-const KERNEL = 'kernel';
-const KERNEL_PARAMS = 'kernel params';
-const KERNEL_PARAM_1 = 'kernel param 1';
-const KERNEL_PARAM_2 = 'kernel param 2';
-const FEATURES_COUNT_NAME = 'features count';
-const TRAIN_SAMPLES_COUNT_NAME = 'train samples count';
-const TRAIN_ERROR = 'Train error,%';
+const GAMMA = 'Gamma';
+const KERNEL = 'Kernel';
+const KERNEL_PARAMS = 'Kernel params';
+const KERNEL_PARAM_1 = 'Kernel parameter 1';
+const KERNEL_PARAM_2 = 'Kernel parameter 2';
+const FEATURES_COUNT_NAME = 'Features count';
+const TRAIN_SAMPLES_COUNT_NAME = 'Train samples count';
+const TRAIN_ERROR = 'Train error, %';
 const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
 const POSITIVE_NAME = 'positive (P)';
 const NEGATIVE_NAME = 'negative (N)';
@@ -322,7 +322,7 @@ function getConfusionMatrixDF(model: any): DG.DataFrame {
 // Show training report
 export function showTrainReport(df: DG.DataFrame, packedModel: any): HTMLElement {
   const model = getUnpackedModel(packedModel);
-  return DG.Viewer.form(model.modelInfo).root;
+  return DG.Viewer.form(model.modelInfo, {showNavigation: false}).root;
 } // showTrainReport
 
 // Returns trained model packed into UInt8Array
@@ -511,4 +511,8 @@ export function isApplicableSVM(df: DG.DataFrame, labels: DG.Column): boolean {
   for (var i = 0; i < columns.length; i++)
     res = res && (columns.byIndex(i).matches('numerical'));
   return res;
+}
+
+export function isInteractiveSVM(df: DG.DataFrame, labels: DG.Column): boolean {
+  return df.rowCount <= 1000;
 }

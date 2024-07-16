@@ -1,6 +1,11 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 
+@grok.decorators.cellRenderer({
+  name: 'hyperlinkCellRenderer',
+  cellType: 'Hyperlink',
+})
 export class HyperlinkCellRenderer extends DG.GridCellRenderer {
   get name() { return 'Hyperlink'; }
 

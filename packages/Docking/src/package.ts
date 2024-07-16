@@ -210,8 +210,7 @@ function formatColumns(autodockResults: DG.DataFrame) {
 
 export function addColorCoding(column: DG.GridColumn) {
   column.isTextColorCoded = true;
-  column.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-  column.column!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.green}, ${DG.Color.red}]`;
+  column.column!.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
 }
 
 function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {

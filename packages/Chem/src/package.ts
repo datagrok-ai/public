@@ -826,7 +826,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
 
   const runActCliffs = async (): Promise<void> => {
     const sp = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs', activities, similarity,
-      similarityMetric, methodName, options, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']},
+      similarityMetric, methodName, options, DG.SEMTYPE.MOLECULE, {'units': molecules.meta.units},
       preprocessingFunction, createTooltipElement, createPropPanelElement, undefined);
     const size = sp.getOptions().look['sizeColumnName'];
     drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, -1, 100, 105, size);
@@ -935,7 +935,7 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
-    {'units': molCol.tags['units']}, createTooltipElement, createPropPanelElement);
+    {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement);
   const size = sp.getOptions().look['sizeColumnName'];
   drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
   //to draw the lines fro cliffs

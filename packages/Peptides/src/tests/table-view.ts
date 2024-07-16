@@ -31,7 +31,7 @@ category('Table view', () => {
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.meta.units = NOTATION.HELM;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, scaling);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol, scaling);

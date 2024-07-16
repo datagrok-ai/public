@@ -159,7 +159,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     for (const col of this.moleculeProperties) {
       propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
-      const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE];
+      const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.meta.colors.getType();
       if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
         propsDict[col].color = grid.cell(col, idx).color;
         propsDict[col].isTextColorCoded = grid.col(col)?.isTextColorCoded;

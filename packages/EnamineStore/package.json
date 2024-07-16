@@ -13,7 +13,7 @@
     "directory": "packages/EnamineStore"
   },
   "dependencies": {
-    "datagrok-api": "^1.19.0",
+    "datagrok-api": "../../js-api",
     "@datagrok-libraries/utils": "^4.2.11"
   },
   "devDependencies": {

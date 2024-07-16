@@ -312,7 +312,7 @@ function dataToTable(data: EnamineStoreSearchResult[], packsList: {[key: string]
   for (const packKey of packsArrays.keys()) {
     const column = DG.Column.fromFloat32Array(packKey, packsArrays.get(packKey));
     column.semType = 'Money';
-    column.setTag('format', `money(${currency === CURRENCY.USD ? '$' : '€'})`);
+    column.meta.format = `money(${currency === CURRENCY.USD ? '$' : '€'})`;
     columns.push(column);
   }
   const table = DG.DataFrame.fromColumns(columns);

@@ -1,5 +1,17 @@
 # compute-utils changelog
 
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
+## 1.35.10 (2024-07-08)
+
+- CompositionPipeline: Exposed options to public interface
+
+## 1.35.9 (2024-07-08)
+
+- PLV: Fixed names conflict in single excel export
+
 ## 1.35.8 (2024-07-03)
 
 - PLV: Fixed run loading to load author
