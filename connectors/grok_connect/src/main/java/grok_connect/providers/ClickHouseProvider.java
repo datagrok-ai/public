@@ -56,6 +56,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return "jdbc:clickhouse://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+
     @Override
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns";
@@ -63,15 +64,14 @@ public class ClickHouseProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        String whereClause = String.format(" WHERE%s%s%s",
-                db == null ? "" : String.format(" c.table_catalog = '%s'", db),
-                schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
-                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
+        String whereClause = String.format(" WHERE%s%s",
+                schema == null ? "" : String.format(" c.table_schema = '%s'", schema),
+                table == null ? "" : String.format("%s c.table_name = '%s'", schema == null ? "" : " AND", table));
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "if(t.table_type ='VIEW', toInt8(1), toInt8(0)) as is_view FROM information_schema.columns c "
                         + "JOIN information_schema.tables t ON t.table_name = c.table_name%s"
-                , db == null && schema == null && table == null ? "" : whereClause);
+                , schema == null && table == null ? "" : whereClause);
     }
 
     @Override
