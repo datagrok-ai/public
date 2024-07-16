@@ -21,7 +21,7 @@
 11. Hide the default tooltip (on a reference viewer from the previous steps)
    - The default tooltip should be hidden for all viewers that use it, while all custom viewer tooltips remain visible without any changes
 
-      ---
+---
 {
   "order": 6
 }
