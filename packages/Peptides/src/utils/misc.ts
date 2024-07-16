@@ -431,12 +431,14 @@ export function mutationCliffsToMaskInfo(mutationCliffs: type.MutationCliffs, ro
  * @param aggColsModel - Object with aggregation columns from analysis settings.
  * @return - Array of combined aggregation columns.
  */
-export function getTotalAggColumns(viewerSelectedColNames: string[], aggColsViewer: AggregationColumns,
-  aggColsModel?: AggregationColumns): [string, DG.AggregationType][] {
+export function getTotalAggColumns(df: DG.DataFrame, viewerSelectedColNames: string[],
+  aggColsViewer: AggregationColumns, aggColsModel?: AggregationColumns): [string, DG.AggregationType][] {
   const aggColsEntries = Object.entries(aggColsViewer);
   const aggColsEntriesFromSettings = !aggColsModel ? [] : Object.entries(aggColsModel)
     .filter((it) => !viewerSelectedColNames.includes(it[0]) || aggColsViewer[it[0]] !== it[1]);
-  return aggColsEntries.concat(aggColsEntriesFromSettings);
+
+  return aggColsEntries.concat(aggColsEntriesFromSettings)
+    .filter((it) => df.columns.contains(it[0]) && df.col(it[0])!.matches('numerical'));
 }
 
 /**

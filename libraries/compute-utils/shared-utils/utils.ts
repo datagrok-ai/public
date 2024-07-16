@@ -169,6 +169,17 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
   });
 };
 
+export const updateOutputValidationSign = (
+  sign: readonly [HTMLElement, HTMLElement],
+  messages: ValidationResultBase | undefined,
+):readonly [HTMLElement, HTMLElement] => {
+  const newSign = getValidationIcon(messages);
+  sign[0].replaceWith(newSign[0]);
+  sign[1].replaceWith(newSign[1]);
+
+  return newSign;
+};
+
 export const injectInputBaseValidation = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
   t.addOptions(validationIndicator);

@@ -36,7 +36,7 @@ class ChemProp(Engine):
             pass
         return model_blob, log
 
-    def predict_impl(self, id: str, model_blob, table: pd.DataFrame):
+    def predict_impl(self, id: str, model_blob, table: pd.DataFrame, estimate_performance: bool = False):
         model_path = ChemProp._get_model_blob_path(Engine.get_temporary_directory(id, False))
         save_blob = not os.path.exists(model_path)
         tmp_dir = Engine.get_temporary_directory(id, save_blob)
@@ -46,11 +46,10 @@ class ChemProp(Engine):
             os.makedirs(model_dir)
             open(model_path, 'wb').write(model_blob)
         table_path = os.path.join(tmp_dir, 'table.csv')
-        save_table = not os.path.exists(table_path)
-        if save_table:
+        if not estimate_performance:
             table.columns = ['smiles']
             # Convert molblocks to SMILES if needed
-            table['smiles'] = table['smiles'].apply(lambda x: self.convert_to_smiles(x) if 'M  END' in x else x)
+            table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
             ChemProp._save_table(table, table_path)
         predictions_path = os.path.join(tmp_dir, 'table_preds_0.csv')
         params = [
@@ -61,9 +60,8 @@ class ChemProp(Engine):
         ]
         call_process(params)
         prediction = pd.read_csv(predictions_path, na_values=['Invalid SMILES'])
-        if save_table:
+        if not estimate_performance:
             prediction = prediction.filter([c for c in list(prediction) if c not in list(table)])
-        shutil.rmtree(tmp_dir, ignore_errors=True)
         return prediction
 
     @staticmethod

@@ -2,7 +2,7 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
-import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
+import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs, toDart} from "./wrappers";
 import {__obs, EventData, StreamSubscription} from "./events";
@@ -19,34 +19,6 @@ import {ViewerEvent} from './api/d4.api.g';
 declare let DG: any;
 declare let ui: any;
 let api = <any>window;
-
-export class TypedEventArgs<TData> {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  /** Event type id */
-  get type(): string {
-    return api.grok_TypedEventArgs_Get_Type(this.dart);
-  }
-
-  get data(): TData {
-    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
-    return toJs(data);
-  }
-
-  /** Event arguments. Only applies when data is EventData */
-  get args(): {[key: string]: any} | null {
-    // @ts-ignore
-    if (!this.data?.dart)
-      return null;
-
-    // @ts-ignore
-    return api.grok_EventData_Get_Args(this.data.dart);
-  }
-}
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -495,13 +467,11 @@ export class FilterGroup extends Viewer {
 export type CategoryDataArgs = {
   matchCondition: {[key: string]: any},
   matchConditionStr: string,
-  mouseEvent: MouseEvent,
   options: {[key: string]: any}
 }
 
 export type RowDataArgs = {
   rowId: number,
-  mouseEvent: MouseEvent
 }
 
 export type LineChartLineArgs = {

@@ -9,7 +9,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
-type DemoFunc = {
+export type DemoFunc = {
   name: string;
   func: DG.Func,
   category: string;
@@ -27,7 +27,7 @@ export class DemoView extends DG.ViewBase {
   tree: DG.TreeViewGroup = ui.tree();
   searchInput: DG.InputBase = ui.input.search('', {value: ''});
   funcs: DemoFunc[] = [];
-  subCategories: String[] = [];
+  subCategories: string[] = [];
 
   constructor() {
     super();

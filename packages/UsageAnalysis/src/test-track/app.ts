@@ -5,7 +5,6 @@ import dayjs from 'dayjs';
 
 import { colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status } from './utils';
 import { _package } from '../package';
-import { Subscription } from 'rxjs';
 
 const NEW_TESTING = 'New Testing';
 
@@ -147,12 +146,10 @@ export class TestTrack extends DG.ViewBase {
   }
 
   private addCollabTestingSync() {
+    const updateBatchInterval = setInterval(() => {
+      this.UpdateBatchData();
+    }, 10000)
     this.onRemoveSubForCollabTestingSync = grok.shell.dockManager.onClosed.subscribe((v) => {
-
-      const updateBatchInterval = setInterval(() => {
-        this.UpdateBatchData();
-      }, 10000)
-
       if (v === this.root) {
         clearInterval(updateBatchInterval);
         if (this.onRemoveSubForCollabTestingSync)
@@ -167,14 +164,14 @@ export class TestTrack extends DG.ViewBase {
   private updateReportsPrefix() {
     if (this.currentNode.value && !('children' in this.currentNode.value) && this.isReporting) {
       const currentDateTime: Date = new Date();
-      DG.Logger.reportPrefix = `Test Track Report \n Test Case: ${this.currentNode.value.path} \n  Test Case selection time: ${currentDateTime.toISOString()} \n`;
+      DG.Logger.autoReportOptions = {'test_case': this.currentNode.value.path, 'selection_time': currentDateTime.toISOString()};
     }
     else
-      this.resetReportsPrefix();
+      this.resetReportsOptions();
   }
 
-  private resetReportsPrefix() {
-    DG.Logger.reportPrefix = '';
+  private resetReportsOptions() {
+    DG.Logger.autoReportOptions = {};
   }
 
   private async initTreeView(): Promise<void> {
@@ -312,7 +309,7 @@ export class TestTrack extends DG.ViewBase {
       this.runReportSync!.style.display = 'block';
       this.pauseReportSync!.style.display = 'none';
       this.isReporting = false;
-      this.resetReportsPrefix();
+      this.resetReportsOptions();
     }, "Reports synchronization is running");
     this.runReportSync = ui.button(getIcon('play', { style: 'fas' }), () => {
       this.runReportSync!.style.display = 'none';
@@ -334,6 +331,8 @@ export class TestTrack extends DG.ViewBase {
     edit.id = 'tt-edit-button';
     edit.disabled = true;
     this.tree.onSelectedNodeChanged.subscribe((node) => {
+      if(!node.value)
+        node = this.tree;
       if (this.currentNode.constructor === DG.TreeViewNode)
         this.currentNode.value.history.style.display = 'none';
       this.currentNode = node;
@@ -346,6 +345,8 @@ export class TestTrack extends DG.ViewBase {
       this.dataSetsToOpen = node?.value?.datasets || [];
       this.projectsToOpen = node?.value?.projects || [];
 
+      if(node === this.tree)
+        return;
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
       node.value.history.style.display = 'flex';
@@ -533,7 +534,7 @@ export class TestTrack extends DG.ViewBase {
   setContextMenu(): void {
     this.tree.onNodeContextMenu.subscribe((data: any) => {
       const node = data?.args?.item;
-      if (node?.constructor === DG.TreeViewGroup) return;
+      if (!node || node?.constructor === DG.TreeViewGroup || !data.args.menu) return;
       (data.args.menu as DG.Menu)
         .group('Status').items(['Passed', 'Failed', 'Skipped'],
           (i) => {
@@ -617,6 +618,7 @@ export class TestTrack extends DG.ViewBase {
     tabControl.header.style.marginBottom = '15px';
     tabControl.onTabChanged.subscribe((tab: DG.TabPane) => input = tab.name === 'String' ? stringInput : textInput);
     dialog.add(tabControl.root);
+    
     dialog.onOK(() => edit ? this.changeNodeReason(node, status, input.value) : this.changeNodeStatus(node, status, input.value));
     dialog.show({ resizable: true });
     dialog.initDefaultHistory();
@@ -696,57 +698,50 @@ export class TestTrack extends DG.ViewBase {
 
   async showStartNewTestingDialog(): Promise<void> {
     const dialog = ui.dialog('Select testing');
-    dialog.root.classList.add('tt-dialog');
     const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
     const check = ui.input.bool('New testing:');
     const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
 
     const allTestingNames: string[] = [];
-    const testingToOpen: string[] = [""];
+    const testingToOpen: string[] = [];
     const testingToOpenLimit = 5;
     let i = 0;
     for (const row of testingNames.rows) {
-      allTestingNames.push(row['batchName']);
+      let batch = row['batchName'];
+      if (batch[0] === '"' && batch[batch.length - 1] === '"')
+        batch = batch.substring(1, batch.length - 1)
+      allTestingNames.push(batch);
+      if(batch === '')
+        continue;
       if (i < testingToOpenLimit)
-        testingToOpen.push(row['batchName']);
+        testingToOpen.push(batch);
       i++;
     }
 
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen });
-    check.onChanged(() => {
-      if (check.value) {
-        versionSelector.enabled = false;
-        newNameInput.enabled = true;
+    newNameInput.addValidator((e: string) => {
+      if (allTestingNames.includes(`${newNameInput.value}`)) {
+        if (!check.value)
+          return null
+        return `${e} is already exists`;
       }
-      else {
-        newNameInput.enabled = false;
-        versionSelector.enabled = true;
-      }
-      okButton.classList.remove('enabled');
-      okButton.classList.add('disabled');
+      return null;
     });
 
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false }); 
 
-    versionSelector.onChanged(() => {
-      if (versionSelector.value === '' || check.value) {
-        okButton.classList.remove('enabled');
-        okButton.classList.add('disabled');
-      }
-      else {
-        okButton.classList.remove('disabled');
-        okButton.classList.add('enabled');
-      }
-    })
-    newNameInput.nullable = false;
-    newNameInput.enabled = false;
+    check.onChanged(() => {
+      versionSelector.enabled = !check.value;
+      newNameInput.enabled = check.value; 
+    }); 
+    newNameInput.enabled = false; 
     dialog.add(check);
     dialog.add(versionSelector);
     dialog.add(newNameInput);
     dialog.onOK(() => {
-      let testingToOpen : string | undefined | null= undefined;
+      let testingToOpen: string | undefined | null = undefined;
 
       if (check.value) {
-        if (allTestingNames.indexOf(`"${newNameInput.value}"`) === -1) {
+        if (allTestingNames.indexOf(`${newNameInput.value}`) === -1) {
           testingToOpen = newNameInput.value;
         }
       }
@@ -762,15 +757,12 @@ export class TestTrack extends DG.ViewBase {
         localStorage.setItem('TTState', start);
         this.reload();
       }
-      else{
+      else {
         grok.shell.error('Testing Name is not valid');
       }
     });
     dialog.show();
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
-    okButton.classList.remove('enabled');
-    okButton.classList.add('disabled');
-
   }
 
   showEditTestingNameDialog(): void {

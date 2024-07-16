@@ -260,7 +260,6 @@ export class HistoricalRunsList extends DG.Widget {
         );
       };
 
-      console.log(newRuns);
       if (newRuns.length > 0) {
         const favoritesRecord: Record<string, string> =
           await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};

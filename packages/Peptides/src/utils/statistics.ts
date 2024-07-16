@@ -152,3 +152,19 @@ export function getAggregatedColumnValuesFromDf(df: DG.DataFrame, idx: number,
   }
   return colResults;
 }
+
+export function getStringColAggregatedJSON(df: DG.DataFrame, colName: string, mask?: DG.BitSet): string {
+  const col = df.col(colName.substring(5, colName.length - 1)); // remove 'dist(' and ')'
+  if (!col || !col.matches('categorical'))
+    return '{}';
+  mask ??= DG.BitSet.create(df.rowCount, () => true);
+  const values = col.getRawData();
+  const valueCounts = new Map<number, number>();
+  for (let i = -1; (i = mask.findNext(i, true)) !== -1;)
+    valueCounts.set(values[i], (valueCounts.get(values[i]) ?? 0) + 1);
+
+  const resJSON: {[_: string]: number} = {};
+  for (const [value, count] of valueCounts)
+    resJSON[col.categories[value]] = count;
+  return JSON.stringify(resJSON);
+}
