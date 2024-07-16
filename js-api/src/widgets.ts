@@ -2366,5 +2366,5 @@ export class FunctionsWidget extends DartWidget {
       );
     }
 
-  get onActionPlusIconClicked(): rxjs.Observable<EventData<Func>> { return this.onEvent('d4-action-plus-icon-click'); }
+  get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }
