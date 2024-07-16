@@ -407,13 +407,13 @@ jobs:
               fi
             done
           fi
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
       - name: Commit package-lock.json
         continue-on-error: true
@@ -444,22 +444,22 @@ jobs:
             done
           fi
 
-      - name: Slack Notification
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ steps.publish.outcome }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
-      - name: Slack Failed-Cancelled Notification
-        if: failure() || cancelled()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed-Cancelled Notification
+#        if: failure() || cancelled()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   libraries:
     name: Check libraries
@@ -549,14 +549,14 @@ jobs:
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
 
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
     runs-on: ubuntu-22.04
@@ -644,11 +644,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
-      - name: Slack Failed Notification
-        if: failure()
-        uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          config: ".github/config/slack.yml"
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
