@@ -9,7 +9,7 @@
    - `Use as Group Tooltip`
    - `Remove Group Tooltip`
 
-   ---
+---
 {
   "order": 3
 }
