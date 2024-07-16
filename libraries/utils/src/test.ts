@@ -402,6 +402,8 @@ export async function runTests(options?:
         for (let i = 0; i < t.length; i++) {
           if (t[i].options) {
             if (t[i].options?.isEnabledBenchmarkMode === undefined) {
+              if(!t[i].options)
+                t[i].options = {}
               //@ts-ignore
               t[i].options.isEnabledBenchmarkMode = value.isAllTestsEnabledBenchmarkMode || false;
             }

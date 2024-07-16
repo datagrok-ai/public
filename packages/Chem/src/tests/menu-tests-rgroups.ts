@@ -183,7 +183,7 @@ M  END
   after(async () => {
     grok.shell.closeAll();
   });
-}, { isEnabledBenchmarkMode: true });
+}, { isAllTestsEnabledBenchmarkMode: true });
 
 const t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
