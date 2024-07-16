@@ -9,7 +9,7 @@
 5. Right-click on a viewer and select `Tooltip > Show` (the option should appear instead of `Tooltip > Hide`)
    - the tooltip should be displayed on hover over all opened viewers
 
-      ---
+---
 {
   "order": 4
 }
