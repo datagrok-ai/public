@@ -727,6 +727,13 @@ export class TestTrack extends DG.ViewBase {
       return null;
     });
 
+    check.addValidator((e: string) => {
+      if (check.value === false && testingToOpen.length === 0) { 
+        return `Cant select test without name`;
+      } 
+      return null;
+    });
+
     const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false });
     if (testingToOpen.length === 0)
       versionSelector.nullable = true;

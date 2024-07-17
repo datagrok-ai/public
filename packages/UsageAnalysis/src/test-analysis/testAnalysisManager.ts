@@ -12,29 +12,17 @@ interface IPackageTest {
     packageName: string
 }
 
-export class TestAnalysesManager {
+export class TestAnalysisManager {
     private testsListMapped: any[] = []; 
 
     constructor() {
     }
 
     public async init() {
-        let testsList = await TestAnalysesManager.collectPackageTests();
+        let testsList = await TestAnalysisManager.collectPackageTests();
         this.testsListMapped = testsList.map((elem) => {
             return { 'name': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
         });
-    }
-
-    public async getTestsStatusesByLastCommit(): Promise<DG.DataFrame> {
-        let currentDate = getDate(new Date(Date.now()));
-
-        let testsListDF = DG.DataFrame.fromObjects(this.testsListMapped);
-
-        const runs: DG.DataFrame = await grok.functions.call('UsageAnalysis:getServerStartsFor2Weeks', { 'date': currentDate });
-        let commitBuildTime: any = Array.from(runs.rows)[0]['buildtime'];
-        let commitBuildDate = getDate(new Date(commitBuildTime));
-        const tests: DG.DataFrame = await grok.functions.call('UsageAnalysis:getTestStatusesInTimespan', { 'startDate': commitBuildDate, 'endDate': currentDate, 'testslist': testsListDF });
-        return tests;
     }
 
     static async collectPackages(packageName?: string): Promise<any[]> {
@@ -45,7 +33,7 @@ export class TestAnalysesManager {
     }
 
     static async collectPackageTests(): Promise<IPackageTest[]> {
-        await TestAnalysesManager.collectManualTestNames()
+        await TestAnalysisManager.collectManualTestNames()
 
         let packagesTests = await this.collectPackages();
         let testsData: IPackageTest[] = [];
