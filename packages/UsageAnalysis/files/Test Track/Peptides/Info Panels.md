@@ -1,4 +1,4 @@
-1. Open peptides.csv table (Browse > Files > Demo Files/bio/peptides.csv).
+1. Open linked datasets
 2. Make sure that each amino acid is rendered with a different color.
 3. Click the peptides column title.
 4. Check that all necessary panels are displayed on the **Context Panel** (**Peptides**, **Peptide Space**, **Get Peptides Structure)**.
@@ -6,5 +6,8 @@
 6. Make sure the content for each panel is displayed correctly.
 ---
 {
-  "order": 1
+  "order": 1,
+  "datasets": [
+    "System:DemoFiles/bio/peptides.csv"
+  ]
 }
