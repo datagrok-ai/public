@@ -39,9 +39,9 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
 }
 
 /** Run the KNN missing values imputer */
-export function runKNNImputer(): void {
+export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   /** current dataframe */
-  let df: DG.DataFrame | null = grok.shell.t;
+  df ??= grok.shell.t;
 
   if (df === null) {
     grok.shell.warning(ERROR_MSG.NO_DATAFRAME);
@@ -221,7 +221,15 @@ export function runKNNImputer(): void {
 
   const distDiv = ui.divH([distTypeInput.root, settingsIcon]);
 
-  dlg.addButton(TITLE.RUN, () => {
+  return dlg.add(targetColInput)
+    .add(featuresInput)    
+    .add(distDiv)
+    .add(metricsDiv)
+    .add(neighborsInput)
+    .add(inPlaceInput)
+    .add(keepEmptyInput)
+    .show()
+    .awaitOnOK(async () => {
       dlg.close();
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
@@ -236,14 +244,6 @@ export function runKNNImputer(): void {
           grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
         else
           grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-      }      
-    })
-    .add(targetColInput)
-    .add(featuresInput)    
-    .add(distDiv)
-    .add(metricsDiv)
-    .add(neighborsInput)
-    .add(inPlaceInput)
-    .add(keepEmptyInput)
-    .show();
+      }
+    });
 } // runKNNImputer
