@@ -301,7 +301,7 @@ export class Widget<TSettings = any> {
   /** Registers an property with the specified type, name, and defaultValue.
    *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *  
+   *
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -552,7 +552,7 @@ export class Accordion extends DartWidget {
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane extends DartWidget {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -1271,7 +1271,7 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 
 
 export class DateInput extends InputBase<dayjs.Dayjs | null> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1286,7 +1286,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
 
 
 export class ChoiceInput<T> extends InputBase<T> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -2324,7 +2324,7 @@ export class MarkdownInput extends InputBase {
 }
 
 export class CodeInput extends InputBase {
-  dart: any;
+  declare dart: any;
   editor: CodeEditor;
 
   constructor(name: string, config?: CodeConfig) {
@@ -2352,7 +2352,7 @@ export class FunctionsWidget extends DartWidget {
     onEvent(eventId: string | null = null): rxjs.Observable<any> {
       if (eventId !== null)
         return __obs(eventId, this.dart);
-  
+
       let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
       return rxjs.fromEventPattern(
         function (handler) {
@@ -2366,5 +2366,6 @@ export class FunctionsWidget extends DartWidget {
       );
     }
 
+  get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
   get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }

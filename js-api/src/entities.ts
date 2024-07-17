@@ -1201,6 +1201,9 @@ export interface PropertyOptions {
   fieldName?: string;
 
   tags?: any;
+
+  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...) */
+  columnTypeFilter?: ColumnType | 'numerical' | 'categorical';
 }
 
 
