@@ -164,7 +164,7 @@ export class TestTrack extends DG.ViewBase {
   private updateReportsPrefix() {
     if (this.currentNode.value && !('children' in this.currentNode.value) && this.isReporting) {
       const currentDateTime: Date = new Date();
-      DG.Logger.autoReportOptions = {'test_case': this.currentNode.value.path, 'selection_time': currentDateTime.toISOString()};
+      DG.Logger.autoReportOptions = { 'test_case': this.currentNode.value.path, 'selection_time': currentDateTime.toISOString() };
     }
     else
       this.resetReportsOptions();
@@ -331,7 +331,7 @@ export class TestTrack extends DG.ViewBase {
     edit.id = 'tt-edit-button';
     edit.disabled = true;
     this.tree.onSelectedNodeChanged.subscribe((node) => {
-      if(!node.value)
+      if (!node.value)
         node = this.tree;
       if (this.currentNode.constructor === DG.TreeViewNode)
         this.currentNode.value.history.style.display = 'none';
@@ -345,7 +345,7 @@ export class TestTrack extends DG.ViewBase {
       this.dataSetsToOpen = node?.value?.datasets || [];
       this.projectsToOpen = node?.value?.projects || [];
 
-      if(node === this.tree)
+      if (node === this.tree)
         return;
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
@@ -618,7 +618,7 @@ export class TestTrack extends DG.ViewBase {
     tabControl.header.style.marginBottom = '15px';
     tabControl.onTabChanged.subscribe((tab: DG.TabPane) => input = tab.name === 'String' ? stringInput : textInput);
     dialog.add(tabControl.root);
-    
+
     dialog.onOK(() => edit ? this.changeNodeReason(node, status, input.value) : this.changeNodeStatus(node, status, input.value));
     dialog.show({ resizable: true });
     dialog.initDefaultHistory();
@@ -711,7 +711,7 @@ export class TestTrack extends DG.ViewBase {
       if (batch[0] === '"' && batch[batch.length - 1] === '"')
         batch = batch.substring(1, batch.length - 1)
       allTestingNames.push(batch);
-      if(batch === '')
+      if (batch === '')
         continue;
       if (i < testingToOpenLimit)
         testingToOpen.push(batch);
@@ -727,13 +727,14 @@ export class TestTrack extends DG.ViewBase {
       return null;
     });
 
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false }); 
-
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false });
+    if (testingToOpen.length === 0)
+      versionSelector.nullable = true;
     check.onChanged(() => {
       versionSelector.enabled = !check.value;
-      newNameInput.enabled = check.value; 
-    }); 
-    newNameInput.enabled = false; 
+      newNameInput.enabled = check.value;
+    });
+    newNameInput.enabled = false;
     dialog.add(check);
     dialog.add(versionSelector);
     dialog.add(newNameInput);
