@@ -67,11 +67,11 @@ def make_chemprop_predictions(df_test, checkpoint_path):
     )
     test_preds = trainer.predict(mpnn, test_loader)
 
-  test_preds = np.concatenate(test_preds, axis=0)
-  full_preds = np.empty(len(smis), dtype=object)
-  full_preds[valid_indices] = test_preds
-  full_preds[invalid_indices] = ""
-  return full_preds
+  test_preds = [pred.item() for batch in test_preds for pred in batch]
+  for index in invalid_indices:
+    test_preds.insert(index, "")
+
+  return np.array(test_preds, dtype=object)
 
 def generate_fingerprint(smiles):
   mol = Chem.MolFromSmiles(smiles)
