@@ -33,6 +33,9 @@ import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/sr
 
 import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
+import {initXgboost} from '../wasm/xgbooster';
+import {testXGBoost} from './xgbooster';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -43,6 +46,7 @@ export function info() {
 //tags: init
 export async function init(): Promise<void> {
   await _initEDAAPI();
+  await initXgboost();
 }
 
 //top-menu: ML | Cluster | DBSCAN...
@@ -678,4 +682,11 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
 //output: bool result
 export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return df.rowCount <= 100000;
+}
+
+//top-menu: ML | Test Booster ...
+//name: testBooster
+//desription: Method for testing XGBoost
+export function testBooster() {
+  testXGBoost();
 }

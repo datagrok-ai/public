@@ -59,7 +59,8 @@
     },
     "category": "Machine Learning",
     "sources": [
-        "wasm/EDA.js"
+        "wasm/EDA.js",
+        "wasm/XGBoostAPI.js"
     ],
     "meta": {
         "menu": {

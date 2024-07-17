@@ -1,10 +1,27 @@
-//#include <xgboost/c_api.h>
+#include <emscripten.h>
 
-#include "../../../XGBoost/xgboost/include/xgboost/c_api.h"
+// The following provides convenient naming of the exported functions.
+extern "C" {
+
+	int train(float* features, int samplesCount, int featuresCount,
+		float missingValue,
+		float* labels, int labelsCount,
+		int iterationsCount, float eta, int maxDepth, float lambda, float alpha,
+		int* modelSize, int modelSizeCount,
+		int* modelBytes, int modelBytesCount) noexcept;
+
+	int predict(float* features, int samplesCount, int featuresCount,
+		float missingValue,
+		int* modelBytes, int modelBytesCount,
+		float* predictions, int predictionsCount) noexcept;
+}
+
+#include "xgboost/include/xgboost/c_api.h"
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
 
+EMSCRIPTEN_KEEPALIVE
 int train(float * features, int samplesCount, int featuresCount,
 	float missingValue,
 	float * labels, int labelsCount,
@@ -18,13 +35,7 @@ int train(float * features, int samplesCount, int featuresCount,
 	Map<Matrix<float, Dynamic, Dynamic, ColMajor>> columnDataMatrix(features, samplesCount, featuresCount);
 	Matrix<float, Dynamic, Dynamic, RowMajor> dataMatrix = columnDataMatrix;
 	float* dataPtr = &dataMatrix(0);
-
-	/*cout << columnDataMatrix << "\n\n";
-	cout << dataMatrix << "\n\n";
-
-	for (int i = 0; i < samplesCount * featuresCount; ++i)
-		cout << dataPtr[i] << (i == samplesCount * featuresCount - 1 ? "\n\n" : ", ");*/
-
+	
 	// 1. XGBoost data matrix
 	DMatrixHandle dmatrix;
 	XGDMatrixCreateFromMat(dataPtr, samplesCount, featuresCount, missingValue, &dmatrix);
@@ -82,10 +93,11 @@ int train(float * features, int samplesCount, int featuresCount,
 	return 0;
 } // train
 
+EMSCRIPTEN_KEEPALIVE
 int predict(float* features, int samplesCount, int featuresCount,
 	float missingValue,
 	int* modelBytes, int modelBytesCount,
-	int* predictions, int predictionsCount) noexcept {
+	float* predictions, int predictionsCount) noexcept {
 
 	// 0. Transform col-by-col features matrix to row-by-row
 	Map<Matrix<float, Dynamic, Dynamic, ColMajor>> columnDataMatrix(features, samplesCount, featuresCount);
@@ -112,7 +124,7 @@ int predict(float* features, int samplesCount, int featuresCount,
 
 	// 4. Store predictions
 	for (int i = 0; i < samplesCount; ++i)
-		predictions[i] = std::round(outResult[i]);
+		predictions[i] = outResult[i];
 
 	// 5. Clearing
 	XGDMatrixFree(dmatrix);
