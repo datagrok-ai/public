@@ -20,5 +20,3 @@ Expected: calc column is added and its values change according to the changes in
 {
   "order": 1
 }
----
-demog.csv

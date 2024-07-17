@@ -6,5 +6,8 @@
 
 ---
 {
-  "order": 13
+  "order": 13,
+  "datasets": [
+    "System:AppData/Chem/mol1K.sdf"
+  ]
 }

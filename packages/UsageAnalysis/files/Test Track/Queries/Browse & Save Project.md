@@ -21,16 +21,18 @@
 
 **Save project**
 
-10.  Run FRAC Classification Query. Press **+** (Add result table to workspace). 
+10. Run FRAC Classification Query. Press **+** (Add result table to workspace).
 11. Open Trellis plot viewer. Save the layout on the Toolbox.
 12. Press "Save" button to save project. "Save project" form opens. Check this form:
-  * all tooltips are present
-  * everything is clickable
-13. Save the project. 
+
+* all tooltips are present
+* everything is clickable
+
+13. Save the project.
 14. Files > Close all.
 15. Open saved project (form Dashboards). Saved layout should be present.
 
 ---
 {
-  "order": 7
+"order": 7
 }
