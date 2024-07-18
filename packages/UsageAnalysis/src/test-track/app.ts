@@ -297,7 +297,7 @@ export class TestTrack extends DG.ViewBase {
     const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), () => this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
     ec.classList.add('tt-ribbon-button');
-    const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Start new testing');
+    const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Select testing');
     start.classList.add('tt-ribbon-button');
     this.testingName = (await nameP) ?? NEW_TESTING;
     this.nameDiv.innerText = this.testingName;
@@ -554,7 +554,7 @@ export class TestTrack extends DG.ViewBase {
           this.showNodeDialog(node, data.dart.item.value.status, true);
         }, null, {
           isEnabled: () => {
-            return (data.dart.item.value.status ? (data.dart.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
+            return (data.args.item.value.status ? (data.dart.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
           }
         });
     });
