@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.7 (2024-07-18)
+
+### Bug Fixes
+
+* Fixed path chacks for npmignore
+
 ## 4.13.6 (2024-07-15)
 
 ### Bug Fixes
