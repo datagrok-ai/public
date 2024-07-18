@@ -23,10 +23,13 @@ export interface DGBigButtonT extends DGBigButton {};
 
 export class DGSplitH extends HTMLElement {
   // DG API
-  private resize = false;
+  private _resize = true;
 
   private defaultSlot!: HTMLSlotElement;
   private inner = null as HTMLElement | null;
+
+  private initialSlots = [] as HTMLElement[];
+  private inited = false;
 
   constructor() {
     super();
@@ -37,18 +40,29 @@ export class DGSplitH extends HTMLElement {
     this.defaultSlot = this.shadowRoot!.appendChild(ui.element('slot') as HTMLSlotElement);
   }
 
-  static get observedAttributes() {
-    return ['resize'];
+  private render() {
+    if (!this.inited) {
+      this.initialSlots = this.defaultSlot.assignedElements() as HTMLElement[];
+      this.inited = true;
+    }
+
+    const newInner = this.appendChild(ui.splitH(
+      this.initialSlots,
+      {},
+      this._resize,
+    ));
+
+    if (this.inner) {
+      ui.empty(this.inner);
+      this.inner.remove();
+    };
+
+    this.inner = newInner;
   }
 
-  connectedCallback() {
-    if (!this.inner) {
-      this.inner = this.appendChild(ui.splitH(
-        Array.from(this.defaultSlot.assignedElements() as HTMLElement[]),
-        {},
-        true,
-      ));
-    }
+  set resize(val: boolean) {
+    this._resize = val;
+    this.render();
   }
 }
 

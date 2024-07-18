@@ -2,14 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent} from 'vue';
-import type {DGBigButtonT, DGButtonT} from '@datagrok-libraries/webcomponents/src';
+import {defineComponent, ref, watch} from 'vue';
+import type {DGBigButtonT, DGButtonT, DGSplitH} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
   namespace JSX {
     interface IntrinsicElements {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
+      'dg-split-h': DGSplitH,
     }
   }
 }
@@ -33,8 +34,17 @@ export const BigButton = defineComponent({
 
 export const SplitH = defineComponent({
   name: 'SplitH',
-  // emits: ['click'],
-  setup(_props, {slots, attrs, emit}) {
-    return () => (<dg-split-h v-bind={attrs}>{slots.default ? slots.default() : []}</dg-split-h>);
+  props: {
+    resize: Boolean,
+  },
+  setup(props, {slots, attrs, emit}) {
+    return () =>{
+      return (<dg-split-h
+        resize={props.resize}
+        v-bind={attrs}
+      >
+        {slots.default ? slots.default() : []}
+      </dg-split-h>);
+    };
   },
 });
