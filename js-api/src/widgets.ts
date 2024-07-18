@@ -414,7 +414,6 @@ export abstract class Filter extends Widget {
 
   /** Override to save filter state. */
   saveState(): any {
-    console.log('save state');
     return {
       column: this.columnName,
       columnName: this.columnName
@@ -425,7 +424,6 @@ export abstract class Filter extends Widget {
   applyState(state: any): void {
     this.columnName = state.columnName;
     this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
-    console.log('apply state');
   }
 
   /** Gets called when a data frame is attached.
@@ -1891,7 +1889,6 @@ export class RangeSlider extends DartWidget {
   /** Sets showHandles in range slider.
    * @param {boolean} value */
   setShowHandles(value: boolean): void {
-    console.log('setShowHandles', value);
     api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
 
