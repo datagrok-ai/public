@@ -1081,13 +1081,11 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
   return new rxjs.Observable(function (observer: { next: (arg0: ResizeObserverEntry) => void; }) {
     const resizeObserver = new ResizeObserver(observerEntries => {
-      resizeObserver.unobserve(element);
       // trigger a new item on the stream when resizes happen
       setTimeout(() => {
         for (const entry of observerEntries) {
           observer.next(entry);
         }
-        resizeObserver.observe(element);
       }, 1);
     });
 
