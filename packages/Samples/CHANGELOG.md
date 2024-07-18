@@ -4,10 +4,5 @@
 
 This release focuses on improving feature stability and usability.
 
-*Dependency: datagrok-api >= 1.13.0*
-
-### Features
-
-### Bug Fixes
-
-* Fixed demo projects
+* Dependency: datagrok-api >= 1.13.0*
+* Fixes demo projects
