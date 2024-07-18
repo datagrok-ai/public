@@ -29,3 +29,12 @@ export const BigButton = defineComponent({
     return () => (<button v-bind={attrs} onClick={(p) => emit('click', p)} is="dg-big-button">{slots.default ? slots.default() : ''}</button>);
   },
 });
+
+
+export const SplitH = defineComponent({
+  name: 'SplitH',
+  // emits: ['click'],
+  setup(_props, {slots, attrs, emit}) {
+    return () => (<dg-split-h v-bind={attrs}>{slots.default ? slots.default() : []}</dg-split-h>);
+  },
+});

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {InputForm, Viewer, DGBigButton, DGButton} from '@datagrok-libraries/webcomponents/src';
+import {InputForm, Viewer, DGBigButton, DGButton, DGSplitH} from '@datagrok-libraries/webcomponents/src';
 
 export const _package = new DG.Package();
 
@@ -13,4 +13,5 @@ export function registerWebcomponents() {
   customElements.define('dg-input-form', InputForm);
   customElements.define('dg-button', DGButton, {extends: 'button'});
   customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
+  customElements.define('dg-split-h', DGSplitH);
 }
