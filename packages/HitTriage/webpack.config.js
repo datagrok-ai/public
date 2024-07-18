@@ -7,6 +7,11 @@ module.exports = {
   mode: 'development',
   entry: {
     package: './src/package.ts',
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts',
+    },
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.tsx', '.js'],
