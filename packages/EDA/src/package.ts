@@ -34,7 +34,7 @@ import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/sr
 import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
 import {initXgboost} from '../wasm/xgbooster';
-import {basicTestXGBoost, testXGBoost} from './xgbooster';
+import {testXGBoost, XGBooster} from './xgbooster';
 
 export const _package = new DG.Package();
 
@@ -687,7 +687,23 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //top-menu: ML | Test Booster ...
 //name: testBooster
 //desription: Method for testing XGBoost
-export function testBooster() {
-  //basicTestXGBoost();
-  testXGBoost();
+//input: dataframe df
+//input: column_list features {type: numerical}
+//input: column target {type: numerical}
+//input: int iterations = 20
+//input: double eta = 0.3
+//input: int maxDepth = 6
+//input: double lambda = 1
+//input: double alpha = 0
+export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
+  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) {
+  //testXGBoost();
+
+  const booster = new XGBooster();
+  booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);
+
+  const prediction = booster.predict(features);
+
+  if (prediction)
+    df.columns.add(prediction);
 }
