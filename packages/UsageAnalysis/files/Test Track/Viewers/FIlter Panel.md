@@ -1,8 +1,8 @@
 1. Open SPGI.csv.
 1. Click the `core` column header
-1. Go to Context Pane > Chem
-1. Set Filter Type to `categorical`
-1. Go to Tables and click the Filter icon. A Filter Panel opens.
+1. Go to Context Pane > Chemistry > Rendering
+1. Set Filter Type to `Categorical`
+1. Using Filter icon open Filter Panel.
 1. Check the Filter Panel:
 1. The Structure tab should use Sketcher
 1. The Primary Scaffold tab should contain categories (molecules).
