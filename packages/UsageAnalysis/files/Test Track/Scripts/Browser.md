@@ -5,11 +5,8 @@
     2. Try to run the script. Click again on the script and check the context panel again. Usage tab should contain
        increased Runs count
     3. Try to share the script with other user. Sharing tab should contain user you shared your script with.
-    4. Check Project tab, after sharing it should project named like the script
     5. Check that Activity has right dates and all actions you performed with connection
     6. Try to send a message to the chat
-
-* Repeat steps for scripts on other languages (Python, Julia, Octave, NodeJS)
 
 ---
 {
