@@ -7,7 +7,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy} from "./utils";
+import {MapProxy, Completer} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -734,6 +734,22 @@ export class Dialog extends DartWidget {
   onOK(handler: Function): Dialog {
     api.grok_Dialog_OnOK(this.dart, handler);
     return this;
+  }
+
+  /**
+   * Sets the OK button handler and returns a promise of the handler callback.
+   * @param {Function} handler
+   * @returns {Promise} */
+  async awaitOnOK<T = any>(handler: () => Promise<T>): Promise<T> {
+    let completer = new Completer<T>();
+    this.onOK(() => {
+      handler().then((res) => completer.complete(res))
+               .catch((error) => completer.reject(error));
+    });
+    this.onCancel(() => {
+      completer.reject();
+    });
+    return completer.promise;
   }
 
   /**

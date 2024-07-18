@@ -73,7 +73,6 @@ export interface IScatterPlot3dSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -170,7 +169,6 @@ export interface ITreeMapSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -347,7 +345,6 @@ export interface IHistogramSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -412,7 +409,6 @@ export interface IFiltersSettings {
 
   filters: Array<{[index: string]: any}>;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -678,7 +674,6 @@ export interface IScatterPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -943,7 +938,6 @@ export interface ILineChartSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1144,7 +1138,6 @@ export interface IBarChartSettings {
 
   showLabels: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1230,7 +1223,6 @@ export interface IDensityPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1404,7 +1396,6 @@ export interface IBoxPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1517,7 +1508,6 @@ export interface IPieChartSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1578,7 +1568,6 @@ export interface IMatrixPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1643,7 +1632,6 @@ export interface ISummarySettings {
 
   invertColorScheme: boolean;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1693,7 +1681,6 @@ export interface ISparklinesSettings {
   /// Color aggregation type.
   colorAggrType: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -1758,6 +1745,7 @@ export interface IGridSettings {
   /// and *Col Header Height* is not specified.
   horzColLabelsHeight: number;
 
+  /// Applicable only to grid
   rowHeight: number;
 
   /// Indicates mouse-over row by drawing a vertical stripe on the row header
@@ -1833,13 +1821,15 @@ export interface IGridSettings {
 
   extendLastColumn: boolean;
 
-  /// Resize rows by dragging the border between rows on a row header
+  /// Resize rows by dragging the border between rows on a row header.
+  /// Applicable only to grid.
   allowRowResizing: boolean;
 
   /// Indicates the way colors are sampled in the heatmap mode when there is not enough
   /// pixels on the screen for each row:
   /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
   /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
+  /// Applicable only to heatmap.
   drawEveryRow: boolean;
 
   /// Whether the context menu is shown
@@ -1901,6 +1891,7 @@ export interface IGridSettings {
 
   /// true: colors are scaled based on the global min/max in all numerical columns
   /// false: colors are scaled based on the column min/max.
+  /// Applicable only to heatmap.
   globalColorScaling: boolean;
 
   /// Controls grid tooltip visibility
@@ -1957,7 +1948,6 @@ export interface IGridSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   title: string;
@@ -2064,7 +2054,6 @@ export interface ICalendarSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2155,7 +2144,6 @@ export interface ITrellisPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2267,7 +2255,6 @@ export interface IPcPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2328,7 +2315,6 @@ export interface IMapViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2375,7 +2361,6 @@ export interface IStatsViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2432,7 +2417,6 @@ export interface ICorrelationPlotSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2496,7 +2480,6 @@ export interface IFormSettings {
 
   columnNames: Array<string>;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2540,8 +2523,6 @@ export interface IMarkupViewerSettings {
   /// with the Markup that might be used for html rendering)
   markupEnabled: boolean;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2702,7 +2683,6 @@ export interface INetworkDiagramSettings {
   /// Its signature: `dataframe expand(dynamic nodeId)`.
   onNodeExpandFunction: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2769,7 +2749,6 @@ export interface ICardSettings {
 
   format: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2834,8 +2813,6 @@ export interface ITileViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
@@ -2902,7 +2879,6 @@ export interface IPivotViewerSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
-  //StreamController _changes;
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers

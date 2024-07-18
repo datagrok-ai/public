@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { EditorSelection, EditorState, Extension, StateEffectType } from '@codemirror/state'
-import { DecorationSet, EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
+import { EditorSelection, EditorState, Extension, StateEffectType, Prec } from '@codemirror/state'
+import { DecorationSet, EditorView, ViewUpdate, hoverTooltip, keymap } from '@codemirror/view'
 import {RegExpCursor} from "@codemirror/search"
 import {Completion, CompletionContext, CompletionResult, autocompletion, startCompletion, completeFromList} from "@codemirror/autocomplete"
 import {StateEffect, StateField} from "@codemirror/state"
@@ -342,6 +342,13 @@ export class AddNewColumnDialog {
       return true;
     }
 
+    const cutSelection = (v: EditorView) => {
+      const selectionContents = v.state.sliceDoc(v.state.selection.main.from, v.state.selection.main.to);
+      navigator.clipboard.writeText(selectionContents);
+      v.dispatch({ changes: { from: v.state.selection.main.from, to: v.state.selection.main.to, insert: '' } })
+      return true;
+    }
+
     //create code mirror
     const cm = new EditorView({
       parent: this.codeMirrorDiv!,
@@ -355,6 +362,12 @@ export class AddNewColumnDialog {
           highlightTheme,
           highlightField,
           bracketMatching({brackets : "()[]{}"}),
+          keymap.of([
+            {
+              key: 'Shift-Delete',
+              run: cutSelection
+            }
+          ]),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
             this.setCodeMirrorFocus();
 
@@ -687,7 +700,7 @@ export class AddNewColumnDialog {
   /** Creates and initializes the "Function List Widget". */
   async initUiFunctions(): Promise<HTMLDivElement> {
     this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({scalarOnly: true, plusIconOnHover: true});
-    //this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
+    this.widgetFunctions!.props.visibleCategories = this.visibleTags.join(',');
     this.widgetFunctions!.props.showSignature = true;
     (this.widgetFunctions as DG.FunctionsWidget)!.onActionPlusIconClicked.subscribe((e: DG.Func) => {
       if (this.codeMirror)
@@ -795,7 +808,8 @@ export class AddNewColumnDialog {
       if (colPos !== -1)
         params[colPos] = `\${${this.selectedColumn!.name}}`;
       const paramsStr = params.join(', ');
-      snippet = `${x.name}(${paramsStr})`;
+      const funcName = (x as DG.Func).nqName.startsWith('core:') ? (x as DG.Func).name : (x as DG.Func).nqName;
+      snippet = `${funcName}(${paramsStr})`;
     }
     else
       return;
