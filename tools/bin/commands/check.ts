@@ -445,7 +445,7 @@ export function checkSourceMap(packagePath: string): string[] {
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
-  if (fs.existsSync(packagePath + '\\.npmignore')) {
+  if (path.join(...[packagePath, '.npmignore'])) {
     const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
     for (const row of npmIgnoreContent.split('\n')) {
       if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {

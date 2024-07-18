@@ -1,7 +1,7 @@
 # Datagrok-tools changelog
 
 
-## 4.13.7 (2024-07-18)
+## 4.13.8 (2024-07-18)
 
 ### Bug Fixes
 
