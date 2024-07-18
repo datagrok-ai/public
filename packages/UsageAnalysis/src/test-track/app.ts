@@ -223,7 +223,7 @@ export class TestTrack extends DG.ViewBase {
         'User': user,
         'Date': row.get('date'),
         'Version': this.version,
-        'Batch': nameP
+        'Batch': nameP.toString()
       };
       if (reason)
         map['Reason'] = reasonTooltipValue;
@@ -369,7 +369,7 @@ export class TestTrack extends DG.ViewBase {
             'User': user,
             'Date': row.get('date'),
             'Version': row.get('version'),
-            'Batch': row.get('batchName')
+            'Batch': row.get('batchName').toString()
           };
           const reason = row.get('reason');
           if (reason)
@@ -531,30 +531,42 @@ export class TestTrack extends DG.ViewBase {
       this.initTreeGroupRecursive(child, group);
   }
 
+  private setStatus(node: any, data: any, statusName: string){ 
+    const status = statusName.toLowerCase() as Status;
+    if (node.value.status === status) return;
+    data.args.menu.clear();
+    data.args.menu.root.remove();
+    if (status === PASSED)
+      this.changeNodeStatus(node, status);
+    else
+      this.showNodeDialog(node, status);
+  }
+
   setContextMenu(): void {
     this.tree.onNodeContextMenu.subscribe((data: any) => {
       const node = data?.args?.item;
       if (!node || node?.constructor === DG.TreeViewGroup || !data.args.menu) return;
       (data.args.menu as DG.Menu)
-        .group('Status').items(['Passed', 'Failed', 'Skipped'],
-          (i) => {
-            const status = i.toLowerCase() as Status;
-            if (node.value.status === status) return;
-            data.args.menu.dart.childMenuContainer?.remove();
-            data.args.menu.dart.cx?.remove();
-            if (status === PASSED)
-              this.changeNodeStatus(node, status);
-            else
-              this.showNodeDialog(node, status);
-          },
-          { radioGroup: 'Status', isChecked: (i) => i.toLowerCase() === (node.value.status ?? 'empty') })
+        .group('Status')
+        .item('Passed', ()=>{
+          const status = 'passed'.toLowerCase() as Status;
+          this.setStatus(node, data, status);
+        },1, {isEnabled: ()=>{return node.value.status === PASSED? 'This test case alredy has this status': null;}})
+        .item('Failed', ()=>{
+          const status = 'failed'.toLowerCase() as Status;
+          this.setStatus(node, data, status);
+        },2, {isEnabled: ()=>{return node.value.status === FAILED? 'This test case alredy has this status': null;}})
+        .item('Skipped', ()=>{
+          const status = 'skipped'.toLowerCase() as Status;
+          this.setStatus(node, data, status);
+        },3, {isEnabled: ()=>{return node.value.status === SKIPPED? 'This test case alredy has this status': null;}}) 
         .endGroup()
         .item('Edit', () => this.editTestCase(node))
         .item('Edit Reason', () => {
-          this.showNodeDialog(node, data.dart.item.value.status, true);
+          this.showNodeDialog(node, data.args.item.value.status, true);
         }, null, {
           isEnabled: () => {
-            return (data.args.item.value.status ? (data.dart.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
+            return (data.args.item.value.status ? (data.args.item.value.status.toLocaleLowerCase() === PASSED ? 'Status passed' : null) : 'No Status To Change');
           }
         });
     });
@@ -734,7 +746,7 @@ export class TestTrack extends DG.ViewBase {
       return null;
     });
 
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen, nullable: false });
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e)=>e.toString()), nullable: false });
     if (testingToOpen.length === 0)
       versionSelector.nullable = true;
     check.onChanged(() => {
