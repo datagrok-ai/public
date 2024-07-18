@@ -29,7 +29,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'num': ['number', 'int', 'double', 'float'],
   'number': ['num', 'int', 'double', 'float'],
   'double': ['int', 'float', 'number', 'num'],
-  'float': ['int']
+  'float': ['int'],
+  'int': ['num', 'number']
 };
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
