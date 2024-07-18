@@ -4,7 +4,7 @@
 
 ***
 
-1. Open linked datasets
+1. Open linked datasets (need to check smiles, molV2000, molV3000 formats)
 2. Make sure that structures of molecules are rendered.
 3. Click a cell with a structure.
 4. Check that all necessary panels are displayed on the **Context Panel.**
