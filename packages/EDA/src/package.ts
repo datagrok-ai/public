@@ -34,7 +34,7 @@ import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/sr
 import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
 
 import {initXgboost} from '../wasm/xgbooster';
-import {testXGBoost} from './xgbooster';
+import {basicTestXGBoost, testXGBoost} from './xgbooster';
 
 export const _package = new DG.Package();
 
@@ -688,5 +688,6 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //name: testBooster
 //desription: Method for testing XGBoost
 export function testBooster() {
+  //basicTestXGBoost();
   testXGBoost();
 }
