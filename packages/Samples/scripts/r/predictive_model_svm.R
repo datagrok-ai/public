@@ -8,7 +8,7 @@
 #input: column predict {type:categorical} [Name of column contains values to predict]
 #input: dataframe dataset {columns:numerical} [Input data set table]
 #input: column_list columns {type:numerical} [Input data set table columns]
-#input: bool fillMissing = TRUE [Fill missing values using kNN algorithm]
+#input: bool fillMissing = true [Fill missing values using kNN algorithm]
 #input: double perc = 0.5 [Percentage of data that goes to training]
 #output: graphics [ROC plot of predicted test part of dataset]
 
