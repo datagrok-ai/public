@@ -1,6 +1,6 @@
 import {Subject} from 'rxjs';
 import {PipelineStepConfiguration, PipelineActionConfiguraion} from '../config/PipelineConfiguration';
-import {ItemName, ItemPath} from '../config/CommonTypes';
+import {ItemId, ItemPath} from '../config/CommonTypes';
 import {NodeConf, NodeConfTypes} from './NodeConf';
 import {NodeIOState} from './NodeIOState';
 import {PipelineDriverState} from './PipelineDriverState';
@@ -8,7 +8,7 @@ import {ControllerConfig} from './ControllerConfig';
 
 export class NodeState {
   public controllerConfig?: ControllerConfig;
-  public states = new Map<ItemName, NodeIOState>();
+  public states = new Map<ItemId, NodeIOState>();
   public notifier = new Subject<true>();
 
   constructor(

@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemName, NqName, TypeKey} from '../config/CommonTypes';
+import {ItemId, NqName, ItemType} from '../config/CommonTypes';
 import {ActionPositions} from '../config/PipelineConfiguration';
 import {ValidationResult} from '../../../shared-utils/validation';
 
@@ -36,7 +36,7 @@ export interface StepsPipelineConfig {
 
 
 export interface StepSequentialType {
-  type: TypeKey;
+  type: ItemType;
   typeName: string;
 }
 
@@ -46,10 +46,10 @@ export interface StepsSequentialConfig extends StepsPipelineConfig, StepSequenti
 
 
 export interface StepParallelType {
-  type: TypeKey;
+  type: ItemType;
   typeName: string;
-  inputTypeId: ItemName;
-  outputTypeId: ItemName;
+  inputTypeId: ItemId;
+  outputTypeId: ItemId;
 }
 
 export interface StepParallelConfig extends StepFunCallConfig, StepParallelType {}
@@ -86,7 +86,7 @@ export interface PipelineViewConfigParallel {
 export interface AddGroupItem {
   event: 'addGroupItem';
   id: string;
-  type: TypeKey;
+  type: ItemType;
   insertBefore?: string;
 }
 
@@ -98,7 +98,7 @@ export interface RemoveGroupItem {
 export interface MoveGroupItem {
   event: 'moveGroupItem';
   id: string;
-  insertBefore?: ItemName;
+  insertBefore?: ItemId;
 }
 
 export interface IOSyncChange {

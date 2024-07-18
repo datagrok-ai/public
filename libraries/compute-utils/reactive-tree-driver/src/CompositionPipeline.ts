@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
-import {FixedPipelineConfiguration, PipelineCompositionConfiguration, PipelineStepConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, NestedPipelineConfig} from './config/PipelineConfiguration';
-import {ItemName, ItemPath, NqName, StateType} from './config/CommonTypes';
+import {AbstractPipelineStaticConfiguration, PipelineCompositionConfiguration, PipelineStepConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, NestedPipelineConfig} from './config/PipelineConfiguration';
+import {ItemId, ItemPath, NqName, StateType} from './config/CommonTypes';
 import {RuntimeController} from './RuntimeController';
 import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isNestedPipelineConfig} from './config/config-processing-utils';
 import {NodeConf, NodeConfTypes, SubNodeConf, SubNodeConfTypes} from './runtime/NodeConf';
@@ -20,7 +20,7 @@ type ItemsToMerge = {
 };
 
 export class CompositionPipeline {
-  private id?: ItemName;
+  private id?: ItemId;
   private nqName?: NqName;
 
   private pipelineState = new PipelineDriverState();
@@ -198,8 +198,8 @@ export class CompositionPipeline {
         return acc;
       },
       {
-        pipelineSteps: new Map<ItemName, StepSpec[]>(),
-        pipelineSeq: [] as ItemName[],
+        pipelineSteps: new Map<ItemId, StepSpec[]>(),
+        pipelineSeq: [] as ItemId[],
       },
     );
 
@@ -224,7 +224,7 @@ export class CompositionPipeline {
 
   // deal with hooks
 
-  private getPipelineHooks(node: FixedPipelineConfiguration, toRemove: Set<string>, path: ItemPath) {
+  private getPipelineHooks(node: AbstractPipelineStaticConfiguration, toRemove: Set<string>, path: ItemPath) {
     node.hooks = node.hooks ?? {};
     for (const [type, hooks] of Object.entries(node.hooks ?? {})) {
       const filteredHooks = [];
@@ -243,7 +243,7 @@ export class CompositionPipeline {
 
   // pipeline config processing
 
-  private processPipelineConfig(pipelineConf: FixedPipelineConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
+  private processPipelineConfig(pipelineConf: AbstractPipelineStaticConfiguration, pipelinePath: ItemPath, toRemove: Set<string>, toAdd: Map<string, ItemsToMerge>) {
     const subPath = this.proccessPipelineNodeConfig(pipelineConf, pipelinePath);
     const steps: PipelineStepConfiguration[] = [];
     for (const conf of pipelineConf.steps) {
@@ -289,7 +289,7 @@ export class CompositionPipeline {
     return [...data, ...moreItems] as T[];
   }
 
-  private proccessPipelineNodeConfig(conf: FixedPipelineConfiguration, pipelinePath: ItemPath) {
+  private proccessPipelineNodeConfig(conf: AbstractPipelineStaticConfiguration, pipelinePath: ItemPath) {
     const nodePath = this.updateFullPathNode(conf, pipelinePath);
     const nodeKey = pathToKey(nodePath);
 

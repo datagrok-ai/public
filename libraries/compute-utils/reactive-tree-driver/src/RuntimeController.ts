@@ -1,5 +1,5 @@
 import {ActionItem, ValidationResult} from '../../shared-utils/validation';
-import {ItemPath, InputState, TypeKey, GroupState, ItemName} from './config/CommonTypes';
+import {ItemPath, InputState, ItemType, GroupState, ItemId} from './config/CommonTypes';
 
 
 export interface RuntimeController {
@@ -23,11 +23,11 @@ export interface RuntimeController {
   getValidationAction(path: ItemPath, name?: string): ActionItem;
   setValidation(path: ItemPath, validation?: ValidationResult | undefined): void;
   // dynamic groups state manipulation
-  getGroupStates<T = any>(path: ItemPath, type?: TypeKey): GroupState<T>;
-  setGroupStates<T = any>(path: ItemPath, type: TypeKey, state: T): void;
+  getGroupStates<T = any>(path: ItemPath, type?: ItemType): GroupState<T>;
+  setGroupStates<T = any>(path: ItemPath, type: ItemType, state: T): void;
   // dynamic groups manipulation
-  addGroupItem(path: ItemPath, type: TypeKey, insertBefore?: ItemName): ItemName;
-  removeGroupItem(path: ItemPath, item: ItemName): void;
-  moveGroupItem(path: ItemPath, item: ItemName, insertBefore?: ItemName): void;
+  addGroupItem(path: ItemPath, type: ItemType, insertBefore?: ItemId): ItemId;
+  removeGroupItem(path: ItemPath, item: ItemId): void;
+  moveGroupItem(path: ItemPath, item: ItemId, insertBefore?: ItemId): void;
   getGroupConfig(path: ItemPath): any;
 }
