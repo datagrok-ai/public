@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.10.1 (2024-07-19)
+
+### Features
+
+* Stereochemistry is saved when convertion from molfile to smiles
+
 ## 1.10.0 (2024-06-12)
 
 ### Features
