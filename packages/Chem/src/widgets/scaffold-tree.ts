@@ -677,6 +677,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const c = this.root.getElementsByClassName('d4-update-shadow');
     if (c.length > 0) {
       const eProgress = c[0];
+      const loader = eProgress.getElementsByClassName('grok-loader')[0] as HTMLElement;
+      loader.style.top = '0px';
+      eProgress.classList.add('chem-scaffold-tree-progress');
       const eCancel : HTMLAnchorElement = ui.link('Cancel', () => {
         this.cancelled = true;
         currentCancelled = true;
@@ -690,7 +693,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.progressBar?.close();
         this.progressBar = null;
       }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
-      eProgress.appendChild(eCancel);
+      eProgress.append(eCancel);
     }
 
     if (currentCancelled)

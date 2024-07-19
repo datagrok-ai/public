@@ -129,13 +129,17 @@
   height: 30px !important;
 }
 
+.chem-scaffold-tree-progress {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 .chem-scaffold-tree-cancel-hint {
   text-align: center;
-  position: absolute;
-  top: 55%;
   font-size: 13px;
-  width: 100% !important;
-  height: 30px !important;
 }
 
 .chem-scaffold-tree-generate-message-hint {
