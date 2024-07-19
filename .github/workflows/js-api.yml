@@ -30,6 +30,7 @@ jobs:
       release_tag: ${{ steps.check-version.outputs.release_tag }}
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
+      replace_version: ${{ steps.replace_ver.outputs.replace_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -152,6 +153,17 @@ jobs:
           JSON="{\"include\": ${MATRIX_JSON}}"
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
+      - name: Set version for dependencies
+        if: steps.check-version.outputs.replace_dep == 'true'
+        id: replace_ver
+        run: |
+          if [[ "${{ steps.check-version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ steps.check-version.outputs.release_tag }}" == 'latest' ]]; then
+            replace_version=${{ nsteps.check-version.outputs.current_version }}
+          else
+            replace_version=$(echo "${{ steps.check-version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
+          fi
+          echo "replace_version=$replace_version" >> $GITHUB_OUTPUT
+
       - name: Output
         run: |
           echo -e "changed_version: ${{ steps.check-version.outputs.changed_version }}"
@@ -161,6 +173,7 @@ jobs:
           echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
           echo -e "release_tag: ${{ steps.check-version.outputs.release_tag }}"
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
+          echo -e "replace_version: ${{ steps.replace_version.outputs.replace_version }}"
 
   build:
     name: ${{ needs.version.outputs.job_name || 'Deploy' }}
@@ -369,9 +382,8 @@ jobs:
         working-directory: docusaurus
         run: |
           npm install
-          version=${{ needs.version.outputs.current_version }}
           if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ needs.version.outputs.release_tag }}" == 'latest' ]]; then
-            npx ts-node parser.ts $version
+            npx ts-node parser.ts ${{ needs.version.outputs.current_version }}
           fi
           if [ -n "$(git status -s static/versions)" ]; then
             git config --global user.name 'github-actions[bot]'
@@ -489,13 +501,7 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ needs.version.outputs.release_tag }}" == 'latest' ]]; then
-            replace_version=${{ needs.version.outputs.current_version }}
-          else
-            replace_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
-          fi
-          base_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${replace_version}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
@@ -592,8 +598,7 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          base_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${base_version}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.replace_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
