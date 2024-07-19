@@ -148,7 +148,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement {
     const propsDict: {[key: string]: any} = {};
-    const grid = grok.shell.tv.grid;
+    const grid = grok.shell.tv?.grid;
     if (similarity) {
       if (refMolecule)
         propsDict['Reference'] = {val: ''};
@@ -159,8 +159,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
       const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE];
       if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
-        propsDict[col].color = grid.cell(col, idx).color;
-        propsDict[col].isTextColorCoded = grid.col(col)?.isTextColorCoded;
+        propsDict[col].color = grid?.cell(col, idx).color;
+        propsDict[col].isTextColorCoded = grid?.col(col)?.isTextColorCoded;
       }
     }
     //const item = ui.divH([], 'similarity-prop-item');
