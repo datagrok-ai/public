@@ -485,7 +485,8 @@ export class TestManager extends DG.ViewBase {
       if (res.col('package') == null || this.verboseCheckBox.value)
         this.addPackageInfo(res, t.packageName);
       if (!this.verboseCheckBox.value)
-        this.removeTestRow(t.packageName, t.test.category, t.test.name);
+        this.removeTestRow(t.packageName, t.test.category, t.test.name); 
+      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING); 
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);

@@ -147,7 +147,11 @@ export class Functions {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
 
-  /** Returns a function with the specified name, or throws an error if
+  parse(command: string, safe: boolean = true): any {
+    return toJs(api.grok_Parse_Command(command, safe));
+  }
+
+ /** Returns a function with the specified name, or throws an error if
    * there is no such function. See also {@link find}. */
   async get(name: string): Promise<Func> {
     let f = await this.find(name);
@@ -272,7 +276,7 @@ type FuncCallParams = {
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
-  public readonly dart: any;
+  declare readonly dart: any;
 
   /** Named input values. See {@link inputParams} for parameter metadata. */
   public inputs: {[name: string]: any};

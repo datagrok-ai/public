@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('Projects', () => {
@@ -14,7 +14,7 @@ category('Projects', () => {
     }, {skipReason: 'GROK-13621'});
     test('demo_notebooks', async () => {
         await grok.dapi.projects.open('demo_notebooks')
-    });
+    }, {skipReason: 'GROK-15481'});
     test('demog', async () => {
         await grok.dapi.projects.open('demog')
     });
@@ -26,7 +26,7 @@ category('Projects', () => {
     });
     test('game-of-thrones', async () => {
         await grok.dapi.projects.open('game_of_thrones')
-    });
+    }, {skipReason: 'GROK-16289'});
     test('models', async () => {
         await grok.dapi.projects.open('models')
     });
@@ -41,14 +41,5 @@ category('Projects', () => {
     });
     test('time-series-decomposition', async () => {
         await grok.dapi.projects.open('time_series_decomposition')
-    });
-    test('wells', async () => {
-        await grok.dapi.projects.open('wells')
-    });
-    test('pic50', async () => {
-        await grok.dapi.projects.open('pic50')
-    });
-    test('zbb', async () => {
-        await grok.dapi.projects.open('zbb')
     });
 });

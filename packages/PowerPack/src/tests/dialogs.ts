@@ -19,13 +19,20 @@ category('Dialogs', () => {
   test('AddNewColumn', async () => {
     const dlg = new AddNewColumnDialog();
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
-    const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({name: name})[0]);
+    const funcs = Object.keys(FUNC_TESTS).map((name) => DG.Func.find({ name: name })[0]);
 
     for (const f of funcs) {
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
         dlg.inputName!.value = columnName;
-        dlg.inputExpression!.value = expression;
+        dlg.codeMirror!.dispatch({
+          changes: {
+            from: 0,
+            to: dlg.codeMirror!.state.doc.length,
+            insert: expression
+          }
+        });
+        await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === expression);
         dlg.uiDialog!.getButton('OK').click();
         try {
           await awaitCheck(() => df.columns.contains(columnName));

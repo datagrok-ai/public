@@ -21,7 +21,7 @@ export interface IDartApi {
   grok_JSON_decode(s: String): any;
   grok_JS_To_Map(js: any): any;
   grok_Complete(c: any, result: any): any;
-  grok_CompleteError(c: any, result: any): any;
+  grok_CompleteError(c: any, result: any, stack: any): any;
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
   grok_Get_CurrentObject(): any;
@@ -529,6 +529,10 @@ export interface IDartApi {
   grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
+  grok_ColumnList_DateTime(cols: any): any;
+  grok_ColumnList_NumericalNoDateTime(cols: any): any;
+  grok_ColumnList_Boolean(cols: any): any;
+  grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
   grok_Column_FromStrings(name: String, list: any): any;
@@ -847,6 +851,7 @@ export interface IDartApi {
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
+  grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;
@@ -1334,6 +1339,7 @@ export interface IDartApi {
   grok_Rect_Unpack(bytes: any): any;
   grok_FileInfo_FromBytes(path: String, data: any): any;
   grok_FileInfo_FromString(path: String, data: String): any;
+  grok_FileInfo_Get_Connection(fi: any): any;
   grok_FileInfo_Get_Path(fi: any): any;
   grok_FileInfo_Get_FullPath(fi: any): any;
   grok_FileInfo_Get_Extension(fi: any): any;
@@ -1342,6 +1348,7 @@ export interface IDartApi {
   grok_FileInfo_Get_IsFile(fi: any): any;
   grok_FileInfo_Get_IsDirectory(fi: any): any;
   grok_FileInfo_Get_Data(fi: any): any;
+  grok_FileInfo_Get_UpdatedOn(fi: any): any;
   grok_FileInfo_ReadAsBytes(fi: any): Promise<any>;
   grok_FileInfo_ReadAsString(fi: any): Promise<any>;
   grok_Dapi_Root(): any;
@@ -1454,10 +1461,11 @@ export interface IDartApi {
   grok_UserReport_Description(report: any): any;
   grok_UserReport_CreatedOn(report: any): any;
   grok_Get_StackTrace_Hash(stackTrace: String): any;
+  grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
   grok_Parse_Command(command: String, safe: Bool): any;
-  grok_Set_AutoReports_Prefix(prefix: String): any;
+  grok_Set_AutoReport_Options(options: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1510,8 +1518,9 @@ export interface IDartApi {
   grok_ViewerEvent_Set_filters(x: any, v: any): any;
   grok_ViewerEvent_Get_row(x: any): any;
   grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_bitset(x: any): any;
   grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
   grok_InputType_Create(): any;
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;

@@ -7,7 +7,7 @@ category('Packages: Docker', () => {
 
   test('Get response: On demand', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
-    if (container.status !== 'stopped')
+    if (!container.status.startsWith('stopped'))
       await grok.dapi.docker.dockerContainers.stop(container.id, true);
     await testResponse(container.id);
   }, {timeout: 60000});
@@ -36,7 +36,7 @@ category('Packages: Docker', () => {
     await grok.dapi.docker.dockerContainers.run(container.id, true);
     await delay(70000);
     container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
-    expect(container.status, 'stopped');
+    expect(container.status.startsWith('stopped'), true);
   }, {timeout: 120000});
 
   test('Get container logs: Incorrect', async () => {
@@ -45,7 +45,7 @@ category('Packages: Docker', () => {
       await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
     });
     const container = await grok.dapi.docker.dockerContainers.filter(containerSimple).first();
-    if (container.status != 'stopped')
+    if (!container.status.startsWith('stopped'))
       await grok.dapi.docker.dockerContainers.stop(container.id, true);
     await expectExceptionAsync(async () => {
       await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
@@ -57,6 +57,6 @@ async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path);
   expect(response.status, 200, `Container response status was ${response.status}`);
-  const result = await response.json();
+  const result: { [key: string]: any } = await response.json() as { [key: string]: any };
   expectObject(result, {"result": 16});
 }

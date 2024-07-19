@@ -1,6 +1,13 @@
 import multiprocessing
 import subprocess
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
 
 class Types(object):
     """ Commonly used type identifiers. """
@@ -21,4 +28,5 @@ def call_process(params: list):
     """
     process = subprocess.run(params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     log = process.stderr
+    logger.debug(f'Process log: {log}')
     return log
