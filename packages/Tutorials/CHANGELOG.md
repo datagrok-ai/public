@@ -1,5 +1,11 @@
 # Tutorials changelog
 
+## 1.3.27 (2024-07-19)
+
+### Bug fixes
+
+* Fixed Cheminformatics tutorials
+
 ## 1.3.26 (2024-06-04)
 
 ### Features

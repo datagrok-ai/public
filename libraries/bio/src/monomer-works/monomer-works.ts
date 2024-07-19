@@ -64,17 +64,17 @@ export function helmTypeToPolymerType(helmType: HelmType): PolymerType {
   return polymerType;
 }
 
-const helmTypeMap: { [helmType: string]: { polymerType: PolymerType, monomerType: MonomerType } } = {
-  [HelmTypes.AA]: {polymerType: PolymerTypes.PEPTIDE, monomerType: MonomerTypes.BACKBONE},
-
-  // [HelmTypes.BASE]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BRANCH},
-  // [HelmTypes.SUGAR]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
-  // [HelmTypes.LINKER]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
-  // [HelmTypes.CHEM]: {polymerType: PolymerTypes.CHEM, monomerType: MonomerTypes.BACKBONE},
-};
-
-export function fromHelmType(biotype: HelmType): { polymerType: PolymerType, monomerType: MonomerType } {
-  if (!Object.keys(helmTypeMap).includes(biotype))
-    throw new Error(`Biotype '${biotype}' is not supported.`);
-  return helmTypeMap[biotype];
-}
+// const helmTypeMap: { [helmType: string]: { polymerType: PolymerType, monomerType: MonomerType } } = {
+//   [HelmTypes.AA]: {polymerType: PolymerTypes.PEPTIDE, monomerType: MonomerTypes.BACKBONE},
+//
+//   // [HelmTypes.BASE]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BRANCH},
+//   // [HelmTypes.SUGAR]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
+//   // [HelmTypes.LINKER]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
+//   // [HelmTypes.CHEM]: {polymerType: PolymerTypes.CHEM, monomerType: MonomerTypes.BACKBONE},
+// };
+//
+// export function fromHelmType(biotype: HelmType): { polymerType: PolymerType, monomerType: MonomerType } {
+//   if (!Object.keys(helmTypeMap).includes(biotype))
+//     throw new Error(`Biotype '${biotype}' is not supported.`);
+//   return helmTypeMap[biotype];
+// }

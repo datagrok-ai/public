@@ -5,6 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest} from 'rxjs';
 import $ from 'cash-dom';
+import { _package } from '../../../package';
 
 
 export class SubstructureSearchFilteringTutorial extends Tutorial {
@@ -29,7 +30,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
     this.describe(this.description + '<hr>');
 
-    this.t = await grok.data.files.openTable('System:AppData/Tutorials/demo_smiles.csv');
+    this.t = await grok.data.loadTable(`${_package.webRoot}files/demo_smiles.csv`);
     const tv = grok.shell.addTableView(this.t);
 
     this.title('Initiate substructure search', true);

@@ -42,13 +42,13 @@ PEPTIDE1{[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[1Nal].[
     userLibSettings = await getUserLibSettings();
 
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries
   });
 
   after(async () => {
     // UserDataStorage.put() replaces existing data
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   test('Identity', async () => {

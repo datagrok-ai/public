@@ -38,7 +38,7 @@ export type Monomer = {
 };
 
 export interface IMonomerLinkData {
-  libName: string;
+  source: string;
   symbol: string;
   notes: string;
 }

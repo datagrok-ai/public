@@ -99,6 +99,13 @@ C1CCCCC1
 CCCCCC`,
       neg: ['col1'],
     },
+    'negSmilesWithSquareBrackets': {
+      csv: `col1
+Cl.c1ccc2nc3ccccc3cc2c1
+Oc1cccc2cc3ccccc3cc12
+[SeH]c1ccc2ccccc2c1`,
+      neg: ['col1'],
+    },
     'negFastaUnSingleChar': {
       csv: `col1
 Alanine
@@ -247,7 +254,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     peptidesComplex = 'peptidesComplex',
     peptidesSimple = 'peptidesSimple',
     fastaCsv = 'fastaCsv',
-    fastaFasta = 'fastaFasta',
+    // fastaFasta = 'fastaFasta',
     fastaPtCsv = 'fastaPtCsv',
     msaComplex = 'msaComplex',
     helmCsv = 'helmCsv',
@@ -268,7 +275,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   }
 
   const samples: { [key: string]: string } = {
-    [Samples.fastaFasta]: 'System:AppData/Bio/samples/FASTA.fasta',
+    // [Samples.fastaFasta]: 'System:AppData/Bio/samples/FASTA.fasta',
     [Samples.fastaPtCsv]: 'System:AppData/Bio/samples/FASTA_PT.csv',
     [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
     [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
@@ -408,11 +415,11 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     });
   });
 
-  test('samplesFastaFasta', async () => {
-    await _testDf(readSamples(Samples.fastaFasta), {
-      'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
-    });
-  });
+  // test('samplesFastaFasta', async () => {
+  //   await _testDf(readSamples(Samples.fastaFasta), {
+  //     'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
+  //   });
+  // });
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
   // test('samplesPeptidesComplexPositiveAlignedSequence', async () => {

@@ -157,7 +157,7 @@ class LibraryControlsManager {
     this.updateLibrarySettings(isMonomerLibrarySelected, libFileName);
     await setUserLibSettings(this.userLibSettings);
     const monomerLibHelper = await getMonomerLibHelper();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
     grok.shell.info('Monomer library user settings saved');
   }
 

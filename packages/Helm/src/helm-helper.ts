@@ -10,7 +10,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
@@ -141,12 +141,14 @@ export class HelmHelper implements IHelmHelper {
       phList.push(ph);
     }
 
-    const fillPlaceholders = (parentDiv: HTMLDivElement, phList: IMonomerSetPlaceholder[], helmType: HelmType): void => {
+    const fillPlaceholders = (
+      parentDiv: HTMLDivElement, phList: IMonomerSetPlaceholder[], helmType: HelmType
+    ): void => {
       for (const ph of phList) {
         const phDiv = mex.createMonomerDiv(parentDiv, ph.symbol, helmType);
         ui.tooltip.bind(phDiv, () => {
           const phTooltipDiv = ui.div([
-            ui.table(ph.monomerLinks, (ml, idx) => {
+            ui.table(ph.monomerLinks, (ml: IMonomerLinkData, idx: number) => {
               return [ml.symbol, ml.libName];
             }, ['Symbol', 'Library source'])
           ]);

@@ -64,7 +64,7 @@ category('toAtomicLevel', async () => {
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
 
     for (const [testName, testData] of Object.entries(TestsData)) {
       const inputPath = testData.inPath;
@@ -77,7 +77,7 @@ category('toAtomicLevel', async () => {
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
@@ -217,7 +217,7 @@ async function _testToAtomicLevel(
   df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
 ): Promise<DG.Column | null> {
   const seqCol: DG.Column<string> = df.getCol(seqColName);
-  const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
+  const monomerLib: IMonomerLib = monomerLibHelper.getMonomerLib();
   const res = await _toAtomicLevel(df, seqCol, monomerLib);
   if (res.warnings.length > 0)
     _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);

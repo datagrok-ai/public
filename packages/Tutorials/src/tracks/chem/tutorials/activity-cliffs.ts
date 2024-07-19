@@ -5,6 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
+import { _package } from '../../../package';
 
 
 export class ActivityCliffsTutorial extends Tutorial {
@@ -35,7 +36,7 @@ export class ActivityCliffsTutorial extends Tutorial {
       It uses distance-based dimensionality reduction algorithms 
       to convert cross-similarities into a 2D scatterplot.<hr>`);
 
-    this.t = await grok.data.files.openTable('System:AppData/Tutorials/activity_cliffs.csv');
+    this.t = await grok.data.loadTable(`${_package.webRoot}files/activity_cliffs.csv`);
     const tv = grok.shell.addTableView(this.t);
 
     this.title('Start the Activity Cliffs tool', true);

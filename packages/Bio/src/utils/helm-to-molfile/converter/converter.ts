@@ -84,7 +84,7 @@ export class HelmToMolfileConverter {
   private async convertToMolfileV3KColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const rdKitModule = await grok.functions.call('Chem:getRdKitModule');
-    const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
+    const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getMonomerLib();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
         const helm = this.helmColumn.get(idx);

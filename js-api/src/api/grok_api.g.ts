@@ -529,6 +529,10 @@ export interface IDartApi {
   grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
+  grok_ColumnList_DateTime(cols: any): any;
+  grok_ColumnList_NumericalNoDateTime(cols: any): any;
+  grok_ColumnList_Boolean(cols: any): any;
+  grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
   grok_Column_FromStrings(name: String, list: any): any;

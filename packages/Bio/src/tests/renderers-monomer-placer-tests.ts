@@ -26,12 +26,12 @@ category('renderers: monomerPlacer', () => {
 
     await setUserLibSettingsForTests();
     await libHelper.awaitLoaded();
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   after(async () => {
     await setUserLibSettings(libSettings);
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   const tests = {

@@ -63,7 +63,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
           .add(webEditorHost!)
           .onOK(() => {
             try {
-              const webEditorValue = webEditorApp!.canvas.getHelm(true)
+              const webEditorValue = webEditorApp!.canvas!.getHelm(true)
                 .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
               this.props = new BioFilterProps(webEditorValue);
             } catch (err: any) {
@@ -90,7 +90,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
       this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_: any) => {
         try {
           if (!!webEditorApp) {
-            const helmString = webEditorApp.canvas.getHelm(true)
+            const helmString = webEditorApp!.canvas!.getHelm(true)
               .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
             this.updateFilterPanel(helmString);
           }

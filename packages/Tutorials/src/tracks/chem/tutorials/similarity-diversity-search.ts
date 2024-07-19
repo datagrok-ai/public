@@ -5,6 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable} from 'rxjs';
 import $ from 'cash-dom';
+import { _package } from '../../../package';
 
 
 export class SimilarityDiversitySearchTutorial extends Tutorial {
@@ -32,7 +33,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     <b>Similarity Search</b> finds structures similar to the reference molecule,
     while <b>Diversity Search</b> shows N molecules of different chemical classes in the dataset.`);
 
-    this.t = await grok.data.files.openTable('System:AppData/Tutorials/demo_smiles.csv');
+    this.t = await grok.data.loadTable(`${_package.webRoot}files/demo_smiles.csv`);
     grok.shell.addTableView(this.t);
 
     this.title('Start the similarity and diversity search', true);

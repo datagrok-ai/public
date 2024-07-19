@@ -5,6 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest} from 'rxjs';
 import $, {Cash} from 'cash-dom';
+import { _package } from '../../../package';
 
 
 export class RGroupsAnalysisTutorial extends Tutorial {
@@ -32,7 +33,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     'variations around a scaffold, analyze substitution patterns, evaluate their ' +
     'impact on crucial compound properties, and find gaps.<hr>');
 
-    this.t = await grok.data.files.openTable('System:AppData/Tutorials/sar_small-R-groups.csv');
+    this.t = await grok.data.loadTable(`${_package.webRoot}files/sar_small-R-groups.csv`);
     const tv = grok.shell.addTableView(this.t);
 
     this.title('Start the R-Groups Analysis tool', true);

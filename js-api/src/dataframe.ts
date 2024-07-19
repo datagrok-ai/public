@@ -1194,6 +1194,22 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
+  get dateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_DateTime(this.dart));
+  }
+
+  get numericalNoDateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
+  }
+
+  get boolean(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Boolean(this.dart));
+  }
+
+  get selected(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Selected(this.dart));
+  }
+
   /** Array containing column names. */
   names(): string[] { return api.grok_ColumnList_Names(this.dart); }
 
