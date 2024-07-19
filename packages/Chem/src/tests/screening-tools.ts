@@ -32,9 +32,9 @@ category('screening tools', () => {
       df = await grok.data.files.openTable('Demo:Files/chem/smiles_100K.zip');
     else
       df = molecules.clone();
-    const tv = grok.shell.addTableView(df);
+    //const tv = grok.shell.addTableView(df);
     await elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
-    tv.close();
+    //tv.close();
     expect(df.columns.length, DG.Test.isInBenchmark ? 17 : 11); //TODO!! Check number of columns for benchmark
   });
 
