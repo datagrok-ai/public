@@ -619,7 +619,7 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
     nodeType: NODE_TYPE, unhandled?: string): HTMLElement {
-    const acc = ui.accordion();
+    const acc = ui.accordion('test manager results');
     acc.root.style.width = '100%';
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';

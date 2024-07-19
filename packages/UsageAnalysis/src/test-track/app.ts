@@ -618,11 +618,11 @@ export class TestTrack extends DG.ViewBase {
   // To Do: fix styles
   showNodeDialog(node: DG.TreeViewNode, status: typeof CRITICALFAIL | typeof MINORFAIL | typeof BLOCKFAIL | typeof SKIPPED, edit: boolean = false): void {
     const name = `${edit ? 'Edit' : 'Specify'} ${errorSeverityLevels.includes(status) ? 'ticket' : 'skip reason'}`;
-    const errorTypeSelector = ui.input.choice('select the error severity level:', { value: errorSeverityLevels[1], items: errorSeverityLevels, nullable: false });
+    const errorTypeSelector = ui.input.choice('Error severity level', { value: errorSeverityLevels[1], items: errorSeverityLevels, nullable: false });
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
-    const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Keys' : 'Reasons', { value: value });
+    const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value });
     textInput.nullable = false;
     textInput.classList.add('ui-input-reason');
 
