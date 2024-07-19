@@ -58,7 +58,7 @@ jobs:
               job_name="Build and publish to NPM"
           
               prerelease_tag=''
-              if [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-([0-9A-Za-z\.-]+)$ ]]; then
+              if [[ "$current_version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-([0-9A-Za-z\.-]+)$ ]]; then
                 base_version="${BASH_REMATCH[1]}"
                 prerelease_tag="${BASH_REMATCH[2]}"
                 # Remove any build info after the prerelease tag (if present)
