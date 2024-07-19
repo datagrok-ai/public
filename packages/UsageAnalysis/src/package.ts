@@ -166,40 +166,24 @@ export function describeCurrentObj(): void {
 }
 
 //name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-//tags: panel, widgets
-//input: string msg {semType: ErrorMessage}
-//output: widget result
-//condition: true
-export function createJiraTicket(msg: string): DG.Widget {
-  const root = ui.div();
-
-  const summary = ui.input.string('Summary', {value: ''});
-  const description = ui.input.string('Description', {value: msg});
-
-  const button = ui.bigButton('CREATE', () => {
-    grok.data.query('Vnerozin:JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': summary.value,
-          'description': description.value,
-          'issuetype': {
-            'name': 'Bug',
-          },
+//description: Creates JIRA ticket using current error log  
+export function createJiraTicket(msg: string){ 
+  grok.data.query('JiraCreateIssue', {
+    'createRequest': JSON.stringify({
+      'fields': {
+        'project': {
+          'key': 'GROK',
         },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-    });
-  });
-  button.style.marginTop = '12px';
-
-  root.appendChild(ui.inputs([summary, description]));
-  root.appendChild(button);
-
-  return new DG.Widget(root);
+        'summary': 'test',
+        'description':'',
+        'issuetype': {
+          'name': 'Bug',
+        },
+      },
+    }),
+    'updateHistory': false,
+  }).then((t) => {
+    grok.shell.info('Created');
+    console.log(t);
+  });  
 }

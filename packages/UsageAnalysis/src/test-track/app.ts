@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import { colors, FAILED, getIcon, getStatusIcon, PASSED, SKIPPED, Status } from './utils';
+import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames } from './utils';
 import { _package } from '../package';
 
 const NEW_TESTING = 'New Testing';
@@ -51,6 +51,8 @@ export class TestTrack extends DG.ViewBase {
   map: { [key: string]: (Category | TestCase) } = {};
   nodes: { [key: string]: (DG.TreeViewNode<any>) } = {};
 
+  jiraBaseUrl = 'https://reddata.atlassian.net/browse/';
+  gitHubBaseUrl = 'https://github.com/datagrok-ai/public/issues/';
   list: Category[] = [];
   expanded: boolean = false;
   version: string = grok.shell.build.client.version;
@@ -202,7 +204,7 @@ export class TestTrack extends DG.ViewBase {
       { uid: this.uid, version: this.version, start: this.start })) || '"New Testing"';
     const nameP: string = this.testingName || namePFromDb.substring(1, namePFromDb.length - 1);
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
-      { batchName: `"${nameP}"` });
+      { batchName: `${nameP}` });
 
 
     for (const row of history.rows) {
@@ -210,7 +212,11 @@ export class TestTrack extends DG.ViewBase {
       if (path.length === 0)
         continue;
 
-      const status: Status = row.get('status');
+      let status: Status = row.get('status');
+      let severity = row.get('severityLevel');
+      if (severity !== null && severity !== '') {
+        status = severity;
+      }
       const reason: string = row.get('reason');
       const user = await grok.dapi.users.find(row.get('uid'));
       const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
@@ -362,7 +368,12 @@ export class TestTrack extends DG.ViewBase {
         const n = Math.min(df.rowCount, 5 - node.value.history.children.length);
         for (const row of df.rows) {
           if (row.idx === n) break;
-          const icon = getStatusIcon(row.get('status'));
+          let status = row.get('status');
+          let severity = row.get('severityLevel');
+          if (severity !== null && severity !== '') {
+            status = severity;
+          }
+          const icon = getStatusIcon(status);
           node.value.history.append(icon);
           const user = await grok.dapi.users.find(row.get('uid'));
           const map: StatusInfo = {
@@ -531,7 +542,7 @@ export class TestTrack extends DG.ViewBase {
       this.initTreeGroupRecursive(child, group);
   }
 
-  private setStatus(node: any, data: any, statusName: string){ 
+  private setStatus(node: any, data: any, statusName: string) {
     const status = statusName.toLowerCase() as Status;
     if (node.value.status === status) return;
     data.args.menu.clear();
@@ -548,18 +559,18 @@ export class TestTrack extends DG.ViewBase {
       if (!node || node?.constructor === DG.TreeViewGroup || !data.args.menu) return;
       (data.args.menu as DG.Menu)
         .group('Status')
-        .item('Passed', ()=>{
+        .item('Passed', () => {
           const status = 'passed'.toLowerCase() as Status;
           this.setStatus(node, data, status);
-        },1, {isEnabled: ()=>{return node.value.status === PASSED? 'This test case alredy has this status': null;}})
-        .item('Failed', ()=>{
+        }, 1, { isEnabled: () => { return node.value.status === PASSED ? 'This test case alredy has this status' : null; } })
+        .item('Failed', () => {
           const status = 'failed'.toLowerCase() as Status;
           this.setStatus(node, data, status);
-        },2, {isEnabled: ()=>{return node.value.status === FAILED? 'This test case alredy has this status': null;}})
-        .item('Skipped', ()=>{
+        }, 2, { isEnabled: () => { return errorSeverityLevels.includes(node.value.status) ? 'This test case alredy has this status' : null; } })
+        .item('Skipped', () => {
           const status = 'skipped'.toLowerCase() as Status;
           this.setStatus(node, data, status);
-        },3, {isEnabled: ()=>{return node.value.status === SKIPPED? 'This test case alredy has this status': null;}}) 
+        }, 3, { isEnabled: () => { return node.value.status === SKIPPED ? 'This test case alredy has this status' : null; } })
         .endGroup()
         .item('Edit', () => this.editTestCase(node))
         .item('Edit Reason', () => {
@@ -583,7 +594,7 @@ export class TestTrack extends DG.ViewBase {
       group.value.status = null;
       return;
     }
-    const status = statuses.includes(FAILED) ? FAILED : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
+    const status = errorSeverityLevels.some((e) => statuses.includes(e)) ? CRITICALFAIL : statuses.includes(SKIPPED) ? SKIPPED : PASSED;
     group.value.status = status;
     const icon = getStatusIcon(status);
     group.value.icon.append(icon);
@@ -604,14 +615,15 @@ export class TestTrack extends DG.ViewBase {
   }
 
   // To Do: fix styles
-  showNodeDialog(node: DG.TreeViewNode, status: typeof FAILED | typeof SKIPPED, edit: boolean = false): void {
-    const name = `${edit ? 'Edit' : 'Specify'} ${status === FAILED ? 'ticket' : 'skip reason'}`;
+  showNodeDialog(node: DG.TreeViewNode, status: typeof CRITICALFAIL | typeof MINORFAIL | typeof BLOCKFAIL | typeof SKIPPED, edit: boolean = false): void {
+    const name = `${edit ? 'Edit' : 'Specify'} ${status === CRITICALFAIL ? 'ticket' : 'skip reason'}`;
+    const errorTypeSelector = ui.input.choice('select the error severity level:', { value: errorSeverityLevels[1], items: errorSeverityLevels, nullable: false });
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
-    const stringInput = ui.input.string(status === FAILED ? 'Key' : 'Reason', { value: value });
+    const stringInput = ui.input.string(status === CRITICALFAIL ? 'Key' : 'Reason', { value: value });
     stringInput.nullable = false;
-    const textInput = ui.input.textArea(status === FAILED ? 'Keys' : 'Reasons', { value: value });
+    const textInput = ui.input.textArea(status === CRITICALFAIL ? 'Keys' : 'Reasons', { value: value });
     textInput.nullable = false;
     let input = stringInput;
     const tabControl = ui.tabControl({
@@ -629,9 +641,80 @@ export class TestTrack extends DG.ViewBase {
     tabControl.root.style.width = 'unset';
     tabControl.header.style.marginBottom = '15px';
     tabControl.onTabChanged.subscribe((tab: DG.TabPane) => input = tab.name === 'String' ? stringInput : textInput);
-    dialog.add(tabControl.root);
 
+
+    const ticketSummary = ui.input.string('Summary');
+    const ticketDescription = ui.input.textArea('Description');
+    const createTicketBtn = ui.button('Create Ticket', () => {
+      createTicketBtn.disabled = true;
+      let errorLabel = 'CriticalError';
+      if (errorTypeSelector.value === BLOCKFAIL)
+        errorLabel = 'Blocker'
+      if (errorTypeSelector.value === MINORFAIL)
+        errorLabel = 'MinorError'
+      console.log(errorSeverityLevels);
+      console.log(errorSeverityLevelJiraNames);
+      console.log(errorTypeSelector.value);
+      grok.functions.call('UsageAnalysis:JiraCreateIssue', {
+        'createRequest': JSON.stringify({
+          'fields': {
+            'project': {
+              'key': 'GROK',
+            },
+            'summary': ticketSummary.value.toString(),
+            'description': `Test Track\n Test Case: ${node.value.path.replace(/:\s[^:]+$/, '')} \n${ticketDescription.value.toString()}`,
+            'issuetype': {
+              'name': 'Bug',
+            },
+            'labels': [
+              'TestTrack',
+              errorSeverityLevelJiraNames[errorTypeSelector.value],
+              this.testingName.replaceAll(' ', '_'),
+              this.version
+            ],
+          },
+        }),
+        'updateHistory': false,
+      }).then((t) => {
+        var ticketResult = JSON.parse(t.stringResult)
+        grok.shell.info('Created');
+        console.log(t);
+        window.open(this.jiraBaseUrl + ticketResult.key, "_blank");
+        ticketSummary.value = '';
+        ticketDescription.value = '';
+        stringInput.value = ticketResult.key;
+        if (textInput.value.length > 0)
+          textInput.value = `${textInput.value}\n`;
+        textInput.value = `${textInput.value}${ticketResult.key}`;
+        createTicketBtn.disabled = false;
+      });
+    })
+
+    let isOpenedJiraTicketTab = false;
+    const jiraTickets = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
+    jiraTickets.classList.add('hidden');
+    const ticketBtn = ui.button('Jira Ticket', () => {
+      if (isOpenedJiraTicketTab)
+        jiraTickets.classList.add('hidden');
+      else
+        jiraTickets.classList.remove('hidden');
+      isOpenedJiraTicketTab = !isOpenedJiraTicketTab;
+    });
+
+    if (status === CRITICALFAIL) {
+      errorTypeSelector.onChanged((e: any) => {
+        if (errorTypeSelector.value !== null)
+          status = errorTypeSelector.value;
+      });
+      dialog.add(errorTypeSelector);
+    }
+
+    dialog.add(tabControl.root);
     dialog.onOK(() => edit ? this.changeNodeReason(node, status, input.value) : this.changeNodeStatus(node, status, input.value));
+    if (status === CRITICALFAIL) {
+      dialog.add(ticketBtn);
+      dialog.add(jiraTickets);
+    }
     dialog.show({ resizable: true });
     dialog.initDefaultHistory();
   }
@@ -647,16 +730,20 @@ export class TestTrack extends DG.ViewBase {
     value.reason.innerHTML = '';
     const icon = getStatusIcon(status);
     value.icon.append(icon);
-    if (status === FAILED || status === SKIPPED) {
+    let severityLevel = null;
+    if (status === CRITICALFAIL || status === MINORFAIL || status === BLOCKFAIL || status === SKIPPED) {
       if (!reason!.includes('\n'))
         value.reason.append(this.getReason(reason!));
       else
         value.reason.append(ui.label('list'));
+      if (status !== SKIPPED)
+        severityLevel = status;
       value.fullReason = reason;
     }
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
-      category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName
+      category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
+      severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
     if (reportData)
       grok.shell.reportTest('manual', params);
@@ -682,14 +769,20 @@ export class TestTrack extends DG.ViewBase {
     }
     if (reason === node.value.reason.innerText) return;
     node.value.reason.innerHTML = '';
-    node.value.fullReason = reason;
-    if (!reason!.includes('\n'))
-      node.value.reason.append(this.getReason(reason!));
-    else
-      node.value.reason.append(ui.label('list'));
+    let severityLevel = null;
+    if (status === CRITICALFAIL || status === MINORFAIL || status === BLOCKFAIL || status === SKIPPED) {
+      if (!reason!.includes('\n'))
+        node.value.reason.append(this.getReason(reason!));
+      else
+        node.value.reason.append(ui.label('list'));
+      if (status !== SKIPPED)
+        severityLevel = status;
+      node.value.fullReason = reason;
+    }
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName
+      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
+      severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
 
     let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
@@ -739,14 +832,7 @@ export class TestTrack extends DG.ViewBase {
       return null;
     });
 
-    check.addValidator((e: string) => {
-      if (check.value === false && testingToOpen.length === 0) { 
-        return `Cant select test without name`;
-      } 
-      return null;
-    });
-
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e)=>e.toString()), nullable: false });
+    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e) => e.toString()), nullable: false });
     if (testingToOpen.length === 0)
       versionSelector.nullable = true;
     check.onChanged(() => {
@@ -822,9 +908,9 @@ export class TestTrack extends DG.ViewBase {
       return res;
     }
     const jira = reason.match(/GROK-\d{1,6}\b/);
-    if (jira) return this.getReasonLink(reason, 'https://reddata.atlassian.net/browse/' + jira[0], jira[0]);
+    if (jira) return this.getReasonLink(reason, this.jiraBaseUrl + jira[0], jira[0]);
     const gh1 = reason.match(/#(\d{3,5})\b/);
-    if (gh1) return this.getReasonLink(reason, 'https://github.com/datagrok-ai/public/issues/' + gh1[1], gh1[0]);
+    if (gh1) return this.getReasonLink(reason, this.gitHubBaseUrl + gh1[1], gh1[0]);
     const gh2 = reason.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
     if (gh2) return this.getReasonLink(reason, reason, `#${gh2[1]}`);
     const slack = reason.includes('datagrok.slack.com');
@@ -864,9 +950,14 @@ export class TestTrack extends DG.ViewBase {
 
     for (const row of history.rows) {
 
-      const status: Status = row.get('status');
       const reason: string = row.get('reason');
       const uid: string = row.get('uid');
+
+      let status = row.get('status');
+      let severity = row.get('severityLevel');
+      if (severity !== null && severity !== '') {
+        status = severity;
+      }
 
       const path = (row.get('test') || '').replace('Unknown: ', '');
       if (path.length === 0)

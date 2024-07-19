@@ -130,14 +130,15 @@ Select * from (
   t.name as test, 
 
   r.params,	
-  r.params::json->'batchName' as batchName,
-  r.params::json->'version' as version,
-  r.params::json->'result' as reason,
-  r.params::json->'uid' as uid,
-  r.params::json->'start' as start
+  r.params::json->>'severityLevel' as severityLevel,  
+  r.params::json->>'batchName' as batchName,
+  r.params::json->>'version' as version,
+  r.params::json->>'result' as reason,
+  r.params::json->>'uid' as uid,
+  r.params::json->>'start' as start
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' and not r.passed is null and (r.params::json->'batchName')::varchar(255) = @batchName
+where t.type = 'manual' and not r.passed is null and (r.params::json->>'batchName') = @batchName
 order by   t.name, r.date_time desc  
 ) as testsData
 order by testsData.date desc
@@ -148,21 +149,23 @@ order by testsData.date desc
 --input: string path
 --input: string batchToExclude
 Select * from (
-   select distinct on ( (r.params::json->'batchName')::varchar(255))  
+   select distinct on ( (r.params::json->>'batchName'))  
   case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
   r.date_time as date,
   t.name as test, 
 
   r.params,	
-  r.params::json->'batchName' as batchName,
-  r.params::json->'version' as version,
-  r.params::json->'result' as reason,
-  r.params::json->'uid' as uid, 
-  r.params::json->'start' as start
+  r.params::json->>'severityLevel' as severityLevel, 
+  r.params::json->>'batchName' as batchName,
+  r.params::json->>'version' as version,
+  r.params::json->>'result' as reason,
+  r.params::json->>'uid' as uid, 
+  r.params::json->>'start' as start
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' and t.name =  concat('Unknown: ', @path) and NOT (r.params::json->'batchName')::varchar(255) = concat('"', @batchToExclude, '"') and NOT (r.params::json->'batchName')::varchar(255) =  @batchToExclude   and not r.passed is null
-order by   (r.params::json->'batchName')::varchar(255), r.date_time desc 
+where t.type = 'manual' and t.name =  concat('Unknown: ', @path) 
+and NOT (r.params::json->>'batchName') =  @batchToExclude   and not r.passed is null
+order by   (r.params::json->>'batchName'), r.date_time desc 
 limit 5 ) as testsData
 order by testsData.date desc
 --end
@@ -171,15 +174,15 @@ order by testsData.date desc
 --connection: System:Datagrok 
 --output: dataframe df
 select * from (
-Select distinct on ((r.params::json->'batchName')::varchar(255))  
-  (r.params::json->'batchName')::varchar(255) as batchName,
-  (r.params::json->'version')::varchar(255) as version, 
-  (r.params::json->'start')::varchar(255) as start,
+Select distinct on ((r.params::json->>'batchName'))   
+  (r.params::json->>'batchName') as batchName,
+  (r.params::json->>'version') as version, 
+  (r.params::json->>'start')as start,
     r.date_time as date
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
 where t.type = 'manual' 
-order by (r.params::json->'batchName')::varchar(255) ) as a
+order by (r.params::json->>'batchName')) as a
 order by a.date desc
 --end
 
@@ -192,17 +195,17 @@ order by a.date desc
 --output: string name
  
 Select distinct on ((r.params::json->'batchName')::varchar(255))  
-  (r.params::json->'batchName')::varchar(255) as batchName,
-  (r.params::json->'version')::varchar(255) as version,
+  (r.params::json->>'batchName')::varchar(255) as batchName,
+  (r.params::json->>'version')::varchar(255) as version,
    
-  (r.params::json->'start')::varchar(255) as start,
+  (r.params::json->>'start')::varchar(255) as start,
     r.date_time as date
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
 where t.type = 'manual' 
-  and (r.params::json->'uid')::varchar(255) = concat('"', @uid,'"')
-  and (r.params::json->'version')::varchar(255) = concat('"', @version,'"')
-  and (r.params::json->'start')::varchar(255) = concat('"', @start,'"')
+  and (r.params::json->>'uid')::varchar(255) = @uid 
+  and (r.params::json->>'version')::varchar(255) =  @version
+  and (r.params::json->>'start')::varchar(255) = @start
 order by (r.params::json->'batchName')::varchar(255), r.date_time 
 limit 1
 --end
