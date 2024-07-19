@@ -27,7 +27,7 @@ jobs:
       job_name: ${{ steps.check-version.outputs.job_name }}
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
-      latest: ${{ steps.check-version.outputs.latest }}
+      release_tag: ${{ steps.check-version.outputs.release_tag }}
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
@@ -55,15 +55,32 @@ jobs:
             if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
               changed_version='true'
               job_name="Build and publish to NPM"
+          
+              prerelease_tag=''
+              if [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-([0-9A-Za-z\.-]+)$ ]]; then
+                base_version="${BASH_REMATCH[1]}"
+                prerelease_tag="${BASH_REMATCH[2]}"
+                # Remove any build info after the prerelease tag (if present)
+                prerelease_tag=$(echo "$prerelease_tag" | sed 's/\+.*//')
+              fi
+          
               latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
               newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
               if [[ "${newest_version}" == "${current_version}" ]]; then
-                echo "latest=true" >> $GITHUB_OUTPUT
+                if [ -n "$prerelease_tag" ]; then
+                  echo "release_tag=$prerelease_tag" >> $GITHUB_OUTPUT
+                else
+                  echo "release_tag=latest" >> $GITHUB_OUTPUT
+                fi
                 if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
                   echo "replace_dep=true" >> $GITHUB_OUTPUT
                 fi
               else
-                echo "latest=false" >> $GITHUB_OUTPUT
+                if [ -n "$prerelease_tag" ]; then
+                  echo "release_tag=$prerelease_tag" >> $GITHUB_OUTPUT
+                else
+                  echo "release_tag=patch" >> $GITHUB_OUTPUT
+                fi
               fi
             else
                 echo "It is an actions for development branch. Publish will be skipped"
@@ -142,7 +159,7 @@ jobs:
           echo -e "name: ${{ steps.check-version.outputs.name }}"
           echo -e "packages_matrix: ${{ steps.packages.outputs.matrix }}"
           echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
-          echo -e "latest: ${{ steps.check-version.outputs.latest }}"
+          echo -e "release_tag: ${{ steps.check-version.outputs.release_tag }}"
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
@@ -335,8 +352,12 @@ jobs:
         id: publish
         run: |
           tag=""
-          if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
+          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]]; then
             tag="--tag patch"
+          elif [[ "${{ needs.version.outputs.release_tag }}" == *'master'* ]]; then
+            tag="--tag bleeding-edge"
+          elif [[ "${{ needs.version.outputs.release_tag }}" == *'rc'* ]]; then
+            tag="--tag release-candidate"
           fi
           npm publish ${tag}
         working-directory: ./js-api
@@ -349,7 +370,9 @@ jobs:
         run: |
           npm install
           version=${{ needs.version.outputs.current_version }}
-          npx ts-node parser.ts $version         
+          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ needs.version.outputs.release_tag }}" == 'latest' ]]; then
+            npx ts-node parser.ts $version
+          fi
           if [ -n "$(git status -s static/versions)" ]; then
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -466,7 +489,13 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
+          if [[ "${{ needs.version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ needs.version.outputs.release_tag }}" == 'latest' ]]; then
+            replace_version=${{ needs.version.outputs.current_version }}
+          else
+            replace_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
+          fi
+          base_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${replace_version}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
@@ -563,7 +592,8 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
+          base_version=$(echo "${{ needs.version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${base_version}"#g' package.json
         working-directory: packages/${{ matrix.package }}
       - name: npm install
         run: rm -rf package-lock.json && npm install
