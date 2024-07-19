@@ -123,20 +123,35 @@ export function testXGBoost() {
 
 /** Interactivity tresholds */
 enum INTERACTIVITY {
-  MAX_SAMLPES = 1000,
-  MAX_FEATURES = 10,
+  SAMLPES_HIGH = 100000,
+  SAMLPES_MID = 50000,
+  SAMPLES_LOW = 10000,
+  FEATURES_HIGH = 10,
+  FEATURES_MID = 20,
+  FEATURES_LOW = 100,
 };
 
 /** Reserve sizes */
 enum RESERVED {
-  MODEL = 1000000,
+  MODEL = 10000000,
   UTILS = 1,
+  PACK = 128,
+  SIZE = 4,
 };
 
 /** XGBoost specific constants */
 const MISSING_VALUE = DG.FLOAT_NULL;
 const SIZE_IDX = 0;
-const PREDICT_NAME = 'Prediction';
+const ALIGN_VAL = 4;
+const BLOCK_SIZE = 64;
+
+enum TITLES {
+  PREDICT = 'Prediction',
+  TYPE = 'Type',
+  PARAMS = 'Params count',
+  CATS = 'Categories',
+  CATS_SIZE = 'Categories size',
+}
 
 /** Data structs for training */
 type TrainStructs = {
@@ -169,8 +184,19 @@ export class XGBooster {
 
   /** Check interactivity */
   static isInteractive(features: DG.ColumnList, predictColumn: DG.Column): boolean {
-    return (features.length <= INTERACTIVITY.MAX_FEATURES) &&
-      (predictColumn.length <= INTERACTIVITY.MAX_SAMLPES);
+    const featuresCount = features.length;
+    const samplesCount = predictColumn.length;
+
+    if (samplesCount <= INTERACTIVITY.SAMPLES_LOW)
+      return featuresCount <= INTERACTIVITY.FEATURES_LOW;
+
+    if (samplesCount <= INTERACTIVITY.SAMLPES_MID)
+      return featuresCount <= INTERACTIVITY.FEATURES_MID;
+
+    if (samplesCount <= INTERACTIVITY.SAMLPES_HIGH)
+      return featuresCount <= INTERACTIVITY.FEATURES_HIGH;
+
+    return false;
   }
 
   private modelParams: Int32Array | undefined = undefined;
@@ -180,8 +206,36 @@ export class XGBooster {
   constructor(packedModel?: Uint8Array) {
     if (packedModel) {
       try {
-        // unpacking the model
+        let offset = 0;
 
+        // Unpack header size
+        const headArr = new Uint32Array(packedModel.buffer, offset, 1);
+        const headerBytesSize = headArr[0];
+        offset += RESERVED.SIZE;
+
+        // Unpack header
+        const headerDf = DG.DataFrame.fromByteArray(new Uint8Array(packedModel.buffer, offset, headerBytesSize));
+        offset += headerBytesSize;
+
+        // Extract model specification
+        this.targetType = headerDf.get(TITLES.TYPE, 0) as string;
+        const modelParamsCount = headerDf.get(TITLES.PARAMS, 0) as number;
+        const categoriesBytesSize = headerDf.get(TITLES.CATS_SIZE, 0) as number;
+
+        // Unpack categories
+        if (categoriesBytesSize > 0) {
+          const categoriesDf = DG.DataFrame.fromByteArray(
+            new Uint8Array(packedModel.buffer, offset, categoriesBytesSize),
+          );
+
+          this.targetCategories = categoriesDf.col(TITLES.CATS)?.toList();
+        }
+        offset += categoriesBytesSize;
+
+        offset = Math.ceil(offset / ALIGN_VAL) * ALIGN_VAL;
+
+        // Unpack model params
+        this.modelParams = new Int32Array(packedModel.buffer, offset, modelParamsCount);
       } catch (error) {
         throw new Error(`Failed to load model: ${(error instanceof Error ? error.message : 'the platform issue')}`);
       }
@@ -212,10 +266,12 @@ export class XGBooster {
 
     // Extract model params from wasm-buffer
     this.modelParams = this.getModelParams(wasmStructs);
+
+    freeTrainMemory(wasmStructs);
   }
 
   /** Predict using trained model */
-  public predict(features: DG.ColumnList): DG.Column | undefined {
+  public predict(features: DG.ColumnList): DG.Column {
     // Allocate memory in wasm-buffer & put training data there
     const wasmStructs = this.getWasmPredictStructs(features);
 
@@ -230,11 +286,67 @@ export class XGBooster {
     );
 
     // Extract prediction column from wasm-buffer
-    return this.getPredictCol(wasmStructs);
+    const prediction = this.getPredictCol(wasmStructs);
+
+    freePredictMemory(wasmStructs);
+
+    return prediction;
   }
 
   /** Return packed model */
-  //public toBytes(): Uint8Array {}
+  public toBytes(): Uint8Array {
+    if ((this.modelParams === undefined) || (this.targetType === undefined))
+      throw new Error('Failed to pack non-trained model');
+
+    // Categories bytes
+    const categoriesBytes = (this.targetCategories !== undefined) ?
+      DG.DataFrame.fromColumns([DG.Column.fromStrings(TITLES.CATS, this.targetCategories)]).toByteArray():
+      undefined;
+
+    const categoriesBytesSize = (categoriesBytes !== undefined) ? categoriesBytes.length : 0;
+
+    const modelParamsBytesSize = this.modelParams.length * this.modelParams.BYTES_PER_ELEMENT;
+
+    // Header with model specification
+    const headerDf = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(TITLES.TYPE, [this.targetType]),
+      DG.Column.fromInt32Array(TITLES.PARAMS, new Int32Array([this.modelParams.length])),
+      DG.Column.fromInt32Array(TITLES.CATS_SIZE, new Int32Array([categoriesBytesSize])),
+    ]);
+
+    // Header bytes
+    const headerBytes = headerDf.toByteArray();
+    const headerBytesSize = headerBytes.length;
+
+    // Packed model
+    const reservedSize = Math.ceil((RESERVED.SIZE +
+      headerBytesSize + categoriesBytesSize + modelParamsBytesSize + RESERVED.PACK) / BLOCK_SIZE) * BLOCK_SIZE;
+
+    const packedModel = new Uint8Array(reservedSize);
+
+    let offset = 0;
+
+    // Pack header size
+    const headArr = new Uint32Array(packedModel.buffer, offset, 1);
+    headArr[0] = headerBytesSize;
+    offset += RESERVED.SIZE;
+
+    // Pack header
+    packedModel.set(headerBytes, offset);
+    offset += headerBytesSize;
+
+    // Pack categories
+    if (categoriesBytesSize > 0)
+      packedModel.set(categoriesBytes!, offset);
+    offset += categoriesBytesSize;
+
+    offset = Math.ceil(offset / ALIGN_VAL) * ALIGN_VAL;
+
+    // Pack model params
+    packedModel.set(new Uint8Array(this.modelParams.buffer), offset);
+
+    return packedModel;
+  }
 
   /** Allocate structs for training at the wasm-side */
   private allocTrainStructs(samplesCount: number, featuresCount: number): TrainStructs {
@@ -348,7 +460,7 @@ export class XGBooster {
     for (let i = 0; i < samplesCount; ++i)
       predClass[i] = this.targetCategories[Math.round(wasmPredict[i])];
 
-    return DG.Column.fromStrings(PREDICT_NAME, predClass);
+    return DG.Column.fromStrings(TITLES.PREDICT, predClass);
   }
 
   /** Get predicted int column */
@@ -361,7 +473,7 @@ export class XGBooster {
     for (let i = 0; i < samplesCount; ++i)
       rawInts[i] = Math.round(wasmPredict[i]);
 
-    return DG.Column.fromInt32Array(PREDICT_NAME, rawInts, samplesCount);
+    return DG.Column.fromInt32Array(TITLES.PREDICT, rawInts, samplesCount);
   }
 
   /** Get predicted int column */
@@ -374,7 +486,7 @@ export class XGBooster {
     for (let i = 0; i < samplesCount; ++i)
       rawFloats[i] = wasmPredict[i];
 
-    return DG.Column.fromFloat32Array(PREDICT_NAME, rawFloats, samplesCount);
+    return DG.Column.fromFloat32Array(TITLES.PREDICT, rawFloats, samplesCount);
   }
 
   /** Get predicted bigint column */
@@ -387,7 +499,7 @@ export class XGBooster {
     for (let i = 0; i < samplesCount; ++i)
       rawInts[i] = BigInt(Math.round(wasmPredict[i]));
 
-    return DG.Column.fromBigInt64Array(PREDICT_NAME, rawInts);
+    return DG.Column.fromBigInt64Array(TITLES.PREDICT, rawInts);
   }
 
   /** Get perdiction colum */

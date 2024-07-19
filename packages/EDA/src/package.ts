@@ -707,8 +707,64 @@ export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: D
   const booster = new XGBooster();
   booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);
 
-  const prediction = booster.predict(features);
+  const packedModel = booster.toBytes();
+
+  const unpacked = new XGBooster(packedModel);
+
+  const prediction = unpacked.predict(features);
 
   if (prediction)
     df.columns.add(prediction);
+}
+
+//name: trainXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: int iterations = 20
+//input: double eta = 0.3
+//input: int maxDepth = 6
+//input: double lambda = 1
+//input: double alpha = 0
+//output: dynamic model
+export function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
+  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Uint8Array {
+  const features = df.columns;
+
+  const booster = new XGBooster();
+  booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+
+  return booster.toBytes();
+}
+
+//name: applyXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyXGBooster(df: DG.DataFrame, model: any): DG.DataFrame {
+  const unpackedModel = new XGBooster(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+}
+
+//name: isApplicableXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isApplicable(df.columns, predictColumn);
+}
+
+//name: isInteractiveXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isInteractive(df.columns, predictColumn);
 }
