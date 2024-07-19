@@ -15,6 +15,7 @@ import {createApp} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElementsTestApp';
+import {VueRichFunctionView} from './components/VueRichFunctionView';
 
 export const _package = new DG.Package();
 
@@ -919,3 +920,12 @@ export async function TestVueElements() {
   app.mount(view.root);
   grok.shell.addView(view);
 }
+
+//tags: test
+export async function TestVueRFV() {
+  const view = new DG.ViewBase();
+  const app = createApp(VueRichFunctionView, {funcCall: 'Compute:ObjectCooling'});
+  app.mount(view.root);
+  grok.shell.addView(view);
+}
+
