@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineConfiguration, AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration,, PipelineActionConfiguraion, PipelineConfiguration, PipelineHooks, PipelineLinkConfigurationBase, PipelineRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineConfiguration, AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfiguration, PipelineHooks, PipelineLinkConfigurationBase, PipelineRef, PipelineStepConfiguration} from './PipelineConfiguration';
 import {ItemId, ItemPath, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 
@@ -22,13 +22,13 @@ function normalizePaths(paths: ItemPath | ItemPath[]): ItemPathArray[] {
     return [parsePath(paths)];
 }
 
-export type State = {
+export type FuncallStateItem = {
   id: ItemId;
   type: string;
   direction: 'input' | 'output';
 }
 
-export type PipelineConfigurationProcessed = AbstractPipelineConfiguration<ItemPathArray[], State[], never>;
+export type PipelineConfigurationProcessed = AbstractPipelineConfiguration<ItemPathArray[], FuncallStateItem[], never>;
 type ConfigTypes = PipelineConfiguration | PipelineConfigurationProcessed;
 
 type CArg1<C extends ConfigTypes> = C extends AbstractPipelineConfiguration<infer A, any, any> ? A : never;
@@ -38,9 +38,9 @@ type CArg3<C extends ConfigTypes> = C extends AbstractPipelineConfiguration<any,
 export type StepConfigType<C extends ConfigTypes> = PipelineStepConfiguration<CArg2<C>>;
 export type TraverseItem<C extends ConfigTypes> = C | StepConfigType<C> | PipelineRef;
 
-export type PipelineStaticConfiguration<C extends ConfigTypes> = AbstractPipelineStaticConfiguration<CArg1<C>,CArg2<C>,CArg3<C>>;
-export type PipelineParallelConfiguration<C extends ConfigTypes> = AbstractPipelineParallelConfiguration<CArg1<C>,CArg2<C>,CArg3<C>>;
-export type PipelineSequentialConfiguration<C extends ConfigTypes> = AbstractPipelineSequentialConfiguration<CArg1<C>,CArg2<C>,CArg3<C>>;
+export type PipelineStaticConfiguration<C extends ConfigTypes> = AbstractPipelineStaticConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
+export type PipelineParallelConfiguration<C extends ConfigTypes> = AbstractPipelineParallelConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
+export type PipelineSequentialConfiguration<C extends ConfigTypes> = AbstractPipelineSequentialConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
 
 export function isPipelineStaticConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is PipelineStaticConfiguration<C> {
   return !!((c as PipelineStaticConfiguration<C>).steps);
@@ -66,42 +66,6 @@ export function isStepConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is St
   return !isPipelineConfig(c) && !isPipelineRef(c);
 }
 
-// async function traverseConfigAsync<T, C extends TraverseItem<ConfigTypes>>(
-//   config: C,
-//   handler: (
-//     acc: T,
-//     conf: C,
-//     itemContext: ExtractContext<C>,
-//     path: ItemPathArray) => Promise<T>,
-//   acc: T,
-//   context: ExtractContext<C>,
-//   path: ItemPathArray = [],
-// ): Promise<T> {
-//   const q = [{config, path, context}];
-//   while (q.length) {
-//     const {config, path} = q.shift()!;
-//     acc = await handler(acc, config, context, path);
-//     const items = getNextItems(config, path);
-//     q.push(...items);
-//   }
-//   return acc;
-// }
-
-// function getNextItems<C extends TraverseItem<ConfigTypes>>(config: C, path: ItemPathArray) {
-//   const nextItems = getNextConfigs(config);
-//   const items = nextItems.map(item => ({...item, path: pathJoin(path, [config.id])}));
-//   return items;
-// }
-
-// function getNextConfigs<C extends TraverseItem<ConfigTypes>>(config: C) {
-//   if (isPipelineParallelConfig(config) || isPipelineSequentialConfig(config)) {
-//     return config.items.map(item => ({config: item.config as C, context: item as ExtractContext<C>}));
-//   } else if(isPipelineStaticConfig(config)) {
-//     return config.steps.map(config => ({config: config as C, context: undefined}));
-//   }
-//   return [];
-// }
-
 export async function getProcessedConfig(conf: PipelineConfiguration): Promise<PipelineConfigurationProcessed> {
   const pconf = await configProcessing(conf);
   return pconf as PipelineConfigurationProcessed;
@@ -113,21 +77,21 @@ async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(c
     return pconf;
   } else if (isPipelineStaticConfig(conf)) {
     const pconf = await processStaticConfig(conf);
-    pconf.steps = await Promise.all(conf.steps.map(async step => {
+    pconf.steps = await Promise.all(conf.steps.map(async (step) => {
       const sconf = await configProcessing(step);
       return sconf as any;
     }));
     return pconf;
   } else if (isPipelineParallelConfig(conf)) {
     const pconf = await processParallelConfig(conf);
-    pconf.items = await Promise.all(conf.items.map(async item => {
+    pconf.items = await Promise.all(conf.items.map(async (item) => {
       const nconf = await configProcessing(item.config);
       return {...item, ...nconf} as any;
     }));
     return pconf;
   } else if (isPipelineSequentialConfig(conf)) {
     const pconf = await processSequentialConfig(conf);
-    pconf.items = await Promise.all(conf.items.map(async item => {
+    pconf.items = await Promise.all(conf.items.map(async (item) => {
       const nconf = await configProcessing(item.config);
       return {...item, ...nconf} as any;
     }));
@@ -141,8 +105,8 @@ async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(c
 
 async function processStaticConfig<C extends PipelineConfiguration>(
   conf: PipelineStaticConfiguration<C>,
-): Promise<PipelineStaticConfiguration<PipelineConfigurationProcessed>>{
-  const links = conf.links?.map(link => processLinkBase(link));
+): Promise<PipelineStaticConfiguration<PipelineConfigurationProcessed>> {
+  const links = conf.links?.map((link) => processLinkBase(link));
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, links, actions, hooks, steps: []};
@@ -150,16 +114,16 @@ async function processStaticConfig<C extends PipelineConfiguration>(
 
 async function processParallelConfig<C extends PipelineConfiguration>(
   conf: PipelineParallelConfiguration<C>,
-): Promise<PipelineParallelConfiguration<PipelineConfigurationProcessed>>{
+): Promise<PipelineParallelConfiguration<PipelineConfigurationProcessed>> {
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, actions, hooks, items: []};
 }
 
 async function processSequentialConfig<C extends PipelineConfiguration>(
-  conf: PipelineSequentialConfiguration<C>
-): Promise<PipelineSequentialConfiguration<PipelineConfigurationProcessed>>{
-  const links = conf.links?.map(link => processLinkBase(link));
+  conf: PipelineSequentialConfiguration<C>,
+): Promise<PipelineSequentialConfiguration<PipelineConfigurationProcessed>> {
+  const links = conf.links?.map((link) => processLinkBase(link));
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, links, actions, hooks, items: []};
@@ -173,21 +137,21 @@ async function processStepConfig(conf: StepConfigType<ConfigTypes>): Promise<Ste
   return conf;
 }
 
-async function getFuncCallIO(nqName: NqName): Promise<State[]> {
+async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
   const func: DG.Func = await grok.functions.eval(nqName);
-  const inputs = func.inputs.map((input) => ({id: input.name, type: input.propertyType as any, direction: 'input' } as State));
-  const outputs = func.outputs.map((output) => ({id: output.name, type: output.propertyType as any, direction: 'output'} as State));
+  const inputs = func.inputs.map((input) => ({id: input.name, type: input.propertyType as any, direction: 'input'} as FuncallStateItem));
+  const outputs = func.outputs.map((output) => ({id: output.name, type: output.propertyType as any, direction: 'output'} as FuncallStateItem));
   const io = [...inputs, ...outputs];
   return io;
 }
 
 function processActions<P extends ItemPath | ItemPath[]>(actionsInput: PipelineActionConfiguraion<P>[]) {
-  const actions = actionsInput.map(action => ({...processLinkBase(action), path: normalizePaths(action.path)}));
+  const actions = actionsInput.map((action) => ({...processLinkBase(action), path: normalizePaths(action.path)}));
   return actions;
 }
 
 function processHooks<P extends ItemPath | ItemPath[]>(hooksInput: PipelineHooks<P>) {
-  const hooks = Object.fromEntries(Object.entries(hooksInput ?? {})?.map(([name, hooks]) => [name, hooks.map(link => processLinkBase(link))] as const));
+  const hooks = Object.fromEntries(Object.entries(hooksInput ?? {})?.map(([name, hooks]) => [name, hooks.map((link) => processLinkBase(link))] as const));
   return hooks;
 }
 
@@ -195,5 +159,6 @@ function processLinkBase<L extends Partial<PipelineLinkConfigurationBase<ItemPat
   const from = normalizePaths(link.from ?? []);
   const to = normalizePaths(link.to ?? []);
   const dataFrameMutations = Array.isArray(link.dataFrameMutations) ? normalizePaths(link.dataFrameMutations) : !!link.dataFrameMutations;
-  return {...link, from, to, dataFrameMutations};
+  const allTypeNodes = Array.isArray(link.allTypeNodes) ? normalizePaths(link.allTypeNodes) : !!link.allTypeNodes;
+  return {...link, from, to, dataFrameMutations, allTypeNodes};
 }

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter, take} from 'rxjs/operators';
-import {AbstractPipelineStaticConfiguration, PipelineCompositionConfiguration, PipelineStepConfiguration, PipelineActionConfiguraion, StateItemConfiguration, PipelineLinkConfiguration, PipelineHooks, NestedPipelineConfig} from './config/PipelineConfiguration';
+import {AbstractPipelineStaticConfiguration, PipelineCompositionConfiguration, PipelineStepConfiguration, PipelineActionConfiguraion, StateItem, PipelineLinkConfiguration, PipelineHooks, NestedPipelineConfig} from './config/PipelineConfiguration';
 import {ItemId, ItemPath, NqName, StateType} from './config/CommonTypes';
 import {RuntimeController} from './RuntimeController';
 import {keyToPath, pathToKey, PathKey, pathJoin, CompositionGraphConfig, PipelineConfigVariants, cloneConfig, getParentKey, traverseConfigPipelines, isNestedPipelineConfig} from './config/config-processing-utils';
@@ -26,7 +26,7 @@ export class CompositionPipeline {
   private pipelineState = new PipelineDriverState();
 
   private config?: CompositionGraphConfig;
-  private ioInfo = new Map<NqName, StateItemConfiguration[]>();
+  private ioInfo = new Map<NqName, StateItem[]>();
   private nodes = new Map<PathKey, NodeState>();
   private links = new Map<PathKey, LinkState>();
   private nestedPipelineConfig = new Map<string, NestedPipelineConfig>();
@@ -430,7 +430,7 @@ export class CompositionPipeline {
       conf.states.push(...info);
   }
 
-  private async getFuncIOSpec(nqName: NqName): Promise<StateItemConfiguration[]> {
+  private async getFuncIOSpec(nqName: NqName): Promise<StateItem[]> {
     const func: DG.Func = await grok.functions.eval(nqName);
     const inputs = func.inputs.map((input) => ({id: input.name, type: input.propertyType as any, stateType: 'input' as StateType}));
     const outputs = func.outputs.map((output) => ({id: output.name, type: output.propertyType as any, stateType: 'output' as StateType}));

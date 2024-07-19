@@ -1,6 +1,6 @@
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {switchMap, takeUntil} from 'rxjs/operators';
-import {StateItemConfiguration} from '../config/PipelineConfiguration';
+import {StateItem} from '../config/PipelineConfiguration';
 import {ItemId, InputState} from '../config/CommonTypes';
 import {debuglog} from '../utils';
 import {PipelineDriverState} from './PipelineDriverState';
@@ -18,7 +18,7 @@ export class NodeIOState<T = any> {
   };
 
   constructor(
-    public conf: StateItemConfiguration,
+    public conf: StateItem,
     public pipelineState: PipelineDriverState,
     public parentId: ItemId,
     public notifier?: Observable<true>,

@@ -6,7 +6,7 @@ import {ItemId, NqName, ItemPath, InputState, ItemType} from '../data/common-typ
 // Pipeline public configuration
 //
 
-export type StateItemConfiguration = {
+export type StateItem = {
   id: ItemId;
   type?: string;
 };
@@ -25,6 +25,7 @@ export type PipelineLinkConfigurationBase<P> = {
   to: P;
   dataFrameMutations?: boolean | P;
   inputState?: InputState | InputState[];
+  allTypeNodes?: boolean | P;
   handler?: Handler;
 }
 
@@ -85,7 +86,7 @@ export type PipelineConfigurationBase<P> = {
   dynamic?: 'sequential' | 'parallel';
   hooks?: PipelineHooks<P>;
   actions?: PipelineActionConfiguraion<P>[];
-  states?: StateItemConfiguration[];
+  states?: StateItem[];
 };
 
 // fixed pipeline

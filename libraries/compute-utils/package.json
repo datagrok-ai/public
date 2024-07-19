@@ -10,6 +10,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.2.11",
     "@types/lodash.clonedeepwith": "^4.5.9",
+    "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
@@ -18,6 +19,7 @@
     "html2canvas": "^1.4.1",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "^6.6.7",
+    "uuid": "^10.0.0",
     "wu": "^2.1.0"
   },
   "devDependencies": {
