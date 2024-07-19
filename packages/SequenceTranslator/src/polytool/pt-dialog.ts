@@ -32,8 +32,10 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
     throw new Error(PT_ERROR_DATAFRAME);
 
   const targetColumnInput = ui.input.column(
-    'Column', {table: grok.shell.t, value: targetColumns[0],
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
+    'Column', {
+      table: grok.shell.t, value: targetColumns[0],
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
+    }
   );
 
   const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
@@ -109,7 +111,7 @@ export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.D
     .onOK(async () => {
       try {
         const helmString = helmInput.stringValue;
-        const helmSelections: number[] = wu.enumerate<HelmAtom>(helmInput.value.atoms)
+        const helmSelections: number[] = wu.enumerate<HelmAtom>(helmInput.molValue.atoms)
           .filter(([a, aI]) => a.highlighted)
           .map(([a, aI]) => aI).toArray();
         if (helmString === undefined || helmString === '') {

@@ -1,0 +1,7 @@
+[
+  {
+    "path": "/polytool-rules",
+    "invalidateOn": "0 0 * 1 *",
+    "preflight": true
+  }
+]

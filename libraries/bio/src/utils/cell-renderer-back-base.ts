@@ -33,6 +33,7 @@ export function getGridCellRendererBack<TValue, TBack extends CellRendererBackBa
 
 export abstract class CellRendererBackBase<TValue> implements IRenderer {
   protected subs: Unsubscribable[] = [];
+  protected dirty: boolean = true;
   protected destroyed: boolean = false;
 
   /** Overriding care to trigger {@link onRendered} event. */
@@ -42,10 +43,9 @@ export abstract class CellRendererBackBase<TValue> implements IRenderer {
     protected readonly tableCol: DG.Column<TValue>,
     public readonly logger: ILogger,
   ) {
-    this.reset();
     if (this.tableCol && this.tableCol.dataFrame) {
       this.subs.push(this.tableCol.dataFrame.onDataChanged.subscribe(() => {
-        try { this.reset(); } catch (err) { this.logger.error(err); }
+        this.dirty = true;
       }));
     }
 
@@ -90,7 +90,9 @@ export abstract class CellRendererBackBase<TValue> implements IRenderer {
     if (this.gridCol && this.gridCol.dart) this.gridCol.grid?.invalidate();
   }
 
-  protected abstract reset(): void;
+  protected reset(): void {
+    this.dirty = false;
+  }
 
   // -- IRenderer --
 

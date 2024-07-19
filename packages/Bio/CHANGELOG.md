@@ -2,6 +2,11 @@
 
 ## 2.13.5 (WIP)
 
+### Features
+
+* Add a progress indicator for loading monomer libraries
+* Add loading monomer sets from .json files
+
 ### Bug fixes
 
 * Fix tests for Helm package init wait
@@ -9,7 +14,7 @@
 * Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
 * Fix use allowUnionTypes to allow union types in JSON schema
 * GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
-* Add progress indicator for loading monomer libraries
+* Fix detectMacromolecule to reject FASTA with numeric monomer
 
 ## 2.13.4 (2024-07-02)
 

@@ -1,0 +1,93 @@
+{
+  "$schema": "../schemas/monomer-set-schema.json",
+  "description": "Amino-acids types",
+  "placeholders": {
+    "AA:aliphatic": {
+      "description": "Aliphatic amino acids",
+      "monomerType": "Backbone",
+      "polymerType": "PEPTIDE",
+      "set": [
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "G",
+          "notes": "Glycine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "A",
+          "notes": "Alanine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "V",
+          "notes": "Valine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "L",
+          "notes": "Leucine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "I",
+          "notes": "Isoleucine"
+        }
+      ]
+    },
+    "AA:neutral": {
+      "description": "Neutral amino acids",
+      "monomerType": "Backbone",
+      "polymerType": "PEPTIDE",
+      "set": [
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "N",
+          "notes": "Asparagine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "Q",
+          "notes": "Glutamine"
+        }
+      ]
+    },
+    "AA:acidic": {
+      "description": "acidic amino acids",
+      "monomerType": "Backbone",
+      "polymerType": "PEPTIDE",
+      "set": [
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "D",
+          "notes": "Aspartic Acid"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "E",
+          "notes": "Glutamic Acid"
+        }
+      ]
+    },
+    "AA:basic": {
+      "description": "basic amino acids",
+      "polymerType": "PEPTIDE",
+      "set": [
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "H",
+          "notes": "Histidine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "K",
+          "notes": "Lysine"
+        },
+        {
+          "source": "HELMCoreLibrary.json",
+          "symbol": "R",
+          "notes": "Arginine"
+        }
+      ]
+    }
+  }
+}

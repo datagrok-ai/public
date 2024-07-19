@@ -93,17 +93,17 @@ category('getMonomer', ()=>{
       'set user lib settings for tests');
     await timeout(async ()=> { await monomerLibHelper.awaitLoaded(); }, 5000,
       'await monomerLib to be loaded');
-    await timeout(async () => { await monomerLibHelper.loadLibraries(true); }, 5000,
+    await timeout(async () => { await monomerLibHelper.loadMonomerLib(true); }, 5000,
       'reload monomerLib with settings for tests'); // load default libraries for tests
   });
 
   after(async ()=>{
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   test('original', async () =>{
-    const monomerLib = libHelper.getBioLib();
+    const monomerLib = libHelper.getMonomerLib();
     rewriteLibraries(monomerLib);
 
     // const overriddenGetMonomer = helmHelper.revertOriginalGetMonomer();
@@ -120,7 +120,7 @@ category('getMonomer', ()=>{
   }, {isAggregated: true});
 
   test('monomerLib', async () =>{
-    const monomerLib = monomerLibHelper.getBioLib();
+    const monomerLib = monomerLibHelper.getMonomerLib();
     expectMonomerLib(monomerLib);
 
     const getMonomerFunc = org.helm.webeditor.Monomers.getMonomer;
@@ -152,7 +152,7 @@ category('getMonomer', ()=>{
     resDf.set('res', resI, '');
     resDf.set('tgt', resI, '');
     try {
-      const monomerLib = monomerLibHelper.getBioLib();
+      const monomerLib = monomerLibHelper.getMonomerLib();
       expectMonomerLib(monomerLib);
       resDf.set('success', resI, true);
     } catch (err) {
@@ -189,13 +189,13 @@ category('getMonomer', ()=>{
     /* Tests getMonomer function adding missing monomers. */
     const helmStr = 'PEPTIDE1{[mis1].R.[mis2].T.C.F}$$$$;';
 
-    expectMonomerLib(monomerLibHelper.getBioLib());
+    expectMonomerLib(monomerLibHelper.getMonomerLib());
     const editor = new JSDraw2.Editor(ui.div(), {viewonly: true});
     editor.setHelm(helmStr);
     const withMissing = JSON.parse(JSON.stringify(
       defaultMonomerLibSummary)) as MonomerLibSummaryType;
     withMissing['PEPTIDE'] += 2;
-    expectMonomerLib(monomerLibHelper.getBioLib(), withMissing);
+    expectMonomerLib(monomerLibHelper.getMonomerLib(), withMissing);
   });
 });
 
@@ -235,7 +235,7 @@ export function expectObjectWithNull(actual: { [key: string]: any }, expected: {
 }
 
 /** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
-function rewriteLibraries(monomerLib: IMonomerLib): void {
+export function rewriteLibraries(monomerLib: IMonomerLib): void {
   org.helm.webeditor.Monomers.clear();
   monomerLib!.getPolymerTypes().forEach((polymerType) => {
     const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);

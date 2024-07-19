@@ -540,7 +540,7 @@ export class SeqHandler {
 
     // get the monomer lib and check against the column
     const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
-    const bioLib = monomerLibHelper.getBioLib();
+    const bioLib = monomerLibHelper.getMonomerLib();
     // retrieve peptides
     const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
     // convert the peptides list to a set for faster lookup

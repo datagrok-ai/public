@@ -26,12 +26,12 @@ category('findMonomers', () => {
 
     // Tests 'findMonomers' requires default monomer library loaded
     await setUserLibSettingsForTests();
-    await monomerLibHelper.loadLibraries(true); // load default libraries for tests
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries for tests
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   const tests: { [testName: string]: { test: string, tgt: Set<string> } } = {

@@ -11,7 +11,7 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLib, IMonomerSet} from '../types/index';
 import {GAP_SYMBOL, ISeqSplitted} from '../utils/macromolecule/types';
 import {SeqHandler} from '../utils/seq-handler';
 import {splitAlignedSequences} from '../utils/splitter';
@@ -164,15 +164,23 @@ export interface IMonomerLibHelper {
   /** Ensures files are loaded and validated, throws error after timeout */
   awaitLoaded(timeout?: number): Promise<void>;
 
-  /** Singleton monomer library */
-  getBioLib(): IMonomerLib;
+  /** Singleton monomer library collected from var */
+  getMonomerLib(): IMonomerLib;
+
+  /** Singleton monomer set collected from various sources */
+  getMonomerSets(): IMonomerSet;
 
   getFileManager(): Promise<IMonomerLibFileManager>;
 
   /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
    * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
    */
-  loadLibraries(reload?: boolean): Promise<void>;
+  loadMonomerLib(reload?: boolean): Promise<void>;
+
+  /** (Re)loads monomer sets based on settings in user storage {@link SETS_STORAGE_NAME} to singleton.
+   * @param {boolean} reload Clean {@link monomerSets} before load sets [false]
+   */
+  loadMonomerSets(reload?: boolean): Promise<void>;
 
   /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
@@ -205,7 +213,7 @@ export async function sequenceChemSimilarity(
     positionColumns = splitAlignedSequences(positionColumns).columns.toList();
 
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
   const rawCols: { categories: string[], data: Uint32Array, emptyIndex: number }[] = new Array(positionColumns.length);
   const rowCount = positionColumns[0].length;
@@ -267,7 +275,7 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 ): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
   /* eslint-enable max-len */
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   const scoringMatrix: number[][] = [];
   const alphabetIndexes: { [id: string]: number } = {};
   const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
@@ -290,7 +298,7 @@ export async function calculateMonomerSimilarity(monomerSet: string[],
 export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerprintType: string = 'Morgan',
 ): Promise<{ scoringMatrix: number[][], alphabetIndexes: { [monomerId: string]: number } }> {
   const libHelper = await getMonomerLibHelper();
-  const monomerLib = libHelper.getBioLib();
+  const monomerLib = libHelper.getMonomerLib();
   const scoringMatrix: number[][] =
     new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
   const alphabetIndexes: { [id: string]: number } = {};

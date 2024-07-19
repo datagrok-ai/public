@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
-//import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
 import {parseHelm} from '../utils';
 import {initHelmMainPackage} from './utils';
 
@@ -74,7 +73,7 @@ category('Helm', () => {
   ];
 
   const complexTestNames = [
-    'comples-monomer', 'complex-monomer+side-chain', 'complex-monomer+side-chain-RNA',
+    'complex-monomer', 'complex-monomer+side-chain', 'complex-monomer+side-chain-RNA',
     'complex-side-chain', 'complex+side-chain+linker'
   ];
 

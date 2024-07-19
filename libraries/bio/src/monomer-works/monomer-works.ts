@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib} from '../types';
-import {HelmType, PolymerType} from '../helm/types';
-import {HelmTypes, PolymerTypes} from '../helm/consts';
+import {HelmType, MonomerType, PolymerType} from '../helm/types';
+import {HelmTypes, MonomerTypes, PolymerTypes} from '../helm/consts';
 
 /** Hypothetical interface to convert mol block notation.
  * It should be placed in the chem-meta package, and have an implementation in the Chem package.
@@ -62,4 +62,19 @@ export function helmTypeToPolymerType(helmType: HelmType): PolymerType {
     console.warn(`Unexpected HelmType '${helmType}'`);
   }
   return polymerType;
+}
+
+const helmTypeMap: { [helmType: string]: { polymerType: PolymerType, monomerType: MonomerType } } = {
+  [HelmTypes.AA]: {polymerType: PolymerTypes.PEPTIDE, monomerType: MonomerTypes.BACKBONE},
+
+  // [HelmTypes.BASE]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BRANCH},
+  // [HelmTypes.SUGAR]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
+  // [HelmTypes.LINKER]: {polymerType: PolymerTypes.RNA, monomerType: MonomerTypes.BACKBONE},
+  // [HelmTypes.CHEM]: {polymerType: PolymerTypes.CHEM, monomerType: MonomerTypes.BACKBONE},
+};
+
+export function fromHelmType(biotype: HelmType): { polymerType: PolymerType, monomerType: MonomerType } {
+  if (!Object.keys(helmTypeMap).includes(biotype))
+    throw new Error(`Biotype '${biotype}' is not supported.`);
+  return helmTypeMap[biotype];
 }

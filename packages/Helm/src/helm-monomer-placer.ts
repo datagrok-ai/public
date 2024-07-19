@@ -73,7 +73,7 @@ export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   // -- Handle events --
 
   private monomerLibOnChanged(_value: any): void {
-    this.reset();
+    this.dirty = true;
     this.invalidateGrid();
   }
 
