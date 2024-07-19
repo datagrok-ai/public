@@ -66,6 +66,17 @@
   ],
   "category": "Development",
   "meta": {
-    "dartium": false
+    "dartium": false,
+    "semanticTypes": [
+      {
+        "semType": "GROK_JIRA_TICKET",
+        "description": "GROK ticket in JIRA",
+        "parsers": [
+          {
+            "regexp": "GROK-\\d+"
+          }
+        ]
+      }
+    ]
   }
 }
