@@ -33,6 +33,7 @@ category('screening tools', () => {
     else
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
+    await delay(10);
     await elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     expect(df.columns.length, DG.Test.isInBenchmark ? 17 : 11); //TODO!! Check number of columns for benchmark
     tv.close();
@@ -41,6 +42,7 @@ category('screening tools', () => {
   test('elementalAnalysis.molV2000', async () => {
     const df = spgi100.clone();
     const tv = grok.shell.addTableView(df);
+    await delay(10);
     await elementalAnalysis(df, df.getCol('Structure'), false, false);
     expect(df.columns.length, 95);
     tv.close();
@@ -49,6 +51,7 @@ category('screening tools', () => {
   test('elementalAnalysis.molV3000', async () => {
     const df = approvedDrugs100.clone();
     const tv = grok.shell.addTableView(df);
+    await delay(10);
     await elementalAnalysis(df, df.getCol('molecule'), false, false);
     expect(df.columns.length, 41);
     tv.close();
@@ -58,6 +61,7 @@ category('screening tools', () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
+    await delay(10);
     await elementalAnalysis(df, df.getCol('smiles'), false, false);
     expect(df.columns.length, 6);
     expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
@@ -68,6 +72,7 @@ category('screening tools', () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
+    await delay(10);
     await elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
     expect(df.columns.length, 29);
     expect(Array.from(df.row(40).cells).map((c) => c.value).join(''),
