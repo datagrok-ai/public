@@ -18,7 +18,7 @@ jobs:
   build:
     name: Build maven
     needs: common-check
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest-m
     if: needs.common-check.outputs.continue == 'true'
     permissions:
       checks: write
@@ -80,7 +80,7 @@ jobs:
 
   docker:
     name: Build Docker
-    needs: [build, common-check]
+    needs: [ build, common-check ]
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
