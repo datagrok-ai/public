@@ -104,10 +104,6 @@ jobs:
                   job_test_env+=',JKG'
                   runner='ubuntu-latest-m'
                 fi
-                if [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
-                   [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-                  job_test_env+=',Compute'
-                fi
                 if [ -d "${DIR}/dockerfiles" ]; then
                   job_test_env+=',Spawner'
                 fi
@@ -294,11 +290,6 @@ jobs:
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
           fi
-          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
-            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile grok_compute'
-          fi
           echo "Check if Grok Spawner is required for the package"
           if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
@@ -308,7 +299,7 @@ jobs:
           # docker system prune -af --volumes
 
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='1.19.2-rc'
+            DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
