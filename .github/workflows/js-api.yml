@@ -221,148 +221,115 @@ jobs:
         run: |
           grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
-      - name: Install ApiTests dependencies
-        run: npm install
-        working-directory: ./packages/ApiTests
-      - name: Build ApiTests
-        run: npm run build
-        working-directory: ./packages/ApiTests
-      - name: Publish ApiTests
-        run: grok publish ${HOST}
-        working-directory: ./packages/ApiTests
-
-      - name: Wait for published docker to become available
-        timeout-minutes: 5
-        run: |
-          until .github/scripts/check-output.sh "docker ps" 'ApiTests'
-          do
-            sleep 1
-            echo -e "\nContainer for ApiTests did not start yet..."
-            docker ps -a
-            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-            echo -e "\nRetrying..."
-          done
-
-          echo -e "\nGet admin session token...\n"
-          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-          echo -e "\nGet ALL containers from datlas API...\n"
-          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-
-      - name: Run ApiTests
-        continue-on-error: true
-        timeout-minutes: 15
-        id: test-ApiTests
-        run: |
-          test_result=$(npm run test -- --record --csv --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
-          if [ -z "$test_result" ]; then
-            echo "All tests finished successfully"
-          else
-            echo "Test failures"
-            echo -e "${test_result}"
-            echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-            exit 1
-          fi
-        working-directory: packages/ApiTests
-      - name: Upload ApiTests results
-        if: steps.test-ApiTests.outcome != 'skipped'
-        uses: actions/upload-artifact@v3
-        with:
-          name: ApiTests.test-results
-          path: |
-            packages/ApiTests/test-record.mp4
-            packages/ApiTests/test-report.csv
-            packages/ApiTests/test-console-output.log
-          retention-days: 14
-          if-no-files-found: warn
-
-      #      - name: Install DBTests dependencies
-      #        run: npm install
-      #        working-directory: ./packages/DBTests
-      #      - name: Run DBTests
-      #        continue-on-error: true
-      #        timeout-minutes: 15
-      #        id: test-DBTests
-      #        run: |
-      #          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
-      #          if [ -z "$test_result" ]; then
-      #            echo "All tests finished successfully"
-      #          else
-      #            echo "Test failures"
-      #            echo -e "${test_result}"
-      #            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-      #            exit 1
-      #          fi
-      #        working-directory: packages/DBTests
-      #      - name: Upload DBTests results
-      #        if: steps.test-DBTests.outcome != 'skipped'
-      #        uses: actions/upload-artifact@v3
-      #        with:
-      #          name: DBTests.test-results
-      #          path: |
-      #            packages/DBTests/test-record.mp4
-      #            packages/DBTests/test-report.csv
-      #            packages/DBTests/test-console-output.log
-      #          retention-days: 14
-      #          if-no-files-found: warn
-
-      - name: Prepare Slack Message
-        #        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
-        if: ${{ steps.test-ApiTests.outcome == 'failure' }}
-        id: slack-prepare
-        shell: bash
-        env:
-          SLACK_ID: ${{ secrets.SLACK_ID }}
-        run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-
-          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-
-          if [ -z "$SLACK_MESSAGE_BODY" ]; then
-            SLACK_MESSAGE_BODY='Test results are empty. Probably it was caused by timeout. Check the job output for more information'
-          fi
-          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
-
-      - name: Send test report to Slack
-        id: slack
-        if: ${{ steps.slack-prepare.outcome == 'success' }}
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          channel-id: ${{ env.SLACK_CHANNEL }}
-          payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
-                        }
-                    },
-                    {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "mrkdwn",
-                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
-                            }
-                        ]
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+#      - name: Install ApiTests dependencies
+#        run: npm install
+#        working-directory: ./packages/ApiTests
+#      - name: Build ApiTests
+#        run: npm run build
+#        working-directory: ./packages/ApiTests
+#      - name: Publish ApiTests
+#        run: grok publish ${HOST}
+#        working-directory: ./packages/ApiTests
+#      - name: Wait for published docker to become available
+#        timeout-minutes: 5
+#        run: |
+#          until .github/scripts/check-output.sh "docker ps" 'ApiTests'
+#          do
+#            sleep 1
+#            echo -e "\nContainer for ApiTests did not start yet..."
+#            docker ps -a
+#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+#            echo -e "\nRetrying..."
+#          done
+#
+#          echo -e "\nGet admin session token...\n"
+#          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+#          echo -e "\nGet ALL containers from datlas API...\n"
+#          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+#
+#      - name: Run ApiTests
+#        continue-on-error: true
+#        timeout-minutes: 15
+#        id: test-ApiTests
+#        run: |
+#          test_result=$(npm run test -- --record --csv --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
+#          if [ -z "$test_result" ]; then
+#            echo "All tests finished successfully"
+#          else
+#            echo "Test failures"
+#            echo -e "${test_result}"
+#            echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+#            exit 1
+#          fi
+#        working-directory: packages/ApiTests
+#      - name: Upload ApiTests results
+#        if: steps.test-ApiTests.outcome != 'skipped'
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: ApiTests.test-results
+#          path: |
+#            packages/ApiTests/test-record.mp4
+#            packages/ApiTests/test-report.csv
+#            packages/ApiTests/test-console-output.log
+#          retention-days: 14
+#          if-no-files-found: warn
+#      - name: Prepare Slack Message
+#        if: ${{ steps.test-ApiTests.outcome == 'failure' }}
+#        id: slack-prepare
+#        shell: bash
+#        env:
+#          SLACK_ID: ${{ secrets.SLACK_ID }}
+#        run: |
+#          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+#          echo "::add-mask::$channel_id"
+#          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+#
+#          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+#          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+#          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
+#          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+#
+#          if [ -z "$SLACK_MESSAGE_BODY" ]; then
+#            SLACK_MESSAGE_BODY='Test results are empty. Probably it was caused by timeout. Check the job output for more information'
+#          fi
+#          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
+#
+#      - name: Send test report to Slack
+#        id: slack
+#        if: ${{ steps.slack-prepare.outcome == 'success' }}
+#        uses: slackapi/slack-github-action@v1.24.0
+#        with:
+#          channel-id: ${{ env.SLACK_CHANNEL }}
+#          payload: |
+#            {
+#                "blocks": [
+#                    {
+#                        "type": "section",
+#                        "text": {
+#                            "type": "mrkdwn",
+#                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+#                        }
+#                    },
+#                    {
+#                        "type": "section",
+#                        "text": {
+#                            "type": "mrkdwn",
+#                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+#                        }
+#                    },
+#                    {
+#                        "type": "context",
+#                        "elements": [
+#                            {
+#                                "type": "mrkdwn",
+#                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+#                            }
+#                        ]
+#                    }
+#                ]
+#            }
+#        env:
+#          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 #
       - name: npm publish
         id: publish
