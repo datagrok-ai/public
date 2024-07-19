@@ -97,8 +97,11 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       {
         category: LST_CATEGORIES.GENERAL,
         nullable: false,
+        columnTypeFilter: DG.TYPE.CATEGORICAL,
       });
-    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {category: LST_CATEGORIES.GENERAL, nullable: false});
+    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {
+      category: LST_CATEGORIES.GENERAL, nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL,
+    });
     this.activityScaling = this.string(LST_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {
         category: LST_CATEGORIES.GENERAL,
