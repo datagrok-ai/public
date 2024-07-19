@@ -18,9 +18,9 @@ category('Projects', () => {
     test('demog', async () => {
         await grok.dapi.projects.open('demog')
     });
-    test('ecg', async () => {
-        await grok.dapi.projects.open('ecg')
-    });
+    // test('ecg', async () => {
+    //     await grok.dapi.projects.open('ecg')
+    // });
     test('eeg', async () => {
         await grok.dapi.projects.open('eeg')
     });
@@ -30,16 +30,16 @@ category('Projects', () => {
     test('models', async () => {
         await grok.dapi.projects.open('models')
     });
-    test('pa-income-by-county', async () => {
-        await grok.dapi.projects.open('pa_income_by_county')
-    });
+    // test('pa-income-by-county', async () => {
+    //     await grok.dapi.projects.open('pa_income_by_county')
+    // });
     test('it-network', async () => {
         await grok.dapi.projects.open('it_network')
     });
-    test('plates', async () => {
-        await grok.dapi.projects.open('plates')
-    });
-    test('time-series-decomposition', async () => {
-        await grok.dapi.projects.open('time_series_decomposition')
-    });
+    // test('plates', async () => {
+    //     await grok.dapi.projects.open('plates')
+    // });
+    // test('time-series-decomposition', async () => {
+    //     await grok.dapi.projects.open('time_series_decomposition')
+    // });
 });

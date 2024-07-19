@@ -1,5 +1,9 @@
 # Samples changelog
 
+## 1.0.4 (2024-07-18)
+
+* Fixes demo swagger connections, projects, scripts
+
 ## 1.0.3 (2024-06-05)
 
 This release focuses on improving feature stability and usability.
