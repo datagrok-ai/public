@@ -1,3 +1,6 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
+/* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -15,7 +18,7 @@ import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {calculateDescriptors, getDescriptorsTree} from "./docker/api";
+import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {getDescriptorsSingle, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
@@ -75,6 +78,8 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {drawMoleculeLabels} from './rendering/molecule-label';
 import {getMCS} from './utils/most-common-subs';
 import {toDart} from 'datagrok-api/dg';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -102,6 +107,13 @@ const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
 //output: object module
 export function getRdKitModule(): RDModule {
   return chemCommonRdKit.getRdKitModule();
+}
+
+//name: getMolFileHandler
+//input: string molString
+//output: object handler
+export function getMolFileHandler(molString: string): MolfileHandlerBase {
+  return MolfileHandler.getInstance(molString);
 }
 
 export const _package: DG.Package = new DG.Package();
@@ -572,7 +584,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   }
   const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
   const embedColsNames: string[] = getEmbeddingColsNames(table);
-  const funcCall = await DG.Func.find({ name: 'chemSpaceTransform' })[0].prepare({
+  const funcCall = await DG.Func.find({name: 'chemSpaceTransform'})[0].prepare({
     table: table,
     molecules: molecules,
     methodName: methodName,
@@ -580,12 +592,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     plotEmbeddings: false,
     options: JSON.stringify(options),
     preprocessingFunction: preprocessingFunction,
-    clusterEmbeddings: clusterEmbeddings
-  }).call(undefined, undefined, { processed: false });
+    clusterEmbeddings: clusterEmbeddings,
+  }).call(undefined, undefined, {processed: false});
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
+    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
     drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
@@ -606,7 +618,7 @@ export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Colu
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: string, clusterEmbeddings?: boolean,
 ): Promise<DG.Viewer | undefined> {
-  const res =  await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
+  const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
     undefined, clusterEmbeddings);
   console.log(`returned from runChemSpace`);
   return res;
@@ -669,10 +681,10 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
     return;
   }
 
-  const funcCall = await DG.Func.find({ name: 'runElementalAnalysis' })[0].prepare({
+  const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
     table: table,
     molecules: molecules,
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
   const columnNames: string[] = funcCall.getOutputParamValue();
 
   const view = grok.shell.getTableView(table.name);
@@ -705,7 +717,6 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
 //input: column molecules { semType: Molecule }
 //output: list res
 export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column): string[] {
-
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
   const columnNames: string[] = [];
 
@@ -753,7 +764,7 @@ export function rGroupsAnalysisMenu(): void {
 //input: string onlyMatchAtRGroups = false {optional: true}
 //output: object res
 export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string,
-  rGroupName: string,rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
+  rGroupName: string, rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
   const params: RGroupParams = {
     molColName: molColName,
     core: core,
@@ -878,7 +889,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
 
   const runActCliffs = async (): Promise<void> => {
-    await DG.Func.find({ name: 'activityCliffsTransform' })[0].prepare({
+    await DG.Func.find({name: 'activityCliffsTransform'})[0].prepare({
       table: table,
       molecules: molecules,
       activities: activities,
@@ -886,7 +897,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       methodName: methodName,
       similarityMetric: similarityMetric,
       options: JSON.stringify(options),
-    }).call(undefined, undefined, { processed: false });
+    }).call(undefined, undefined, {processed: false});
 
     const view = grok.shell.getTableView(table.name);
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
@@ -900,7 +911,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       markerMinSize: 5,
       markerMaxSize: 25,
       title: 'Activity cliffs',
-      initializationFunction: 'activityCliffsInitFunction'
+      initializationFunction: 'activityCliffsInitFunction',
     }) as DG.ScatterPlotViewer;
   };
 
@@ -954,8 +965,8 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
   options?: string): Promise<void> {
-  const preprocessingFunction = DG.Func.find({ name: 'getFingerprints', package: 'Chem' })[0];
-  const axesNames = getEmbeddingColsNames(table); 
+  const preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+  const axesNames = getEmbeddingColsNames(table);
   await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
     similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
   const tagContent: ActivityCliffsParams = {
@@ -964,7 +975,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
     similarityMetric: similarityMetric,
     similarity: similarity,
     options: options ?? {},
-    
+
   };
   table.setTag('activityCliffsParams', JSON.stringify(tagContent));
 }
@@ -1009,7 +1020,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     return;
   }
 
-  await DG.Func.find({ name: 'runStructuralAlerts' })[0].prepare({
+  await DG.Func.find({name: 'runStructuralAlerts'})[0].prepare({
     table: table,
     molecules: molecules,
     pains: pains,
@@ -1019,8 +1030,8 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     dandee: dandee,
     inpharmatica: inpharmatica,
     lint: lint,
-    glaxo: glaxo
-  }).call(undefined, undefined, { processed: false });
+    glaxo: glaxo,
+  }).call(undefined, undefined, {processed: false});
 
   return table;
 }
@@ -1040,7 +1051,6 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
- 
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1480,7 +1490,7 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, 
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
     fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   return res ?? DG.DataFrame.create();
 }
@@ -1803,7 +1813,7 @@ export async function getAllModelingEngines(): Promise<object> {
 //input: map parameterValues
 //output: blob result
 export async function trainModel(
-  id: string, type: string, tableServerUrl: string, tableToken: string, predict: string, parameterValues: {[_: string]: any}
+  id: string, type: string, tableServerUrl: string, tableToken: string, predict: string, parameterValues: {[_: string]: any},
 ): Promise<Uint8Array> {
   const container = await getContainer();
   const uriParams = new URLSearchParams({
@@ -1811,7 +1821,7 @@ export async function trainModel(
     'type': type,
     'table_server_url': tableServerUrl,
     'table_token': tableToken,
-    'predict': predict
+    'predict': predict,
   });
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id,
     '/modeling/train?' + uriParams, {method: 'POST', body: JSON.stringify(parameterValues),
@@ -1830,13 +1840,13 @@ export async function trainModel(
 //input: string tableToken
 //output: list result
 export async function applyModel(id: string, type: string, modelBlob: Uint8Array, tableServerUrl: string,
-                                 tableToken: string): Promise<DG.Column[]> {
+  tableToken: string): Promise<DG.Column[]> {
   const container = await getContainer();
   const uriParams = new URLSearchParams({
     'id': id,
     'type': type,
     'table_server_url': tableServerUrl,
-    'table_token': tableToken
+    'table_token': tableToken,
   });
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id,
     '/modeling/predict?' + uriParams, {method: 'POST', body: modelBlob,
