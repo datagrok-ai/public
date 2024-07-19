@@ -689,7 +689,7 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 //desription: Method for testing XGBoost
 //input: dataframe df
 //input: column_list features {type: numerical}
-//input: column target {type: numerical}
+//input: column target
 //input: int iterations = 20
 //input: double eta = 0.3
 //input: int maxDepth = 6
@@ -698,6 +698,11 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
   iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) {
   //testXGBoost();
+
+  if (!XGBooster.isApplicable(features, target)) {
+    grok.shell.error('XGBoost is not applicable!');
+    return;
+  }
 
   const booster = new XGBooster();
   booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);

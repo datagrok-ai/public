@@ -136,6 +136,7 @@ enum RESERVED {
 /** XGBoost specific constants */
 const MISSING_VALUE = DG.FLOAT_NULL;
 const SIZE_IDX = 0;
+const PREDICT_NAME = 'Prediction';
 
 /** Data structs for training */
 type TrainStructs = {
@@ -160,7 +161,7 @@ export class XGBooster {
       if (!col.matches('numerical'))
         return false;
     }
-    if (!predictColumn.matches('numerical'))
+    if (!predictColumn.matches('numerical') && !predictColumn.matches('string'))
       return false;
 
     return true;
@@ -173,6 +174,8 @@ export class XGBooster {
   }
 
   private modelParams: Int32Array | undefined = undefined;
+  private targetType: string | undefined = undefined;
+  private targetCategories: string[] | undefined = undefined;
 
   constructor(packedModel?: Uint8Array) {
     if (packedModel) {
@@ -188,6 +191,13 @@ export class XGBooster {
   /** Fit model */
   public fit(features: DG.ColumnList, target: DG.Column, iterations: number, eta: number,
     maxDepth: number, lambda: number, alpha: number) {
+    // Type of the target
+    this.targetType = target.type;
+
+    // Store categories of string target
+    if (this.targetType === DG.COLUMN_TYPE.STRING)
+      this.targetCategories = target.categories;
+
     // Allocate memory in wasm-buffer & put training data there
     const wasmStructs = this.getWasmTrainStructs(features, target);
 
@@ -325,15 +335,75 @@ export class XGBooster {
     return wasmStructs;
   }
 
+  /** Get predicted string column */
+  private getPredictedStringCol(wasmStructs: PredictStructs): DG.Column {
+    const wasmPredict = wasmStructs.predict;
+    const samplesCount = wasmPredict.length;
+
+    if (this.targetCategories === undefined)
+      throw new Error('Predicting fails: undefined categories');
+
+    const predClass = new Array<string>(samplesCount);
+
+    for (let i = 0; i < samplesCount; ++i)
+      predClass[i] = this.targetCategories[Math.round(wasmPredict[i])];
+
+    return DG.Column.fromStrings(PREDICT_NAME, predClass);
+  }
+
+  /** Get predicted int column */
+  private getPredictedIntCol(wasmStructs: PredictStructs): DG.Column {
+    const wasmPredict = wasmStructs.predict;
+    const samplesCount = wasmPredict.length;
+
+    const rawInts = new Int32Array(samplesCount);
+
+    for (let i = 0; i < samplesCount; ++i)
+      rawInts[i] = Math.round(wasmPredict[i]);
+
+    return DG.Column.fromInt32Array(PREDICT_NAME, rawInts, samplesCount);
+  }
+
+  /** Get predicted int column */
+  private getPredictedFloatCol(wasmStructs: PredictStructs): DG.Column {
+    const wasmPredict = wasmStructs.predict;
+    const samplesCount = wasmPredict.length;
+
+    const rawFloats = new Float32Array(samplesCount);
+
+    for (let i = 0; i < samplesCount; ++i)
+      rawFloats[i] = wasmPredict[i];
+
+    return DG.Column.fromFloat32Array(PREDICT_NAME, rawFloats, samplesCount);
+  }
+
+  /** Get predicted bigint column */
+  private getPredictedBigIntCol(wasmStructs: PredictStructs): DG.Column {
+    const wasmPredict = wasmStructs.predict;
+    const samplesCount = wasmPredict.length;
+
+    const rawInts = new BigInt64Array(samplesCount);
+
+    for (let i = 0; i < samplesCount; ++i)
+      rawInts[i] = BigInt(Math.round(wasmPredict[i]));
+
+    return DG.Column.fromBigInt64Array(PREDICT_NAME, rawInts);
+  }
+
   /** Get perdiction colum */
   private getPredictCol(wasmStructs: PredictStructs): DG.Column {
-    const wasmPredict = wasmStructs.predict;
-    const size = wasmPredict.length;
-    const raw = new Float32Array(size);
+    switch (this.targetType) {
+    case DG.COLUMN_TYPE.STRING:
+      return this.getPredictedStringCol(wasmStructs);
 
-    for (let i = 0; i < size; ++i)
-      raw[i] = wasmPredict[i];
+    case DG.COLUMN_TYPE.INT:
+      return this.getPredictedIntCol(wasmStructs);
 
-    return DG.Column.fromFloat32Array('Predict', raw, size);
+    case DG.COLUMN_TYPE.BIG_INT:
+      return this.getPredictedBigIntCol(wasmStructs);
+
+    default:
+      return this.getPredictedFloatCol(wasmStructs);
+    }
   }
 }
