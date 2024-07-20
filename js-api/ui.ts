@@ -1163,13 +1163,6 @@ export class tools {
     });
   }
 
-  private static formObserver: MutationObserver = new MutationObserver((records) => {
-    for (let r of records) {
-      this.calcWidths(r.target as HTMLElement);
-      this.setLabelsWidth(r.target as HTMLElement, tools.formLabelMaxWidths.get((r.target as HTMLElement).dataset['num'] as string)!);
-    }
-  });
-
   private static formResizeObserver = _isDartium() ? null : new ResizeObserver((records, observer) => {
     for (let r of records) {
       setTimeout(() => {
@@ -1253,7 +1246,12 @@ export class tools {
     if (this.getFormId(form) == undefined)
       form.dataset['num'] = `${this.formNumber++}`;
 
-    this.formObserver.observe(form, {
+    let formObserver = new MutationObserver((records) => {
+      this.calcWidths(form);
+      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form.dataset['num'] as string)!);
+    });
+
+    formObserver.observe(form, {
       childList: true,
       subtree: true,
     });
@@ -1276,6 +1274,7 @@ export class tools {
         if (!_isDartium()) {
           this.formResizeObserver!.unobserve(form);
         }
+        formObserver.disconnect();
         tools.formMinInputWidths.delete(tools.getFormId(form));
         tools.formLabelWidths.delete(tools.getFormId(form));
         tools.formLabelMaxWidths.delete(tools.getFormId(form));
