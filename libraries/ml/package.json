@@ -8,7 +8,7 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.6.13",
+  "version": "6.6.13-master",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.1.9",
@@ -17,7 +17,7 @@
     "@types/seedrandom": "^3.0.8",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.20.0-master",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.12",
     "jaro-winkler-typescript": "^1.0.1",
