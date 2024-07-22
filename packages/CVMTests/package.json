@@ -53,6 +53,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CVMTests"
-  },
-  "skipCI": false
+  }
 }
