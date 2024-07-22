@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.22 (2024-07-22)
+
+Fix Active peptide selection viewer failing on frame attached.
+
 ## 1.17.21 (2024-07-12)
 
 Add support for string aggregation with pie chart viewer in LST viewer.
