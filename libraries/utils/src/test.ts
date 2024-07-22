@@ -520,7 +520,9 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
       params = { ...params, ...res };
-    }
+    }    
+    if (params.result instanceof DG.DataFrame)
+      params.result = JSON.stringify(params.result?.toJson()) || '';
     if ((<any>grok.shell).reportTest != null)
       await (<any>grok.shell).reportTest(type, params);
     else {
