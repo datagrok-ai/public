@@ -943,6 +943,7 @@ export interface IDartApi {
   grok_Entity_Set_Id(p: any, id: String): any;
   grok_Entity_New_Id(e: any): any;
   grok_Entity_Path(p: any): any;
+  grok_Query_Sql_Create(dataConnection: any, query: String): any;
   grok_Query_Query(q: any): any;
   grok_Query_Set_Query(q: any, s: String): any;
   grok_Query_Get_AdHoc(q: any): any;
