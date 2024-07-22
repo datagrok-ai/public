@@ -335,12 +335,12 @@ export async function _formDemo() {
   await viewerDemo(DG.VIEWER.FORM);
 }
 
-//name: shapeMapDemo
-//description: Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
-//meta.demoPath: Visualization | Geographical | Shape Map
-export async function _shapeMapDemo() {
-  await viewerDemo(DG.VIEWER.SHAPE_MAP);
-}
+////name: shapeMapDemo
+////description: Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
+////meta.demoPath: Visualization | Geographical | Shape Map
+//export async function _shapeMapDemo() {
+//  await viewerDemo(DG.VIEWER.SHAPE_MAP);
+//}
 
 //name: pivotTableDemo
 //description: A pivot table is a table of grouped values that aggregates the individual items of a more extensive table within one or more discrete categories. This summary might include sums, averages, or other statistics, which the pivot table groups together using a chosen aggregation function applied to the grouped values.
