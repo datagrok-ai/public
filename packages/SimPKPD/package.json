@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/simpkpd",
   "friendlyName": "SimPKPD",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "PKPD simulations tools",
   "author": {
     "name": "Viktor Makarichev",
