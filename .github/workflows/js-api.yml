@@ -158,7 +158,7 @@ jobs:
         id: replace_ver
         run: |
           if [[ "${{ steps.check-version.outputs.release_tag }}" == 'patch' ]] || [[ "${{ steps.check-version.outputs.release_tag }}" == 'latest' ]]; then
-            replace_version=${{ nsteps.check-version.outputs.current_version }}
+            replace_version=${{ steps.check-version.outputs.current_version }}
           else
             replace_version=$(echo "${{ steps.check-version.outputs.current_version }}" | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-master|rc).*/\1\2/')
           fi
