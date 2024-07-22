@@ -74,7 +74,12 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     this.describe(`By default, a reference molecule in the similarity viewer follows the current row.
     However, you can change the settings to lock it in.`);
 
-    await this.contextMenuAction('Right-click the similarity viewer and select Properties...', 'Properties...');
+    //await this.contextMenuAction('Right-click the similarity viewer and select Properties...', 'Properties...');
+
+    await this.action('Hover over similarity viewer and click gear icon in the right top corner of the viewer to open settings',
+      new Observable((subscriber: any) => {
+        $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
+      }), sim!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement);
 
     await this.action('Under Misc, clear the Follow Current Row checkbox', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
