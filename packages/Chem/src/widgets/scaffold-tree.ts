@@ -1957,7 +1957,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   render() {
     const thisViewer = this;
     this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: v => {
-      thisViewer.bitOperation = v as unknown as BitwiseOp;
+      thisViewer.bitOperation = v.stringValue;
       thisViewer.updateFilters();
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     }});
