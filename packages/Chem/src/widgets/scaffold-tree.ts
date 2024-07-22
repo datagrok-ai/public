@@ -775,7 +775,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
 
-    this.progressBar!.close();
+    this.progressBar?.close();
     this.progressBar = null;
   }
 
