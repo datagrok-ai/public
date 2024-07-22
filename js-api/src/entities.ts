@@ -401,10 +401,6 @@ export class DataQuery extends Func {
     super(dart);
   }
 
-  static sql(connection: DataConnection, query: string): DataQuery {
-    return toJs(api.grok_Query_Sql_Create(connection.dart, query));
-  }
-
   /** @deprecated Use FuncCall.adHoc instead **/
   get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.dart); }
   /** @deprecated Use FuncCall.adHoc instead **/
