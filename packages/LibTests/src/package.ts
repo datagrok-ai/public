@@ -927,5 +927,6 @@ export async function TestVueRFV() {
   const app = createApp(VueRichFunctionView, {funcCall: 'Compute:ObjectCooling'});
   app.mount(view.root);
   grok.shell.addView(view);
+  view.root.classList.remove('ui-panel');
 }
 
