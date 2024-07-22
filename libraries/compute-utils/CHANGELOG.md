@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
 ## 1.36.0 (2024-07-10)
 
 - RFV: Added output validators support
