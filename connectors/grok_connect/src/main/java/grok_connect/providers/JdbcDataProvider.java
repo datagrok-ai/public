@@ -551,8 +551,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         if (funcInfo != null) {
             String sql = funcInfo.dbFunctionName.replaceAll("#", aggr.colName);
-            return sql + " as \"" + sql + "\"";
-        } else
+            return sql + " as " + addBrackets(sql);
+        }
+        else
             return null;
     }
 
