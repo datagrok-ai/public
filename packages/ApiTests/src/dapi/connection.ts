@@ -1,13 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
-import {delay, delayWhen} from "rxjs/operators";
+import { before, category, expect, test, expectArray, after } from '@datagrok-libraries/utils/src/test';
+import { delay, delayWhen } from "rxjs/operators";
 
 
 category('Dapi: connection', () => {
   const dcParams = {
-    dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
+    dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'
+  };
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
@@ -47,11 +48,11 @@ category('Dapi: connection', () => {
     const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
     const q = dc.query('JS postprocess query test', 'select * from orders');
     const query = await grok.dapi.queries.save(q);
-    await query.setProperties({jsScript: script});
+    await query.setProperties({ jsScript: script });
     expect((await query.getProperties()).jsScript, script);
     await query.executeTable();
     await grok.dapi.queries.delete(query);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 });
 
 category('Dapi: connection cache', () => {
@@ -60,7 +61,7 @@ category('Dapi: connection cache', () => {
 
   before(async () => {
     const connection: DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
-    await grok.functions.call('DropConnectionCache', {'connection': connection});
+    await grok.functions.call('DropConnectionCache', { 'connection': connection });
   });
 
   test('Invalidation, performance', async () => {
@@ -143,15 +144,15 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 1.5, true);
-  });
+  }, { benchmark: true });
 
   after(async () => {
     try {
       await grok.dapi.files.delete(testFilePath1);
-    } catch (_) {}
+    } catch (_) { }
     try {
       await grok.dapi.files.delete(testFilePath2);
-    } catch (_) {}
+    } catch (_) { }
   });
 });
 
@@ -180,8 +181,10 @@ category('Dapi: TableQuery', () => {
   before(async () => {
     fromTable = DG.TableInfo.fromDataFrame(grok.data.testData('demog', 5000));
     from = fromTable.name;
-    const dcParams = {dataSource: 'Postgres', server: 'dev.datagrok.ai:54322', db: 'northwind',
-      login: 'datagrok', password: 'datagrok'};
+    const dcParams = {
+      dataSource: 'Postgres', server: 'dev.datagrok.ai:54322', db: 'northwind',
+      login: 'datagrok', password: 'datagrok'
+    };
     dc = DG.DataConnection.create('test', dcParams);
     dc = await grok.dapi.connections.save(dc);
   });
@@ -235,12 +238,12 @@ category('Dapi: TableQuery', () => {
   test('From table', async () => {
     const dtqb = DG.TableQuery.fromTable(fromTable);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 
   test('From', async () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, {skipReason: 'GROK-11670'});
+  }, { skipReason: 'GROK-11670' });
 });
 
 /*

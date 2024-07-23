@@ -187,8 +187,15 @@ export class TestManager extends DG.ViewBase {
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
+              const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].isAllTestsEnabledBenchmarkMode;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
-                return { test: t, packageName: f.package.name };
+                if (t.options.isEnabledBenchmarkMode === undefined) {
+                  if (!t.options)
+                    t.options = {}
+                  t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false; 
+                }
+                const result = { test: t, packageName: f.package.name }; 
+                return result;
               });
               const subcats = cat.split(':');
               let subcatsFromUrl = [];
@@ -348,17 +355,21 @@ export class TestManager extends DG.ViewBase {
     });
     runTestsButton.classList.add('ui-btn-outline');
 
-    const debugButton = ui.input.bool('Debug', {value: this.debugMode, onValueChanged: () => {this.debugMode = !this.debugMode;}});
+    const debugButton = ui.input.bool('Debug', { value: this.debugMode, onValueChanged: () => { this.debugMode = !this.debugMode; } });
     debugButton.classList.add('tm-button');
 
-    const benchmarkButton = ui.input.bool('Benchmark', {value: this.benchmarkMode, onValueChanged: () => {
-      this.benchmarkMode = !this.benchmarkMode;
-      DG.Test.isInBenchmark = this.benchmarkMode;
-    }});
+    const benchmarkButton = ui.input.bool('Benchmark', {
+      value: this.benchmarkMode, onValueChanged: () => {
+        this.benchmarkMode = !this.benchmarkMode;
+        DG.Test.isInBenchmark = this.benchmarkMode;
+      }
+    });
     benchmarkButton.classList.add('tm-button');
 
-    const runSkippedButton = ui.input.bool('Run skipped', {value: this.runSkippedMode,
-      onValueChanged: () => {this.runSkippedMode = !this.runSkippedMode;}});
+    const runSkippedButton = ui.input.bool('Run skipped', {
+      value: this.runSkippedMode,
+      onValueChanged: () => { this.runSkippedMode = !this.runSkippedMode; }
+    });
     runSkippedButton.classList.add('tm-button');
 
     return {
@@ -460,6 +471,8 @@ export class TestManager extends DG.ViewBase {
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
+    if (DG.Test.isInBenchmark && !t.test.options?.benchmark)
+      t.test.options.skipReason = "Test can not be runned in benchmark mode";
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
@@ -485,8 +498,8 @@ export class TestManager extends DG.ViewBase {
       if (res.col('package') == null || this.verboseCheckBox.value)
         this.addPackageInfo(res, t.packageName);
       if (!this.verboseCheckBox.value)
-        this.removeTestRow(t.packageName, t.test.category, t.test.name); 
-      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING); 
+        this.removeTestRow(t.packageName, t.test.category, t.test.name);
+      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
@@ -592,6 +605,14 @@ export class TestManager extends DG.ViewBase {
       }
     }
     for (const t of category.tests) {
+      if (!t.test.options?.benchmark) {
+        // if(!t.test.options){
+        //   t.test.options = {};
+        // }
+        // //@ts-ignore
+        // t.test.options?.isEnabledBenchmarkMode =  category.isAllTestsEnabledBenchmarkMode || false;
+
+      }
       const res = await this.runTest(t);
       if (!res)
         testsSucceded = false;
@@ -749,8 +770,8 @@ export class TestManager extends DG.ViewBase {
           info.appendChild(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
           info.appendChild(ui.divText(`Category: ${cat}`));
-      } 
-      else{
+      }
+      else {
         if (!isTooltip) {
           const resStr = ui.div();
           resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\

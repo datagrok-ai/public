@@ -36,7 +36,7 @@ category('screening tools', () => {
     await elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     tv.close();
     expect(df.columns.length, DG.Test.isInBenchmark ? 17 : 11); //TODO!! Check number of columns for benchmark
-  });
+  }, {benchmark: true});
 
   test('elementalAnalysis.molV2000', async () => {
     const df = spgi100.clone();
@@ -96,7 +96,7 @@ category('screening tools: benchmarks', () => {
     await DG.timeAsync('Structural Alerts', async () => {
       await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
-  }, {timeout: 120000});
+  }, {timeout: 120000, benchmark: true});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
