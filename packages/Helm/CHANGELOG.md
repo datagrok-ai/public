@@ -1,6 +1,6 @@
 # Helm changelog
 
-## 2.3.2 (WIP)
+## 2.3.2 (2024-07-23)
 
 ### Features
 
