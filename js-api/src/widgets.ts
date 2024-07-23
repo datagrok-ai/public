@@ -1809,6 +1809,9 @@ export class TreeViewGroup extends TreeViewNode {
   /** Indicates whether check or uncheck is applied to a node only or to all node's children */
   get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
   set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
+  
+  get currentItem(): TreeViewNode { return toJs(api.grok_TreeViewNode_Get_CurrentItem(this.dart)); }
+  set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
