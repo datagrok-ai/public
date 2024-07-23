@@ -16,11 +16,11 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 //polytool specific
-import {getPolyToolConversionDialog, getPolyToolEnumerationDialog} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
-import {polyToolEnumerateUI} from './polytool/pt-ui';
+import {polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-ui';
 import {addContextMenuUI} from './utils/context-menu';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
@@ -165,11 +165,18 @@ export async function polyToolConvert(): Promise<void> {
   }
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate
-//name: polyToolEnumerate
+//top-menu: Bio | Convert | PolyTool-Enumerate HELM
+//name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
-export async function polyToolEnumerate(): Promise<void> {
-  polyToolEnumerateUI();
+export async function polyToolEnumerateHelm(): Promise<void> {
+  polyToolEnumerateHelmUI();
+}
+
+//top-menu: Bio | Convert | PolyTool-Enumerate Chem
+//name: polyToolEnumerateChem
+//description: Perform cyclization of polymers
+export async function polyToolEnumerateChem(): Promise<void> {
+  polyToolEnumerateChemUI();
 }
 
 //name: polyToolColumnChoice
@@ -199,3 +206,32 @@ export function addContextMenu(event: DG.EventData): void {
   addContextMenuUI(event);
 }
 
+//name: PolyTool Converter
+//meta.icon: img/icons/structure.png
+//meta.browsePath: PolyTool
+//tags: app
+//output: view v
+export async function ptConverterApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+  return view;
+}
+
+//name: PolyTool Enumerator Helm
+//meta.icon: img/icons/structure.png
+//meta.browsePath: PolyTool
+//tags: app
+//output: view v
+export async function ptEnumeratorHelmApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+  return view;
+}
+
+//name: PolyTool Enumerator Chem
+//meta.icon: img/icons/structure.png
+//meta.browsePath: PolyTool
+//tags: app
+//output: view v
+export async function ptEnumeratorChemApp(): Promise<DG.ViewBase> {
+  const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+  return view;
+}
