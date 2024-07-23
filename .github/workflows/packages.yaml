@@ -308,7 +308,7 @@ jobs:
           # docker system prune -af --volumes
 
           if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='1.19.2-rc'
+            DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
             export GROK_SPAWNER_VERSION='bleeding-edge'
