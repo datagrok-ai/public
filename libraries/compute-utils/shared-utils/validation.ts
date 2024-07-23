@@ -157,6 +157,8 @@ function stylePopover(popover: HTMLElement): void {
   popover.popover = 'auto';
   popover.style.fontStyle = 'normal';
   popover.style.pointerEvents = 'all';
+  popover.style.maxWidth = '300px';
+  popover.style.textWrap = 'pretty';
 }
 
 function renderValidationResults(messages: ValidationResultBase) {
