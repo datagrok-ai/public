@@ -25,12 +25,15 @@ category('scaffold tree', () => {
     tv.addViewer(ScaffoldTreeViewer.TYPE);
     await awaitCheck(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
       'cannot create viewer', 3000);
+    const generateLink = document.querySelector('.chem-scaffold-tree-generate-hint') as HTMLElement;
+    if (generateLink)
+      generateLink.click();
     const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0] as ScaffoldTreeViewer;
     await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 60000);
     await delay(2000); //need to scaffold to finish generation
     tv.close();
-  }, {timeout: 60000});
+  }, {timeout: 60000, benchmark: true});
 
   after(async () => {
     grok.shell.closeAll();

@@ -1,5 +1,18 @@
 # HitTriage changelog
 
+## 1.1.13 (2024-07-23)
+
+Fix chem descriptors breaking loop.
+
+## 1.1.12 (2024-07-18)
+
+Fix broken demo campaign file.
+
+## 1.1.11 (2024-06-03)
+
+* Add ability for collaboration on same campaign.
+* Fixed bugs with tiles viewer forms crashing in case of removing columns.
+
 ## 1.1.10 (2024-04-09)
 
 Fixed bugs with tiles viewer forms and functions loading.

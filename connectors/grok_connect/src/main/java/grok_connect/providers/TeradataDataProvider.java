@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -78,7 +76,7 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.getDb();
         StringColumn column = new StringColumn(new String[]{db});
         column.name = "TABLE_SCHEMA";
@@ -162,13 +160,6 @@ public class TeradataDataProvider extends JdbcDataProvider {
     @Override
     public String limitToSql(String query, Integer limit) {
         return query + "sample " + limit.toString();
-    }
-
-    @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
     @Override

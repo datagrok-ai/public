@@ -29,7 +29,7 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
@@ -77,7 +77,7 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     seqCol.setTag(bioTAGS.aligned, 'SEQ');
 
@@ -120,7 +120,7 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
@@ -191,8 +191,8 @@ ATC-G-TTGC--
   test('empty', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([(() => {
       const col = DG.Column.fromStrings('seq', []);
-      col.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MACROMOLECULE);
-      col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+      col.semType = DG.SEMTYPE.MACROMOLECULE;
+      col.meta.units = NOTATION.FASTA;
       col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
       return col;
     })()]);
@@ -222,7 +222,7 @@ function buildDfWithSeqCol(csv: string, notation: NOTATION, alphabet: ALPHABET, 
 
   const seqCol: DG.Column = df.getCol('seq');
   seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  seqCol.setTag(DG.TAGS.UNITS, notation);
+  seqCol.meta.units = notation;
   seqCol.setTag(bioTAGS.alphabet, alphabet);
   seqCol.setTag(bioTAGS.aligned, aligned);
 

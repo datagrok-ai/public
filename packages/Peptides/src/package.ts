@@ -14,6 +14,7 @@ import {PeptidesModel} from './model';
 import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
+import {LSTPieChartRenderer} from './utils/cell-renderer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -95,6 +96,14 @@ export function peptidesDialog(): DG.Dialog {
   return dialog.show();
 }
 
+//name: testInitFunctionPeptides
+//input: viewer v
+export async function testInitFunctionPeptides(v: DG.Viewer): Promise<void> {
+  grok.shell.info('Test init function for Peptides package');
+  grok.shell.info('Viewer name: ' + v.dataFrame.name);
+  await new Promise<void>((r) => setTimeout(r, 1000));
+}
+
 //name: Peptides
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
@@ -160,4 +169,13 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return macromoleculeSarFastaDemoUI();
+}
+
+//name: LST Pie Chart
+//tags: cellRenderer
+//meta.cellType: lst-pie-chart
+//meta.gridChart: true
+//output: grid_cell_renderer result
+export function lstPiechartCellRenderer(): LSTPieChartRenderer {
+  return new LSTPieChartRenderer();
 }

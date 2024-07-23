@@ -218,100 +218,84 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
     fillVisibleNodes(rootGroup.children[n] as TreeViewGroup, visibleNodes);
 }
 
-function updateLabelWithLoaderOrBitset(thisViewer: ScaffoldTreeViewer) {
-  const items = thisViewer.tree.items;
+function getVisibleNodes(thisViewer: ScaffoldTreeViewer): Array<TreeViewGroup> {
+  const visibleNodes: Array<TreeViewGroup> = [];
+  fillVisibleNodes(thisViewer.tree, visibleNodes);
 
-  const updateLabel = (group: DG.TreeViewGroup) => {
-    const { labelDiv, bitset } = value(group);
-    const loaderNode = labelDiv.querySelector('.grok-loader');
-    const newLoaderDiv = ui.div(ui.loader(), {style: {'padding-right': '35px'}});
+  const scrollTop = thisViewer.tree.root.scrollTop;
+  const viewerHeight = thisViewer.root.offsetHeight;
+  const nodeHeight = thisViewer.sizesMap[thisViewer.size].height;
 
-    labelDiv.style.display = 'flex';
-    
-    if (!loaderNode && !labelDiv.childNodes[1])
-      labelDiv.insertBefore(newLoaderDiv, labelDiv.firstChild);
-    else if (labelDiv.firstChild && labelDiv.childNodes[1])
-      labelDiv.replaceChild(newLoaderDiv, labelDiv.firstChild);
+  const start = Math.floor(scrollTop / nodeHeight);
+  let end = start + Math.ceil(viewerHeight / nodeHeight);
+  if (end >= visibleNodes.length) end = visibleNodes.length - 1;
 
-    if (labelDiv.childNodes[1]) {
-      const textContent = labelDiv.childNodes[1].textContent;
-      const copiedBitset = bitset ? bitset.clone() : DG.BitSet.create(thisViewer.molColumn!.length).setAll(false);
-      const viewerBitset = thisViewer.dataFrame ? thisViewer.dataFrame.filter : DG.BitSet.create(copiedBitset!.length).setAll(false);
-      const filteredBitset = copiedBitset?.and(viewerBitset);
-      const bitsetCount = filteredBitset?.trueCount.toString();
-      const countMatch = bitsetCount === textContent;
+  return visibleNodes.slice(start, end + 1);
+}
 
-      if (countMatch)
-        labelDiv.removeChild(labelDiv.firstChild!);
-      else
-        labelDiv.replaceChild(ui.divText(`${bitsetCount} of `, {style: {'padding-right': '3px'}}), labelDiv.firstChild!); 
+async function updateLabel(thisViewer: ScaffoldTreeViewer, group: TreeViewGroup) {
+  const v = value(group);
+  let { labelDiv, bitset } = v;
 
-      labelDiv.onmouseenter = (e) => {
-        if (!countMatch) {
-          ui.tooltip.show(ui.divV([
-            ui.divText(textContent + ' matches total'),
-            ui.divText(bitsetCount + ' matches filtered')
-          ]), e.clientX + 15, e.clientY) ;
-        }
-      };
+  if (!labelDiv) {
+    labelDiv = ui.divText('');
+    v.labelDiv = labelDiv;
+  }
 
-      labelDiv.onmouseleave = (e) => ui.tooltip.hide();
-    };
+  labelDiv.style.display = 'flex';
+
+  bitset = thisViewer.molColumn === null
+    ? null
+    : await handleMalformedStructures(thisViewer.molColumn, v.smiles);
+
+  v.bitset = bitset;
+  updateNodeHitsLabel(group, bitset ? bitset.trueCount.toString() : '0');
+
+  if (bitset !== null)
+    await updateLabelContent(labelDiv, bitset, thisViewer);
+}
+
+async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, thisViewer: ScaffoldTreeViewer) {
+  const textContent = labelDiv.childNodes[0]?.textContent || '';
+  const copiedBitset = bitset.clone();
+  const viewerBitset = thisViewer.dataFrame ? thisViewer.dataFrame.filter : DG.BitSet.create(copiedBitset.length).setAll(false);
+  const filteredBitset = copiedBitset.and(viewerBitset);
+  const bitsetCount = filteredBitset.trueCount.toString();
+  const countMatch = bitsetCount === textContent;
+
+  if (!countMatch) {
+    const newText = ui.divText(`${bitsetCount} of ${textContent}`, { style: { 'padding-right': '3px' } });
+    if (labelDiv.firstChild)
+      labelDiv.replaceChild(newText, labelDiv.firstChild);
+    else
+      labelDiv.appendChild(newText);
+  }
+
+  labelDiv.onmouseenter = (e) => {
+    if (!countMatch) {
+      ui.tooltip.show(ui.divV([
+        ui.divText(textContent + ' matches total'),
+        ui.divText(bitsetCount + ' matches filtered')
+      ]), e.clientX + 15, e.clientY);
+    }
   };
 
-  items.map((group) => {
-    const castedGroup = group as DG.TreeViewGroup;
-    if (isOrphans(group))
-      return;
-    updateLabel(castedGroup);
-  });
+  labelDiv.onmouseleave = (e) => ui.tooltip.hide();
+}
+
+async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
+  const visibleNodes = getVisibleNodes(thisViewer);
+
+  for (const group of visibleNodes) {
+    if (isOrphans(group)) continue; // Skip orphans
+
+    await updateLabel(thisViewer, group);
+  }
 }
 
 function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   const labelDiv = value(group).labelDiv;
   labelDiv!.innerHTML = text;
-}
-
-async function updateAllNodesHits(thisViewer: ScaffoldTreeViewer, onDone : Function | null = null) {
-  const items = thisViewer.tree.items;
-  if (items.length > 0) {
-    await updateNodesHitsImpl(thisViewer, items, 0, items.length - 1);
-    thisViewer.filterTree(thisViewer.threshold);
-    thisViewer.updateSizes();
-
-    if (onDone !== null)
-      onDone();
-  }
-}
-
-async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
-  const visibleNodes : Array<TreeViewGroup> = [];
-  fillVisibleNodes(thisViewer.tree, visibleNodes);
-
-  const start = Math.floor(thisViewer.tree.root.scrollTop / thisViewer.sizesMap[thisViewer.size].height);
-  let end = start + Math.ceil(thisViewer.root.offsetHeight / thisViewer.sizesMap[thisViewer.size].height);
-  if (end >= visibleNodes.length)
-    end = visibleNodes.length - 1;
-
-  await updateNodesHitsImpl(thisViewer, visibleNodes, start, end);
-}
-
-async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>,
-  start: number, end: number) {
-  for (let n = start; n <= end; ++n) {
-    const group = visibleNodes[n];
-    if (isOrphans(group))
-      return;
-
-    const v = value(group);
-    const bitset = thisViewer.molColumn === null ?
-      null :
-      await handleMalformedStructures(thisViewer.molColumn, v.smiles);
-
-    v.bitset = bitset;
-    v.init = true;
-    updateNodeHitsLabel(group, bitset!.trueCount.toString());
-  }
 }
 
 async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
@@ -627,7 +611,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const s = JSON.stringify(this.serializeTrees(this.tree));
     const dialog = ui.dialog({title: 'Enter file name'});
     dialog
-      .add(ui.stringInput('Name', 'scaffold-tree'))
+      .add(ui.input.string('Name', {value: 'scaffold-tree'}))
       .onOK(() => {
         DG.Utils.download(`${dialog.inputs[0].stringValue}.tree`, s);
         dialog.close();
@@ -677,6 +661,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const c = this.root.getElementsByClassName('d4-update-shadow');
     if (c.length > 0) {
       const eProgress = c[0];
+      const loader = eProgress.getElementsByClassName('grok-loader')[0] as HTMLElement;
+      loader.style.top = '0px';
+      eProgress.classList.add('chem-scaffold-tree-progress');
       const eCancel : HTMLAnchorElement = ui.link('Cancel', () => {
         this.cancelled = true;
         currentCancelled = true;
@@ -690,7 +677,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.progressBar?.close();
         this.progressBar = null;
       }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
-      eProgress.appendChild(eCancel);
+      eProgress.append(eCancel);
     }
 
     if (currentCancelled)
@@ -744,7 +731,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
     molCol.semType = DG.SEMTYPE.MOLECULE;
-    molCol.setTag(DG.TAGS.UNITS, this.molColumn.getTag(DG.TAGS.UNITS));
+    molCol.meta.units = this.molColumn.meta.units;
     const dataFrame = DG.DataFrame.fromColumns([molCol]);
 
     if (currentCancelled)
@@ -771,7 +758,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.treeBuildCount > runNum || this.cancelled)
       return;
 
-    if (jsonStr != null)
+    if (jsonStr != null && jsonStr != '')
       await this.loadTreeStr(jsonStr);
 
     if (this.cancelled) {
@@ -788,7 +775,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
 
-    this.progressBar!.close();
+    this.progressBar?.close();
     this.progressBar = null;
   }
 
@@ -810,7 +797,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.appendOrphanFolders(this.tree);
 
-    await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
     if (this.progressBar !== null)
       this.progressBar.update(100, 'Tree is ready');
@@ -820,9 +806,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.updateFilters();
     this.updateTag();
-    if (this.dataFrame) {
-      updateLabelWithLoaderOrBitset(this); 
-    }
+    await updateVisibleNodes(thisViewer); //first visible N nodes
   }
 
   get molColumn(): DG.Column | null {
@@ -1504,22 +1488,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     };
 
-    const labelDiv = label ? ui.divText(label) : ui.div(ui.loader(), { style: { 'margin-left': '-50px' } });
+    const labelDiv = ui.divText('');
     const iconsInfo = ui.divH([flagIcon, labelDiv]);
-    
-    if (!label) {
-      handleMalformedStructures(thisViewer.molColumn!, molStrSketcher!).then((bitset: DG.BitSet) => {
-        const newLabelDiv = ui.divH([ui.divText(bitset.trueCount.toString())]);
-        iconsInfo.replaceChildren(ui.divH([flagIcon, newLabelDiv]));
-        value(group).smiles = molStrSketcher!;
-        value(group).bitset = bitset;
-        value(group).labelDiv = newLabelDiv;
-        this.updateFilters();
-        this.filterTree(this.threshold);
-        updateLabelWithLoaderOrBitset(this); 
-      });
-    }
-    
+
     value(group).labelDiv = labelDiv;
 
     const c = molHost.getElementsByTagName('CANVAS');
@@ -1682,7 +1653,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const isMolDataset = dataFrame ? dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null : false;
     if (this.allowGenerate && isMolDataset) {
       this._generateLink!.style.color = '';
-      setTimeout(() => this.generateTree(), 1000);
+      this._generateLink!.onclick = (e) => this.generateTree();
     }
   }
 
@@ -1859,6 +1830,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       dataFrame.rows.highlight(null);
     });
 
+    this.tree.root.addEventListener('scroll', async () => await updateVisibleNodes(thisViewer));
+
     if (this.applyFilter) {
       this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
         if (thisViewer.bitset != null)
@@ -1869,12 +1842,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.subs.push(DG.debounce(dataFrame.onFilterChanged, 10).subscribe(async (_) => {
       if (thisViewer.tree.items.length < 1)
         return;
-      const firstChild = thisViewer.tree.items[0];
-      if (dataFrame.rowCount !== value(firstChild).bitset?.length) {
-        this.bitsetUpdateInProgress = true;
-        await updateAllNodesHits(thisViewer);
-      }
-      updateLabelWithLoaderOrBitset(thisViewer);
+      await updateVisibleNodes(thisViewer);
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
       dataFrame.rows.requestFilter();
@@ -1988,11 +1956,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   render() {
     const thisViewer = this;
-    this._bitOpInput = ui.choiceInput('', BitwiseOp.OR, Object.values(BitwiseOp), (op: BitwiseOp) => {
-      thisViewer.bitOperation = op;
+    this._bitOpInput = ui.input.choice('', {value: BitwiseOp.OR, items: Object.values(BitwiseOp), onValueChanged: v => {
+      thisViewer.bitOperation = v.stringValue;
       thisViewer.updateFilters();
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-    });
+    }});
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([

@@ -257,6 +257,8 @@ export const TAGS = {
   COLOR_CODING_LINEAR: '.color-coding-linear',
   COLOR_CODING_SCHEME_MAX: '.color-coding-scheme-max',
   COLOR_CODING_SCHEME_MIN: '.color-coding-scheme-min',
+  COLOR_CODING_MATCH_TYPE: '.color-coding-match-type',
+  COLOR_CODING_FALLBACK_COLOR: '.color-coding-fallback-color',
 
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
@@ -292,6 +294,11 @@ export const TAGS = {
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
 
+export enum LINK_CLICK_BEHAVIOR {
+  OPEN_IN_NEW_TAB = 'Open in new tab',
+  OPEN_IN_CONTEXT_PANEL = 'Open in context panel',
+  CUSTOM = 'Custom',
+}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.
@@ -617,7 +624,6 @@ export enum PERMISSION {
  * @typedef {string} Type
  * @typedef {string} SemType
  * @typedef {string} SimilarityMetric
- * @typedef {string} ColorType
  * @typedef {string} DockType
  *
  * @typedef {Object} ElementOptions
@@ -646,7 +652,6 @@ export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type StructureFilterType = `${STRUCTURE_FILTER_TYPE}`;
-export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;

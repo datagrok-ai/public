@@ -1,5 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
@@ -8,6 +9,7 @@ import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
+import {checkForSingleSeqClusters} from './multiple-sequence-alignment';
 import * as C from './constants';
 
 import {_package} from '../package';
@@ -54,20 +56,26 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   if (clustersCol.type != DG.COLUMN_TYPE.STRING)
     clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
 
-  const clusters = clustersCol.categories;
-  const bodies: PepseaBodyUnit[][] = new Array(clusters.length);
+  const clustersColCategories = clustersCol.categories;
+  const clustersColData = clustersCol.getRawData();
+  const bodies: PepseaBodyUnit[][] = new Array(clustersColCategories.length);
+  const clusterIndexes: number[][] = new Array(clustersColCategories.length);
 
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
-    const cluster = clustersCol.get(rowIndex) as string;
+    const clusterCategoryIdx = clustersColData[rowIndex];
+    const cluster = clustersColCategories[clusterCategoryIdx];
     if (cluster === '')
       continue;
 
-    const clusterId = clusters.indexOf(cluster);
+    const clusterId = clustersColCategories.indexOf(cluster);
     const helmSeq = srcCol.get(rowIndex);
-    if (helmSeq)
+    if (helmSeq) {
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
+      (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIndex);
+    }
   }
+  checkForSingleSeqClusters(clusterIndexes, clustersColCategories);
 
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
@@ -83,7 +91,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   }
 
   const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(unUsedName, alignedSequences);
-  alignedSequencesCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  alignedSequencesCol.meta.units = NOTATION.SEPARATOR;
   alignedSequencesCol.setTag(bioTAGS.separator, C.PEPSEA.SEPARATOR);
   alignedSequencesCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   alignedSequencesCol.setTag(bioTAGS.alphabet, ALPHABET.UN);

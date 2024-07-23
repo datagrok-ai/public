@@ -117,11 +117,11 @@ export class PipelineView extends FunctionView {
         let name = `${getVisibleStepName(step)}>${initialName}`;
         if (name.length > 31)
           name = `${name.slice(0, 31)}`;
-        let i = 1;
-        while (wb.worksheets.some((sheet) => sheet.name === name)) {
+        let i = 2;
+        while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
           let truncatedName = `${getVisibleStepName(step)}>${initialName}`;
           if (truncatedName.length > (31 - `-${i}`.length))
-            truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+            truncatedName = `${truncatedName.slice(0, 31 - `-${i}`.length)}`;
           name = `${truncatedName}-${i}`;
           i++;
         }
@@ -630,7 +630,9 @@ export class PipelineView extends FunctionView {
       const newRibbonPanels = [
         [
           ...super.buildRibbonPanels().flat(),
-          ...currentStep && this.steps[currentStep.func.nqName].options?.helpUrl ? [infoIcon]: [],
+          ...currentStep && this.steps[
+            currentStep.options?.customId ?? currentStep.func.nqName
+          ].options?.helpUrl ? [infoIcon]: [],
         ],
         ...currentStep ? currentStep.view.buildRibbonPanels(): [],
       ];

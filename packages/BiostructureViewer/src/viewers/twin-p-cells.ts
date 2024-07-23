@@ -42,7 +42,7 @@ export class TwinProteinView {
 
     // ---- INPUTS ----
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
-    this.repChoice = ui.choiceInput('Representation', 'cartoon', representations);
+    this.repChoice = ui.input.choice('Representation', {value: 'cartoon', items: representations});
     this.root = ui.div();
     this.changeChoices();
 

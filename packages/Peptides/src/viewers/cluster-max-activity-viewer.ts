@@ -86,8 +86,8 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
       showXSelector: false,
       showYSelector: false,
       showColorSelector: false,
-      xAxisType: 'logarithmic',
-      yAxisType: 'logarithmic',
+      xAxisType: DG.AxisType.logarithmic,
+      yAxisType: DG.AxisType.logarithmic,
       invertYAxis: this.activityTarget === ACTIVITY_TARGET.LOW,
       xColumnName: ClusterMaxActivityViewer.clusterSizeColName,
       markerType: 'circle',
@@ -124,7 +124,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     clusterSizeCol.init((i) => clusterCol.isNone(i) ? null : clusterSizeMap[clusterCol.get(i)] ?? null);
 
     if (activityCol.stats.min <= 0)
-      scatterPlotProps.yAxisType = 'linear';
+      scatterPlotProps.yAxisType = DG.AxisType.linear;
 
     // create a new column to store max activity for each cluster size
     const maxActivityIndexPerClusterMap: {[key: number]: number} = {};
@@ -290,7 +290,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
 
     this.render();
 
-    this.dataFrame.onDataChanged.subscribe(() => {
+    this.dataFrame?.onDataChanged.subscribe(() => {
       this.render();
     });
   }
@@ -299,6 +299,8 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     if (this.renderTimeout)
       clearTimeout(this.renderTimeout);
     this.renderTimeout = setTimeout(() => {
+      if (!this.dataFrame)
+        return;
       $(this.root).empty();
       const scViewer = this.scViewer;
       if (scViewer == null) {

@@ -1,5 +1,58 @@
 # compute-utils changelog
 
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
+## 1.35.10 (2024-07-08)
+
+- CompositionPipeline: Exposed options to public interface
+
+## 1.35.9 (2024-07-08)
+
+- PLV: Fixed names conflict in single excel export
+
+## 1.35.8 (2024-07-03)
+
+- PLV: Fixed run loading to load author
+
+## 1.35.7 (2024-07-01)
+
+- HistoryList: Fixed bug on batch deletion
+- HistoryInput: Added skipDf option
+
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResults method
+
+## 1.35.5 (2024-06-26)
+
+- getParamChanges fixed empty FuncCall error
+
+## 1.35.4 (2024-06-25)
+
+- Inputs bugfixes
+
+## 1.35.3 (2024-06-25)
+
+- Changed inputs to use new API
+
+## 1.35.2 (2024-06-24)
+
+- RFV: Added getViewers method
+
+## 1.35.0 (2024-06-12)
+
+- Code adapted for Compute API
+
 ## 1.34.3 (2024-05-21)
 
 ### Bug fixes
@@ -173,7 +226,7 @@
 ### Features
 
 - RFV: Now supports readme files via `meta.readme` tag
-- Wizard: Now support help panel state saving 
+- Wizard: Now support help panel state saving
 
 ## 1.24.1 (2024-03-02)
 

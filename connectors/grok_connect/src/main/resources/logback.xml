@@ -20,4 +20,5 @@
     <logger name="spark" level="warn" />
     <logger name="org.eclipse.jetty" level="warn" />
     <logger name="com.wisecoders.dbschema" level="warn" />
+    <logger name="org.neo4j" level="warn" />
 </configuration>

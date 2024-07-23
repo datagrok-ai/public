@@ -32,7 +32,7 @@ select * from customers
 --connection: ClickHouseNorthwind
 --input: int quantity = '40'
 --input: string productName = 'Manjimup Dried Apples'
---input: string country { choices: Demo:NorthwindDemo:countries }
+--input: string country { choices: Samples:NorthwindDemo:countries }
 select
   order_details.orderid,
   order_details.unitprice,

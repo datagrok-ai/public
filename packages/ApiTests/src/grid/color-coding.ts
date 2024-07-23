@@ -12,10 +12,10 @@ category('Grid: Color Coding', () => {
   test('colorCoding.api', async () => {
     v = grok.shell.addTableView(demog);
     grid = v.grid;
-    demog.col('age')!.colors.setLinear();
-    demog.col('age')!.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
-    demog.col('sex')!.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
-    demog.col('started')!.colors.setLinear([DG.Color.white, DG.Color.red]);
+    demog.col('age')!.meta.colors.setLinear();
+    demog.col('age')!.meta.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
+    demog.col('sex')!.meta.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
+    demog.col('started')!.meta.colors.setLinear([DG.Color.white, DG.Color.red]);
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
@@ -33,25 +33,19 @@ category('Grid: Color Coding', () => {
   });
 
   function testTags(after: string = '') {
-    const ageTags: any[] = Array.from(demog.col('age')!.tags);
-    if (!hasTag(ageTags, '.color-coding-type') ||
-      !hasTag(ageTags, 'Conditional') ||
-      !hasTag(ageTags, '.color-coding-conditional') ||
-      !hasTag(ageTags, '{"<30":"#00ff00","30-70":"#ff0000"}'))
+    const ageCol = demog.col('age')!;
+    if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CONDITIONAL ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_CONDITIONAL) !== '{"<30":"#00ff00","30-70":"#ff0000"}')
       throw new Error('Conditional Color Coding error on Age column' + after);
 
-    const sexTags: any[] = Array.from(demog.col('sex')!.tags);
-    if (!hasTag(sexTags, '.color-coding-type') ||
-      !hasTag(sexTags, 'Categorical') ||
-      !hasTag(sexTags, '.color-coding-categorical') ||
-      !hasTag(sexTags, '{"M":4278190335,"F":4286578816}'))
+    const sexCol = demog.col('sex')!;
+    if (sexCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL ||
+      sexCol.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL) !== '{"M":4278190335,"F":4286578816}')
       throw new Error('Categorical Color Coding error on Sex column' + after);
-   
-    const startedTags: any[] = Array.from(demog.col('started')!.tags);
-    if (!hasTag(startedTags, '.color-coding-type') ||
-      !hasTag(startedTags, 'Linear') ||
-      !hasTag(startedTags, '.color-coding-linear') ||
-      !hasTag(startedTags, '[4294967295,4294901760]'))
+
+    const startedCol = demog.col('started')!;
+    if (startedCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
+      startedCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294967295,4294901760]')
       throw new Error('Linear Color Coding error on Started column' + after);
   }
 });

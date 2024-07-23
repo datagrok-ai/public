@@ -90,6 +90,11 @@ for (const lang of langs) {
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
       });
+
+      test('Empty dataframe', async () => {
+        const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
+        expect(result.rowCount, 0);
+      });
     }
 
     if (!['JavaScript', 'Grok'].includes(lang)) {
@@ -97,7 +102,8 @@ for (const lang of langs) {
         const fileStringData = 'Hello world!';
         const fileBinaryData: Uint8Array = new TextEncoder().encode(fileStringData);
         const result = await grok.functions.call(`CVMTests:${lang}FileBlobInputOutput`,
-            {'fileInput': DG.FileInfo.fromString(fileStringData), 'blobInput': DG.FileInfo.fromBytes(fileBinaryData)});
+            {'fileInput': DG.FileInfo.fromString('test.txt', fileStringData),
+              'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
       });
@@ -163,7 +169,7 @@ for (const lang of langs) {
       const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
       return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 120000});
+    }, {timeout: 120000, benchmark: true});
 
     test(`Dataframe performance test sequentially`, async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -175,7 +181,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000});
+    }, {timeout: 120000, benchmark: true});
 
     test('Dataframe performance test parallel', async () => {
       const iterations = DG.Test.isInBenchmark ? 10 : 3;
@@ -188,9 +194,15 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 120000});
+    }, {timeout: 120000, benchmark: true});
   });
 }
+
+category('Stdout', () => {
+  test('Console printing', async () => {
+    await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
+  }, {timeout: 60000});
+});
 
 category('Scripts: Client cache test', () => {
   before(async () => {

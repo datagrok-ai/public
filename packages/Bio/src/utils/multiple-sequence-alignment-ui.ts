@@ -7,7 +7,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
-import {runKalign} from './multiple-sequence-alignment';
+import {MsaWarning, runKalign} from './multiple-sequence-alignment';
 import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
 import {multipleSequenceAlginmentUIOptions} from './types';
@@ -17,12 +17,6 @@ import {awaitContainerStart} from './docker';
 import {_package} from '../package';
 
 import '../../css/msa.css';
-
-export class MsaWarning extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-  }
-}
 
 export async function multipleSequenceAlignmentUI(
   options: multipleSequenceAlginmentUIOptions = {},
@@ -37,25 +31,25 @@ export async function multipleSequenceAlignmentUI(
     const table = options.col?.dataFrame ?? grok.shell.t;
     const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
-      const errMsg: string = `Multiple sequence analysis requires a dataset with a macromolecule column.`;
+      const errMsg: string = `Multiple Sequence Alignment analysis requires a dataset with a macromolecule column.`;
       grok.shell.warning(errMsg);
-      reject(new MsaWarning(errMsg));
+      reject(new MsaWarning(ui.divText(errMsg)));
       return; // Prevents creating the MSA dialog
     }
 
     // UI for PepSea alignment
-    const methodInput = ui.choiceInput('Method', options.pepsea.method, pepseaMethods);
+    const methodInput = ui.input.choice('Method', {value: options.pepsea.method, items: pepseaMethods});
     methodInput.setTooltip('Alignment method');
 
     // UI for Kalign alignment
-    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
+    const terminalGapInput = ui.input.float('Terminal gap', {value: options?.kalign?.terminalGap});
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
     const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
     // shared UI
-    const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
+    const gapOpenInput = ui.input.float('Gap open', {value: options.pepsea.gapOpen});
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-    const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
+    const gapExtendInput = ui.input.float('Gap extend', {value: options.pepsea.gapExtend});
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
 
     const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
@@ -75,25 +69,24 @@ export async function multipleSequenceAlignmentUI(
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
     let prevSeqCol = seqCol;
-    const colInput = ui.columnInput(
-      'Sequence', table, seqCol,
-      async (valueCol: DG.Column) => {
-        if (!valueCol || valueCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+    const colInput = ui.input.column(
+      'Sequence', {table: table, value: seqCol, onValueChanged: async (input: DG.InputBase<DG.Column<string>>): Promise<void> => {
+        if (!input.value || input.value.semType !== DG.SEMTYPE.MACROMOLECULE) {
           okBtn.disabled = true;
           await delay(0); // to
           colInput.value = prevSeqCol as DG.Column<string>;
           return;
         }
-        prevSeqCol = valueCol;
+        prevSeqCol = input.value;
         okBtn.disabled = false;
         performAlignment = await onColInputChange(
           colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
           methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
         );
-      }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
+      }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
+    const clustersColInput = ui.input.column('Clusters', {table: table, value: options.clustersCol!});
     clustersColInput.nullable = true;
 
     const dlg = ui.dialog('MSA')
@@ -145,8 +138,6 @@ async function onDialogOk(
 
     resolve(msaCol);
   } catch (err: any) {
-    const errMsg: string = err instanceof Error ? err.message : err.toString();
-    grok.shell.error(errMsg);
     reject(err);
   } finally {
     pi.close();

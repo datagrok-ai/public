@@ -1,6 +1,7 @@
-import DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {loadJsonData} from './apps/common/model/data-loader/json-loader';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 import {MonomerLibWrapper} from './apps/common/model/monomer-lib/lib-wrapper';
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
 import {FormatDetector} from './apps/common/model/parsing-validation/format-detector';
@@ -14,9 +15,13 @@ import {FormatConverter} from './apps/translator/model/format-converter';
 import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
-import {getPolyToolDialog} from './polytool/ui';
+//polytool specific
+import {getPolyToolConversionDialog} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
+import {ITranslationHelper} from './types';
+import {polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-ui';
+import {addContextMenuUI} from './utils/context-menu';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
@@ -26,11 +31,11 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 //tags: app
 //output: view v
 export async function oligoToolkitApp(): Promise<DG.ViewBase> {
-  await initSequenceTranslatorLibData();
-  const externalViewFactories = await getExternalAppViewFactories();
+  await _package.initLibData();
+  const externalViewFactories = await getExternalAppViewFactories(_package);
   if (!externalViewFactories)
     throw new Error('External app view factories not loaded');
-  const appUI = new CombinedAppUI(externalViewFactories!);
+  const appUI = new CombinedAppUI(externalViewFactories!, _package);
   const view = await appUI.getAppView();
   return view;
 }
@@ -65,16 +70,18 @@ export async function oligoStructureApp(): Promise<DG.ViewBase> {
   return view;
 }
 
-//name: initSequenceTranslatorLibData
-export async function initSequenceTranslatorLibData(): Promise<void> {
-  await loadJsonData();
-  await _package.initMonomerLib();
+//name: getTranslationHelper
+//output: object result
+export async function getTranslationHelper(): Promise<ITranslationHelper> {
+  await _package.initLibData();
+  return _package;
 }
 
 //name: getCodeToWeightsMap
 //output: object result
-export function getCodeToWeightsMap(): {[key: string]: number} {
-  const map = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+export function getCodeToWeightsMap(): { [key: string]: number } {
+  const monomerLibWrapper = _package.monomerLibWrapper;
+  const map = monomerLibWrapper.getCodesToWeightsMap();
   return Object.fromEntries(map);
 }
 
@@ -82,8 +89,8 @@ export function getCodeToWeightsMap(): {[key: string]: number} {
 //input: string sequence
 //output: bool result
 export function validateSequence(sequence: string): boolean {
-  const validator = new SequenceValidator(sequence);
-  const format = (new FormatDetector(sequence).getFormat());
+  const validator = _package.createSequenceValidator(sequence);
+  const format = _package.createFormatDetector(sequence).getFormat();
   return (format === null) ? false : validator.isValidSequence(format!);
 }
 
@@ -134,29 +141,43 @@ export async function demoOligoStructure(): Promise<void> {
 export async function translateOligonucleotideSequence(
   sequence: string, sourceFormat: string, targetFormat: string
 ): Promise<string> {
-  await initSequenceTranslatorLibData();
-  return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
+  await _package.initLibData();
+  return _package.createFormatConverter(sequence, sourceFormat).convertTo(targetFormat);
 }
 
 async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
-  await initSequenceTranslatorLibData();
-  const appUI = getSpecifiedAppUI(appName);
+  await _package.initLibData();
+  const appUI = getSpecifiedAppUI(appName, _package);
   const view = await appUI.getAppView();
   return view;
 }
 
-//top-menu: Bio | Convert | PolyTool
-//name: polyTool
+//top-menu: Bio | Convert | PolyTool-Convert
+//name: polyToolConvert
 //description: Perform cyclization of polymers
-export async function polyTool(): Promise<void> {
+export async function polyToolConvert(): Promise<void> {
   let dialog: DG.Dialog;
   try {
-    dialog = await getPolyToolDialog();
+    dialog = await getPolyToolConversionDialog();
     dialog.show();
   } catch (err: any) {
-    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
+    grok.shell.warning('To run PolyTool Conversion, open a dataframe with macromolecules');
   }
 }
+
+//top-menu: Bio | Convert | PolyTool-Enumerate HELM
+//name: polyToolEnumerateHelm
+//description: Perform cyclization of polymers
+export async function polyToolEnumerateHelm(): Promise<void> {
+  polyToolEnumerateHelmUI();
+}
+
+// //top-menu: Bio | Convert | PolyTool-Enumerate Chem
+// //name: polyToolEnumerateChem
+// //description: Perform cyclization of polymers
+// export async function polyToolEnumerateChem(): Promise<void> {
+//   polyToolEnumerateChemUI();
+// }
 
 //name: polyToolColumnChoice
 //input: dataframe df [Input data table]
@@ -176,3 +197,41 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
   const jsonFileContent = JSON.stringify(libObject, null, 2);
   DG.Utils.download(jsonFileName, jsonFileContent);
 }
+
+// -- Handle context menu --
+
+//name: addContextMenu
+//input: object event
+export function addContextMenu(event: DG.EventData): void {
+  addContextMenuUI(event);
+}
+
+// //name: PolyTool Converter
+// //meta.icon: img/icons/structure.png
+// //meta.browsePath: PolyTool
+// //tags: app
+// //output: view v
+// export async function ptConverterApp(): Promise<DG.ViewBase> {
+//   const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+//   return view;
+// }
+
+// //name: PolyTool Enumerator Helm
+// //meta.icon: img/icons/structure.png
+// //meta.browsePath: PolyTool
+// //tags: app
+// //output: view v
+// export async function ptEnumeratorHelmApp(): Promise<DG.ViewBase> {
+//   const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+//   return view;
+// }
+
+// //name: PolyTool Enumerator Chem
+// //meta.icon: img/icons/structure.png
+// //meta.browsePath: PolyTool
+// //tags: app
+// //output: view v
+// export async function ptEnumeratorChemApp(): Promise<DG.ViewBase> {
+//   const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
+//   return view;
+// }

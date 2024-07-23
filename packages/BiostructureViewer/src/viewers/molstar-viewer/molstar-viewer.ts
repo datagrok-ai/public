@@ -877,7 +877,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       throw new Error(`${this.viewerToLog()}.getLigandStrOfRow(), no dataFrame or ligandColumnName`);
 
     const ligandCol: DG.Column = this.dataFrame.getCol(this.ligandColumnName);
-    const ligandUnits: string = ligandCol.getTag(DG.TAGS.UNITS);
+    const ligandUnits: string = ligandCol.meta.units!;
     const ligandCellValue: string = ligandCol.get(rowIdx);
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;

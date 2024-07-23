@@ -19,4 +19,4 @@ df.onMetadataChanged
   });
 
 // Change the formula either programmatically or from the interface (tab 'Formula' in the context panel)
-col.tags[DG.TAGS.FORMULA] = 'Avg($[x])';
+col.meta.formula = 'Avg($[x])';

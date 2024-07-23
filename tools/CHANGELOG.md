@@ -1,5 +1,37 @@
 # Datagrok-tools changelog
 
+
+## 4.13.8 (2024-07-18)
+
+### Bug Fixes
+
+* Fixed path chacks for npmignore
+
+## 4.13.6 (2024-07-15)
+
+### Bug Fixes
+
+* Splitt warnings and errors in grok check command
+
+## 4.13.4 (2024-06-25)
+
+### Bug Fixes
+
+* Check source maps fixes 
+
+## 4.13.3 (2024-06-21)
+
+### Features
+
+* Added check on source maps in grock check command
+
+## 4.13.1 (2024-06-04)
+
+### Features
+
+* Added argument `package`, which allows you to choose a package for the `test` command
+
+
 ## 4.12.13 (2023-08-17)
 
 ### Bug Fixes

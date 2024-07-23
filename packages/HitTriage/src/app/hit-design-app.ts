@@ -16,6 +16,7 @@ import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Subscription} from 'rxjs';
+import {filter} from 'rxjs/operators';
 
 export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   multiView: DG.MultiView;
@@ -39,6 +40,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
   public mainView: DG.ViewBase;
+  private get version() {return this._campaign?.version ?? 0;};
 
   constructor(c: DG.FuncCall) {
     super(c);
@@ -175,34 +177,35 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       if (isNew)
         grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
 
-      subs.push(this.dataFrame!.onRowsAdded.subscribe(() => { // TODO, insertion of rows in the middle
-        try {
+      subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
+        .subscribe(() => { // TODO, insertion of rows in the middle
+          try {
           // const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
           // this.processedValues.push(...new Array(newRowsNum).fill(''));
-          this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
-          if (this.template!.stages?.length > 0) {
-            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-              const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
-              if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
+            this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+            if (this.template!.stages?.length > 0) {
+              for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+                const colVal = this.dataFrame!.col(TileCategoriesColName)!.get(i);
+                if (!colVal || colVal === '' || this.dataFrame!.col(TileCategoriesColName)?.isNone(i))
                 this.dataFrame!.set(TileCategoriesColName, i, this.template!.stages[0]);
+              }
             }
+            let lastAddedCell: DG.GridCell | null = null;
+            for (let i = 0; i < this.dataFrame!.rowCount; i++) {
+              const cell = view.grid.cell(this.molColName, i);
+              if (!cell)
+                continue;
+              if (cell.cell.value === '' || cell.cell.value === null)
+                lastAddedCell = cell;
+            }
+            if (lastAddedCell)
+              grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
+          } catch (e) {
+            console.error(e);
           }
-          let lastAddedCell: DG.GridCell | null = null;
-          for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-            const cell = view.grid.cell(this.molColName, i);
-            if (!cell)
-              continue;
-            if (cell.cell.value === '' || cell.cell.value === null)
-              lastAddedCell = cell;
-          }
-          if (lastAddedCell)
-            grok.functions.call('Chem:editMoleculeCell', {cell: lastAddedCell});
-        } catch (e) {
-          console.error(e);
-        }
         //const lastCell = view.grid.cell(this.molColName, this.dataFrame!.rowCount - 1);
         //view.grid.onCellValueEdited
-      }));
+        }));
       this.dataFrame && subs.push(this.dataFrame?.onRowsRemoved.subscribe(() => {
         try {
           this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
@@ -490,7 +493,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const getPathEditor = () => {
       const editIcon = ui.icons.edit(() => {
         const folderPath = getFolderPath();
-        const newPathInput = ui.stringInput('Path', folderPath);
+        const newPathInput = ui.input.string('Path', {value: folderPath});
         const labelElement = newPathInput.root.getElementsByTagName('label').item(0);
         if (labelElement)
           labelElement.remove();
@@ -581,9 +584,30 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       savePath: this._filePath,
       columnTypes: colTypeMap,
       tilesViewerFormSketch: sketchStateString,
+      version: this.version + 1,
     };
+    const campaignPath = `Hit Design/campaigns/${campaignId}/${CampaignJsonName}`;
+    // check if someone already saved the campaign
+    let resDf = enrichedDf;
+
+
+    if (await _package.files.exists(campaignPath)) {
+      const prevCamp: HitDesignCampaign = JSON.parse(await _package.files.readAsText(campaignPath));
+      if ((prevCamp.version ?? 0) > this.version) {
+        campaign.version = Math.max(this.version, (prevCamp.version ?? 0)) + 1;
+        if (await grok.dapi.files.exists(this._filePath)) {
+          try {
+            const prevCampDf = await grok.dapi.files.readCsv(this._filePath);
+            const joined = this.unionDataframes(prevCampDf, enrichedDf, this.molColName);
+            resDf = joined;
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    }
     const csvDf = DG.DataFrame.fromColumns(
-      enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
+      resDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();
     //await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
     await grok.dapi.files.writeAsText(this._filePath, csvDf);
@@ -594,7 +618,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       campaign.layout = newLayout.viewState;
     campaign.template = this.template;
 
-    await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`,
+    await _package.files.writeAsText(campaignPath,
       JSON.stringify(campaign));
     notify && grok.shell.info('Campaign saved successfully.');
     this.campaign = campaign;

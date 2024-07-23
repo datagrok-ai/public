@@ -8,7 +8,7 @@ let df = DG.DataFrame.fromColumns([
 df.onColumnsAdded
   .subscribe((data) => {
     data.args.columns
-      .filter((col) => col.tags.has(DG.TAGS.FORMULA))
+      .filter((col) => col.meta.formula != null)
       .forEach((col) => grok.shell.info(`Added ${col.name}`));
 });
 

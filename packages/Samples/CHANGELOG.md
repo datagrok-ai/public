@@ -1,9 +1,12 @@
-# Demo changelog
+# Samples changelog
 
-## 1.3.5 (2023-07-27)
+## 1.0.4 (2024-07-18)
 
-*Dependency: datagarok-api >= 1.13.0*
+* Fixes demo swagger connections, projects, scripts
 
-### Bug Fixes
+## 1.0.3 (2024-06-05)
 
-* Fixed minor issues with packages and notebooks
+This release focuses on improving feature stability and usability.
+
+* Dependency: datagrok-api >= 1.13.0*
+* Fixes demo projects

@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {
   getUserLibSettings, setUserLibSettings, LIB_PATH
@@ -49,7 +50,9 @@ export class MonomerLibManager implements IMonomerLibHelper {
   }
 
   /** Protect constructor to prevent multiple instantiation. */
-  protected constructor() {}
+  protected constructor(
+    private readonly logger: ILogger,
+  ) {}
 
   /** Singleton monomer library
    * @return {MonomerLibManager} MonomerLibHelper instance
@@ -64,7 +67,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
   async getFileManager(): Promise<MonomerLibFileManager> {
     if (this._fileManagerPromise === undefined) {
       this._fileManagerPromise = (async () => {
-        const fileManager: MonomerLibFileManager = await MonomerLibFileManager.create(this, this._eventManager);
+        const fileManager: MonomerLibFileManager =
+          await MonomerLibFileManager.create(this, this._eventManager, this.logger);
         return fileManager;
       })();
     }
@@ -82,6 +86,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       // WARNING: This function is not allowed to throw any exception,
       // because it will prevent further handling monomer library settings
       // through blocking this.loadLibrariesPromise
+      const pi = DG.TaskBarProgressIndicator.create('Loading monomers ...');
       try {
         const [libFileNameList, settings]: [string[], UserLibSettings] = await Promise.all([
           (await this.getFileManager()).getValidLibraryPaths(),
@@ -95,14 +100,19 @@ export class MonomerLibManager implements IMonomerLibHelper {
           return isFileIncluded && isExplicit;
         });
 
+        let completedLibCount: number = 0;
         const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
           .map((libFileName) => {
             //TODO handle whether files are in place
-            return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
-              const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
-                `${err instanceof Error ? err.message : err.toString()}`;
-              return new MonomerLib({}, libFileName, errMsg);
-            });
+            return this.readLibrary(LIB_PATH, libFileName)
+              .catch((err: any) => {
+                const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
+                  `${err instanceof Error ? err.message : err.toString()}`;
+                return new MonomerLib({}, libFileName, errMsg);
+              }).finally(() => {
+                pi.update(Math.round(100 * (++completedLibCount) / filteredLibFnList.length),
+                  `Loading monomer libs ${completedLibCount}/${filteredLibFnList.length}`);
+              });
           }));
         this._monomerLib.updateLibs(libs, reload);
       } catch (err: any) {
@@ -112,6 +122,8 @@ export class MonomerLibManager implements IMonomerLibHelper {
 
         const errStack = err instanceof Error ? err.stack : undefined;
         _package.logger.error(errMsg, undefined, errStack);
+      } finally {
+        pi.close();
       }
     });
   }
@@ -149,7 +161,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
     let res = window.$monomerLibHelperPromise;
     if (res === undefined) {
       res = window.$monomerLibHelperPromise = (async () => {
-        const instance = new MonomerLibManager();
+        const instance = new MonomerLibManager(_package.logger);
         instance._eventManager = MonomerLibFileEventManager.getInstance();
         return instance;
       })();

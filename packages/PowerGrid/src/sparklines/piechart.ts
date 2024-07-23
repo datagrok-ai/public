@@ -345,18 +345,16 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     return ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
+      ui.input.columns('Сolumns', {table: gc.grid.dataFrame, onValueChanged: (input) => {
+        settings.columnNames = names(input.value);
         gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      }, available: names(gc.grid.dataFrame.columns.numerical), checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
-        function(value: PieChartStyle) {
-          settings.style = value;
+      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius],
+        onValueChanged: (input) => {
+          settings.style = input.value;
           gc.grid.invalidate();
-        }),
+        }}),
     ]);
   }
 }

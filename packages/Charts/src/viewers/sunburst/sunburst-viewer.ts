@@ -133,7 +133,7 @@ export class SunburstViewer extends EChartViewer {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
           const column = dataFrame.getCol(hierarchyColumnNames[j]);
-          const format = column.getTag(DG.TAGS.FORMAT);
+          const format = column.meta.format;
           if (format) {
             const number = format.indexOf('.');
             const len = format.length - number - 1;
@@ -199,6 +199,11 @@ export class SunburstViewer extends EChartViewer {
 
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
+      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
+      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
+      this.render();
+    }));
     this.addSelectionOrDataSubs();
     this.render();
   }
@@ -307,6 +312,8 @@ export class SunburstViewer extends EChartViewer {
   }
 
   render() {
+    if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
+      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 

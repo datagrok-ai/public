@@ -3,39 +3,40 @@ title: "Basic tasks"
 format: 'mdx'
 ---
 
+```mdx-code-block
+import DownloadIcon from '../../../uploads/icons/download-icon.png';
+import ExportCSV from '../../../uploads/pictures/export-csv.png';
+```
+
 ## Access
 
 ### Import
 
 To open a local file, drag and drop it on the platform. Alternatively, go to
-**Sidebar** > **Browse** > **Top Menu** and click the **Open file**
-(![](../../../uploads/icons/open-file-con-temp.png)) icon or the **Import text**
-(![](../../../uploads/icons/open-text-icon-temp.png)) icon, which lets you
-configure the text file before import. 
+**Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>) > **Top Menu** and click the **Open file**
+(<FAIcon icon="fa-regular fa-folder-open"/>) icon or the **Import text**
+(<FAIcon icon="fa-regular fa-file-lines"/>) icon, which lets you
+configure the text file before import.
 
 ### Open in Datagrok
 
-To open a file, table, or other object in Datagrok, open **Browse** (**Sidebar** > **Browse**). In the **Browse** tree, find your object and double-click it to
+To open a file, table, or other object in Datagrok, open **Browse** (**Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>)). In the **Browse** tree, find your object and double-click it to
 open.
 
 To learn more about data access options, see the
 [Access](../../../access/access.md) section of our documentation.
 
-## Save
+## Save and share a table
 
-When you open an object in Datagrok (like a table or a query), your changes to
+When you import a table in Datagrok, your changes to
 it **_aren't_** saved automatically. Everything stays in your browser's memory. If you close or
-refresh the browser tab, any unsaved work will be lost. 
+refresh the browser tab, any unsaved work will be lost. Click SAVE button on top 
+to upload it to the server. A project containing this table will be automatically created.
 
-To save your changes, you must manually upload the modified object to
-the server. Uploading your object doesn't automatically share it with others. You
+Uploading the project object doesn't automatically share it with others. You
 must share it explicitly.
 
-To save your changes, find the **SAVE** button at the top of the screen and
-click it. This typically opens the dialog where you can specify what to save and
-where to save it.
-
-### Table Views
+### Saving a dashboard
 
 When you open a CSV file or run a [function](../../concepts/functions/functions.md)
 that produces a table, it opens a [Table View](../views/table-view.md) resembling Excel. Here, you can edit both the data
@@ -43,22 +44,17 @@ that produces a table, it opens a [Table View](../views/table-view.md) resemblin
 [layout](../../../visualize/view-layout.md)).
 
 Tables and layouts are separate [entities](../../concepts/objects.md). This means you can
-choose to save changes made to the data, layout, or both.
-
-All _entities_ are stored within [projects](../../concepts/project/project.md).
-Based on your privileges, you can either update the original project or create
-a copy with your changes.
+choose to save changes made to the data, layout, or both. 
 
 To save:
 
-1. At the top of your screen, find the **SAVE** button and click it to open
-   the **Save project** dialog.
+1. At the top of your screen, click the **SAVE** button top open the **Save project** dialog.
 1. In the dialog:
    * **For new entities**: Enter a name and, optionally, a
       description for your project. By default, mew entities are saved to your personal project under **My stuff**. 
    * **For existing (modified) entities**: Remove any tables you don't want to save. By default, all open tables are included. Select one of the following: 
           * **Save original project**: Updates the original project.
-          * **Save a copy**: Creates a new version of the project. If you choose this option, you must also decide what happens to each table included in your new project:
+          * **Save a copy**: Useful when you want to edit the project, but don't have the privilege to modify the original one. If you choose this option, you must also decide what happens to each table included in your new project:
               * **Clone**: Creates a copy of the table in your new project.
               * **Move**: Moves the table to the new project, leaving a read-only linked copy in the original project. The linked copy updates with changes made to the table in the new project.
               * **Link**: Creates a read-only linked copy of the original table in your project. Changes to the table in the original project are automatically reflected in the linked table in your project.
@@ -67,13 +63,13 @@ To save:
       * To update the data every time you open a project, toggle **Data sync**.
          This feature is commonly used to create [dynamic dashboards](../../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)
          or when tables link to different projects.
-      * To save your project in a presentation mode, toggle **Presentation mode**.
+      * To save your project in a presentation mode, toggle **Presentation mode**. Useful for sharing with data consumers. Toolboxes, status bars, menus, ribbons, context panels will not be shown, letting users focus on the data and visualizations you have created.
 1. Click **OK** to save. The **SAVE** button in the **Table View** turns grey,
    indicating you have no unsaved changes.
 
 :::note
 
-Moving tables between projects, impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/project.md).
+Moving tables between projects impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/project.md).
 
 :::
 
@@ -95,23 +91,18 @@ When you upload a table with a generation script, you can activate the **Data sy
 ## Share
 
 You can share Datagrok [entities](../../concepts/objects.md) with other users or
-[groups](../../../govern/group.md). When you share an entity, you grant a
-[privilege](../../../govern/authorization.md) (typically, _view_ or _edit_) to others.
+[groups](../../../govern/access-control/users-and-groups#groups). When you share an entity, you grant a
+[privilege](../../../govern/access-control/access-control.md#permissions) (typically, _view_ or _edit_) to others.
 To learn how to manage groups and privileges, see
-[Security](../../../govern/security.md).
+[Access control](../../../govern/access-control/access-control.md#authorization).
 
-You can share _entities_ in two ways:
+To share an entity, right-click to open the context menu and click "Share...". You can also do that from the  [Context Panel](../panels/panels.md#context-panel).
 
-1. Via context actions, accessible through the **Context Menu** (right-click) or
-   the [Context Panel](../panels/panels.md#context-panel).
-1. By sharing the entity's URL. To access an entity via a URL, the recipient
-   needs appropriate permissions. The URL links never expire, can't be revoked,
-   and may break if the entity is renamed. Use them with caution.
+You can send the entity's URL to your colleague. To access an entity via a URL, the recipient needs appropriate permissions. 
 
 To share an entity using context actions:
 
-1. Find and click the **Share...** command on the **Context Menu** (available on
-   right-click) or the **Context Panel**. This opens a dialog.
+1. Right-click to open the context menu and click "Share...".
 1. In the dialog: 
    1. In the identity/email field, start typing the name, username,
       email, or group name and select the appropriate match.
@@ -126,12 +117,21 @@ To share an entity using context actions:
    1. To skip notification, clear the **Send notification** checkbox.
 1. Click **OK** to share. The shared item appears in the recipient's [Browse view](../views/browse.md).
 
+:::note
+
+You can share an entity with an email address that doesn't yet have a Datagrok
+account. In such cases, Datagrok creates a non-active user account. To access the
+shared entity, the recipient will need to register and activate their account
+using the specified email address.
+
+:::
+
 ## Download
 
-### Tables
+### Tables and visualizations
 
 You can download any open table as a file or a set of files. To do this, use the
-**Download** (![](../../../uploads/icons/download-icon.png)) icon located at the
+**Download** (<img src={DownloadIcon} width="15px"/>) icon located at the
 top of the screen.
 
 <details>
@@ -155,7 +155,7 @@ This opens the **Save as CSV** dialog, where you can specify the desired
 configuration. If you want to use these settings by default in the future, click
 the **SET DEFAULT** button.
 
-![Export CSV](../../../uploads/pictures/export-csv.png "Export CSV")
+<img src={ExportCSV} width="250px"/>
 
 When downloading tables in a **CSV** format, only the current table
 is downloaded. 
@@ -191,5 +191,37 @@ table using drag and drop.
 ### Files
 
 To download a file, go to **Sidebar** > **Browse**. In the **Browse** tree,
-locate the file you want to download, right-click it and select the download
-option from its **Context Menu**.
+right-click the file and select the download option from its **Context Menu**.
+
+## Add to favorites
+
+To add an entity to favorites, do any of the following:
+
+* Drag-and-drop in the [Browse](../views/browse.md) tree:
+    * Drag and drop the entity on the **Favorites** directory under **My stuff**.
+    * Click the **Favorites** directory under **My stuff**. This opens the
+  **Favorites** view. Drag and drop the entity on the view.
+* Use the **Context Panel**
+  1. In the **Browse** tree, click the entity you want. The **Context Panel** shows entity-specific information and actions.
+  1. On the **Context Panel** next to the entity's name, click the **Add to
+     favorites (<FAIcon icon="fa-regular fa-star"/>) icon**. The color of the
+     icon changes to orange, and the entity is added to your favorites.
+
+You can later access favorites either from the **Browse** tree or by clicking
+the **Favorites (<FAIcon icon="fa-regular fa-star"/>) icon**:
+* On the **Sidebar**, or
+* On top of the **Context Panel**. 
+
+To remove an entity from favorites, use the context menu. Alternatively, on the
+**Context Panel** next to the entity's name, click the orange **Add to favorites
+(<FAIcon icon="fa-regular fa-star"/>) icon**. The color changes to neutral, and
+the entity is removed from your favorites.
+
+![](img/add-to-favorites.gif)
+
+:::note
+
+You can favorite any Datagrok [entity](../../concepts/objects.md) like a data connection, query, or a project.
+You can't favorite an individual file or a specific value within a cell. <!--This can be solved with sticky meta.Suggestion submitted-->
+
+:::

@@ -53,10 +53,10 @@ Some connection parameters have unique characteristics, and it's important to sp
   string` parameter to enter a custom JDBC connection string. Leave all other
   parameter fields empty. You still need to enter credentials.
 * _Credentials_. You have two ways to specify credentials:
-  * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/security.md#credentials). To specify who can change the connection credentials, click the **Gear** icon
+  * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/access-control/access-control.md#credentials-management-system). To specify who can change the connection credentials, click the **Gear** icon
    and select from the **Credential owner** dropdown.
 
-  * Use the [Secrets Manager](../data-connection-credentials.md), such as the AWS Secrets Manager.
+  * Use the [Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS Secrets Manager.
 
 Upon successful connection, the database appears in the [Database Manager](https://public.datagrok.ai/connect) 
 under the respective data source.
@@ -597,8 +597,8 @@ To share:
 1. Right-click the connection or a query you want to share and select **Share...**.
 2. In the **Share** dialog, enter a user or a group that needs access and set
    corresponding permissions. These privileges can be given to users or to
-   [groups](../../govern/group.md). For more information on the access privilege
-   model, see [Privileges](../../govern/security.md#privileges).
+   [groups](../../govern/access-control/users-and-groups#groups). For more information on the access privilege
+   model, see [Permissions](../../govern/access-control/access-control.md#permissions).
 3. Optional. Add a description in the provided text field. If you don't want to
    notify the recipients, clear the **Send notification** checkbox. :::note
 

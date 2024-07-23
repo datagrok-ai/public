@@ -121,60 +121,208 @@ left join filled f on f.date = e.date and f.status = e.status
 
 --name: TestTrack
 --connection: System:Datagrok
---input: string version
---input: string uid
---input: string start
-select
-distinct on (e.description)
-e.description as path,
-case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
-v2.value as reason,
-e.event_time as date
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
-left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
-left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
-left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
-left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
-where v3.value = @version and v5.value = @uid and v6.value = @start
-order by e.description, e.event_time desc
+--input: string batchName
+
+Select * from (
+   select distinct on (t.name)  
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.date_time as date,
+  t.name as test, 
+
+  r.params,	
+  r.params::json->>'severityLevel' as severityLevel,  
+  r.params::json->>'batchName' as batchName,
+  r.params::json->>'version' as version,
+  r.params::json->>'result' as reason,
+  r.params::json->>'uid' as uid,
+  r.params::json->>'start' as start
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' and not r.passed is null and (r.params::json->>'batchName') = @batchName
+order by   t.name, r.date_time desc  
+) as testsData
+order by testsData.date desc
 --end
 
 --name: LastStatuses
 --connection: System:Datagrok
 --input: string path
-select
-case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
-e.event_time as date,
-v5.value::uuid as uid,
-v3.value as version,
-v2.value as reason,
-v6.value as start
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-manual%'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
-left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2.parameter_id and p2.name = 'result' on v2.event_id = e.id
-left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'version' on v3.event_id = e.id
-left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
-left join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'uid' on v5.event_id = e.id
-left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'start' on v6.event_id = e.id
-where e.description = @path
-order by e.event_time desc
-limit 4
+--input: string batchToExclude
+Select * from (
+   select distinct on ( (r.params::json->>'batchName'))  
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.date_time as date,
+  t.name as test, 
+
+  r.params,	
+  r.params::json->>'severityLevel' as severityLevel, 
+  r.params::json->>'batchName' as batchName,
+  r.params::json->>'version' as version,
+  r.params::json->>'result' as reason,
+  r.params::json->>'uid' as uid, 
+  r.params::json->>'start' as start
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' and t.name =  concat('Unknown: ', @path) 
+and NOT (r.params::json->>'batchName') =  @batchToExclude   and not r.passed is null
+order by   (r.params::json->>'batchName'), r.date_time desc 
+limit 5 ) as testsData
+order by testsData.date desc
 --end
 
---name: TestingName
---connection: System:Datagrok
---input: string id
---output: string name
-select
-distinct on (e.description)
-v1.value as name
-from events e
-inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name = 'tt-new-testing'
-left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'name' on v1.event_id = e.id
-where e.description = @id
-order by e.description, e.event_time desc
+--name: TestingNames
+--connection: System:Datagrok 
+--output: dataframe df
+select * from (
+Select distinct on ((r.params::json->>'batchName'))   
+  (r.params::json->>'batchName') as batchName,
+  (r.params::json->>'version') as version, 
+  (r.params::json->>'start')as start,
+    r.date_time as date
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' 
+order by (r.params::json->>'batchName')) as a
+order by a.date desc
 --end
+
+
+--name: TestingName
+--connection: System:Datagrok 
+--input: string version
+--input: string uid
+--input: string start
+--output: string name
+ 
+Select distinct on ((r.params::json->'batchName')::varchar(255))  
+  (r.params::json->>'batchName')::varchar(255) as batchName,
+  (r.params::json->>'version')::varchar(255) as version,
+   
+  (r.params::json->>'start')::varchar(255) as start,
+    r.date_time as date
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name   
+where t.type = 'manual' 
+  and (r.params::json->>'uid')::varchar(255) = @uid 
+  and (r.params::json->>'version')::varchar(255) =  @version
+  and (r.params::json->>'start')::varchar(255) = @start
+order by (r.params::json->'batchName')::varchar(255), r.date_time 
+limit 1
+--end
+
+--name: Builds
+--connection: System:Datagrok
+with commits as (
+select distinct on (a.commit) a.id, a.buildtime, a.commit
+from (select
+e.id, e.description, e.event_time as buildtime, v2.value as commit
+from events e
+inner join event_types t on t.id = e.event_type_id
+inner join event_parameter_values v2 inner join event_parameters p2 on (p2.id = v2.parameter_id and p2.name = 'commit')  on v2.event_id = e.id
+where t.friendly_name = 'datagrok-started' and t.source = 'info' and NOT e.id = 'e1c09320-25d0-11ef-abf5-c1c6c1b45111'
+order by e.event_time) a)
+select buildtime || ' - ' || commit as text, buildtime as build, commits.id as id,
+coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits order by 1 desc
+--end
+
+--name: getTestStatusesAcordingDF
+--connection: System:Datagrok 
+--meta.cache: all
+--input: string buildId 
+--input: dataframe testslist 
+--meta.cache.invalidateOn: 0 0 * * *
+
+  with commits as (
+  select distinct on (a.commit) a.id, a.buildtime, a.commit
+  from (select
+  e.id, e.description, e.event_time as buildtime, v2.value as commit
+  from events e
+  inner join event_types t on t.id = e.event_type_id
+  inner join event_parameter_values v2 inner join event_parameters p2 on (p2.id = v2.parameter_id and p2.name = 'commit')  on v2.event_id = e.id
+  where t.friendly_name = 'datagrok-started' and t.source = 'info' and NOT e.id = 'e1c09320-25d0-11ef-abf5-c1c6c1b45111' 
+  order by e.event_time) a), 
+  builds as (select buildtime || ' - ' || commit as build, buildtime as date,
+  coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits 
+  where id = @buildId order by 1 desc), 
+  
+  test_event_types as (select t.id, coalesce(t.friendly_name, df.name)as friendly_name from  event_types t
+  full outer join testslist df on df.name =  t.friendly_name
+  where ((t.friendly_name like 'test-integration%' or t.friendly_name like 'test-unit%') and t.source = 'usage') or df.name like 'test-%'),
+  
+  manualTestsTypes as (select t.id, t.friendly_name as friendly_name, regexp_matches(t.friendly_name, 'test-(\S*) (\S[^: ]*).* (\w+)')as data
+  from test_event_types t
+  where t.friendly_name like 'test-manual%'),
+  autoTestsTypes as (select t.id, t.friendly_name as friendly_name, regexp_matches(t.friendly_name, 'test-(\S*) (\S[^:]*): (.*): (.*)')as data
+  from test_event_types t),
+  types as (select manualTestsTypes.id, manualTestsTypes.friendly_name as friendly_name, 
+  manualTestsTypes.data[1] as type, 
+  null as package,
+  manualTestsTypes.data[3] as test,
+  manualTestsTypes.data[2] as category
+  from manualTestsTypes
+  union 
+  select autoTestsTypes.id, autoTestsTypes.friendly_name as friendly_name, 
+  autoTestsTypes.data[1] as type, 
+  autoTestsTypes.data[2] as package,
+  autoTestsTypes.data[4] as test,
+  autoTestsTypes.data[3] as category
+  from autoTestsTypes)
+
+select DISTINCT ON (b.build, t.friendly_name) b.date as build_date, b.build, 
+t.id::text as test_id,
+e.event_time as test_time,
+coalesce(v6.value, t.package) as package,
+coalesce(v7.value, t.test) as test,
+coalesce(v8.value, t.category) as category,
+case when e.id is null then 'did not run' when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
+v2.value as result,
+case when v3.value != 'null' then v3.value::int else null end as ms,
+coalesce(v5.value, t.type) as
+from
+types t
+left join event_parameters p1 on p1.event_type_id = t.id and p1.name = 'success'
+left join event_parameters p2 on p2.event_type_id = t.id and p2.name = 'result'
+left join event_parameters p3 on p3.event_type_id = t.id and p3.name = 'ms'
+left join event_parameters p4 on p4.event_type_id = t.id and p4.name = 'skipped'
+left join event_parameters p5 on p5.event_type_id = t.id and p5.name = 'type'
+left join event_parameters p6 on p6.event_type_id = t.id and p6.name = 'packageName'
+left join event_parameters p7 on p7.event_type_id = t.id and p7.name = 'test'
+left join event_parameters p8 on p8.event_type_id = t.id and p8.name = 'category'
+full join builds b on 1=1
+left join events e on e.event_type_id = t.id and (e.event_time  BETWEEN b.date and b.next)
+left join event_parameter_values v1  on v1.event_id = e.id and p1.id = v1.parameter_id
+left join event_parameter_values v2  on v2.event_id = e.id and p2.id = v2.parameter_id
+left join event_parameter_values v3  on v3.event_id = e.id and p3.id = v3.parameter_id
+left join event_parameter_values v4  on v4.event_id = e.id and p4.id = v4.parameter_id
+left join event_parameter_values v5  on v5.event_id = e.id and p5.id = v5.parameter_id
+left join event_parameter_values v6  on v6.event_id = e.id and p6.id = v6.parameter_id
+left join event_parameter_values v7 on v7.event_id = e.id and p7.id = v7.parameter_id
+left join event_parameter_values v8  on v8.event_id = e.id and p8.id = v8.parameter_id
+
+ORDER BY b.build desc, t.friendly_name
+--end 
+
+--name: ManualTestingTestStatuses
+--connection: System:Datagrok
+--input: string batchName
+Select * from (
+   select distinct on (t.name)  
+  case when r.passed is null then 'did not run' when r.skipped then 'skipped' when r.passed then 'passed' when not r.passed then 'failed' else 'unknown' end as status,
+  r.date_time as date,
+  t.name as test, 
+
+  r.params,	
+  r.params->'batchName' as batchName,
+  r.params->'version' as version,
+  r.params->'result' as reason,
+  r.params->'uid' as uid, 
+  r.params->'start' as start,
+  u.friendly_name
+from tests t full join builds b on 1 = 1
+left join test_runs r on r.test_name = t.name and r.build_name = b.name 
+left join users u on    u.id::text = r.params->>'uid'::text
+where t.type = 'manual' and not r.passed is null and (r.params::json->'batchName')::varchar(255) = @batchName
+order by   t.name, r.date_time desc  
+) as testsData
+order by testsData.date desc
+--end 

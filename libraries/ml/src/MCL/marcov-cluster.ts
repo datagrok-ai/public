@@ -57,7 +57,7 @@ export class MCLSparseReducer {
         clusterSizeMap[cluster] = 0;
       clusterSizeMap[cluster]++;
     }
-    const sortedIndexes = Object.keys(clusterSizeMap).map(Number).sort((a, b) => clusterSizeMap[a] - clusterSizeMap[b]);
+    const sortedIndexes = Object.keys(clusterSizeMap).map(Number).sort((a, b) => clusterSizeMap[b] - clusterSizeMap[a]);
     const clusterMap: {[_: number]: number} = {};
     sortedIndexes.forEach((clusterIdx, i) => clusterMap[clusterIdx] = i + 1);
     for (let i = 0; i < clusters.length; i++)

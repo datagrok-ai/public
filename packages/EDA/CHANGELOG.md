@@ -1,6 +1,14 @@
 # EDA changelog
 
-## 1.1.25 (2024-05-27)
+## 1.1.28 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
+## 1.1.27 (2024-06-17)
+
+Add linear regression
+
+## 1.1.26 (2024-05-27)
 
 Add inflation factor to MCL
 

@@ -2,17 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import '../types/helm';
-import * as org from 'org';
-// Alias helm consts
-import PolymerTypes = org.helm.PolymerTypes;
-import HelmTypes = org.helm.HelmTypes;
-import MonomerTypes = org.helm.MonomerTypes;
+import {MonomerType, PolymerType} from '../helm/types';
+import {MonomerTypes, PolymerTypes} from '../helm/consts';
 
-export {PolymerTypes, HelmTypes, MonomerTypes};
-
-import HELM_POLYMER_TYPE = org.helm.PolymerTypes;
-import HELM_MONOMER_TYPE = org.helm.MonomerTypes;
+import HELM_POLYMER_TYPE = PolymerTypes;
+import HELM_MONOMER_TYPE = MonomerTypes;
+import {RGroup} from '../types';
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
 
@@ -89,16 +84,16 @@ export const jsonSdfMonomerLibDict = {
 };
 
 export const DUMMY_MONOMER = {
-  'monomerType': 'Backbone',
+  'monomerType': 'Backbone' as MonomerType,
   'smiles': '',
   'name': '',
   'author': 'Datagrok',
   'molfile': '',
   'naturalAnalog': '',
-  'rgroups': [],
+  'rgroups': [] as RGroup[],
   'createDate': null,
   'id': 0,
-  'polymerType': 'PEPTIDE',
+  'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
 };
 // range of hex nubers used in PepSea library to endode monomers

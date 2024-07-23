@@ -17,9 +17,6 @@ Mappings:
     JN:
       domain: "docker.io"
       repo: "datagrok/jupyter_notebook"
-    GrokCompute:
-      domain: "docker.io"
-      repo: "datagrok/grok_compute"
     H2o:
       domain: "docker.io"
       repo: "datagrok/h2o"

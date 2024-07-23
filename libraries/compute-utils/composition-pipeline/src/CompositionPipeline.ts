@@ -11,6 +11,7 @@ import {PipelineRuntime} from './runtime/PipelineRuntime';
 import {PipelineGlobalState} from './runtime/PipelineGlobalState';
 import {HookSpec, CompositionPipelineView, StepSpec} from './view/CompositionPipelineView';
 import {RFVPopup} from './view/RFVPopup';
+import {RichFunctionView} from '../../function-views';
 
 
 type ItemsToMerge = {
@@ -68,7 +69,11 @@ export class CompositionPipeline {
     this.exportConfig = this.config.exportConfig;
   }
 
-  public makePipelineView(nqName = this.nqName) {
+  public makePipelineView(nqName = this.nqName, options?: {
+    historyEnabled: boolean,
+    isTabbed: boolean,
+    skipInit?: boolean,
+  }) {
     if (this.viewInst)
       throw new Error(`View has been already created for pipeline ${nqName}`);
 
@@ -78,7 +83,7 @@ export class CompositionPipeline {
     if (this.nqName && this.nqName !== nqName)
       throw new Error(`View different wrapper nqName ${nqName}, already set to ${this.nqName}`);
 
-    this.viewInst = new CompositionPipelineView(nqName);
+    this.viewInst = new CompositionPipelineView(nqName, options);
     this.nqName = nqName;
     return this.viewInst;
   }
@@ -168,7 +173,7 @@ export class CompositionPipeline {
               const action = this.rt!.getAction(keyToPath(conf.id));
               return ui.button(action.actionName, action.action);
             });
-            const view = controller.getView(keyToPath(viewKey))!;
+            const view = controller.getView(keyToPath(viewKey))! as RichFunctionView;
             view.setAdditionalButtons(btns);
           }
         },

@@ -13,21 +13,24 @@ import {
   getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {_package} from '../package-test';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 
 category('activityCliffs', async () => {
   let viewList: DG.ViewBase[] = [];
   let dfList: DG.DataFrame[] = [];
 
+  let helmHelper: IHelmHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
   const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
   const helmEncodingFunc = DG.Func.find({name: 'helmPreprocessingFunction', package: 'Bio'})[0];
   before(async () => {
+    helmHelper = await getHelmHelper(); // init Helm package
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -59,7 +62,7 @@ category('activityCliffs', async () => {
 
     await _testActivityCliffsOpen(actCliffsDf, DimReductionMethods.UMAP,
       'sequence', 'Activity', 90, cliffsNum, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc);
-  });
+  }, {benchmark: true});
 
   test('activityCliffsWithEmptyRows', async () => {
     const actCliffsDfWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');

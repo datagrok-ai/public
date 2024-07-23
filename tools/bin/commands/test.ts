@@ -14,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
+  const commandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
     'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
@@ -24,11 +24,6 @@ export function test(args: TestArgs): boolean {
   if (nArgs > 1 || options.length > commandOptions.length || (options.length > 0 &&
     !options.every((op) => commandOptions.includes(op))))
     return false;
-
-  if (!utils.isPackageDir(curDir)) {
-    color.error('File `package.json` not found. Run the command from the package directory');
-    return false;
-  }
 
   if (!fs.existsSync(confPath)) {
     color.error(`File \`${confPath}\` not found. Run \`grok config\` to set up the config file`);
@@ -50,14 +45,25 @@ export function test(args: TestArgs): boolean {
     console.log('Environment variable `HOST` is set to', config.default);
   }
 
-  const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
-  if (packageData.name) {
-    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
-    console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
+  if (args.package) {
+    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(args.package);
   } else {
-    color.error('Invalid package name. Set the `name` field in `package.json`');
-    return false;
+    if (!utils.isPackageDir(curDir)) {
+      color.error('File `package.json` not found. Run the command from the package directory or specify plugin using \'--package\' option');
+      return false;
+    } else {
+      const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
+      if (packageData.name) {
+        process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
+      } else {
+        color.error('Invalid package name. Set the `name` field in `package.json`');
+        return false;
+      }
+    }
   }
+
+  console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
+
 
   if (args.platform && process.env.TARGET_PACKAGE !== 'ApiTests') {
     color.error('--platform flag can only be used in the ApiTests package');
@@ -69,14 +75,15 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  if (args['skip-build']) {
-    if (args['skip-publish'])
-      test();
-    else
+  if (args['skip-publish'] || args.package) {
+    test()
+  } else {
+    if (args['skip-build']) {
       publish(test);
-  } else
-    build(args['skip-publish'] ? test : () => publish(test));
-
+    } else {
+      build(() => publish(test));
+    }
+  }
 
   function build(callback: Function): void {
     exec('npm run build', (err, stdout, stderr) => {
@@ -107,7 +114,7 @@ export function test(args: TestArgs): boolean {
 
   function test(): void {
     color.info('Starting tests...');
-    const P_START_TIMEOUT: number = 3600000;
+    const P_START_TIMEOUT: number = 900000;
     let browser: Browser;
     let page: Page;
     let recorder: PuppeteerScreenRecorder;
@@ -116,11 +123,11 @@ export function test(args: TestArgs): boolean {
       failed: boolean, csv?: string, countReport: { skip: number, pass: number }
     };
 
-    function init(timeout: number): Promise<void> {
+    function init(time: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
       if (args.gui)
         params['headless'] = false;
-      return testUtils.runWithTimeout(timeout, async () => {
+      return testUtils.timeout(async () => {
         try {
           const out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
@@ -129,16 +136,16 @@ export function test(args: TestArgs): boolean {
         } catch (e) {
           throw e;
         }
-      });
+      }, time);
     }
 
     function runTest(timeout: number, options: {
       path?: string, catchUnhandled?: boolean, core?: boolean,
       report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean
     } = {}): Promise<resultObject> {
-      return testUtils.runWithTimeout(timeout, async () => {
+      return testUtils.timeout(async () => {
         const consoleLogOutputDir = './test-console-output.log';
-        function addLogsToFile(msg: any) { 
+        function addLogsToFile(msg: any) {
           fs.appendFileSync(consoleLogOutputDir, `${msg}`);
         }
         await page.exposeFunction("addLogsToFile", addLogsToFile);
@@ -219,7 +226,14 @@ export function test(args: TestArgs): boolean {
               resolve({ failReport, skipReport, passReport, failed, csv, countReport });
             }).catch((e: any) => {
               const stack = ((<any>window).DG.Logger.translateStackTrace(e.stack)).then(() => {
-                resolve({ failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: { skip: 0, pass: 0 } });
+                resolve({
+                  failReport: `${e.message}\n${stack}`,
+                  skipReport: '',
+                  passReport: '',
+                  failed: true,
+                  csv: '',
+                  countReport: { skip: 0, pass: 0 }
+                });
               });
             });
           });
@@ -229,7 +243,7 @@ export function test(args: TestArgs): boolean {
           await recorder.stop();
         }
         return r;
-      });
+      }, timeout);
     }
 
     (async () => {
@@ -285,6 +299,7 @@ interface TestArgs {
   // category?: string,
   path?: string,
   host?: string,
+  package?: string,
   csv?: boolean,
   gui?: boolean,
   catchUnhandled?: boolean,

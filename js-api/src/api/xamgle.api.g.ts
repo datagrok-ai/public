@@ -95,11 +95,13 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
-  enableStickyMeta: boolean;
-
   /// Whenever an error occurs, automatically reports extended logs to the server. Use UsageAnalysis to browse them.
   /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
   autoReportExtendedLogs: boolean;
+
+  /// Displays Index Files check box in connection edit dialog. If it is disabled then check
+  /// box will not be shown to the user and indexing of files will not be configurable.
+  enableConnectionIndexFiles: boolean;
 
   dateFormat: string;
 
@@ -123,16 +125,12 @@ export interface SettingsInterface {
   /// Datlas API URL.
   apiUrl: string;
 
-  /// Jupyter Gateway instance token.
-  jupyterGatewayToken: string;
-
   /// Jupyter Notebook instance token.
   jupyterNotebookToken: string;
 
-  /// Help base URL.
-  helpBaseUrl: string;
-
   clientFuncCacheEnabled: boolean;
+
+  clientFilesCacheEnabled: boolean;
 
   dataFrameBatchSize: number;
 

@@ -15,7 +15,7 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   // if compute is in dialog form, we need to show all the functions
   const computeFunctions = await app.computeFunctions;
   const functions = computeFunctions.functions
-    .filter(({inputs: i}) => i.length > 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
+    .filter(({inputs: i}) => i.length >= 2 && i[0].propertyType === 'dataframe' && i[1].propertyType === 'column')
     .map((f): HitTriageTemplateFunction => ({package: f.package.name, name: f.name, args:
       template?.compute?.functions?.find((tf) => tf.name === f.name && tf.package === f.package.name)?.args ?? {}}));
 
@@ -34,33 +34,37 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     })
     ;
 
-  const useDescriptors = !!template?.compute?.descriptors?.enabled || dialog;
-
-  // tree groups
-  const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
-  const descriptorsGroup = ui.tree();
-  descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
+  let useDescriptors = !!template?.compute?.descriptors?.enabled || dialog;
   const host = ui.div([], {classes: 'hit-triage-compute-dialog-host'});
   const descriptorItems: DG.TreeViewNode[] = [];
+  const descriptorsGroup = ui.tree();
+  try {
+  // tree groups
+    const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
+    descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
 
-  function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
-    const res = treeNode.group(name, null, false);
-    res.enableCheckBox(false);
-    return res;
-  };
+    function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
+      const res = treeNode.group(name, null, false);
+      res.enableCheckBox(false);
+      return res;
+    };
 
-  // const descriptorsGroup = createTreeGroup('Descriptors', tree);
-  const keys = Object.keys(descriptorsTree);
-  const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
-  for (const groupName of keys) {
-    const group = createTreeGroup(groupName, descriptorsGroup);
+    // const descriptorsGroup = createTreeGroup('Descriptors', tree);
+    const keys = Object.keys(descriptorsTree);
+    const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
+    for (const groupName of keys) {
+      const group = createTreeGroup(groupName, descriptorsGroup);
 
-    for (const descriptor of descriptorsTree[groupName].descriptors) {
-      const item = group.item(descriptor.name, descriptor);
-      descriptorItems.push(item);
-      item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
-    }
-  };
+      for (const descriptor of descriptorsTree[groupName].descriptors) {
+        const item = group.item(descriptor.name, descriptor);
+        descriptorItems.push(item);
+        item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
+      }
+    };
+  } catch (e) {
+    console.error(e);
+    useDescriptors = false;
+  }
 
   const descriptorsName = 'Descriptors';
   const funcNamesMap: {[key: string]: string} = {[descriptorsName]: descriptorsName};
@@ -168,13 +172,14 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
   host.appendChild(tc.root);
   // add checkboxes to each hader
   tc.panes.forEach((pane)=> {
-    const functionCheck = ui.boolInput('', calculatedFunctions[funcNamesMap[pane.name]], (v:boolean) => {
-      calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
-      if (!v)
-        $(pane.content).find('input').attr('disabled', 'true');
-      else
-        $(pane.content).find('input').removeAttr('disabled');
-    });
+    const functionCheck =
+      ui.input.bool('', {value: calculatedFunctions[funcNamesMap[pane.name]], onValueChanged: (input) => {
+        calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
+        if (!input.value)
+          $(pane.content).find('input').attr('disabled', 'true');
+        else
+          $(pane.content).find('input').removeAttr('disabled');
+      }});
     functionCheck.setTooltip('Toggle calculation of this function');
     pane.header.appendChild(functionCheck.root);
     pane.header.classList.add('hit-triage-compute-dialog-pane-header');

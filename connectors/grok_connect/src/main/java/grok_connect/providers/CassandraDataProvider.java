@@ -1,11 +1,14 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
@@ -41,9 +44,6 @@ public class CassandraDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.KEYSPACE));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
@@ -104,7 +104,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.get(DbCredentials.KEYSPACE);
         if (GrokConnectUtil.isNotEmpty(db)) {
             StringColumn column = new StringColumn(new String[]{db});
@@ -118,7 +118,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+            throws QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.get(DbCredentials.KEYSPACE), schema, table);
@@ -248,15 +248,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
-        try {
-            statement.setObject(parameterIndex, localDateTime.toLocalDate());
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setObject(parameterIndex, localDateTime.toLocalDate());
     }
 
     @Override

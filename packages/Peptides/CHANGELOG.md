@@ -1,5 +1,21 @@
 # Peptides changelog
 
+## 1.17.22 (2024-07-22)
+
+Fix Active peptide selection viewer failing on frame attached.
+
+## 1.17.21 (2024-07-12)
+
+Add support for string aggregation with pie chart viewer in LST viewer.
+
+## 1.17.20 (2024-07-09)
+
+MCL: Reverse order of clusters
+
+## 1.17.19 (2024-07-01)
+
+Fix dialog styles
+
 ## 1.17.18 (2024-05-27)
 
 Add inflation factor to MCL.

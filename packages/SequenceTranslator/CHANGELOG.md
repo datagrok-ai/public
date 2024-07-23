@@ -1,5 +1,75 @@
 # Sequence Translator changelog
 
+## 1.3.9 (2024-07-23)
+
+* Dependency: datgarok-api >= 1.20.0
+
+## 1.3.8 (2024-07-09)
+
+### Features
+
+* Add PolyTool-enumerate context menu for macromolecule cell
+
+### Bug fixes
+
+* Use HelmInput from Helm
+* Bump dependencies versions
+
+## 1.3.7 (2024-07-01)
+
+### Bug fixes
+
+* Fix style for colored text input
+
+## 1.3.6 (2024-06-26)
+
+### Bug fixes
+
+* Fix bulk input in Pattern app
+
+## 1.3.5 (2024-06-13)
+
+### Features
+
+* PolyTool Enumeration: cell with helm is added to the input
+
+## 1.3.4 (2024-06-12)
+
+### Bug fixes
+
+* Fix terminal modification SVG rendering
+
+## 1.3.3 (2024-06-12)
+
+### Bug fixes
+
+* Fix terminal modification SVG rendering
+
+## 1.3.2 (2024-06-10)
+
+### Features
+
+* Add package MonomersPath package settings fallback to monomers-sample
+* Add README for monomers-sample
+* Add sample for bulk translation in Translator app
+
+### Bug fixes
+
+* Fix tests for MonomersPath package settings
+
+## 1.3.1 (2024-06-05)
+
+### Bug fixes
+
+* PolyTool: example data added to project
+
+## 1.3.0 (2024-03-30)
+
+### Features
+
+* PolyTool: algorithm of conversion facilitated, json files are used as rules
+* PolyTool: enumeration feature (demo) added
+
 ## 1.2.9 (2024-03-30)
 
 ### Features

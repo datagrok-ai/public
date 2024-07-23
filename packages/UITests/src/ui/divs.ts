@@ -26,7 +26,7 @@ category('UI: Div', () => {
     'buttonsInput': {'element': ui.buttonsInput(), 'selectors': ['.ui-input-root', '.ui-input-buttons']},
     'form': {'element': ui.form([]), 'selectors': ['.ui-form']},
     'image': {'element': ui.image('https://dev.datagrok.ai/favicon.png', 42, 42), 'selectors': ['.ui-image']},
-    'inputs': {'element': ui.inputs([ui.floatInput('test', 42)]), 'selectors': ['.ui-form']},
+    'inputs': {'element': ui.inputs([ui.input.float('test', {value: 42})]), 'selectors': ['.ui-form']},
     'narrowForm': {'element': ui.narrowForm(), 'selectors': ['.ui-form', '.ui-form-condensed']},
     'loader': {'element': ui.loader(), 'selectors': ['.grok-loader']},
     'wait': {'element': ui.wait(async ()=> ui.div()), 'selectors': ['.grok-wait']},

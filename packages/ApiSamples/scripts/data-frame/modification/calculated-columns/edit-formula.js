@@ -9,11 +9,11 @@ let col = await df.columns.addNewCalculated('new', '0');
 grok.shell.addTableView(df);
 
 // Changes a column's formula programmatically. Note that setting a new value
-// to `DG.TAGS.FORMULA` will not trigger re-calculation of values in the column.
+// to column.meta.formula will not trigger re-calculation of values in the column.
 // See also:
 // https://dev.datagrok.ai/js/samples/data-frame/modification/calculated-columns/apply-formula
 // https://dev.datagrok.ai/js/samples/data-frame/events/calculated-columns/update
 col = await col.applyFormula('${x}+${y}-${z}');
 
 // Opens a dialog to edit a calculated column
-col.dialogs.editFormula();
+col.meta.dialogs.editFormula();

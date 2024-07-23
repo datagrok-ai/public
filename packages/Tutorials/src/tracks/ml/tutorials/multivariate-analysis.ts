@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Observable } from 'rxjs';
-import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class MultivariateAnalysisTutorial extends Tutorial {
@@ -15,7 +15,6 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
-  prerequisites: TutorialPrerequisites = {jupyter: true};
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -37,22 +36,20 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     // We create fake dialog that runs analysis (since inputs of the "main" dialog are added using ui.form).
     const dlg = ui.dialog({title: 'Multivariate Analysis (PLS)', helpUrl: this.helpUrl});
 
-    dlg.add(ui.columnInput('Predict', this.t!, null, () => {}, {
+    dlg.add(ui.input.column('Predict', {table: this.t!,
       filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
     }));
   
-    dlg.add(ui.columnsInput('Using', this.t!, () => {}, {
+    dlg.add(ui.input.columns('Using', {table: this.t!,
       available: this.t!.columns.toList().filter((col) => 
         (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
       ).map((col) => col.name),
       checked: [],
     }));
   
-    dlg.add(ui.intInput('Components', null, () => {}));
+    dlg.add(ui.input.int('Components'));
   
-    dlg.add(ui.columnInput('Names', this.t!, null, () => {}, {
-      filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)
-    }));
+    dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 
     let viewers = [] as DG.Viewer[];
   

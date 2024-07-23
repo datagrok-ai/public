@@ -122,7 +122,6 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 0, max: 100});
     this.maxMutations = this.int(SAR_PROPERTIES.MAX_MUTATIONS, 1,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 20});
-
     this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
     this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: C.AGGREGATION_TYPES});
@@ -422,8 +421,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    * @return - map of columns and aggregations.
    */
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(
-      this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG])
+      .filter(([colName, _]) => this.model.df.columns.contains(colName) &&
+        this.model.df.col(colName)!.matches('numerical')));
   }
 
   /**
@@ -432,7 +432,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   getTotalViewerAggColumns(): [string, DG.AggregationType][] {
     const aggrCols = this.getAggregationColumns();
-    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
+    return getTotalAggColumns(this.model.df, this.columns, aggrCols, this.model?.settings?.columns);
   }
 
   /** Creates viewer grid. */
@@ -899,8 +899,8 @@ export class MonomerPosition extends SARViewer {
     $(this.root).empty();
     let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
     if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
-      const mutationCliffsMode = ui.boolInput(SELECTION_MODE.MUTATION_CLIFFS,
-        this.mode === SELECTION_MODE.MUTATION_CLIFFS);
+      const mutationCliffsMode = ui.input.bool(SELECTION_MODE.MUTATION_CLIFFS,
+        {value: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
       mutationCliffsMode.root.addEventListener('click', () => {
         invariantMapMode.value = false;
         mutationCliffsMode.value = true;
@@ -908,7 +908,7 @@ export class MonomerPosition extends SARViewer {
         this.showHelp();
       });
       mutationCliffsMode.setTooltip('Statistically significant changes in activity');
-      const invariantMapMode = ui.boolInput(SELECTION_MODE.INVARIANT_MAP, this.mode === SELECTION_MODE.INVARIANT_MAP);
+      const invariantMapMode = ui.input.bool(SELECTION_MODE.INVARIANT_MAP, {value: this.mode === SELECTION_MODE.INVARIANT_MAP});
       invariantMapMode.root.addEventListener('click', () => {
         mutationCliffsMode.value = false;
         invariantMapMode.value = true;

@@ -108,7 +108,7 @@ class Engine(object):
         metrics_names = ['mse', 'rmse', 'corr', 'nobs', 'r2', 'logloss', 'auc']
         if cancelled:
             return dict(zip(metrics_names, ['null'] * 7))
-        predicted = self.predict_impl(id, model_blob, table)
+        predicted = self.predict_impl(id, model_blob, table, estimate_performance=True)
         y_true = np.array(table[predict])
         y_pred = np.array(predicted[predict])
 
@@ -152,9 +152,14 @@ class Engine(object):
             value = parameter_values[param]
             if value != self.parameters[param]['default_value'] or \
                     ('required' in self.parameters[param] and self.parameters[param]['required']):
-                str_value = str(value)
                 if self.parameters[param]['type'] == Types.LIST:
-                    str_value = str_value[1:(len(str_value) - 1)]
+                    param = param.replace('_', '-')
+                    params.append('--' + param)
+                    for number in value:
+                        params.append(str(number))
+                    continue
+                str_value = str(value)
+                param = param.replace('_', '-')
                 params.append('--' + param)
                 params.append(str_value)
         return params

@@ -357,7 +357,7 @@ in a structured, machine-readable way. We can also tune what needs to be persist
 
 ### Privileges and visibility
 
-Datagrok has a built-in [role-based privileges system](../govern/authorization.md)
+Datagrok has a built-in [role-based privileges system](../govern/access-control/access-control.md#authorization)
 that is used to define who can see, execute, or edit models. The same mechanism is used for the data access control.
 
 ### Exploratory data analysis

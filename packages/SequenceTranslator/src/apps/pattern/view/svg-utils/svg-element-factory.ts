@@ -13,7 +13,7 @@ export class SVGElementFactory {
     });
   }
 
-  public createCanvas(width: number, height: number): SVGElement {
+  createCanvas(width: number, height: number): SVGElement {
     const svgElement = this.createElement('svg') as SVGElement;
     this.setAttributes(svgElement, {
       id: 'mySvg',
@@ -23,7 +23,7 @@ export class SVGElementFactory {
     return svgElement;
   }
 
-  public createCircleElement(centerPosition: Position, radius: number, color: string): SVGCircleElement {
+  createCircleElement(centerPosition: Position, radius: number, color: string): SVGCircleElement {
     const circle = this.createElement('circle') as SVGCircleElement;
     this.setAttributes(circle, {
       cx: centerPosition.x,
@@ -34,7 +34,7 @@ export class SVGElementFactory {
     return circle;
   }
 
-  public createTextElement(textContent: string, position: Position, fontSize: number, color: string): SVGTextElement {
+  createTextElement(textContent: string, position: Position, fontSize: number, color: string): SVGTextElement {
     const textElement = this.createElement('text') as SVGTextElement;
     this.setAttributes(textElement, {
       'x': position.x,
@@ -48,7 +48,7 @@ export class SVGElementFactory {
     return textElement;
   }
 
-  public createStarElement(centerPosition: Position, color: string): SVGPolygonElement {
+  createStarElement(centerPosition: Position, color: string): SVGPolygonElement {
     const star = this.createElement('polygon') as SVGPolygonElement;
     const points = this.computeStarVertexCoordinates(centerPosition);
     const pointsAttribute = points.map((point) => point.join(',')).join(' ');
@@ -78,5 +78,17 @@ export class SVGElementFactory {
     });
 
     return points;
+  }
+
+  createRectangleElement(topLeftCorner: Position, width: number, height: number, color: string): SVGRectElement {
+    const rectangle = this.createElement('rect') as SVGRectElement;
+    this.setAttributes(rectangle, {
+      x: topLeftCorner.x,
+      y: topLeftCorner.y,
+      width,
+      height,
+      fill: color,
+    });
+    return rectangle;
   }
 }

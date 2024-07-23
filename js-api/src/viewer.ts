@@ -2,10 +2,10 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
-import {Menu, ObjectPropertyBag, Widget, Filter} from "./widgets";
+import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs, toDart} from "./wrappers";
-import {__obs, StreamSubscription} from "./events";
+import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
 import {filter, map} from 'rxjs/operators';
@@ -19,34 +19,6 @@ import {ViewerEvent} from './api/d4.api.g';
 declare let DG: any;
 declare let ui: any;
 let api = <any>window;
-
-export class TypedEventArgs<TData> {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  /** Event type id */
-  get type(): string {
-    return api.grok_TypedEventArgs_Get_Type(this.dart);
-  }
-
-  get data(): TData {
-    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
-    return toJs(data);
-  }
-
-  /** Event arguments. Only applies when data is EventData */
-  get args(): {[key: string]: any} | null {
-    // @ts-ignore
-    if (!this.data?.dart)
-      return null;
-
-    // @ts-ignore
-    return api.grok_EventData_Get_Args(this.data.dart);
-  }
-}
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -76,10 +48,11 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
-  get onDataHovered(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-hover-event')); }
-  get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select-event')); }
+  get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
+  get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
   /// current row clicked
-  get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-click-event')); }
+  get onDataRowClicked(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-row-click')); }
+  get onPropertyValueChanged(): rxjs.Observable<EventData<Property>> { return this.onEvent('d4-property-value-changed'); }
 
   initDartObject(dart: any) {
     this.dart = dart;
@@ -451,7 +424,7 @@ export interface FilterState {
 
 /** Represents a group of filters that are located together. */
 export class FilterGroup extends Viewer {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -491,6 +464,28 @@ export class FilterGroup extends Viewer {
   }
 }
 
+export type CategoryDataArgs = {
+  matchCondition: {[key: string]: any},
+  matchConditionStr: string,
+  options: {[key: string]: any}
+}
+
+export type RowDataArgs = {
+  rowId: number,
+}
+
+export type LineChartLineArgs = {
+  chartIdx: number,
+  yColumnNames: string[],
+  yAggrTypes: string[],
+}
+
+export type CorrPlotCellArgs = {
+  column1: string,
+  column2: string,
+  value: number,
+}
+
 export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   constructor(dart: any) {
     super(dart);
@@ -499,6 +494,16 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   get activeFrame(): DataFrame {
     return api.grok_LineChartViewer_activeFrame(this.dart);
   }
+
+  resetView(): void{
+    api.grok_LineChartViewer_ResetView(this.dart);
+  }
+
+  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
+  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
+  get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
 }
 
 /** 2D scatter plot */
@@ -547,6 +552,91 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
+  get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
+}
+
+export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onBinsSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-bins'); }
+  get onLineSelected(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-select-line'); }
+  get onMouseOverBins(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-bins'); }
+  get onMouseOverLine(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-histogram-mouse-over-line'); }
+}
+
+export class BarChartViewer extends Viewer<interfaces.IBarChartSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  resetView(): void{
+    api.grok_BarChartViewer_ResetView(this.dart);
+  }
+
+  get onCategoryClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-clicked'); }
+  get onCategoryHovered(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-bar-chart-on-category-hovered'); }
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-bar-chart-reset-view'); }
+}
+
+export class PieChartViewer extends Viewer<interfaces.IPieChartSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onSegmentClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-pie-chart-on-segment-clicked'); }
+}
+
+export class PcPlot extends Viewer<interfaces.IPcPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onLineClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-clicked'); }
+  get onLineHovered(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-pc-plot-on-line-hovered'); }
+}
+
+export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  resetView(): void{
+    api.grok_BoxPlotViewer_ResetView(this.dart);
+  }
+
+  get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
+  get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
+  get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+  get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-boxplot-point-click'); }
+}
+
+
+export class CorrelationPlot extends Viewer<interfaces.ICorrelationPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onCorrCellClicked(): rxjs.Observable<EventData<CorrPlotCellArgs>> { return this.onEvent('d4-correlation-plot-corr-cell-click'); }
+}
+
+
+export class CalendarViewer extends Viewer<interfaces.ICalendarSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onCalendarClicked(): rxjs.Observable<EventData<CategoryDataArgs>> { return this.onEvent('d4-calendar-clicked'); }
+}
+
+export class PivotViewer extends Viewer<interfaces.IPivotViewerSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onAggregationChanged(): rxjs.Observable<null> { return this.onEvent('d4-pivot-grid-aggr-changed'); }
 }
 
 export class ViewerMetaHelper {
@@ -563,8 +653,20 @@ export class ViewerMetaHelper {
 export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
   readonly viewer: Viewer;
 
-  get storage(): string { return this.viewer.props['formulaLines']; }
-  set storage(value: string) { this.viewer.props['formulaLines'] = value; }
+  get storage(): string {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      return api.grok_PropMixin_GetPropertyValue(innerLook, 'formulaLines');
+    }
+    return this.viewer.props['formulaLines'];
+  }
+  set storage(value: string) {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      api.grok_PropMixin_SetPropertyValue(innerLook, 'formulaLines', value);
+    } else
+      this.viewer.props['formulaLines'] = value;
+  }
 
   constructor(viewer: Viewer) {
     super();

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as arrow from 'apache-arrow';
-import {Compression,  readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm/esm/arrow1";
+import {Compression,  readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm";
 
 export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
   //todo: use direct creation of vectors from typed arrays

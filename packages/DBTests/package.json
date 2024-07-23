@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/dbtests",
   "friendlyName": "DB Tests",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Automated tests for JDBC Providers",
   "author": {
     "name": "Pavlo Polovyi",
@@ -9,7 +9,7 @@
   },
   "servicePackage": true,
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.9",
+    "@datagrok-libraries/utils": "^4.2.13",
     "cash-dom": "latest",
     "datagrok-api": "^1.17.0",
     "dayjs": "latest"

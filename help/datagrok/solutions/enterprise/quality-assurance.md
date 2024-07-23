@@ -13,9 +13,8 @@ end-to-end-experience, we took ownership of [data access](../../../datagrok/data
 and [collaboration](../../../datagrok/navigation/basic-tasks/basic-tasks.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like
-[authentication](../../../govern/authentication.md),
-[audit](../../../govern/audit.md), and
-[role management system](../../../govern/user.md). The list goes on and on.
+[authentication](../../../govern/access-control/access-control.md#authentication),
+[audit](../../../govern/audit/audit.md). The list goes on and on.
 
 This sort of power comes at the cost of significantly increasing the platform's
 complexity. And our QA processes, along with the CI/СD concept, maintain the
@@ -161,7 +160,7 @@ See [Test Manager](../../../develop/how-to/test-packages.md#test-manager) to lea
 
 Usage Analysis is the
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) that facilitates understanding of Datagrok platform usage through different viewers, displaying data on usage statistics, errors, and platform events.
-See [Usage Analysis](../../../govern/usage-analysis.md)
+See [Usage Analysis](../../../govern/audit/usage-analysis.md)
 to learn more.
 
 See also:

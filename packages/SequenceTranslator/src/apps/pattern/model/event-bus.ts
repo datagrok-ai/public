@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {debounceTime, map, skip, switchMap} from 'rxjs/operators';
+import {debounceTime, throttleTime, map, skip, switchMap} from 'rxjs/operators';
 
 import {
   GRAPH_SETTINGS_KEYS as G, LEGEND_SETTINGS_KEYS as L, PATTERN_RECORD_KEYS as R, STRAND, STRANDS, TERMINI, TERMINUS
@@ -476,6 +476,12 @@ export class EventBus {
 
   getSelectedIdColumn(): string | null {
     return this._selectedIdColumn.getValue();
+  }
+
+  get updateSvgContainer$(): rxjs.Observable<void> {
+    return this.patternStateChanged$.pipe(
+      debounceTime(100)
+    );
   }
 }
 

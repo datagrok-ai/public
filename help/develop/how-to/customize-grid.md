@@ -180,17 +180,19 @@ Colors can also be derived from column tags. Numerical columns have the options
 [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional)
 of constructing a grid for a dataframe with these tags:
 
+<details>
+<summary> Example </summary>
+
 ```javascript
 let t = grok.data.demo.demog();
 
-t.col('height').tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-t.col('height').tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"20-170":"#00FF00","170-190":"#220505"}`;
-
-t.col('age').tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-t.col('age').tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.orange}, ${DG.Color.green}]`;
+t.col('height').meta.colors.setConditional({'20-170': '#00FF00', '170-190': '#220505'});
+t.col('age').meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
 
 grok.shell.addTableView(t);
 ```
+
+</details>
 
 You should specify the `COLOR_CODING_TYPE` tag in all cases. The
 `COLOR_CODING_CONDITIONAL` and `COLOR_CODING_LINEAR` tags take effect only when the corresponding coloring type is set.

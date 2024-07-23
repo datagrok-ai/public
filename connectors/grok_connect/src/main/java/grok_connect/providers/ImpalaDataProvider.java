@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -35,9 +33,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
                     + "'default' will be used"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -92,7 +87,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String schema = connection.get(DbCredentials.SCHEMA);
         String columnName = "TABLE_SCHEMA";
         if (GrokConnectUtil.isNotEmpty(schema)) {
@@ -110,7 +105,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+            throws QueryCancelledByUser, GrokConnectException {
         if (table == null) {
             return handleNoTable(connection);
         }
@@ -150,19 +145,13 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = new Properties();
-        if (!conn.hasCustomConnectionString()) {
-            if (conn.ssl()) {
-                properties.setProperty("SSL", "1");
-            }
-        }
+        if (!conn.hasCustomConnectionString() && conn.ssl())
+            properties.setProperty("SSL", "1");
         if (conn.credentials != null) {
-            String login = conn.credentials.getLogin();
-            String password = conn.credentials.getPassword();
-            if (login != null && !login.isEmpty() && password != null && !password.isEmpty()) {
+            setIfNotNull(properties, "UID", conn.credentials.getLogin());
+            setIfNotNull(properties, "PWD", conn.credentials.getPassword());
+            if (properties.contains("UID"))
                 properties.setProperty("AuthMech", "3");
-                properties.setProperty("UID", login);
-                properties.setProperty("PWD", password);
-            }
         }
         return properties;
     }
@@ -172,7 +161,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 
-    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = "SHOW TABLES;";
@@ -188,7 +177,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     private DataFrame getSingleTableInfo(DataConnection connection, String table) throws GrokConnectException,
-            QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+            QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String currentSchema = connection.get(DbCredentials.SCHEMA);

@@ -1,5 +1,40 @@
 # utils changelog
 
+## 4.2.13 (2024-07-15)
+
+Added benchmark flag to category options
+
+## 4.2.12 (2024-07-15)
+
+Added benchmark flag to test options
+
+## 4.2.11 (2023-06-20)
+
+New tests reporting method.
+
+## 4.2.10 (2023-06-17)
+
+Fixed core tests compatibility.
+
+## 4.2.9 (2023-06-13)
+
+Fixed viewer testing.
+
+## 4.2.8 (2023-06-05)
+
+Fix the infinite loading of tests.
+
+## 4.2.7 (2023-06-05)
+
+Fix the lastError problem in the test engine.
+
+## 4.2.6 (2023-05-29)
+
+### Features
+
+* Added timeouts for before/after
+* Timeout function was updated to async method
+
 ## 4.2.5 (2024-05-13)
 
 ### Bug fixes

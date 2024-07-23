@@ -62,7 +62,7 @@ category('AutoDock', () => {
     const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq-short.sdf');
     const ligandDf: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: sdfBytes}))[0];
     const ligandCol = ligandDf.getCol('molecule');
-    ligandCol.setTag(DG.TAGS.UNITS, 'mol');
+    ligandCol.meta.units = 'mol';
     grok.shell.addTableView(DG.DataFrame.fromColumns([ligandCol]));
     if (receptorPdb === '' || !ligandCol)
       throw new Error('Empty test data');
