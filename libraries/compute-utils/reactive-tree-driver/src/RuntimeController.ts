@@ -1,8 +1,7 @@
 import {ActionItem, ValidationResult} from '../../shared-utils/validation';
-import {ItemPath, InputState, ItemType, GroupState, ItemId} from './config/CommonTypes';
+import {ItemPath, InputState, ItemType, ItemId} from './data/common-types';
 
-
-export interface RuntimeController {
+export interface IRuntimeController {
   // individual links
   enableLink(path: ItemPath): void;
   disableLink(path: ItemPath): void;
@@ -15,19 +14,16 @@ export interface RuntimeController {
   // pipeline level
   enablePipeline(path: ItemPath): void;
   disablePipeline(path: ItemPath): void;
-  loadNestedPipeline(path: ItemPath, runId: string): void;
+  loadPipelineRun(path: ItemPath, runId: string): void;
   // individual state manipulation
   getState<T = any>(path: ItemPath): T | undefined;
   setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
-  updateStateInputState(path: ItemPath, inputState?: InputState): void;
+  updateConsistency(path: ItemPath, inputState?: InputState): void;
   getValidationAction(path: ItemPath, name?: string): ActionItem;
   setValidation(path: ItemPath, validation?: ValidationResult | undefined): void;
-  // dynamic groups state manipulation
-  getGroupStates<T = any>(path: ItemPath, type?: ItemType): GroupState<T>;
-  setGroupStates<T = any>(path: ItemPath, type: ItemType, state: T): void;
-  // dynamic groups manipulation
-  addGroupItem(path: ItemPath, type: ItemType, insertBefore?: ItemId): ItemId;
-  removeGroupItem(path: ItemPath, item: ItemId): void;
-  moveGroupItem(path: ItemPath, item: ItemId, insertBefore?: ItemId): void;
-  getGroupConfig(path: ItemPath): any;
+  // dynamic pipeline manipulation
+  getGroupSteps(path: ItemPath): any;
+  addGroupStep(path: ItemPath, type: ItemType, insertBefore?: ItemId): ItemId;
+  moveGroupStep(path: ItemPath, item: ItemId, insertBefore?: ItemId): void;
+  deleteGroupStep(path: ItemPath, item: ItemId): void;
 }
