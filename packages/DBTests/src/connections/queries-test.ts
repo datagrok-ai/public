@@ -44,7 +44,7 @@ category('Connections', () => {
     if (t.rowCount != lim)
       // eslint-disable-next-line no-throw-literal
       throw 'Rows number in' + query.name + 'table is not as expected';
-  }, {isEnabledBenchmarkMode: true});
+  }, {benchmark: true});
 
   test('External Provider: Columns in empty result', async () => {
     const query = await grok.dapi.queries.filter(`friendlyName = "TestForColumnsOnEmptyResult"`).include('params').first();

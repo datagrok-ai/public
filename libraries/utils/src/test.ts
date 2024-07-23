@@ -17,7 +17,7 @@ export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
     beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number,
-    isAllTestsEnabledBenchmarkMode?: boolean
+    benchmarks?: boolean
   }
 } = {};
 
@@ -40,13 +40,13 @@ export interface TestOptions {
   unhandledExceptionTimeout?: number;
   skipReason?: string;
   isAggregated?: boolean;
-  isEnabledBenchmarkMode?: boolean;
+  benchmark?: boolean;
 }
 
 export interface CategoryOptions {
   clear?: boolean;
   timeout?: number;
-  isAllTestsEnabledBenchmarkMode?: boolean;
+  benchmarks?: boolean;
 }
 
 export class TestContext {
@@ -227,7 +227,7 @@ export function category(category: string, tests_: () => void, options?: Categor
   if (tests[currentCategory]) {
     tests[currentCategory].clear = options?.clear ?? true;
     tests[currentCategory].timeout = options?.timeout;
-    tests[currentCategory].isAllTestsEnabledBenchmarkMode = options?.isAllTestsEnabledBenchmarkMode;
+    tests[currentCategory].benchmarks = options?.benchmarks;
   }
 }
 
@@ -401,11 +401,11 @@ export async function runTests(options?:
       if (value.clear) {
         for (let i = 0; i < t.length; i++) {
           if (t[i].options) {
-            if (t[i].options?.isEnabledBenchmarkMode === undefined) {
+            if (t[i].options?.benchmark === undefined) {
               if(!t[i].options)
                 t[i].options = {}
               //@ts-ignore
-              t[i].options.isEnabledBenchmarkMode = value.isAllTestsEnabledBenchmarkMode || false;
+              t[i].options.benchmark = value.isAllTestsEnabledBenchmarkMode || false;
             }
           }
           res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
@@ -474,7 +474,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   let skip = t.options?.skipReason || filter;
   let skipReason = filter ? 'skipped' : t.options?.skipReason;
 
-  if (DG.Test.isInBenchmark && !t.options?.isEnabledBenchmarkMode) {
+  if (DG.Test.isInBenchmark && !t.options?.benchmark) {
     skipReason = `${t.category} ${t.name} doesnt available in benchmark mode`;
     skip = true;
   }

@@ -22,7 +22,7 @@ category('column panel', () => {
       await testInchiPanel('addInchisTopMenu', 'inchi', 'inchi',
         'InChI=1S/C22H22BrNO2/c1-26-22-12-9-19(13-21(22)25)16-24(14-17-5-3-2-4-6-17)15-18-7-10-20(23)11-8-18/h2-13,25H,14-16H2,1H3');
     }
-  }, {isEnabledBenchmarkMode: true});
+  }, {benchmark: true});
 
   test('add inchi keys', async () => {
     if (DG.Test.isInBenchmark) {
@@ -30,7 +30,7 @@ category('column panel', () => {
       addInchiKeys(df, df.col('smiles')!);
     } else
       await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys', 'inchi_key', 'BRJLNESNMQYEGX-UHFFFAOYSA-N');
-  }, {isEnabledBenchmarkMode: true});
+  }, {benchmark: true});
 });
 
 async function testInchiPanel(funcName: string, tableName: string, newColName: string, expected: string) {

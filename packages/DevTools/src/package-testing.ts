@@ -471,7 +471,7 @@ export class TestManager extends DG.ViewBase {
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
-    if (DG.Test.isInBenchmark && !t.test.options?.isEnabledBenchmarkMode)
+    if (DG.Test.isInBenchmark && !t.test.options?.benchmark)
       t.test.options.skipReason = "Test can not be runned in benchmark mode";
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
@@ -605,7 +605,7 @@ export class TestManager extends DG.ViewBase {
       }
     }
     for (const t of category.tests) {
-      if (!t.test.options?.isEnabledBenchmarkMode) {
+      if (!t.test.options?.benchmark) {
         // if(!t.test.options){
         //   t.test.options = {};
         // }

@@ -144,7 +144,7 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 1.5, true);
-  }, { isEnabledBenchmarkMode: true });
+  }, { benchmark: true });
 
   after(async () => {
     try {
