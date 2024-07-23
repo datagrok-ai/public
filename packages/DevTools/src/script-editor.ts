@@ -1,20 +1,43 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+import {Subscription} from "rxjs";
+import {first} from "rxjs/operators";
 
-export function scriptEditor(view: DG.View) {
-  setTimeout(function() {
-    // @ts-ignore
-    const editor = view.root.querySelector(".CodeMirror").CodeMirror;
-    const doc = editor.getDoc();
+export function initScriptEditor(view: DG.View): void {
+  const startTime = new Date().getTime();
+  let timeoutId: number | undefined;
 
-    if (doc.getLine(2) == '//language: javascript') {
-      setScriptRibbon(view, doc);
-      editor.setCursor({line: 6, ch: 0});
-      //editor.setFocus();
+  const sub: Subscription = grok.events.onViewChanged.pipe(first()).subscribe((_) => {
+    if (timeoutId)
+      clearTimeout(timeoutId);
+  });
+
+  const check = () => {
+    console.log('CALLED');
+    if (new Date().getTime() - startTime >= 1500) {
+      sub.unsubscribe();
+      return;
     }
-  }, 300);
+    const codeMirror = view.root.querySelector(".CodeMirror");
+    if (codeMirror) {
+      // @ts-ignore
+      const editor = codeMirror.CodeMirror;
+      const doc = editor.getDoc();
+      if (doc.getLine(2) == '//language: javascript') {
+        setScriptRibbon(view, doc);
+        editor.setCursor({line: 6, ch: 0});
+        console.log('ADDED');
+        //editor.setFocus();
+      }
+      sub.unsubscribe();
+      return;
+    }
+
+    timeoutId = window.setTimeout(check, 100);
+  };
+
+  check();
 }
 
 function setScriptRibbon(v: DG.View, doc: any) {
