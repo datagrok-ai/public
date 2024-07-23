@@ -161,10 +161,7 @@ export const DEMO_APP_HIERARCHY = {
 						},
 						{
 							name: 'Map',
-						},
-						{
-							name: 'Shape Map',
-						},
+						}
 					]
 				},
 				{

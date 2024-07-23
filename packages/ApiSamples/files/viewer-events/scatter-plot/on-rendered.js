@@ -1,0 +1,1 @@
+args.sender.canvas.getContext('2d').fillText('foo', 100, 100);

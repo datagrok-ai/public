@@ -10,35 +10,22 @@ import { ViewHandler } from './view-handler';
 import { TestTrack } from './test-track/app';
 import { ReportsWidget } from "./widgets/reports-widget";
 import { ReportingApp } from "./reporting/reporting_app";
-import { TestAnalysesManager } from './test-analysis/testAnalysesManager';
-import { TestAnalysisApp } from './test-analysis/app';
-
+import { TestAnalysisManager } from './test-analysis/testAnalysisManager'; 
 import { getDate } from './utils';
 import dayjs from "dayjs";
 
 
 export const _package = new DG.Package();
 
-
-//name: Test Analysis
-//tags: app
-//meta.url: /tests/analysis
-//output: view v
-export async function TestAnalysis(): Promise<DG.ViewBase| null > { 
-  const handler = new TestAnalysisApp();
-  await handler.init();
-  return handler.view; 
-}
-
 //name: TestsList 
 //meta.url: /tests/list
 //output: dataframe df
 export async function TestsList(): Promise<DG.DataFrame| undefined> { 
-  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const pacakageTests = await TestAnalysisManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
-  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
     return { 'name':  "test-manual " + elem };
   });
@@ -51,11 +38,11 @@ export async function TestsList(): Promise<DG.DataFrame| undefined> {
 //output: dataframe df
 export async function TestsListJoined(): Promise<DG.DataFrame| undefined> { 
   
-  const pacakageTests = await TestAnalysesManager.collectPackageTests();
+  const pacakageTests = await TestAnalysisManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
-  const manualTest = await TestAnalysesManager.collectManualTestNames();
+  const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
     return { 'name':  "test-manual " + elem };
   });
@@ -69,31 +56,11 @@ export async function TestsListJoined(): Promise<DG.DataFrame| undefined> {
 }
 
 
-//name: BuildTests
-//meta.runOnOpen: false
-//meta.runOnInput: false
-//input: string build {choices: UsageAnalysis:Builds}
-//output: dataframe df
-export async function BuildTests(build: any) {
-  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds');
-  let date = dayjs();
-  let next = dayjs();
-  for (let i = 0; i < builds.rowCount; i++) {
-    if (builds.get('text', i) == build) {
-      date = builds.get('build', i);
-      next = builds.get('next', i);
-      break;
-    }
-  }
-  return await grok.functions.call('UsageAnalysis:BuildTestsData', {'dateStart': date, 'dateEnd': next});
-}
-
-
 //name: TestAnalysisReportForCurrentDay
 //input: datetime date 
 //output: dataframe df
 export async function TestAnalysisReportForCurrentDay(date: any) {
-  const tests = await TestAnalysesManager.collectPackageTests();
+  const tests = await TestAnalysisManager.collectPackageTests();
   const testsListMapped = tests.map((elem) => {
     return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
@@ -199,40 +166,24 @@ export function describeCurrentObj(): void {
 }
 
 //name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-//tags: panel, widgets
-//input: string msg {semType: ErrorMessage}
-//output: widget result
-//condition: true
-export function createJiraTicket(msg: string): DG.Widget {
-  const root = ui.div();
-
-  const summary = ui.input.string('Summary', {value: ''});
-  const description = ui.input.string('Description', {value: msg});
-
-  const button = ui.bigButton('CREATE', () => {
-    grok.data.query('Vnerozin:JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': summary.value,
-          'description': description.value,
-          'issuetype': {
-            'name': 'Bug',
-          },
+//description: Creates JIRA ticket using current error log  
+export function createJiraTicket(msg: string){ 
+  grok.data.query('JiraCreateIssue', {
+    'createRequest': JSON.stringify({
+      'fields': {
+        'project': {
+          'key': 'GROK',
         },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-    });
-  });
-  button.style.marginTop = '12px';
-
-  root.appendChild(ui.inputs([summary, description]));
-  root.appendChild(button);
-
-  return new DG.Widget(root);
+        'summary': 'test',
+        'description':'',
+        'issuetype': {
+          'name': 'Bug',
+        },
+      },
+    }),
+    'updateHistory': false,
+  }).then((t) => {
+    grok.shell.info('Created');
+    console.log(t);
+  });  
 }

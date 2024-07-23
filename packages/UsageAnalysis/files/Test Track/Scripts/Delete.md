@@ -4,8 +4,6 @@
 4. Click YES in the confirmation dialog.
 5. Check that script has been deleted and is no longer present.
 
-* Repeat steps for scripts on other languages (Python, Julia, Octave, NodeJS)
-
 ---
 {
 "order": 5

@@ -7,7 +7,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy} from "./utils";
+import {MapProxy, Completer} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -301,7 +301,7 @@ export class Widget<TSettings = any> {
   /** Registers an property with the specified type, name, and defaultValue.
    *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *  
+   *
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -414,7 +414,6 @@ export abstract class Filter extends Widget {
 
   /** Override to save filter state. */
   saveState(): any {
-    console.log('save state');
     return {
       column: this.columnName,
       columnName: this.columnName
@@ -425,7 +424,6 @@ export abstract class Filter extends Widget {
   applyState(state: any): void {
     this.columnName = state.columnName;
     this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
-    console.log('apply state');
   }
 
   /** Gets called when a data frame is attached.
@@ -552,7 +550,7 @@ export class Accordion extends DartWidget {
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane extends DartWidget {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -734,6 +732,22 @@ export class Dialog extends DartWidget {
   onOK(handler: Function): Dialog {
     api.grok_Dialog_OnOK(this.dart, handler);
     return this;
+  }
+
+  /**
+   * Sets the OK button handler and returns a promise of the handler callback.
+   * @param {Function} handler
+   * @returns {Promise} */
+  async awaitOnOK<T = any>(handler: () => Promise<T>): Promise<T> {
+    let completer = new Completer<T>();
+    this.onOK(() => {
+      handler().then((res) => completer.complete(res))
+               .catch((error) => completer.reject(error));
+    });
+    this.onCancel(() => {
+      completer.reject();
+    });
+    return completer.promise;
   }
 
   /**
@@ -1271,7 +1285,7 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 
 
 export class DateInput extends InputBase<dayjs.Dayjs | null> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1286,7 +1300,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
 
 
 export class ChoiceInput<T> extends InputBase<T> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1875,7 +1889,6 @@ export class RangeSlider extends DartWidget {
   /** Sets showHandles in range slider.
    * @param {boolean} value */
   setShowHandles(value: boolean): void {
-    console.log('setShowHandles', value);
     api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
 
@@ -2324,7 +2337,7 @@ export class MarkdownInput extends InputBase {
 }
 
 export class CodeInput extends InputBase {
-  dart: any;
+  declare dart: any;
   editor: CodeEditor;
 
   constructor(name: string, config?: CodeConfig) {
@@ -2352,7 +2365,7 @@ export class FunctionsWidget extends DartWidget {
     onEvent(eventId: string | null = null): rxjs.Observable<any> {
       if (eventId !== null)
         return __obs(eventId, this.dart);
-  
+
       let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
       return rxjs.fromEventPattern(
         function (handler) {
@@ -2366,5 +2379,6 @@ export class FunctionsWidget extends DartWidget {
       );
     }
 
-  get onActionPlusIconClicked(): rxjs.Observable<EventData<Func>> { return this.onEvent('d4-action-plus-icon-click'); }
+  get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
+  get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }

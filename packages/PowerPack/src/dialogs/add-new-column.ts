@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { EditorSelection, EditorState, Extension, StateEffectType } from '@codemirror/state'
-import { DecorationSet, EditorView, ViewUpdate, hoverTooltip } from '@codemirror/view'
+import { EditorSelection, EditorState, Extension, StateEffectType, Prec } from '@codemirror/state'
+import { DecorationSet, EditorView, ViewUpdate, hoverTooltip, keymap } from '@codemirror/view'
 import {RegExpCursor} from "@codemirror/search"
 import {Completion, CompletionContext, CompletionResult, autocompletion, startCompletion, completeFromList} from "@codemirror/autocomplete"
 import {StateEffect, StateField} from "@codemirror/state"
@@ -29,7 +29,8 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'num': ['number', 'int', 'double', 'float'],
   'number': ['num', 'int', 'double', 'float'],
   'double': ['int', 'float', 'number', 'num'],
-  'float': ['int']
+  'float': ['int'],
+  'int': ['num', 'number']
 };
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
@@ -96,6 +97,7 @@ export class AddNewColumnDialog {
   packageAutocomplete = false;
   functionAutocomplete = false;
   autocompleteEnter = false;
+  selectedColumn: DG.Column | null = null;
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -151,7 +153,8 @@ export class AddNewColumnDialog {
     }
 
     this.prepareForSeleniumTests();
-    await this.updatePreview(this.codeMirror!.state.doc.toString());
+    if (!this.call)
+      await this.updatePreview(this.codeMirror!.state.doc.toString());
     this.prepareFunctionsListForAutocomplete();
   }
 
@@ -252,7 +255,7 @@ export class AddNewColumnDialog {
 
     this.uiDialog!.root.onclick = () => {
       setTimeout(() => {
-        this.setCodeMirrorFocus();
+        this.setCodeMirrorFocus(cm);
       }, 100);
     };
 
@@ -341,6 +344,13 @@ export class AddNewColumnDialog {
       return true;
     }
 
+    const cutSelection = (v: EditorView) => {
+      const selectionContents = v.state.sliceDoc(v.state.selection.main.from, v.state.selection.main.to);
+      navigator.clipboard.writeText(selectionContents);
+      v.dispatch({ changes: { from: v.state.selection.main.from, to: v.state.selection.main.to, insert: '' } })
+      return true;
+    }
+
     //create code mirror
     const cm = new EditorView({
       parent: this.codeMirrorDiv!,
@@ -354,8 +364,14 @@ export class AddNewColumnDialog {
           highlightTheme,
           highlightField,
           bracketMatching({brackets : "()[]{}"}),
+          keymap.of([
+            {
+              key: 'Shift-Delete',
+              run: cutSelection
+            }
+          ]),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
-            this.setCodeMirrorFocus();
+            this.setCodeMirrorFocus(cm);
 
             //update hint
             ui.empty(this.hintDiv);
@@ -375,7 +391,7 @@ export class AddNewColumnDialog {
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{\\w+\\}');
+            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}');
 
             const colSelections = [];
             while (!cursor.done) {
@@ -451,21 +467,21 @@ export class AddNewColumnDialog {
     });  
 
     if (this.call)
-      this.codeMirror!.dispatch({changes: {
+      cm!.dispatch({changes: {
         from: 0,
-        to: this.codeMirror!.state.doc.length,
+        to: cm.state.doc.length,
         insert: this.call.getParamValue('expression')
       }});
 
     return cm;
   }
 
-  setCodeMirrorFocus() {
+  setCodeMirrorFocus(cm: EditorView) {
     if (!this.inputName!.root.contains(document.activeElement)
       && !this.uiColumns!.contains(document.activeElement)
       && !this.uiFunctions!.contains(document.activeElement)
       && !this.inputType!.root.contains(document.activeElement)) {
-      this.codeMirror!.focus();
+        cm!.focus();
     }
   }
 
@@ -666,8 +682,13 @@ export class AddNewColumnDialog {
     this.columnsDf?.onCurrentRowChanged.subscribe(() => {
       if (this.columnsDf && this.columnsDf!.currentRowIdx !== -1) {
         const colName = this.columnsDf!.get('name', this.columnsDf!.currentRowIdx);
-        if (this.sourceDf)
-          this.widgetFunctions!.props.sortByColType = this.sourceDf.col(colName);
+        if (this.sourceDf) {
+          this.selectedColumn = this.sourceDf.col(colName);
+          this.widgetFunctions!.props.sortByColType = this.selectedColumn;
+        } else {
+          this.selectedColumn = null;
+          this.widgetFunctions!.props.sortByColType = null;
+        }
       }
     })
 
@@ -680,9 +701,17 @@ export class AddNewColumnDialog {
 
   /** Creates and initializes the "Function List Widget". */
   async initUiFunctions(): Promise<HTMLDivElement> {
-    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({scalarOnly: true});
-    //this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
+    this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply({scalarOnly: true, plusIconOnHover: true});
+    this.widgetFunctions!.props.visibleCategories = this.visibleTags.join(',');
     this.widgetFunctions!.props.showSignature = true;
+    (this.widgetFunctions as DG.FunctionsWidget)!.onActionPlusIconClicked.subscribe((e: DG.Func) => {
+      if (this.codeMirror)
+        this.insertIntoCodeMirror(e, this.codeMirror);
+    });
+    (this.widgetFunctions as DG.FunctionsWidget)!.onActionClicked.subscribe((e: DG.Func) => {
+      if (this.codeMirror)
+        this.insertIntoCodeMirror(e, this.codeMirror);
+    });
     const control = ui.box();
     control.append(this.widgetFunctions!.root);
     control.classList.add('ui-widget-addnewcolumn-functions');
@@ -776,8 +805,13 @@ export class AddNewColumnDialog {
     if (this.typeOf(x, DG.Column))
       snippet = `\${${x.name}}`;
     else if (this.typeOf(x, DG.Func)) {
-      const paramsStr = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType).join(', ');
-      snippet = `${x.name}(${paramsStr})`;
+      const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
+      const colPos = this.findColumnTypeMatchingParam(x);
+      if (colPos !== -1)
+        params[colPos] = `\${${this.selectedColumn!.name}}`;
+      const paramsStr = params.join(', ');
+      const funcName = (x as DG.Func).nqName.startsWith('core:') ? (x as DG.Func).name : (x as DG.Func).nqName;
+      snippet = `${funcName}(${paramsStr})`;
     }
     else
       return;
@@ -792,6 +826,31 @@ export class AddNewColumnDialog {
       }
     });
     this.setSelection(cursorPos);
+  }
+
+  findColumnTypeMatchingParam(f: DG.Func): number {
+    if (!this.selectedColumn)
+      return -1;
+    let finalPos = -1;
+    let bestTypePosFound = false;
+    let bestDynamicTypePosFound = false;
+    for (let i = 0; i < f.inputs.length; i++) {
+      const mappedTypes = VALIDATION_TYPES_MAPPING[f.inputs[i].propertyType] ?? [];
+      if (this.selectedColumn.semType && f.inputs[i].semType == this.selectedColumn.semType) {
+        finalPos = i;
+        break;
+      } else if ((this.selectedColumn.type == f.inputs[i].propertyType ||
+        mappedTypes.includes(this.selectedColumn.type)) && f.inputs[i].semType == null && !bestTypePosFound) {
+        bestTypePosFound = true;
+        finalPos = i;
+        if (!this.selectedColumn.semType)
+          break;
+      } else if (f.inputs[i].propertyType == 'dynamic' && !bestDynamicTypePosFound) {
+        bestDynamicTypePosFound = true;
+        finalPos = i;
+      }
+    }
+    return finalPos;
   }
 
   /** Creates new unique Column Name. */

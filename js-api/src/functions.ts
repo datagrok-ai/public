@@ -276,7 +276,7 @@ type FuncCallParams = {
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
-  public readonly dart: any;
+  declare readonly dart: any;
 
   /** Named input values. See {@link inputParams} for parameter metadata. */
   public inputs: {[name: string]: any};

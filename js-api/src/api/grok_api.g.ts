@@ -529,6 +529,10 @@ export interface IDartApi {
   grok_ColumnList_Replace(cols: any, columnToReplace: any, newColumn: any): any;
   grok_ColumnList_Categorical(cols: any): any;
   grok_ColumnList_Numerical(cols: any): any;
+  grok_ColumnList_DateTime(cols: any): any;
+  grok_ColumnList_NumericalNoDateTime(cols: any): any;
+  grok_ColumnList_Boolean(cols: any): any;
+  grok_ColumnList_Selected(cols: any): any;
   grok_ColumnList_ByTags(cols: any, desiredTags: any): any;
   grok_ColumnList_GetUnusedName(cols: any, name: String, choices: any): any;
   grok_Column_FromStrings(name: String, list: any): any;
@@ -847,6 +851,7 @@ export interface IDartApi {
   grok_Property_Set(p: any, propertyName: String, propertyValue: any): any;
   grok_Property_Get_ColumnTypeFilter(p: any): any;
   grok_Property_Options(p: any, options: any): any;
+  grok_Property_RegisterAttachedProperty(typeName: String, p: any): any;
   grok_SemanticValue(value: any, semType: String): any;
   grok_SemanticValue_Get_Value(v: any): any;
   grok_SemanticValue_Set_Value(v: any, x: any): any;

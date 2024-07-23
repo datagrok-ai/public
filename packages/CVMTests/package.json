@@ -9,7 +9,7 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.20.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "^4.2.12"
@@ -53,6 +53,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CVMTests"
-  },
-  "skipCI": false
+  }
 }

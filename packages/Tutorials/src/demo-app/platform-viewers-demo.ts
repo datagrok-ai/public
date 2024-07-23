@@ -26,7 +26,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Markup: 'files/demog.csv',
   'Tile Viewer': 'chem/sar_small.csv',
   Form: 'files/sar-small.csv',
-  'Shape Map': 'geo/us_2016_election_by_county.csv',
+  //'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
   Filters: 'files/filters.csv',
 };

@@ -424,7 +424,7 @@ export interface FilterState {
 
 /** Represents a group of filters that are located together. */
 export class FilterGroup extends Viewer {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -476,13 +476,13 @@ export type RowDataArgs = {
 
 export type LineChartLineArgs = {
   chartIdx: number,
-  yColumnNames: string[], 
+  yColumnNames: string[],
   yAggrTypes: string[],
 }
 
 export type CorrPlotCellArgs = {
   column1: string,
-  column2: string, 
+  column2: string,
   value: number,
 }
 
@@ -501,7 +501,7 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
 
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
-  get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); } 
+  get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
 }
@@ -553,6 +553,7 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onPointClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-click'); }
+  get onPointDoubleClicked(): rxjs.Observable<EventData<RowDataArgs>> { return this.onEvent('d4-scatterplot-point-double-click'); }
 }
 
 export class HistogramViewer extends Viewer<interfaces.IHistogramSettings> {
