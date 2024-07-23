@@ -153,7 +153,8 @@ export class AddNewColumnDialog {
     }
 
     this.prepareForSeleniumTests();
-    await this.updatePreview(this.codeMirror!.state.doc.toString());
+    if (!this.call)
+      await this.updatePreview(this.codeMirror!.state.doc.toString());
     this.prepareFunctionsListForAutocomplete();
   }
 
@@ -254,7 +255,7 @@ export class AddNewColumnDialog {
 
     this.uiDialog!.root.onclick = () => {
       setTimeout(() => {
-        this.setCodeMirrorFocus();
+        this.setCodeMirrorFocus(cm);
       }, 100);
     };
 
@@ -370,7 +371,7 @@ export class AddNewColumnDialog {
             }
           ]),
           EditorView.updateListener.of(async (e: ViewUpdate) => {
-            this.setCodeMirrorFocus();
+            this.setCodeMirrorFocus(cm);
 
             //update hint
             ui.empty(this.hintDiv);
@@ -390,7 +391,7 @@ export class AddNewColumnDialog {
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{\\w+\\}');
+            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}');
 
             const colSelections = [];
             while (!cursor.done) {
@@ -466,21 +467,21 @@ export class AddNewColumnDialog {
     });  
 
     if (this.call)
-      this.codeMirror!.dispatch({changes: {
+      cm!.dispatch({changes: {
         from: 0,
-        to: this.codeMirror!.state.doc.length,
+        to: cm.state.doc.length,
         insert: this.call.getParamValue('expression')
       }});
 
     return cm;
   }
 
-  setCodeMirrorFocus() {
+  setCodeMirrorFocus(cm: EditorView) {
     if (!this.inputName!.root.contains(document.activeElement)
       && !this.uiColumns!.contains(document.activeElement)
       && !this.uiFunctions!.contains(document.activeElement)
       && !this.inputType!.root.contains(document.activeElement)) {
-      this.codeMirror!.focus();
+        cm!.focus();
     }
   }
 
