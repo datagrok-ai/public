@@ -8,13 +8,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
@@ -561,9 +558,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
-        return (name.contains(" ") && !name.startsWith(brackets.substring(0, 1)))
-                ? brackets.charAt(0) + name + brackets.substring(brackets.length() - 1)
-                : name;
+        return Arrays.stream(name.split("\\."))
+                .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
+                        : brackets.charAt(0) + name + brackets.substring(brackets.length() - 1))
+                .collect(Collectors.joining("."));
     }
 
     public String limitToSql(String query, Integer limit) {

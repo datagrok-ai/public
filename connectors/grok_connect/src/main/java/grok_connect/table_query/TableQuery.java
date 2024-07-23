@@ -35,7 +35,7 @@ public class TableQuery {
             table = table.substring(idx + 1);
         }
         table = addBrackets.convert(table);
-        table = schema != null && schema.length() != 0 && !connection.dataSource.equals("SQLite") ? schema + "." + table : table;
+        table = schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite") ? addBrackets.convert(schema) + "." + table : table;
         sql.append("SELECT");
         sql.append(System.lineSeparator());
         if (limit != null && !limitAtEnd) {
@@ -121,7 +121,7 @@ public class TableQuery {
             }
         }
         preparedFields.addAll(getAggFuncs().stream().map(aggrToSql::convert).filter(Objects::nonNull).collect(Collectors.toList()));
-        return preparedFields.stream()
+        return preparedFields.isEmpty() ? "*\n" : preparedFields.stream()
                 .collect(Collectors.joining(String.format(",%s", System.lineSeparator()), "", System.lineSeparator()));
     }
 

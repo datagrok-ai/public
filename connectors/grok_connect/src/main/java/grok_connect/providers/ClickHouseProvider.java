@@ -28,6 +28,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.nameBrackets = "\"";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#^(int(8|16|32))$", serialization.Types.INT);
             put("#^(uint(8|16))$", serialization.Types.INT);
