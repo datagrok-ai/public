@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 
 import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames } from './utils';
 import { _package } from '../package';
+import { testViewer } from '@datagrok-libraries/utils/src/test';
 
 const NEW_TESTING = 'New Testing';
 
@@ -71,6 +72,7 @@ export class TestTrack extends DG.ViewBase {
   isReporting: boolean = false;
   onRemoveSubForCollabTestingSync?: any;
   onRemoveSubForReportiingSync?: any;
+  tableViewReport?: DG.TableView | null = null;
 
   isReportSyncActive: boolean = false;
   public static getInstance(): TestTrack {
@@ -149,7 +151,7 @@ export class TestTrack extends DG.ViewBase {
 
   private addCollabTestingSync() {
     const updateBatchInterval = setInterval(() => {
-      this.UpdateBatchData();
+      this.updateBatchData();
     }, 10000)
     this.onRemoveSubForCollabTestingSync = grok.shell.dockManager.onClosed.subscribe((v) => {
       if (v === this.root) {
@@ -288,9 +290,18 @@ export class TestTrack extends DG.ViewBase {
       });
       const df = DG.DataFrame.fromObjects(list)!;
       df.getCol('status').meta.colors.setCategorical(colors);
-      const tv = grok.shell.addTableView(df);
-      tv.grid.sort(['category', 'name']);
-      tv.name = 'Report';
+      if (this.tableViewReport !== null)
+        this.tableViewReport?.close();
+      this.tableViewReport = grok.shell.addTableView(df);
+      this.tableViewReport.grid.sort(['category', 'name']);
+      this.tableViewReport.name = 'Report';
+
+      this.tableViewReport.dataFrame.onSelectionChanged.subscribe(() => {
+
+      });
+
+      if (this.currentNode !== this.tree && this.currentNode?.value?.path !== null)
+        this.UpdateReportAccordingTestTrackSelection(this.currentNode);
     }, 'Generate report');
     report.classList.add('tt-ribbon-button');
     const ec = ui.button(getIcon('sort', { style: 'fas' }), () => {
@@ -354,6 +365,8 @@ export class TestTrack extends DG.ViewBase {
 
       if (node === this.tree)
         return;
+      this.UpdateReportAccordingTestTrackSelection(node);
+
       this.testCaseDiv.append(node.value.text);
       edit.disabled = false;
       node.value.history.style.display = 'flex';
@@ -390,7 +403,6 @@ export class TestTrack extends DG.ViewBase {
         }
       });
     });
-
     // UI
     this.append(ui.div(this.searchInput.root));
     this.append(ui.div([this.testCaseDiv, edit], { id: 'tt-test-case-div-outer' }));
@@ -400,6 +412,19 @@ export class TestTrack extends DG.ViewBase {
     grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
 
     this.isInitializing = false;
+  }
+
+  private UpdateReportAccordingTestTrackSelection(node: any) {
+    if (this.tableViewReport !== null) {
+      this.tableViewReport?.dataFrame?.selection?.setAll(false); 
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any)=> `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      if(foundRows.length === 1)
+        this.tableViewReport?.dataFrame?.selection?.set(foundRows[0], true);
+    }
+  }
+
+  private UpdateTestTrackAccordingReportSelction() {
+    //TODO
   }
 
   private closeTreeCategories() {
@@ -626,7 +651,6 @@ export class TestTrack extends DG.ViewBase {
     textInput.nullable = false;
     textInput.classList.add('ui-input-reason');
 
-
     const ticketSummary = ui.input.string('Summary');
     const ticketDescription = ui.input.textArea('Description');
     const createTicketBtn = ui.button('Create Ticket', () => {
@@ -688,8 +712,14 @@ export class TestTrack extends DG.ViewBase {
       dialog.add(errorTypeSelector);
     }
 
+    dialog.root.addEventListener('keydown', (e) => {
+      if (e.key == 'Enter' && document.activeElement?.nodeName === 'TEXTAREA')
+        e.stopImmediatePropagation();
+    });
     dialog.add(textInput.root);
-    dialog.onOK(() => edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value));
+    dialog.onOK(() => {
+      edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
+    });
     if (errorSeverityLevels.includes(status)) {
       dialog.add(ui.divV([ticketMenuToogleBtn, jiraTicketsTab]));
     }
@@ -716,8 +746,8 @@ export class TestTrack extends DG.ViewBase {
         value.reason.append(ui.label('list'));
       if (status !== SKIPPED)
         severityLevel = status;
-      value.fullReason = reason;
     }
+    value.fullReason = reason;
     const params = {
       success: status === PASSED, result: reason ?? '', skipped: status === SKIPPED, type: 'manual',
       category: value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
@@ -738,10 +768,12 @@ export class TestTrack extends DG.ViewBase {
       map['Reason'] = reasonTooltipValue;
       ui.tooltip.bind(icon, () => ui.tableFromMap(map));
     });
+    this.updateReportData(node);
   }
 
   changeNodeReason(node: DG.TreeViewNode, status: Status, reason: string, uid: string = this.uid, reportData: Boolean = true): void {
     if (status !== node.value.status) {
+      this.changeNodeStatus(node, status, reason, uid, reportData);
       return;
     }
     if (reason === node.value.reason.innerText) return;
@@ -754,8 +786,8 @@ export class TestTrack extends DG.ViewBase {
         node.value.reason.append(ui.label('list'));
       if (status !== SKIPPED)
         severityLevel = status;
-      node.value.fullReason = reason;
     }
+    node.value.fullReason = reason;
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
@@ -776,6 +808,7 @@ export class TestTrack extends DG.ViewBase {
     });
     if (reportData)
       grok.shell.reportTest('manual', params);
+    this.updateReportData(node); 
   }
 
   async showStartNewTestingDialog(): Promise<void> {
@@ -871,7 +904,7 @@ export class TestTrack extends DG.ViewBase {
   }
 
   refresh(): void {
-    this.UpdateBatchData();
+    this.updateBatchData();
   }
 
   getReason(reason: string): HTMLElement {
@@ -920,7 +953,7 @@ export class TestTrack extends DG.ViewBase {
     return (instance as TestCase) !== undefined;
   }
 
-  async UpdateBatchData() {
+  private async updateBatchData() {
     if (!this.testingName)
       return;
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `"${this.testingName}"` });
@@ -954,6 +987,17 @@ export class TestTrack extends DG.ViewBase {
             this.changeNodeStatus(node, status, reason, uid, false);
           }
         }
+      }
+    }
+  }
+
+  private updateReportData(node: DG.TreeViewNode) {    
+    if (this.tableViewReport !== null) {
+      this.tableViewReport?.dataFrame?.selection?.setAll(false); 
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any)=> `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      if(foundRows.length === 1){
+        this.tableViewReport?.dataFrame?.set('status', foundRows[0], node.value.status || '')
+        this.tableViewReport?.dataFrame?.set('reason', foundRows[0], node.value.fullReason || '')
       }
     }
   }

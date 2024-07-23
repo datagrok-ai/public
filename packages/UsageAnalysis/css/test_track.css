@@ -170,12 +170,12 @@
 
 .tt-dialog  .ui-input-reason textarea{
   height: 206px;
-  width: 90%;
+  width: 80%;
 }
 
 .tt-dialog  .ui-input-reason label{
   height: 206px;
   vertical-align: top;
   justify-content:flex-start;
-  width: 90%;
+  width: 80%;
 }
