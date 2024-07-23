@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
 ## 1.36.1 (2024-07-22)
 
 - RFV: Last inputs are now saved locally
