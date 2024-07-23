@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.1.13 (2024-07-23)
+
+Fix chem descriptors breaking loop.
+
 ## 1.1.12 (2024-07-18)
 
 Fix broken demo campaign file.
