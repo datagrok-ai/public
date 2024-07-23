@@ -9,7 +9,7 @@
     "directory": "packages/ADMETox"
   },
   "dependencies": {
-    "datagrok-api": "^1.20.0"",
+    "datagrok-api": "^1.20.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "^4.2.11"
