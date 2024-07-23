@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.13 (2024-07-15)
+
+Added benchmark flag to category options
+
 ## 4.2.12 (2024-07-15)
 
 Added benchmark flag to test options
