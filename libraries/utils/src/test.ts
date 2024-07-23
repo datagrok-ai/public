@@ -402,19 +402,24 @@ export async function runTests(options?:
         for (let i = 0; i < t.length; i++) {
           if (t[i].options) {
             if (t[i].options?.benchmark === undefined) {
-              if(!t[i].options)
+              if (!t[i].options)
                 t[i].options = {}
               //@ts-ignore
               t[i].options.benchmark = value.isAllTestsEnabledBenchmarkMode || false;
             }
           }
-          res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
+          let testRun = await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose);
+          if (testRun)
+            res.push(testRun);
           grok.shell.closeAll();
           DG.Balloon.closeAll();
         }
       } else {
-        for (let i = 0; i < t.length; i++)
-          res.push(await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose));
+        for (let i = 0; i < t.length; i++){
+          let testRun = await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose);
+          if (testRun)
+            res.push(testRun);
+        }
       }
       const data = res.filter((d) => d.result != 'skipped');
       try {
@@ -475,8 +480,8 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   let skipReason = filter ? 'skipped' : t.options?.skipReason;
 
   if (DG.Test.isInBenchmark && !t.options?.benchmark) {
-    skipReason = `${t.category} ${t.name} doesnt available in benchmark mode`;
-    skip = true;
+    stdLog(`SKIPPED: ${t.category} ${t.name} doesnt available in benchmark mode`);
+    return undefined;
   }
 
   if (!skip)
@@ -522,7 +527,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
       params = { ...params, ...res };
-    }    
+    }
     if (params.result instanceof DG.DataFrame)
       params.result = JSON.stringify(params.result?.toJson()) || '';
     if ((<any>grok.shell).reportTest != null)

@@ -187,14 +187,14 @@ export class TestManager extends DG.ViewBase {
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
-              const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].isAllTestsEnabledBenchmarkMode;
+              const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].benchmarks;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
                 if (t.options.isEnabledBenchmarkMode === undefined) {
                   if (!t.options)
                     t.options = {}
-                  t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false; 
+                  t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false;
                 }
-                const result = { test: t, packageName: f.package.name }; 
+                const result = { test: t, packageName: f.package.name };
                 return result;
               });
               const subcats = cat.split(':');
@@ -471,8 +471,12 @@ export class TestManager extends DG.ViewBase {
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
-    if (DG.Test.isInBenchmark && !t.test.options?.benchmark)
+    if (DG.Test.isInBenchmark && !t.test.options?.benchmark) {
       t.test.options.skipReason = "Test can not be runned in benchmark mode";
+    
+      this.updateTestResultsIcon(t.resultDiv, true, true);
+      return;
+    }
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
@@ -605,14 +609,6 @@ export class TestManager extends DG.ViewBase {
       }
     }
     for (const t of category.tests) {
-      if (!t.test.options?.benchmark) {
-        // if(!t.test.options){
-        //   t.test.options = {};
-        // }
-        // //@ts-ignore
-        // t.test.options?.isEnabledBenchmarkMode =  category.isAllTestsEnabledBenchmarkMode || false;
-
-      }
       const res = await this.runTest(t);
       if (!res)
         testsSucceded = false;
