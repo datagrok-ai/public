@@ -1,13 +1,13 @@
 --name:UniqueUsersOverview
 --input: string date {pattern: datetime}
---input: list groups
---input: list packages
+--input: list<string> groups
+--input: list<string> packages
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
-  where id = any(@groups)
+  where id::varchar = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -47,20 +47,20 @@ select to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc
 AT TIME ZONE 'UTC' as date, count(distinct res.ugid)
 from res, selected_groups sg, t2
 where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all'])
+and (res.package = any(@packages) or @packages = ARRAY['all']::varchar[])
 group by date
 --end
 
 --name: PackagesUsageOverview
 --input: string date {pattern: datetime}
---input: list groups
---input: list packages
+--input: list<string> groups
+--input: list<string> packages
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
-  where id = any(@groups)
+  where id::varchar = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -94,6 +94,6 @@ count(*) AS count, res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000
 max(event_time) as time_end, min(event_time) as time_start
 from res, selected_groups sg
 where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all'])
+and (res.package = any(@packages) or @packages = ARRAY['all']::varchar[])
 GROUP BY res.package, res.user, res.uid, res.ugid, res.pid
 --end

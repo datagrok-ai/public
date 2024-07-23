@@ -230,7 +230,8 @@ export class PackagesView extends UaView {
       return ui.wait(async () => {
         const df = await grok.functions.call('UsageAnalysis:PackagesContextPaneLogs', filter);
         const data: {[key: string]: number} = {};
-        for (const r of df.rows) data[r.source] = r.count + (data[r.source] ?? 0);
+        for (const r of df.rows)
+          data[r.source] = r.count + (data[r.source] ?? 0);
         const info = lPane.root.querySelector('#info') as HTMLElement;
         info.textContent = df.getCol('count').stats.sum.toString();
         info.style.removeProperty('display');

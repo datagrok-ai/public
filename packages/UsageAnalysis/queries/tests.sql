@@ -243,7 +243,7 @@ coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.
   order by e.event_time) a), 
   builds as (select buildtime || ' - ' || commit as build, buildtime as date,
   coalesce((select min(c2.buildtime) from commits c2 where c2.buildtime > commits.buildtime), now() at time zone 'utc') as next from commits 
-  where id = @buildId order by 1 desc), 
+  where id::varchar = @buildId order by 1 desc),
   
   test_event_types as (select t.id, coalesce(t.friendly_name, df.name)as friendly_name from  event_types t
   full outer join testslist df on df.name =  t.friendly_name
