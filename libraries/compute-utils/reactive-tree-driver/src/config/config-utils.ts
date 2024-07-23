@@ -35,7 +35,7 @@ function getNextItems<C extends TraverseItem<PipelineConfigurationProcessed>>(co
 
 function getNextConfigs<C extends TraverseItem<PipelineConfigurationProcessed>>(config: C) {
   if (isPipelineParallelConfig(config) || isPipelineSequentialConfig(config))
-    return config.items.map((item) => ({config: item.config as C}));
+    return config.stepType.map((item) => ({config: item.config as C}));
   else if (isPipelineStaticConfig(config))
     return config.steps.map((config) => ({config: config as C}));
 

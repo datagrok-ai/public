@@ -1,6 +1,7 @@
 import {Observable} from 'rxjs';
 import {RuntimeController} from '../RuntimeController';
 import {ItemId, NqName, ItemPath, InputState, ItemType} from '../data/common-types';
+import { PipelineInstanceConfig, StepParallelState, StepSequentialState} from './PipelineInstance';
 
 //
 // Pipeline public configuration
@@ -111,7 +112,8 @@ export type PipelineParallelItem<P, S, R> = ({
 }) & ParallelItemContext<P>;
 
 export type AbstractPipelineParallelConfiguration<P, S, R> = {
-  items: PipelineParallelItem<P, S, R>[];
+  initialSteps?: StepParallelState[];
+  stepType: PipelineParallelItem<P, S, R>[];
   dynamic: 'parallel';
 } & PipelineConfigurationBase<P>;
 
@@ -129,7 +131,8 @@ export type PipelineSequentialItem<P, S, R> = ({
 }) & SequentialItemContext;
 
 export type AbstractPipelineSequentialConfiguration<P, S, R> = {
-  items: PipelineSequentialItem<P, S, R>[];
+  initialSteps?: StepSequentialState[];
+  stepTypes: PipelineSequentialItem<P, S, R>[];
   links?: PipelineDynamicLinkConfiguration<P>[];
   dynamic: 'sequential';
 } & PipelineConfigurationBase<P>;
@@ -149,3 +152,11 @@ AbstractPipelineSequentialConfiguration<P, S, R>;
 
 export type PipelineConfigurationProvided = AbstractPipelineConfiguration<ItemPath | ItemPath[], never, PipelineRef>;
 export type PipelineConfiguration = PipelineConfigurationProvided | PipelineRef;
+
+// extrenal instance config
+
+export type ExternalInitialConfig = {
+  provider: PipelineProvider | NqName;
+  version?: string;
+  config: PipelineInstanceConfig;
+}

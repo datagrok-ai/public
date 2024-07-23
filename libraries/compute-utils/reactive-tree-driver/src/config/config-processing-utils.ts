@@ -84,14 +84,14 @@ async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(c
     return pconf;
   } else if (isPipelineParallelConfig(conf)) {
     const pconf = await processParallelConfig(conf);
-    pconf.items = await Promise.all(conf.items.map(async (item) => {
+    pconf.stepType = await Promise.all(conf.stepType.map(async (item) => {
       const nconf = await configProcessing(item.config);
       return {...item, ...nconf} as any;
     }));
     return pconf;
   } else if (isPipelineSequentialConfig(conf)) {
     const pconf = await processSequentialConfig(conf);
-    pconf.items = await Promise.all(conf.items.map(async (item) => {
+    pconf.stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item.config);
       return {...item, ...nconf} as any;
     }));
@@ -117,7 +117,7 @@ async function processParallelConfig<C extends PipelineConfiguration>(
 ): Promise<PipelineParallelConfiguration<PipelineConfigurationProcessed>> {
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, actions, hooks, items: []};
+  return {...conf, actions, hooks, stepType: []};
 }
 
 async function processSequentialConfig<C extends PipelineConfiguration>(
@@ -126,7 +126,7 @@ async function processSequentialConfig<C extends PipelineConfiguration>(
   const links = conf.links?.map((link) => processLinkBase(link));
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, links, actions, hooks, items: []};
+  return {...conf, links, actions, hooks, stepTypes: []};
 }
 
 async function processStepConfig(conf: StepConfigType<ConfigTypes>): Promise<StepConfigType<PipelineConfigurationProcessed>> {

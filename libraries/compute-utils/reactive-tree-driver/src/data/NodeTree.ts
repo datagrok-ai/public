@@ -72,6 +72,10 @@ export class NodeTree<T> {
     return parent.removeChild(segment);
   }
 
+  toJSON() {
+
+  }
+
   traverse<R>(fn: (acc: R, item: T | undefined, pathArray: ItemPathArray) => R, acc: R) {
     return traverseNodeTree(this.root, fn, acc!);
   }
@@ -91,6 +95,10 @@ export class NodeTree<T> {
     if (nodes.length < pathArray.length + additionalNodes)
       throw new Error(`NodeTree: Failed to get all nodes to: ${pathArray}`);
     return nodes;
+  }
+
+  static fromJSON() {
+
   }
 }
 

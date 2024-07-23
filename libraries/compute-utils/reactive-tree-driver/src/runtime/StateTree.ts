@@ -3,8 +3,8 @@ import {InputState} from '../data/common-types';
 import {v4 as uuidv4} from 'uuid';
 import {switchMap} from 'rxjs/operators';
 import {NodeTree} from '../data/NodeTree';
-import {PipelineConfigurationProvided, PipelineStepConfiguration, StateItem} from '../config/PipelineConfiguration';
-import {FuncallStateItem} from '../config/config-processing-utils';
+import {PipelineStepConfiguration, StateItem} from '../config/PipelineConfiguration';
+import { FuncallStateItem, PipelineConfigurationProcessed, PipelineParallelConfiguration, PipelineSequentialConfiguration, PipelineStaticConfiguration } from '../config/config-processing-utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 
 export interface ICallable {
@@ -123,14 +123,12 @@ export class FuncCallNode implements IStoreProvider {
   }
 }
 
-
-export class PipelineNode implements IStoreProvider {
+export class PipelineNodeBase implements IStoreProvider {
   public readonly uuid = uuidv4();
-  public readonly nodeType = 'pipeline';
   private store: MemoryStore;
 
   constructor(
-    public readonly config: PipelineConfigurationProvided,
+    public readonly config: PipelineConfigurationProcessed,
   ) {
     this.store = new MemoryStore(config.states ?? []);
   }
@@ -140,4 +138,52 @@ export class PipelineNode implements IStoreProvider {
   }
 }
 
-export type StateTree = NodeTree<FuncCallNode | PipelineNode>;
+export class StaticPipelineNode extends PipelineNodeBase {
+  public readonly nodeType = 'staticPipeline';
+
+  constructor(
+    public readonly config: PipelineStaticConfiguration<PipelineConfigurationProcessed>
+  ) {
+    super(config);
+  }
+}
+
+export class ParallelPipelineNode extends PipelineNodeBase {
+  public readonly nodeType = 'parallelPipeline';
+
+  constructor(
+    public readonly config: PipelineParallelConfiguration<PipelineConfigurationProcessed>
+  ) {
+    super(config);
+  }
+}
+
+export class SequentialPipelineNode extends PipelineNodeBase {
+  public readonly nodeType = 'sequentialPipeline';
+
+  constructor(
+    public readonly config: PipelineSequentialConfiguration<PipelineConfigurationProcessed>
+  ) {
+    super(config);
+  }
+}
+
+export type StateTreeNode = FuncCallNode | StaticPipelineNode | ParallelPipelineNode | SequentialPipelineNode;
+
+export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
+  return node.nodeType === 'funccall';
+}
+
+export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelineNode {
+  return node.nodeType === 'staticPipeline';
+}
+
+export function isParallelPipelineNode(node: StateTreeNode): node is ParallelPipelineNode {
+  return node.nodeType === 'parallelPipeline';
+}
+
+export function isSequentialPipelineNode(node: StateTreeNode): node is SequentialPipelineNode {
+  return node.nodeType === 'sequentialPipeline';
+}
+
+export type StateTree = NodeTree<StateTreeNode>;

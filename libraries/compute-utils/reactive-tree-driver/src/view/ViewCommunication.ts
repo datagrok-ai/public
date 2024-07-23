@@ -1,85 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemId, NqName, ItemType} from '../config/CommonTypes';
+import {ItemType} from '../data/common-types';
 import {ActionPositions} from '../config/PipelineConfiguration';
 import {ValidationResult} from '../../../shared-utils/validation';
-
-// view config
-
-export interface ViewConfig {
-  provider: NqName;
-  pipelineConfig: StepsPipelineConfig;
-};
-
-
-export type PipelineViewConfigVariants = PipelineViewConfigStatic | PipelineViewConfigParallel | PipelineViewConfigSequential;
-
-
-export interface StepFunCallConfig {
-  id: string;
-  nqName: string;
-  isStep: true;
-  funcCallId?: string;
-  funcCall?: DG.FuncCall;
-  isInconsistent?: boolean;
-  ioSynced?: boolean;
-  isCurrent?: boolean;
-}
-
-export interface StepsPipelineConfig {
-  id: string;
-  funcCallId?: string;
-  nqName?: string
-  isStep: false;
-  isCurrent?: boolean;
-  pipelineConfig: PipelineViewConfigVariants;
-}
-
-
-export interface StepSequentialType {
-  type: ItemType;
-  typeName: string;
-}
-
-export interface StepSequentialConfig extends StepFunCallConfig, StepSequentialType {}
-
-export interface StepsSequentialConfig extends StepsPipelineConfig, StepSequentialType {}
-
-
-export interface StepParallelType {
-  type: ItemType;
-  typeName: string;
-  inputTypeId: ItemId;
-  outputTypeId: ItemId;
-}
-
-export interface StepParallelConfig extends StepFunCallConfig, StepParallelType {}
-
-export interface StepsParallelConfig extends StepsPipelineConfig, StepParallelType {}
-
-
-export interface PipelineViewConfigStatic {
-  id: string;
-  dynamic: false;
-  isStep: false;
-  steps: (StepFunCallConfig | StepsPipelineConfig)[];
-}
-
-export interface PipelineViewConfigSequential {
-  id: string;
-  dynamic: 'sequential';
-  isStep: false;
-  steps: (StepFunCallConfig | StepsSequentialConfig)[];
-  stepTypes: StepSequentialType[];
-}
-
-export interface PipelineViewConfigParallel {
-  id: string;
-  dynamic: 'parallel';
-  isStep: false;
-  steps: (StepFunCallConfig | StepsParallelConfig)[];
-  stepTypes: StepParallelType[];
-}
-
 
 // view config updates
 
@@ -98,7 +20,7 @@ export interface RemoveGroupItem {
 export interface MoveGroupItem {
   event: 'moveGroupItem';
   id: string;
-  insertBefore?: ItemId;
+  insertBefore?: string;
 }
 
 export interface IOSyncChange {
@@ -147,8 +69,6 @@ export interface Actions {
   }[];
 }
 
-// additional control events
-
 export interface ActionTriggered {
   event: 'actionClicked',
   id: string,
@@ -162,31 +82,4 @@ export interface ViewValidationResult {
     input: string,
     validation: ValidationResult,
   }[];
-}
-
-
-// utils
-
-export function isStepFunCallConfig(config: StepFunCallConfig | StepsPipelineConfig): config is StepFunCallConfig {
-  return config.isStep;
-}
-
-export function traverseViewConfig<T>(
-  config: ViewConfig,
-  handler: (acc: T, node: (StepFunCallConfig | StepsPipelineConfig)) => T,
-  acc: T,
-): T {
-  const stk: (StepFunCallConfig | StepsPipelineConfig)[] = [config.pipelineConfig];
-
-  while (stk.length) {
-    const conf = stk.pop()!;
-    if (isStepFunCallConfig(conf))
-      acc = handler(acc, conf);
-    else {
-      acc = handler(acc, conf);
-      const rsteps = [...conf.pipelineConfig.steps].reverse();
-      stk.push(...rsteps);
-    }
-  }
-  return acc;
 }
