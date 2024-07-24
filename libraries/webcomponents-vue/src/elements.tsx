@@ -41,7 +41,8 @@ export const SplitH = defineComponent({
     return () =>{
       return (<dg-split-h
         resize={props.resize}
-        v-bind={attrs}
+        attrs={attrs}
+        style={{height: '100%'}}
       >
         {slots.default ? slots.default() : []}
       </dg-split-h>);

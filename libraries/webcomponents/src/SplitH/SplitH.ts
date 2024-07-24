@@ -30,7 +30,7 @@ export class DGSplitH extends HTMLElement {
 
     const newInner = this.appendChild(ui.splitH(
       this.initialSlots,
-      {},
+      {style: {height: '100%'}},
       this._resize,
     ));
 

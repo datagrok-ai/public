@@ -16,6 +16,7 @@ import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {VueRichFunctionView} from './components/VueRichFunctionView';
+import {VuePipelineView} from './components/VuePipelineView';
 
 export const _package = new DG.Package();
 
@@ -925,6 +926,37 @@ export async function TestVueElements() {
 export async function TestVueRFV() {
   const view = new DG.ViewBase();
   const app = createApp(VueRichFunctionView, {funcCall: 'Compute:ObjectCooling'});
+  app.mount(view.root);
+  grok.shell.addView(view);
+  view.root.classList.remove('ui-panel');
+}
+
+//tags: test
+export async function TestVuePLV() {
+  const view = new DG.ViewBase();
+  const app = createApp(VuePipelineView, {
+    wrapperFunccall: 'Compute:ObjectCooling',
+    treeData: [
+      {
+        text: 'Step 1',
+        children: [
+          {text: 'Step 1.1'},
+          {text: 'Step 1.2'},
+          {text: 'Step 1.3'},
+        ],
+      }, {
+        text: 'Step 2',
+        children: [
+          {text: 'Step 2.1'},
+          {text: 'Step 2.2', children: [
+            {text: 'Step 2.2.1'},
+            {text: 'Step 2.2.2'},
+          ]},
+          {text: 'Step 2.3'},
+        ],
+      },
+    ],
+  });
   app.mount(view.root);
   grok.shell.addView(view);
   view.root.classList.remove('ui-panel');

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, shallowRef, triggerRef, defineExpose, nextTick} from 'vue';
+import {defineComponent, onMounted, PropType, ref, shallowRef, triggerRef, defineExpose, nextTick, computed} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton} from '@datagrok-libraries/webcomponents-vue/src';
 import {GridStack} from 'gridstack';
@@ -28,6 +28,18 @@ export const VueRichFunctionView = defineComponent({
   setup(props) {
     let grid = null; 
     
+    const currentCall = computed(() => props.funcCall instanceof DG.FuncCall ?
+      props.funcCall : DG.Func.byName(props.funcCall).prepare({
+        ambTemp: 22,
+        initTemp: 100,
+        desiredTemp: 30,
+        area: 0.06, 
+        heatCap: 4200,
+        heatTransferCoeff: 8.3,
+        simTime: 21600,
+        previousRun: null,
+      }));
+
     const getDefaultCall = () => props.funcCall instanceof DG.FuncCall ?
       props.funcCall : DG.Func.byName(props.funcCall).prepare({
         ambTemp: 22,
@@ -40,18 +52,11 @@ export const VueRichFunctionView = defineComponent({
         previousRun: null,
       });
 
-
-    const resolvedFuncCall = shallowRef(getDefaultCall());
-
     const viewerTypes = ref(['Scatter plot', 'Histogram', 'Line chart']);
 
     const runSimulation = async () => {
-      await resolvedFuncCall.value.call();
-      triggerRef(resolvedFuncCall);
-    };
-
-    const restoreDefault = () => {
-      resolvedFuncCall.value = getDefaultCall();
+      await currentCall.value.call();
+      triggerRef(currentCall);
     };
 
     let inited = false;
@@ -79,15 +84,14 @@ export const VueRichFunctionView = defineComponent({
       
       inited = true;     
     });
-
+          
     return () => (
       <div style={{width: '100%', height: '100%'}}>
         <div class="grid-stack"></div>
 
         <div id="formNode">
-          <InputForm funcCall={resolvedFuncCall.value}> </InputForm>
+          <InputForm funcCall={currentCall.value}> </InputForm>
           <div style={{display: 'flex', position: 'sticky', bottom: '10px'}}>
-            <BigButton onClick={restoreDefault}> Restore default </BigButton>
             <BigButton onClick={runSimulation}> Run </BigButton>
           </div>
         </div>
@@ -104,7 +108,7 @@ export const VueRichFunctionView = defineComponent({
           <Viewer 
             style={{width: '100%'}} 
             type={viewerTypes.value[0]}
-            dataFrame={resolvedFuncCall.value.outputs['simulation']}> 
+            dataFrame={currentCall.value.outputs['simulation']}> 
           </Viewer>
         </div>
         <div id="viewerNode2">
@@ -120,7 +124,7 @@ export const VueRichFunctionView = defineComponent({
           <Viewer 
             style={{width: '100%'}} 
             type={viewerTypes.value[1]}
-            dataFrame={resolvedFuncCall.value.outputs['simulation']}> 
+            dataFrame={currentCall.value.outputs['simulation']}> 
           </Viewer>
         </div>
         <div id="viewerNode3">
@@ -136,7 +140,7 @@ export const VueRichFunctionView = defineComponent({
           <Viewer 
             style={{width: '100%'}} 
             type={viewerTypes.value[2]}
-            dataFrame={resolvedFuncCall.value.outputs['simulation']}> 
+            dataFrame={currentCall.value.outputs['simulation']}> 
           </Viewer>
         </div>
       </div>
