@@ -130,6 +130,11 @@
   text-overflow: ellipsis;
   overflow: hidden;
   color: var(--grey-4);
+  
+}
+
+.tt-dialog .d4-dialog-contents{
+  overflow: hidden;
 }
 
 .tt-reason br {
@@ -144,13 +149,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-}
-
-.tt-dialog .ui-input-label {
-  width: unset !important;
-  min-width: unset !important;
-  max-width: unset !important;
-}
+} 
 
 .tt-reason-dialog {
   min-width: 500px;
@@ -166,16 +165,38 @@
 
 .tt-dialog .ui-input-textarea textarea{
   vertical-align: bottom;
+  resize: vertical;
+  width: 65%;
 }
 
-.tt-dialog  .ui-input-reason textarea{
-  height: 206px;
-  width: 80%;
+.tt-dialog .ui-input-reason textarea{
+  height: 100px;
+  min-width: 74%;
+  max-width: 80%; 
+  resize: none;
 }
 
-.tt-dialog  .ui-input-reason label{
-  height: 206px;
+.tt-dialog .ui-input-reason label{
+  height: 100px;
   vertical-align: top;
   justify-content:flex-start;
-  width: 80%;
+  min-width: 74%;
+  max-width: 80%;
+}
+
+.tt-dialog .create-ticket-button{
+  align-self: end;
+}
+
+.tt-dialog .d4-pane-jira_tickets .d4-flex-col{
+  width: 75%;
+}
+
+.tt-dialog .skipped-textarea textarea{ 
+  min-width: 85%;
+  max-width: 100%;
+}
+
+.no-after::after{
+  display: none !important;
 }
