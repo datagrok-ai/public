@@ -92,12 +92,15 @@ export function rGroupAnalysis(col: DG.Column): void {
   //General fields
   const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.input.choice('Molecules', {value: col.name, items: molColNames});
+  columnInput.root.classList.add('chem-rgroup-input');
   const columnPrefixInput = ui.input.string('Column prefix', {value: 'R'});
+  columnPrefixInput.root.classList.add('chem-rgroup-input');
   ui.tooltip.bind(columnPrefixInput.captionLabel, 'Prefix for R Group columns');
   const visualAnalysisCheck = ui.input.bool('Visual analysis', {value: true});
+  visualAnalysisCheck.root.classList.add('chem-rgroup-input');
   ui.tooltip.bind(visualAnalysisCheck.captionLabel, 'Add trellis plot after analysis is completed');
   const replaceLatest = ui.input.bool('Replace latest', {value: true});
-  replaceLatest.root.classList.add('chem-rgroup-replace-latest');
+  replaceLatest.root.classList.add('chem-rgroup-input');
   ui.tooltip.bind(replaceLatest.captionLabel, 'Overwrite latest analysis results by new one');
 
   //MCS fields
@@ -123,7 +126,8 @@ export function rGroupAnalysis(col: DG.Column): void {
   mcsButton.classList.add('chem-mcs-button');
   const mcsExactAtomsCheck = ui.input.bool('Exact atoms', {value: true});
   const mcsExactBondsCheck = ui.input.bool('Exact bonds', {value: true});
-  mcsExactBondsCheck.captionLabel.classList.add('chem-mcs-settings-label');
+  mcsExactAtomsCheck.root.classList.add('chem-rgroup-input');
+  mcsExactBondsCheck.root.classList.add('chem-rgroup-input');
 
   //R groups fields
   const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
@@ -158,14 +162,13 @@ export function rGroupAnalysis(col: DG.Column): void {
     title: 'R-Groups Analysis',
     helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
-    .add(ui.divV([
+    .add(ui.div([
       sketcher,
       ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
       columnInput,
       columnPrefixInput,
-      visualAnalysisCheck.root,
+      ui.divH([visualAnalysisCheck.root, latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null]),
       rGroupsSettingsIcon,
-      latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null,
       rGroupSettingsDiv,
     ]))
     .onOK(async () => {
