@@ -501,7 +501,7 @@ jobs:
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker compose -p datagrok logs --no-color --timestamps
           else
             echo 'Check dev logs'
           fi
