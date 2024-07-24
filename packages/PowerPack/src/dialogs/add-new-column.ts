@@ -146,10 +146,12 @@ export class AddNewColumnDialog {
 
     this.codeMirror = this.initCodeMirror();
     this.codeMirrorDiv.onkeydown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && this.autocompleteEnter) {
+      if (e.key === 'Enter' && this.autocompleteEnter) { //do not close the dialog when autocompleting using Enter button
         e.stopImmediatePropagation();
         this.autocompleteEnter = false;
       }
+      if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
+        e.stopImmediatePropagation();
     }
 
     this.prepareForSeleniumTests();
