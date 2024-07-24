@@ -553,16 +553,7 @@
   top: 546px;
 }
 
-.chem-rgroup-settings-div > .ui-input-root {
-  padding: 0px!important;
-}
-
-.chem-rgroup-input > .ui-input-label {
-  min-width: 135px!important;
-  max-width: 135px!important;
-}
-
-.chem-rgroup-input {
+.chem-rgroup-settings-div .ui-input-root {
   padding: 0px!important;
 }
 
