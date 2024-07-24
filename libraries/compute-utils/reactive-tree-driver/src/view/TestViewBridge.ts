@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, EMPTY, Subject, merge, of} from 'rxjs';
 import {HooksRunner} from './HooksRunner';
-import {ActionTriggered, Actions, FuncCallLoaded, ViewConfig, ViewConfigChanges, ViewValidationResult, isStepFunCallConfig, traverseViewConfig} from './ViewCommunication';
+import {ActionTriggered, Actions, FuncCallLoaded, ViewConfigChanges, ViewValidationResult} from './ViewCommunication';
 import {IViewBridge} from './IViewBridge';
 import {delay, switchMap, takeUntil, map} from 'rxjs/operators';
+import {PipelineState} from '../config/PipelineInstance';
 
 export class TestViewBridge implements IViewBridge {
   private destroyed$ = new Subject<true>();
@@ -11,7 +12,7 @@ export class TestViewBridge implements IViewBridge {
   actionsInput = new BehaviorSubject<Actions | undefined>(undefined);
   actionsEvents = new Subject<ActionTriggered>();
 
-  configInput = new BehaviorSubject<ViewConfig | undefined>(undefined);
+  configInput = new BehaviorSubject<PipelineState | undefined>(undefined);
   configChanges = new Subject<ViewConfigChanges>();
 
   blockRunInput = new BehaviorSubject(false);
@@ -28,7 +29,7 @@ export class TestViewBridge implements IViewBridge {
     ).subscribe((payload) => this.configChanges.next({event: 'funcCallLoaded', ...payload} as FuncCallLoaded));
   }
 
-  private loadAllCalls(config: ViewConfig) {
+  private loadAllCalls(config: PipelineState) {
     const callsIds = traverseViewConfig(config, (acc, node) => {
       if (isStepFunCallConfig(node))
         return [...acc, {id: node.id, funcCallId: node.funcCallId!}];

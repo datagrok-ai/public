@@ -1,7 +1,7 @@
 import {Observable} from 'rxjs';
-import {RuntimeController} from '../RuntimeController';
-import {ItemId, NqName, ItemPath, InputState, ItemType} from '../data/common-types';
-import { PipelineInstanceConfig, StepParallelState, StepSequentialState} from './PipelineInstance';
+import {IRuntimeController} from '../RuntimeController';
+import {ItemId, NqName, ItemPath, InputState, ItemType, ItemPathArray} from '../data/common-types';
+import {PipelineInstanceConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
 //
 // Pipeline public configuration
@@ -15,8 +15,8 @@ export type StateItem = {
 // handlers
 
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R>) | NqName;
-export type Handler = HandlerBase<{ controller: RuntimeController }, void>;
-export type SelectorKeyExtractor = HandlerBase<{ controller: RuntimeController }, string>;
+export type Handler = HandlerBase<{ controller: IRuntimeController }, void>;
+export type SelectorKeyExtractor = HandlerBase<{ controller: IRuntimeController }, string>;
 export type PipelineProvider = HandlerBase<{ version?: string }, PipelineConfigurationProvided>;
 
 // link-like
@@ -72,6 +72,11 @@ export type PipelineHooks<P> = {
   onClose?: PipelineHookConfiguration<P>[];
 };
 
+export type HooksSpec = {
+  path: ItemPathArray;
+  hooks: PipelineHooks<ItemPathArray>;
+}
+
 // static steps config
 
 export type PipelineStepConfiguration<S> = {
@@ -84,7 +89,6 @@ export type PipelineStepConfiguration<S> = {
 export type PipelineConfigurationBase<P> = {
   id: ItemId;
   nqName: NqName;
-  dynamic?: 'sequential' | 'parallel';
   hooks?: PipelineHooks<P>;
   actions?: PipelineActionConfiguraion<P>[];
   states?: StateItem[];
@@ -95,14 +99,14 @@ export type PipelineConfigurationBase<P> = {
 export type AbstractPipelineStaticConfiguration<P, S, R> = {
   links?: PipelineLinkConfiguration<P>[];
   steps: (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R> | R)[];
-  dynamic?: undefined;
+  type: 'static';
 } & PipelineConfigurationBase<P>;
 
 // parallel pipeline
 
 export type ParallelItemContext<P> = {
-  nqName?: NqName;
   type: ItemType;
+  allowAdding: boolean;
   selectorPath?: P;
   selectorExtractor?: SelectorKeyExtractor;
 };
@@ -112,16 +116,16 @@ export type PipelineParallelItem<P, S, R> = ({
 }) & ParallelItemContext<P>;
 
 export type AbstractPipelineParallelConfiguration<P, S, R> = {
-  initialSteps?: StepParallelState[];
-  stepType: PipelineParallelItem<P, S, R>[];
-  dynamic: 'parallel';
+  initialSteps?: StepParallelInitialConfig[];
+  stepTypes: PipelineParallelItem<P, S, R>[];
+  type: 'parallel';
 } & PipelineConfigurationBase<P>;
 
 // sequential pipeline
 
 export type SequentialItemContext = {
-  nqName?: NqName;
   type: ItemType;
+  allowAdding: boolean;
   inputTypeId: ItemId;
   outputTypeId: ItemId;
 };
@@ -131,10 +135,10 @@ export type PipelineSequentialItem<P, S, R> = ({
 }) & SequentialItemContext;
 
 export type AbstractPipelineSequentialConfiguration<P, S, R> = {
-  initialSteps?: StepSequentialState[];
+  initialSteps?: StepSequentialInitialConfig[];
   stepTypes: PipelineSequentialItem<P, S, R>[];
   links?: PipelineDynamicLinkConfiguration<P>[];
-  dynamic: 'sequential';
+  type: 'sequential';
 } & PipelineConfigurationBase<P>;
 
 // global config
@@ -145,10 +149,19 @@ export type PipelineRef = {
   provider: PipelineProvider | NqName;
 }
 
-export type AbstractPipelineConfiguration<P, S, R> =
+export type PipelineSelfRef<P> = {
+  selfRefPath: P
+  type: 'selfRef',
+}
+
+export type AbstractPipelineConfigurationDefered<P, S, R> =
 AbstractPipelineStaticConfiguration<P, S, R> |
 AbstractPipelineParallelConfiguration<P, S, R> |
 AbstractPipelineSequentialConfiguration<P, S, R>;
+
+export type AbstractPipelineConfiguration<P, S, R> =
+AbstractPipelineConfigurationDefered<P, S, R> |
+PipelineSelfRef<P>;
 
 export type PipelineConfigurationProvided = AbstractPipelineConfiguration<ItemPath | ItemPath[], never, PipelineRef>;
 export type PipelineConfiguration = PipelineConfigurationProvided | PipelineRef;

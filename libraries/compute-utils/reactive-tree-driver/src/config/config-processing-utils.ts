@@ -1,15 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineConfiguration, AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfiguration, PipelineHooks, PipelineLinkConfigurationBase, PipelineRef, PipelineStepConfiguration} from './PipelineConfiguration';
-import {ItemId, ItemPath, NqName} from '../data/common-types';
+import { AbstractPipelineConfiguration, AbstractPipelineConfigurationDefered, AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfiguration, PipelineHooks, PipelineLinkConfigurationBase, PipelineRef, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {ItemId, ItemPath, ItemPathArray, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 
 //
 // Internal config processing
 //
-
-export type ItemPathArray = string[];
 
 function parsePath(path: ItemPath): ItemPathArray {
   return path.split('/').filter((x) => x);
@@ -28,6 +26,8 @@ export type FuncallStateItem = {
   direction: 'input' | 'output';
 }
 
+export type PipelineConfigurationDerefed = AbstractPipelineConfigurationDefered<ItemPathArray[], FuncallStateItem[], never>;
+
 export type PipelineConfigurationProcessed = AbstractPipelineConfiguration<ItemPathArray[], FuncallStateItem[], never>;
 type ConfigTypes = PipelineConfiguration | PipelineConfigurationProcessed;
 
@@ -36,34 +36,39 @@ type CArg2<C extends ConfigTypes> = C extends AbstractPipelineConfiguration<any,
 type CArg3<C extends ConfigTypes> = C extends AbstractPipelineConfiguration<any, any, infer A> ? A : never;
 
 export type StepConfigType<C extends ConfigTypes> = PipelineStepConfiguration<CArg2<C>>;
-export type TraverseItem<C extends ConfigTypes> = C | StepConfigType<C> | PipelineRef;
+export type PipelineSelfRefType<C extends ConfigTypes> = PipelineSelfRef<CArg1<C>>;
+export type ConfigTraverseItem<C extends ConfigTypes> = C | StepConfigType<C> | PipelineRef | PipelineSelfRefType<C>;
 
 export type PipelineStaticConfiguration<C extends ConfigTypes> = AbstractPipelineStaticConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
 export type PipelineParallelConfiguration<C extends ConfigTypes> = AbstractPipelineParallelConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
 export type PipelineSequentialConfiguration<C extends ConfigTypes> = AbstractPipelineSequentialConfiguration<CArg1<C>, CArg2<C>, CArg3<C>>;
 
-export function isPipelineStaticConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is PipelineStaticConfiguration<C> {
-  return !!((c as PipelineStaticConfiguration<C>).steps);
+export function isPipelineStaticConfig<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is PipelineStaticConfiguration<C> {
+  return !!((c as PipelineStaticConfiguration<C>).type === 'static');
 }
 
-export function isPipelineParallelConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is PipelineParallelConfiguration<C> {
-  return !!((c as PipelineParallelConfiguration<C>).dynamic === 'parallel');
+export function isPipelineParallelConfig<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is PipelineParallelConfiguration<C> {
+  return !!((c as PipelineParallelConfiguration<C>).type === 'parallel');
 }
 
-export function isPipelineSequentialConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is PipelineSequentialConfiguration<C> {
-  return !!((c as PipelineSequentialConfiguration<C>).dynamic === 'sequential');
+export function isPipelineSequentialConfig<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is PipelineSequentialConfiguration<C> {
+  return !!((c as PipelineSequentialConfiguration<C>).type === 'sequential');
 }
 
-export function isPipelineConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is C {
+export function isPipelineConfig<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is C {
   return isPipelineStaticConfig(c) || isPipelineParallelConfig(c) || isPipelineSequentialConfig(c);
 }
 
-export function isPipelineRef<C extends ConfigTypes>(c: TraverseItem<C>): c is PipelineRef {
+export function isPipelineRef<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is PipelineRef {
   return !!((c as PipelineRef).provider);
 }
 
-export function isStepConfig<C extends ConfigTypes>(c: TraverseItem<C>): c is StepConfigType<C> {
+export function isStepConfig<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is StepConfigType<C> {
   return !isPipelineConfig(c) && !isPipelineRef(c);
+}
+
+export function isSelfRef<C extends ConfigTypes>(c: ConfigTraverseItem<C>): c is PipelineSelfRefType<C> {
+  return (c as PipelineSelfRefType<C>).type === 'selfRef';
 }
 
 export async function getProcessedConfig(conf: PipelineConfiguration): Promise<PipelineConfigurationProcessed> {
@@ -71,7 +76,7 @@ export async function getProcessedConfig(conf: PipelineConfiguration): Promise<P
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(conf: C): Promise<TraverseItem<PipelineConfigurationProcessed>> {
+async function configProcessing<C extends ConfigTraverseItem<PipelineConfiguration>>(conf: C): Promise<ConfigTraverseItem<PipelineConfigurationProcessed>> {
   if (isStepConfig(conf)) {
     const pconf = await processStepConfig(conf);
     return pconf;
@@ -84,7 +89,7 @@ async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(c
     return pconf;
   } else if (isPipelineParallelConfig(conf)) {
     const pconf = await processParallelConfig(conf);
-    pconf.stepType = await Promise.all(conf.stepType.map(async (item) => {
+    pconf.stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item.config);
       return {...item, ...nconf} as any;
     }));
@@ -99,6 +104,9 @@ async function configProcessing<C extends TraverseItem<PipelineConfiguration>>(c
   } else if (isPipelineRef(conf)) {
     const pconf = await callHandler(conf.provider, conf).toPromise();
     return configProcessing(pconf);
+  } else if (isSelfRef(conf)) {
+    const pconf = processSelfRef(conf);
+    return pconf;
   }
   throw new Error(`configProcessing type matching failed: ${conf}`);
 }
@@ -117,7 +125,7 @@ async function processParallelConfig<C extends PipelineConfiguration>(
 ): Promise<PipelineParallelConfiguration<PipelineConfigurationProcessed>> {
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
-  return {...conf, actions, hooks, stepType: []};
+  return {...conf, actions, hooks, stepTypes: []};
 }
 
 async function processSequentialConfig<C extends PipelineConfiguration>(
@@ -161,4 +169,9 @@ function processLinkBase<L extends Partial<PipelineLinkConfigurationBase<ItemPat
   const dataFrameMutations = Array.isArray(link.dataFrameMutations) ? normalizePaths(link.dataFrameMutations) : !!link.dataFrameMutations;
   const allTypeNodes = Array.isArray(link.allTypeNodes) ? normalizePaths(link.allTypeNodes) : !!link.allTypeNodes;
   return {...link, from, to, dataFrameMutations, allTypeNodes};
+}
+
+function processSelfRef<P extends ItemPath | ItemPath[]>(ref: PipelineSelfRef<P>) {
+  const selfRefPath = normalizePaths(ref.selfRefPath);
+  return {...ref, selfRefPath};
 }

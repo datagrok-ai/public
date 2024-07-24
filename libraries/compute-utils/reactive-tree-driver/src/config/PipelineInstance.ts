@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import { ItemId, ItemType, NqName } from '../data/common-types';
+import { InputState, ItemId, ItemPathArray, ItemType, NqName} from '../data/common-types';
 
 //
 // initial steps config for dynamic pipelines
@@ -17,14 +17,15 @@ export type StepSequentialInitialConfig = {
 
 export type StepFunCallInitialConfig = {
   id: string;
-  defaultInputs?: Record<string,any>;
-};
-
-export type ConfRec<S> = {
-  steps?: ConfRec<S>[];
+  values?: Record<string, any>;
+  inputStates?: Record<string, InputState>;
 }
 
-export type PipelineInstanceConfig = ConfRec<StepParallelInitialConfig | StepSequentialInitialConfig | StepFunCallInitialConfig>;
+export type InstanceConfRec<C> = {
+  steps?: InstanceConfRec<C>[];
+} & C;
+
+export type PipelineInstanceConfig = InstanceConfRec<StepParallelInitialConfig | StepSequentialInitialConfig | StepFunCallInitialConfig>;
 
 
 //
@@ -42,46 +43,47 @@ export type PipelineState = PipelineStateStatic | PipelineStateSequential | Pipe
 // funcall
 
 export type StepFunCallState = {
-  instanceId: string;
   type: 'funccall';
+  uuid: string;
   nqName: string;
+  configPath: ItemPathArray;
   funcCallId?: string;
   funcCall?: DG.FuncCall;
-  isInconsistent?: boolean;
-  ioSynced?: boolean;
+  isLoading?: boolean;
+  isRunning?: boolean;
+  isRunable?: boolean;
+  isOuputOutdated?: boolean;
   isCurrent?: boolean;
-} & StepFunCallInitialConfig;
+};
 
 // pipeline base
 
-type PipelineInstanceBase<S> = {
-  id: string;
-  instanceId: string;
-  nqName?: string;
+export type PipelineInstanceBase<S> = {
+  configPath: ItemPathArray;
+  uuid: string;
+  nqName: string | undefined;
 } & S;
 
 // static
 
 export type PipelineStateStatic = PipelineInstanceBase<{
-  type: 'staticPipeline',
-  steps: StepFunCallState[];
+  type: 'static',
+  steps: PipelineState[];
 }>;
 
 // sequential
 
 export type StepSequentialDescription = {
-  typeName: string;
+  type: string;
   inputTypeId: ItemId;
   outputTypeId: ItemId;
-  dynamic: boolean;
-} & StepSequentialInitialConfig;
+  allowAdding: boolean;
+};
 
-export type StepSequentialState = {
-  state: PipelineState;
-} & StepSequentialDescription;
+export type StepSequentialState = PipelineState & StepSequentialDescription;
 
 export type PipelineStateSequential = PipelineInstanceBase<{
-  type: 'sequentialPipeline';
+  type: 'sequential';
   steps: StepSequentialState[];
   stepTypes: StepSequentialDescription[];
 }>;
@@ -89,17 +91,14 @@ export type PipelineStateSequential = PipelineInstanceBase<{
 // parallel
 
 export type StepParallelDescription = {
-  typeName: string;
-  dynamic: boolean;
-} & StepParallelInitialConfig;
+  type: string;
+  allowAdding: boolean;
+};
 
-export type StepParallelState = {
-  state: PipelineState
-} & StepParallelDescription;
-
+export type StepParallelState = PipelineState & StepParallelDescription;
 
 export type PipelineStateParallel = PipelineInstanceBase<{
-  type: 'parallelPipeline';
+  type: 'parallel';
   steps: StepParallelState[];
   stepTypes: StepParallelDescription[];
 }>;

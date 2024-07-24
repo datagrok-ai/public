@@ -1,43 +1,41 @@
 import {ItemPathArray} from '../data/common-types';
 import {pathJoin} from '../utils';
-import {PipelineConfigurationProcessed, TraverseItem, isPipelineParallelConfig, isPipelineSequentialConfig, isPipelineStaticConfig} from './config-processing-utils';
 
-export function traverseConfig<T>(
-  config: PipelineConfigurationProcessed,
+export type StateTraverseNode<C> = {
+  id: string;
+  steps: StateTraverseNode<C>[];
+} & C;
+
+export type StateTraverseItem<C> = {
+  path: ItemPathArray;
+} & StateTraverseNode<C>;
+
+export function traverseConfig<C, T>(
+  start: StateTraverseNode<C>,
   handler: (
     acc: T,
-    conf: TraverseItem<PipelineConfigurationProcessed>,
+    conf: StateTraverseItem<C>,
     path: ItemPathArray,
     stop: () => void,
   ) => T,
   acc: T,
   path: ItemPathArray = [],
 ): T {
-  const q = [{config, path}];
+  const q: StateTraverseItem<C>[] = [{...start, path}];
   let stop = false;
   const signal = () => stop = true;
   while (q.length) {
-    const {config, path} = q.shift()!;
-    acc = handler(acc, config, path, signal);
+    const item = q.shift()!;
+    acc = handler(acc, item, item.path, signal);
     if (stop)
       return acc;
-    const items = getNextItems(config, path);
+    const items = getNext(item, path);
     q.push(...items);
   }
   return acc;
 }
 
-function getNextItems<C extends TraverseItem<PipelineConfigurationProcessed>>(config: C, path: ItemPathArray) {
-  const nextItems = getNextConfigs(config);
-  const items = nextItems.map((item) => ({...item, path: pathJoin(path, [config.id])}));
-  return items;
-}
-
-function getNextConfigs<C extends TraverseItem<PipelineConfigurationProcessed>>(config: C) {
-  if (isPipelineParallelConfig(config) || isPipelineSequentialConfig(config))
-    return config.stepType.map((item) => ({config: item.config as C}));
-  else if (isPipelineStaticConfig(config))
-    return config.steps.map((config) => ({config: config as C}));
-
-  return [];
+function getNext<C>(config: StateTraverseNode<C>, path: ItemPathArray): StateTraverseItem<C>[] {
+  const steps = config.steps ?? [];
+  return steps.map((step) => ({...step, path: pathJoin(path, [step.id])}));
 }

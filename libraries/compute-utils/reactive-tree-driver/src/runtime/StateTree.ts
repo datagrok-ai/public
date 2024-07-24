@@ -1,17 +1,19 @@
 import {BehaviorSubject, Observable, Subject, of} from 'rxjs';
-import {InputState} from '../data/common-types';
+import { InputState, ItemPathArray } from '../data/common-types';
 import {v4 as uuidv4} from 'uuid';
 import {switchMap} from 'rxjs/operators';
-import {NodeTree} from '../data/NodeTree';
+import {NodeTree, TreeNode} from '../data/NodeTree';
 import {PipelineStepConfiguration, StateItem} from '../config/PipelineConfiguration';
-import { FuncallStateItem, PipelineConfigurationProcessed, PipelineParallelConfiguration, PipelineSequentialConfiguration, PipelineStaticConfiguration } from '../config/config-processing-utils';
+import {FuncallStateItem, PipelineConfigurationDerefed, PipelineParallelConfiguration, PipelineSequentialConfiguration, PipelineStaticConfiguration} from '../config/config-processing-utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
+import {PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallState} from '../config/PipelineInstance';
 
 export interface ICallable {
   run(): void
-  isRunning$: Observable<boolean>;
-  isRunable$: Observable<boolean>;
-  isOuputOutdated$: Observable<boolean>;
+  isRunning$: BehaviorSubject<boolean>;
+  isRunable$: BehaviorSubject<boolean>;
+  isOuputOutdated$: BehaviorSubject<boolean>;
+  isCurrent$: BehaviorSubject<boolean>;
 }
 
 export interface IStateStore {
@@ -22,6 +24,10 @@ export interface IStateStore {
 
 export interface IValidationDisplay {
   setValidation(id: string, validation: ValidationResultBase | undefined): void;
+}
+
+export interface IIdWrapper {
+  id?: string;
 }
 
 export class StoreItem<T = any> {
@@ -50,24 +56,37 @@ export class MemoryStore implements IStateStore {
   }
 }
 
-export type IFuncCallBridge = IStateStore & IValidationDisplay & ICallable;
+export type IFuncCallBridge = IStateStore & IValidationDisplay & ICallable & IIdWrapper;
 
 export class FuncCallInstanceAdapter implements IFuncCallBridge {
   private instance$ = new BehaviorSubject<IFuncCallBridge | undefined>(undefined);
-  public isRunning$ = this.instance$.pipe(
-    switchMap((instance) => instance? instance.isRunning$ : of(false)),
-  );
-  public isRunable$ = this.instance$.pipe(
-    switchMap((instance) => instance? instance.isRunable$ : of(false)),
-  );
-  public isOuputOutdated$ = this.instance$.pipe(
-    switchMap((instance) => instance? instance.isOuputOutdated$ : of(false)),
-  );
+  public isRunning$ = new BehaviorSubject(false);
+  public isRunable$ = new BehaviorSubject(false);
+  public isOuputOutdated$ = new BehaviorSubject(false);
+  public isCurrent$ = new BehaviorSubject(false);
 
-  constructor() {}
+  constructor() {
+    this.instance$.pipe(
+      switchMap((instance) => instance? instance.isRunning$ : of(false)),
+    ).subscribe(this.isRunning$);
+    this.instance$.pipe(
+      switchMap((instance) => instance? instance.isRunable$ : of(false)),
+    ).subscribe(this.isRunable$);
+    this.instance$.pipe(
+      switchMap((instance) => instance? instance.isOuputOutdated$ : of(false)),
+    ).subscribe(this.isOuputOutdated$);
+  }
+
+  get id() {
+    return this.instance$.value?.id;
+  }
 
   setInstance(instance: IFuncCallBridge | undefined) {
     this.instance$.next(instance);
+  }
+
+  getInstance() {
+    return this.instance$.value;
   }
 
   getState<T = any>(id: string): T | undefined {
@@ -111,7 +130,8 @@ export class FuncCallNode implements IStoreProvider {
   private adapter = new FuncCallInstanceAdapter();
 
   constructor(
-    public readonly config: PipelineStepConfiguration<FuncallStateItem>[],
+    public readonly configPath: ItemPathArray,
+    public readonly config: PipelineStepConfiguration<FuncallStateItem>,
   ) {}
 
   setFuncall(fc?: IFuncCallBridge) {
@@ -121,6 +141,25 @@ export class FuncCallNode implements IStoreProvider {
   getStore() {
     return this.adapter;
   }
+
+  static fromState() {
+
+  }
+
+  toState(): StepFunCallState {
+    const res: StepFunCallState = {
+      configPath: this.configPath,
+      type: 'funccall',
+      uuid: this.uuid,
+      nqName: this.config.nqName,
+      funcCallId: this.adapter.getInstance()?.id,
+      isRunning: this.adapter.getInstance()?.isRunning$.value,
+      isRunable: this.adapter.getInstance()?.isRunable$.value,
+      isOuputOutdated: this.adapter.getInstance()?.isOuputOutdated$.value,
+      isCurrent: this.adapter.getInstance()?.isCurrent$.value,
+    };
+    return res;
+  }
 }
 
 export class PipelineNodeBase implements IStoreProvider {
@@ -128,7 +167,8 @@ export class PipelineNodeBase implements IStoreProvider {
   private store: MemoryStore;
 
   constructor(
-    public readonly config: PipelineConfigurationProcessed,
+    public readonly config: PipelineConfigurationDerefed,
+    public readonly configPath: ItemPathArray,
   ) {
     this.store = new MemoryStore(config.states ?? []);
   }
@@ -136,35 +176,90 @@ export class PipelineNodeBase implements IStoreProvider {
   getStore() {
     return this.store;
   }
+
+  toState() {
+    return {
+      uuid: this.uuid,
+      nqName: this.config.nqName,
+      configPath: this.configPath,
+    };
+  }
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'staticPipeline';
+  public readonly nodeType = 'static';
 
   constructor(
-    public readonly config: PipelineStaticConfiguration<PipelineConfigurationProcessed>
+    public readonly config: PipelineStaticConfiguration<PipelineConfigurationDerefed>,
+    public readonly configPath: ItemPathArray,
   ) {
-    super(config);
+    super(config, configPath);
+  }
+
+  static fromState() {
+
+  }
+
+  toState() {
+    const base = super.toState();
+    const res: PipelineStateStatic = {
+      ...base,
+      type: this.nodeType,
+      steps: [],
+    };
+    return res;
   }
 }
 
 export class ParallelPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'parallelPipeline';
+  public readonly nodeType = 'parallel';
 
   constructor(
-    public readonly config: PipelineParallelConfiguration<PipelineConfigurationProcessed>
+    public readonly config: PipelineParallelConfiguration<PipelineConfigurationDerefed>,
+    public readonly configPath: ItemPathArray,
   ) {
-    super(config);
+    super(config, configPath);
+  }
+
+  static fromState() {
+
+  }
+
+  toState() {
+    const base = super.toState();
+    const res: PipelineStateParallel = {
+      ...base,
+      type: this.nodeType,
+      steps: [],
+      stepTypes: this.config.stepTypes,
+    };
+    return res;
   }
 }
 
 export class SequentialPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'sequentialPipeline';
+  public readonly nodeType = 'sequential';
 
   constructor(
-    public readonly config: PipelineSequentialConfiguration<PipelineConfigurationProcessed>
+    public readonly config: PipelineSequentialConfiguration<PipelineConfigurationDerefed>,
+    public readonly configPath: ItemPathArray,
   ) {
-    super(config);
+    super(config, configPath);
+  }
+
+  static fromState() {
+
+  }
+
+  toState() {
+    const base = super.toState();
+    const res: PipelineStateSequential = {
+      ...base,
+      type: this.nodeType,
+      steps: [],
+      stepTypes: this.config.stepTypes,
+    };
+    return res;
   }
 }
 
@@ -175,15 +270,37 @@ export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
 }
 
 export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelineNode {
-  return node.nodeType === 'staticPipeline';
+  return node.nodeType === 'static';
 }
 
 export function isParallelPipelineNode(node: StateTreeNode): node is ParallelPipelineNode {
-  return node.nodeType === 'parallelPipeline';
+  return node.nodeType === 'parallel';
 }
 
 export function isSequentialPipelineNode(node: StateTreeNode): node is SequentialPipelineNode {
-  return node.nodeType === 'sequentialPipeline';
+  return node.nodeType === 'sequential';
 }
 
-export type StateTree = NodeTree<StateTreeNode>;
+
+export class StateTree extends NodeTree<StateTreeNode> {
+  public toState(): PipelineState {
+    return this.toStateRec(this.getRoot());
+  }
+
+  static fromState(state: PipelineState): StateTree {
+
+  }
+
+  private toStateRec(node: TreeNode<StateTreeNode>): PipelineState {
+    const item = node.getItem();
+    if (isFuncCallNode(item))
+      return item.toState();
+
+    const state = item.toState();
+    const steps = node.getChildren().map((node) => {
+      const item = this.toStateRec(node.item);
+      return item;
+    });
+    return {...state, steps} as PipelineState;
+  }
+}

@@ -1,15 +1,12 @@
 import * as DG from 'datagrok-api/dg';
-import {PipelineRuntime} from '../runtime/PipelineRuntime';
-import {HookSpec} from './CompositionPipelineView';
-import {PipelineHooks} from '../config/PipelineConfiguration';
+import {PipelineState} from '../config/PipelineInstance';
+import {HooksSpec, PipelineHooks} from '../config/PipelineConfiguration';
 import {callHandler} from '../utils';
-import {ControllerConfig} from '../runtime/ControllerConfig';
-import {RuntimeControllerImpl} from '../runtime/RuntimeControllerImpl';
-import {ViewConfig} from './ViewCommunication';
 import {Observable, concat} from 'rxjs';
+import {ItemPathArray} from '../data/common-types';
 
 export class HooksRunner {
-  constructor(private rt: PipelineRuntime, private hooks: HookSpec[]) {}
+  constructor(private rt: any, private hooks: HooksSpec[]) {}
 
   onInit() {
     return this.execHooks('onInit');
@@ -43,15 +40,15 @@ export class HooksRunner {
     return this.execHooks('beforeLoadRun', {id});
   }
 
-  afterLoadRun(id: string, funcCall: DG.FuncCall, config: ViewConfig) {
+  afterLoadRun(id: string, funcCall: DG.FuncCall, config: PipelineState) {
     return this.execHooks('afterLoadRun', {id, funcCall, config});
   }
 
-  beforeSaveRun(funcCall: DG.FuncCall, config: ViewConfig) {
+  beforeSaveRun(funcCall: DG.FuncCall, config: PipelineState) {
     return this.execHooks('beforeSaveRun', {funcCall, config});
   }
 
-  afterSaveRun(funcCall: DG.FuncCall, config: ViewConfig) {
+  afterSaveRun(funcCall: DG.FuncCall, config: PipelineState) {
     return this.execHooks('afterSaveRun', {funcCall, config});
   }
 
@@ -60,13 +57,13 @@ export class HooksRunner {
     return this.execHooks('onClose');
   }
 
-  private execHooks(category: keyof PipelineHooks, additionalParams: Record<string, any> = {}) {
+  private execHooks(category: keyof PipelineHooks<ItemPathArray>, additionalParams: Record<string, any> = {}) {
     const observables: Observable<any>[] = [];
-    for (const {hooks, pipelinePath} of this.hooks!) {
+    for (const {hooks, path} of this.hooks!) {
       const items = hooks[category];
       for (const item of items ?? []) {
         const handler = item.handler!;
-        const ctrlConf = new ControllerConfig(pipelinePath, item.from, item.to);
+        const ctrlConf = new ControllerConfig(path, item.from, item.to);
         const controller = new RuntimeControllerImpl(item.id, ctrlConf, this.rt!);
         const params = {...additionalParams, controller};
         const obs$ = callHandler(handler, params);

@@ -1,29 +1,29 @@
 import {ActionItem, ValidationResult} from '../../shared-utils/validation';
-import {ItemPath, InputState, ItemType, ItemId} from './data/common-types';
+import {ItemPathArray, InputState, ItemType, ItemId} from './data/common-types';
 
 export interface IRuntimeController {
   // individual links
-  enableLink(path: ItemPath): void;
-  disableLink(path: ItemPath): void;
-  triggerLink(path: ItemPath): void;
-  isLinkEnabled(path: ItemPath): void;
+  enableLink(path: ItemPathArray): void;
+  disableLink(path: ItemPathArray): void;
+  triggerLink(path: ItemPathArray): void;
+  isLinkEnabled(path: ItemPathArray): void;
   // individual steps
-  enableStep(path: ItemPath): void;
-  disableStep(path: ItemPath): void;
-  isStepEnabled(path: ItemPath): boolean;
+  enableStep(path: ItemPathArray): void;
+  disableStep(path: ItemPathArray): void;
+  isStepEnabled(path: ItemPathArray): boolean;
   // pipeline level
-  enablePipeline(path: ItemPath): void;
-  disablePipeline(path: ItemPath): void;
-  loadPipelineRun(path: ItemPath, runId: string): void;
+  enablePipeline(path: ItemPathArray): void;
+  disablePipeline(path: ItemPathArray): void;
+  loadPipelineRun(path: ItemPathArray, runId: string): void;
   // individual state manipulation
-  getState<T = any>(path: ItemPath): T | undefined;
-  setState<T = any>(path: ItemPath, state: T, inputState?: InputState): void;
-  updateConsistency(path: ItemPath, inputState?: InputState): void;
-  getValidationAction(path: ItemPath, name?: string): ActionItem;
-  setValidation(path: ItemPath, validation?: ValidationResult | undefined): void;
+  getState<T = any>(path: ItemPathArray): T | undefined;
+  setState<T = any>(path: ItemPathArray, state: T, inputState?: InputState): void;
+  updateConsistency(path: ItemPathArray, inputState?: InputState): void;
+  getValidationAction(path: ItemPathArray, name?: string): ActionItem;
+  setValidation(path: ItemPathArray, validation?: ValidationResult | undefined): void;
   // dynamic pipeline manipulation
-  getGroupSteps(path: ItemPath): any;
-  addGroupStep(path: ItemPath, type: ItemType, insertBefore?: ItemId): ItemId;
-  moveGroupStep(path: ItemPath, item: ItemId, insertBefore?: ItemId): void;
-  deleteGroupStep(path: ItemPath, item: ItemId): void;
+  getGroupSteps(path: ItemPathArray): any;
+  addGroupStep(path: ItemPathArray, type: ItemType, insertBefore?: ItemId): ItemId;
+  moveGroupStep(path: ItemPathArray, item: ItemId, insertBefore?: ItemId): void;
+  deleteGroupStep(path: ItemPathArray, item: ItemId): void;
 }
