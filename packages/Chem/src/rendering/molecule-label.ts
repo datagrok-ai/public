@@ -10,7 +10,10 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
 
     let smallMarker = true;
   
+    let smallMarkerType = sp.getOptions().look['markerType'];
     sp.onAfterDrawScene.pipe().subscribe(() => {
+      if (smallMarker)
+        smallMarkerType = sp.getOptions().look['markerType'];
       const rowCount = table.rowCount;
       const pointsOnScreen = new Array<DG.Point>(maxPoints);
       const pointsOnScreenIdxs = new Uint32Array(maxPoints);
@@ -24,8 +27,8 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
           if (counter == 20) {
             sp.setOptions({
               markerDefaultSize: smallMarkerSize,
-              markerType: 'circle',
               sizeColumnName: sizeCol,
+              markerType: smallMarkerType,
             });
             if (!smallMarker) {
               smallMarker = true;
@@ -56,8 +59,8 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
             if (dist < minDistBetweenLabels) {
                 sp.setOptions({
                     markerDefaultSize: smallMarkerSize,
-                    markerType: 'circle',
                     sizeColumnName: sizeCol,
+                    markerType: smallMarkerType,
                 });
                   if (!smallMarker) {
                     smallMarker = true;
@@ -102,7 +105,6 @@ export async function drawMoleculeLabels(table: DG.DataFrame, molCol: DG.Column,
           mol?.delete();
         }
       }
-
       sp.setOptions({
         sizeColumnName: '',
         markerDefaultSize: largeMarkerSize,
