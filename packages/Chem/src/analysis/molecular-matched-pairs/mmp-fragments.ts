@@ -25,8 +25,9 @@ export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsRes
 
 export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
   const gpu = await getGPUDevice();
+  //TODO: fallback for no results if gpu was not succesfull
   if (fragsOut.frags.length < 10 || !gpu)
-    return getMmpRulesTrivial(fragsOut, fragmentCutoff);
+    return getMmpRulesCPU(fragsOut, fragmentCutoff);
   else
     return await getMmpRulesGPU(fragsOut, fragmentCutoff);
 }
@@ -145,7 +146,7 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): [[number, number][][], 
   return [res, fragIdToFragName, fragSizes];
 }
 
-function getMmpRulesTrivial(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): [MmpRules, number, boolean] {
+function getMmpRulesCPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): [MmpRules, number, boolean] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = fragsOut.frags.length;
 
