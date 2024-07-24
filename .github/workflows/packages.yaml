@@ -381,7 +381,7 @@ jobs:
           do
             sleep 1
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             echo -e "\nRetrying..."
           done
@@ -437,7 +437,7 @@ jobs:
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             wait=$((2 ** count))
             count=$((count + 1))
