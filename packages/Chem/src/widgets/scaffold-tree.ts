@@ -16,6 +16,7 @@ import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
 let scaffoldTreeId = 0;
+const SCAFFOLD_TREE_SKETCHER_ACTION = 'scaffold-tree-sketcher-action';
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -1003,7 +1004,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   
     processGroup(node);
   }
-  
 
   removeNode(node: TreeViewGroup) {
     const dialog = ui.dialog({title: 'Remove scaffold'});
@@ -1870,6 +1870,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.closeAll = true;
     }));
 
+    this.subs.push(DG.debounce(grok.events.onCustomEvent(SCAFFOLD_TREE_SKETCHER_ACTION), 250).subscribe(async (_) => {
+      await updateVisibleNodes(thisViewer);
+    }));
+
     this.render();
     const isMolDataset = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null;
 
@@ -2152,10 +2156,13 @@ class SketcherDialogWrapper {
     this.dialog.addButton('Reset', () => {
       thisWrapper.isMolBlock ? thisWrapper.sketcher.setMolFile(molStr) : thisWrapper.sketcher.setSmiles(molStr);
     });
+
     this.dialog.addButton(actionName, () => {
       const molStr = this.normalizeMolStr(thisWrapper.sketcher.getMolFile());
       action(molStr, thisWrapper.node, errorMsg);
     });
+
+    this.dialog.getButton(actionName).onclick = (e) => grok.events.fireCustomEvent(SCAFFOLD_TREE_SKETCHER_ACTION, {});
 
     if (onCancel != null)
       this.dialog.onCancel(onCancel);
