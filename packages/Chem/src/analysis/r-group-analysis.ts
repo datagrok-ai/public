@@ -190,7 +190,9 @@ export function rGroupAnalysis(col: DG.Column): void {
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;
           if (visualAnalysisCheck.value! && view) {
-            if (!res.yAxisColName || !res.xAxisColName)
+            if (!res.yAxisColName && !res.xAxisColName)
+              grok.shell.error('None R-Groups were found');
+            else if (!res.yAxisColName || !res.xAxisColName)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
@@ -322,14 +324,13 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       //filter out unmatched values
       const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => matchCol.get(i));
       col.dataFrame.filter.copyFrom(filterUnmatched);
-    } else
-      grok.shell.error('None R-Groups were found');
+    }
     progressBar.close();
 
     return {
       xAxisColName: rGroups.length > 1 ? rGroups[1].name : '',  //rGroups[0] column is Core column
       yAxisColName: rGroups.length > 2 ? rGroups[2].name : '',
-      highlightColName: highlightCol?.name
+      highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
 
   } catch (e: any) {
