@@ -1,5 +1,11 @@
 # Chemspace changelog
 
+## 1.0.5 (2024-05-23)
+
+### Bug fixes
+
+* Dependency: datgarok-api >= 1.20.0
+
 ## 1.0.4 (2024-05-23)
 
 ### Bug fixes
