@@ -1451,6 +1451,7 @@ export interface IDartApi {
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
+  grok_BrowseView_Get_DockManager(view: any): any;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
