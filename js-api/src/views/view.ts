@@ -670,7 +670,7 @@ export class BrowseView extends View {
   get localTree(): TreeViewGroup { return api.grok_BrowseView_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowseView_Get_MainTree(this.dart); }
 
-  get preview(): View | null { return api.grok_BrowseView_Get_Preview(this.dart); }
+  get preview(): View | null { return toJs(api.grok_BrowseView_Get_Preview(this.dart)); }
   set preview(preview: View | null) { api.grok_BrowseView_Set_Preview(this.dart, preview?.dart); }
 }
 
