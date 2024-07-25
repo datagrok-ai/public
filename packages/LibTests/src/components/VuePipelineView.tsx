@@ -107,7 +107,7 @@ export const VuePipelineView = defineComponent({
                       cursor='grab'
                       style={{paddingLeft: '4px'}}
                     />: null }
-                    { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
+                    { stat.parent && tree.value?.isDroppable(stat.parent) && stat.isHovered ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}
                       onClick={() => tree.value!.remove(stat)}
