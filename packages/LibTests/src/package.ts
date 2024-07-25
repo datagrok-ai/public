@@ -940,9 +940,9 @@ export async function TestVuePLV() {
       {
         text: 'Review phases (draggable + adding)',
         children: [
-          {text: 'Phase: Cleaning 1'},
-          {text: 'Phase: Filtering 1'},
-          {text: 'Phase: Post-filtering 1'},
+          {text: 'Phase 1: Cleaning'},
+          {text: 'Phase 2: Filtering'},
+          {text: 'Phase 3: Post-filtering'},
         ],
       }, {
         text: 'Step 2',

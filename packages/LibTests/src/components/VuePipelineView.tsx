@@ -32,8 +32,10 @@ export const VuePipelineView = defineComponent({
   setup(props) {
     const currentFuncCall = shallowRef(props.wrapperFunccall);
     const tree = ref(null as {
+      add: Function,
       remove: Function,
       isDraggable: Function,
+      isDroppable: Function,
     } | null);
 
     return () => (
@@ -44,8 +46,9 @@ export const VuePipelineView = defineComponent({
             class="mtl-tree"
             ref={tree} 
             v-model={props.treeData} 
-            eachDraggable={(stat: Stat<Data>) => (stat.data.text.includes('Phase') || stat.data.text.includes('Day'))}
+            eachDraggable={(stat: Stat<Data>) => (stat.data.text.includes('Phase'))}
             eachDroppable={(stat: Stat<Data>) => (stat.data.text.includes('Review'))}
+            rootDroppable={false}
             treeLine
           > 
             { 
@@ -104,10 +107,18 @@ export const VuePipelineView = defineComponent({
                       cursor='grab'
                       style={{paddingLeft: '4px'}}
                     />: null }
-                    { stat.isHovered ? <IconFA 
+                    { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}
                       onClick={() => tree.value!.remove(stat)}
+                    />: null }
+                    { tree.value?.isDroppable(stat) && stat.isHovered ? <IconFA 
+                      name='plus' 
+                      style={{paddingLeft: '4px'}}
+                      onClick={() => tree.value!.add({
+                        text: `${node.text.includes('phase') ? 'Phase': 'Day'} ${(stat.children.length + 1).toString()}`,
+                      }, 
+                      stat, stat.children.length)}
                     />: null }
                   </div>
                 );
