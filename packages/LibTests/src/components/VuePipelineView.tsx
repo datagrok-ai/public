@@ -57,7 +57,7 @@ export const VuePipelineView = defineComponent({
                   open={stat.open}
                   class="mtl-mr"
                   //@ts-ignore
-                  onClick={() => {stat.open = !stat.open;}}
+                  onClick={(e) => {stat.open = !stat.open; e.stopPropagation();}}
                 />;
 
                 const getCall = (params: {
@@ -89,8 +89,8 @@ export const VuePipelineView = defineComponent({
                     });
                 };
 
-                const onNodeClick = () => {
-                  currentFuncCall.value = getCall({initTemp: Math.random()*70 + 30});
+                const onNodeClick = async () => {
+                  currentFuncCall.value = await getCall({initTemp: Math.random()*70 + 30}).call(); 
                   triggerRef(currentFuncCall);
                 };
                 return (
@@ -110,15 +110,18 @@ export const VuePipelineView = defineComponent({
                     { stat.parent && tree.value?.isDroppable(stat.parent) && stat.isHovered ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}
-                      onClick={() => tree.value!.remove(stat)}
+                      onClick={(e: Event) => {tree.value!.remove(stat); e.stopPropagation();}}
                     />: null }
                     { tree.value?.isDroppable(stat) && stat.isHovered ? <IconFA 
                       name='plus' 
                       style={{paddingLeft: '4px'}}
-                      onClick={() => tree.value!.add({
-                        text: `${node.text.includes('phase') ? 'Phase': 'Day'} ${(stat.children.length + 1).toString()}`,
-                      }, 
-                      stat, stat.children.length)}
+                      onClick={(e) => {
+                        tree.value!.add({
+                          text: `${node.text.includes('phase') ? 'Phase': 'Day'} ${(stat.children.length + 1).toString()}`,
+                        }, 
+                        stat, stat.children.length);
+                        e.stopPropagation();
+                      }}
                     />: null }
                   </div>
                 );

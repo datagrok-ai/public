@@ -68,7 +68,7 @@ export const IconFA = defineComponent({
       return (<dg-icon-fa
         name={props.name}
         cursor={props.cursor}
-        onClick={() => emit('click')}
+        onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);
     };
