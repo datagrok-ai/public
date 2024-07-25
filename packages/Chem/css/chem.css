@@ -387,10 +387,6 @@
   margin-left: 0px!important;
 }
 
-.chem-mcs-settings-label {
-  width: 98px!important;
-}
-
 .chem-viewer-grid {
   margin: 6px 0;
   gap: 6px;
@@ -557,13 +553,7 @@
   top: 546px;
 }
 
-.chem-rgroup-replace-latest {
-  position: absolute!important;
-  top: 540px;
-  left: 148px;
-}
-
-.chem-rgroup-settings-div > .ui-input-root {
+.chem-rgroup-settings-div .ui-input-root {
   padding: 0px!important;
 }
 

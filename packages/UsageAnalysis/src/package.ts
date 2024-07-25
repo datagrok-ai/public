@@ -128,7 +128,8 @@ export function usageWidget(): DG.Widget {
 //test: reportsWidget()
 export async function reportsWidget(): Promise<DG.Widget | null> {
   const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
-  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
+  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators')
+    || userGroup.adminMemberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
     return new ReportsWidget();
   return null;
 }

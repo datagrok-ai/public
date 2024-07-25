@@ -223,9 +223,24 @@ export class TestTrack extends DG.ViewBase {
       const user = await grok.dapi.users.find(row.get('uid'));
       const icon = status ? ui.div(getStatusIcon(status)) : ui.div();
       let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
+
+      let reasonList;
+      if (this.hasAnyLink(reason || '')) {
+        const listLink = ui.link('list', '');
+        listLink.classList.add('no-after');
+        listLink.addEventListener("click", (e: Event) => {
+          e.preventDefault();
+          this.openReasonLink(reason || '');
+        });
+        reasonList = (listLink);
+      } 
+      else{
+        reasonList = ui.label('list');
+      }
+
       this.map[path] = {
         name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: icon, reason: ui.div((reason.includes("\n") ? 'list' : reason), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
+        icon: icon, reason: ui.div((reason.includes("\n") ? reasonList: reasonTooltipValue), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
       };
       const map: StatusInfo = {
         'User': user,
@@ -416,9 +431,9 @@ export class TestTrack extends DG.ViewBase {
 
   private UpdateReportAccordingTestTrackSelection(node: any) {
     if (this.tableViewReport !== null) {
-      this.tableViewReport?.dataFrame?.selection?.setAll(false); 
-      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any)=> `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
-      if(foundRows.length === 1)
+      this.tableViewReport?.dataFrame?.selection?.setAll(false);
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      if (foundRows.length === 1)
         this.tableViewReport?.dataFrame?.selection?.set(foundRows[0], true);
     }
   }
@@ -692,17 +707,18 @@ export class TestTrack extends DG.ViewBase {
         createTicketBtn.disabled = false;
       });
     })
+    ticketSummary.onChanged(() => {
+      if (ticketSummary.value.length === 0) {
+        createTicketBtn.disabled = true;
+      }
+      else {
+        createTicketBtn.disabled = false;
+      }
+    })
 
-    let isOpenedJiraTicketTab = false;
+    createTicketBtn.classList.add('create-ticket-button');
     const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
-    jiraTicketsTab.classList.add('hidden');
-    const ticketMenuToogleBtn = ui.button('Jira Ticket', () => {
-      if (isOpenedJiraTicketTab)
-        jiraTicketsTab.classList.add('hidden');
-      else
-        jiraTicketsTab.classList.remove('hidden');
-      isOpenedJiraTicketTab = !isOpenedJiraTicketTab;
-    });
+
 
     if (errorSeverityLevels.includes(status)) {
       errorTypeSelector.onChanged((e: any) => {
@@ -711,7 +727,9 @@ export class TestTrack extends DG.ViewBase {
       });
       dialog.add(errorTypeSelector);
     }
-
+    else {
+      textInput.root.classList.add('skipped-textarea')
+    }
     dialog.root.addEventListener('keydown', (e) => {
       if (e.key == 'Enter' && document.activeElement?.nodeName === 'TEXTAREA')
         e.stopImmediatePropagation();
@@ -721,9 +739,11 @@ export class TestTrack extends DG.ViewBase {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
     if (errorSeverityLevels.includes(status)) {
-      dialog.add(ui.divV([ticketMenuToogleBtn, jiraTicketsTab]));
+      const accordion = ui.accordion();
+      accordion.addPane('Jira Tickets', () => jiraTicketsTab)
+      dialog.add(accordion);
     }
-    dialog.show({ resizable: true });
+    dialog.show({ resizable: false });
     dialog.initDefaultHistory();
   }
 
@@ -742,8 +762,25 @@ export class TestTrack extends DG.ViewBase {
     if (errorSeverityLevels.includes(status) || status === SKIPPED) {
       if (!reason!.includes('\n'))
         value.reason.append(this.getReason(reason!));
-      else
-        value.reason.append(ui.label('list'));
+      else if ((reason || '').length > 0) {
+        if (this.hasAnyLink(reason || '')) {
+          const listLink = ui.link('list', '');
+          listLink.classList.add('no-after');
+          listLink.addEventListener("click", (e: Event) => {
+            e.preventDefault();
+            this.openReasonLink(reason || '');
+          });
+          value.reason.append(listLink);
+        }
+        else {
+          if (!reason!.includes('\n'))
+            node.value.reason.append(this.getReason(reason!));
+          else
+            node.value.reason.append(ui.label('list'));
+          if (status !== SKIPPED)
+            severityLevel = status;
+        }
+      }
       if (status !== SKIPPED)
         severityLevel = status;
     }
@@ -808,7 +845,7 @@ export class TestTrack extends DG.ViewBase {
     });
     if (reportData)
       grok.shell.reportTest('manual', params);
-    this.updateReportData(node); 
+    this.updateReportData(node);
   }
 
   async showStartNewTestingDialog(): Promise<void> {
@@ -908,30 +945,60 @@ export class TestTrack extends DG.ViewBase {
   }
 
   getReason(reason: string): HTMLElement {
-    if (reason.includes('\n')) {
-      // const el = ui.divText(reason, 'tt-link tt-link-list');
-      // el.setAttribute('data-label', 'LIST');
-      // const df = DG.DataFrame.fromColumns([DG.Column.fromList("string", "key", reason.split('\n'))]);
-      // const grid = df.plot.grid();
-      // return grid.root;
-      const res = ui.divV(reason.split('\n').map((e) => { return ui.label(e) }))
-      return res;
+    const result = ui.label('');
+    for (let str of reason.split('\n')) {
+      const jira = str.match(/GROK-\d{1,6}\b/);
+      const gh1 = str.match(/#(\d{3,5})\b/);
+      const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
+      const slack = str.includes('datagrok.slack.com');
+      if (jira) result.append(this.getReasonLink(str, this.jiraBaseUrl + jira[0], jira[0]));
+      else if (gh1) result.append(this.getReasonLink(str, this.gitHubBaseUrl + gh1[1], gh1[0]));
+      else if (gh2) result.append(this.getReasonLink(str, str, `#${gh2[1]}`));
+      else if (slack) result.append(this.getReasonLink(str, str, 'SLACK'));
+      else result.append(ui.p(str));
     }
+    result.style.lineHeight = '4px ';
+    return result;
+  }
+
+  hasAnyLink(reason: string): boolean {
     const jira = reason.match(/GROK-\d{1,6}\b/);
-    if (jira) return this.getReasonLink(reason, this.jiraBaseUrl + jira[0], jira[0]);
     const gh1 = reason.match(/#(\d{3,5})\b/);
-    if (gh1) return this.getReasonLink(reason, this.gitHubBaseUrl + gh1[1], gh1[0]);
     const gh2 = reason.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
-    if (gh2) return this.getReasonLink(reason, reason, `#${gh2[1]}`);
     const slack = reason.includes('datagrok.slack.com');
-    if (slack) return this.getReasonLink(reason, reason, 'SLACK');
-    const el = ui.label(reason);
-    ui.tooltip.bind(el, () => reason);
-    return el;
+    return (jira || gh1 || gh2 || slack) ? true : false
+  }
+
+  openReasonLink(reason: string) {
+    let hasLink = false;
+    for (let str of reason.split('\n')) {
+      const jira = str.match(/GROK-\d{1,6}\b/);
+      const gh1 = str.match(/#(\d{3,5})\b/);
+      const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
+      const slack = str.includes('datagrok.slack.com');
+      let linkToOpen: string = "";
+      if (jira) {
+        linkToOpen = this.jiraBaseUrl + jira[0];
+      }
+      else if (gh1) {
+        linkToOpen = this.gitHubBaseUrl + gh1[1];
+      }
+      else if (gh2) {
+        linkToOpen = str;
+      }
+      else if (slack) {
+        linkToOpen = str;
+      }
+      if (linkToOpen.length > 0) {
+        window.open(linkToOpen);
+        window.focus();
+        hasLink = true;
+      }
+    }
   }
 
   getReasonLink(reason: string, target: string, label: string): HTMLAnchorElement {
-    const link = ui.link(reason, target, reason, 'tt-link');
+    const link = ui.link(`${reason}\n`, target, reason, 'tt-link');
     link.setAttribute('data-label', label);
     return link;
   }
@@ -956,7 +1023,7 @@ export class TestTrack extends DG.ViewBase {
   private async updateBatchData() {
     if (!this.testingName)
       return;
-    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `"${this.testingName}"` });
+    const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack', { batchName: `${this.testingName}` });
 
     for (const row of history.rows) {
 
@@ -991,11 +1058,11 @@ export class TestTrack extends DG.ViewBase {
     }
   }
 
-  private updateReportData(node: DG.TreeViewNode) {    
+  private updateReportData(node: DG.TreeViewNode) {
     if (this.tableViewReport !== null) {
-      this.tableViewReport?.dataFrame?.selection?.setAll(false); 
-      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any)=> `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
-      if(foundRows.length === 1){
+      this.tableViewReport?.dataFrame?.selection?.setAll(false);
+      let foundRows = Array.from(this.tableViewReport?.dataFrame?.rows?.where((row: any) => `${this.tableViewReport?.dataFrame?.get('category', row)}: ${this.tableViewReport?.dataFrame?.get('name', row)}` === node.value.path) || '');
+      if (foundRows.length === 1) {
         this.tableViewReport?.dataFrame?.set('status', foundRows[0], node.value.status || '')
         this.tableViewReport?.dataFrame?.set('reason', foundRows[0], node.value.fullReason || '')
       }

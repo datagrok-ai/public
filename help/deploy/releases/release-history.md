@@ -126,7 +126,7 @@ See also:
 * (Improvement) GROK-15868: Browse: hierarchy updates (UI) 
 * GROK-15822: Fix logging for setting up environment using S3 and AWS credentials (WIP)
 * (Bug) GROK-15485: Viewers | Line chart : bugs in RowSource = FilteredSelected, SelectedOrCurrent (WIP)
-* (Bug) GROK-15757: UA | Test track: fix the { "order": } for test scenarios 
+* (Bug) GROK-15757: UA | Test track: fix the \{ "order": } for test scenarios
 * (Bug) GROK-15758: UA | Test track : make "List" option from previous test results readable 
 * (Bug) GROK-15995: Helm: Colors for libraries monomers 
 * (Bug) GROK-16226: Viewers: DG.Filters incorrectly sets columnNames 

@@ -277,7 +277,8 @@ jobs:
 
           profiles='--profile datagrok --profile db'
           echo "Check if Grok Connect is required for the package"
-          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]]; then
+          if [ -d "packages/${{ matrix.package }}/connections" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name connections) ]] || \
+             [ -d "packages/${{ matrix.package }}/queries" ] || [[ -n $(find packages/${{ matrix.package }}/node_modules/@datagrok -type d -name queries) ]]; then
             profiles+=' --profile grok_connect'
           fi
           echo "Check if CVM is required for the package"
@@ -380,7 +381,7 @@ jobs:
           do
             sleep 1
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             echo -e "\nRetrying..."
           done
@@ -436,7 +437,7 @@ jobs:
           until grok publish ${{ steps.datagrok-image.outputs.alias }}; do
             exit=$?
             if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-              docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+              docker compose -p datagrok logs --no-color --timestamps datagrok
             fi
             wait=$((2 ** count))
             count=$((count + 1))
@@ -500,7 +501,7 @@ jobs:
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
-            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker compose -p datagrok logs --no-color --timestamps
           else
             echo 'Check dev logs'
           fi

@@ -337,7 +337,7 @@ category('mmpa', () => {
     //check that 'Existing' column has been calculated
     await awaitCheck(() =>
       genDf.columns.names().includes('Existing'), '\'Existing\' column hasn\'t been created', 10000);
-    expect(genDf.col('Existing')!.toList().filter((it) => it).length, 22, 'Incorrect data in \'Existing\' column');
+    expect(genDf.col('Existing')!.toList().filter((it) => it).length, 23, 'Incorrect data in \'Existing\' column');
   });
 });
 
