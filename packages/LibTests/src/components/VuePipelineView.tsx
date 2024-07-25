@@ -3,20 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {defineComponent, PropType, ref, shallowRef, triggerRef, watch} from 'vue';
 import {IconFA, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
-import {Draggable, DraggableTreeType, OpenIcon} from '@he-tree/vue';
+import {Draggable, OpenIcon} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
+import '@he-tree/vue/style/material-design.css';
 import {VueRichFunctionView} from './VueRichFunctionView';
+import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 
 type TreeNode = {
   text: string,
   children: TreeNode[]
 }
 
-type State = {
-  checked: boolean,
-  open: boolean,
-  children: any[],
-  isHovered?: boolean,
+type Data = {
+  text: string
 }
 
 export const VuePipelineView = defineComponent({
@@ -32,15 +31,25 @@ export const VuePipelineView = defineComponent({
   },
   setup(props) {
     const currentFuncCall = shallowRef(props.wrapperFunccall);
-    const tree = ref(null as {remove: Function} | null);
+    const tree = ref(null as {
+      remove: Function,
+      isDraggable: Function,
+    } | null);
 
     return () => (
       <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
         <div>
           <h2> Model name </h2>
-          <Draggable ref={tree} v-model={props.treeData} treeLine> 
+          <Draggable 
+            class="mtl-tree"
+            ref={tree} 
+            v-model={props.treeData} 
+            eachDraggable={(stat: Stat<Data>) => (stat.data.text.includes('Phase') || stat.data.text.includes('Day'))}
+            eachDroppable={(stat: Stat<Data>) => (stat.data.text.includes('Review'))}
+            treeLine
+          > 
             { 
-              ({stat, node}: {stat: State, node: TreeNode}) => {
+              ({stat, node}: {stat: Stat<Data>, node: TreeNode}) => {
                 const openIcon = <OpenIcon
                   open={stat.open}
                   class="mtl-mr"
@@ -82,7 +91,7 @@ export const VuePipelineView = defineComponent({
                   triggerRef(currentFuncCall);
                 };
                 return (
-                  <div style={{display: 'flex'}} 
+                  <div style={{display: 'flex', padding: '4px 0px', width: '100%'}}
                     onClick={onNodeClick}
                     onMouseover={() => stat.isHovered = true} 
                     onMouseleave={() => stat.isHovered = false} 
@@ -90,12 +99,11 @@ export const VuePipelineView = defineComponent({
                   >
                     { stat.children.length ? openIcon : null }
                     <span class="mtl-ml">{node.text}</span>
-                    { stat.isHovered ? <IconFA 
+                    { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
                       name='grip-vertical' 
                       cursor='grab'
-                      style={{
-                        paddingLeft: '4px',
-                      }}/>: null }
+                      style={{paddingLeft: '4px'}}
+                    />: null }
                     { stat.isHovered ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}

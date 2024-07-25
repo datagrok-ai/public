@@ -938,19 +938,19 @@ export async function TestVuePLV() {
     wrapperFunccall: 'Compute:ObjectCooling',
     treeData: [
       {
-        text: 'Step 1',
+        text: 'Review phases (draggable + adding)',
         children: [
-          {text: 'Step 1.1'},
-          {text: 'Step 1.2'},
-          {text: 'Step 1.3'},
+          {text: 'Phase: Cleaning 1'},
+          {text: 'Phase: Filtering 1'},
+          {text: 'Phase: Post-filtering 1'},
         ],
       }, {
         text: 'Step 2',
         children: [
           {text: 'Step 2.1'},
-          {text: 'Step 2.2', children: [
-            {text: 'Step 2.2.1'},
-            {text: 'Step 2.2.2'},
+          {text: 'Review days (no drag, only adding)', children: [
+            {text: 'Day 1'},
+            {text: 'Day 2'},
           ]},
           {text: 'Step 2.3'},
         ],
