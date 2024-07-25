@@ -1859,18 +1859,3 @@ export async function applyModel(id: string, type: string, modelBlob: Uint8Array
 }
 
 export {getMCS};
-
-//top-menu: Chem | Transform | AAAAA
-//name: AAAAA
-//output: dataframe data
-//meta.cache: client
-export async function testTest() {
-
-  await delay(10000);
-  const table = grok.data.demo.molecules(100);
-  console.log('AAAAAA');
-
-  return table;
-}
-
-
