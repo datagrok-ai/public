@@ -959,6 +959,7 @@ export async function TestVuePLV() {
   });
   app.mount(view.root);
   grok.shell.addView(view);
+  view.name = 'PLV PoC';
   view.root.classList.remove('ui-panel');
 }
 
