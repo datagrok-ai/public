@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.11.1 (2024-07-25)
+
+### Bug Fixes
+
+* Removed unnecessary code
+
 ## 1.11.0 (2024-07-24)
 
 *Dependency: datagarok-api >= 1.20.0*
