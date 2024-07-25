@@ -19,3 +19,31 @@ export class DGBigButton extends HTMLButtonElement {
 }
 
 export interface DGBigButtonT extends DGBigButton {};
+
+export class DGIconFA extends HTMLElement {
+  _name = 'edit';
+  _cursor = '';
+
+  constructor() {
+    super();
+  }
+
+  private render() {
+    ui.empty(this);
+    const t = ui.iconFA(this._name);
+    t.style.cursor = this._cursor;
+    this.append(t);
+  }
+
+  set name(val: string) {
+    this._name = val;
+    this.render();
+  }
+
+  set cursor(val: string) {
+    this._cursor = val;
+    this.render();
+  }
+}
+
+export interface DGIconFAT extends DGIconFA {};

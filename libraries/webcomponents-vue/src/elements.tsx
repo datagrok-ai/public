@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, ref, watch} from 'vue';
-import type {DGBigButtonT, DGButtonT, DGSplitH} from '@datagrok-libraries/webcomponents/src';
+import type {DGBigButtonT, DGButtonT, DGIconFAT, DGSplitH} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
   namespace JSX {
@@ -11,6 +11,7 @@ declare global {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
       'dg-split-h': DGSplitH,
+      'dg-icon-fa': DGIconFAT,
     }
   }
 }
@@ -41,11 +42,35 @@ export const SplitH = defineComponent({
     return () =>{
       return (<dg-split-h
         resize={props.resize}
-        attrs={attrs}
+        v-bind={attrs}
         style={{height: '100%'}}
       >
         {slots.default ? slots.default() : []}
       </dg-split-h>);
+    };
+  },
+});
+
+export const IconFA = defineComponent({
+  name: 'IconFA',
+  props: {
+    name: String,
+    cursor: {
+      type: String,
+      default: 'pointer',
+    },
+  },
+  emits: [
+    'click',
+  ],
+  setup(props, {emit}) {
+    return () => {
+      return (<dg-icon-fa
+        name={props.name}
+        cursor={props.cursor}
+        onClick={() => emit('click')}
+      >
+      </dg-icon-fa>);
     };
   },
 });

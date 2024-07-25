@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {defineComponent, PropType, ref, shallowRef, triggerRef} from 'vue';
-import {SplitH} from '@datagrok-libraries/webcomponents-vue/src';
+import {IconFA, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {Draggable, OpenIcon} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import {VueRichFunctionView} from './VueRichFunctionView';
@@ -16,6 +16,7 @@ type State = {
   checked: boolean,
   open: boolean,
   children: any[],
+  isHovered?: boolean,
 }
 
 export const VuePipelineView = defineComponent({
@@ -77,19 +78,28 @@ export const VuePipelineView = defineComponent({
 
                 const onNodeClick = () => {
                   currentFuncCall.value = getCall({initTemp: Math.random()*70 + 30});
-                  console.log(currentFuncCall.value.inputs['initTemp']);
                   triggerRef(currentFuncCall);
                 };
                 return (
-                  <div style={{display: 'flex'}} onClick={onNodeClick}>
+                  <div style={{display: 'flex'}} 
+                    onClick={onNodeClick}
+                    onMouseover={() => stat.isHovered = true} 
+                    onMouseleave={() => stat.isHovered = false} 
+                    onDragstart={() => stat.isHovered = false}
+                  >
                     { stat.children.length ? openIcon : null }
-                    <input
-                      class="mtl-checkbox mtl-mr"
-                      type="checkbox"
-                      v-model={stat.checked}
-                      title='check'
-                    />
                     <span class="mtl-ml">{node.text}</span>
+                    { stat.isHovered ? <IconFA 
+                      name='grip-vertical' 
+                      cursor='grab'
+                      style={{
+                        paddingLeft: '4px',
+                      }}/>: null }
+                    { stat.isHovered ? <IconFA 
+                      name='times' 
+                      style={{paddingLeft: '4px'}}
+                      onClick={() => console.log(this)}
+                    />: null }
                   </div>
                 );
               }
