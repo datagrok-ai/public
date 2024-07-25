@@ -5,7 +5,7 @@ import {Observable, defer, from} from 'rxjs';
 import {ItemPathArray} from './data/common-types';
 import {HandlerBase} from './config/PipelineConfiguration';
 
-export function callHandler<P, R>(handler: HandlerBase<P, R>, params: P): Observable<R> {
+export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {
   if (typeof handler === 'string') {
     return defer(async () => {
       const f: DG.Func = await grok.functions.eval(handler);

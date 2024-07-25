@@ -1,10 +1,10 @@
-import {BehaviorSubject, Observable, Subject, of} from 'rxjs';
-import { InputState, ItemPathArray } from '../data/common-types';
+import {BehaviorSubject, Observable, of} from 'rxjs';
+import {InputState, ItemPathArray} from '../data/common-types';
 import {v4 as uuidv4} from 'uuid';
 import {switchMap} from 'rxjs/operators';
 import {NodeTree, TreeNode} from '../data/NodeTree';
 import {PipelineStepConfiguration, StateItem} from '../config/PipelineConfiguration';
-import {FuncallStateItem, PipelineConfigurationDerefed, PipelineParallelConfiguration, PipelineSequentialConfiguration, PipelineStaticConfiguration} from '../config/config-processing-utils';
+import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallState} from '../config/PipelineInstance';
 
@@ -130,7 +130,6 @@ export class FuncCallNode implements IStoreProvider {
   private adapter = new FuncCallInstanceAdapter();
 
   constructor(
-    public readonly configPath: ItemPathArray,
     public readonly config: PipelineStepConfiguration<FuncallStateItem>,
   ) {}
 
@@ -148,10 +147,11 @@ export class FuncCallNode implements IStoreProvider {
 
   toState(): StepFunCallState {
     const res: StepFunCallState = {
-      configPath: this.configPath,
       type: 'funccall',
       uuid: this.uuid,
       nqName: this.config.nqName,
+      configId: this.config.id,
+      friendlyName: this.config.friendlyName,
       funcCallId: this.adapter.getInstance()?.id,
       isRunning: this.adapter.getInstance()?.isRunning$.value,
       isRunable: this.adapter.getInstance()?.isRunable$.value,
@@ -167,8 +167,7 @@ export class PipelineNodeBase implements IStoreProvider {
   private store: MemoryStore;
 
   constructor(
-    public readonly config: PipelineConfigurationDerefed,
-    public readonly configPath: ItemPathArray,
+    public readonly config: PipelineConfigurationProcessed,
   ) {
     this.store = new MemoryStore(config.states ?? []);
   }
@@ -179,9 +178,8 @@ export class PipelineNodeBase implements IStoreProvider {
 
   toState() {
     return {
+      configId: this.config.id,
       uuid: this.uuid,
-      nqName: this.config.nqName,
-      configPath: this.configPath,
     };
   }
 }
@@ -190,20 +188,20 @@ export class StaticPipelineNode extends PipelineNodeBase {
   public readonly nodeType = 'static';
 
   constructor(
-    public readonly config: PipelineStaticConfiguration<PipelineConfigurationDerefed>,
-    public readonly configPath: ItemPathArray,
+    public readonly config: PipelineConfigurationStaticProcessed,
   ) {
-    super(config, configPath);
+    super(config);
   }
 
-  static fromState() {
+  static fromState(state: PipelineStateStatic) {
 
   }
 
-  toState() {
+  toState(): PipelineStateStatic {
     const base = super.toState();
     const res: PipelineStateStatic = {
       ...base,
+      nqName: this.config.nqName,
       type: this.nodeType,
       steps: [],
     };
@@ -215,23 +213,25 @@ export class ParallelPipelineNode extends PipelineNodeBase {
   public readonly nodeType = 'parallel';
 
   constructor(
-    public readonly config: PipelineParallelConfiguration<PipelineConfigurationDerefed>,
-    public readonly configPath: ItemPathArray,
+    public readonly config: PipelineConfigurationParallelProcessed,
   ) {
-    super(config, configPath);
+    super(config);
   }
 
-  static fromState() {
+  static fromState(state: PipelineStateParallel) {
 
   }
 
-  toState() {
+  toState(): PipelineStateParallel {
     const base = super.toState();
     const res: PipelineStateParallel = {
       ...base,
       type: this.nodeType,
       steps: [],
-      stepTypes: this.config.stepTypes,
+      stepTypes: this.config.stepTypes.map(s => {
+        const {id: configId, allowAdding} = s;
+        return {configId, allowAdding};
+      }),
     };
     return res;
   }
@@ -241,13 +241,12 @@ export class SequentialPipelineNode extends PipelineNodeBase {
   public readonly nodeType = 'sequential';
 
   constructor(
-    public readonly config: PipelineSequentialConfiguration<PipelineConfigurationDerefed>,
-    public readonly configPath: ItemPathArray,
+    public readonly config: PipelineConfigurationSequentialProcessed,
   ) {
-    super(config, configPath);
+    super(config);
   }
 
-  static fromState() {
+  static fromState(state: PipelineStateSequential) {
 
   }
 
@@ -257,7 +256,10 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       ...base,
       type: this.nodeType,
       steps: [],
-      stepTypes: this.config.stepTypes,
+      stepTypes: this.config.stepTypes.map(s => {
+        const {id: configId, allowAdding} = s;
+        return {configId, allowAdding};
+      }),
     };
     return res;
   }
@@ -288,7 +290,7 @@ export class StateTree extends NodeTree<StateTreeNode> {
   }
 
   static fromState(state: PipelineState): StateTree {
-
+    // TODO
   }
 
   private toStateRec(node: TreeNode<StateTreeNode>): PipelineState {

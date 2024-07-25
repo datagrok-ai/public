@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {ItemType} from '../data/common-types';
+import {ItemId} from '../data/common-types';
 import {ActionPositions} from '../config/PipelineConfiguration';
 import {ValidationResult} from '../../../shared-utils/validation';
 
@@ -7,43 +7,43 @@ import {ValidationResult} from '../../../shared-utils/validation';
 
 export interface AddGroupItem {
   event: 'addGroupItem';
-  id: string;
-  type: ItemType;
+  uuid: string;
+  id: ItemId;
   insertBefore?: string;
 }
 
 export interface RemoveGroupItem {
   event: 'removeGroupItem';
-  id: string;
+  uuid: string;
 }
 
 export interface MoveGroupItem {
   event: 'moveGroupItem';
-  id: string;
+  uuid: string;
   insertBefore?: string;
 }
 
 export interface IOSyncChange {
   event: 'ioSyncChange';
-  id: string;
+  uuid: string;
   ioSynced: boolean;
 }
 
 export interface CurrentStepChange {
   event: 'currentStepChange';
-  id: string;
+  uuid: string;
 }
 
 export interface ConsistencyChange {
   event: 'consistencyChange';
-  id: string;
+  uuid: string;
   input: string;
   value: boolean;
 }
 
 export interface FuncCallLoaded {
   event: 'funcCallLoaded';
-  id: string;
+  uuid: string;
   funcCall: DG.FuncCall;
 }
 
@@ -57,13 +57,13 @@ export type GlobalCategories = typeof globalCategories[number];
 
 export interface Actions {
   stepActions: {
-    id: string,
+    uuid: string,
     name: string,
     position: ActionPositions,
-    stepId: string;
+    step: string;
   }[];
   globalActions: {
-    id: string,
+    uuid: string,
     name: string,
     category?: GlobalCategories,
   }[];
@@ -78,7 +78,7 @@ export interface ActionTriggered {
 
 export interface ViewValidationResult {
   results: {
-    id: string,
+    uuid: string,
     input: string,
     validation: ValidationResult,
   }[];

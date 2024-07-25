@@ -1,22 +1,22 @@
 import * as DG from 'datagrok-api/dg';
-import { InputState, ItemId, ItemPathArray, ItemType, NqName} from '../data/common-types';
+import {InputState, ItemId, NqName} from '../data/common-types';
 
 //
 // initial steps config for dynamic pipelines
 //
 
 export type StepParallelInitialConfig = {
-  type: ItemType;
+  id: ItemId;
   allowRemoving: boolean;
 }
 
 export type StepSequentialInitialConfig = {
-  type: ItemType;
+  id: ItemId;
   allowRemoving: boolean;
 }
 
 export type StepFunCallInitialConfig = {
-  id: string;
+  id: ItemId;
   values?: Record<string, any>;
   inputStates?: Record<string, InputState>;
 }
@@ -40,13 +40,15 @@ export interface PipelineInstanceState {
 
 export type PipelineState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallState;
 
-// funcall
+
+// funccall
 
 export type StepFunCallState = {
   type: 'funccall';
   uuid: string;
   nqName: string;
-  configPath: ItemPathArray;
+  friendlyName?: string;
+  configId: string;
   funcCallId?: string;
   funcCall?: DG.FuncCall;
   isLoading?: boolean;
@@ -59,9 +61,10 @@ export type StepFunCallState = {
 // pipeline base
 
 export type PipelineInstanceBase<S> = {
-  configPath: ItemPathArray;
   uuid: string;
-  nqName: string | undefined;
+  configId: string;
+  friendlyName?: string;
+  nqName?: string;
 } & S;
 
 // static
@@ -74,9 +77,7 @@ export type PipelineStateStatic = PipelineInstanceBase<{
 // sequential
 
 export type StepSequentialDescription = {
-  type: string;
-  inputTypeId: ItemId;
-  outputTypeId: ItemId;
+  configId: string;
   allowAdding: boolean;
 };
 
@@ -91,7 +92,7 @@ export type PipelineStateSequential = PipelineInstanceBase<{
 // parallel
 
 export type StepParallelDescription = {
-  type: string;
+  configId: string;
   allowAdding: boolean;
 };
 

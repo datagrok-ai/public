@@ -1,41 +1,47 @@
 import {ItemPathArray} from '../data/common-types';
 import {pathJoin} from '../utils';
+import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from './config-processing-utils';
+import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {PipelineInstanceState} from './PipelineInstance';
 
-export type StateTraverseNode<C> = {
-  id: string;
-  steps: StateTraverseNode<C>[];
-} & C;
+type TraverseItem = PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]> | PipelineSelfRef;
 
-export type StateTraverseItem<C> = {
-  path: ItemPathArray;
-} & StateTraverseNode<C>;
-
-export function traverseConfig<C, T>(
-  start: StateTraverseNode<C>,
-  handler: (
-    acc: T,
-    conf: StateTraverseItem<C>,
-    path: ItemPathArray,
-    stop: () => void,
-  ) => T,
-  acc: T,
-  path: ItemPathArray = [],
-): T {
-  const q: StateTraverseItem<C>[] = [{...start, path}];
-  let stop = false;
-  const signal = () => stop = true;
-  while (q.length) {
-    const item = q.shift()!;
-    acc = handler(acc, item, item.path, signal);
-    if (stop)
-      return acc;
-    const items = getNext(item, path);
-    q.push(...items);
-  }
-  return acc;
+function isPipelineStaticConfig(c: TraverseItem): c is PipelineConfigurationStaticProcessed {
+  return !!((c as PipelineConfigurationStaticProcessed).type === 'static');
 }
 
-function getNext<C>(config: StateTraverseNode<C>, path: ItemPathArray): StateTraverseItem<C>[] {
-  const steps = config.steps ?? [];
-  return steps.map((step) => ({...step, path: pathJoin(path, [step.id])}));
+function isPipelineParallelConfig(c: TraverseItem): c is PipelineConfigurationParallelProcessed {
+  return !!((c as PipelineConfigurationParallelProcessed).type === 'parallel');
+}
+
+function isPipelineSequentialConfig(c: TraverseItem): c is PipelineConfigurationSequentialProcessed {
+  return !!((c as PipelineConfigurationSequentialProcessed).type === 'sequential');
+}
+
+function isPipelineStepConfig(c: TraverseItem): c is PipelineStepConfiguration<FuncallStateItem[]> {
+  return !isPipelineStaticConfig(c) && !isPipelineParallelConfig(c) && isPipelineSequentialConfig(c) && !isPipelineSelfRef(c);
+}
+
+function isPipelineSelfRef(c: TraverseItem): c is PipelineSelfRef {
+  return !!((c as PipelineSelfRef).type === 'selfRef');
+}
+
+export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed): TraverseItem {
+  let node: TraverseItem = config;
+  if (node.id !== config.id) {
+    throw new Error(`Instance config id ${node.id} is not matching ${config.id}`);
+  }
+  const [, ...rest] = instancePath;
+  // TODO
+  for (const segment of rest) {
+    if (isPipelineStaticConfig(node)) {
+
+    } else if (isPipelineParallelConfig(node) || isPipelineSequentialConfig(node)) {
+
+    } else if (isPipelineStepConfig(node)) {
+
+    } else if (isPipelineSelfRef(node)) {
+
+    }
+  }
 }

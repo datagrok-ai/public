@@ -1,6 +1,5 @@
 
 export type ItemId = string;
-export type ItemType = string
 export type ItemPath = string;
 export type ItemPathArray = string[];
 export type ItemAddress = string[];

@@ -1,5 +1,5 @@
 import {ActionItem, ValidationResult} from '../../shared-utils/validation';
-import {ItemPathArray, InputState, ItemType, ItemId} from './data/common-types';
+import {ItemPathArray, InputState, ItemId} from './data/common-types';
 
 export interface IRuntimeController {
   // individual links
@@ -23,7 +23,7 @@ export interface IRuntimeController {
   setValidation(path: ItemPathArray, validation?: ValidationResult | undefined): void;
   // dynamic pipeline manipulation
   getGroupSteps(path: ItemPathArray): any;
-  addGroupStep(path: ItemPathArray, type: ItemType, insertBefore?: ItemId): ItemId;
+  addGroupStep(path: ItemPathArray, type: ItemId, insertBefore?: ItemId): ItemId;
   moveGroupStep(path: ItemPathArray, item: ItemId, insertBefore?: ItemId): void;
   deleteGroupStep(path: ItemPathArray, item: ItemId): void;
 }
