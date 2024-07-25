@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {defineComponent, PropType, ref, shallowRef, triggerRef} from 'vue';
+import {defineComponent, PropType, ref, shallowRef, triggerRef, watch} from 'vue';
 import {IconFA, SplitH} from '@datagrok-libraries/webcomponents-vue/src';
-import {Draggable, OpenIcon} from '@he-tree/vue';
+import {Draggable, DraggableTreeType, OpenIcon} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import {VueRichFunctionView} from './VueRichFunctionView';
 
@@ -32,12 +32,13 @@ export const VuePipelineView = defineComponent({
   },
   setup(props) {
     const currentFuncCall = shallowRef(props.wrapperFunccall);
+    const tree = ref(null as {remove: Function} | null);
 
     return () => (
       <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
         <div>
           <h2> Model name </h2>
-          <Draggable v-model={props.treeData} treeLine> 
+          <Draggable ref={tree} v-model={props.treeData} treeLine> 
             { 
               ({stat, node}: {stat: State, node: TreeNode}) => {
                 const openIcon = <OpenIcon
@@ -98,7 +99,7 @@ export const VuePipelineView = defineComponent({
                     { stat.isHovered ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}
-                      onClick={() => console.log(this)}
+                      onClick={() => tree.value!.remove(stat)}
                     />: null }
                   </div>
                 );
