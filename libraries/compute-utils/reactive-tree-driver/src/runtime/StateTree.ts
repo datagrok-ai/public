@@ -4,9 +4,12 @@ import {v4 as uuidv4} from 'uuid';
 import {switchMap} from 'rxjs/operators';
 import {NodeTree, TreeNode} from '../data/NodeTree';
 import {PipelineStepConfiguration, StateItem} from '../config/PipelineConfiguration';
-import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
+import { FuncallStateItem, isPipelineParallelConfig, , PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import {PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallState} from '../config/PipelineInstance';
+import { isFuncCallState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallState} from '../config/PipelineInstance';
+import {buildTraverseD} from '../data/traversable';
+import { pathJoin } from '../utils';
+import { getConfigByInstancePath, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig } from '../config/config-utils';
 
 export interface ICallable {
   run(): void
@@ -130,7 +133,7 @@ export class FuncCallNode implements IStoreProvider {
   private adapter = new FuncCallInstanceAdapter();
 
   constructor(
-    public readonly config: PipelineStepConfiguration<FuncallStateItem>,
+    public readonly config: PipelineStepConfiguration<FuncallStateItem[]>,
   ) {}
 
   setFuncall(fc?: IFuncCallBridge) {
@@ -142,7 +145,7 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   static fromState() {
-
+    // TODO: Additional deserialization or separate initial instance tree type?
   }
 
   toState(): StepFunCallState {
@@ -193,10 +196,6 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config);
   }
 
-  static fromState(state: PipelineStateStatic) {
-
-  }
-
   toState(): PipelineStateStatic {
     const base = super.toState();
     const res: PipelineStateStatic = {
@@ -216,10 +215,6 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     public readonly config: PipelineConfigurationParallelProcessed,
   ) {
     super(config);
-  }
-
-  static fromState(state: PipelineStateParallel) {
-
   }
 
   toState(): PipelineStateParallel {
@@ -244,10 +239,6 @@ export class SequentialPipelineNode extends PipelineNodeBase {
     public readonly config: PipelineConfigurationSequentialProcessed,
   ) {
     super(config);
-  }
-
-  static fromState(state: PipelineStateSequential) {
-
   }
 
   toState() {
@@ -289,8 +280,39 @@ export class StateTree extends NodeTree<StateTreeNode> {
     return this.toStateRec(this.getRoot());
   }
 
-  static fromState(state: PipelineState): StateTree {
-    // TODO
+  static fromState(state: PipelineState, config: PipelineConfigurationProcessed): StateTree {
+    const traverse = buildTraverseD([] as ItemPathArray, (item: PipelineState, path: ItemPathArray) => {
+      if (isFuncCallState(item))
+        return [[item, pathJoin(path, [item.configId])] as const];
+      else
+        return item.steps.map(step => [step, pathJoin(path, [step.configId])] as const);
+    });
+
+    const tree = traverse(state, (acc, state, path) => {
+      const nodeConf = getConfigByInstancePath(path, config);
+      if (nodeConf == null)
+        throw new Error(`Unable to find conf node for ${path}`);
+      const node = StateTree.makeNode(nodeConf);
+      if (acc)
+        acc.addItem(path, node, node); // TODO: fix addressing
+      else
+        return node;
+      return acc;
+    }, undefined as StateTree | undefined);
+    return tree!;
+  }
+
+  private static makeNode(nodeConf: PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]>) {
+    if (isPipelineStepConfig(nodeConf)) {
+      return new FuncCallNode(nodeConf);
+    } else if (isPipelineStaticConfig(nodeConf)) {
+      return new StaticPipelineNode(nodeConf);
+    } else if (isPipelineParallelConfig(nodeConf)) {
+      return new ParallelPipelineNode(nodeConf);
+    } else if (isPipelineSequentialConfig(nodeConf)) {
+      return new SequentialPipelineNode(nodeConf);
+    }
+    throw new Error(`Wrong node type ${nodeConf}`);
   }
 
   private toStateRec(node: TreeNode<StateTreeNode>): PipelineState {

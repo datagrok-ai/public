@@ -38,17 +38,32 @@ export interface PipelineInstanceState {
   state: PipelineState;
 };
 
+export type StateTypes = PipelineState['type'];
+
 export type PipelineState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallState;
+
+export function isFuncCallState(state: PipelineState): state is StepFunCallState {
+  return state.type === 'funccall';
+}
+export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic  {
+  return state.type === 'static';
+}
+export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel {
+  return state.type === 'parallel';
+}
+export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential {
+  return state.type === 'static';
+}
 
 
 // funccall
 
 export type StepFunCallState = {
   type: 'funccall';
+  configId: string;
   uuid: string;
   nqName: string;
   friendlyName?: string;
-  configId: string;
   funcCallId?: string;
   funcCall?: DG.FuncCall;
   isLoading?: boolean;

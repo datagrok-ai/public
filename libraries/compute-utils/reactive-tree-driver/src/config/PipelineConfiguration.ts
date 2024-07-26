@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import {IRuntimeController} from '../RuntimeController';
-import {ItemId, NqName, ItemPath, InputState, ItemType, ItemPathArray} from '../data/common-types';
+import {ItemId, NqName, ItemPath, InputState, ItemPathArray} from '../data/common-types';
 import {PipelineInstanceConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
 //
@@ -94,8 +94,9 @@ export type PipelineStepConfiguration<S> = {
   io?: S;
 };
 
-export type PipelineConfigurationBase<P> = {
+export type PipelineConfigurationBase<P, G> = {
   id: ItemId;
+  globalId?: G;
   nqName?: NqName;
   friendlyName?: string;
   hooks?: PipelineHooks<P>;
@@ -105,11 +106,11 @@ export type PipelineConfigurationBase<P> = {
 
 // fixed pipeline
 
-export type AbstractPipelineStaticConfiguration<P, S, R> = {
+export type AbstractPipelineStaticConfiguration<P, S, R, G> = {
   links?: PipelineLinkConfiguration<P>[];
-  steps: (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R> | R)[];
+  steps: (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R, G> | R)[];
   type: 'static';
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<P, G>;
 
 // parallel pipeline
 
@@ -120,13 +121,13 @@ export type ParallelItemContext<P> = {
   selectorExtractor?: SelectorKeyExtractor;
 };
 
-export type PipelineParallelItem<P, S, R> = (AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>;
+export type PipelineParallelItem<P, S, R, G> = (AbstractPipelineConfiguration<P, S, R, G> | R) & ParallelItemContext<P>;
 
-export type AbstractPipelineParallelConfiguration<P, S, R> = {
+export type AbstractPipelineParallelConfiguration<P, S, R, G> = {
   initialSteps?: StepParallelInitialConfig[];
-  stepTypes: PipelineParallelItem<P, S, R>[];
+  stepTypes: PipelineParallelItem<P, S, R, G>[];
   type: 'parallel';
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<P, G>;
 
 // sequential pipeline
 
@@ -135,33 +136,33 @@ export type SequentialItemContext = {
   allowAdding: boolean;
 };
 
-export type PipelineSequentialItem<P, S, R> = (AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext;
+export type PipelineSequentialItem<P, S, R, G> = (AbstractPipelineConfiguration<P, S, R, G> | R) & SequentialItemContext;
 
-export type AbstractPipelineSequentialConfiguration<P, S, R> = {
+export type AbstractPipelineSequentialConfiguration<P, S, R, G> = {
   initialSteps?: StepSequentialInitialConfig[];
-  stepTypes: PipelineSequentialItem<P, S, R>[];
+  stepTypes: PipelineSequentialItem<P, S, R, G>[];
   links?: PipelineDynamicLinkConfiguration<P>[];
   type: 'sequential';
-} & PipelineConfigurationBase<P>;
+} & PipelineConfigurationBase<P, G>;
 
 // pipeline config
 
-export type AbstractPipelineConfiguration<P, S, R> =
-AbstractPipelineStaticConfiguration<P, S, R> |
-AbstractPipelineParallelConfiguration<P, S, R> |
-AbstractPipelineSequentialConfiguration<P, S, R>;
+export type AbstractPipelineConfiguration<P, S, R, G> =
+AbstractPipelineStaticConfiguration<P, S, R, G> |
+AbstractPipelineParallelConfiguration<P, S, R, G> |
+AbstractPipelineSequentialConfiguration<P, S, R, G>;
 
-export type PipelineRefIntial = {
+export type PipelineRefInitial = {
   version?: string;
   provider: PipelineProvider | NqName;
   type: 'ref';
 }
 
-export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<ItemPath | ItemPath[], never, PipelineRefIntial>;
-export type PipelineConfigurationParallelIntial = AbstractPipelineParallelConfiguration<ItemPath | ItemPath[], never, PipelineRefIntial>;
-export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<ItemPath | ItemPath[], never, PipelineRefIntial>;
+export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<ItemPath | ItemPath[], never, PipelineRefInitial, never>;
+export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfiguration<ItemPath | ItemPath[], never, PipelineRefInitial, never>;
+export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<ItemPath | ItemPath[], never, PipelineRefInitial, never>;
 
-export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelIntial | PipelineConfigurationSequentialInitial | PipelineRefIntial;
+export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial | PipelineRefInitial;
 
 // extrenal instance config
 

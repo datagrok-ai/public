@@ -1,5 +1,5 @@
 import {indexFromEnd} from '../utils';
-import {TraverseHandler} from './common-types';
+import {buildTraverseB} from './traversable';
 
 export type NodeAddressSegment = {
   id: string,
@@ -11,40 +11,15 @@ export type NodeAddressSegment = {
 
 export type NodeAddress = NodeAddressSegment[];
 
-export type NodesSelectorSegment = NodeAddressSegment |
-{
-  meta: '^' | '*' | '$',
-  type?: string,
-};
-
-export type NodesSelector = NodesSelectorSegment[];
-
 export type NodePath = {
   id: string,
   idx: number,
 }[];
 
-function traverseNodeTree<T, R>(
-  startNode: TreeNode<T>,
-  fn: TraverseHandler<R, TreeNode<T>, NodePath>,
-  acc: R,
-): R {
-  let stop = false;
-  const signal = () => stop = true;
-  const q: (readonly [NodePath, TreeNode<T>])[] = [[[], startNode]] as const;
-  while (q.length) {
-    const [path, item] = q.shift()!;
-    acc = fn(acc, item, path, signal);
-    if (stop)
-      return acc;
-    const next = item.getChildren().map(({id, item}, idx) => [[...path, {id, idx}] as NodePath, item] as const);
-    q.push(...next);
-  }
-  return acc;
-}
-
 export class NodeTree<T> {
   private root = new TreeNode(this.item);
+
+  public traverse = buildTraverseB([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
   constructor(private item: T) {}
 
@@ -79,10 +54,6 @@ export class NodeTree<T> {
     return parent.removeChild(segment);
   }
 
-  traverse<R>(fn: TraverseHandler<R, TreeNode<T>, NodePath>, acc: R) {
-    return traverseNodeTree<T, R>(this.root, fn, acc);
-  }
-
   private getNodesFromAddress(address: NodeAddress) {
     let current = this.root;
     const nodes = [current];
@@ -96,7 +67,6 @@ export class NodeTree<T> {
     return nodes;
   }
 }
-
 
 export class TreeNode<T> {
   private children = new PositionedMap<TreeNode<T>>();

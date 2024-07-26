@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelIntial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineGlobalId, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefIntial, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineGlobalId, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 import {ItemId, ItemPath, ItemPathArray, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 
@@ -27,64 +27,85 @@ export type FuncallStateItem = {
 }
 
 
-type TraverseItem = PipelineConfigurationInitial | PipelineStepConfiguration<never>;
+type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfiguration<never>;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
+export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
+export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
-function isPipelineStaticConfig(c: TraverseItem): c is PipelineConfigurationStaticInitial {
+
+function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
 }
 
-function isPipelineParallelConfig(c: TraverseItem): c is PipelineConfigurationParallelIntial {
-  return !!((c as PipelineConfigurationParallelIntial).type === 'parallel');
+function isPipelineParallelInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationParallelInitial {
+  return !!((c as PipelineConfigurationParallelInitial).type === 'parallel');
 }
 
-function isPipelineSequentialConfig(c: TraverseItem): c is PipelineConfigurationSequentialInitial {
+function isPipelineSequentialInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationSequentialInitial {
   return !!((c as PipelineConfigurationSequentialInitial).type === 'sequential');
 }
 
-function isPipelineRef(c: TraverseItem): c is PipelineRefIntial {
-  return !!((c as PipelineRefIntial).type === 'ref');
+function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefInitial {
+  return !!((c as PipelineRefInitial).type === 'ref');
 }
 
-function isStepConfig(c: TraverseItem): c is PipelineStepConfiguration<never> {
-  return !isPipelineStaticConfig(c) && !isPipelineParallelConfig(c) && isPipelineSequentialConfig(c) && !isPipelineRef(c);
+function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfiguration<never> {
+  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
 }
+
+
+export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]>;
+
+export function isPipelineStaticConfig(c: ConfigTraverseItem): c is PipelineConfigurationStaticProcessed {
+  return !!((c as PipelineConfigurationStaticProcessed).type === 'static');
+}
+
+export function isPipelineParallelConfig(c: ConfigTraverseItem): c is PipelineConfigurationParallelProcessed {
+  return !!((c as PipelineConfigurationParallelProcessed).type === 'parallel');
+}
+
+export function isPipelineSequentialConfig(c: ConfigTraverseItem): c is PipelineConfigurationSequentialProcessed {
+  return !!((c as PipelineConfigurationSequentialProcessed).type === 'sequential');
+}
+
+export function isStepConfig(c: ConfigTraverseItem): c is PipelineStepConfiguration<FuncallStateItem[]> {
+  return !isPipelineStaticConfig(c) && !isPipelineParallelConfig(c) && isPipelineSequentialConfig(c);
+}
+
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
   const pconf = await configProcessing(conf, new Set());
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing(conf: TraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]> | PipelineSelfRef> {
-  if (isStepConfig(conf)) {
+async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]> | PipelineSelfRef> {
+  if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf);
     return pconf;
-  } else if (isPipelineStaticConfig(conf)) {
+  } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf);
     const steps = await Promise.all(conf.steps.map(async (step) => {
       const sconf = await configProcessing(step, loadedPipelines);
       return sconf as any;
     }));
     return {...pconf, steps};
-  } else if (isPipelineParallelConfig(conf)) {
+  } else if (isPipelineParallelInitial(conf)) {
     const pconf = processParallelConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item, loadedPipelines);
       return {...item, ...nconf} as any;
     }));
     return {...pconf, stepTypes};
-  } else if (isPipelineSequentialConfig(conf)) {
+  } else if (isPipelineSequentialInitial(conf)) {
     const pconf = processSequentialConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
       const nconf = await configProcessing(item, loadedPipelines);
       return {...item, ...nconf} as any;
     }));
     return {...pconf, stepTypes};
-  } else if (isPipelineRef(conf)) {
+  } else if (isPipelineRefInitial(conf)) {
     const pconf = await callHandler<PipelineConfigurationInitial & PipelineGlobalId>(conf.provider, conf).toPromise();
     if (loadedPipelines.has(pconf.globalId))
       return {selfRef: pconf.globalId, type: 'selfRef'};
@@ -101,7 +122,7 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
   return {...conf, links, actions, hooks};
 }
 
-function processParallelConfig(conf: PipelineConfigurationParallelIntial) {
+function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
   const actions = processActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, actions, hooks, stepTypes: []};
