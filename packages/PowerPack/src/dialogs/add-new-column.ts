@@ -822,8 +822,10 @@ export class AddNewColumnDialog {
     else if (this.typeOf(x, DG.Func)) {
       const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
       const colPos = this.findColumnTypeMatchingParam(x);
-      if (colPos !== -1)
-        params[colPos] = `\${${this.selectedColumn!.name}}`;
+      if (colPos !== -1) {
+        const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
+        params[colPos] = isAggr ? `\$[${this.selectedColumn!.name}]` : `\${${this.selectedColumn!.name}}`;
+      }
       const paramsStr = params.join(', ');
       const funcName = (x as DG.Func).nqName.startsWith('core:') ? (x as DG.Func).name : (x as DG.Func).nqName;
       snippet = `${funcName}(${paramsStr})`;
