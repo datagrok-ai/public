@@ -42,9 +42,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //     this._sketcher?.editor.setOptions(opts);
         //   }
         // });
-        this.setMoleculeFromHost();
         //@ts-ignore
         window[KETCHER_WINDOW_OBJECT] = ketcher;
+        this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
           try {
             this._smiles = await this._sketcher!.getSmiles();
