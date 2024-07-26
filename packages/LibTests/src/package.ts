@@ -940,19 +940,19 @@ export async function TestVuePLV() {
       {
         text: 'Review phases (draggable + adding)',
         children: [
-          {text: 'Phase 1: Cleaning'},
-          {text: 'Phase 2: Filtering'},
-          {text: 'Phase 3: Post-filtering'},
+          {text: 'Phase 1: Cleaning', funcCall: 'LibTests:LongScript'},
+          {text: 'Phase 2: Filtering', funcCall: 'LibTests:LongScript'},
+          {text: 'Phase 3: Post-filtering', funcCall: 'LibTests:LongScript'},
         ],
       }, {
         text: 'Step 2',
         children: [
-          {text: 'Step 2.1'},
+          {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
           {text: 'Review days (no drag, only adding)', children: [
-            {text: 'Day 1'},
-            {text: 'Day 2'},
+            {text: 'Day 1', funcCall: 'LibTests:LongScript'},
+            {text: 'Day 2', funcCall: 'LibTests:LongScript'},
           ]},
-          {text: 'Step 2.3'},
+          {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
         ],
       },
     ],

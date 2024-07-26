@@ -15,8 +15,24 @@ type TreeNode = {
 }
 
 type Data = {
+  funcCall: DG.FuncCall | string,
   text: string
 }
+
+type AugmentedStat = Stat<Data> & {
+  isHovered: boolean
+  status: Status
+};
+
+const statusToIcon = {
+  ['locked']: 'lock',
+  [`didn't run`]: 'circle',
+  ['running']: 'hourglass-half',
+  ['succeeded']: 'check-circle',
+  ['failed']: 'times-circle',
+} as Record<Status, string>;
+
+type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed';
 
 export const VuePipelineView = defineComponent({
   props: {
@@ -53,7 +69,7 @@ export const VuePipelineView = defineComponent({
             treeLine
           > 
             { 
-              ({stat, node}: {stat: Stat<Data>, node: TreeNode}) => {
+              ({stat, node}: {stat: AugmentedStat, node: TreeNode}) => {
                 const openIcon = <OpenIcon
                   open={stat.open}
                   class="mtl-mr"
@@ -61,49 +77,51 @@ export const VuePipelineView = defineComponent({
                   onClick={(e) => {stat.open = !stat.open; e.stopPropagation();}}
                 />;
 
-                const getCall = (params: {
-                  ambTemp?: number,
-                  initTemp?: number,
-                  desiredTemp?: number,
-                  area?: number, 
-                  heatCap?: number,
-                  heatTransferCoeff?: number,
-                  simTime?: number,
+                const getCall = (params?: {
+                  a?: number,
+                  b?: number,
                 }) => {
                   const defaultParams = {
-                    ambTemp: 22,
-                    initTemp: 100,
-                    desiredTemp: 30,
-                    area: 0.06, 
-                    heatCap: 4200,
-                    heatTransferCoeff: 8.3,
-                    simTime: 21600,
+                    a: 2,
+                    b: 3,
                   };
+                  const funcCall = stat.data.funcCall;
 
-                  return props.wrapperFunccall instanceof DG.FuncCall ?
-                    props.wrapperFunccall.func.prepare({
+                  return funcCall instanceof DG.FuncCall ?
+                    funcCall.func.prepare({
                       ...defaultParams,
                       ...params,
-                    }) : DG.Func.byName(props.wrapperFunccall).prepare({
+                    }) : DG.Func.byName(funcCall).prepare({
                       ...defaultParams,
                       ...params,
                     });
                 };
 
-                const progressIcon = <IconFA 
-                  name='hourglass-half' 
-                  animation='fa-spin'
-                  style={{
-                    alignSelf: 'center',
-                    left: '-16px',
-                    position: 'absolute',
-                  }} 
-                />;
+                const progressIcon = (status: Status) =>{ 
+                  return <IconFA 
+                    name={statusToIcon[status]}
+                    animation={status === `running` ? 'spin': ' '}
+                    style={{
+                      alignSelf: 'center',
+                      left: '-16px',
+                      position: 'absolute',
+                    }} 
+                  />;
+                };
 
                 const onNodeClick = async () => {
-                  currentFuncCall.value = await getCall({initTemp: Math.random()*70 + 30}).call(); 
+                  stat.status = 'running';
+                  try {
+                    const call = await getCall().call();
+                    currentFuncCall.value = call;
+                  } catch {
+                    stat.status = 'failed';
+                  }
+                  stat.status = 'succeeded';
+                  
                   triggerRef(currentFuncCall);
                 };
+
                 return (
                   <div style={{display: 'flex', padding: '4px 0px', width: '100%'}}
                     onClick={onNodeClick}
@@ -111,7 +129,7 @@ export const VuePipelineView = defineComponent({
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
                   >
-                    { progressIcon }
+                    { progressIcon(stat.status ?? `didn't run`) }
                     { stat.children.length ? openIcon : null }
                     <span class="mtl-ml">{node.text}</span>
                     { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
@@ -141,7 +159,7 @@ export const VuePipelineView = defineComponent({
             }
           </Draggable>
         </div>
-        <VueRichFunctionView funcCall={currentFuncCall.value} style={{height: '100%'}}/>
+        <VueRichFunctionView funcCall={currentFuncCall.value} style={{height: '100%'}}/> 
       </SplitH>
     );
   },

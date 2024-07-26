@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, ref, watch} from 'vue';
+import {defineComponent, PropType, ref, watch} from 'vue';
 import type {DGBigButtonT, DGButtonT, DGIconFAT, DGSplitH} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
@@ -60,7 +60,7 @@ export const IconFA = defineComponent({
       default: 'pointer',
     },
     animation: {
-      type: String,
+      type: String as PropType<'spin' | 'pulse' | ' '>,
       default: '',
     },
   },

@@ -33,8 +33,8 @@ export class DGIconFA extends HTMLElement {
     ui.empty(this);
     const t = ui.iconFA(this._name);
     t.style.cursor = this._cursor;
-    t.classList.add(this._animation);
-    this.append(t);
+    if (this._animation !== ' ') t.classList.add(`fa-${this._animation}`);
+    this.appendChild(t);
   }
 
   set name(val: string) {
