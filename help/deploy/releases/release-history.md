@@ -24,7 +24,7 @@ See also:
 
 ## 2024-07-23 Datagrok 1.20.0 release 
 
-### Breaking changes:S
+### Breaking changes:
  
 * File caching updates.
 * Inputs harmonization.
