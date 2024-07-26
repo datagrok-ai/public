@@ -10,4 +10,4 @@ const delay = (delayInms) => {
   
 await delay(5000);
 
-res = a + b;
+res = 'test';
