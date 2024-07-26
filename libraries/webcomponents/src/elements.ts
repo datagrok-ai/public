@@ -22,8 +22,8 @@ export interface DGBigButtonT extends DGBigButton {};
 
 export class DGIconFA extends HTMLElement {
   _name = 'edit';
-  _cursor = '';
-  _animation = '';
+  _cursor = 'pointer';
+  _animation = null as null | string;
 
   constructor() {
     super();
@@ -33,7 +33,7 @@ export class DGIconFA extends HTMLElement {
     ui.empty(this);
     const t = ui.iconFA(this._name);
     t.style.cursor = this._cursor;
-    if (this._animation !== ' ') t.classList.add(`fa-${this._animation}`);
+    if (this._animation) t.classList.add(`fa-${this._animation}`);
     this.appendChild(t);
   }
 
@@ -47,7 +47,7 @@ export class DGIconFA extends HTMLElement {
     this.render();
   }
 
-  set animation(val: string) {
+  set animation(val: string | null) {
     this._animation = val;
     this.render();
   }

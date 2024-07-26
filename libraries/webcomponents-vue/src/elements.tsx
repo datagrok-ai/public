@@ -60,8 +60,8 @@ export const IconFA = defineComponent({
       default: 'pointer',
     },
     animation: {
-      type: String as PropType<'spin' | 'pulse' | ' '>,
-      default: '',
+      type: Object as PropType<'spin' | 'pulse' | null>,
+      default: null,
     },
   },
   emits: [

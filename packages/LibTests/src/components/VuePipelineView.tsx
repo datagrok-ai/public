@@ -32,6 +32,14 @@ const statusToIcon = {
   ['failed']: 'times-circle',
 } as Record<Status, string>;
 
+const statusToColor = {
+  ['locked']: 'black',
+  [`didn't run`]: 'yellow',
+  ['running']: 'blue',
+  ['succeeded']: 'green',
+  ['failed']: 'red',
+} as Record<Status, string>;
+
 type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed';
 
 export const VuePipelineView = defineComponent({
@@ -100,8 +108,9 @@ export const VuePipelineView = defineComponent({
                 const progressIcon = (status: Status) =>{ 
                   return <IconFA 
                     name={statusToIcon[status]}
-                    animation={status === `running` ? 'spin': ' '}
+                    animation={status === `running` ? 'spin': null}
                     style={{
+                      color: statusToColor[status],
                       alignSelf: 'center',
                       left: '-16px',
                       position: 'absolute',
