@@ -24,6 +24,7 @@ export class DGIconFA extends HTMLElement {
   _name = 'edit';
   _cursor = 'pointer';
   _animation = null as null | string;
+  _tooltip = null as null | string;
 
   constructor() {
     super();
@@ -31,7 +32,7 @@ export class DGIconFA extends HTMLElement {
 
   private render() {
     ui.empty(this);
-    const t = ui.iconFA(this._name);
+    const t = ui.iconFA(this._name, null, this._tooltip);
     t.style.cursor = this._cursor;
     if (this._animation) t.classList.add(`fa-${this._animation}`);
     this.appendChild(t);
@@ -49,6 +50,11 @@ export class DGIconFA extends HTMLElement {
 
   set animation(val: string | null) {
     this._animation = val;
+    this.render();
+  }
+
+  set tooltip(val: string | null) {
+    this._tooltip = val;
     this.render();
   }
 }

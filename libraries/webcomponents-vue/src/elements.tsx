@@ -63,6 +63,10 @@ export const IconFA = defineComponent({
       type: Object as PropType<'spin' | 'pulse' | null>,
       default: null,
     },
+    tooltip: {
+      type: String as PropType<string | null>,
+      default: null,
+    },
   },
   emits: [
     'click',
@@ -73,6 +77,7 @@ export const IconFA = defineComponent({
         name={props.name}
         cursor={props.cursor}
         animation={props.animation}
+        tooltip={props.tooltip}
         onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);

@@ -40,6 +40,14 @@ const statusToColor = {
   ['failed']: 'red',
 } as Record<Status, string>;
 
+const statusToTooltip = {
+  ['locked']: 'This step is currently locked',
+  [`didn't run`]: `This step didn't run yet`,
+  ['running']: 'Running...',
+  ['succeeded']: 'Run succeeded',
+  ['failed']: 'Run failed',
+} as Record<Status, string>;
+
 type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed';
 
 export const VuePipelineView = defineComponent({
@@ -109,6 +117,7 @@ export const VuePipelineView = defineComponent({
                   return <IconFA 
                     name={statusToIcon[status]}
                     animation={status === `running` ? 'spin': null}
+                    tooltip={statusToTooltip[status] ?? null}
                     style={{
                       color: statusToColor[status],
                       alignSelf: 'center',
