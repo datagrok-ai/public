@@ -59,6 +59,10 @@ export const IconFA = defineComponent({
       type: String,
       default: 'pointer',
     },
+    animation: {
+      type: String,
+      default: '',
+    },
   },
   emits: [
     'click',
@@ -68,6 +72,7 @@ export const IconFA = defineComponent({
       return (<dg-icon-fa
         name={props.name}
         cursor={props.cursor}
+        animation={props.animation}
         onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);

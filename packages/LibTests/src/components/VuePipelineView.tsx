@@ -49,6 +49,7 @@ export const VuePipelineView = defineComponent({
             eachDraggable={(stat: Stat<Data>) => (stat.data.text.includes('Phase'))}
             eachDroppable={(stat: Stat<Data>) => (stat.data.text.includes('Review'))}
             rootDroppable={false}
+            style={{paddingLeft: '20px'}}
             treeLine
           > 
             { 
@@ -89,6 +90,16 @@ export const VuePipelineView = defineComponent({
                     });
                 };
 
+                const progressIcon = <IconFA 
+                  name='hourglass-half' 
+                  animation='fa-spin'
+                  style={{
+                    alignSelf: 'center',
+                    left: '-16px',
+                    position: 'absolute',
+                  }} 
+                />;
+
                 const onNodeClick = async () => {
                   currentFuncCall.value = await getCall({initTemp: Math.random()*70 + 30}).call(); 
                   triggerRef(currentFuncCall);
@@ -100,6 +111,7 @@ export const VuePipelineView = defineComponent({
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
                   >
+                    { progressIcon }
                     { stat.children.length ? openIcon : null }
                     <span class="mtl-ml">{node.text}</span>
                     { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
