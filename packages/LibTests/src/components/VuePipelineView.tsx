@@ -113,7 +113,6 @@ export const VuePipelineView = defineComponent({
                   stat.status = 'running';
                   try {
                     const call = await getCall().call();
-                    console.log(call);
                     currentFuncCall.value = call;
                     stat.status = 'succeeded';
                   } catch {
