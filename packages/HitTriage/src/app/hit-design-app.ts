@@ -148,6 +148,33 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   set campaign(campaign: HitDesignCampaign | undefined) {this._campaign = campaign;}
 
+  private _duplicateVidCache?: {
+    colVersion: number,
+    valueCounts: Int32Array | Uint32Array,
+    indexes: Int32Array | Uint32Array,
+  };
+
+  private cacheDuplicateVIDs() {
+    const col = this.dataFrame?.col(ViDColName);
+    if (!col) {
+      this._duplicateVidCache = undefined;
+      return;
+    }
+    const colVersion = col.version;
+    const valueCounts = new Uint32Array(col.categories.length).fill(0);
+    const indexes = col.getRawData() as Uint32Array;
+    indexes.forEach((v) => valueCounts[v]++);
+    this._duplicateVidCache = {colVersion, valueCounts, indexes};
+  }
+
+  get duplicateVidCache() {
+    const col = this.dataFrame?.col(ViDColName);
+    if (!col)
+      return undefined;
+    if (!this._duplicateVidCache || col.version !== this._duplicateVidCache.colVersion)
+      this.cacheDuplicateVIDs();
+    return this._duplicateVidCache;
+  }
   private getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
@@ -262,10 +289,32 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             return;
           const newValue = gc.cell.value;
           const newValueIdx = gc.tableRowIndex!;
+          let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
+          // try to find existing molecule
+          if (newValue) {
+            try {
+              const sims = await grok.chem.getSimilarities(gc.tableColumn, newValue);
+              if (sims?.length === this.dataFrame!.rowCount) {
+                for (let i = 0; i < sims.length; i++) {
+                  if (sims.get(i) === 1 && i !== newValueIdx && this.dataFrame!.col(ViDColName)?.get(i)) {
+                    newVid = this.dataFrame!.col(ViDColName)?.get(i);
+                    break;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          // if the vid was duplicated, generate a new one
+          if (this.duplicateVidCache &&
+            this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[newValueIdx]] > 1)
+            newVid = null;
 
-          if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx) ||
-            this.dataFrame!.col(ViDColName)?.get(newValueIdx) === '')
-              this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
+          if (!newVid || newVid === '')
+            newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
+
+          this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, false);
 
 
           const computeObj = this.template!.compute;
@@ -290,6 +339,24 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           console.error(e);
         }
       }));
+
+      subs.push(view.grid.onCellRender.subscribe((args) => {
+        try {
+          // color duplicate vid values
+          const cell = args.cell;
+          if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
+            cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
+            return;
+
+          if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
+            args.cell.style.backColor =
+              DG.Color.setAlpha(DG.Color.getCategoricalColor(this.duplicateVidCache.indexes[cell.tableRowIndex!])
+                , 150);
+          }
+        } catch (e) {}
+      }));
+
+
       const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
         if (v.id === view.id) {
           subs.forEach((s) => s.unsubscribe());
