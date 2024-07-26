@@ -1,0 +1,46 @@
+{
+  "name": "bionemo",
+  "friendlyName": "BioNeMo",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "latest",
+    "axios": "^1.7.2",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-bionemo": "webpack && grok publish",
+    "release-bionemo": "webpack && grok publish --release",
+    "build-bionemo": "webpack",
+    "build": "webpack",
+    "debug-bionemo-dev": "webpack && grok publish dev",
+    "release-bionemo-dev": "webpack && grok publish dev --release",
+    "debug-bionemo-local": "webpack && grok publish local",
+    "release-bionemo-local": "webpack && grok publish local --release",
+    "debug-bionemo-release.datagrok.ai": "webpack && grok publish release.datagrok.ai",
+    "release-bionemo-release.datagrok.ai": "webpack && grok publish release.datagrok.ai --release",
+    "debug-bionemo-localhost": "webpack && grok publish localhost",
+    "release-bionemo-localhost": "webpack && grok publish localhost --release",
+    "debug-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai",
+    "release-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai --release",
+    "debug-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
+    "release-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
+}
