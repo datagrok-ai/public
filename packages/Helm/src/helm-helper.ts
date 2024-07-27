@@ -62,16 +62,16 @@ export class HelmHelper implements IHelmHelper {
       mexfilter: true
     });
     const sizes = webEditorApp.calculateSizes();
-    webEditorApp.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
+    webEditorApp.canvas!.resize(sizes.rightwidth - 100, sizes.topheight - 210);
     let s: Partial<CSSStyleDeclaration> = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
     scil.apply(webEditorApp.sequence.style, s);
-    scil.apply(webEditorApp.notation.style, s);
+    scil.apply(webEditorApp.notation!.style, s);
     s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + webEditorApp.toolbarheight) + 'px'};
-    scil.apply(webEditorApp.properties.parent.style, s);
-    webEditorApp.structureview.resize(sizes.rightwidth, sizes.bottomheight + webEditorApp.toolbarheight);
-    webEditorApp.mex.resize(sizes.topheight - 80);
+    scil.apply(webEditorApp.properties!.parent.style, s);
+    webEditorApp.structureview!.resize(sizes.rightwidth, sizes.bottomheight + webEditorApp.toolbarheight);
+    webEditorApp.mex!.resize(sizes.topheight - 80);
     setTimeout(() => {
-      webEditorApp.canvas.helm.setSequence(helm, 'HELM');
+      webEditorApp.canvas!.helm!.setSequence(helm, 'HELM');
     }, 200);
     return webEditorApp;
   }
