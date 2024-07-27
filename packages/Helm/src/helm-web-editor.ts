@@ -64,14 +64,14 @@ export function buildWebEditorApp(view: HTMLDivElement): App {
     mexfilter: true
   });
   const sizes = app.calculateSizes();
-  app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
+  app.canvas!.resize(sizes.rightwidth - 100, sizes.topheight - 210);
   let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
   scil.apply(app.sequence.style, s);
-  scil.apply(app.notation.style, s);
+  scil.apply(app.notation!.style, s);
   s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  scil.apply(app.properties.parent.style, s);
-  app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
-  app.mex.resize(sizes.topheight - 80);
+  scil.apply(app.properties!.parent.style, s);
+  app.structureview!.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
+  app.mex!.resize(sizes.topheight - 80);
 
   return app;
 }

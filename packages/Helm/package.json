@@ -8,26 +8,26 @@
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources-backup": [
+    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js",
     "helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed.js",
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "sources": [
-    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js",
     "css/helm.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.42.5",
+    "@datagrok-libraries/bio": "../../libraries/bio",
     "@datagrok-libraries/chem-meta": "^1.2.5",
-    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.20.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.10.6",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.6",
-    "@datagrok-libraries/js-draw-lite": "^0.0.4",
+    "@datagrok-libraries/helm-web-editor": "../../external/HELMWebEditor/HELM/source",
+    "@datagrok-libraries/js-draw-lite": "../../external/JSDraw.Lite/source/web",
     "@datagrok/bio": "^2.13.3",
     "@datagrok/chem": "^1.9.2",
     "@types/node": "17.0.45",

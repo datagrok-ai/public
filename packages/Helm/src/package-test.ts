@@ -6,7 +6,6 @@ import * as grok from 'datagrok-api/grok';
 // import {HelmType, OrgHelmModuleType} from '@datagrok/helm-web-editor/src/types/org-helm';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
-import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import './tests/_first-tests';
 import './tests/helm-tests';

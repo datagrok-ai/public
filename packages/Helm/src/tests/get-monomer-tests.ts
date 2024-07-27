@@ -19,12 +19,8 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {defaultMonomerLibSummary, expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 
-import {getMonomerHandleArgs} from '../utils/get-monomer';
+import {getMonomerHandleArgs, rewriteLibraries} from '../utils/get-monomer';
 import {JSDraw2HelmModule, OrgHelmModule} from '../types';
-
-import {HelmHelper} from '../helm-helper';
-import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
-import {getRS} from '../utils/get-monomer-dummy';
 import {initHelmMainPackage} from './utils';
 
 import {_package} from '../package-test';
@@ -232,48 +228,4 @@ export function expectObjectWithNull(actual: { [key: string]: any }, expected: {
         throw new Error(`Expected (${expectedValue}) for key '${expectedKey}', got (${actualValue})`);
     }
   }
-}
-
-/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
-function rewriteLibraries(monomerLib: IMonomerLib): void {
-  org.helm.webeditor.Monomers.clear();
-  monomerLib!.getPolymerTypes().forEach((polymerType) => {
-    const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
-    monomerSymbols.forEach((monomerSymbol) => {
-      let isBroken = false;
-      const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
-      const webEditorMonomer: IWebEditorMonomer = {
-        id: monomerSymbol,
-        m: monomer.molfile,
-        n: monomer.name,
-        na: monomer.naturalAnalog,
-        rs: monomer.rgroups.length,
-        type: monomer.polymerType,
-        mt: monomer.monomerType,
-        at: {},
-      };
-
-      if (monomer.rgroups.length > 0) {
-        // @ts-ignore
-        webEditorMonomer.rs = monomer.rgroups.length;
-        const at: { [prop: string]: any } = {};
-        monomer.rgroups.forEach((it) => {
-          at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
-        });
-        webEditorMonomer.at = at;
-      } else if (monomer[SMILES] != null) {
-        // @ts-ignore
-        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-        webEditorMonomer.at = getRS(monomer[SMILES].toString());
-      } else
-        isBroken = true;
-
-      if (!isBroken)
-        org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
-    });
-  });
-
-  // Obsolete
-  const grid: DG.Grid = grok.shell.tv?.grid;
-  if (grid) grid.invalidate();
 }

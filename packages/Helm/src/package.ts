@@ -28,7 +28,7 @@ import {getRS} from './utils/get-monomer-dummy';
 import {buildWebEditorApp} from './helm-web-editor';
 import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage({debug: false});
+export const _package = new HelmPackage({debug: true}/**/);
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -52,70 +52,12 @@ export async function initHelm(): Promise<void> {
 
   try {
     const [_, lib]: [void, IMonomerLib] = await Promise.all([
-      Promise.all([
-        (async () => {
-          _package.logger.debug(`${logPrefix}, dependence loading …`);
-          const t1: number = performance.now();
-
-          _package.logger.debug(`${logPrefix}, dojox loading and patching …`);
-          await initHelmLoadAndPatchDojo();
-          _package.logger.debug(`${logPrefix}, dojox loaded and patched`);
-
-          // Alternatively load old bundles by package.json/sources
-          _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
-          require('../node_modules/@datagrok-libraries/helm-web-editor/dist/package.js');
-          await window.helmWebEditor$.initPromise;
-          _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);
-
-          org.helm.webeditor.kCaseSensitive = true; // GROK-13880
-
-          _package.logger.debug(`${logPrefix}, scil.Utils.alert patch`);
-          _package.initHelmPatchScilAlert(); // patch immediately
-
-          const t2: number = performance.now();
-          _package.logger.debug(`${logPrefix}, dependence loaded, ET: ${(t2 - t1)} ms`);
-        })()
-      ]).then(() => {
-
-        // settings
-      }),
-      (async () => {
-        const libHelper = await getMonomerLibHelper();
-        _package.setLibHelper(libHelper);
-        return libHelper.getBioLib();
-      })()
+      _package.initHelm(),
+      _package.getMonomerLib(),
     ]);
 
     _package.logger.debug(`${logPrefix}, then(), lib loaded`);
-    monomerLib = lib;
-    // rewriteLibraries(); // initHelm()
-    await _package.initHelmPatchPistoia(monomerLib);
-
-    monomerLib.onChanged.subscribe((_) => {
-      const logPrefixInt = `${logPrefix} monomerLib.onChanged()`;
-      try {
-        const libSummary = monomerLib!.getSummaryObj();
-        const isLibEmpty = Object.keys(libSummary).length == 0;
-        const libSummaryLog = isLibEmpty ? 'empty' : Object.entries(libSummary)
-          .map(([pt, count]) => `${pt}: ${count}`)
-          .join(', ');
-        _package.logger.debug(`${logPrefixInt}, start, lib: { ${libSummaryLog} }`);
-
-        const libSummaryHtml = isLibEmpty ? 'empty' : Object.entries(libSummary)
-          .map(([pt, count]) => `${pt} ${count}`)
-          .join('<br />');
-        const libMsg: string = `Monomer lib updated:<br /> ${libSummaryHtml}`;
-        grok.shell.info(libMsg);
-
-        // _package.logger.debug(`${logPrefixInt}, org,helm.webeditor.Monomers updating ...`);
-        // rewriteLibraries(); // initHelm() monomerLib.onChanged()
-        // _package.logger.debug(`${logPrefixInt}, end, org.helm.webeditor.Monomers completed`);
-      } catch (err: any) {
-        const errMsg = errorToConsole(err);
-        console.error(`${logPrefixInt} error:\n` + errMsg);
-        // throw err; // Prevent disabling event handler
-      }
-    });
+    _package.initMonomerLib(lib);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
@@ -130,7 +72,7 @@ export async function initHelm(): Promise<void> {
 }
 
 export function getMonomerLib(): IMonomerLib | null {
-  return monomerLib;
+  return _package.monomerLib;
 }
 
 //name: getHelmService
@@ -198,14 +140,14 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   setTimeout(async () => {
     app = await buildWebEditorApp(view);
     if (!!cell && units === undefined)
-      app.canvas.helm.setSequence(cell.value, 'HELM');
+      app.canvas!.helm!.setSequence(cell.value, 'HELM');
     else
-      app.canvas.helm.setSequence(value!, 'HELM');
+      app.canvas!.helm!.setSequence(value!, 'HELM');
   }, 20);
   const dlg = ui.dialog({showHeader: false, showFooter: true});
   dlg.add(view)
     .onOK(() => {
-      const helmValue: string = app.canvas.getHelm(true).replace(/<\/span>/g, '')
+      const helmValue: string = app.canvas!.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
       if (!!cell) {
         if (units === undefined)

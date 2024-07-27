@@ -150,12 +150,12 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
       .add(webEditorHost!)
       .onOK(() => {
         try {
-          const webEditorValue = webEditorApp!.canvas.getHelm(true)
+          const webEditorValue = webEditorApp.canvas!.getHelm(true)
             .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
           this.viewer.editor.setHelm(webEditorValue);
           this.helmString = webEditorValue;
 
-          const selection = webEditorApp!.canvas.helm.jsd.m.atoms;
+          const selection = webEditorApp.canvas!.helm!.jsd.m.atoms;
           this.helmSelection = [];
           for (let i = 0; i < selection.length; i++) {
             if (selection[i].selected)
