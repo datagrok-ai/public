@@ -7,7 +7,7 @@ import {PatternExistsError, PatternNameExistsError} from '../../model/types';
 import {SvgDisplayManager} from '../svg-utils/svg-display-manager';
 import {NumericLabelVisibilityControls} from './numeric-label-visibility-controls';
 import {TranslationExamplesBlock} from './translation-examples-block';
-import {DEFAULT_DATE, PATTERN_RECORD_KEYS as P, DATE_KEYS as D} from '../../model/const';
+import {DEFAULT_DATE, PATTERN_RECORD_KEYS as P, DATE_KEYS as D, LEGEND_SETTINGS_KEYS as L} from '../../model/const';
 
 export class PatternAppRightSection {
   private svgDisplay: HTMLDivElement;
@@ -73,7 +73,7 @@ export class PatternAppRightSection {
 
   private async openInfoDialog() {
     let author = this.dataManager.getCurrentUserName();
-    const patternName = this.dataManager.getDefaultPatternName();
+    let patternName = this.dataManager.getDefaultPatternName();
     let createDate = DEFAULT_DATE;
     let modifyDate = DEFAULT_DATE;
     const hash = new URLSearchParams(window.location.search).get('pattern');
@@ -83,6 +83,7 @@ export class PatternAppRightSection {
         const authorID = record[P.AUTHOR_ID];
         const userFriendlyName = (await grok.dapi.users.find(authorID)).friendlyName;
         author = userFriendlyName;
+        patternName = record[P.PATTERN_CONFIG][L.PATTERN_NAME];
         if (record[P.DATE] !== undefined) {
           const create = record[P.DATE][D.CREATE];
           if (create !== undefined)
