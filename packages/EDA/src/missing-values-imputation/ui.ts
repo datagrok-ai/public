@@ -251,8 +251,8 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
         .forEach((name) => featuresMetrics.delete(name));
 
-    try {
-      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+      try {
+        const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
 
         if (!keepEmpty)
           imputeFailed(df!, failedToImpute);
