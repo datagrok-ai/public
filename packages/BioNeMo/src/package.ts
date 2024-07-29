@@ -52,7 +52,7 @@ export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
 //name: EsmFoldModelPanel
 //input: semantic_value sequence {semType: Macromolecule}
 //output: widget result
-export async function EsmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
+export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
   const result = new DG.Widget(ui.div());
   const loader = ui.loader();
   result.root.appendChild(loader);
@@ -62,4 +62,15 @@ export async function EsmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.
     result.root.appendChild(molstarViewer.root);
   });
   return result;
+}
+
+//name: DiffDockModel
+//top-menu: Chem | BioNeMo | DiffDock...
+//input: dataframe df
+//input: column ligands {semType: Molecule}
+//input: file target
+//input: int poses = 20
+export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: DG.FileInfo, poses: number) {
+  const encodedPoses = await grok.functions.call('BioNeMo:diffdock', {protein: await target.readAsString(), ligand: ligands.get(0), num_poses: poses});
+  const posesJson = new TextDecoder().decode(encodedPoses.data);
 }
