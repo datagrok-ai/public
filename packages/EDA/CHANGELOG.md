@@ -53,6 +53,7 @@ Fixed webGPU numeric distance with 0 range
 ## 1.1.17 (2024-04-14)
 
 ### Features
+
 * Add webGPU UMAP implementation.
 * Add webGPU Sparse matrix calculation.
 * Add webGPU option for MCL.
