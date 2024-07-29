@@ -555,6 +555,13 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
+//name: KNN imputation for a table
+//desription: Missing values imputation using the k-nearest neighbors method for a given table
+//input: dataframe table
+export async function kNNImputationForTable(table: DG.DataFrame) {
+  await runKNNImputer(table);
+}
+
 //name: trainLinearRegression
 //meta.mlname: Linear Regression
 //meta.mlrole: train

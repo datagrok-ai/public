@@ -2,51 +2,51 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { TITLE, KNN_IMPUTER, ERROR_MSG, HINT } from './ui-constants';
-import { SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS, 
-  impute, getMissingValsIndices, areThereFails, imputeFailed } from "./knn-imputer";
+import {TITLE, KNN_IMPUTER, ERROR_MSG, HINT} from './ui-constants';
+import {SUPPORTED_COLUMN_TYPES, METRIC_TYPE, DISTANCE_TYPE, MetricInfo, DEFAULT, MIN_NEIGHBORS,
+  impute, getMissingValsIndices, areThereFails, imputeFailed} from './knn-imputer';
 
 /** Setting of the feature metric inputs */
 type FeatureInputSettings = {
   defaultWeight: number,
   defaultMetric: METRIC_TYPE,
-  availableMetrics: METRIC_TYPE[], 
+  availableMetrics: METRIC_TYPE[],
 };
 
 /** Return default setting of the feature metric inputs */
 function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
   switch (type) {
-    case DG.COLUMN_TYPE.STRING:
-    case DG.COLUMN_TYPE.DATE_TIME:
-      return {
-        defaultWeight: DEFAULT.WEIGHT,
-        defaultMetric: METRIC_TYPE.ONE_HOT,
-        availableMetrics: [METRIC_TYPE.ONE_HOT]
-      };
+  case DG.COLUMN_TYPE.STRING:
+  case DG.COLUMN_TYPE.DATE_TIME:
+    return {
+      defaultWeight: DEFAULT.WEIGHT,
+      defaultMetric: METRIC_TYPE.ONE_HOT,
+      availableMetrics: [METRIC_TYPE.ONE_HOT],
+    };
 
-    case DG.COLUMN_TYPE.INT:
-    case DG.COLUMN_TYPE.FLOAT:
-    case DG.COLUMN_TYPE.QNUM:
-      return {
-        defaultWeight: DEFAULT.WEIGHT,
-        defaultMetric: METRIC_TYPE.DIFFERENCE,
-        availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT]
-      };
+  case DG.COLUMN_TYPE.INT:
+  case DG.COLUMN_TYPE.FLOAT:
+  case DG.COLUMN_TYPE.QNUM:
+    return {
+      defaultWeight: DEFAULT.WEIGHT,
+      defaultMetric: METRIC_TYPE.DIFFERENCE,
+      availableMetrics: [METRIC_TYPE.DIFFERENCE, METRIC_TYPE.ONE_HOT],
+    };
 
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  default:
+    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
   }
 }
 
 /** Run the KNN missing values imputer */
-export function runKNNImputer(): void {
+export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   /** current dataframe */
-  let df: DG.DataFrame | null = grok.shell.t;
+  df ??= grok.shell.t;
 
   if (df === null) {
     grok.shell.warning(ERROR_MSG.NO_DATAFRAME);
     return;
-  }    
+  }
 
   /** columns with missing values */
   const colsWithMissingVals = [] as DG.Column[];
@@ -129,8 +129,7 @@ export function runKNNImputer(): void {
     if (selectedFeatureColNames.length > 0) {
       checkApplicability();
       metricInfoInputs.forEach((div, name) => div.hidden = !selectedFeatureColNames.includes(name));
-    }
-    else
+    } else
       hideWidgets();
   }, available: availableFeatureColsNames, checked: availableFeatureColsNames});
   featuresInput.setTooltip(HINT.FEATURES);
@@ -159,13 +158,14 @@ export function runKNNImputer(): void {
   const checkApplicability = () => {
     showWidgets();
 
-    if (selectedFeatureColNames.length === 1)
+    if (selectedFeatureColNames.length === 1) {
       targetColNames.forEach((name) => {
         if (selectedFeatureColNames[0] === name) {
           hideWidgets();
           grok.shell.warning(`${ERROR_MSG.ONE_FEATURE_SELECTED} the column '${name}'`);
         }
       });
+    }
   };
 
   // Metrics components
@@ -194,7 +194,7 @@ export function runKNNImputer(): void {
 
     // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
     // @ts-ignore
-    const prop = DG.Property.fromOptions({ "name": name, "inputType": "Float", min: 0, max: 10, "showSlider": true, "step": 1});
+    const prop = DG.Property.fromOptions({'name': name, 'inputType': 'Float', 'min': 0, 'max': 10, 'showSlider': true, 'step': 1});
     const weightInput = ui.input.forProperty(prop);
     weightInput.value = settings.defaultWeight;
     weightInput.onChanged(() => {
@@ -203,7 +203,7 @@ export function runKNNImputer(): void {
       featuresMetrics.set(name, distInfo);
     });
     weightInput.setTooltip(HINT.WEIGHT);
-    
+
     const div = ui.divH([distTypeInput.root, weightInput.root]);
     metricInfoInputs.set(name, div);
     metricsDiv.append(div);
@@ -217,11 +217,27 @@ export function runKNNImputer(): void {
   keepEmptyInput.root.hidden = !areThereFails(targetColNames, selectedFeatureColNames, misValsInds);
 
   // Icon showing/hiding metrics UI
-  const settingsIcon = ui.icons.settings(() => { metricsDiv.hidden = !metricsDiv.hidden;}, HINT.METRIC_SETTINGS);
+  const settingsIcon = ui.icons.settings(() => {metricsDiv.hidden = !metricsDiv.hidden;}, HINT.METRIC_SETTINGS);
 
   const distDiv = ui.divH([distTypeInput.root, settingsIcon]);
 
-  dlg.addButton(TITLE.RUN, () => {
+  let resolve: (value: void | PromiseLike<void>) => void;
+  let reject: (reason?: any) => void;
+  let okClicked = false;
+  const promise = new Promise<void>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  dlg.add(targetColInput)
+    .add(featuresInput)
+    .add(distDiv)
+    .add(metricsDiv)
+    .add(neighborsInput)
+    .add(inPlaceInput)
+    .add(keepEmptyInput)
+    .show()
+    .onOK(() => {
+      okClicked = true;
       dlg.close();
       availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name));
 
@@ -230,20 +246,15 @@ export function runKNNImputer(): void {
 
         if (!keepEmpty)
           imputeFailed(df!, failedToImpute);
-      }
-      catch (err) {
+        resolve();
+      } catch (err) {
         if (err instanceof Error)
           grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
         else
           grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-      }      
-    })
-    .add(targetColInput)
-    .add(featuresInput)    
-    .add(distDiv)
-    .add(metricsDiv)
-    .add(neighborsInput)
-    .add(inPlaceInput)
-    .add(keepEmptyInput)
-    .show();
+        reject(err);
+      }
+    }).onClose.subscribe(() => !okClicked && reject());
+
+    return promise;
 } // runKNNImputer

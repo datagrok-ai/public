@@ -14,8 +14,6 @@
 11. On the top menu, click the **Save** button
 12. Click on the **x** icon to close script view
 
-* Repeat steps for scripts on other languages (Python, Julia, Octave, NodeJS)
-
 ---
 {
 "order": 1

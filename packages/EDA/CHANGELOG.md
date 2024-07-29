@@ -1,10 +1,14 @@
 # EDA changelog
 
-## 1.1.28 (2024-07-03)
+## 1.1.29 (2024-07-29)
 
 Add the softmax classifier
 
-## 1.1.27 (2024-07-01)
+## 1.1.28 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
+## 1.1.27 (2024-06-17)
 
 Add linear regression
 

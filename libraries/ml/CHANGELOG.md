@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.14 (2024-07-09)
+
+Use only numeric columns without datetime for Activities in activity cliffs editor
+
 ## 6.6.13 (2024-07-09)
 
 Reverse order of MCL Clusters

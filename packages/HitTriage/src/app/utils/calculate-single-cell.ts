@@ -17,9 +17,12 @@ export async function calculateSingleCellValues(
   table.name = 'HD Single cell values';
   await table.meta.detectSemanticTypes();
 
-  if (descriptors.length)
-    await grok.chem.descriptors(table, col.name, descriptors);
-
+  try {
+    if (descriptors.length)
+      await grok.chem.descriptors(table, col.name, descriptors);
+  } catch (e) {
+    console.error('Descriptors calculation error', e);
+  }
   for (const func of functions) {
     try {
       const props = func.args;
@@ -110,9 +113,12 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
     const newVal = grok.chem.convert(value, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
     molCol.set(i, newVal, false);
   }
-
-  if (resultMap.descriptors && resultMap.descriptors.length > 0)
-    await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+  try {
+    if (resultMap.descriptors && resultMap.descriptors.length > 0)
+      await grok.chem.descriptors(dataFrame!, molColName!, resultMap.descriptors);
+  } catch (e) {
+    console.error('Descriptors calculation error', e);
+  }
 
   for (const funcName of Object.keys(resultMap.externals)) {
     try {

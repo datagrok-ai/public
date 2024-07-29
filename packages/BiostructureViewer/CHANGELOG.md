@@ -1,5 +1,9 @@
 # BiostructureViewer changelog
 
+## 1.1.2 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
 ## 1.1.1 (2024-06-10)
 
 ### Bug fixes

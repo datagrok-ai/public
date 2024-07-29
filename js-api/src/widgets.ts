@@ -7,7 +7,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
-import {MapProxy} from "./utils";
+import {MapProxy, Completer} from "./utils";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -27,6 +27,34 @@ declare let DG: any;
 declare let ui: any;
 const api: IDartApi = <any>window;
 
+
+export class TypedEventArgs<TData> {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Event type id */
+  get type(): string {
+    return api.grok_TypedEventArgs_Get_Type(this.dart);
+  }
+
+  get data(): TData {
+    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
+    return toJs(data);
+  }
+
+  /** Event arguments. Only applies when data is EventData */
+  get args(): {[key: string]: any} | null {
+    // @ts-ignore
+    if (!this.data?.dart)
+      return null;
+
+    // @ts-ignore
+    return api.grok_EventData_Get_Args(this.data.dart);
+  }
+}
 
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
@@ -273,7 +301,7 @@ export class Widget<TSettings = any> {
   /** Registers an property with the specified type, name, and defaultValue.
    *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
-   *  
+   *
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -386,7 +414,6 @@ export abstract class Filter extends Widget {
 
   /** Override to save filter state. */
   saveState(): any {
-    console.log('save state');
     return {
       column: this.columnName,
       columnName: this.columnName
@@ -397,7 +424,6 @@ export abstract class Filter extends Widget {
   applyState(state: any): void {
     this.columnName = state.columnName;
     this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
-    console.log('apply state');
   }
 
   /** Gets called when a data frame is attached.
@@ -524,7 +550,7 @@ export class Accordion extends DartWidget {
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane extends DartWidget {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);
@@ -706,6 +732,22 @@ export class Dialog extends DartWidget {
   onOK(handler: Function): Dialog {
     api.grok_Dialog_OnOK(this.dart, handler);
     return this;
+  }
+
+  /**
+   * Sets the OK button handler and returns a promise of the handler callback.
+   * @param {Function} handler
+   * @returns {Promise} */
+  async awaitOnOK<T = any>(handler: () => Promise<T>): Promise<T> {
+    let completer = new Completer<T>();
+    this.onOK(() => {
+      handler().then((res) => completer.complete(res))
+               .catch((error) => completer.reject(error));
+    });
+    this.onCancel(() => {
+      completer.reject();
+    });
+    return completer.promise;
   }
 
   /**
@@ -1243,7 +1285,7 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 
 
 export class DateInput extends InputBase<dayjs.Dayjs | null> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1258,7 +1300,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
 
 
 export class ChoiceInput<T> extends InputBase<T> {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
@@ -1767,6 +1809,9 @@ export class TreeViewGroup extends TreeViewNode {
   /** Indicates whether check or uncheck is applied to a node only or to all node's children */
   get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
   set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
+  
+  get currentItem(): TreeViewNode { return toJs(api.grok_TreeViewNode_Get_CurrentItem(this.dart)); }
+  set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
@@ -1847,7 +1892,6 @@ export class RangeSlider extends DartWidget {
   /** Sets showHandles in range slider.
    * @param {boolean} value */
   setShowHandles(value: boolean): void {
-    console.log('setShowHandles', value);
     api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
 
@@ -2296,7 +2340,7 @@ export class MarkdownInput extends InputBase {
 }
 
 export class CodeInput extends InputBase {
-  dart: any;
+  declare dart: any;
   editor: CodeEditor;
 
   constructor(name: string, config?: CodeConfig) {
@@ -2313,4 +2357,31 @@ export class CodeInput extends InputBase {
   set value(x: string) { this.editor.value = x; }
 
   get onValueChanged(): Observable<any> { return this.editor.onValueChanged; }
+}
+
+export class FunctionsWidget extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+    /** Observes platform events with the specified eventId. */
+    onEvent(eventId: string | null = null): rxjs.Observable<any> {
+      if (eventId !== null)
+        return __obs(eventId, this.dart);
+
+      let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
+      return rxjs.fromEventPattern(
+        function (handler) {
+          return api.grok_Stream_Listen(dartStream, function (x: any) {
+            handler(new TypedEventArgs(x));
+          });
+        },
+        function (handler, dart) {
+          new StreamSubscription(dart).cancel();
+        }
+      );
+    }
+
+  get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
+  get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
 }

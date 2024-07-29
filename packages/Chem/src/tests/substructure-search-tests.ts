@@ -200,25 +200,25 @@ M  END
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1');
-  });
+  }, {benchmark: true});
 
   test('search_2_benzene_rings_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1');
-  });
+  }, {benchmark: true});
 
   test('search_complex_structure_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1');
-  });
+  }, {benchmark: true});
 
   test('search_non_ring_structure_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
-  });
+  }, {benchmark: true});
 
 });
 

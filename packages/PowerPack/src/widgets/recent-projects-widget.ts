@@ -39,7 +39,7 @@ function projectData(p: DG.Project){
     [
       ui.h2(ui.link(p.friendlyName, (_: any) => {}, undefined, null))
     ]);
-  ui.bind(p, card);
+  ui.bind(p, card, {contextMenu: true});
   return card;
 }
 

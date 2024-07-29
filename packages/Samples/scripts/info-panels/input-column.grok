@@ -4,6 +4,7 @@
 #tags: demo, panel
 #sample: acidiq.csv
 #condition: col.name == "AGE"
+#input: dataframe table
 #input: column col
 #output: double min
 #output: double max

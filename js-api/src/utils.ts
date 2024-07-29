@@ -727,3 +727,19 @@ export namespace Test {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
   }
 }
+
+// Completer class based on https://stackoverflow.com/a/67007151
+export class Completer<T> {
+	public readonly promise: Promise<T>;
+	public complete: (value: (PromiseLike<T> | T)) => void;
+	public reject: (reason?: any) => void;
+
+	public constructor() {
+    this.complete = (_) => {};
+    this.reject = (_) => {};
+    this.promise = new Promise<T>((resolve, reject) => {
+        this.complete = resolve;
+        this.reject = reject;
+    })
+	}
+}

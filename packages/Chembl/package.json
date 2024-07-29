@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/chembl",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "Chembl integration, commonly used queries and browser",
   "author": {
     "name": "Maria Dolotova",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "datagrok-api": "^1.19.0",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.13",
     "@types/react-dom": "^17.0.9",
     "file-loader": "^6.2.0",
     "ts-loader": "latest",

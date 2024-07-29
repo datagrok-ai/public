@@ -9,7 +9,7 @@
 #input: column signal {type:numerical; allowNulls:false} [Column with signal]
 #input: double sampleRate = 256.0 [Signal sample rate, in Hz]
 #input: int w0 = 4 [Tradeoff between time and frequency resolution]
-#input: bool removeDc = TRUE [Flag to force DC component removal]
+#input: bool removeDc = true [Flag to force DC component removal]
 #output: graphics [Scalogram plot]
 
 import numpy as np

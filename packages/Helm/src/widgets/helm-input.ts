@@ -63,7 +63,10 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
 
     if (name) this.captionLabel.innerText = name;
 
-    this.viewerHost = ui.div([], {classes: 'ui-input-editor', style: {width: '100%', height: '100%'}});
+    this.viewerHost = ui.div([], {
+      classes: 'ui-input-editor',
+      style: {width: '100%', height: '100%', overflow: 'hidden'},
+    });
     this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost);
 
     this.subs = [];

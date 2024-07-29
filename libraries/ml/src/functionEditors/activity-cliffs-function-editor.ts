@@ -29,7 +29,7 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
 
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       super({...editorSettings, enableMCL: true});
-      const numericalColumns = this.tableInput.value!.columns.numerical;
+      const numericalColumns = this.tableInput.value!.columns.numericalNoDateTime;
       this.activitiesInput = ui.input.column('Activities', {table: this.tableInput.value!,
         value: DG.Utils.firstOrNull(numericalColumns),
         filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);

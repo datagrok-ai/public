@@ -1,5 +1,17 @@
 # HitTriage changelog
 
+## 1.1.14 (2024-07-26)
+
+Added detection of duplicate molecules in campaign and vid coloring of duplicates.
+
+## 1.1.13 (2024-07-23)
+
+Fix chem descriptors breaking loop.
+
+## 1.1.12 (2024-07-18)
+
+Fix broken demo campaign file.
+
 ## 1.1.11 (2024-06-03)
 
 * Add ability for collaboration on same campaign.
