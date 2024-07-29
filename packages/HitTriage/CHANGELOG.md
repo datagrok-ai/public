@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.1.15 (2024-07-29)
+
+Fixed duplicate detection on fingerprints. added rerunning calculations
+
 ## 1.1.14 (2024-07-26)
 
 Added detection of duplicate molecules in campaign and vid coloring of duplicates.
