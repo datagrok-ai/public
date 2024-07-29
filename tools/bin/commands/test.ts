@@ -15,7 +15,7 @@ import * as testUtils from '../utils/test-utils';
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
   const commandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark'];
+    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -43,6 +43,11 @@ export function test(args: TestArgs): boolean {
   } else if (config.default) {
     process.env.HOST = config.default;
     console.log('Environment variable `HOST` is set to', config.default);
+  }
+
+  let categoryToCheck: string | undefined = undefined;
+  if (args.category) {
+    categoryToCheck = args.category.toString();
   }
 
   if (args.package) {
@@ -141,7 +146,7 @@ export function test(args: TestArgs): boolean {
 
     function runTest(timeout: number, options: {
       path?: string, catchUnhandled?: boolean, core?: boolean,
-      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean
+      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?:string
     } = {}): Promise<resultObject> {
       return testUtils.timeout(async () => {
         const consoleLogOutputDir = './test-console-output.log';
@@ -163,7 +168,6 @@ export function test(args: TestArgs): boolean {
         }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
-
         const r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
           if (options.benchmark)
             (<any>window).DG.Test.isInBenchmark = true;
@@ -176,12 +180,14 @@ export function test(args: TestArgs): boolean {
               verbose?: boolean
             } = {
               testContext: testContext,
+              category: options.category
             };
             if (options.path) {
               const split = options.path.split(' -- ');
               params.category = split[0];
               params.test = split[1];
             }
+
             if (targetPackage === 'DevTools') {
               params.skipCore = options.core ? false : true;
               params.verbose = options.verbose === true;
@@ -254,11 +260,11 @@ export function test(args: TestArgs): boolean {
         color.error('Initialization failed.');
         throw e;
       }
-
+      
       const r = await runTest(7200000, {
         path: args.path, verbose: args.verbose, platform: args.platform,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
-        core: args.core
+        core: args.core, category: categoryToCheck
       });
 
       if (r.csv && args.csv) {
@@ -296,7 +302,7 @@ export function test(args: TestArgs): boolean {
 
 interface TestArgs {
   _: string[],
-  // category?: string,
+  category?: any,
   path?: string,
   host?: string,
   package?: string,

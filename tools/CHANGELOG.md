@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.9 (2024-07-29)
+
+### Bug Fixes
+
+* Added ability to select category by args variable 
+
 ## 4.13.8 (2024-07-18)
 
 ### Bug Fixes
