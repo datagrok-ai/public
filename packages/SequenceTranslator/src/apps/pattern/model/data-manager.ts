@@ -188,17 +188,23 @@ export class DataManager {
     }
   }
 
-  async overwritePatternInUserStorage(
+  async overwriteExistingPatternInUserStorage(
     eventBus: EventBus
   ): Promise<void> {
     const patternConfig = eventBus.getPatternConfig();
-    const hash = this.getHash(patternConfig);
     const patternName = patternConfig[L.PATTERN_NAME];
-    const record = await this.getRecordFromPattern(patternConfig);
-    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, hash, record, false);
-    this.currentUserPatternNameToHash.set(patternName, hash);
-    // eventBus.selectUser(this.getCurrentUserAuthorshipCategory());
-    eventBus.updatePatternList();
+    const oldHash = this.currentUserPatternNameToHash.get(patternName);
+
+    if (oldHash === undefined)
+      throw new Error(`Old hash is undefined`);
+    await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldHash, false);
+
+    const newRecord = await this.getRecordFromPattern(patternConfig);
+    const newHash = this.getHash(patternConfig);
+    await grok.dapi.userDataStorage.postValue(STORAGE_NAME, newHash, newRecord, false);
+    this.currentUserPatternNameToHash.set(patternName, newHash);
+    eventBus.requestPatternLoad(newHash);
+    eventBus.updateUrlState(newHash);
   }
 
   async deletePattern(
