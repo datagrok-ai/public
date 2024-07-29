@@ -24,15 +24,42 @@ export async function molMIMModel(algorithm: string, num_molecules: number, prop
   particles: number, iterations: number, smi: string
 ) {
   const results = await grok.functions.call('BioNeMo:MolMIMGenerate', {algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi});
-  console.log(results);
 }
 
 //name: EsmFoldModel
-//top-menu: Chem | BioNeMo | EsmFold...
-//input: string sequence = "MDILCEENTSLSSTTNSLMQLNDDTRLYSNDFNSGEANTSDAFNWTVDSENRTNLSCEGCLSPSCLSLLHLQEKNWSALLTAVVIILTIAGNILVIMAVSLEKKLQNATNYFLMSLAIADMLLGFLVMPVSMLTILYGYRWPLPSKLCAVWIYLDVLFSTASIMHLCAISLDRYVAIQNPIHHSRFNSRTKAFLKIIAVWTISVGISMPIPVFGLQDDSKVFKEGSCLLADDNFVLIGSFVSFFIPLTIMVITYFLTIKSLQKEATLCVSDLGTRAKLASFSFLPQSSLSSEKLFQRSIHREPGSYTGRRTMQSISNEQKACKVLGIVFFLFVVMWCPFFITNIMAVICKESCNEDVIGALLNVFVWIGYLSSAVNPLVYTLFNKTYRSAFSRYIQCQYKENKKPLQLILVNTIPALAYKSSQLQMGQKKNSKQDAKTTDNDCSMVALGKQHSEEASKDNSDGVNEKVSCV"
-export async function esmFoldModel(sequence: string) {
-  const currentView = grok.shell.tv;
-  const structure = await grok.functions.call('BioNeMo:esmfold', {sequence});
-  const viewer = await currentView.dataFrame.plot.fromType('Biostructure', {pdb: structure});
-  currentView.dockManager.dock(viewer.root, DG.DOCK_TYPE.RIGHT);
+//top-menu: Bio | BioNeMo | EsmFold...
+//input: dataframe df 
+//input: column sequences {semType: Macromolecule}
+export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
+  const grid = grok.shell.getTableView(df.name).grid;
+  const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
+  //init not working
+  /*protein.init((i: number) => {
+    const value = sequences.get(i);
+    grok.functions.call('BioNeMo:esmfold', {value}).then((res) => res);
+  });*/
+  for (let i = 0; i < sequences.length; ++i) {
+    const colValue = sequences.get(i);
+    const predictedValue = await grok.functions.call('BioNeMo:esmfold', {sequence: colValue});
+    protein.set(i, predictedValue);
+  }
+  protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
+  df.columns.add(protein);
+  await grok.data.detectSemanticTypes(df);
+  grid.invalidate();
+}
+
+//name: EsmFoldModelPanel
+//input: semantic_value sequence {semType: Macromolecule}
+//output: widget result
+export async function EsmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
+  const result = new DG.Widget(ui.div());
+  const loader = ui.loader();
+  result.root.appendChild(loader);
+  grok.functions.call('BioNeMo:esmfold', {sequence: sequence.value}).then(async (res) => {
+    result.root.removeChild(loader);
+    const molstarViewer = await sequence.cell.dataFrame.plot.fromType('Biostructure', {pdb: res});
+    result.root.appendChild(molstarViewer.root);
+  });
+  return result;
 }
