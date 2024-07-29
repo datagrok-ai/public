@@ -31,8 +31,8 @@ import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
-
 import {PlsModel} from './pls/pls-ml';
+import {SoftmaxClassifier} from './softmax-classifier';
 
 export const _package = new DG.Package();
 
@@ -556,6 +556,13 @@ export function kNNImputation() {
   runKNNImputer();
 }
 
+//name: KNN imputation for a table
+//desription: Missing values imputation using the k-nearest neighbors method for a given table
+//input: dataframe table
+export async function kNNImputationForTable(table: DG.DataFrame) {
+  await runKNNImputer(table);
+}
+
 //name: trainLinearRegression
 //meta.mlname: Linear Regression
 //meta.mlrole: train
@@ -592,10 +599,8 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
     if (!col.matches('numerical'))
       return false;
   }
-  if (!predictColumn.matches('numerical'))
-    return false;
 
-  return true;
+  return predictColumn.matches('numerical');
 }
 
 //name: isInteractiveLinearRegression
@@ -606,6 +611,63 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
 //output: bool result
 export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return df.rowCount <= 100000;
+}
+
+//name: trainSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 20} [Learning rate]
+//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step: 10} [Fitting iterations count]
+//input: double penalty = 0.1 {category: Hyperparameters; min: 0.0001; max: 1} [Regularization rate]
+//input: double tolerance = 0.001 {category: Hyperparameters; min: 0.00001; max: 0.1} [Fitting tolerance]
+//output: dynamic model
+export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, rate: number,
+  iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  const model = new SoftmaxClassifier({
+    classesCount: predictColumn.categories.length,
+    featuresCount: features.length,
+  });
+
+  await model.fit(features, predictColumn, rate, iterations, penalty, tolerance);
+
+  return model.toBytes();
+}
+
+//name: applySoftmax
+//meta.mlname: Softmax
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applySoftmax(df: DG.DataFrame, model: any): DG.DataFrame {
+  const features = df.columns;
+  const unpackedModel = new SoftmaxClassifier(undefined, model);
+
+  return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
+}
+
+//name: isApplicableSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicableSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return SoftmaxClassifier.isApplicable(df.columns, predictColumn);
+}
+
+//name: isInteractiveSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
 }
 
 //name: trainPLSRegression

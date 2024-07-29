@@ -1,5 +1,9 @@
 # ClinicalCase changelog
 
+## 1.0.8 (2024-07-24)
+
+* Dependency: datgarok-api >= 1.20.0
+
 ## 1.0.7 (2024-02-12)
 
 ### Bug fixes

@@ -39,9 +39,9 @@ function getFeatureInputSettings(type: DG.COLUMN_TYPE): FeatureInputSettings {
 }
 
 /** Run the KNN missing values imputer */
-export function runKNNImputer(): void {
+export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
   /** current dataframe */
-  const df: DG.DataFrame | null = grok.shell.t;
+  df ??= grok.shell.t;
 
   if (df === null) {
     grok.shell.warning(ERROR_MSG.NO_DATAFRAME);
@@ -195,13 +195,12 @@ export function runKNNImputer(): void {
     distTypeInput.root.hidden = true; // this input will be used further
 
     // The following should provide a slider (see th bug https://reddata.atlassian.net/browse/GROK-14431)
-    // @ts-ignore
     const prop = DG.Property.fromOptions({
       'name': name,
       'inputType': 'Float',
       'min': 0,
       'max': 10,
-      //@ts-ignore
+      // @ts-ignore
       'showSlider': true,
       'step': 1,
     });
@@ -231,30 +230,41 @@ export function runKNNImputer(): void {
 
   const distDiv = ui.divH([distTypeInput.root, settingsIcon]);
 
-  dlg.addButton(TITLE.RUN, () => {
-    dlg.close();
-    availableFeatureColsNames.filter(
-      (name) => !selectedFeatureColNames.includes(name)).forEach((name) => featuresMetrics.delete(name),
-    );
-
-    try {
-      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
-
-      if (!keepEmpty)
-        imputeFailed(df!, failedToImpute);
-    } catch (err) {
-      if (err instanceof Error)
-        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
-      else
-        grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
-    }
-  })
-    .add(targetColInput)
+  let resolve: (value: void | PromiseLike<void>) => void;
+  let reject: (reason?: any) => void;
+  let okClicked = false;
+  const promise = new Promise<void>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  dlg.add(targetColInput)
     .add(featuresInput)
     .add(distDiv)
     .add(metricsDiv)
     .add(neighborsInput)
     .add(inPlaceInput)
     .add(keepEmptyInput)
-    .show();
+    .show()
+    .onOK(() => {
+      okClicked = true;
+      dlg.close();
+      availableFeatureColsNames.filter((name) => !selectedFeatureColNames.includes(name))
+        .forEach((name) => featuresMetrics.delete(name));
+
+    try {
+      const failedToImpute = impute(df!, targetColNames, featuresMetrics, misValsInds, distType, neighbors, inPlace);
+
+        if (!keepEmpty)
+          imputeFailed(df!, failedToImpute);
+        resolve();
+      } catch (err) {
+        if (err instanceof Error)
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${err.message}`);
+        else
+          grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
+        reject(err);
+      }
+    }).onClose.subscribe(() => !okClicked && reject());
+
+  return promise;
 } // runKNNImputer

@@ -6,7 +6,7 @@ import {defaultErrorHandler} from './err-info';
 import {_package, addContextMenu} from '../package';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {polyToolEnumerateUI} from '../polytool/pt-ui';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-ui';
 
 export type SequenceTranslatorWindowType = Window & {
   $sequenceTranslator?: {
@@ -38,7 +38,7 @@ function addContextMenuForCell(gridCell: DG.GridCell, menu: DG.Menu): boolean {
   _package.logger.debug(`${logPrefix}, start`);
 
   const polyToolEnumerate = () => {
-    polyToolEnumerateUI(gridCell.cell);
+    polyToolEnumerateHelmUI(gridCell.cell);
   };
 
   if (gridCell && gridCell.tableColumn) {

@@ -135,7 +135,7 @@ class OverwritePatternDialog {
 
   private processOverwriteNamesakePattern(): void {
     const patternName = this.eventBus.getPatternName();
-    this.dataManager.overwritePatternInUserStorage(this.eventBus)
+    this.dataManager.overwriteExistingPatternInUserStorage(this.eventBus)
       .then(() => {
         grok.shell.info(`Pattern ${patternName} overwritten`);
       })

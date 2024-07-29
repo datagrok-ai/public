@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.3.9 (2024-07-23)
+
+* Dependency: datgarok-api >= 1.20.0
+
 ## 1.3.8 (2024-07-09)
 
 ### Features

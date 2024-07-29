@@ -1,5 +1,25 @@
 # Chem changelog
 
+## 1.11.1 (2024-07-25)
+
+### Bug Fixes
+
+* Removed unnecessary code
+
+## 1.11.0 (2024-07-24)
+
+*Dependency: datagarok-api >= 1.20.0*
+
+### Bug Fixes
+
+* GROK-16328: Chem: R-Group analysis: Broken styles
+* GROK-16329: Chem: R-Group analysis: Error when none R groups were found
+* GROK-16338: Chem: Chemical space: Reseting marker type to circles
+* Chem: Scaffold Tree: Fix representation when the viewers are stacked
+* Chem: Chemprop: Fix applying the model to different datasets
+* Chem: Fix substructure filter style
+* Chem: Do not render molecules with invisible width
+
 ## 1.10.0 (2024-06-12)
 
 ### Features

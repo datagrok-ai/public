@@ -14,7 +14,9 @@ import {addTransformedColumn} from './pt-conversion';
 
 import {handleError} from './utils';
 import {defaultErrorHandler} from '../utils/err-info';
-import {getLibrariesList, getEnumeration, PT_HELM_EXAMPLE} from './pt-enumeration';
+import {getLibrariesList} from './utils';
+import {getEnumerationHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
+import {getEnumerationChem, PT_CHEM_EXAMPLE} from './pt-enumeration-chem';
 
 const PT_ERROR_DATAFRAME = 'No dataframe with macromolecule columns open';
 const PT_WARNING_COLUMN = 'No marcomolecule column chosen!';
@@ -31,10 +33,10 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   if (!targetColumns)
     throw new Error(PT_ERROR_DATAFRAME);
 
-  const targetColumnInput = ui.input.column(
-    'Column', {table: grok.shell.t, value: targetColumns[0],
-      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
-  );
+  const targetColumnInput = ui.input.column('Column', {
+    table: grok.shell.t, value: targetColumns[0],
+    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
+  });
 
   const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
   ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
@@ -80,7 +82,7 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   return dialog;
 }
 
-export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.Dialog> {
+export async function getPolyToolEnumerationHelmDialog(cell?: DG.Cell): Promise<DG.Dialog> {
   const [libList, helmHelper] = await Promise.all([
     getLibrariesList(), getHelmHelper()]);
 
@@ -89,6 +91,7 @@ export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.D
   const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
   const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
 
+  helmInput.input.setAttribute('style', `min-width:250px!important;`);
   screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
 
   const div = ui.div([
@@ -96,6 +99,7 @@ export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.D
     screenLibrary.root
   ]);
 
+  // Displays the molecule from a current cell (monitors changes)
   const cccSubs = grok.events.onCurrentCellChanged.subscribe(() => {
     const cell = grok.shell.tv.dataFrame.currentCell;
 
@@ -103,7 +107,6 @@ export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.D
       helmInput.stringValue = cell.value;
   });
 
-  // Displays the molecule from a current cell (monitors changes)
   const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
     .add(div)
     .onOK(async () => {
@@ -117,7 +120,73 @@ export async function getPolyToolEnumerationDialog(cell?: DG.Cell): Promise<DG.D
         } else if (helmSelections === undefined || helmSelections.length < 1) {
           grok.shell.warning('PolyTool: no selection was provided');
         } else {
-          const molecules = await getEnumeration(helmString, helmSelections, screenLibrary.value!);
+          const molecules = await getEnumerationHelm(helmString, helmSelections, screenLibrary.value!);
+          const molCol = DG.Column.fromStrings('Enumerated', molecules);
+          const df = DG.DataFrame.fromColumns([molCol]);
+          grok.shell.addTableView(df);
+        }
+      } catch (err: any) {
+        defaultErrorHandler(err);
+      } finally {
+        cccSubs.unsubscribe();
+      }
+    }).onCancel(() => {
+      cccSubs.unsubscribe();
+    });
+
+  return dialog;
+}
+
+export async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dialog> {
+  const [libList, helmHelper] = await Promise.all([
+    getLibrariesList(), getHelmHelper()]);
+
+  let molValue = PT_CHEM_EXAMPLE;//cell ? cell.value : PT_CHEM_EXAMPLE;
+  const molInput = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
+  molInput.syncCurrentObject = false;
+  // sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
+  molInput.onChanged.subscribe((_: any) => {
+    molValue = molInput.getMolFile();
+    // col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
+    // col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
+    // col.dataFrame?.fireValuesChanged();
+  });
+  molInput.root.classList.add('ui-input-editor');
+  molInput.root.style.marginTop = '3px';
+  molInput.setMolFile(molValue);
+
+  //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
+  const screenLibrary = ui.input.choice('Library to use', {value: null, items: libList});
+
+  molInput.root.setAttribute('style', `min-width:250px!important;`);
+  molInput.root.setAttribute('style', `max-width:250px!important;`);
+  screenLibrary.input.setAttribute('style', `min-width:250px!important;`);
+
+  const div = ui.div([
+    molInput.root,
+    screenLibrary.root
+  ]);
+
+  const cccSubs = grok.events.onCurrentCellChanged.subscribe(() => {
+    const cell = grok.shell.tv.dataFrame.currentCell;
+
+    if (cell.column.semType === DG.SEMTYPE.MOLECULE)
+      molInput.setValue(cell.value);
+  });
+
+  // Displays the molecule from a current cell (monitors changes)
+  const dialog = ui.dialog(PT_UI_DIALOG_ENUMERATION)
+    .add(div)
+    .onOK(async () => {
+      try {
+        const molString = molInput.getMolFile();
+
+        if (molString === undefined || molString === '') {
+          grok.shell.warning('PolyTool: no molecule was provided');
+        } else if (!molString.includes('R#')) {
+          grok.shell.warning('PolyTool: no R group was provided');
+        } else {
+          const molecules = await getEnumerationChem(molString, screenLibrary.value!);
           const molCol = DG.Column.fromStrings('Enumerated', molecules);
           const df = DG.DataFrame.fromColumns([molCol]);
           grok.shell.addTableView(df);

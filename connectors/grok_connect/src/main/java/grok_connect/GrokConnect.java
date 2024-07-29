@@ -214,7 +214,6 @@ public class GrokConnect {
         post("/set_settings", (request, response) -> {
             Settings settings = gson.fromJson(request.body(), Settings.class);
             SettingsManager.getInstance().setSettings(settings);
-            ConnectionPool.getInstance().setTimer();
             response.status(HttpURLConnection.HTTP_OK);
             return response;
         });

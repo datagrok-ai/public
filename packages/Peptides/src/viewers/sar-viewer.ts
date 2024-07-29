@@ -122,7 +122,6 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 0, max: 100});
     this.maxMutations = this.int(SAR_PROPERTIES.MAX_MUTATIONS, 1,
       {category: PROPERTY_CATEGORIES.MUTATION_CLIFFS, min: 1, max: 20});
-
     this.columns = this.columnList(SAR_PROPERTIES.COLUMNS, [], {category: PROPERTY_CATEGORIES.AGGREGATION});
     this.aggregation = this.string(SAR_PROPERTIES.AGGREGATION, DG.AGG.AVG,
       {category: PROPERTY_CATEGORIES.AGGREGATION, choices: C.AGGREGATION_TYPES});
@@ -422,8 +421,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    * @return - map of columns and aggregations.
    */
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(
-      this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG])
+      .filter(([colName, _]) => this.model.df.columns.contains(colName) &&
+        this.model.df.col(colName)!.matches('numerical')));
   }
 
   /**
@@ -432,7 +432,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   getTotalViewerAggColumns(): [string, DG.AggregationType][] {
     const aggrCols = this.getAggregationColumns();
-    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
+    return getTotalAggColumns(this.model.df, this.columns, aggrCols, this.model?.settings?.columns);
   }
 
   /** Creates viewer grid. */

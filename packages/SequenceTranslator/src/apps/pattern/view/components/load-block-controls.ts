@@ -94,12 +94,15 @@ export class PatternLoadControlsManager {
       possibleValues.push(this.dataManager.getOtherUsersAuthorshipCategory());
 
     const authorChoiceInput = ui.input.choice(
-      'Author', {value: this.eventBus.getSelectedAuthor(), items: possibleValues,
-        onValueChanged: (input) => {
-          this.authorSelectedByUser = true;
-          this.eventBus.selectAuthor(input.value);
-        }}
-    );
+      'Author', {value: this.eventBus.getSelectedAuthor(), items: possibleValues});
+
+    authorChoiceInput.onInput(() => {
+      this.authorSelectedByUser = true;
+      if (authorChoiceInput.value === null)
+        throw new Error('author choice must be non-null');
+      this.eventBus.selectAuthor(authorChoiceInput.value);
+    });
+
     this.setAuthorChoiceInputStyle(authorChoiceInput);
     authorChoiceInput.setTooltip('Select pattern author');
 

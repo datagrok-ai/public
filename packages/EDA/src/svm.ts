@@ -75,19 +75,11 @@ const FEATURES_COUNT_NAME = 'Features count';
 const TRAIN_SAMPLES_COUNT_NAME = 'Train samples count';
 const TRAIN_ERROR = 'Train error, %';
 const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
-const POSITIVE_NAME = 'positive (P)';
-const NEGATIVE_NAME = 'negative (N)';
-const PREDICTED_POSITIVE_NAME = 'predicted positive (PP)';
-const PREDICTED_NEGATIVE_NAME = 'predicted negative (PN)';
 const SENSITIVITY = 'Sensitivity';
 const SPECIFICITY = 'Specificity';
 const BALANCED_ACCURACY = 'Balanced accuracy';
 const POSITIVE_PREDICTIVE_VALUE = 'Positive predicitve value';
 const NEGATIVE_PREDICTIVE_VALUE = 'Negative predicitve value';
-const ML_REPORT = 'Model report';
-const ML_REPORT_PREDICTED_LABELS = 'Predicted labels';
-const ML_REPORT_TRAIN_LABELS = 'Train labels';
-const ML_REPORT_CORRECTNESS = 'Prediction correctness';
 const PREDICTION = 'prediction';
 
 // Pack/unpack constants
@@ -306,19 +298,6 @@ function getModelInfo(model: any): DG.DataFrame {
   ]);
 }
 
-// Get dataframe with confusion matrix
-function getConfusionMatrixDF(model: any): DG.DataFrame {
-  const data = model.confusionMatrix.getRawData();
-
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('', [POSITIVE_NAME, NEGATIVE_NAME]),
-    DG.Column.fromList('int', PREDICTED_POSITIVE_NAME,
-      [data[TRUE_POSITIVE_INDEX], data[FALSE_POSITIVE_INDEX]]),
-    DG.Column.fromList('int', PREDICTED_NEGATIVE_NAME,
-      [data[FALSE_NEGATIVE_INDEX], data[TRUE_NEGATIVE_INDEX]]),
-  ]);
-}
-
 // Show training report
 export function showTrainReport(df: DG.DataFrame, packedModel: any): HTMLElement {
   const model = getUnpackedModel(packedModel);
@@ -491,7 +470,6 @@ function getUnpackedModel(packedModel: any): any {
 // Wrapper for combining the function "predict" with Datagrok predicitve tools
 export async function getPrediction(df: DG.DataFrame, packedModel: any): Promise<DG.DataFrame> {
   const model = getUnpackedModel(new Uint8Array(packedModel));
-
   const resNumeric = await predict(model, df.columns);
   const res = DG.Column.string(PREDICTION, resNumeric.length);
   const categories = model.realLabels.categories;

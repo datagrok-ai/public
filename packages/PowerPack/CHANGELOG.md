@@ -1,5 +1,9 @@
 # PowerPack changelog
 
+## 1.1.8 (2024-07-24)
+
+* Dependency: datagarok-api >= 1.20.0*
+
 ## 1.1.7 (2024-06-12)
 
 * Semantic value extractors

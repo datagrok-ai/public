@@ -870,7 +870,7 @@ export class Column<T = any> {
 
   /** Performs deep cloning, optionally taking mask of the rows to be included.
    * Note that the cloned colum is not added to this column's dataframe. */
-  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, mask)); }
+  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, toDart(mask))); }
 
   /** FOR EXPERT USE ONLY!
    *
@@ -1192,6 +1192,22 @@ export class ColumnList {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
+  }
+
+  get dateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_DateTime(this.dart));
+  }
+
+  get numericalNoDateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
+  }
+
+  get boolean(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Boolean(this.dart));
+  }
+
+  get selected(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Selected(this.dart));
   }
 
   /** Array containing column names. */
@@ -2372,12 +2388,12 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string, matchType?: MatchType} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
     if (options?.fallbackColor != null)
-      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = options.fallbackColor;
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = JSON.stringify(options.fallbackColor);
     if (options?.matchType != null)
       this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
