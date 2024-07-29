@@ -689,9 +689,9 @@ export class TestTrack extends DG.ViewBase {
             'labels': [
               'TestTrack',
               errorSeverityLevelJiraNames[errorTypeSelector.value],
-              this.testingName.replaceAll(' ', '_'),
               this.version
             ],
+            'customfield_10439':this.testingName
           },
         }),
         'updateHistory': false,
