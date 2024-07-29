@@ -32,12 +32,8 @@ export function cloneConfig<T>(config: T): T {
   });
 }
 
-export function indexFromEnd<T>(arr: T[], offset = 0): T | undefined {
+export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {
   return arr[arr.length - offset - 1];
-}
-
-export function pathJoin(path: ItemPathArray, ...restPaths: ItemPathArray[]): ItemPathArray {
-  return path.concat(...restPaths);
 }
 
 const PIPELINE_DEBUG = true;

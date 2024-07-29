@@ -23,14 +23,14 @@ export class NodeTree<T> {
 
   constructor(private item: T) {}
 
-  addItem(paddress: NodeAddress, item: T, id: string, idx?: number) {
+  addItem(paddress: Readonly<NodeAddress>, item: T, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.addChild(item, id, idx);
     return item;
   }
 
-  getItem(address: NodeAddress) {
+  getItem(address: Readonly<NodeAddress>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const node = indexFromEnd(nodeSeq)!;
     return node.getItem();
@@ -40,21 +40,21 @@ export class NodeTree<T> {
     return this.root;
   }
 
-  attachBrunch(paddress: NodeAddress, node: TreeNode<T>, id: string, idx?: number) {
+  attachBrunch(paddress: Readonly<NodeAddress>, node: TreeNode<T>, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);
     const parent = indexFromEnd(nodeSeq)!;
     parent.attachNode(node, id, idx);
     return node;
   }
 
-  removeBrunch(address: NodeAddress) {
+  removeBrunch(address: Readonly<NodeAddress>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const parent = indexFromEnd(nodeSeq, 1)!;
     const segment = indexFromEnd(address)!;
     return parent.removeChild(segment);
   }
 
-  private getNodesFromAddress(address: NodeAddress) {
+  private getNodesFromAddress(address: Readonly<NodeAddress>) {
     let current = this.root;
     const nodes = [current];
     for (const segment of address) {

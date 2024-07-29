@@ -31,7 +31,7 @@ export function isPipelineSelfRef(c: ConfigTraverseItem): c is PipelineSelfRef {
   return !!((c as PipelineSelfRef).type === 'selfRef');
 }
 
-function buildRefMap(config: PipelineConfigurationProcessed): Map<string, PipelineConfigurationProcessed> {
+export function buildRefMap(config: PipelineConfigurationProcessed): Map<string, PipelineConfigurationProcessed> {
   const res = new Map<string, PipelineConfigurationProcessed>();
 
   const getNextItem = (item: ConfigTraverseItem, path: ItemPathArray) => {
@@ -69,9 +69,7 @@ function buildRefMap(config: PipelineConfigurationProcessed): Map<string, Pipeli
   return res;
 }
 
-export function getConfigByInstancePath (instancePath: ItemPathArray, config: PipelineConfigurationProcessed) {
-  const refMap = buildRefMap(config);
-
+export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
   let [startId, ...startPath] = instancePath;
   if (startId !== config.id)
     throw new Error(`Root segment ${startId} different id ${config.id}`);
@@ -87,7 +85,7 @@ export function getConfigByInstancePath (instancePath: ItemPathArray, config: Pi
           return item;
       }
     }
-    throw new Error(`Segment ${targetSegment} not found on path ${currentPath}`)
+    throw new Error(`Segment ${targetSegment} not found on path ${currentPath}`);
   }
 
   const traverse = buildTraverseD([] as ItemPathArray, (item: ConfigTraverseItem, path: ItemPathArray, remainingPath?: ItemPathArray) => {

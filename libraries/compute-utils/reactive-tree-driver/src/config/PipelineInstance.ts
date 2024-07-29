@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {InputState, ItemId, NqName} from '../data/common-types';
+import { ValidationResultBase } from '../../../shared-utils/validation';
 
 //
 // initial steps config for dynamic pipelines
@@ -41,11 +42,12 @@ export interface PipelineInstanceState {
 export type StateTypes = PipelineState['type'];
 
 export type PipelineState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallState;
+export type PipelineSerializedState = PipelineStateStatic | PipelineStateSequential | PipelineStateParallel | StepFunCallSerializedState;
 
 export function isFuncCallState(state: PipelineState): state is StepFunCallState {
   return state.type === 'funccall';
 }
-export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic  {
+export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic {
   return state.type === 'static';
 }
 export function isParallelPipelineState(state: PipelineState): state is PipelineStateParallel {
@@ -58,20 +60,24 @@ export function isSequentialPipelineState(state: PipelineState): state is Pipeli
 
 // funccall
 
-export type StepFunCallState = {
+export type StepFunCallSerializedState = {
   type: 'funccall';
   configId: string;
   uuid: string;
   nqName: string;
   friendlyName?: string;
   funcCallId?: string;
-  funcCall?: DG.FuncCall;
-  isLoading?: boolean;
-  isRunning?: boolean;
-  isRunable?: boolean;
   isOuputOutdated?: boolean;
   isCurrent?: boolean;
 };
+
+export type StepFunCallState = {
+  funcCall?: DG.FuncCall;
+  validations?: Record<string, ValidationResultBase>;
+  isLoading?: boolean;
+  isRunning?: boolean;
+  isRunable?: boolean;
+} & StepFunCallSerializedState;
 
 // pipeline base
 
