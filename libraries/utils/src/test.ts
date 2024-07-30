@@ -415,7 +415,7 @@ export async function runTests(options?:
           DG.Balloon.closeAll();
         }
       } else {
-        for (let i = 0; i < t.length; i++){
+        for (let i = 0; i < t.length; i++) {
           let testRun = await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose);
           if (testRun)
             res.push(testRun);
@@ -443,7 +443,7 @@ export async function runTests(options?:
   } finally {
     resetConsole();
   }
-  if (options.testContext.catchUnhandled) {
+  if (options.testContext.catchUnhandled && (!DG.Test.isInBenchmark)) {
     await delay(1000);
     const error = await grok.shell.lastError;
     const params = {

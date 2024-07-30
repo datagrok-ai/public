@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.15 (2024-07-30)
+
+Removed Unhadled exception test for benchmarks 
+
 ## 4.2.14 (2024-07-29)
 
 Fixed setting lines width, color and opacity in ScatterPlotLinesRenderer
