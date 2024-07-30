@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.36.3 (2024-07-30)
+
+- Wizard: Fixed context info icon duplication
+
 ## 1.36.2 (2024-07-23)
 
 - RFV: Added validation tooltip width and text-wrap
