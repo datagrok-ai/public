@@ -3,19 +3,19 @@
 
 ## 4.13.11 (2024-07-30)
 
-### Bug Fixes
+### Features
 
 * Added commit label to context panel for 'manually' published versions
 
 ## 4.13.10 (2024-07-29)
 
-### Bug Fixes
+### Features
 
 * Added ability to select test by args variable 
 
 ## 4.13.9 (2024-07-29)
 
-### Bug Fixes
+### Features
 
 * Added ability to select category by args variable 
 
@@ -27,9 +27,9 @@
 
 ## 4.13.6 (2024-07-15)
 
-### Bug Fixes
+### Features
 
-* Splitt warnings and errors in grok check command
+* Splitted warnings and errors in grok check command
 
 ## 4.13.4 (2024-06-25)
 
