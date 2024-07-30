@@ -1,5 +1,9 @@
 # Chembl changelog
 
+## 1.0.38 (2024-07-22)
+
+* Fixed 'Pattern Similarity With Threshold' query name
+
 ## 1.0.37 (2024-06-12)
 
 * Updated datagrok api dependency

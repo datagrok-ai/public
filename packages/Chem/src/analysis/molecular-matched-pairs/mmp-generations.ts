@@ -5,6 +5,7 @@ import {MMP_COLNAME_FROM, MMP_COLNAME_TO, columnsDescriptions} from './mmp-const
 import {MmpInput} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
 
 export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
@@ -40,15 +41,26 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
     activityNames[i] = name;
   }
 
-  await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-    activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
-    rulesFrom, rulesTo, rulesFromCats, rulesToCats);
-  console.timeEnd('generations');
+  const gpu = await getGPUDevice();
+
+  //TODO: fallback for no results if gpu was not succesfull
+  if (gpu) {
+    await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
+      activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
+      rulesFrom, rulesTo, rulesFromCats, rulesToCats);
+  }
+  else {
+    await generationsCPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
+      activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
+      rulesFrom, rulesTo, rulesFromCats, rulesToCats);
+  }
+
+  //console.timeEnd('generations');
 
 
-  console.time('rdkitlinkfragments');
+  //console.time('rdkitlinkfragments');
   const generation = await (await getRdKitService()).mmpLinkFragments(cores, to);
-  console.timeEnd('rdkitlinkfragments');
+  //console.timeEnd('rdkitlinkfragments');
   const cols = [];
   cols.push(createColWithDescription('string', 'Structure', allStructures, DG.SEMTYPE.MOLECULE));
   cols.push(createColWithDescription('double', `Initial value`, Array.from(allInitActivities)));

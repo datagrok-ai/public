@@ -1,10 +1,13 @@
+/* eslint-disable max-params */
+/* eslint-disable max-len */
+/* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import {assure} from '@datagrok-libraries/utils/src/test';
+import {assure, delay} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
@@ -15,7 +18,7 @@ import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {calculateDescriptors, getDescriptorsTree} from "./docker/api";
+import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {getDescriptorsSingle, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
@@ -74,7 +77,9 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {drawMoleculeLabels} from './rendering/molecule-label';
 import {getMCS} from './utils/most-common-subs';
-import {toDart} from 'datagrok-api/dg';
+import JSZip from 'jszip';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -102,6 +107,13 @@ const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
 //output: object module
 export function getRdKitModule(): RDModule {
   return chemCommonRdKit.getRdKitModule();
+}
+
+//name: getMolFileHandler
+//input: string molString
+//output: object handler
+export function getMolFileHandler(molString: string): MolfileHandlerBase {
+  return MolfileHandler.getInstance(molString);
 }
 
 export const _package: DG.Package = new DG.Package();
@@ -572,7 +584,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   }
   const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
   const embedColsNames: string[] = getEmbeddingColsNames(table);
-  const funcCall = await DG.Func.find({ name: 'chemSpaceTransform' })[0].prepare({
+  const funcCall = await DG.Func.find({name: 'chemSpaceTransform'})[0].prepare({
     table: table,
     molecules: molecules,
     methodName: methodName,
@@ -580,12 +592,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     plotEmbeddings: false,
     options: JSON.stringify(options),
     preprocessingFunction: preprocessingFunction,
-    clusterEmbeddings: clusterEmbeddings
-  }).call(undefined, undefined, { processed: false });
+    clusterEmbeddings: clusterEmbeddings,
+  }).call(undefined, undefined, {processed: false});
   let res = funcCall.getOutputParamValue();
 
   if (plotEmbeddings) {
-    res = grok.shell.tv.scatterPlot({ x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space' });
+    res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
     if (clusterEmbeddings)
       res.props.colorColumnName = clusterColName;
     drawMoleculeLabels(table, molecules, res as DG.ScatterPlotViewer, 20, -1, 100, 70);
@@ -606,7 +618,7 @@ export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Colu
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: string, clusterEmbeddings?: boolean,
 ): Promise<DG.Viewer | undefined> {
-  const res =  await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
+  const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
     undefined, clusterEmbeddings);
   console.log(`returned from runChemSpace`);
   return res;
@@ -669,10 +681,10 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
     return;
   }
 
-  const funcCall = await DG.Func.find({ name: 'runElementalAnalysis' })[0].prepare({
+  const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
     table: table,
     molecules: molecules,
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
   const columnNames: string[] = funcCall.getOutputParamValue();
 
   const view = grok.shell.getTableView(table.name);
@@ -705,7 +717,6 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
 //input: column molecules { semType: Molecule }
 //output: list res
 export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column): string[] {
-
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
   const columnNames: string[] = [];
 
@@ -753,7 +764,7 @@ export function rGroupsAnalysisMenu(): void {
 //input: string onlyMatchAtRGroups = false {optional: true}
 //output: object res
 export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string,
-  rGroupName: string,rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
+  rGroupName: string, rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<RGroupDecompRes | undefined> {
   const params: RGroupParams = {
     molColName: molColName,
     core: core,
@@ -878,7 +889,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
   }
 
   const runActCliffs = async (): Promise<void> => {
-    await DG.Func.find({ name: 'activityCliffsTransform' })[0].prepare({
+    await DG.Func.find({name: 'activityCliffsTransform'})[0].prepare({
       table: table,
       molecules: molecules,
       activities: activities,
@@ -886,7 +897,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       methodName: methodName,
       similarityMetric: similarityMetric,
       options: JSON.stringify(options),
-    }).call(undefined, undefined, { processed: false });
+    }).call(undefined, undefined, {processed: false});
 
     const view = grok.shell.getTableView(table.name);
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
@@ -900,7 +911,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       markerMinSize: 5,
       markerMaxSize: 25,
       title: 'Activity cliffs',
-      initializationFunction: 'activityCliffsInitFunction'
+      initializationFunction: 'activityCliffsInitFunction',
     }) as DG.ScatterPlotViewer;
   };
 
@@ -954,8 +965,8 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
   options?: string): Promise<void> {
-  const preprocessingFunction = DG.Func.find({ name: 'getFingerprints', package: 'Chem' })[0];
-  const axesNames = getEmbeddingColsNames(table); 
+  const preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
+  const axesNames = getEmbeddingColsNames(table);
   await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
     similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
   const tagContent: ActivityCliffsParams = {
@@ -964,7 +975,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
     similarityMetric: similarityMetric,
     similarity: similarity,
     options: options ?? {},
-    
+
   };
   table.setTag('activityCliffsParams', JSON.stringify(tagContent));
 }
@@ -1009,7 +1020,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     return;
   }
 
-  await DG.Func.find({ name: 'runStructuralAlerts' })[0].prepare({
+  await DG.Func.find({name: 'runStructuralAlerts'})[0].prepare({
     table: table,
     molecules: molecules,
     pains: pains,
@@ -1019,8 +1030,8 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
     dandee: dandee,
     inpharmatica: inpharmatica,
     lint: lint,
-    glaxo: glaxo
-  }).call(undefined, undefined, { processed: false });
+    glaxo: glaxo,
+  }).call(undefined, undefined, {processed: false});
 
   return table;
 }
@@ -1040,7 +1051,6 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
 ): Promise<DG.DataFrame | void> {
- 
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1480,7 +1490,7 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, 
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore,
     fingerprint as Fingerprint, DG.BitSet.create(col.length).setAll(true));
   return res ?? DG.DataFrame.create();
 }
@@ -1782,70 +1792,144 @@ export async function getContainer() {
   return container;
 }
 
-//name: getAllModelingEngines
-//description: Gets all registered modeling engines with parameters
-//output: map models
-export async function getAllModelingEngines(): Promise<object> {
+export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
   const container = await getContainer();
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/engines');
-  if (response.status !== 200)
-    throw new Error(response.statusText);
-  return toDart(await response.json());
-}
+  
+  const body = {
+    type: 'Chemprop',
+    table: table,
+    predict: predict,
+    parameters: parameterValues
+  };
 
-//name: trainModel
-//description: Train model
-//input: string id
-//input: string type
-//input: string tableServerUrl
-//input: string tableToken
-//input: string predict
-//input: map parameterValues
-//output: blob result
-export async function trainModel(
-  id: string, type: string, tableServerUrl: string, tableToken: string, predict: string, parameterValues: {[_: string]: any}
-): Promise<Uint8Array> {
-  const container = await getContainer();
-  const uriParams = new URLSearchParams({
-    'id': id,
-    'type': type,
-    'table_server_url': tableServerUrl,
-    'table_token': tableToken,
-    'predict': predict
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/train_chemprop', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
   });
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id,
-    '/modeling/train?' + uriParams, {method: 'POST', body: JSON.stringify(parameterValues),
-      headers: {'Content-Type': 'application/json'}});
+
   if (response.status !== 201)
-    throw new Error(response.statusText);
+    throw new Error(`Error training model: ${response.statusText}`);
   return new Uint8Array(await response.arrayBuffer());
 }
 
-//name: applyModel
-//description: Apply model
-//input: string id
-//input: string type
-//input: blob modelBlob
-//input: string tableServerUrl
-//input: string tableToken
-//output: list result
-export async function applyModel(id: string, type: string, modelBlob: Uint8Array, tableServerUrl: string,
-                                 tableToken: string): Promise<DG.Column[]> {
+export async function applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
   const container = await getContainer();
-  const uriParams = new URLSearchParams({
-    'id': id,
-    'type': type,
-    'table_server_url': tableServerUrl,
-    'table_token': tableToken
+
+  const body = {
+    modelBlob: Array.from(modelBlob),
+    table: table
+  };
+
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/predict_chemprop', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
   });
-  const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id,
-    '/modeling/predict?' + uriParams, {method: 'POST', body: modelBlob,
-      headers: {'Content-Type': 'application/octet-stream'}});
+
   if (response.status !== 201)
-    throw new Error(response.statusText);
+    throw new Error(`Error applying model: ${response.statusText}`);
+  
   const data = await response.json();
-  const column = DG.Column.fromStrings('outcome', Array.from(data['outcome'], (v: any, _) => v?.toString()));
-  return [toDart(column)];
+  return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
+}
+
+//name: trainChemprop
+//description: To be added
+//meta.mlname: Chemprop
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: string dataset_type = 'regression' {category: General; choices: ['regression', 'classification']} [Type of dataset, e.g. classification or regression. This determines the loss function used during training.]
+//input: string metric = 'rmse' {category: General; choices: ['auc', 'prc-auc', 'rmse', 'mae', 'mse', 'r2', 'accuracy', 'cross_entropy']} [Metric to use during evaluation. Note: Does NOT affect loss function used during training (loss is determined by the `dataset_type` argument).]
+//input: int multiclass_num_classes = 3 {category: General} [Number of classes when running multiclass classification]
+//input: int num_folds = 1 {category: General} [Number of folds when performing cross validation]
+//input: int data_seed = 0 {category: General} [Random seed to use when splitting data into train/val/test sets. When `num_folds` > 1, the first fold uses this seed and all subsequent folds add 1 to the seed.]
+//input: list split_sizes = [0.8, 0.1, 0.1] {category: General} [Split proportions for train/validation/test sets]
+//input: string split_type = 'random' {category: General; choices: ['random', 'scaffold_balanced', 'predetermined', 'crossval', 'index_predetermined']} [Method of splitting the data into train/val/test]
+//input: string activation = 'ReLU' {category: Model; choices: ['ReLU', 'LeakyReLU', 'PReLU', 'tanh', 'SELU', 'ELU']} [Activation function]
+//input: bool atom_messages = false {category: Model} [Use messages on atoms instead of messages on bonds]
+//input: bool message_bias = false {category: Model} [Whether to add bias to linear layers]
+//input: int ensemble_size = 1 {category: Model} [Number of models in ensemble]
+//input: int message_hidden_dim = 300 {category: Model} [Dimensionality of hidden layers in MPN]
+//input: int depth = 3 {category: Model} [Number of message passing step]
+//input: double dropout = 0.0 {category: Model} [Dropout probability]
+//input: int ffn_hidden_dim = 300 {category: Model} [Hidden dim for higher-capacity FFN (defaults to hidden_size)]
+//input: int ffn_num_layers = 2 {category: Model} [Number of layers in FFN after MPN encoding]
+//input: int epochs = 50 {category: Training} [Number of epochs to run]
+//input: int batch_size = 64 {category: Training} [Batch size]
+//input: double warmup_epochs = 2.0 {category: Training} [Number of epochs during which learning rate increases linearly from init_lr to max_lr. Afterwards, learning rate decreases exponentially from max_lr to final_lr.]
+//input: double init_lr = 0.0001 {category: Training} [Initial learning rate]
+//input: double max_lr = 0.001 {category: Training} [Maximum learning rate]
+//input: double final_lr = 0.0001 {category: Training} [Final learning rate]
+//input: bool no_descriptor_scaling = false {category: Training} [Turn off scaling of features]
+//output: dynamic model
+export async function trainChemprop(
+  df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number,
+  data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number,
+  message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number,
+  warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean
+): Promise<Uint8Array> {
+  const parameterValues = {
+    'dataset_type': dataset_type,
+    'metric': metric,
+    'multiclass_num_classes': multiclass_num_classes,
+    'activation': activation,
+    'atom_messages': atom_messages,
+    'batch_size': batch_size,
+    'message_bias': message_bias,
+    'depth': depth,
+    'dropout': dropout,
+    'ensemble_size': ensemble_size,
+    'epochs': epochs,
+    'ffn_hidden_dim': ffn_hidden_dim,
+    'ffn_num_layers': ffn_num_layers,
+    'final_lr': final_lr,
+    'message_hidden_dim': message_hidden_dim,
+    'init_lr': init_lr,
+    'max_lr': max_lr,
+    'no_descriptor_scaling': no_descriptor_scaling,
+    'num_folds': num_folds,
+    'data_seed': data_seed,
+    'split_sizes': split_sizes,
+    'split_type': split_type,
+    'warmup_epochs': warmup_epochs
+  };
+  df.columns.add(predictColumn);
+  const modelBlob = await trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+  const zip = new JSZip();
+  const archive = await zip.loadAsync(modelBlob);
+  const file = archive.file('blob.bin');
+  const binBlob = await file?.async('uint8array')!;
+  return binBlob;
+}
+
+//name: applyChemprop
+//meta.mlname: Chemprop
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe data_out
+export async function applyChemprop(df: DG.DataFrame, model: Uint8Array) {
+  const column = await applyModelChemprop(model, df.toCsv());
+  return DG.DataFrame.fromColumns([column]);
+}
+
+//name: isApplicableNN
+//meta.mlname: Chemprop
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export async function isApplicableNN(df: DG.DataFrame, predictColumn: DG.Column) {
+  if (df.columns.length > 1)
+    return false;
+  const featureColumn = df.columns.byIndex(0);
+  if (featureColumn.semType != 'Molecule')
+    return false;
+  if (!predictColumn.matches('numerical'))
+    return false;
+  return true;
 }
 
 export {getMCS};

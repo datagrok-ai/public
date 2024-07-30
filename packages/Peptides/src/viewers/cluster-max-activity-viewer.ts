@@ -290,7 +290,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
 
     this.render();
 
-    this.dataFrame.onDataChanged.subscribe(() => {
+    this.dataFrame?.onDataChanged.subscribe(() => {
       this.render();
     });
   }
@@ -299,6 +299,8 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     if (this.renderTimeout)
       clearTimeout(this.renderTimeout);
     this.renderTimeout = setTimeout(() => {
+      if (!this.dataFrame)
+        return;
       $(this.root).empty();
       const scViewer = this.scViewer;
       if (scViewer == null) {

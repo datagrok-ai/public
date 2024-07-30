@@ -138,8 +138,7 @@ class Table {
       this._dataFrame.rows.removeAt(itemIdx);
       if (this._currentItemIdx > itemIdx)
         this._currentItemIdx--;
-      if (this._currentItemIdx >= 0)
-        this._onItemChangedAction(this._currentItemIdx);
+      this._onItemChangedAction(this._currentItemIdx);
     });
     btn.style.textAlign = 'center';
     btn.style.height = '20px';

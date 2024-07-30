@@ -34,6 +34,7 @@ export enum TITLE {
   SCORES = 'Scores',
   EXPL_VAR = 'Explained Variance',
   EXPLORE = 'Explore',
+  FEATURES = 'Feature names',
 }
 
 /** Tooltips */

@@ -1,6 +1,14 @@
 # Grok Connect changelog
 
-# 2.1.15 (2024-03-20) (WIP)
+# 2.1.18 (2024-07-17) WIP
+
+* Bug fixes
+
+# 2.1.17 (2024-04-19)
+
+* Bug fixes
+
+# 2.1.16 (2024-03-20)
 
 * Fix bug with missing last rows of returned DataFrame
 
