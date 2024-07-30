@@ -13,7 +13,7 @@ import {getLayoutInput} from './layout-input';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
-  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery },
+  dataSourceFunctionMap: { [key: string]: DG.Func | DG.DataQuery | DG.Script },
 ): Promise<INewTemplateResult<HitTriageTemplate>> {
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
@@ -27,7 +27,8 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
   });
-  const submitFunctionInput = ui.input.choice('Submit function', {value: null, items: [null, ...Object.keys(submitFunctionsMap)]});
+  const submitFunctionInput =
+    ui.input.choice('Submit function', {value: null, items: [null, ...Object.keys(submitFunctionsMap)]});
   submitFunctionInput.value = null;
   submitFunctionInput.nullable = true;
   submitFunctionInput.fireChanged();
@@ -80,14 +81,8 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   if (Object.entries(dataSourceFunctionMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
     const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
-    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
-      .filter(`#${C.HitTriageDataSourceTag}`).list();
-    // DG.Script.create
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionMap[func.friendlyName ?? func.name] = func;
-    });
-    dataSourceQueries.forEach((query) => {
-      dataSourceFunctionMap[query.friendlyName ?? query.name] = query;
     });
   }
   const combinedSourceNames = Object.keys(dataSourceFunctionMap);

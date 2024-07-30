@@ -55,11 +55,6 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
     });
-    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
-      .filter(`#${C.HitTriageDataSourceTag}`).list();
-    dataSourceQueries.forEach((query) => {
-      dataSourceFunctionsMap[query.friendlyName ?? query.name] = query;
-    });
   }
   let funcCall: DG.FuncCall | null = null;
   // each data source function can have some parameters like for example number of rows to return

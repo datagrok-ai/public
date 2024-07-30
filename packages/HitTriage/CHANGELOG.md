@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.2.0 (2024-07-30)
+
+Permission management and sharing of campaigns. Deleting templates. optimization of function loading
+
 ## 1.1.16 (2024-07-29)
 
 Fix re-running calculations on the first index.
