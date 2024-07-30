@@ -1,12 +1,17 @@
 # Datagrok-tools changelog
 
 
+## 4.13.11 (2024-07-30)
+
+### Bug Fixes
+
+* Added commit label to context panel for 'manually' published versions
+
 ## 4.13.10 (2024-07-29)
 
 ### Bug Fixes
 
 * Added ability to select test by args variable 
-
 
 ## 4.13.9 (2024-07-29)
 
