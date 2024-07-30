@@ -6,7 +6,7 @@ import {defaultErrorHandler} from './err-info';
 import {_package, addContextMenu} from '../package';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {polyToolEnumerateHelmUI} from '../polytool/pt-ui';
+import {polyToolEnumerateHelmUI} from '../polytool/pt-dialog';
 
 export type SequenceTranslatorWindowType = Window & {
   $sequenceTranslator?: {

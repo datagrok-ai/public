@@ -16,11 +16,10 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 //polytool specific
-import {getPolyToolConversionDialog} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog, polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
-import {polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-ui';
 import {addContextMenuUI} from './utils/context-menu';
 import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
