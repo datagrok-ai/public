@@ -622,29 +622,23 @@ export class PipelineView extends FunctionView {
         await this.showHelpWithDelay(currentStep);
         this.saveHelpState('opened');
       }
-    });
+    }, 'Show help for this step');
 
     const updateInfoIconAndRibbons = () => {
       const currentStep = this.findCurrentStep();
-
-      const newRibbonPanels = [
-        [
-          ...super.buildRibbonPanels().flat(),
-          ...currentStep && this.steps[
-            currentStep.options?.customId ?? currentStep.func.nqName
-          ].options?.helpUrl ? [infoIcon]: [],
-        ],
-        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
-      ];
-
-      this.setRibbonPanels(newRibbonPanels);
+      ui.setDisplay(infoIcon, !!(currentStep && this.helpFiles[currentStep.func.nqName]));
 
       if (currentStep && this.helpFiles[currentStep.func.nqName]) {
         if (grok.shell.windows.help.visible)
           this.showHelpWithDelay(currentStep);
       }
 
-      return newRibbonPanels;
+      console.log(this.getRibbonPanels());
+      this.setRibbonPanels([
+        ...this.getRibbonPanels().slice(0, 1),
+        ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+        ...this.getRibbonPanels().length > 2 ? this.getRibbonPanels().slice(-1): [],
+      ]);
     };
 
     if (!this.isReady.value) {
@@ -674,7 +668,16 @@ export class PipelineView extends FunctionView {
       this.subs.push(tabSub, helpSub);
     }
 
-    const newRibbonPanels = updateInfoIconAndRibbons();
+    const currentStep = this.findCurrentStep();
+    const newRibbonPanels = [
+      [
+        ...super.buildRibbonPanels().flat(),
+        infoIcon,
+      ],
+      ...currentStep ? currentStep.view.buildRibbonPanels(): [],
+    ];
+    this.setRibbonPanels(newRibbonPanels);
+    updateInfoIconAndRibbons();
 
     return newRibbonPanels;
   }

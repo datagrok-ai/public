@@ -744,7 +744,7 @@ export class RichFunctionView extends FunctionView {
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...this.isFittingEnabled ? [fitting]: [],
-      ...this.hasContextHelp ? [contextHelpIcon]: [],
+      ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);
