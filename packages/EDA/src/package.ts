@@ -31,6 +31,7 @@ import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
+import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
 export const _package = new DG.Package();
@@ -667,4 +668,69 @@ export function isApplicableSoftmax(df: DG.DataFrame, predictColumn: DG.Column):
 //output: bool result
 export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
+}
+
+//name: trainPLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: int components = 3 {min: 1; max: 10} [Number of latent components]
+//output: dynamic model
+export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  if (components > features.length)
+    throw new Error('Number of components is greater than features count');
+
+  const model = new PlsModel();
+  await model.fit(features, predictColumn, components);
+
+  return model.toBytes();
+}
+
+//name: applyPLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
+  const unpackedModel = new PlsModel(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+}
+
+//name: isApplicablePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicablePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isApplicable(df.columns, predictColumn);
+}
+
+//name: visualizePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: visualize
+//input: dataframe df
+//input: column targetColumn
+//input: column predictColumn
+//input: dynamic model
+//output: dynamic widget
+export async function visualizePLSRegression(df: DG.DataFrame, targetColumn: DG.Column, predictColumn: DG.Column, model: any): Promise<any> {
+  const unpackedModel = new PlsModel(model);
+  const viewers = unpackedModel.viewers();
+
+  return viewers.map((v) => v.root);
+}
+
+//name: isInteractivePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isInteractive(df.columns, predictColumn);
 }

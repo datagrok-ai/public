@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.30 (2024-07-29)
+
+Add PLS regression to predictive modeling tools
+
 ## 1.1.29 (2024-07-29)
 
 Add the softmax classifier
