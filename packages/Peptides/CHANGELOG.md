@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.24 (2024-07-29)
+
+Fix invariant map values rendering
+
 ## 1.17.23 (2024-07-29)
 
 Added options to invariant map:
