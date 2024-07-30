@@ -28,7 +28,7 @@ const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';
 const PT_UI_DIALOG_ENUMERATION = 'Poly Tool Enumeration';
 const PT_UI_RULES_USED = 'Rules used';
 
-export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
+export async function getPolyToolConversionDialog(targetCol?: DG.Column): Promise<DG.Dialog> {
   const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   if (!targetColumns)
     throw new Error(PT_ERROR_DATAFRAME);
@@ -37,6 +37,8 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
     table: grok.shell.t, value: targetColumns[0],
     filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
   });
+
+  targetColumnInput.value = targetCol ? targetCol : targetColumnInput.value;
 
   const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
   ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
