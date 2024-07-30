@@ -10,7 +10,7 @@ import {
   Hit,
   isSummarySettingsBase
 } from './shared';
-import { generalProps, groupProps, subGroupProps } from './properties';
+import { createTreeGroup, initializeSectors } from '../utils/settings';
 
 let minRadius: number;
 
@@ -19,7 +19,7 @@ enum PieChartStyle {
   Angle = 'Angle'
 }
 
-interface Subsector {
+export interface Subsector {
   name: string;
   lowThreshold: number;
   highThreshold: number;
@@ -28,7 +28,7 @@ interface Subsector {
   probabilities?: number[];
 }
 
-interface PieChartSettings extends SummarySettingsBase {
+export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle;
   sectors?: {
@@ -356,226 +356,22 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
-        function (value: PieChartStyle) {
-          settings.style = value;
-          gc.grid.invalidate();
-        }),
-      ui.choiceInput('Type', 'Standard', ['Standard', 'VlaaiVis'],
-        function (value: string) {
+      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius, 'VlaaiVis'],
+        function (value: PieChartStyle | string) {
           ui.empty(elementsDiv);
           const sectors = initializeSectors(settings.columnNames, grok.shell.tv.dataFrame);
-          if (value === 'Vlaavis') {
+          if (value === 'VlaaiVis') {
             settings.sectors = sectors;
             gc.grid.invalidate();
             elementsDiv.appendChild(createTreeGroup(settings, gc));
           } else {
             delete settings.sectors;
+            settings.style = value as PieChartStyle;
             gc.grid.invalidate();
           }
-        }
-      )
+        })
     ]);
 
     return ui.divV([inputs, elementsDiv]);
   }
 }
-
-function generateNumber() {
-  return Math.random();
-}
-
-function createInputForProperty(property: any, name: string, settings: PieChartSettings, gc: DG.GridColumn) {
-  const prop = DG.Property.fromOptions(property.property);
-  const input = DG.InputBase.forProperty(prop, {});
-
-  // Find the initial value in settings.sectors
-  let value: any;
-
-  for (const sector of settings.sectors!.sectors) {
-    if (sector.name === name) {
-      value = sector[property.property.name as keyof typeof sector];
-      break;
-    }
-    for (const subsector of sector.subsectors) {
-      if (subsector.name === name) {
-        value = subsector[property.property.name as keyof typeof subsector];
-        break;
-      }
-    }
-
-    if (name === '') {
-      value = (settings.sectors as any)[property.property.name];
-    }
-
-    if (value !== undefined) break;
-  }
-
-  input.value = value !== undefined ? value : property.object[property.property.name];
-
-  // Handle input changes
-  input.onChanged(() => {
-    for (const sector of settings.sectors!.sectors) {
-      if (sector.name === name) {
-        sector[property.property.name as keyof typeof sector] = input.value;
-        break;
-      }
-      for (const subsector of sector.subsectors) {
-        if (subsector.name === name) {
-          subsector[property.property.name as keyof typeof subsector] = input.value as never;
-          break;
-        }
-      }
-
-      if (name === '') {
-        (settings.sectors as any)[property.property.name] = input.value;
-      }
-    }
-    settings.sectors = settings.sectors;
-    gc.grid.invalidate();
-  });
-
-  return input.root;
-}
-
-/**
- 5. think of better naming
- 6. UI fixes
- */
-
-// Function to create tree group with properties
-function createTreeGroup(settings: PieChartSettings, gc: DG.GridColumn): Element {
-  const df = grok.shell.tv.dataFrame;
-  const tag = '.group-name';
-  const tree = ui.tree();
-  const inputs = ui.divV([]);
-
-  // Map to store group names and corresponding columns
-  const groupMap = new Map<string, DG.Column[]>();
-  const propertiesMap = new Map<string, any>();
-  const columns = df.columns.byNames(settings.columnNames);
-
-  // Populate the group map
-  //Should utilize columnNames from settings to be sync
-  columns.forEach((col: DG.Column) => {
-    const groupName = col.getTag(tag);
-    if (groupName !== null) {
-      if (!groupMap.has(groupName)) {
-        groupMap.set(groupName, []);
-        propertiesMap.set(groupName, {});
-      }
-      groupMap.get(groupName)!.push(col);
-      propertiesMap.set(col.name, {});
-    }
-  });
-
-  // Create tree nodes
-  Array.from(groupMap.keys()).forEach((group) => {
-    const groupNode = tree.group(group);
-    groupNode.expanded = true;
-    groupNode.enableCheckBox(false);
-
-    const columns = groupMap.get(group);
-    columns?.forEach((col) => {
-      const colNode = groupNode.item(col.name);
-      colNode.checked = false;
-      colNode.enableCheckBox(false);
-    });
-  });
-
-  tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
-    ui.empty(inputs);
-    if (settings.columnNames.includes(node.text)) {
-      for (let prop of subGroupProps)
-        inputs.appendChild(createInputForProperty(prop, node.text, settings, gc));
-    } else {
-      for (let prop of groupProps) {
-        inputs.appendChild(createInputForProperty(prop, node.text, settings, gc));
-        const propName = prop.property.name;
-        propertiesMap.get(node.text)[propName] = (prop.object as any)[propName];
-      }
-    }
-  });
-
-  const generalInp = ui.divV([]);
-  //routine to create general props
-  for (let prop of generalProps)
-    generalInp.appendChild(createInputForProperty(prop, '', settings, gc));
-
-  //console.log('settings object');
-  //console.log(JSON.stringify(createTreeSettings(groupMap, propertiesMap)));
-
-  return ui.divV([generalInp, ui.divH([tree.root, inputs], 'ui-form')]);
-}
-
-const defaultGeneralProps = generalProps.reduce((acc, prop) => {
-  acc[prop.property.name] = (prop.object as any)[prop.property.name];
-  return acc;
-}, {} as Record<string, any>);
-
-// Default properties based on groupProps and subGroupProps
-const defaultGroupProps = groupProps.reduce((acc, prop) => {
-  acc[prop.property.name] = (prop.object as any)[prop.property.name];
-  return acc;
-}, {} as Record<string, any>);
-
-function initializeSectors(columnNames: string[], dataFrame: DG.DataFrame): {
-  lowerBound: number;
-  upperBound: number;
-  sectors: {
-    name: string;
-    sectorColor: string;
-    subsectors: Subsector[];
-  }[];
-  values: string | null;
-} {
-  const groupMap = new Map<string, DG.Column[]>();
-  const propertiesMap = new Map<string, any>();
-  const columns = dataFrame.columns.byNames(columnNames);
-  const tag = '.group-name';
-
-  columns.forEach((col: DG.Column) => {
-    const groupName = col.getTag(tag);
-    if (groupName !== null) {
-      if (!groupMap.has(groupName)) {
-        groupMap.set(groupName, []);
-        propertiesMap.set(groupName, {});
-      }
-      groupMap.get(groupName)!.push(col);
-      propertiesMap.set(col.name, {});
-    }
-  });
-
-  let sectors: { name: string; sectorColor: string; subsectors: Subsector[] }[] = [];
-
-  groupMap.forEach((columns, groupName) => {
-    let subsectors: Subsector[] = [];
-
-    columns.forEach((col) => {
-      subsectors.push({
-        name: col.name,
-        lowThreshold: parseFloat(col.getTag('.low-threshold')) ?? 0,
-        highThreshold: parseFloat(col.getTag('.high-threshold')) ?? 1,
-        weight: parseFloat(col.getTag('.weight')) ?? generateNumber(),
-        //applicability: defaultSubGroupProps["applicability"] ?? DEFAULT_APPLICABILITY_VALUE,
-        //probabilities: []
-      });
-    });
-
-    sectors.push({
-      name: groupName,
-      sectorColor: defaultGroupProps["sectorColor"],
-      subsectors
-    });
-  });
-
-  return {
-    lowerBound: defaultGeneralProps["lowerBound"] ?? DEFAULT_LOWER_VALUE,
-    upperBound: defaultGeneralProps["upperBound"] ?? DEFAULT_UPPER_VALUE,
-    sectors,
-    values: null
-  };
-}
-
-const DEFAULT_LOWER_VALUE = 0.7;
-const DEFAULT_UPPER_VALUE = 0.9;
