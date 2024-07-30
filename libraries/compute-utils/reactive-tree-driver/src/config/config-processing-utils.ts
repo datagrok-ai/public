@@ -56,25 +56,6 @@ function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepCon
 }
 
 
-export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]>;
-
-export function isPipelineStaticConfig(c: ConfigTraverseItem): c is PipelineConfigurationStaticProcessed {
-  return !!((c as PipelineConfigurationStaticProcessed).type === 'static');
-}
-
-export function isPipelineParallelConfig(c: ConfigTraverseItem): c is PipelineConfigurationParallelProcessed {
-  return !!((c as PipelineConfigurationParallelProcessed).type === 'parallel');
-}
-
-export function isPipelineSequentialConfig(c: ConfigTraverseItem): c is PipelineConfigurationSequentialProcessed {
-  return !!((c as PipelineConfigurationSequentialProcessed).type === 'sequential');
-}
-
-export function isStepConfig(c: ConfigTraverseItem): c is PipelineStepConfiguration<FuncallStateItem[]> {
-  return !isPipelineStaticConfig(c) && !isPipelineParallelConfig(c) && isPipelineSequentialConfig(c);
-}
-
-
 export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
   const pconf = await configProcessing(conf, new Set());
   return pconf as PipelineConfigurationProcessed;

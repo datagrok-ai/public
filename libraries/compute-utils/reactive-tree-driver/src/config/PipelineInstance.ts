@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {InputState, ItemId, NqName} from '../data/common-types';
-import { ValidationResultBase } from '../../../shared-utils/validation';
+import {ItemId, NqName} from '../data/common-types';
+import {ValidationResultBase} from '../../../shared-utils/validation';
+import {RestrictionType} from '../runtime/FuncCallAdapters';
 
 //
 // initial steps config for dynamic pipelines
@@ -19,7 +20,7 @@ export type StepSequentialInitialConfig = {
 export type StepFunCallInitialConfig = {
   id: ItemId;
   values?: Record<string, any>;
-  inputStates?: Record<string, InputState>;
+  inputRestrictions?: Record<string, RestrictionType>;
 }
 
 export type InstanceConfRec<C> = {

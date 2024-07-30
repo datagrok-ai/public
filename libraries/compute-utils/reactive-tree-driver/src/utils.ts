@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import cloneDeepWith from 'lodash.clonedeepwith';
 import {Observable, defer, from} from 'rxjs';
-import {ItemPathArray} from './data/common-types';
 import {HandlerBase} from './config/PipelineConfiguration';
 
 export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): Observable<R> {

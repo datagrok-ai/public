@@ -3,11 +3,11 @@ import {v4 as uuidv4} from 'uuid';
 import {switchMap, map} from 'rxjs/operators';
 import {NodePath, NodeTree, TreeNode} from '../data/NodeTree';
 import {PipelineStepConfiguration} from '../config/PipelineConfiguration';
-import {FuncallStateItem, isPipelineParallelConfig, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
+import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import {isFuncCallState, PipelineSerializedState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import { isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/traversable';
-import {buildRefMap, getConfigByInstancePath, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig} from '../config/config-utils';
+import { buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig} from '../config/config-utils';
 import {IFuncCallAdapter, IRunnableWrapper, IStateStore, IValidationStore, MemoryStore, RestrictionType} from './FuncCallAdapters';
 
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
@@ -104,6 +104,9 @@ export interface IStoreProvider {
 export class FuncCallNode implements IStoreProvider {
   public readonly uuid = uuidv4();
   public readonly nodeType = 'funccall';
+  public initialValues: Record<string, any> = {};
+  public initialInputRestriction: Record<string, RestrictionType> = {};
+
   private instancesWrapper = new FuncCallInstancesBridge();
 
   constructor(
@@ -121,6 +124,11 @@ export class FuncCallNode implements IStoreProvider {
   restoreState(state: StepFunCallState) {
     this.instancesWrapper.isOutputOutdated$.next(!!state.isOuputOutdated);
     this.instancesWrapper.isCurrent$.next(!!state.isCurrent);
+  }
+
+  initState(initialConfig: StepFunCallInitialConfig) {
+    this.initialValues = initialConfig.values ?? {};
+    this.initialInputRestriction = initialConfig.inputRestrictions ?? {};
   }
 
   toState(): StepFunCallState {
@@ -153,8 +161,6 @@ export class FuncCallNode implements IStoreProvider {
     };
     return res;
   }
-
-
 }
 
 export class PipelineNodeBase implements IStoreProvider {
@@ -277,14 +283,14 @@ export class StateTree extends NodeTree<StateTreeNode> {
   }
 
   static fromState(state: PipelineSerializedState, config: PipelineConfigurationProcessed): StateTree {
+    const refMap = buildRefMap(config);
+
     const traverse = buildTraverseD([] as Readonly<NodePath>, (item: PipelineState, path) => {
       if (isFuncCallState(item))
         return [];
       else
         return item.steps.map((step, idx) => [step, [...path, {id: step.configId, idx}]] as const);
     });
-
-    const refMap = buildRefMap(config);
 
     const tree = traverse(state, (acc, state, path) => {
       const confPath = path.map(p => p.id);
@@ -305,6 +311,89 @@ export class StateTree extends NodeTree<StateTreeNode> {
       return acc;
     }, undefined as StateTree | undefined);
     return tree!;
+  }
+
+  static fromInstanceConfig(instanceConfig: PipelineInstanceConfig, config: PipelineConfigurationProcessed): StateTree {
+    const refMap = buildRefMap(config);
+
+    const traverse = buildTraverseD([] as Readonly<NodePath>, (data: PipelineInstanceConfig, path, visited) => {
+      if (visited!.has(data))
+        throw new Error(`Initial config cycle on node ${data}`);
+      visited!.add(data);
+      if (data.steps)
+        return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}], visited] as const);
+      else
+        return [];
+    }, new Set<PipelineInstanceConfig>());
+
+    const tree = traverse(instanceConfig, (acc, state, path) => {
+      const confPath = path.map(p => p.id);
+      const treePath = path.map(p => ({idx: p.idx}));
+      const nodeConf = getConfigByInstancePath(confPath, config, refMap);
+      if (nodeConf == null)
+        throw new Error(`Unable to find conf node for ${path}`);
+      const node = StateTree.makeNode(nodeConf);
+      if (isFuncCallNode(node))
+        node.initState(state);
+      if (acc)
+        acc.addItem(treePath, node, node.config.id);
+      else
+        return new StateTree(node);
+      return acc;
+
+    }, undefined as StateTree | undefined);
+    return tree!;
+  }
+
+  static stateMakeInitialTree(config: PipelineConfigurationProcessed): StateTree {
+    const refMap = buildRefMap(config);
+
+    const traverse = buildTraverseD([] as Readonly<NodePath>, (data: ConfigTraverseItem, path, visited) => {
+      if (visited!.has(data))
+        throw new Error(`Initial config cycle on node ${data}`);
+      visited!.add(data);
+      if (isPipelineParallelConfig(data) || isPipelineSequentialConfig(data)) {
+        const items = (data?.initialSteps ?? []).map((step, idx) => {
+          const item = data.stepTypes.find(t => t.id === step.id);
+          if (!item)
+            throw new Error(`Item ${step.id} not found on path ${path}`);
+          const nextPath = [...path, {id: step.id, idx}];
+          return [item, nextPath, visited] as const;
+        });
+        return items;
+      } else if (isPipelineStaticConfig(data)) {
+        return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}], visited] as const);
+      } else if (isPipelineSelfRef(data)) {
+        const next = refMap.get(data.selfRef);
+        if (!next) {
+          throw new Error(`Failed to deref ${data.selfRef} on path ${path}`);
+        }
+        return [[next, [...path, {id: next.id, idx: 0}], visited!]] as const
+      }
+      return [] as const;
+    }, new Set<ConfigTraverseItem>());
+
+    const tree = traverse(config, (acc, state, path) => {
+      const confPath = path.map(p => p.id);
+      const treePath = path.map(p => ({idx: p.idx}));
+      const nodeConf = getConfigByInstancePath(confPath, config, refMap);
+      if (nodeConf == null)
+        throw new Error(`Unable to find conf node for ${path}`);
+      const node = StateTree.makeNode(nodeConf);
+      if (isFuncCallNode(node)) {
+        if (!isPipelineStepConfig(state))
+          throw new Error(`Wrong FuncCall node state: ${state}`);
+        node.initState(state);
+      }
+      if (acc)
+        acc.addItem(treePath, node, node.config.id);
+      else
+        return new StateTree(node);
+      return acc;
+
+    }, undefined as StateTree | undefined);
+    return tree!;
+
   }
 
   private static makeNode(nodeConf: PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]>) {

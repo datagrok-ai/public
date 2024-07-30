@@ -106,9 +106,13 @@ export type PipelineConfigurationBase<P, G> = {
 
 // fixed pipeline
 
+export type PipelineStaticItem<P, S, R, G> = {
+  id: ItemId;
+} & (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R, G> | R);
+
 export type AbstractPipelineStaticConfiguration<P, S, R, G> = {
   links?: PipelineLinkConfiguration<P>[];
-  steps: (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R, G> | R)[];
+  steps: PipelineStaticItem<P, S, R, G>[];
   type: 'static';
 } & PipelineConfigurationBase<P, G>;
 
