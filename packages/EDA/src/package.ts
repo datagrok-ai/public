@@ -809,6 +809,7 @@ export function applyXGBooster(df: DG.DataFrame, model: any): DG.DataFrame {
 //meta.mlrole: isInteractive
 //input: dataframe df
 //input: column predictColumn
+//output: bool result
 export function isInteractiveXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return XGBooster.isInteractive(df.columns, predictColumn);
 }
