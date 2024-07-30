@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.36.4 (2024-07-30)
+
+- Deps update
+
 ## 1.36.3 (2024-07-30)
 
 - Wizard: Fixed context info icon duplication
