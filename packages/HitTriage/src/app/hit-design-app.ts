@@ -301,7 +301,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
           const cellIndex = args?.args?.item?.tableRowIndex;
           const cellValue = args?.args?.item?.cell?.value;
-          if (cellIndex && cellValue && cellIndex > -1) {
+          if (cellValue && (cellIndex ?? -1) > -1) {
             menu.item('Re-Run Calculations', async () => {
               try {
                 await performSingleCellCalculations(cellIndex, cellValue);

@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.1.16 (2024-07-29)
+
+Fix re-running calculations on the first index.
+
 ## 1.1.15 (2024-07-29)
 
 Fixed duplicate detection on fingerprints. added rerunning calculations
