@@ -788,7 +788,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async exportRunJson() {
     if (this._lastCall) {
       const data = await fcToSerializable(this._lastCall, this);
-      return serialize(data, 0);
+      return serialize(data);
     }
   }
 

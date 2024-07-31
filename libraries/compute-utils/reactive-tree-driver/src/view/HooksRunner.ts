@@ -63,11 +63,11 @@ export class HooksRunner {
       const items = hooks[category];
       for (const item of items ?? []) {
         const handler = item.handler!;
-        const ctrlConf = new ControllerConfig(path, item.from, item.to);
-        const controller = new RuntimeControllerImpl(item.id, ctrlConf, this.rt!);
-        const params = {...additionalParams, controller};
-        const obs$ = callHandler(handler, params);
-        observables.push(obs$);
+        // const ctrlConf = new ControllerConfig(path, item.from, item.to);
+        // const controller = new RuntimeControllerImpl(item.id, ctrlConf, this.rt!);
+        // const params = {...additionalParams, controller};
+        // const obs$ = callHandler(handler, params);
+        // observables.push(obs$);
       }
     }
     return concat(observables);
