@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
 ## 1.36.3 (2024-07-30)
 
 - Wizard: Fixed context info icon duplication
