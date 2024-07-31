@@ -129,42 +129,37 @@ export const VuePipelineView = defineComponent({
                   />;
                 };
 
-                const onNodeClick = async (stat: Stat<Data>) => {
-                  const nodeCall = stat.data.funcCall;
-                  stat.status = 'running';
+                const runByTree = async (currentStat: AugmentedStat) => {
+                  const nodeCall = currentStat.data.funcCall;
+                  currentStat.status = 'running';
                   if (nodeCall) {
                     try {
                       const call = await getCall(nodeCall).call();
                       currentFuncCall.value = call;
-                      stat.status = 'succeeded';
-                    } catch {
-                      stat.status = 'failed';
-                    }
-                  
-                    triggerRef(currentFuncCall);
-                  } else {
-                    await Promise.all(stat.children.map(async (child) => {
-                      try {
-                        child.status = 'running';
-                        await onNodeClick(child);
-                        child.status = 'succeeded';
+                      currentStat.status = 'succeeded';
 
-                        return Promise.resolve(child.status);
-                      } catch (e) {
-                        child.status = 'failed';
-                        return Promise.reject(e);
-                      }
+                      triggerRef(currentFuncCall);
+
+                      return Promise.resolve(currentStat.status);
+                    } catch (e) {
+                      currentStat.status = 'failed';
+
+                      return Promise.reject(e);
+                    }
+                  } else {
+                    await Promise.all(currentStat.children.map(async (child) => {
+                      return runByTree(child as AugmentedStat);
                     })).then(() => {
-                      stat.status = 'succeeded';
+                      currentStat.status = 'succeeded';
                     }).catch(() => {
-                      stat.status = 'failed';
+                      currentStat.status = 'failed';
                     });                      
                   }
                 };
 
                 return (
                   <div style={{display: 'flex', padding: '4px 0px', width: '100%'}}
-                    onClick={() => onNodeClick(stat)}
+                    onClick={() => runByTree(stat)}
                     onMouseover={() => stat.isHovered = true} 
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
