@@ -62,14 +62,13 @@ that automatically update when the data changes.
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
   const layout = await _package.files.readAsText(VIEWER_LAYOUTS_FILE_NAMES[viewerName]);
-  const modifiedLayout = DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
-  return modifiedLayout;
+  return DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
 }
 
 async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string): Promise<void> {
   const layout = await getLayout(viewerName, tableView.dataFrame);
   tableView.loadLayout(layout);
-  const viewer = Array.from(grok.shell.tv.viewers).find((viewer) => viewer.type === viewerName);
+  const viewer = Array.from(tableView.viewers)?.find((viewer) => viewer.type === viewerName);
   if (viewer)
     grok.shell.windows.help.showHelp(viewer.helpUrl);
 }
