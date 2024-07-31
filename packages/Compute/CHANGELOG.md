@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
 ## 1.36.4 (2024-07-30)
 
 - Deps update
