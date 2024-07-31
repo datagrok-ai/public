@@ -15,7 +15,7 @@ type TreeNode = {
 }
 
 type Data = {
-  funcCall: DG.FuncCall | string,
+  funcCall?: DG.FuncCall | string,
   text: string
 }
 
@@ -129,11 +129,12 @@ export const VuePipelineView = defineComponent({
                   />;
                 };
 
-                const onNodeClick = async () => {
+                const onNodeClick = async (stat: Stat<Data>) => {
+                  const nodeCall = stat.data.funcCall;
                   stat.status = 'running';
-                  if (stat.data.funcCall) {
+                  if (nodeCall) {
                     try {
-                      const call = await getCall(stat.data.funcCall).call();
+                      const call = await getCall(nodeCall).call();
                       currentFuncCall.value = call;
                       stat.status = 'succeeded';
                     } catch {
@@ -145,8 +146,7 @@ export const VuePipelineView = defineComponent({
                     await Promise.all(stat.children.map(async (child) => {
                       try {
                         child.status = 'running';
-                        const call = await getCall(child.data.funcCall).call();
-                        child.data.funcCall = call;
+                        await onNodeClick(child);
                         child.status = 'succeeded';
 
                         return Promise.resolve(child.status);
@@ -164,7 +164,7 @@ export const VuePipelineView = defineComponent({
 
                 return (
                   <div style={{display: 'flex', padding: '4px 0px', width: '100%'}}
-                    onClick={onNodeClick}
+                    onClick={() => onNodeClick(stat)}
                     onMouseover={() => stat.isHovered = true} 
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
