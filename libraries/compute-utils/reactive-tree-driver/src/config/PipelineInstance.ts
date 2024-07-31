@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName} from '../data/common-types';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import {RestrictionType} from '../runtime/FuncCallAdapters';
+import { RestrictionState, RestrictionType} from '../runtime/FuncCallAdapters';
+import { ActionPositions } from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines
@@ -58,6 +59,9 @@ export function isSequentialPipelineState(state: PipelineState): state is Pipeli
   return state.type === 'static';
 }
 
+export const pipelineMenuCategories = ['export', 'mock', 'template'] as const;
+export type PipelineMenuCategories = typeof pipelineMenuCategories[number];
+
 
 // funccall
 
@@ -66,11 +70,18 @@ export type StepFunCallSerializedState = {
   configId: string;
   uuid: string;
   nqName: string;
+  inputRestrictions?: Record<string, RestrictionState | undefined>;
   friendlyName?: string;
   funcCallId?: string;
   isOuputOutdated?: boolean;
   isCurrent?: boolean;
 };
+
+export type StepAction = {
+  uuid: string,
+  friendlyName?: string;
+  position: ActionPositions,
+}
 
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
@@ -78,15 +89,27 @@ export type StepFunCallState = {
   isLoading?: boolean;
   isRunning?: boolean;
   isRunable?: boolean;
+  actions?: StepAction;
 } & StepFunCallSerializedState;
 
 // pipeline base
 
+export type PipelineAction = {
+  uuid: string,
+  friendlyName?: string;
+  position: ActionPositions,
+}
+
 export type PipelineInstanceBase<S> = {
   uuid: string;
   configId: string;
+  isLoadable?: boolean;
+  isSavable?: boolean;
+  isLocked?: boolean;
+  isReadonly?: boolean;
   friendlyName?: string;
   nqName?: string;
+
 } & S;
 
 // static

@@ -17,7 +17,6 @@ export interface IRunnableWrapper {
   run(): Observable<any>;
   isRunning$: BehaviorSubject<boolean>;
   isOutputOutdated$: BehaviorSubject<boolean>;
-
 }
 
 export interface IFuncCallWrapper extends IRunnableWrapper {

@@ -44,7 +44,7 @@ export type PipelineLinkConfiguration<P> = {
 } & PipelineLinkConfigurationBase<P>;
 
 export type PipelineDynamicLinkConfiguration<P> = {
-  // TODO: better spec
+  // TODO: create spec
   id: ItemId;
 } & PipelineLinkConfigurationBase<P>;
 
@@ -56,9 +56,18 @@ export type PipelineHookConfiguration<P> = {
 export type PipelineActionConfiguraion<P> = {
   id: ItemId;
   path: P;
+  friendlyName?: string;
+  menuCategory?: string;
+} & PipelineLinkConfigurationBase<P>;
+
+export type StepActionConfiguraion<P> = {
+  id: ItemId;
+  path: P;
   position: ActionPositions;
   friendlyName?: string;
+  menuCategory?: string;
 } & PipelineLinkConfigurationBase<P>;
+
 
 const actionPositions = ['buttons', 'menu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
@@ -87,11 +96,12 @@ export type HooksSpec = {
 
 // static steps config
 
-export type PipelineStepConfiguration<S> = {
+export type PipelineStepConfiguration<P, S> = {
   id: ItemId;
   nqName: NqName;
   friendlyName?: string;
   io?: S;
+  actions?: StepActionConfiguraion<P>[];
 };
 
 export type PipelineConfigurationBase<P, G> = {
@@ -108,7 +118,7 @@ export type PipelineConfigurationBase<P, G> = {
 
 export type PipelineStaticItem<P, S, R, G> = {
   id: ItemId;
-} & (PipelineStepConfiguration<S> | AbstractPipelineConfiguration<P, S, R, G> | R);
+} & (PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R, G> | R);
 
 export type AbstractPipelineStaticConfiguration<P, S, R, G> = {
   links?: PipelineLinkConfiguration<P>[];

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineGlobalId, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineGlobalId, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
 import {ItemId, ItemPath, ItemPathArray, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 
@@ -26,14 +26,13 @@ export type FuncallStateItem = {
   direction: 'input' | 'output';
 }
 
-
-type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfiguration<never>;
+type PipelineStepConfigurationInitial = PipelineStepConfiguration<ItemPath | ItemPath[], never>;
+type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
 export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
 export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
 export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
-
 
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
   return !!((c as PipelineConfigurationStaticInitial).type === 'static');
@@ -51,17 +50,16 @@ function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefIni
   return !!((c as PipelineRefInitial).type === 'ref');
 }
 
-function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfiguration<never> {
+function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
   return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
 }
-
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
   const pconf = await configProcessing(conf, new Set());
   return pconf as PipelineConfigurationProcessed;
 }
 
-async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]> | PipelineSelfRef> {
+async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<ItemPathArray[], FuncallStateItem[]> | PipelineSelfRef> {
   if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf);
     return pconf;
@@ -93,35 +91,33 @@ async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines
     loadedPipelines.add(pconf.globalId);
     return configProcessing(pconf, loadedPipelines);
   }
-  throw new Error(`configProcessing type matching failed: ${conf}`);
+  throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
   const links = conf.links?.map((link) => processLinkBase(link));
-  const actions = processActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, links, actions, hooks};
 }
 
 function processParallelConfig(conf: PipelineConfigurationParallelInitial) {
-  const actions = processActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, actions, hooks, stepTypes: []};
 }
 
 function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
   const links = conf.links?.map((link) => processLinkBase(link));
-  const actions = processActions(conf.actions ?? []);
+  const actions = processPipelineActions(conf.actions ?? []);
   const hooks = processHooks(conf.hooks ?? {});
   return {...conf, links, actions, hooks};
 }
 
-async function processStepConfig(conf: PipelineStepConfiguration<never>) {
-  if (conf.io == null) {
-    const io = await getFuncCallIO(conf.nqName);
-    return {...conf, io};
-  }
-  return conf;
+async function processStepConfig(conf: PipelineStepConfiguration<ItemPath | ItemPath[], never>) {
+  const actions = processStepActions(conf.actions ?? []);
+  const io = await getFuncCallIO(conf.nqName);
+  return {...conf, io, actions};
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
@@ -132,7 +128,12 @@ async function getFuncCallIO(nqName: NqName): Promise<FuncallStateItem[]> {
   return io;
 }
 
-function processActions<P extends ItemPath | ItemPath[]>(actionsInput: PipelineActionConfiguraion<P>[]) {
+function processPipelineActions<P extends ItemPath | ItemPath[]>(actionsInput: PipelineActionConfiguraion<P>[]) {
+  const actions = actionsInput.map((action) => ({...processLinkBase(action), path: normalizePaths(action.path)}));
+  return actions;
+}
+
+function processStepActions<P extends ItemPath | ItemPath[]>(actionsInput: StepActionConfiguraion<P>[]) {
   const actions = actionsInput.map((action) => ({...processLinkBase(action), path: normalizePaths(action.path)}));
   return actions;
 }

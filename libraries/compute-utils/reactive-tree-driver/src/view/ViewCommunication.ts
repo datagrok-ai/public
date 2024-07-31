@@ -1,15 +1,12 @@
-import * as DG from 'datagrok-api/dg';
 import {ItemId} from '../data/common-types';
-import {ActionPositions} from '../config/PipelineConfiguration';
-import {ValidationResult} from '../../../shared-utils/validation';
 
-// view config updates
+// view config update requests
 
 export interface AddGroupItem {
   event: 'addGroupItem';
-  uuid: string;
-  id: ItemId;
-  insertBefore?: string;
+  parentPipelineUuid: string;
+  itemId: ItemId;
+  postion?: number;
 }
 
 export interface RemoveGroupItem {
@@ -20,66 +17,36 @@ export interface RemoveGroupItem {
 export interface MoveGroupItem {
   event: 'moveGroupItem';
   uuid: string;
-  insertBefore?: string;
+  postion: number;
 }
 
-export interface IOSyncChange {
-  event: 'ioSyncChange';
-  uuid: string;
-  ioSynced: boolean;
-}
-
-export interface CurrentStepChange {
-  event: 'currentStepChange';
+export interface ChangeCurrentStep {
+  event: 'changeCurrentStep';
   uuid: string;
 }
 
-export interface ConsistencyChange {
-  event: 'consistencyChange';
+export interface RunStep {
+  event: 'runStep';
   uuid: string;
-  input: string;
-  value: boolean;
 }
 
-export interface FuncCallLoaded {
-  event: 'funcCallLoaded';
+export interface SavePipeline {
+  event: 'savePipeline';
   uuid: string;
-  funcCall: DG.FuncCall;
 }
 
-export type ViewConfigChanges = AddGroupItem | RemoveGroupItem | MoveGroupItem | IOSyncChange | CurrentStepChange | ConsistencyChange | FuncCallLoaded;
-
-
-// additional controls
-
-export const globalCategories = ['export', 'mock', 'template'] as const;
-export type GlobalCategories = typeof globalCategories[number];
-
-export interface Actions {
-  stepActions: {
-    uuid: string,
-    name: string,
-    position: ActionPositions,
-    step: string;
-  }[];
-  globalActions: {
-    uuid: string,
-    name: string,
-    category?: GlobalCategories,
-  }[];
+export interface LoadPipeline {
+  event: 'loadPipeline';
+  funcCallId: string;
+  parentPipelineUuid?: string;
+  itemId?: ItemId;
+  postion?: number;
+  isReadonly?: boolean;
 }
 
-export interface ActionTriggered {
-  event: 'actionClicked',
-  id: string,
+export interface RunAction {
+  event: 'runAction';
+  uuid: string;
 }
 
-// validatation results
-
-export interface ViewValidationResult {
-  results: {
-    uuid: string,
-    input: string,
-    validation: ValidationResult,
-  }[];
-}
+export type ViewConfigChanges = AddGroupItem | RemoveGroupItem | MoveGroupItem | ChangeCurrentStep | RunStep | SavePipeline | LoadPipeline | RunAction;

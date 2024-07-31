@@ -1,12 +1,13 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/traversable';
-import { isParallelPipelineNode, isSequentialPipelineNode } from '../runtime/StateTree';
 import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from './config-processing-utils';
 import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
-export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]> | PipelineSelfRef;
 
-export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfiguration<FuncallStateItem[]>;
+export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<ItemPathArray[], FuncallStateItem[]>;
+export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | PipelineSelfRef;
+
+export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;
 
 export function isPipelineStaticConfig(c: ConfigTraverseItem): c is PipelineConfigurationStaticProcessed {
   return !!((c as PipelineConfigurationStaticProcessed).type === 'static');
@@ -20,7 +21,7 @@ export function isPipelineSequentialConfig(c: ConfigTraverseItem): c is Pipeline
   return !!((c as PipelineConfigurationSequentialProcessed).type === 'sequential');
 }
 
-export function isPipelineConfig(c: ConfigTraverseItem):  c is PipelineConfigurationProcessed {
+export function isPipelineConfig(c: ConfigTraverseItem): c is PipelineConfigurationProcessed {
   return isPipelineStaticConfig(c) ||isPipelineParallelConfig(c) || isPipelineSequentialConfig(c)
 }
 
@@ -28,7 +29,7 @@ export function isPipelineSelfRef(c: ConfigTraverseItem): c is PipelineSelfRef {
   return !!((c as PipelineSelfRef).type === 'selfRef');
 }
 
-export function isPipelineStepConfig(c: ConfigTraverseItem): c is PipelineStepConfiguration<FuncallStateItem[]> {
+export function isPipelineStepConfig(c: ConfigTraverseItem): c is PipelineStepConfigurationProcessed {
   return !isPipelineConfig(c) && !isPipelineSelfRef(c);
 }
 
@@ -81,7 +82,7 @@ function findNextNode(items: ConfigTraverseItem[], targetSegment: string, curren
         return item;
     }
   }
-  throw new Error(`Segment ${targetSegment} not found on path ${currentPath}`);
+  throw new Error(`Segment ${targetSegment} not found on path ${currentPath.join('/')}`);
 }
 
 export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
