@@ -949,7 +949,7 @@ export async function TestVuePLV() {
         children: [
           {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
           {text: 'Review days (no drag, only adding)', children: [
-            {text: 'Day 1', funcCall: 'LibTests:LongScript'},
+            {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
             {text: 'Day 2', funcCall: 'LibTests:LongScript'},
           ]},
           {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},

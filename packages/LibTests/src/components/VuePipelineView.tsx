@@ -29,6 +29,7 @@ const statusToIcon = {
   [`didn't run`]: 'circle',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
+  ['partially succeeded']: 'dot-circle',
   ['failed']: 'times-circle',
 } as Record<Status, string>;
 
@@ -37,6 +38,7 @@ const statusToColor = {
   [`didn't run`]: 'yellow',
   ['running']: 'blue',
   ['succeeded']: 'green',
+  ['partially succeeded']: 'green',
   ['failed']: 'red',
 } as Record<Status, string>;
 
@@ -45,10 +47,30 @@ const statusToTooltip = {
   [`didn't run`]: `This step didn't run yet`,
   ['running']: 'Running...',
   ['succeeded']: 'Run succeeded',
+  ['partially succeeded']: 'Partially succeeded',
   ['failed']: 'Run failed',
 } as Record<Status, string>;
 
-type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed';
+type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
+
+const getCall = (funcCall: DG.FuncCall | string, params?: {
+  a?: number,
+  b?: number,
+}) => {
+  const defaultParams = {
+    a: 2,
+    b: 3,
+  };
+
+  return funcCall instanceof DG.FuncCall ?
+    funcCall.func.prepare({
+      ...defaultParams,
+      ...params,
+    }) : DG.Func.byName(funcCall).prepare({
+      ...defaultParams,
+      ...params,
+    });
+};
 
 export const VuePipelineView = defineComponent({
   props: {
@@ -93,26 +115,6 @@ export const VuePipelineView = defineComponent({
                   onClick={(e) => {stat.open = !stat.open; e.stopPropagation();}}
                 />;
 
-                const getCall = (params?: {
-                  a?: number,
-                  b?: number,
-                }) => {
-                  const defaultParams = {
-                    a: 2,
-                    b: 3,
-                  };
-                  const funcCall = stat.data.funcCall;
-
-                  return funcCall instanceof DG.FuncCall ?
-                    funcCall.func.prepare({
-                      ...defaultParams,
-                      ...params,
-                    }) : DG.Func.byName(funcCall).prepare({
-                      ...defaultParams,
-                      ...params,
-                    });
-                };
-
                 const progressIcon = (status: Status) =>{ 
                   return <IconFA 
                     name={statusToIcon[status]}
@@ -129,15 +131,35 @@ export const VuePipelineView = defineComponent({
 
                 const onNodeClick = async () => {
                   stat.status = 'running';
-                  try {
-                    const call = await getCall().call();
-                    currentFuncCall.value = call;
-                    stat.status = 'succeeded';
-                  } catch {
-                    stat.status = 'failed';
-                  }
+                  if (stat.data.funcCall) {
+                    try {
+                      const call = await getCall(stat.data.funcCall).call();
+                      currentFuncCall.value = call;
+                      stat.status = 'succeeded';
+                    } catch {
+                      stat.status = 'failed';
+                    }
                   
-                  triggerRef(currentFuncCall);
+                    triggerRef(currentFuncCall);
+                  } else {
+                    await Promise.all(stat.children.map(async (child) => {
+                      try {
+                        child.status = 'running';
+                        const call = await getCall(child.data.funcCall).call();
+                        child.data.funcCall = call;
+                        child.status = 'succeeded';
+
+                        return Promise.resolve(child.status);
+                      } catch (e) {
+                        child.status = 'failed';
+                        return Promise.reject(e);
+                      }
+                    })).then(() => {
+                      stat.status = 'succeeded';
+                    }).catch(() => {
+                      stat.status = 'failed';
+                    });                      
+                  }
                 };
 
                 return (

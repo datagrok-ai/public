@@ -1,4 +1,4 @@
-//name: LongScript
+//name: LongFailingScript
 //language: javascript
 //input: double a
 //input: double b
@@ -10,4 +10,4 @@ const delay = (delayInms) => {
   
 await delay(5000);
 
-res = a+b;
+res = 'test';
