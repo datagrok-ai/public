@@ -9,7 +9,7 @@ category('Chemspace', () => {
     const widget = await pricesPanel('CSCS00102564062');
     await awaitCheck(() => widget.root.getElementsByClassName('chemspace-prices-grid').length > 0,
       'prices panel hasn\'t been created', 30000);
-  }, {skipReason: 'Requires API key'});
+  });
 
   test('Samples panel', async () => {
     const widget = await samplesPanel(mol);
@@ -24,11 +24,11 @@ category('Chemspace', () => {
     await awaitCheck(() => subPane.getElementsByClassName('chem-mol-box').length === 10,
       `Expected 9 molecules with substructure, got ${subPane.getElementsByClassName('chem-mol-box').length}`, 30000);
 
-  }, { skipReason: 'Requires API key' , timeout: 60000});
+  }, { timeout: 60000});
 
   test('App', async () => {
     app();
     await awaitCheck(() => grok.shell.tv.dataFrame.rowCount === 10,
     `Search hasn't been completed`, 30000);
-  }, {skipReason: 'Requires API key'});
+  });
 });
