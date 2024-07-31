@@ -510,7 +510,6 @@ export class AddNewColumnDialog {
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
-      console.log(funcCall);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
       return e.message;
