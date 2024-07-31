@@ -778,10 +778,10 @@ export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: D
 //input: dataframe df
 //input: column predictColumn
 //input: int iterations = 20 {min: 1; max: 100} [Number of training iterations]
-//input: double eta = 0.3 {caption: rate; min: 0; max: 1} [Learning rate]
-//input: int maxDepth = 6 {min: 0} [Maximum depth of a tree]
-//input: double lambda = 1 {min: 0} [L2 regularization term]
-//input: double alpha = 0 {min: 0} [L1 regularization term]
+//input: double eta = 0.3 {caption: Rate; min: 0; max: 1} [Learning rate]
+//input: int maxDepth = 6 {min: 0; max: 20} [Maximum depth of a tree]
+//input: double lambda = 1 {min: 0; max: 100} [L2 regularization term]
+//input: double alpha = 0 {min: 0; max: 100} [L1 regularization term]
 //output: dynamic model
 export function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
   iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Uint8Array {
