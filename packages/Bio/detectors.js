@@ -8,6 +8,7 @@
  *
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
+// eslint-disable-next-line max-lines
 
 const SEQ_SAMPLE_LIMIT = 100;
 const SEQ_SAMPLE_LENGTH_LIMIT = 100;
@@ -100,8 +101,8 @@ class BioPackageDetectors extends DG.Package {
   numbersRawAlphabet = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
   smilesRawAlphabet = new Set([
-    'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
-    'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
+    'C', 'F', 'H', 'N', 'O', 'P', 'S', 'B', /**/'A', 'E', 'I', 'K', 'L', 'M', 'R', 'Z',
+    'c', 'n', 'o', 's', /**/'a', 'e', 'g', 'i', 'l', 'r', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
@@ -186,9 +187,9 @@ class BioPackageDetectors extends DG.Package {
       }
 
       const decoyAlphabets = [
-        ['NUMBERS', this.numbersRawAlphabet, 0.25],
-        ['SMILES', this.smilesRawAlphabet, 0.25],
-        ['SMARTS', this.smartsRawAlphabet, 0.45],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25, undefined],
+        ['SMILES', this.smilesRawAlphabet, 0.25, (seq) => seq.replaceAll()],
+        ['SMARTS', this.smartsRawAlphabet, 0.45, undefined],
       ];
 
       const candidateAlphabets = [
@@ -463,10 +464,11 @@ class BioPackageDetectors extends DG.Package {
     const keys = new Set([...new Set(Object.keys(freq)), ...alphabet]);
     keys.delete(gapSymbol);
 
+    const freqSum = Object.values(freq).reduce((a, b) => a + b, 0);
     const freqA = [];
     const alphabetA = [];
     for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : -0.10);
+      freqA.push(m in freq ? freq[m] / freqSum : -0.001);
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
@@ -510,7 +512,7 @@ class BioPackageDetectors extends DG.Package {
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|([A-Za-z-])/g;
+  monomerRe = /\[([A-Za-z0-9_\-,()]+)\]|(.)/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
   getSplitterAsFasta(lengthLimit) {

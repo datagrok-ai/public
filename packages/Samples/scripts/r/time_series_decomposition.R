@@ -5,8 +5,8 @@
 #tags: demo, viewers
 #sample: births.csv
 #input: dataframe data [Input data table]
-#input: column dates {type:dateTime; format:MM/dd/yyyy; allowNulls:false} [Date time column]
-#input: column observations {type:numerical; allowNulls:false} [Observations column]
+#input: column dates {type:datetime} [Date time column]
+#input: column observations {type:numerical} [Observations column]
 #output: graphics [Components plot]
 
 require(stats)

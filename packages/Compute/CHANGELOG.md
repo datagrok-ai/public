@@ -1,5 +1,21 @@
 # Compute changelog
 
+## 1.36.4 (2024-07-30)
+
+- Deps update
+
+## 1.36.3 (2024-07-30)
+
+- Wizard: Fixed context info icon duplication
+
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
 ## 1.36.0 (2024-07-10)
 
 - RFV: Added output validators support

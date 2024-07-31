@@ -229,6 +229,9 @@ export class RichFunctionView extends FunctionView {
               input.notify = false;
               input.value = value;
               input.notify = true;
+              this.funcCall.inputs[key] = value;
+
+              this.inputValidationRequests.next({field: key, isRevalidation: false});
             }
 
             grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
@@ -741,7 +744,7 @@ export class RichFunctionView extends FunctionView {
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...this.isFittingEnabled ? [fitting]: [],
-      ...this.hasContextHelp ? [contextHelpIcon]: [],
+      ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -1057,18 +1060,18 @@ export class RichFunctionView extends FunctionView {
 
   private async saveLastInputs() {
     try {
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToSave = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
           this.funcCall.inputs[inputParam.name]:
-          await grok.dapi.tables.uploadDataFrame(this.funcCall.inputs[inputParam.name]);
+          Array.from((this.funcCall.inputs[inputParam.name] as DG.DataFrame).toByteArray());
 
         return {
-          ...(await acc),
-          [inputParam.name]: JSON.stringify(valueToSave),
+          ...acc,
+          [inputParam.name]: valueToSave,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, lastInputs);
+      return localStorage.setItem(this.inputsStorage, JSON.stringify(lastInputs));
     } catch (e: any) {
       grok.shell.error(e.toString());
     }
@@ -1076,20 +1079,20 @@ export class RichFunctionView extends FunctionView {
 
   private async loadLastInputs() {
     try {
-      const valuesFromStorage = await grok.dapi.userDataStorage.get(this.inputsStorage);
+      const valuesFromStorage = JSON.parse(localStorage.getItem(this.inputsStorage) ?? '{}');
 
       if (Object.keys(valuesFromStorage).length === 0) return null;
 
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToLoad = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
-          JSON.parse(valuesFromStorage[inputParam.name]):
-          await grok.dapi.tables.getTable(JSON.parse(valuesFromStorage[inputParam.name]));
+          valuesFromStorage[inputParam.name]:
+          DG.DataFrame.fromByteArray(new Uint8Array(valuesFromStorage[inputParam.name]));
 
         return {
-          ...(await acc),
+          ...acc,
           [inputParam.name]: valueToLoad,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
       return lastInputs;
     } catch (e: any) {
@@ -1099,7 +1102,7 @@ export class RichFunctionView extends FunctionView {
 
   private async deleteLastInputs() {
     try {
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, {});
+      return localStorage.removeItem(this.inputsStorage);
     } catch (e: any) {
       grok.shell.error(e.toString());
     }

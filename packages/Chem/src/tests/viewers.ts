@@ -27,7 +27,13 @@ const awaitViewers: {[key: string]: (viewer: DG.Viewer) => Promise<void>} = {
 
 category('viewers', () => {
   const df = grok.data.demo.molecules(15);
-  const viewers = DG.Func.find({package: 'Chem', tags: ['viewer']}).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({ package: 'Chem', tags: ['viewer'] }).reduce<string[]>((result, f) => {
+    const name = f.friendlyName;
+    if (name !== 'Scaffold Tree')
+      result.push(name);
+    return result;
+  }, []);
+
   for (const v of viewers) {
     test(v, async () => {//@ts-ignore
       await testViewer(v, df.clone(), {

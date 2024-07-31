@@ -1,4 +1,4 @@
-// Linear regression tools
+// Regression tools
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -191,7 +191,7 @@ async function getLinearRegressionParamsUsingPLS(features: DG.ColumnList,
     features: features,
     predict: targets,
     components: components,
-    names: null,
+    names: undefined,
   });
 
   return plsAnalysis.regressionCoefficients.getRawData() as Float32Array;

@@ -1,7 +1,7 @@
 #name: Ternary Plot
 #language: r
 #tags: demo, viewers
-#sample: feldspar.csv
+#sample: cars.csv
 #input: dataframe t
 #input: column topColumnName {type:numerical;auto}
 #input: column leftColumnName {type:numerical;auto}

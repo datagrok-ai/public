@@ -1,0 +1,1 @@
+grok.shell.o = ui.divText('Clicked on ' + args.rowId);

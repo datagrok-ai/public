@@ -7,16 +7,17 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
-import {checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog} from './check';
+import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog } from './check';
 import * as utils from '../utils/utils';
-import {Indexable} from '../utils/utils';
+import { Indexable } from '../utils/utils';
 import * as color from '../utils/color-utils';
 
+const { exec } = require('child_process');
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
-const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-8'}));
+const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 const packageFiles = [
@@ -41,7 +42,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
   }
 
-  const zip = archiver('zip', {store: false});
+  const zip = archiver('zip', { store: false });
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -77,11 +78,11 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
-  const json = JSON.parse(fs.readFileSync(packageFilePath, {encoding: 'utf-8'}));
+  const json = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
 
   if (isWebpack) {
     const webpackConfigPath = path.join(curDir, 'webpack.config.js');
-    const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
+    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     const externals = extractExternals(content);
     if (externals) {
       const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
@@ -131,7 +132,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return;
     }
     if (canonicalRelativePath.startsWith('connections/')) {
-      let f = fs.readFileSync(fullPath, {encoding: 'utf-8'});
+      let f = fs.readFileSync(fullPath, { encoding: 'utf-8' });
       const matches = [...f.matchAll(reg)];
       for (const m of matches) {
         const envVar = process.env[m[1]];
@@ -141,11 +142,11 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         }
         f = f.replace(m[0], envVar);
       }
-      zip.append(f, {name: relativePath});
+      zip.append(f, { name: relativePath });
       console.log(`Adding ${canonicalRelativePath}...`);
       return;
     }
-    zip.append(fs.createReadStream(fullPath), {name: relativePath});
+    zip.append(fs.createReadStream(fullPath), { name: relativePath });
     console.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
@@ -153,7 +154,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     return 1;
   }
 
-  zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
+  zip.append(JSON.stringify(localTimestamps), { name: 'timestamps.json' });
 
   // Upload
   url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}`;
@@ -216,11 +217,12 @@ export function publish(args: PublishArgs) {
     return false;
   }
 
+
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
+  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   let host = config.default;
   const urls = utils.mapURL(config);
   if (nArgs === 2) host = args['_'][1];
@@ -244,7 +246,7 @@ export function publish(args: PublishArgs) {
 
   // Get the package name
   if (!fs.existsSync(packDir)) return color.error('`package.json` doesn\'t exist');
-  const _package = JSON.parse(fs.readFileSync(packDir, {encoding: 'utf-8'}));
+  const _package = JSON.parse(fs.readFileSync(packDir, { encoding: 'utf-8' }));
   const packageName = _package.name;
 
   // Upload the package
@@ -252,8 +254,21 @@ export function publish(args: PublishArgs) {
   process.on('beforeExit', async () => {
     let code = 0;
     try {
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.suffix);
 
+      exec('git rev-parse HEAD', (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.error(`Error executing command: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`Standard Error: ${stderr}`);
+          return;
+        }
+        if(!args.suffix && stdout)
+          args.suffix = stdout.toString().substring(0,8); 
+      });
+      await utils.delay(100); 
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.suffix);
     } catch (error) {
       console.error(error);
       code = 1;

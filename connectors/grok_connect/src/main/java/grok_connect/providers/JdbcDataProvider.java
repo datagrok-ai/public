@@ -8,13 +8,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
@@ -153,9 +150,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                     else {
                         if (param.value == null) {
                             statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-                        } else {
-                            statement.setObject(n + i + 1, param.value);
                         }
+                        else
+                            statement.setObject(n + i + 1, param.value);
                     }
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
@@ -199,16 +196,15 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
+        if (funcParam.value == null) {
+            statement.setNull(parameterIndex, java.sql.Types.TIMESTAMP);
+            return;
+        }
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
-        try {
-            statement.setTimestamp(parameterIndex, ts, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setTimestamp(parameterIndex, ts, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
 
     protected String manualQueryInterpolation(String query, DataQuery dataQuery) {
@@ -275,10 +271,14 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
-        @SuppressWarnings (value="unchecked")
-        ArrayList<String> values = (ArrayList<String>) param.value;
-        Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
-        statement.setArray(n, array);
+        if (param.value == null)
+            statement.setNull(n, java.sql.Types.ARRAY);
+        else {
+            @SuppressWarnings (value="unchecked")
+            ArrayList<String> values = (ArrayList<String>) param.value;
+            Array array = statement.getConnection().createArrayOf("VARCHAR", values.toArray());
+            statement.setArray(n, array);
+        }
         return 0;
     }
 
@@ -551,16 +551,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         if (funcInfo != null) {
             String sql = funcInfo.dbFunctionName.replaceAll("#", aggr.colName);
-            return sql + " as \"" + sql + "\"";
-        } else
+            return sql + " as " + addBrackets(sql);
+        }
+        else
             return null;
     }
 
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
-        return (name.contains(" ") && !name.startsWith(brackets.substring(0, 1)))
-                ? brackets.charAt(0) + name + brackets.substring(brackets.length() - 1)
-                : name;
+        return Arrays.stream(name.split("\\."))
+                .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
+                        : brackets.charAt(0) + name + brackets.substring(brackets.length() - 1))
+                .collect(Collectors.joining("."));
     }
 
     public String limitToSql(String query, Integer limit) {

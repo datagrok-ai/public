@@ -108,7 +108,7 @@ class Engine(object):
         metrics_names = ['mse', 'rmse', 'corr', 'nobs', 'r2', 'logloss', 'auc']
         if cancelled:
             return dict(zip(metrics_names, ['null'] * 7))
-        predicted = self.predict_impl(id, model_blob, table)
+        predicted = self.predict_impl(id, model_blob, table, estimate_performance=True)
         y_true = np.array(table[predict])
         y_pred = np.array(predicted[predict])
 

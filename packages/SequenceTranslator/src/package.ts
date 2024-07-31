@@ -16,12 +16,12 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 //polytool specific
-import {getPolyToolConversionDialog, getPolyToolEnumerationDialog} from './polytool/pt-dialog';
+import {getPolyToolConversionDialog, polyToolEnumerateHelmUI, polyToolEnumerateChemUI} from './polytool/pt-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
-import {polyToolEnumerateUI} from './polytool/pt-ui';
 import {addContextMenuUI} from './utils/context-menu';
+import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 export const _package: OligoToolkitPackage = new OligoToolkitPackage();
 
@@ -165,11 +165,18 @@ export async function polyToolConvert(): Promise<void> {
   }
 }
 
-//top-menu: Bio | Convert | PolyTool-Enumerate
-//name: polyToolEnumerate
+//top-menu: Bio | Convert | PolyTool-Enumerate HELM
+//name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
-export async function polyToolEnumerate(): Promise<void> {
-  polyToolEnumerateUI();
+export async function polyToolEnumerateHelm(): Promise<void> {
+  polyToolEnumerateHelmUI();
+}
+
+//top-menu: Bio | Convert | PolyTool-Enumerate Chem
+//name: polyToolEnumerateChem
+//description: Perform cyclization of polymers
+export async function polyToolEnumerateChem(): Promise<void> {
+  polyToolEnumerateChemUI();
 }
 
 //name: polyToolColumnChoice
@@ -199,3 +206,44 @@ export function addContextMenu(event: DG.EventData): void {
   addContextMenuUI(event);
 }
 
+// //name: PolyTool Converter
+// //meta.icon: img/icons/structure.png
+// //meta.browsePath: PolyTool
+// //tags: app
+// export async function ptConverterApp(): Promise<void> {
+//   const view = grok.shell.v as DG.TableView;
+//   const table = view.dataFrame;
+//   const colNames = table.columns.names(); 
+//   let covertableName = '';
+
+//   for (let i = 0; i < colNames.length; i++) {
+//     const col = table.columns.byName(colNames[i]);
+//     if (col.semType === DG.SEMTYPE.MACROMOLECULE && col.meta.units === NOTATION.SEPARATOR) {
+//       covertableName = colNames[i];
+//       break;
+//     }
+//   }
+
+//   if (covertableName === '')
+//     grok.shell.error('To run the app open a view with convertable separator notation for macromolecules');
+//   else {
+//     const dialog = await getPolyToolConversionDialog();
+//     dialog.show();
+//   }  
+// }
+
+//name: PolyTool Enumerator Helm
+//meta.icon: img/icons/structure.png
+//meta.browsePath: PolyTool
+//tags: app
+export async function ptEnumeratorHelmApp(): Promise<void> {
+  polyToolEnumerateHelmUI();
+}
+
+//name: PolyTool Enumerator Chem
+//meta.icon: img/icons/structure.png
+//meta.browsePath: PolyTool
+//tags: app
+export async function ptEnumeratorChemApp(): Promise<void> {
+  polyToolEnumerateChemUI();
+}

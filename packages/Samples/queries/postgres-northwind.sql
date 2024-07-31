@@ -30,9 +30,9 @@ select * from customers
 
 --name: order details by @quantity, @productName, @country
 --connection: PostgresNorthwind
---input: int quantity = 40
---input: string productName {choices: Query("SELECT distinct productname FROM products")}
---input: string country { choices: Samples:countries }
+--input: int quantity = 9
+--input: string productName = "Tofu" {choices: Query("SELECT distinct productname FROM products")}
+--input: string country = "Germany" { choices: Samples:countries }
 select
     order_details.orderid,
     order_details.unitprice,
@@ -58,7 +58,7 @@ where
 
 --name: customers in @country
 --connection: PostgresNorthwind
---input: string country
+--input: string country = "France"
 select * from customers where country = @country
 --end
 
@@ -72,7 +72,7 @@ select productname from products where @lookup(productname)
 
 --name: productDetails
 --connection: PostgresNorthwind
---input: string productName {suggestions: Demo:productLookup}
+--input: string productName {suggestions: Samples:productLookup}
 select * from products where productname = @productName
 --end
 
@@ -80,8 +80,8 @@ select * from products where productname = @productName
 --name: OrdersByEmployee
 --friendlyName: OrdersByEmployee
 --connection: PostgresNorthwind
---input: string shipCountry = "Spain" {choices: Query("SELECT DISTINCT shipCountry FROM orders")}
---input: string shipCity {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipCountry = @shipCountry")}
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM orders")}
+--input: string shipCity = "Paris" {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipCountry = @shipCountry")}
 --input: string customerId {choices: Query("SELECT DISTINCT customerid FROM orders WHERE shipCity = @shipCity")}
 --input: string employee {choices: Query("SELECT DISTINCT lastName FROM employees INNER JOIN orders ON employees.employeeId = orders.employeeId WHERE customerId = @customerId")}
 

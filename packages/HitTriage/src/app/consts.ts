@@ -30,3 +30,9 @@ export const i18n = {
   createNewCampaignHeader: 'New campaign',
   selectTemplate: 'Template',
 } as const;
+
+export const funcTypeNames = {
+  script: 'script',
+  function: 'function-package',
+  query: 'data-query',
+} as const;

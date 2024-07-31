@@ -118,20 +118,20 @@ from generate_series(1, @num) s(i)
 select * from compound_structures
 --end
 
---name: PostgresqlPerfTestTableNormal
---friendlyName: PostgresqlPerfTestTableNormal
+--name: PostgresqlTableNormal
+--friendlyName: PostgresqTableNormal
 --connection: PostgreSQLDBTests
 SELECT * FROM Test_Normal;
 --end
 
---name: PostgresqlPerfTestTableWide
---friendlyName: PostgresqlPerfTestTableWide
+--name: PostgresqlTableWide
+--friendlyName: PostgresqlTableWide
 --connection: PostgreSQLDBTests
 SELECT * FROM Test_Wide;
 --end
 
---name: PostgresqlPerfTestTableLong
---friendlyName: PostgresqlPerfTestTableLong
+--name: PostgresqlTableLong
+--friendlyName: PostgresqlTableLong
 --connection: PostgreSQLDBTests
 SELECT * FROM Test_Long;
 --end
@@ -172,4 +172,10 @@ UPDATE tmp_table_test SET name = 'test' WHERE id = 1;
 --friendlyName: TestDropTable
 --connection: PostgreSQLDBTests
 DROP TABLE tmp_table_test;
+--end
+
+--name: SimpleSelect
+--friendlyName: SimpleSelect
+--connection: PostgreSQLDBTests
+SELECT 1;
 --end

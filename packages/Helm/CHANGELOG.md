@@ -1,6 +1,6 @@
 # Helm changelog
 
-## 2.3.2 (2024-07-08)
+## 2.3.2 (2024-07-23)
 
 ### Features
 
@@ -10,6 +10,7 @@
 
 * Add tooltip to HelmInput showing monomer of lib, test
 * Fix HelmInput to redraw on monomer lib changed
+* Fix HelmInput to handle dialog resize
 
 ## 2.3.1 (2024-06-28)
 

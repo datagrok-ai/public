@@ -97,7 +97,6 @@ export function rGroupAnalysis(col: DG.Column): void {
   const visualAnalysisCheck = ui.input.bool('Visual analysis', {value: true});
   ui.tooltip.bind(visualAnalysisCheck.captionLabel, 'Add trellis plot after analysis is completed');
   const replaceLatest = ui.input.bool('Replace latest', {value: true});
-  replaceLatest.root.classList.add('chem-rgroup-replace-latest');
   ui.tooltip.bind(replaceLatest.captionLabel, 'Overwrite latest analysis results by new one');
 
   //MCS fields
@@ -123,7 +122,6 @@ export function rGroupAnalysis(col: DG.Column): void {
   mcsButton.classList.add('chem-mcs-button');
   const mcsExactAtomsCheck = ui.input.bool('Exact atoms', {value: true});
   const mcsExactBondsCheck = ui.input.bool('Exact bonds', {value: true});
-  mcsExactBondsCheck.captionLabel.classList.add('chem-mcs-settings-label');
 
   //R groups fields
   const rGroupMatchingStrategy = ui.input.choice('Matching strategy', {
@@ -132,41 +130,40 @@ export function rGroupAnalysis(col: DG.Column): void {
       rGroupSettings!.rGroupMatchingStrategy = rGroupMatchingStrategy.value!;
       saveRGroupUserSettings();
     }});
+  rGroupMatchingStrategy.root.style.display = 'none';
   const onlyMatchAtRGroupsInput = ui.input.bool('Only match at R groups', {
     value: rGroupSettings?.onlyMatchAtRGroups ?? false, onValueChanged: () => {
       rGroupSettings!.onlyMatchAtRGroups = onlyMatchAtRGroupsInput.value!;
       saveRGroupUserSettings();
     }});
+  onlyMatchAtRGroupsInput.root.style.display = 'none';
   ui.tooltip.bind(onlyMatchAtRGroupsInput.captionLabel, 'Return matches only for labelled R groups');
 
   //settings button to adjust mcs and r-groups settings
   const rGroupsSettingsIcon = ui.iconFA('cog', () => {
     rGroupSettinsOpened = !rGroupSettinsOpened;
-    if (!rGroupSettinsOpened)
-      ui.empty(rGroupSettingsDiv);
-    else {
-      rGroupSettingsDiv.append(rGroupMatchingStrategy.root);
-      rGroupSettingsDiv.append(onlyMatchAtRGroupsInput.root);
-    }
+    const display = !rGroupSettinsOpened ? 'none' : 'flex';
+    rGroupMatchingStrategy.root.style.display = display;
+    onlyMatchAtRGroupsInput.root.style.display = display;
   }, 'R group analysis settings');
   rGroupsSettingsIcon.classList.add('chem-rgroup-settings-icon');
-  const rGroupSettingsDiv = ui.inputs([], 'chem-rgroup-settings-div');
   let rGroupSettinsOpened = false;
-
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
     helpUrl: '/help/datagrok/solutions/domains/chem/chem.md#r-groups-analysis',
   })
-    .add(ui.divV([
+    .add(ui.div([
       sketcher,
-      ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
-      columnInput,
-      columnPrefixInput,
-      visualAnalysisCheck.root,
-      rGroupsSettingsIcon,
-      latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null,
-      rGroupSettingsDiv,
+      ui.div([
+        ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
+        columnInput,
+        columnPrefixInput,
+        ui.divH([visualAnalysisCheck.root, latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null]),
+        rGroupsSettingsIcon,
+        rGroupMatchingStrategy,
+        onlyMatchAtRGroupsInput
+      ], 'chem-rgroup-settings-div')
     ]))
     .onOK(async () => {
       try {
@@ -190,7 +187,9 @@ export function rGroupAnalysis(col: DG.Column): void {
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;
           if (visualAnalysisCheck.value! && view) {
-            if (!res.yAxisColName || !res.xAxisColName)
+            if (!res.yAxisColName && !res.xAxisColName)
+              grok.shell.error('None R-Groups were found');
+            else if (!res.yAxisColName || !res.xAxisColName)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
             else
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
@@ -322,14 +321,13 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       //filter out unmatched values
       const filterUnmatched = DG.BitSet.create(rGroups[0].length).init((i) => matchCol.get(i));
       col.dataFrame.filter.copyFrom(filterUnmatched);
-    } else
-      grok.shell.error('None R-Groups were found');
+    }
     progressBar.close();
 
     return {
       xAxisColName: rGroups.length > 1 ? rGroups[1].name : '',  //rGroups[0] column is Core column
       yAxisColName: rGroups.length > 2 ? rGroups[2].name : '',
-      highlightColName: highlightCol?.name
+      highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
 
   } catch (e: any) {

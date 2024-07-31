@@ -157,13 +157,6 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
-    }
-
-    @Override
     public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
