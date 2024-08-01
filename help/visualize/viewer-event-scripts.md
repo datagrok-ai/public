@@ -1,6 +1,6 @@
-<!-- TITLE: Viewer Event Scripts  -->
+<!-- TITLE: Viewer event scripts  -->
 
-# Viewer Event Scripts
+# Viewer event scripts
 
 Bring more interactivity to your dashboards by defining custom event handlers. For instance,
 you can make a REST call, and show additional information when a user double-clicks a point
