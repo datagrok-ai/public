@@ -938,27 +938,32 @@ export async function TestVuePLV() {
     wrapperFunccall: 'Compute:ObjectCooling',
     treeData: [
       {
-        text: 'Review phases (sequental + drag + adding)',
+        text: 'Model name', 
         children: [
-          {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
-          {text: 'Filtering', funcCall: 'LibTests:LongScript'},
-          {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
-        ],
-      }, {
-        text: 'Step 2',
-        children: [
-          {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
           {
-            text: 'Review days (parallel + no drag + adding)', 
-            order: 'parallel',
+            text: 'Review phases (sequental + drag + adding)',
             children: [
-              {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
-              {text: 'Day 2', funcCall: 'LibTests:LongScript'},
-            ]},
-          {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
+              {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
+              {text: 'Filtering', funcCall: 'LibTests:LongScript'},
+              {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
+            ],
+          }, 
+          {
+            text: 'Step 2',
+            children: [
+              {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
+              {
+                text: 'Review days (parallel + no drag + adding)', 
+                order: 'parallel',
+                children: [
+                  {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
+                  {text: 'Day 2', funcCall: 'LibTests:LongScript'},
+                ]},
+              {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
+            ],
+          },
         ],
-      },
-    ],
+      }],
   });
   app.mount(view.root);
   grok.shell.addView(view);

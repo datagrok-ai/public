@@ -20,9 +20,15 @@ type Data = {
   order?: Order,
 }
 
-type AugmentedStat = Stat<Data> & {
-  isHovered: boolean
-  status: Status
+
+type AugmentedStat = {
+  isHovered: boolean,
+  status: Status,
+  data: Data;
+  open: boolean;
+  parent: AugmentedStat | null;
+  children: AugmentedStat[];
+  level: number;
 };
 
 const statusToIcon = {
@@ -75,6 +81,13 @@ const getCall = (funcCall: DG.FuncCall | string, params?: {
     });
 };
 
+const getCurrentStatus = (stat: AugmentedStat) => {
+  if (!stat.parent) return `didn't run`;
+  const parent = stat.parent;
+
+  return parent.data.order === 'parallel' && parent.status !== `locked` ? `didn't run`: `locked`;
+};
+
 const runSequentallly = async (children: AugmentedStat[]) => {
   for (const child of children) 
     await runByTree(child);
@@ -98,8 +111,8 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
     }
   } else {  
     return (currentStat.data.order === `parallel` ? 
-      runInParallel(currentStat.children as AugmentedStat[]): 
-      runSequentallly(currentStat.children as AugmentedStat[])
+      runInParallel(currentStat.children): 
+      runSequentallly(currentStat.children)
     ).then(() => {
       currentStat.status = 'succeeded';
 
@@ -135,7 +148,6 @@ export const VuePipelineView = defineComponent({
     return () => (
       <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
         <div>
-          <h2> Model name </h2>
           <Draggable 
             class="mtl-tree"
             ref={tree} 
@@ -148,6 +160,9 @@ export const VuePipelineView = defineComponent({
           > 
             { 
               ({stat, node}: {stat: AugmentedStat, node: TreeNode}) => {
+                if (!stat.status)  
+                  stat.status = getCurrentStatus(stat);
+                
                 const openIcon = <OpenIcon
                   open={stat.open}
                   class="mtl-mr"
@@ -176,7 +191,7 @@ export const VuePipelineView = defineComponent({
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
                   >
-                    { progressIcon(stat.status ?? `didn't run`) }
+                    { progressIcon(stat.status) }
                     { stat.children.length ? openIcon : null }
                     <span class="mtl-ml">{node.text}</span>
                     { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
@@ -194,7 +209,7 @@ export const VuePipelineView = defineComponent({
                       style={{paddingLeft: '4px'}}
                       onClick={(e) => {
                         tree.value!.add({
-                          text: `${node.text.includes('phase') ? 'Phase': 'Day'} ${(stat.children.length + 1).toString()}`,
+                          text: `${node.text.includes('phase') ? 'Phase': 'Day'} ${((stat.children.length ?? 0) + 1).toString()}`,
                         }, 
                         stat, stat.children.length);
                         e.stopPropagation();
