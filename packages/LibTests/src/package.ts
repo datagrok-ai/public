@@ -938,20 +938,23 @@ export async function TestVuePLV() {
     wrapperFunccall: 'Compute:ObjectCooling',
     treeData: [
       {
-        text: 'Review phases (draggable + adding)',
+        text: 'Review phases (sequental + drag + adding)',
         children: [
-          {text: 'Phase 1: Cleaning', funcCall: 'LibTests:LongScript'},
-          {text: 'Phase 2: Filtering', funcCall: 'LibTests:LongScript'},
-          {text: 'Phase 3: Post-filtering', funcCall: 'LibTests:LongScript'},
+          {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
+          {text: 'Filtering', funcCall: 'LibTests:LongScript'},
+          {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
         ],
       }, {
         text: 'Step 2',
         children: [
           {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
-          {text: 'Review days (no drag, only adding)', children: [
-            {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
-            {text: 'Day 2', funcCall: 'LibTests:LongScript'},
-          ]},
+          {
+            text: 'Review days (parallel + no drag + adding)', 
+            order: 'parallel',
+            children: [
+              {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
+              {text: 'Day 2', funcCall: 'LibTests:LongScript'},
+            ]},
           {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
         ],
       },

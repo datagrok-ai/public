@@ -16,7 +16,8 @@ type TreeNode = {
 
 type Data = {
   funcCall?: DG.FuncCall | string,
-  text: string
+  text: string,
+  order?: Order,
 }
 
 type AugmentedStat = Stat<Data> & {
@@ -53,6 +54,8 @@ const statusToTooltip = {
 
 type Status = 'locked' | `didn't run` | 'running' | 'succeeded' | 'failed' | 'partially succeeded';
 
+type Order = 'sequental' | 'parallel';
+
 const getCall = (funcCall: DG.FuncCall | string, params?: {
   a?: number,
   b?: number,
@@ -72,6 +75,13 @@ const getCall = (funcCall: DG.FuncCall | string, params?: {
     });
 };
 
+const runSequentallly = async (children: AugmentedStat[]) => {
+  for (const child of children) 
+    await runByTree(child);
+};
+
+const runInParallel = async (children: AugmentedStat[]) => Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
+
 const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
   const nodeCall = currentStat.data.funcCall;
   currentStat.status = 'running';
@@ -86,9 +96,10 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
 
       return Promise.reject(e);
     }
-  } else {
-    return Promise.all(currentStat.children
-      .map(async (child) => runByTree(child as AugmentedStat)),
+  } else {  
+    return (currentStat.data.order === `parallel` ? 
+      runInParallel(currentStat.children as AugmentedStat[]): 
+      runSequentallly(currentStat.children as AugmentedStat[])
     ).then(() => {
       currentStat.status = 'succeeded';
 

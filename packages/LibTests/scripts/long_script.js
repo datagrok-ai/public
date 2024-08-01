@@ -8,6 +8,6 @@ const delay = (delayInms) => {
   return new Promise((resolve) => setTimeout(resolve, delayInms));
 };
   
-await delay(5000);
+await delay(3000);
 
 res = a+b;
