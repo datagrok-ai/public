@@ -22,10 +22,9 @@ export function fit(features, target, missingValue, iterations, eta, maxDepth, l
   const modelBuf = XGBoostModule._malloc(modelReserve * INT_BYTES);
   const utilsBuf = XGBoostModule._malloc(utilsLength * INT_BYTES);
 
-  // Wasm buffer
+  // Wasm buffer routine
   const floatHeap = XGBoostModule.HEAPF32;
-  const intHeap = XGBoostModule.HEAP32;
-
+  let intHeap = XGBoostModule.HEAP32;
   let raw;
 
   // Put features to wasm buffer
@@ -51,6 +50,7 @@ export function fit(features, target, missingValue, iterations, eta, maxDepth, l
   );
 
   // Extract model params from wasm buffer
+  intHeap = XGBoostModule.HEAP32;
   const paramsCount = intHeap[utilsBuf / INT_BYTES + SIZE_IDX];
   const params = new Int32Array(paramsCount);
 
@@ -73,8 +73,8 @@ export function predict(features, missingValue, params) {
   const featuresCount = features.length;
   const paramsCount = params.length;
 
-  // Wasm buffer
-  const floatHeap = XGBoostModule.HEAPF32;
+  // Wasm buffer routine
+  let floatHeap = XGBoostModule.HEAPF32;
   const intHeap = XGBoostModule.HEAP32;
 
   // Allocate memory
@@ -102,6 +102,7 @@ export function predict(features, missingValue, params) {
   );
 
   // Extract predictions from wasm buffer
+  floatHeap = XGBoostModule.HEAPF32;
   const prediction = new Float32Array(samplesCount);
 
   for (let i = 0; i < samplesCount; ++i)
@@ -114,64 +115,3 @@ export function predict(features, missingValue, params) {
 
   return prediction;
 } // predict
-
-
-/** Train XGBoost model */
-export function train(features, samplesCount, featuresCount, missingValue,
-  labels,
-  iterations, eta, maxDepth, lambda, alpha,
-  utils,
-  modelBytes, reserved) {
-  return XGBoostModule._train(features.byteOffset, samplesCount, featuresCount, missingValue,
-    labels.byteOffset, samplesCount,
-    iterations, eta, maxDepth, lambda, alpha,
-    utils.byteOffset, utils.length,
-    modelBytes.byteOffset, reserved);
-}
-
-/** Predict by XGBoost model */
-export function predictOld(features, samplesCount, featuresCount, missingValue,
-  modelBytes, modelSize,
-  predictions) {
-  return XGBoostModule._predict(features.byteOffset, samplesCount, featuresCount, missingValue,
-    modelBytes.byteOffset, modelSize,
-    predictions.byteOffset, samplesCount);
-}
-
-/** Allocate memory for training */
-export function allocTrainMemory(samplesCount, featuresCount, modelReserve, utilsLength) {
-  return {
-    int32Buffer: XGBoostModule.HEAP32.buffer,
-    float32Buffer: XGBoostModule.HEAPF32.buffer,
-    featuresOffset: XGBoostModule._malloc(samplesCount * featuresCount * FLOAT_BYTES),
-    labelsOffset: XGBoostModule._malloc(samplesCount * FLOAT_BYTES),
-    modelOffset: XGBoostModule._malloc(modelReserve * INT_BYTES),
-    utilsOffset: XGBoostModule._malloc(utilsLength * INT_BYTES),
-  };
-}
-
-/** Free memory allocated for training */
-export function freeTrainMemory(trainMemory) {
-  XGBoostModule._free(trainMemory.featuresOffset);
-  XGBoostModule._free(trainMemory.labelsOffset);
-  XGBoostModule._free(trainMemory.modelOffset);
-  XGBoostModule._free(trainMemory.utilsOffset);
-}
-
-/** Allocate memory for predicting */
-export function allocPredictMemory(samplesCount, featuresCount, modelReserve) {
-  return {
-    int32Buffer: XGBoostModule.HEAP32.buffer,
-    float32Buffer: XGBoostModule.HEAPF32.buffer,
-    featuresOffset: XGBoostModule._malloc(samplesCount * featuresCount * FLOAT_BYTES),
-    predictOffset: XGBoostModule._malloc(samplesCount * FLOAT_BYTES),
-    modelOffset: XGBoostModule._malloc(modelReserve * INT_BYTES),
-  };
-}
-
-/** Free memory allocated for predicting */
-export function freePredictMemory(predictMemory) {
-  XGBoostModule._free(predictMemory.featuresOffset);
-  XGBoostModule._free(predictMemory.predictOffset);
-  XGBoostModule._free(predictMemory.modelOffset);
-}

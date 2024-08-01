@@ -35,7 +35,7 @@ import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
-import {testXGBoost, XGBooster} from './xgbooster';
+import {XGBooster} from './xgbooster';
 
 export const _package = new DG.Package();
 

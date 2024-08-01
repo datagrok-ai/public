@@ -4,122 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {train, predictOld, allocTrainMemory, freeTrainMemory, allocPredictMemory,
-  freePredictMemory, fit, predict} from '../wasm/xgbooster';
-
-export function testXGBoost() {
-  const iterations = 20;
-  const eta = 0.3;
-  const maxDepth = 6;
-  const lambda = 1;
-  const alpha = 0;
-
-  const samplesCount = 5;
-  const featuresCount = 3;
-  const reserved = 1000000;
-  const MISSING_VALUE = -1;
-
-  // 1. TRAINING
-
-  const trainMemory = allocTrainMemory(samplesCount, featuresCount, reserved, 1);
-
-  const trainFeatures = new Float32Array(
-    trainMemory.float32Buffer,
-    trainMemory.featuresOffset,
-    samplesCount * featuresCount,
-  );
-
-  const trainLabels = new Float32Array(
-    trainMemory.float32Buffer,
-    trainMemory.labelsOffset,
-    samplesCount,
-  );
-
-  const utils = new Int32Array(
-    trainMemory.int32Buffer,
-    trainMemory.utilsOffset,
-    samplesCount * featuresCount,
-  );
-
-  const packedModelBytes = new Int32Array(
-    trainMemory.int32Buffer,
-    trainMemory.modelOffset,
-    reserved,
-  );
-
-  for (let i = 0; i < samplesCount; ++i) {
-    let sum = 0;
-
-    for (let j = 0; j < featuresCount; ++j) {
-      trainFeatures[featuresCount * i + j] = Math.random() * 10;
-      sum += trainFeatures[featuresCount * i + j];
-    }
-
-    trainLabels[i] = Math.round(sum) % 3;
-
-    console.log(`${i}   <-->   ${trainLabels[i]}`);
-  }
-
-  console.log('Start training:');
-
-  const trainRes = train(trainFeatures, samplesCount, featuresCount, MISSING_VALUE, trainLabels,
-    iterations, eta, maxDepth, lambda, alpha,
-    utils,
-    packedModelBytes, reserved);
-
-  console.log(`Training result: ${trainRes}`);
-  console.log(`Model size: ${utils[0]}`);
-
-  // 2. PREDICTING
-  const predictMemory = allocPredictMemory(samplesCount, featuresCount, utils[0]);
-
-  const predictFeatures = new Float32Array(
-    predictMemory.float32Buffer,
-    predictMemory.featuresOffset,
-    samplesCount * featuresCount,
-  );
-
-  for (let i = 0; i < featuresCount * samplesCount; ++i)
-    predictFeatures[i] = trainFeatures[i];
-
-  const predictLabels = new Float32Array(
-    predictMemory.float32Buffer,
-    predictMemory.predictOffset,
-    samplesCount,
-  );
-
-  const unpackedModelBytes = new Int32Array(
-    predictMemory.int32Buffer,
-    predictMemory.modelOffset,
-    utils[0],
-  );
-
-  for (let i = 0; i < utils[0]; ++i)
-    unpackedModelBytes[i] = packedModelBytes[i];
-
-  console.log('Start predicting:');
-
-  const predictRes = predictOld(
-    predictFeatures,
-    samplesCount,
-    featuresCount,
-    MISSING_VALUE,
-    unpackedModelBytes,
-    utils[0],
-    predictLabels,
-  );
-
-  console.log(`Predicting result: ${predictRes}`);
-
-  console.log('Predictions:');
-  for (let i = 0; i < samplesCount; i++)
-    console.log(Math.round(predictLabels[i]));
-
-  freeTrainMemory(trainMemory);
-  freePredictMemory(predictMemory);
-
-  console.log('Done!');
-}
+import {fit, predict} from '../wasm/xgbooster';
 
 /** Interactivity tresholds */
 enum INTERACTIVITY {
@@ -141,7 +26,6 @@ enum RESERVED {
 
 /** XGBoost specific constants */
 const MISSING_VALUE = DG.FLOAT_NULL;
-const SIZE_IDX = 0;
 const ALIGN_VAL = 4;
 const BLOCK_SIZE = 64;
 
@@ -152,21 +36,6 @@ enum TITLES {
   CATS = 'Categories',
   CATS_SIZE = 'Categories size',
 }
-
-/** Data structs for training */
-type TrainStructs = {
-  features: Float32Array,
-  target: Float32Array,
-  utils: Int32Array,
-  model: Int32Array,
-};
-
-/** Data structs for predicting */
-type PredictStructs = {
-  features: Float32Array,
-  predict: Float32Array,
-  model: Int32Array,
-};
 
 /** XGBoost modeling */
 export class XGBooster {
@@ -252,53 +121,34 @@ export class XGBooster {
     if (this.targetType === DG.COLUMN_TYPE.STRING)
       this.targetCategories = target.categories;
 
-    /*
-    // Allocate memory in wasm-buffer & put training data there
-    const wasmStructs = this.getWasmTrainStructs(features, target);
-
-    // Train model
-    train(
-      wasmStructs.features, target.length, features.length, MISSING_VALUE, // features data
-      wasmStructs.target, // target/labels data
-      iterations, eta, maxDepth, lambda, alpha, // hyperparameters of training
-      wasmStructs.utils, // model utils
-      wasmStructs.model, RESERVED.MODEL, // trained model
-    );
-
-    // Extract model params from wasm-buffer
-    this.modelParams = this.getModelParams(wasmStructs);
-    console.log(this.modelParams);
-
-    freeTrainMemory(wasmStructs);*/
-
+    // Train model params
     this.modelParams = fit(features, target, MISSING_VALUE,
       iterations, eta, maxDepth, lambda, alpha, RESERVED.MODEL, RESERVED.UTILS,
     );
   }
 
   /** Predict using trained model */
-  public predict(features: DG.ColumnList): DG.Column {/*
-    // Allocate memory in wasm-buffer & put training data there
-    const wasmStructs = this.getWasmPredictStructs(features);
+  public predict(features: DG.ColumnList): DG.Column {
+    if (this.modelParams === undefined)
+      throw new Error('Failed to apply non-trained model');
 
-    const samplesCount = features.byIndex(0).length;
-    const featuresCount = features.length;
+    // Get prediction
+    const prediction = predict(features, MISSING_VALUE, this.modelParams);
 
-    // Train model
-    predictOld(
-      wasmStructs.features, samplesCount, featuresCount, MISSING_VALUE,
-      wasmStructs.model, this.modelParams?.length,
-      wasmStructs.predict,
-    );
+    // Create an appropriate column
+    switch (this.targetType) {
+    case DG.COLUMN_TYPE.STRING:
+      return this.stringColPrediction(prediction);
 
-    // Extract prediction column from wasm-buffer
-    const prediction = this.getPredictColOld(wasmStructs);
+    case DG.COLUMN_TYPE.INT:
+      return this.intColPrediction(prediction);
 
-    console.log(wasmStructs.predict);
+    case DG.COLUMN_TYPE.BIG_INT:
+      return this.bigIntColPrediction(prediction);
 
-    freePredictMemory(wasmStructs);
-    console.log(predict(features, MISSING_VALUE, this.modelParams));*/
-    return this.getPredictCol(predict(features, MISSING_VALUE, this.modelParams));
+    default:
+      return DG.Column.fromFloat32Array(TITLES.PREDICT, prediction);
+    }
   }
 
   /** Return packed model */
@@ -354,184 +204,10 @@ export class XGBooster {
     packedModel.set(new Uint8Array(this.modelParams.buffer), offset);
 
     return packedModel;
-  }
+  } // toBytes
 
-  /** Allocate structs for training at the wasm-side */
-  private allocTrainStructs(samplesCount: number, featuresCount: number): TrainStructs {
-    const memory = allocTrainMemory(samplesCount, featuresCount, RESERVED.MODEL, RESERVED.UTILS);
-    console.log(memory);
-
-    return {
-      features: new Float32Array(memory.float32Buffer, memory.featuresOffset, samplesCount * featuresCount),
-      target: new Float32Array(memory.float32Buffer, memory.labelsOffset, samplesCount),
-      model: new Int32Array(memory.int32Buffer, memory.modelOffset, RESERVED.MODEL),
-      utils: new Int32Array(memory.int32Buffer, memory.utilsOffset, RESERVED.UTILS),
-    };
-  }
-
-  /** Get wasm-structures for training model */
-  private getWasmTrainStructs(features: DG.ColumnList, target: DG.Column): TrainStructs {
-    const samplesCount = target.length;
-    const featuresCount = features.length;
-
-    // Allocate wasm-buffer
-    const wasmStructs = this.allocTrainStructs(samplesCount, featuresCount);
-
-    // Put targets to wasm-buffer
-    const rawTarget = target.getRawData();
-    const wasmTarget = wasmStructs.target;
-    for (let i = 0; i < samplesCount; ++i)
-      wasmTarget[i] = rawTarget[i];
-
-    // Put features to wasm-buffer
-    const wasmFeatures = wasmStructs.features;
-    for (let j = 0; j < featuresCount; ++j) {
-      const raw = features.byIndex(j).getRawData();
-
-      for (let i = 0; i < samplesCount; ++i)
-        wasmFeatures[j * samplesCount + i] = raw[i];
-    }
-
-    //console.log(wasmStructs);
-
-    return wasmStructs;
-  }
-
-  /** Get model params from wasm-buffer */
-  private getModelParams(wasmStructs: TrainStructs): Int32Array {
-    const modelParamsCount = wasmStructs.utils[SIZE_IDX];
-    const params = new Int32Array(modelParamsCount);
-    const trained = wasmStructs.model;
-
-    console.log(`Params count: ${modelParamsCount}`);
-
-    for (let i = 0; i < modelParamsCount; ++i)
-      params[i] = trained[i];
-
-    return params;
-  }
-
-  /** Allocate structs for predicting at the wasm-side */
-  private allocPredictStructs(samplesCount: number, featuresCount: number): PredictStructs {
-    if (this.modelParams === undefined)
-      throw new Error('Non-trained model applying');
-
-    const memory = allocPredictMemory(samplesCount, featuresCount, this.modelParams.length);
-
-    return {
-      features: new Float32Array(memory.float32Buffer, memory.featuresOffset, samplesCount * featuresCount),
-      predict: new Float32Array(memory.float32Buffer, memory.predictOffset, samplesCount),
-      model: new Int32Array(memory.int32Buffer, memory.modelOffset, this.modelParams.length),
-    };
-  }
-
-  /** Get wasm-structures for predicting */
-  private getWasmPredictStructs(features: DG.ColumnList): PredictStructs {
-    if (this.modelParams === undefined)
-      throw new Error('Non-trained model applying');
-
-    const samplesCount = features.byIndex(0).length;
-    const featuresCount = features.length;
-
-    // Allocate wasm-buffer
-    const wasmStructs = this.allocPredictStructs(samplesCount, featuresCount);
-
-    // Put model params to wasm-buffer
-    const wasmModel = wasmStructs.model;
-    const model = this.modelParams;
-    const paramsCount = model.length;
-
-    for (let i = 0; i < paramsCount; ++i)
-      wasmModel[i] = model[i];
-
-    // Put features to wasm-buffer
-    const wasmFeatures = wasmStructs.features;
-    for (let j = 0; j < featuresCount; ++j) {
-      const raw = features.byIndex(j).getRawData();
-
-      for (let i = 0; i < samplesCount; ++i)
-        wasmFeatures[j * samplesCount + i] = raw[i];
-    }
-
-    //console.log(wasmStructs);
-
-    return wasmStructs;
-  }
-
-  /** Get predicted string column */
-  private getPredictedStringColOld(wasmStructs: PredictStructs): DG.Column {
-    const wasmPredict = wasmStructs.predict;
-    const samplesCount = wasmPredict.length;
-
-    if (this.targetCategories === undefined)
-      throw new Error('Predicting fails: undefined categories');
-
-    const predClass = new Array<string>(samplesCount);
-
-    for (let i = 0; i < samplesCount; ++i)
-      predClass[i] = this.targetCategories[Math.round(wasmPredict[i])];
-
-    return DG.Column.fromStrings(TITLES.PREDICT, predClass);
-  }
-
-  /** Get predicted int column */
-  private getPredictedIntColOld(wasmStructs: PredictStructs): DG.Column {
-    const wasmPredict = wasmStructs.predict;
-    const samplesCount = wasmPredict.length;
-
-    const rawInts = new Int32Array(samplesCount);
-
-    for (let i = 0; i < samplesCount; ++i)
-      rawInts[i] = Math.round(wasmPredict[i]);
-
-    return DG.Column.fromInt32Array(TITLES.PREDICT, rawInts, samplesCount);
-  }
-
-  /** Get predicted int column */
-  private getPredictedFloatColOld(wasmStructs: PredictStructs): DG.Column {
-    const wasmPredict = wasmStructs.predict;
-    const samplesCount = wasmPredict.length;
-
-    const rawFloats = new Float32Array(samplesCount);
-
-    for (let i = 0; i < samplesCount; ++i)
-      rawFloats[i] = wasmPredict[i];
-
-    return DG.Column.fromFloat32Array(TITLES.PREDICT, rawFloats, samplesCount);
-  }
-
-  /** Get predicted bigint column */
-  private getPredictedBigIntColOld(wasmStructs: PredictStructs): DG.Column {
-    const wasmPredict = wasmStructs.predict;
-    const samplesCount = wasmPredict.length;
-
-    const rawInts = new BigInt64Array(samplesCount);
-
-    for (let i = 0; i < samplesCount; ++i)
-      rawInts[i] = BigInt(Math.round(wasmPredict[i]));
-
-    return DG.Column.fromBigInt64Array(TITLES.PREDICT, rawInts);
-  }
-
-  /** Get perdiction colum */
-  private getPredictColOld(wasmStructs: PredictStructs): DG.Column {
-    switch (this.targetType) {
-    case DG.COLUMN_TYPE.STRING:
-      return this.getPredictedStringColOld(wasmStructs);
-
-    case DG.COLUMN_TYPE.INT:
-      return this.getPredictedIntColOld(wasmStructs);
-
-    case DG.COLUMN_TYPE.BIG_INT:
-      return this.getPredictedBigIntColOld(wasmStructs);
-
-    default:
-      return this.getPredictedFloatColOld(wasmStructs);
-    }
-  }
-
-  /** Get predicted string column */
-  private getPredictedStringCol(prediction: Float32Array): DG.Column {
+  /** Return predicted string column */
+  private stringColPrediction(prediction: Float32Array): DG.Column {
     const samplesCount = prediction.length;
 
     if (this.targetCategories === undefined)
@@ -545,8 +221,8 @@ export class XGBooster {
     return DG.Column.fromStrings(TITLES.PREDICT, predClass);
   }
 
-  /** Get predicted int column */
-  private getPredictedIntCol(prediction: Float32Array): DG.Column {
+  /** Return predicted int column */
+  private intColPrediction(prediction: Float32Array): DG.Column {
     const samplesCount = prediction.length;
 
     const rawInts = new Int32Array(samplesCount);
@@ -557,8 +233,8 @@ export class XGBooster {
     return DG.Column.fromInt32Array(TITLES.PREDICT, rawInts, samplesCount);
   }
 
-  /** Get predicted bigint column */
-  private getPredictedBigIntCol(prediction: Float32Array): DG.Column {
+  /** Return predicted bigint column */
+  private bigIntColPrediction(prediction: Float32Array): DG.Column {
     const samplesCount = prediction.length;
 
     const rawInts = new BigInt64Array(samplesCount);
@@ -567,22 +243,5 @@ export class XGBooster {
       rawInts[i] = BigInt(Math.round(prediction[i]));
 
     return DG.Column.fromBigInt64Array(TITLES.PREDICT, rawInts);
-  }
-
-  /** Get perdiction colum */
-  private getPredictCol(prediction: Float32Array): DG.Column {
-    switch (this.targetType) {
-    case DG.COLUMN_TYPE.STRING:
-      return this.getPredictedStringCol(prediction);
-
-    case DG.COLUMN_TYPE.INT:
-      return this.getPredictedIntCol(prediction);
-
-    case DG.COLUMN_TYPE.BIG_INT:
-      return this.getPredictedBigIntCol(prediction);
-
-    default:
-      return DG.Column.fromFloat32Array(TITLES.PREDICT, prediction);
-    }
   }
 }
