@@ -1,4 +1,4 @@
-<!-- TITLE: Viewer Events  -->
+<!-- TITLE: Viewer Event Scripts  -->
 
 # Viewer Event Scripts
 
