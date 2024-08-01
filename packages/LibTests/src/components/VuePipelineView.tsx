@@ -72,6 +72,35 @@ const getCall = (funcCall: DG.FuncCall | string, params?: {
     });
 };
 
+const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
+  const nodeCall = currentStat.data.funcCall;
+  currentStat.status = 'running';
+  if (nodeCall) {
+    try {
+      await getCall(nodeCall).call();
+      currentStat.status = 'succeeded';
+
+      return Promise.resolve(currentStat.status);
+    } catch (e) {
+      currentStat.status = 'failed';
+
+      return Promise.reject(e);
+    }
+  } else {
+    return Promise.all(currentStat.children
+      .map(async (child) => runByTree(child as AugmentedStat)),
+    ).then(() => {
+      currentStat.status = 'succeeded';
+
+      return Promise.resolve(currentStat.status);
+    }).catch((e) => {
+      currentStat.status = 'failed';
+
+      return Promise.reject(e);
+    });                      
+  }
+};
+
 export const VuePipelineView = defineComponent({
   props: {
     wrapperFunccall: {
@@ -127,34 +156,6 @@ export const VuePipelineView = defineComponent({
                       position: 'absolute',
                     }} 
                   />;
-                };
-
-                const runByTree = async (currentStat: AugmentedStat) => {
-                  const nodeCall = currentStat.data.funcCall;
-                  currentStat.status = 'running';
-                  if (nodeCall) {
-                    try {
-                      const call = await getCall(nodeCall).call();
-                      currentFuncCall.value = call;
-                      currentStat.status = 'succeeded';
-
-                      triggerRef(currentFuncCall);
-
-                      return Promise.resolve(currentStat.status);
-                    } catch (e) {
-                      currentStat.status = 'failed';
-
-                      return Promise.reject(e);
-                    }
-                  } else {
-                    await Promise.all(currentStat.children.map(async (child) => {
-                      return runByTree(child as AugmentedStat);
-                    })).then(() => {
-                      currentStat.status = 'succeeded';
-                    }).catch(() => {
-                      currentStat.status = 'failed';
-                    });                      
-                  }
                 };
 
                 return (
