@@ -157,9 +157,9 @@ export class XGBooster {
       throw new Error('Failed to pack non-trained model');
 
     // Categories bytes
-    const categoriesBytes = (this.targetCategories !== undefined) ?
-      DG.DataFrame.fromColumns([DG.Column.fromStrings(TITLES.CATS, this.targetCategories)]).toByteArray():
-      undefined;
+    const categoriesBytes = (this.targetCategories !== undefined) ? DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, TITLES.CATS, this.targetCategories),
+    ]).toByteArray(): undefined;
 
     const categoriesBytesSize = (categoriesBytes !== undefined) ? categoriesBytes.length : 0;
 
@@ -215,10 +215,13 @@ export class XGBooster {
 
     const predClass = new Array<string>(samplesCount);
 
-    for (let i = 0; i < samplesCount; ++i)
-      predClass[i] = this.targetCategories[Math.round(prediction[i])];
+    const maxCategory = this.targetCategories.length - 1;
+    const categoryIdx = (val: number) => Math.max(0, Math.min(val, maxCategory));
 
-    return DG.Column.fromStrings(TITLES.PREDICT, predClass);
+    for (let i = 0; i < samplesCount; ++i)
+      predClass[i] = this.targetCategories[categoryIdx(Math.round(prediction[i]))];
+
+    return DG.Column.fromList(DG.COLUMN_TYPE.STRING, TITLES.PREDICT, predClass);
   }
 
   /** Return predicted int column */
