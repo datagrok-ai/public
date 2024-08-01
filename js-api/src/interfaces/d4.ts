@@ -1256,16 +1256,18 @@ export interface IDensityPlotSettings {
 }
 
 export interface IBoxPlotSettings {
-  showStatistics: boolean;
+  categoryColumnNames: Array<string>;
 
-  category: string;
-  categoryColumnName: string;
+  showStatistics: boolean;
 
   showCategoryAxis: boolean;
 
   showCategorySelector: boolean;
 
   labelOrientation: keyof typeof TextOrientation;
+
+  /// Display subcategories - category combibations in the x axis table.
+  showMinorCategories: boolean;
 
   value: string;
   valueColumnName: string;
@@ -1277,6 +1279,9 @@ export interface IBoxPlotSettings {
   showValueAxis: boolean;
 
   showValueSelector: boolean;
+
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
 
   /// Column to color-code boxes (Q2-Q3 region).
   /// See also *Bin Color Aggr Type*.
@@ -1310,6 +1315,7 @@ export interface IBoxPlotSettings {
 
   markerOpacity: number;
 
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexPosition;
@@ -1357,11 +1363,9 @@ export interface IBoxPlotSettings {
 
   whiskerWidthRatio: number;
 
-  maxBinWidth: number;
-
   axisUseColumnFormat: boolean;
 
-  /// Number of KDE bins to display a violin plot
+  /// Number of KDE bins to display a violin plot.
   bins: number;
 
   whiskerColor: number;
