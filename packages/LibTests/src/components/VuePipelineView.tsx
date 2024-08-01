@@ -162,6 +162,12 @@ export const VuePipelineView = defineComponent({
               ({stat, node}: {stat: AugmentedStat, node: TreeNode}) => {
                 if (!stat.status)  
                   stat.status = getCurrentStatus(stat);
+
+                const runIcon = <IconFA 
+                  name='play'
+                  onClick={() => runByTree(stat)}
+                  style={{paddingLeft: '4px'}}
+                />;
                 
                 const openIcon = <OpenIcon
                   open={stat.open}
@@ -185,26 +191,31 @@ export const VuePipelineView = defineComponent({
                 };
 
                 return (
-                  <div style={{display: 'flex', padding: '4px 0px', width: '100%'}}
-                    onClick={() => runByTree(stat)}
+                  <div 
+                    style={{
+                      display: 'flex', 
+                      padding: '4px 0px', 
+                      width: '100%',
+                    }}
                     onMouseover={() => stat.isHovered = true} 
                     onMouseleave={() => stat.isHovered = false} 
                     onDragstart={() => stat.isHovered = false}
+                    class={stat.status === 'locked' ? 'd4-disabled': null}
                   >
                     { progressIcon(stat.status) }
                     { stat.children.length ? openIcon : null }
                     <span class="mtl-ml">{node.text}</span>
-                    { tree.value?.isDraggable(stat) && stat.isHovered ? <IconFA 
+                    { tree.value?.isDraggable(stat) && stat.isHovered && stat.status !== 'running' ? <IconFA 
                       name='grip-vertical' 
                       cursor='grab'
                       style={{paddingLeft: '4px'}}
                     />: null }
-                    { stat.parent && tree.value?.isDroppable(stat.parent) && stat.isHovered ? <IconFA 
+                    { stat.parent && tree.value?.isDroppable(stat.parent) && stat.isHovered && stat.status !== 'running' ? <IconFA 
                       name='times' 
                       style={{paddingLeft: '4px'}}
                       onClick={(e: Event) => {tree.value!.remove(stat); e.stopPropagation();}}
                     />: null }
-                    { tree.value?.isDroppable(stat) && stat.isHovered ? <IconFA 
+                    { tree.value?.isDroppable(stat) && stat.isHovered && stat.status !== 'running' ? <IconFA 
                       name='plus' 
                       style={{paddingLeft: '4px'}}
                       onClick={(e) => {
@@ -215,6 +226,7 @@ export const VuePipelineView = defineComponent({
                         e.stopPropagation();
                       }}
                     />: null }
+                    { stat.isHovered && stat.status !== 'running' ? runIcon: null }
                   </div>
                 );
               }
