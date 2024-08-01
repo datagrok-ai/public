@@ -432,11 +432,11 @@ export class DemoView extends DG.ViewBase {
 
         if (path.length > 2) {
           let groupPath = path[0];
-          let treePath = (tree ? tree : this.tree).getOrCreateGroup(path[0], {path: groupPath});
+          let treePath = (tree ? tree : this.tree).getOrCreateGroup(path[0], {path: groupPath}, false);
           (treePath.root.firstElementChild as HTMLElement).dataset.name = path[0];
           for (let i = 1; i < path.length - 1; i++) {
             groupPath += `/${path[i]}`;
-            treePath = treePath.getOrCreateGroup(path[i], {path: groupPath});
+            treePath = treePath.getOrCreateGroup(path[i], {path: groupPath}, false);
             (treePath.root.firstElementChild as HTMLElement).dataset.name = path[i];
           }
 
@@ -453,7 +453,7 @@ export class DemoView extends DG.ViewBase {
             ui.tooltip.hide();
           };
         } else {
-          const folder =  (tree ? tree : this.tree).getOrCreateGroup(directionFuncs[j].category, {path: path[0]});
+          const folder = (tree ? tree : this.tree).getOrCreateGroup(directionFuncs[j].category, {path: path[0]}, false);
           (folder.root.firstElementChild as HTMLElement).dataset.name = directionFuncs[j].category;
           const item = folder.item(directionFuncs[j].name, {path: directionFuncs[j].path});
 
