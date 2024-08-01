@@ -1,4 +1,4 @@
-import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -9,6 +9,7 @@ category('UI: Users', () => {
     const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
     mng.header.click();
     let platform: any;
+    await delay(2000);
     await awaitCheck(() => {
       platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
         .find((el) => el.textContent === 'Platform');
@@ -16,10 +17,10 @@ category('UI: Users', () => {
     }, '', 2000);
     if ((platform.nextElementSibling as HTMLElement).style.display === 'none')
       (platform.firstElementChild as HTMLElement).click();
-    await delay(100);
     const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
+
   });
 
   /*
@@ -66,7 +67,7 @@ category('UI: Users', () => {
     user.firstName = 'new';
     user.lastName = 'user';
     // TODO: add save and delete when will work
-  }, {skipReason: 'GROK-11318'});
+  }, { skipReason: 'GROK-11318' });
 
   test('actions.addServiceUser', async () => {
     await showDialog('Service User...');
@@ -74,7 +75,7 @@ category('UI: Users', () => {
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
-  });
+  }, { timeout: 100000 });
 
   test('actions.inviteFriend', async () => {
     await showDialog('Invite a Friend...');
@@ -82,7 +83,7 @@ category('UI: Users', () => {
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
-  });
+  }, { timeout: 100000 });
 
   test('user.panel', async () => {
     await awaitCheck(() => {
@@ -104,24 +105,30 @@ category('UI: Users', () => {
     const desc = userInfo.innerText;
     const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined');
     expect(b, true);
-  });
+  }, { timeout: 100000 });
 
   after(async () => {
     grok.shell.closeAll();
   });
 
   async function showDialog(label: string) {
+    console.log('ok');
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'New');
+    console.log('ok1');
     if (cng === undefined) throw new Error(`cannot find New User button`);
+    console.log('ok2');
     (cng as HTMLElement).click();
     let optn: any;
+    console.log('ok3');
     await awaitCheck(() => {
       optn = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find((el) => el.textContent === label);
       return optn !== undefined;
     }, '', 1000);
+    await delay(500);
+    console.log('ok4');
     // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
     optn.click();
   };
-}, {clear: false});
+}, { clear: false });

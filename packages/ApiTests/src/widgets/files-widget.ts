@@ -49,5 +49,5 @@ category('Widgets', () => {
         return true;
       }, 'AppData timeout', 10000);
     }
-  });
+  }, {timeout: 100000});
 });

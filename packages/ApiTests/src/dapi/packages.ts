@@ -23,5 +23,5 @@ category('Dapi: packages', () => {
 
   test('readCsv error', async () => {
     await expectExceptionAsync(() => _package.files.readCsv('datasets/noFile.csv').then());
-  }, {skipReason: 'GROK-13716'});
+  });
 });

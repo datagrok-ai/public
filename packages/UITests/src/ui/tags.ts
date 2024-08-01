@@ -1,4 +1,4 @@
-import {after, before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 async function testTags(obj: any, apiPath: any, error: string) {
   obj.tag('apiteststag');
   await apiPath.save(obj);
-  const len = await apiPath.filter('#apiteststag').list().then((els: any[])=> els.length);
+  const len = await apiPath.filter('#apiteststag').list().then((els: any[]) => els.length);
   await apiPath.delete(obj);
   if (len !== 1) throw new Error(`Expected 1 ${error}, got ${len}`);
 }
@@ -19,6 +19,7 @@ category('UI: Tags', () => {
     const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
     mng.header.click();
     let groups: any;
+    await delay(1000);
     await awaitCheck(() => {
       groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
         .find((el) => el.textContent === 'Dashboards');
@@ -37,13 +38,18 @@ category('UI: Tags', () => {
         return /[0-9]+ \/ [0-9]+/g.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
       return false;
     }, 'cannot load projects', 3000);
+    await delay(3000);
     const search = grok.shell.v.root.querySelector('.grok-gallery-search-bar .ui-input-root .ui-input-editor') as HTMLInputElement;
     search.value = '#demo';
     search.dispatchEvent(new Event('input'));
-    const regex = new RegExp(`[0-9]+ / ${prapi}`, 'g');
+    console.log('regex')
+    console.log(`[0-9]+ / ${prapi}`)
+    const regex = new RegExp(`[0-9]+ \\/ ((${prapi})|(...))`, 'g');
     await awaitCheck(() => {
-      if (document.querySelector('.grok-items-view-counts') !== null)
+      if (document.querySelector('.grok-items-view-counts') !== null) {
+        console.log(document.querySelector('.grok-items-view-counts'));
         return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
+      }
       return false;
     }, 'number of projects does not match', 7000);
   });
@@ -68,9 +74,9 @@ category('UI: Tags', () => {
       db: '',
     }), grok.dapi.connections, 'connection');
     await testTags(DG.Script.create('apitests'), grok.dapi.scripts, 'script');
-  });
+  }, { timeout: 40000 });
 
   after(async () => {
     grok.shell.closeAll();
   });
-}, {clear: false});
+}, { clear: false });

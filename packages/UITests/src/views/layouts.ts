@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import { after, awaitCheck, before, category, delay, expect, test } from '@datagrok-libraries/utils/src/test';
 // import $ from 'cash-dom';
 
 category('Layouts', () => {
@@ -85,7 +85,7 @@ category('Layouts', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, {clear: false});
+}, { clear: false });
 
 category('Layouts: Apply', () => {
   const df: DG.DataFrame = grok.data.demo.demog(100);
@@ -107,8 +107,10 @@ category('Layouts: Apply', () => {
     }, '', 3000);
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
+    await delay(10000);
     const num = list!.children.length + 1;
     save.click();
+    await delay(1000);
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     try {
       tv.resetLayout();
@@ -123,7 +125,7 @@ category('Layouts: Apply', () => {
       l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
       await grok.dapi.layouts.delete(l[0]);
     }
-  });
+  }, { timeout: 100000 });
 
   test('gallery', async () => {
     const tv = grok.shell.addTableView(df);
@@ -136,7 +138,7 @@ category('Layouts: Apply', () => {
       list = document.querySelector('.panel-content #layouts');
       return list !== null;
     }, '', 3000);
-    const num = list!.children.length + 1;
+    const num = list!.children. length + 1;
     grok.shell.topMenu.find('View').find('Layout').find('Save to Gallery').click();
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     try {

@@ -266,7 +266,7 @@ category('DataFrame: Column', () => {
     const col = DG.Column.int('col', 3);
     col.setRawData(Int32Array.from([1, 2, 3]));
     expectArray(col.getRawData(), [1, 2, 3]);
-  }, {skipReason: 'skip'});
+  }, {skipReason:'GROK-16406'});
 
   test('getSortedOrder', async () => {
     expectArray(COL1.getSortedOrder(), [1, 2, 3, 0]);
