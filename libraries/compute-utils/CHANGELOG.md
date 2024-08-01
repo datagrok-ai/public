@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.36.6 (2024-08-01)
+
+- RFV: Added spinning for async validation icon
+
 ## 1.36.5 (2024-07-31)
 
 - RFV & Wizard: Historical runs load optimization
