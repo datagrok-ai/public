@@ -1,3 +1,7 @@
+.he-tree__open-icon {
+  height: 14px;
+}
+
 .grid-stack>.grid-stack-item {
   overflow: hidden;
   border: solid 1px var(--grey-2);
