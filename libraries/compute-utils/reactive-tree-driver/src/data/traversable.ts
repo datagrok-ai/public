@@ -1,4 +1,4 @@
-import {TraverseHandler} from "./common-types";
+import {TraverseHandler} from './common-types';
 
 export function buildTraverseB<T, P, S>(startPath: P, getNext: (item: T, path: P, state?: S) => (readonly [T, P, S?])[], startState?: S) {
   return function traverse<A>(start: T, handler: TraverseHandler<A, T, P>, acc: A) {
@@ -14,7 +14,7 @@ export function buildTraverseB<T, P, S>(startPath: P, getNext: (item: T, path: P
       q.push(...next);
     }
     return acc;
-  }
+  };
 }
 
 export function buildTraverseD<T, P, S>(startPath: P, getNext: (item: T, path: P, state?: S) => (readonly [T, P, S?])[], startState?: S) {
@@ -32,5 +32,5 @@ export function buildTraverseD<T, P, S>(startPath: P, getNext: (item: T, path: P
       stk.push(...rnext);
     }
     return acc;
-  }
+  };
 }

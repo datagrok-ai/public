@@ -1,5 +1,5 @@
 import {indexFromEnd} from '../utils';
-import { buildTraverseB, buildTraverseD } from './traversable';
+import {buildTraverseB, buildTraverseD} from './traversable';
 
 export type NodeAddressSegment = {
   id: string,
@@ -17,7 +17,7 @@ export type NodePath = {
 }[];
 
 export class NodeTree<T> {
-  private root = new TreeNode(this.item);
+  protected root = new TreeNode(this.item);
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
@@ -55,14 +55,14 @@ export class NodeTree<T> {
     return parent.removeChild(segment);
   }
 
-  find(pred: (item: T) => boolean): [T, NodePath] | undefined {
-    return this.traverse(this.root, ((acc, item, path, stop) => {
+  find(pred: (item: T) => boolean): TreeNode<T> | undefined {
+    return this.traverse(this.root, ((acc, item, _path, stop) => {
       if (pred(item.getItem())) {
         stop();
-        return [item.getItem(), path] as const;
+        return item;
       }
       return acc;
-    }), undefined as [T, NodePath] | undefined);
+    }), undefined as TreeNode<T> | undefined);
   }
 
   private getNodesFromAddress(address: Readonly<NodeAddress>) {

@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {ItemId, NqName} from '../data/common-types';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import { RestrictionState, RestrictionType} from '../runtime/FuncCallAdapters';
-import { ActionPositions } from './PipelineConfiguration';
+import {RestrictionState, RestrictionType} from '../runtime/FuncCallAdapters';
+import {ActionPositions} from './PipelineConfiguration';
 
 //
 // initial steps config for dynamic pipelines

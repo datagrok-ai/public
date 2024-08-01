@@ -14,6 +14,7 @@ export interface RestrictionState {
 
 export interface IRunnableWrapper {
   id?: string;
+  instance?: DG.FuncCall;
   run(): Observable<any>;
   isRunning$: BehaviorSubject<boolean>;
   isOutputOutdated$: BehaviorSubject<boolean>;
@@ -45,10 +46,9 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   isRunning$ = new BehaviorSubject(false);
   isOutputOutdated$ = new BehaviorSubject(true);
   validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
-  // TODO: add restrictions serialization/deserialization
   inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
 
-  constructor(private instance: DG.FuncCall) {}
+  constructor(public instance: DG.FuncCall) {}
 
   run() {
     return from(defer(async () => {
@@ -67,8 +67,8 @@ export class FuncCallAdapter implements IFuncCallAdapter {
     const param = this.instance[ptype][name];
     return param.onChanged.pipe(
       startWith(null),
-      map(() => param.value)
-    )
+      map(() => param.value),
+    );
   }
 
   getState<T = any>(name: string) {
@@ -139,22 +139,22 @@ export class MemoryStore implements IStateStore, IValidationStore {
 
 // mock implementation for rxjs testing
 
-export class FuncCallMokcAdapter extends MemoryStore implements IFuncCallAdapter {
+export class FuncCallMockAdapter extends MemoryStore implements IFuncCallAdapter {
   id = uuidv4();
   isRunning$ = new BehaviorSubject(false);
   isOutputOutdated$ = new BehaviorSubject(true);
+  instance = undefined;
 
   constructor(statesDescriptions: StateItem[]) {
     super(statesDescriptions);
   }
 
-  run(outputs?: Record<string,any>, delayTime = 0) {
+  run(outputs?: Record<string, any>, delayTime = 0) {
     return from(defer(async () => {
       try {
         this.isRunning$.next(true);
-        for (const [k,v] of Object.entries(outputs ?? {})) {
+        for (const [k, v] of Object.entries(outputs ?? {}))
           this.setState(k, v);
-        }
       } finally {
         this.isRunning$.next(false);
         this.isOutputOutdated$.next(false);
@@ -165,4 +165,8 @@ export class FuncCallMokcAdapter extends MemoryStore implements IFuncCallAdapter
   getFuncCall(): DG.FuncCall {
     throw new Error(`Not implemented for mocks`);
   }
+}
+
+export function isMockAdapter(adapter: IRunnableWrapper): adapter is FuncCallMockAdapter {
+  return adapter.instance == null;
 }

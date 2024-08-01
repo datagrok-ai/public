@@ -22,7 +22,7 @@ export function isPipelineSequentialConfig(c: ConfigTraverseItem): c is Pipeline
 }
 
 export function isPipelineConfig(c: ConfigTraverseItem): c is PipelineConfigurationProcessed {
-  return isPipelineStaticConfig(c) ||isPipelineParallelConfig(c) || isPipelineSequentialConfig(c)
+  return isPipelineStaticConfig(c) ||isPipelineParallelConfig(c) || isPipelineSequentialConfig(c);
 }
 
 export function isPipelineSelfRef(c: ConfigTraverseItem): c is PipelineSelfRef {
@@ -37,9 +37,9 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
   const res = new Map<string, PipelineConfigurationProcessed>();
 
   const getNextItem = (item: ConfigTraverseItem, path: ItemPathArray) => {
-    if (isPipelineStepConfig(item)) {
+    if (isPipelineStepConfig(item))
       return [] as any;
-    } else if (isPipelineSelfRef(item)) {
+    else if (isPipelineSelfRef(item)) {
       const next = res.get(item.selfRef);
       if (next == null)
         throw new Error(`SelfRef ${item.selfRef} on path ${path.join('/')} not found`);
@@ -48,14 +48,14 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
     }
     const npath = [...path, item.id];
     return [item, npath] as const;
-  }
+  };
 
   const traverse = buildTraverseD([] as ItemPathArray, (item: ConfigTraverseItem, path: ItemPathArray) => {
-    if (isPipelineSelfRef(item) || isPipelineStepConfig(item)) {
+    if (isPipelineSelfRef(item) || isPipelineStepConfig(item))
       return [] as [ConfigTraverseItem, ItemPathArray][];
-    } else if(isPipelineStaticConfig(item)) {
+    else if (isPipelineStaticConfig(item))
       return item.steps.map((item) => getNextItem(item, path));
-    }
+
     return item.stepTypes.map((item) => getNextItem(item, path));
   });
 
@@ -86,7 +86,7 @@ function findNextNode(items: ConfigTraverseItem[], targetSegment: string, curren
 }
 
 export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
-  let [startId, ...startPath] = instancePath;
+  const [startId, ...startPath] = instancePath;
   if (startId !== config.id)
     throw new Error(`Root segment ${startId} different id ${config.id}`);
 
@@ -101,9 +101,9 @@ export function getConfigByInstancePath(instancePath: ItemPathArray, config: Pip
     } else if (isPipelineStepConfig(item)) {
       if (item.id !== segment)
         throw new Error(`Step segment ${segment} has different id ${item.id}`);
-    } else if (isPipelineSelfRef(item)) {
+    } else if (isPipelineSelfRef(item))
       throw new Error(`Ref segment ${segment} was not mapped`);
-    }
+
     if (newRemainingPath.length > 0)
       throw new Error(`Unmatched segments ${newRemainingPath}`);
     return [];
