@@ -5,6 +5,7 @@
 #input: string ligand
 #input: int num_poses
 #output: blob result
+#meta.cache: all
 
 import sys
 import requests
@@ -71,4 +72,4 @@ r = requests.post(url, headers=headers, json={
     "is_staged": True
 })
 
-result = json.dumps(r.text).encode('utf-8')
+result = (r.text).encode('utf-8')

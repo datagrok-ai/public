@@ -8,14 +8,17 @@
     "axios": "^1.7.2",
     "cash-dom": "latest",
     "datagrok-api": "latest",
-    "dayjs": "latest"
+    "dayjs": "latest",
+    "@datagrok-libraries/bio": "^5.39.13"
   },
   "devDependencies": {
     "datagrok-tools": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "css-loader": "latest",
+    "style-loader": "latest"
   },
   "scripts": {
     "link-all": "",
