@@ -804,59 +804,6 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
     }).show();
 }
 
-/* //top-menu: Chem | Analyze | Activity Cliffs...
-//name: Activity Cliffs
-//description: Detects pairs of molecules with similar structure and significant difference in any given property
-//input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
-//input: column activities {type:numerical}
-//input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE"] }
-//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
-//input: func preprocessingFunction
-//input: object options {optional: true}
-//editor: Chem:ActivityCliffsEditor
-export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<void> {
-  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
-    return;
-  }
-  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
-    grok.shell.error(`Column ${activities.name} is not numeric`);
-    return;
-  }
-
-  const allowedRowCount = 10000;
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
-  if (table.rowCount > allowedRowCount) {
-    grok.shell.warning(`Too many rows, maximum for activity cliffs is ${allowedRowCount}`);
-    return;
-  }
-
-  const runActCliffs = async (): Promise<void> => {
-    const sp = await getActivityCliffs(table, molecules, axesNames, 'Activity cliffs', activities, similarity,
-      similarityMetric, methodName, options, DG.SEMTYPE.MOLECULE, {'units': molecules.meta.units},
-      preprocessingFunction, createTooltipElement, createPropPanelElement, undefined);
-    const size = sp.getOptions().look['sizeColumnName'];
-    drawMoleculeLabels(table, molecules, sp as DG.ScatterPlotViewer, 20, -1, 100, 105, size);
-  };
-  const axesNames = getEmbeddingColsNames(table);
-  if (table.rowCount > fastRowCount) {
-    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
-    Do you want to continue?`))
-      .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-        await runActCliffs();
-        progressBar.close();
-      })
-      .show();
-  } else
-    await runActCliffs();
-} */
-
-
 //top-menu: Chem | Analyze | Activity Cliffs...
 //name: Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
