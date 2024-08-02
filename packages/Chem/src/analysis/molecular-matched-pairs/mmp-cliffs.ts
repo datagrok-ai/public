@@ -138,7 +138,6 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
 
-
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
       fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],

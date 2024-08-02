@@ -67,7 +67,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   activeInputs: DG.InputBase[] | null = null;
   calculatedOnGPU: boolean | null = null;
 
-
   constructor() {
     super();
 
@@ -126,8 +125,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         // console.log(`${grok.dapi.root}/entities/${tableInfo.id}/token`);
         // const response = await fetch(`${grok.dapi.root}/entities/${tableInfo.id}/token`, {method: "POST"}); //or without POST
         // const respText = await response.text();
-
-
     }
   }
 
@@ -227,7 +224,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.linesRenderer = linesEditor;
 
-    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
+    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
 
     return ui.box(cliffs);
   }
@@ -276,6 +273,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     genTab.header.append(addToWorkspaceButton(this.generationsGrid!.dataFrame,
       'Generation', 'chem-mmpa-add-generation-to-workspace-button'));
 
+    let refilter = true;
     tabs.onTabChanged.subscribe(() => {
       this.currentTab = tabs.currentPane.name;
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
@@ -285,7 +283,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.refreshFilterAllPairs();
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
-        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
+
+        if (refilter)
+          grok.shell.warning('Cutoff filters were applied for all activities');
+
+        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), refilter);
+        refilter = false;
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs!,
             this.linesActivityCorrespondance![this.lastSelectedPair],
@@ -373,6 +376,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   async runMMP(mmpInput: MmpInput) {
     //console.profile('MMP');
     //rdkit module
+
     const module = getRdKitModule();
     const moleculesArray = mmpInput.molecules.toList();
 
@@ -391,8 +395,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //initial calculations
     const fragsOut = await getMmpFrags(moleculesArray);
     const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
-    const palette = getPalette(mmpInput.activities.length);
 
+    const palette = getPalette(mmpInput.activities.length);
     //Transformations tab
     const {maxActs, diffs, meanDiffs, activityMeanNames,
       linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
@@ -401,10 +405,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames, palette);
 
-    const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
     //Cliffs tab
+    const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
+  
     const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] =
       getMmpScatterPlot(mmpInput, maxActs, embedColsNames);
+
     drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
     //running internal chemspace
@@ -417,7 +423,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs,
       allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
-      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu);
+      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu); 
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
