@@ -1182,20 +1182,20 @@ export class tools {
     }
   }
 
-  private static formLabelWidths: Map<string, number[]> = new Map<string, number[]>();
-  private static formMinInputWidths: Map<string, number> = new Map<string, number>();
-  private static formLabelMaxWidths: Map<string, number> = new Map<string, number>();
+  private static formLabelWidths: WeakMap<HTMLElement, number[]> = new WeakMap<HTMLElement, number[]>();
+  private static formMinInputWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
+  private static formLabelMaxWidths: WeakMap<HTMLElement, number> = new WeakMap<HTMLElement, number>();
 
   private static calcWidths(form: HTMLElement): void {
-    this.formMinInputWidths.set(this.getFormId(form), 150);
-    this.formLabelMaxWidths.set(this.getFormId(form), 140);
+    this.formMinInputWidths.set(form, 150);
+    this.formLabelMaxWidths.set(form, 140);
     let widths = tools.getLabelsWidths(form);
     widths.sort();
-    this.formLabelWidths.set(this.getFormId(form), widths);
+    this.formLabelWidths.set(form, widths);
     const inputsMinWidths = tools.getInputsMinWidths(form);
 
-    this.formMinInputWidths.set(this.getFormId(form), Math.max(...inputsMinWidths));
-    this.formLabelMaxWidths.set(this.getFormId(form), Math.max(...this.formLabelWidths.get(form.dataset['num'] as string)!));
+    this.formMinInputWidths.set(form, Math.max(...inputsMinWidths));
+    this.formLabelMaxWidths.set(form, Math.max(...this.formLabelWidths.get(form)!));
   }
 
   private static handleFormResize(form: HTMLElement): boolean {
@@ -1207,25 +1207,25 @@ export class tools {
       parent = parent.parentElement;
     }
     window.requestAnimationFrame(() => {
-      let labelWidth = tools.formLabelMaxWidths.get(tools.getFormId(form))!;
-      if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(tools.getFormId(form))!) {
+      let labelWidth = tools.formLabelMaxWidths.get(form)!;
+      if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
         // try to shrink long labels if they are present
-        let labelsToShrink = Math.ceil(tools.formLabelWidths.get(tools.getFormId(form))!.length * 0.2); // find 20% longest labels
-        if (labelsToShrink > 0 && labelsToShrink < tools.formLabelWidths.get(tools.getFormId(form))!.length) {
-          let newWidth = Math.max(...tools.formLabelWidths.get(tools.getFormId(form))!.slice(labelsToShrink))
+        let labelsToShrink = Math.ceil(tools.formLabelWidths.get(form)!.length * 0.2); // find 20% longest labels
+        if (labelsToShrink > 0 && labelsToShrink < tools.formLabelWidths.get(form)!.length) {
+          let newWidth = Math.max(...tools.formLabelWidths.get(form)!.slice(labelsToShrink))
           if (newWidth < 0.8 * labelWidth) // worths it?
-            labelWidth = Math.max(newWidth, form.clientWidth - tools.formMinInputWidths.get(tools.getFormId(form))!);
+            labelWidth = Math.max(newWidth, form.clientWidth - tools.formMinInputWidths.get(form)!);
         }
       }
       if (form.classList.contains('d4-dialog-contents')) {
-        let dialogFormWidth = tools.formLabelMaxWidths.get(tools.getFormId(form))! + tools.formMinInputWidths.get(tools.getFormId(form))! + 40;
+        let dialogFormWidth = tools.formLabelMaxWidths.get(form)! + tools.formMinInputWidths.get(form)! + 40;
         if (form.style.minWidth != `${dialogFormWidth}px`)
           form.style.minWidth = `${dialogFormWidth}px`;
       } else {
-        if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(tools.getFormId(form))!) {
+        if (form.clientWidth - labelWidth < tools.formMinInputWidths.get(form)!) {
           // switch form to tall view if inputs room is too small
           form.classList.add('ui-form-condensed');
-        } else if (form.clientWidth - labelWidth > tools.formMinInputWidths.get(tools.getFormId(form))! + 10) { // hysteresis
+        } else if (form.clientWidth - labelWidth > tools.formMinInputWidths.get(form)! + 10) { // hysteresis
           form.classList.remove('ui-form-condensed');
         }
       }
@@ -1241,14 +1241,12 @@ export class tools {
   private static formNumber: number = 0;
 
   static resizeFormLabels(form: HTMLElement): void {
-    //let labelWidths: number[] = []
-
     if (this.getFormId(form) == undefined)
       form.dataset['num'] = `${this.formNumber++}`;
 
     let formObserver = new MutationObserver((records) => {
       this.calcWidths(form);
-      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form.dataset['num'] as string)!);
+      this.setLabelsWidth(form, tools.formLabelMaxWidths.get(form)!);
     });
 
     formObserver.observe(form, {
@@ -1257,29 +1255,10 @@ export class tools {
     });
 
     this.calcWidths(form);
-    this.setLabelsWidth(form, tools.formMinInputWidths.get(this.getFormId(form))!);
+    this.setLabelsWidth(form, tools.formMinInputWidths.get(form)!);
     this.handleFormResize(form);
-    if (!_isDartium()) {
+    if (!_isDartium())
       this.formResizeObserver!.observe(form);
-    }
-
-    let tries = 0;
-    let interval = setInterval(() => {
-      if (!document.contains(form))
-        tries++;
-      else
-        tries = 0;
-      if (tries > 30) {
-        clearInterval(interval);
-        if (!_isDartium()) {
-          this.formResizeObserver!.unobserve(form);
-        }
-        formObserver.disconnect();
-        tools.formMinInputWidths.delete(tools.getFormId(form));
-        tools.formLabelWidths.delete(tools.getFormId(form));
-        tools.formLabelMaxWidths.delete(tools.getFormId(form));
-      }
-    }, 1000);
   }
 
   private static getInputsMinWidths(form: HTMLElement): number[] {
