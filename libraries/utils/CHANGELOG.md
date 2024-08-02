@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.17 (2024-08-02)
+
+ScatterPlotLInesRenderer: speed up multiple lines indexes calculations
+
 ## 4.2.16 (2024-08-02)
 
 Fixed core tests output to the Test Manager app
