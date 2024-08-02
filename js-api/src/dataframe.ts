@@ -1970,7 +1970,7 @@ export class GroupByBuilder {
   /** Performs the aggregation
    *  @returns {DataFrame} */
   aggregate(options?: {autoName?: boolean}): DataFrame {
-    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart, options?.autoName ?? true));
+    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart, options?.autoName ?? false));
   }
 
   /**
