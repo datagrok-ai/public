@@ -24,6 +24,7 @@ export class DiffDockModel {
   public posesColumn!: DG.Column;
   public virtualPosesColumn!: DG.Column;
   private currentViewer: DG.DockNode | null = null;
+  private bestId: number | null = null;
   
   constructor(df: DG.DataFrame, ligands: DG.Column, target: string, poses: number) {
     this.df = df;
@@ -42,7 +43,7 @@ export class DiffDockModel {
   private async calculatePoses() {
     const posesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.POSES_COLUMN_NAME, this.ligands.length);
     const confidenceColumn = this.createColumn(DG.TYPE.FLOAT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
-    const virtualPosesColumn = this.createColumn(DG.TYPE.OBJECT, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, this.ligands.length);
+    const virtualPosesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, this.ligands.length);
     const grid = grok.shell.getTableView(this.df.name).grid;
 
     for (let i = 0; i < posesColumn.length; ++i) {
@@ -61,7 +62,7 @@ export class DiffDockModel {
       grid.sort([confidenceColumn]);
 
       posesJson.receptor = this.target;
-      virtualPosesColumn.set(i, posesJson);
+      virtualPosesColumn.set(i, JSON.stringify(posesJson));
     }
   
     this.df.columns.add(posesColumn);
@@ -98,6 +99,7 @@ export class DiffDockModel {
     const positions = poses.position_confidence;
     const minValue = Math.min(...positions);
     const idx = positions.findIndex((value) => value === minValue);
+    this.bestId = idx;
     return {
       bestPose: poses.ligand_positions[idx],
       confidence: minValue,
@@ -114,16 +116,16 @@ export class DiffDockModel {
     const molstarViewer = await this.createMolstarViewer(currentRow);
     if (fullHeight)
       molstarViewer.root.style.height = '100%';
-    const items = this.createPoseItems(this.virtualPosesColumn.get(currentRow) as PosesJson);
+    const items = this.createPoseItems(JSON.parse(this.virtualPosesColumn.get(currentRow)) as PosesJson);
     
     const molstarProps = molstarViewer.getProperties();
     const ligandValueProp = molstarProps.find((p: DG.Property) => p.name === 'ligandValue');
     const ligandColProp = molstarProps.find((p: DG.Property) => p.name === 'ligandColumnName');
   
-    const comboPopup = ui.comboPopup(items[0], items, (item: string) => {
+    const comboPopup = ui.comboPopup(items[this.bestId ?? 0], items, (item: string) => {
       comboPopup.getElementsByTagName('span')[0].textContent = item;
       const idx = parseInt(item.split(' ')[1]) - 1;
-      molstarViewer.apply({ 'ligandValue': (this.virtualPosesColumn.get(currentRow) as PosesJson).ligand_positions[idx] });
+      molstarViewer.apply({ 'ligandValue': (JSON.parse(this.virtualPosesColumn.get(currentRow)) as PosesJson).ligand_positions[idx] });
       molstarViewer.onPropertyChanged(ligandValueProp!);
       molstarViewer.onPropertyChanged(ligandColProp!);
     });
@@ -138,7 +140,7 @@ export class DiffDockModel {
     return await this.ligands.dataFrame.plot.fromType('Biostructure', {
       pdb: this.target,
       ligandColumnName: this.ligands.name,
-      ligandValue: this.ligands.get(currentRow),
+      ligandValue: (JSON.parse(this.virtualPosesColumn.get(currentRow)) as PosesJson).ligand_positions[this.bestId ?? 0],
       zoom: true,
     });
   }
@@ -157,7 +159,7 @@ export class DiffDockModel {
     }
   }
 
-  private subscribeToCurrentCellChanged() {
+  public subscribeToCurrentCellChanged() {
     this.df.onCurrentCellChanged.subscribe(() => this.handleCurrentCellChanged());
   }
 }

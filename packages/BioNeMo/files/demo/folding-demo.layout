@@ -69,7 +69,7 @@
                 "type": "Markup",
                 "look": {
                   "#type": "MarkupViewerLook",
-                  "content": "# Folding Demo\n\nThe Folding Demo showcases EsmFold, a model that predicts the 3D structure of proteins from their amino acid sequences.\n\nYou can use EsmFold in two ways:\n\n1. **For the Entire Column**:\n   - Navigate to the top menu and select `Bio | BioNemo | EsmFold`.\n   - This will apply EsmFold to all sequences in the selected column.\n\n2. **For a Single Cell**:\n   - Click on a specific sequence in the dataset.\n   - The ESMFold panel will appear in the property panel."
+                  "content": "# Folding Demo\n\nThe Folding Demo showcases EsmFold, a model that predicts the 3D structure of proteins from their amino acid sequences.\n\nYou can use EsmFold in two ways:\n\n1. **For the entire column**:\n   - Navigate to the top menu and select `Bio | BioNemo | EsmFold`.\n   - This will apply EsmFold to all sequences in the selected column.\n\n2. **For a single cell**:\n   - Click on a specific sequence in the dataset.\n   - The ESMFold panel will appear in the property panel."
                 },
                 "title": "Markup"
               }

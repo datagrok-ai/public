@@ -3,24 +3,24 @@
   "viewStateMap": {
     "containerType": "vertical",
     "state": {
-      "width": 1237,
+      "width": 1173,
       "height": 802
     },
     "children": [
       {
         "containerType": "horizontal",
         "state": {
-          "width": 1237,
-          "height": 587
+          "width": 1173,
+          "height": 523
         },
         "children": [
           {
             "containerType": "panel",
             "state": {
-              "width": 218,
-              "height": 587,
+              "width": 202,
+              "height": 523,
               "element": {
-                "id": "5eb527b0-4ce0-11ef-894a-91028b230726",
+                "id": "7c453e20-4ce0-11ef-dfbc-85cbf82e5432",
                 "type": "Filters",
                 "look": {
                   "#type": "FiltersLook",
@@ -69,18 +69,18 @@
           {
             "containerType": "fill",
             "state": {
-              "width": 1018,
-              "height": 587,
+              "width": 970,
+              "height": 523,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 1018,
-                  "height": 587,
+                  "width": 970,
+                  "height": 523,
                   "element": {
-                    "id": "5eb527b0-4ce0-11ef-bb28-d312ef39b5b4",
+                    "id": "7c458c40-4ce0-11ef-813b-6d98da1cf2fe",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -132,7 +132,8 @@
                         },
                         {
                           "visible": false,
-                          "columnName": "~posesJson"
+                          "columnName": "~posesJson",
+                          "cellType": "xray"
                         },
                         {
                           "columnName": "~SMILES.Pattern"
@@ -155,14 +156,14 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 1237,
-          "height": 214,
+          "width": 1173,
+          "height": 278,
           "element": {
-            "id": "5eb54ec0-4ce0-11ef-e59b-5945a8eeed9e",
+            "id": "7c45b350-4ce0-11ef-d5a8-350bc6739d74",
             "type": "Markup",
             "look": {
               "#type": "MarkupViewerLook",
-              "content": "# What’s Markdown?\n      \nMarkdown is a [lightweight markup language](https://www.markdownguide.org/basic-syntax/)\nthat you can use to add formatting elements to plaintext text documents. It supports the following:\n      \n* [Headings](https://www.markdownguide.org/basic-syntax/#headings)\n* [Bold and italic](https://www.markdownguide.org/basic-syntax/#bold-and-italic)\n* [Lists](https://www.markdownguide.org/basic-syntax/#lists)\n* and much more!"
+              "content": "# DiffDock Demo\n\nThe DiffDock Demo showcases DiffDock, a model that predicts the 3D structure of how a molecule interacts with a protein.\n\nYou can use DiffDock to explore molecular interactions in two ways:\n\n1. **For viewing poses**:\n   - Click on a pose in the dataset.\n   - The Mol* viewer will open, displaying the selected pose.\n\n2. **For viewing other poses and confidence**:\n   - In the Mol* viewer, a combo popup will list other generated poses and their confidence levels.\n   - To visualize other generated poses, click on the pose of your interest."
             },
             "title": "Markup"
           }
@@ -171,13 +172,13 @@
       }
     ],
     "floating": [],
-    "tableId": "36a3af80-4ce0-11ef-992f-cd498420161f",
-    "tableName": "demo_dataset_small (2)"
+    "tableId": "d508d770-4ce0-11ef-f5ce-3bdbd48d3b05",
+    "tableName": "Table"
   },
-  "name": "DemoDatasetSmall2",
-  "friendlyName": "demo_dataset_small (2)",
+  "name": "Table",
+  "friendlyName": "Table",
   "author": {
     "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
   },
-  "createdOn": "2024-08-02T11:35:50.949Z"
+  "createdOn": "2024-08-02T14:21:18.972Z"
 }

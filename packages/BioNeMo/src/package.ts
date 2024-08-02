@@ -95,10 +95,10 @@ export async function diffDockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
     // Check if the column exists before creating new one
     let virtualPosesColumn = table.columns.byName(CONSTANTS.VIRTUAL_POSES_COLUMN_NAME);
     if (!virtualPosesColumn) {
-      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.OBJECT, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, table.rowCount);
+      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, table.rowCount);
       table.columns.add(virtualPosesColumn);
     }
-    virtualPosesColumn.set(smiles.cell.rowIndex, posesJson);
+    virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
     diffDockModel.virtualPosesColumn = virtualPosesColumn;
 
     const combinedControl = await diffDockModel.createCombinedControl(smiles.cell.rowIndex, false);
