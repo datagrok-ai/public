@@ -17,7 +17,7 @@ export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
     beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number,
-    benchmarks?: boolean
+    benchmarks?: boolean, benchmarkTimeout?: number,
   }
 } = {};
 
@@ -37,6 +37,7 @@ export namespace assure {
 
 export interface TestOptions {
   timeout?: number;
+  benchmarkTimeout?: number;
   unhandledExceptionTimeout?: number;
   skipReason?: string;
   isAggregated?: boolean;
@@ -285,7 +286,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
     if ((tests && Array.isArray(tests) && tests.length)) {
       for (let i = 0; i < tests.length; i++) {
         const res = (tests[i] as string).matchAll(reg);
-        const map: { skip?: string, wait?: number, cat?: string, timeout?: number } = {};
+        const map: { skip?: string, wait?: number, cat?: string, timeout?: number, benchmarkTimeout?:number } = {};
         Array.from(res).forEach((arr) => {
           if (arr[0].startsWith('skip')) map['skip'] = arr[1];
           else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
@@ -297,7 +298,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: map.timeout });
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark? map.benchmarkTimeout :map.timeout });
         if (map.cat) {
           const cat: string = autoTestsCatName + ': ' + map.cat;
           test.category = cat;
@@ -413,7 +414,7 @@ export async function runTests(options?:
               t[i].options.benchmark = value.isAllTestsEnabledBenchmarkMode || false;
             }
           }
-          let testRun = await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose);
+          let testRun = await execTest(t[i], options?.test, logs,  DG.Test.isInBenchmark? value.benchmarkTimeout :value.timeout, package_.name, options.verbose);
           if (testRun)
             res.push(testRun);
           grok.shell.closeAll();
@@ -421,7 +422,7 @@ export async function runTests(options?:
         }
       } else {
         for (let i = 0; i < t.length; i++) {
-          let testRun = await execTest(t[i], options?.test, logs, value.timeout, package_.name, options.verbose);
+          let testRun = await execTest(t[i], options?.test, logs,  DG.Test.isInBenchmark? value.benchmarkTimeout :value.timeout, package_.name, options.verbose);
           if (testRun)
             res.push(testRun);
         }

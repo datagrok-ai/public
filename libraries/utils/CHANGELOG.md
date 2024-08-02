@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.18 (2024-08-02)
+
+Added benchmark timeout to grok test
+
 ## 4.2.17 (2024-08-02)
 
 ScatterPlotLInesRenderer: speed up multiple lines indexes calculations
