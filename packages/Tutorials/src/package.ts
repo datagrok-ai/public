@@ -17,7 +17,7 @@ import {DemoAppWidget} from './demo-app/widget';
 export const _package = new DG.Package();
 
 const tracks: Track[] = [];
-const PATH_START_INDEX: number = 4;
+const PATH_START_INDEX: number = 5;
 
 //name: Tutorials
 //tags: app
@@ -112,6 +112,8 @@ export function demoApp(): DG.ViewBase {
   if (!pathSegments[pathSegments.length - 1])
     pathSegments.splice(pathSegments.length - 1, 1);
 
+  if (grok.shell.view('Browse') === undefined)
+    grok.shell.v = DG.View.createByType('browse');
   const demoView = new DemoView();
   if (pathSegments.length > PATH_START_INDEX) {
     const pathElements = pathSegments.slice(PATH_START_INDEX, pathSegments.length)
@@ -128,8 +130,7 @@ export function demoApp(): DG.ViewBase {
 //input: dynamic treeNode
 //input: view browseView
 export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
-  const demoView = new DemoView(true, browseView);
-  demoView._initTree(treeNode);
+  new DemoView();
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {

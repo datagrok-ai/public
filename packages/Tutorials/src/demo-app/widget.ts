@@ -18,7 +18,6 @@ export class DemoAppWidget extends DG.Widget {
         const funcs = demoView.funcs;
         const searchInput = ui.input.search('',{value: ''});
         
-        grok.shell.dockManager.close(demoView.dockPanel);
         grok.shell.windows.showToolbox = true;
         grok.shell.windows.showRibbon = true;
         grok.shell.windows.showHelp = true;
