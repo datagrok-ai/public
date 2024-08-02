@@ -11,6 +11,7 @@ export class Viewer<T = any> extends HTMLElement {
   private viewerSetted$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
   private dfSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
   private typeSetted$ = new BehaviorSubject<string | undefined>(undefined);
+  private _options: Record<string, string | boolean> = {};
 
   private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
 
@@ -121,6 +122,11 @@ export class Viewer<T = any> extends HTMLElement {
     this.typeSetted$.next(type);
   }
 
+  set options(options: Record<string, string | boolean>) {
+    this._options = options;
+    this.viewer?.setOptions(options);
+  }
+
   public getViewerEventObservable<P = any>(eventType?: string): Observable<P> {
     return this.viewer$.pipe(
       switchMap((viewer) => viewer ? viewer.onEvent().pipe(
@@ -132,6 +138,7 @@ export class Viewer<T = any> extends HTMLElement {
 
   private async createViewer(type: string, df: DG.DataFrame) {
     const viewer = await df.plot.fromType(type) as DG.Viewer<T>;
+    viewer.setOptions(this._options);
     return viewer;
   }
 

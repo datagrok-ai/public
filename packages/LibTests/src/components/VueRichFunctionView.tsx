@@ -2,12 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, shallowRef, triggerRef, defineExpose, nextTick, computed} from 'vue';
+import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton} from '@datagrok-libraries/webcomponents-vue/src';
 import {GridStack} from 'gridstack';
 import 'gridstack/dist/gridstack.min.css';
 import '../styles/VueRichFunctionView.css';
+import {getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 declare global {
   namespace JSX {
@@ -40,6 +41,20 @@ export const VueRichFunctionView = defineComponent({
         previousRun: null,
       }));
 
+    const paramsWithViewers = computed(() => {
+      return [
+        ...currentCall.value.func.inputs,
+        ...currentCall.value.func.outputs,
+      ].filter((prop) =>
+        prop.propertyType === DG.TYPE.DATA_FRAME && getPropViewers(prop).config.length !== 0,
+      );
+    });
+
+    const viewers = ref([] as Element[]);
+    const formNode = ref(null as null | Element);
+
+    const addViewer = (el: Element) => viewers.value.push(el); 
+
     const getDefaultCall = () => props.funcCall instanceof DG.FuncCall ?
       props.funcCall : DG.Func.byName(props.funcCall).prepare({
         ambTemp: 22,
@@ -52,8 +67,6 @@ export const VueRichFunctionView = defineComponent({
         previousRun: null,
       });
 
-    const viewerTypes = ref(['Scatter plot', 'Histogram', 'Line chart']);
-
     const runSimulation = async () => {
       await currentCall.value.call();
       triggerRef(currentCall);
@@ -64,9 +77,7 @@ export const VueRichFunctionView = defineComponent({
     onMounted(async () => {
       await nextTick();
       if (inited) return;
-
-      const formNode = document.querySelector('#formNode')!;
-        
+  
       grid = GridStack.init({
         float: true,
         auto: false,
@@ -74,13 +85,19 @@ export const VueRichFunctionView = defineComponent({
         margin: 0,
       });
     
-      grid.addWidget(formNode, {
-        minW: Math.ceil(160 / grid.cellWidth()), 
-        maxW: Math.ceil(formNode.getBoundingClientRect().width / grid.cellWidth()), 
-        h: Math.ceil(formNode.getBoundingClientRect().height / grid.getCellHeight()),
-      });
-      for (let i = 1; i <= 3; i++) 
-        grid.addWidget(document.querySelector(`#viewerNode${i}`)!, {h: 5, w: 12}); 
+      if (formNode.value) {
+        grid.addWidget(formNode.value, {
+          minW: Math.ceil(160 / grid.cellWidth()), 
+          maxW: Math.ceil(formNode.value.getBoundingClientRect().width / grid.cellWidth()), 
+          h: Math.ceil(formNode.value.getBoundingClientRect().height / grid.getCellHeight()),
+        });
+      }
+      
+      let idx = 0;
+      while (document.querySelector(`#viewer${idx}`)) {
+        grid.addWidget(document.querySelector(`#viewer${idx}`)!, {h: 5, w: 12});    
+        idx++;
+      }   
       
       inited = true;     
     });
@@ -89,60 +106,28 @@ export const VueRichFunctionView = defineComponent({
       <div style={{width: '100%', height: '100%'}}>
         <div class="grid-stack"></div>
 
-        <div id="formNode">
+        <div ref={formNode}>
           <InputForm funcCall={currentCall.value}> </InputForm>
           <div style={{display: 'flex', position: 'sticky', bottom: '10px'}}>
             <BigButton onClick={runSimulation}> Run </BigButton>
           </div>
         </div>
-        <div id="viewerNode1">
-          <div>
-            <label for="viewer-choice1">Choose a viewer:</label>
-            <select v-model={viewerTypes.value[0]} name="viewers" id="viewer-choice1">
-              <option value="Scatter plot">Scatter plot</option>
-              <option value="Line chart">Line chart</option>
-              <option value="Grid">Grid</option>
-              <option value="Histogram">Histogram</option>
-            </select>
-          </div>
-          <Viewer 
-            style={{width: '100%'}} 
-            type={viewerTypes.value[0]}
-            dataFrame={currentCall.value.outputs['simulation']}> 
-          </Viewer>
-        </div>
-        <div id="viewerNode2">
-          <div>
-            <label for="viewer-choice2">Choose a viewer:</label>
-            <select v-model={viewerTypes.value[1]} name="viewers" id="viewer-choice2">
-              <option value="Scatter plot">Scatter plot</option>
-              <option value="Line chart">Line chart</option>
-              <option value="Grid">Grid</option>
-              <option value="Histogram">Histogram</option>
-            </select>
-          </div>
-          <Viewer 
-            style={{width: '100%'}} 
-            type={viewerTypes.value[1]}
-            dataFrame={currentCall.value.outputs['simulation']}> 
-          </Viewer>
-        </div>
-        <div id="viewerNode3">
-          <div>
-            <label for="viewer-choice3">Choose a viewer:</label>
-            <select v-model={viewerTypes.value[2]} id="viewer-choice3" name="viewers">
-              <option value="Scatter plot">Scatter plot</option>
-              <option value="Line chart">Line chart</option>
-              <option value="Grid">Grid</option>
-              <option value="Histogram">Histogram</option>
-            </select>
-          </div>
-          <Viewer 
-            style={{width: '100%'}} 
-            type={viewerTypes.value[2]}
-            dataFrame={currentCall.value.outputs['simulation']}> 
-          </Viewer>
-        </div>
+        { 
+          paramsWithViewers.value
+            .map((viewer) => getPropViewers(viewer))
+            .map(({name, config: allConfigs}) => 
+              allConfigs.map((options, idx) => 
+                <div id={`viewer${idx.toString()}`}>
+                  <Viewer
+                    type={options['type'] as string}
+                    options={options}
+                    dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
+                    style={{width: '100%'}} 
+                  /> 
+                </div>,
+              ),
+            )
+        }
       </div>
     );
   },
