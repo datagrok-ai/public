@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {fit, predict} from '../wasm/xgbooster';
+import {predict, fitInWebWorker} from '../wasm/xgbooster';
 
 /** Interactivity tresholds */
 enum INTERACTIVITY {
@@ -112,7 +112,7 @@ export class XGBooster {
   }
 
   /** Fit model */
-  public fit(features: DG.ColumnList, target: DG.Column, iterations: number, eta: number,
+  public async fit(features: DG.ColumnList, target: DG.Column, iterations: number, eta: number,
     maxDepth: number, lambda: number, alpha: number) {
     // Type of the target
     this.targetType = target.type;
@@ -122,7 +122,7 @@ export class XGBooster {
       this.targetCategories = target.categories;
 
     // Train model params
-    this.modelParams = fit(features, target, MISSING_VALUE,
+    this.modelParams = await fitInWebWorker(features, target, MISSING_VALUE,
       iterations, eta, maxDepth, lambda, alpha, RESERVED.MODEL, RESERVED.UTILS,
     );
   }

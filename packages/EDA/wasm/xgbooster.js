@@ -66,6 +66,50 @@ export function fit(features, target, missingValue, iterations, eta, maxDepth, l
   return params;
 } // fit
 
+/** Fit and return model params in webworker */
+export async function fitInWebWorker(features, target, missingValue, iterations, eta, maxDepth, lambda, alpha,
+  modelReserve, utilsLength) {
+  return new Promise((resolve, reject) => {
+    // Data size
+    const samplesCount = target.length;
+    const featuresCount = features.length;
+
+    // Features raw data
+    const featuresRaw = new Float32Array(samplesCount * featuresCount);
+    let shift;
+    let raw;
+    for (let j = 0; j < featuresCount; ++j) {
+      raw = features.byIndex(j).getRawData();
+      shift = j * samplesCount;
+
+      for (let i = 0; i < samplesCount; ++i)
+        featuresRaw[i + shift] = raw[i];
+    }
+
+    const worker = new Worker(new URL('../wasm/workers/xgboostWorker.js', import.meta.url));
+
+    worker.postMessage({
+      features: featuresRaw,
+      target: target.getRawData(),
+      samplesCount: samplesCount,
+      featuresCount: featuresCount,
+      modelReserve: modelReserve,
+      utilsLength: utilsLength,
+      iterations: iterations,
+      eta: eta,
+      maxDepth: maxDepth,
+      lambda: lambda,
+      alpha: alpha,
+      missingValue: missingValue,
+    });
+
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(e.data.params);
+    };
+  });
+} // fitInWebWorker
+
 /** Return prediction by trained model */
 export function predict(features, missingValue, params) {
   // Data & model sizes

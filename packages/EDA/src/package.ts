@@ -750,7 +750,7 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 //input: int maxDepth = 6
 //input: double lambda = 1
 //input: double alpha = 0
-export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
+export async function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
   iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) {
   //testXGBoost();
 
@@ -760,7 +760,7 @@ export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: D
   }
 
   const booster = new XGBooster();
-  booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);
+  await booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);
 
   const packedModel = booster.toBytes();
 
@@ -783,12 +783,12 @@ export function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: D
 //input: double lambda = 1 {min: 0; max: 100} [L2 regularization term]
 //input: double alpha = 0 {min: 0; max: 100} [L1 regularization term]
 //output: dynamic model
-export function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
-  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Uint8Array {
+export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
+  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Promise<Uint8Array> {
   const features = df.columns;
 
   const booster = new XGBooster();
-  booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+  await booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
 
   return booster.toBytes();
 }
