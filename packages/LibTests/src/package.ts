@@ -16,7 +16,7 @@ import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElementsTestApp';
 import {VueRichFunctionView} from './components/VueRichFunctionView';
-import {VuePipelineView} from './components/VuePipelineView';
+import {TreeWizardView} from './components/TreeWizard/TreeWizardView';
 
 export const _package = new DG.Package();
 
@@ -932,9 +932,9 @@ export async function TestVueRFV() {
 }
 
 //tags: test
-export async function TestVuePLV() {
+export async function TestTreeWizardView() {
   const view = new DG.ViewBase();
-  const app = createApp(VuePipelineView, {
+  const app = createApp(TreeWizardView, {
     wrapperFunccall: 'Compute:ObjectCooling',
     treeData: [
       {
@@ -967,7 +967,7 @@ export async function TestVuePLV() {
   });
   app.mount(view.root);
   grok.shell.addView(view);
-  view.name = 'PLV PoC';
+  view.name = 'TreeWizard PoC';
   view.root.classList.remove('ui-panel');
 }
 
