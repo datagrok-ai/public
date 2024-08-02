@@ -3,8 +3,8 @@
   "friendlyName": "API Tests",
   "version": "1.7.16",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
