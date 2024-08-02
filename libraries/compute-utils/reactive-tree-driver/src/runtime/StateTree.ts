@@ -1,14 +1,17 @@
-import { BehaviorSubject, Observable, defer, identity, of, from, merge, Subject } from 'rxjs';
-import { v4 as uuidv4 } from 'uuid';
-import { delay, finalize, map, mapTo, toArray, concatMap } from 'rxjs/operators';
-import { NodePath, NodeTree, TreeNode } from '../data/NodeTree';
-import { PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed } from '../config/config-processing-utils';
-import { isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState } from '../config/PipelineInstance';
-import { buildTraverseD } from '../data/traversable';
-import { buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed } from '../config/config-utils';
-import { FuncCallAdapter, IFuncCallAdapter, isMockAdapter, IStateStore, MemoryStore } from './FuncCallAdapters';
-import { FuncCallInstancesBridge } from './FuncCallInstancesBridge';
-import { historyUtils } from '../../../history-utils';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {BehaviorSubject, Observable, defer, identity, of, from, merge, Subject} from 'rxjs';
+import {v4 as uuidv4} from 'uuid';
+import {delay, finalize, map, mapTo, toArray, concatMap} from 'rxjs/operators';
+import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
+import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
+import {isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import {buildTraverseD} from '../data/traversable';
+import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {FuncCallAdapter, IFuncCallAdapter, isMockAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
+import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
+import {historyUtils} from '../../../history-utils';
 
 export interface IStoreProvider {
   getStateStore(): IStateStore;
@@ -82,6 +85,8 @@ export class PipelineNodeBase implements IStoreProvider {
   public isLoadable$ = new BehaviorSubject(false);
   public isSavable$ = new BehaviorSubject(false);
   public isReadonly$ = new BehaviorSubject(false);
+  // TODO: implement (?)
+  public metaCallId$ = new BehaviorSubject<string | undefined>(undefined);
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
@@ -193,13 +198,16 @@ export function isSequentialPipelineNode(node: StateTreeNode): node is Sequentia
   return node.nodeType === 'sequential';
 }
 
+const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
+const CONFIG_PATH = 'PIPELINE_CONFIG';
+const PROVIDER_PATH = 'PIPELINE_PROVIDER';
 
-export class StateTree extends NodeTree<StateTreeNode> {
+export class StateTree extends BaseTree<StateTreeNode> {
   public makeStateRequests = new Subject<true>();
 
   constructor(
     item: StateTreeNode,
-    private useMockFuncCalls = false,
+    private mockMode = false,
   ) {
     super(item);
   }
@@ -212,18 +220,11 @@ export class StateTree extends NodeTree<StateTreeNode> {
     return this.toStateRec(this.getRoot(), false);
   }
 
-  public save(uuid: string, mockDelay?: number): Observable<void> {
+  public save(uuid: string, mockDelay?: number): Observable<string> {
     let item: PipelineNodeBase;
     return defer(() => {
       this.globalStructureLock();
-      const root = this.find(item => item.uuid === uuid);
-      if (root == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const item = root.getItem();
-      if (isFuncCallNode(item)) {
-        throw new Error(`Attempting to save FuncCall node ${uuid}`);
-      }
-
+      const [root, nqName] = this.findPipelineRootNode(uuid);
       const pendingFuncCallSaves = this.traverse(root, (acc, node) => {
         const item = node.getItem();
         if (isFuncCallNode(item)) {
@@ -233,14 +234,13 @@ export class StateTree extends NodeTree<StateTreeNode> {
           if (bridge == null)
             throw new Error(`FuncCall node ${item.uuid} has no instance`);
           item.instancesWrapper.isLoading$.next(true);
-          if (!isMockAdapter(bridge)) {
+          if (isMockAdapter(bridge)) {
             const obs$ = of(bridge).pipe(mockDelay ? delay(mockDelay) : identity).pipe(
-              map(adapter => [item, adapter] as const)
+              map((adapter) => [item, adapter] as const),
             );
             return [...acc, obs$];
           } else {
-            const fc = bridge.getFuncCall();
-            const obs$ = from(historyUtils.saveRun(fc)).pipe(map(nextCall => [item, new FuncCallAdapter(nextCall)] as const));
+            const obs$ = defer(() => this.saveFuncCall(bridge)).pipe(map((nextCall) => [item, new FuncCallAdapter(nextCall)] as const));
             return [...acc, obs$];
           }
         } else {
@@ -257,12 +257,12 @@ export class StateTree extends NodeTree<StateTreeNode> {
         }),
         toArray(),
         concatMap(() => {
-          if (this.useMockFuncCalls)
-            return of();
-          // TODO: save pipeline serialized state in meta call
-          return of();
+          if (this.mockMode)
+            return of('');
+          const state = this.toStateRec(root, true);
+          const json = JSON.stringify(state);
+          return defer(() => StateTree.saveMetaCall(nqName, json));
         }),
-        mapTo(void(0))
       );
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
@@ -272,23 +272,99 @@ export class StateTree extends NodeTree<StateTreeNode> {
     }));
   }
 
-  public attach(uuid: string, tree: NodeTree<StateTreeNode>) {
+  private findPipelineRootNode(uuid: string) {
+    const data = this.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    const [root, path] = data;
+    const item = root.getItem();
+    if (isFuncCallNode(item))
+      throw new Error(`Attempting to save FuncCall node ${uuid}`);
 
+    const nqName = root.getItem().config.nqName;
+    if (nqName == null)
+      throw new Error(`Attempting to save pipeline with no nqName`);
+    return [root, nqName, path] as const;
   }
 
-  // TODO: implement pipeline load
-  public load(id: string, uuid: string, providedData?: NodeTree<StateTreeNode>) {
-    return defer(() => {
+  private async saveFuncCall(bridge: IFuncCallAdapter) {
+    const fc = bridge.getFuncCall();
+    // TODO: DF handling (?)
+    const restrictions = bridge.inputRestrictions$.value;
+    fc.options[RESTRICTIONS_PATH] = JSON.stringify(restrictions);
+    return historyUtils.saveRun(fc);
+  }
 
+  private static async loadFuncCall(id: string): Promise<IFuncCallAdapter> {
+    const fc = await historyUtils.loadRun(id, false);
+    const restrictions = JSON.parse(fc.options[RESTRICTIONS_PATH] ?? {});
+    const bridge = new FuncCallAdapter(fc);
+    bridge.inputRestrictions$.next(restrictions);
+    return bridge;
+  }
+
+  private static async saveMetaCall(nqName: string, stateJson: string) {
+    const metaCall = await this.makeFuncCall(nqName);
+    metaCall.options[CONFIG_PATH] = stateJson;
+    const fc = await historyUtils.saveRun(metaCall);
+    return fc.id;
+  }
+
+  private static async loadMetaConfig(id: string) {
+    const fc = await historyUtils.loadRun(id, false);
+    const config = JSON.parse(fc.options[CONFIG_PATH] ?? {});
+    return config as PipelineSerializedState;
+  }
+
+  private static async makeFuncCall(nqName: string) {
+    const func: DG.Func = await grok.functions.eval(nqName);
+    return func.prepare({});
+  }
+
+  public load(id: string, uuid: string, config: PipelineConfigurationProcessed, pos?: number) {
+    return defer(() => {
       this.globalStructureLock();
+      const [root, _nqName, path] = this.findPipelineRootNode(uuid);
+      const tree = StateTree.load(id, config).pipe(
+        concatMap((tree) => this.loadOrCreateCalls(tree)),
+      );
+      const branch = root.getItem();
+      this.attachBrunch(path, root, branch.config.id, pos);
+      return tree;
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
     }));
-
   }
 
-  static async load(nqName: string, id: string): Promise<NodeTree<StateTreeNode>> {
+  private loadOrCreateCalls(tree: StateTree) {
+    return defer(() => {
+      const pendingFuncCallLoads = tree.traverse(tree.root, (acc, node) => {
+        const item = node.getItem();
+        if (isFuncCallNode(item)) {
+          const obs$ = defer(() => StateTree.loadFuncCall(item.instancesWrapper.id!)).pipe(
+            map((nitem) => [item, nitem] as const),
+          );
+          return [...acc, obs$];
+        }
+        return acc;
+      }, [] as Array<Observable<Readonly<[FuncCallNode, IFuncCallAdapter]>>>);
+      return merge(...pendingFuncCallLoads, 5).pipe(
+        map(([node, nAdapter]) => {
+          node.setAdapter(nAdapter);
+          node.instancesWrapper.isLoading$.next(false);
+        }),
+        toArray(),
+        mapTo(tree),
+      );
+    });
+  }
 
+  static load(id: string, config: PipelineConfigurationProcessed): Observable<StateTree> {
+    return defer(async () => {
+      const state = await StateTree.loadMetaConfig(id);
+      const tree = StateTree.fromState(state, config);
+      return tree;
+    });
   }
 
   static fromState(state: PipelineSerializedState, config: PipelineConfigurationProcessed): StateTree {

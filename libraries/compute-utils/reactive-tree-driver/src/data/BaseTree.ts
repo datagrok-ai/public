@@ -3,9 +3,9 @@ import {buildTraverseB, buildTraverseD} from './traversable';
 
 export type NodeAddressSegment = {
   id: string,
-  idx?: undefined,
+  idx?: number,
 } | {
-  id?: undefined,
+  id?: string,
   idx: number
 };
 
@@ -16,7 +16,7 @@ export type NodePath = {
   idx: number,
 }[];
 
-export class NodeTree<T> {
+export class BaseTree<T> {
   protected root = new TreeNode(this.item);
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
@@ -55,14 +55,14 @@ export class NodeTree<T> {
     return parent.removeChild(segment);
   }
 
-  find(pred: (item: T) => boolean): TreeNode<T> | undefined {
-    return this.traverse(this.root, ((acc, item, _path, stop) => {
+  find(pred: (item: T) => boolean) {
+    return this.traverse(this.root, ((acc, item, path, stop) => {
       if (pred(item.getItem())) {
         stop();
-        return item;
+        return [item, path] as const;
       }
       return acc;
-    }), undefined as TreeNode<T> | undefined);
+    }), undefined as Readonly<[TreeNode<T>, NodePath]> | undefined);
   }
 
   private getNodesFromAddress(address: Readonly<NodeAddress>) {
@@ -88,7 +88,7 @@ export class TreeNode<T> {
     if (segment.idx != null)
       return this.children.getItemByIndex(segment.idx);
     else
-      return this.children.getLastItemById(segment.id);
+      return this.children.getLastItemById(segment.id!);
   }
 
   public getChildren() {
@@ -110,7 +110,7 @@ export class TreeNode<T> {
     if (segment.idx != null)
       return this.children.removeItemByIndex(segment.idx);
     else
-      return this.children.removeLastItemById(segment.id);
+      return this.children.removeLastItemById(segment.id!);
   }
 
   public getItem() {

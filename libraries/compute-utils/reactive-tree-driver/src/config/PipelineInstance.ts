@@ -109,7 +109,6 @@ export type PipelineInstanceBase<S> = {
   isReadonly?: boolean;
   friendlyName?: string;
   nqName?: string;
-
 } & S;
 
 // static

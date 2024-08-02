@@ -1,7 +1,7 @@
-import { BehaviorSubject, of, combineLatest, Observable, from, defer } from "rxjs";
-import { switchMap, map } from "rxjs/operators";
-import { ValidationResultBase } from "../../../shared-utils/validation";
-import { IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, RestrictionType } from "./FuncCallAdapters";
+import {BehaviorSubject, of, combineLatest, Observable, from, defer} from 'rxjs';
+import {switchMap, map} from 'rxjs/operators';
+import {ValidationResultBase} from '../../../shared-utils/validation';
+import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, RestrictionType} from './FuncCallAdapters';
 
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
   private instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);
@@ -16,7 +16,7 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
   constructor() {
     this.instance$.pipe(
-      switchMap((instance) => instance ? instance.isRunning$ : of(false))
+      switchMap((instance) => instance ? instance.isRunning$ : of(false)),
     ).subscribe(this.isRunning$);
 
     // TODO: add global lock as well
@@ -28,11 +28,11 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
           instance.isRunning$,
           instance.validations$.pipe(map((validations) => this.isRunnable(validations))),
         ]).pipe(map((isRunning, isValid) => !isRunning && isValid));
-      })
+      }),
     ).subscribe(this.isRunable$);
 
     this.instance$.pipe(
-      switchMap((instance) => instance ? instance.isOutputOutdated$ : of(false))
+      switchMap((instance) => instance ? instance.isOutputOutdated$ : of(false)),
     ).subscribe(this.isOutputOutdated$);
   }
 
@@ -42,9 +42,8 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
   setInstance(instance: IFuncCallAdapter | undefined, initValues = false) {
     if (initValues && instance) {
-      for (const [key, val] of Object.entries(this.initialValues)) {
+      for (const [key, val] of Object.entries(this.initialValues))
         instance.setState(key, val);
-      }
     }
     this.instance$.next(instance);
   }
@@ -61,7 +60,7 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
   getStateChanges<T = any>(id: string): Observable<T | undefined> {
     return this.instance$.pipe(
-      switchMap((instance) => instance ? instance.getStateChanges(id) : of(undefined))
+      switchMap((instance) => instance ? instance.getStateChanges(id) : of(undefined)),
     );
   }
 
