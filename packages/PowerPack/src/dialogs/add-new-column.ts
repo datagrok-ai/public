@@ -39,7 +39,8 @@ const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
   'GetRowIndex': DG.TYPE.INT,
 }
 
-const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`
+const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`;
+const FUNC_OUTPUT_TYPE = 'output';
 
 export class AddNewColumnDialog {
   addColumnTitle: string = 'Add New Column';
@@ -98,6 +99,7 @@ export class AddNewColumnDialog {
   functionAutocomplete = false;
   autocompleteEnter = false;
   selectedColumn: DG.Column | null = null;
+  error = '';
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -168,6 +170,8 @@ export class AddNewColumnDialog {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
       });
+      //the last param in the list is return value
+      params.push({propName: FUNC_OUTPUT_TYPE, propType: func.outputs[0].semType ?? func.outputs[0].propertyType});
       try {
         const packageName = func.package.name;
         if (!this.packageFunctionsNames[packageName]) {
@@ -430,7 +434,7 @@ export class AddNewColumnDialog {
 
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
-            let error = '';
+            this.error = '';
             if (cmValue) {
               if (this.packageAutocomplete)
                 setTimeout(() => {
@@ -439,28 +443,28 @@ export class AddNewColumnDialog {
               else if(fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
-                  error = `Package ${packAndFuncNames[0]} not found`;
+                  this.error = `Package ${packAndFuncNames[0]} not found`;
                 else if (!packAndFuncNames[1])
-                  error = `Start typing to see ${packAndFuncNames[0]} package functions`;
+                  this.error = `Start typing to see ${packAndFuncNames[0]} package functions`;
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
-                  error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
+                  this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                  error = this.validateFormula(cmValue);
+                this.error = this.validateFormula(cmValue);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                error = this.validateFormula(cmValue);
+                this.error = this.validateFormula(cmValue);
               }
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            await this.updatePreview(cmValue, error);
-            if (error) {
+            await this.updatePreview(cmValue, this.error);
+            if (this.error) {
               //need to wait for autocompletion to appear, in case autocoplete is opened - do not show error             
               setTimeout(() => {
                 ui.empty(this.errorDiv);
                 if (!this.codeMirrorDiv.getElementsByClassName('cm-tooltip-autocomplete').length) {
-                  this.errorDiv.append(ui.divText(error, 'cm-error-div'));
+                  this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
                 }
               }, 100);
             }
@@ -583,10 +587,10 @@ export class AddNewColumnDialog {
   }
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
-    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] }):
-      { funcName: string, start: number, end: number } | null {
-    let { from, to, text } = view.state.doc.lineAt(pos)
-    let start = pos, end = pos
+    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] },
+    withoutSignature?: boolean): { funcName: string, start: number, end: number } | null {
+    let { from, to, text } = view.state.doc.lineAt(pos);
+    let start = pos, end = pos;
     while (start > from && /\w|:/.test(text[start - from - 1]))
       start--;
     while (end < to && /\w|:/.test(text[end - from]))
@@ -596,9 +600,16 @@ export class AddNewColumnDialog {
     const funcName = text.slice(start - from, end - from);
     if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
       return null;
+    if (withoutSignature)
+      return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
+    const funcInputs = funcParams.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
+    const funcOutputs = funcParams.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
+    let funcOutputType = '';
+    if (funcOutputs.length)
+      funcOutputType = funcOutputs[0].propType;
     return {
-      funcName: `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}`,
+      funcName: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
       start: start,
       end: end
     }
@@ -816,8 +827,18 @@ export class AddNewColumnDialog {
   insertIntoCodeMirror(x: any, cm: EditorView): void {
     let snippet: string = '';
 
-    if (this.typeOf(x, DG.Column))
-      snippet = `\${${x.name}}`;
+    if (this.typeOf(x, DG.Column)) {
+      const cursorPos = cm.state.selection.main.head;
+      let parenthesesPos = cursorPos;
+      while (parenthesesPos > 0) {
+        if (cm.state.doc.toString()[parenthesesPos] === '(')
+          break;
+        parenthesesPos--;
+      }
+      const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
+      const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
+      snippet = isAggr ? `\$[${x.name}]` : `\${${x.name}}`;
+    }
     else if (this.typeOf(x, DG.Func)) {
       const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
       const colPos = this.findColumnTypeMatchingParam(x);
