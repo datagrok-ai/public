@@ -42,10 +42,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   enableFilters: boolean = true;
   colorPalette: PaletteCodes | null = null;
   //transformations tab objects
-  allPairsGrid: DG.Grid | null = null;
-  transformationsMask: DG.BitSet | null = null;
-  casesGrid: DG.Grid | null = null;
-  pairsMask: DG.BitSet | null = null;
+  transFragmentsGrid: DG.Grid | null = null;
+  transFragmentsMask: DG.BitSet | null = null;
+  transPairsGrid: DG.Grid | null = null;
+  transPairsMask: DG.BitSet | null = null;
   //cliffs tab objects
   diffs: Array<Float32Array> | null = null;
   linesIdxs: Uint32Array | null = null;
@@ -129,7 +129,20 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   private setupTransformationTab(): void {
-    this.transformationsMask!.setAll(true);
+
+    // this.casesGrid!.setOptions({
+    //   pinnedRowColumnNames: [],
+    //   pinnedRowValues: [],
+    // });
+    // if (idxPairs >= 0) {
+    //   this.casesGrid!.setOptions({
+    //     pinnedRowValues: [idxPairs.toString()],
+    //     pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
+    //   });
+    // }
+
+
+    this.transFragmentsMask!.setAll(true);
     this.parentTable!.onCurrentRowChanged.pipe(debounceTime(1000)).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1) {
         this.refilterAllPairs(true);
@@ -139,15 +152,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.refilterAllPairs(true);
 
-    this.allPairsGrid!.table.onCurrentRowChanged.subscribe(() => {
-      if (this.allPairsGrid!.table.currentRowIdx !== -1)
+    this.transFragmentsGrid!.table.onCurrentRowChanged.subscribe(() => {
+      if (this.transFragmentsGrid!.table.currentRowIdx !== -1)
         this.refreshPair(this.rdkitModule!);
     });
 
     this.mmpView!.name = MMP_NAMES.VIEW_NAME;
     this.mmpView!.box = true;
 
-    this.pairsMask!.setAll(false);
+    this.transPairsMask!.setAll(false);
     this.refreshPair(this.rdkitModule!);
   }
 
@@ -257,8 +270,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       };
 
       return ui.splitV([
-        createGridDiv('Fragments', this.allPairsGrid!),
-        createGridDiv('Pairs', this.casesGrid!),
+        createGridDiv('Fragments', this.transFragmentsGrid!),
+        createGridDiv('Pairs', this.transPairsGrid!),
       ], {}, true);
     });
     tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
@@ -292,7 +305,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs!,
             this.linesActivityCorrespondance![this.lastSelectedPair],
-            this.casesGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+            this.transPairsGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
         }
       }
     });
@@ -313,7 +326,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   private fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
-    linesIdxs: Uint32Array, allPairsGrid: DG.Grid, casesGrid: DG.Grid, generationsGrid: DG.Grid,
+    linesIdxs: Uint32Array, transFragmentsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
     tp: DG.Viewer, sp: DG.Viewer,
     sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
     colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
@@ -327,8 +340,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.mmpRules = rules;
 
     this.diffs = diffs;
-    this.allPairsGrid = allPairsGrid;
-    this.casesGrid = casesGrid;
+    this.transFragmentsGrid = transFragmentsGrid;
+    this.transPairsGrid = transPairsGrid;
     this.generationsGrid = generationsGrid;
     this.lines = lines;
     this.linesActivityCorrespondance = linesActivityCorrespondance;
@@ -336,8 +349,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.calculatedOnGPU = gpuUsed;
 
     //transformations tab setup
-    this.transformationsMask = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
-    this.pairsMask = DG.BitSet.create(this.casesGrid.dataFrame.rowCount);
+    this.transFragmentsMask = DG.BitSet.create(this.transFragmentsGrid.dataFrame.rowCount);
+    this.transPairsMask = DG.BitSet.create(this.transPairsGrid.dataFrame.rowCount);
     this.mmpView = DG.View.create();
     this.setupTransformationTab();
 
@@ -359,7 +372,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
         grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-          casesGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
+          transPairsGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
         this.lastSelectedPair = event.id;
       }
     });
@@ -374,7 +387,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async runMMP(mmpInput: MmpInput) {
-    //console.profile('MMP');
+    console.profile('MMP');
     //rdkit module
 
     const module = getRdKitModule();
@@ -399,11 +412,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const palette = getPalette(mmpInput.activities.length);
     //Transformations tab
     const {maxActs, diffs, meanDiffs, activityMeanNames,
-      linesIdxs, allPairsGrid, casesGrid, lines, linesActivityCorrespondance} =
+      linesIdxs, transFragmentsGrid, transPairsGrid, lines, linesActivityCorrespondance} =
       getMmpActivityPairsAndTransforms(mmpInput, mmpRules, allCasesNumber, palette);
 
     //Fragments tab
-    const tp = getMmpTrellisPlot(allPairsGrid, activityMeanNames, palette);
+    const tp = getMmpTrellisPlot(transFragmentsGrid, activityMeanNames, palette);
 
     //Cliffs tab
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
@@ -415,25 +428,28 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //running internal chemspace
     const linesEditor = runMmpChemSpace(mmpInput, sp, lines, linesIdxs, linesActivityCorrespondance,
-      casesGrid.dataFrame, diffs, module, embedColsNames);
+      transPairsGrid.dataFrame, diffs, module, embedColsNames);
+
 
     const generationsGrid: DG.Grid =
-      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames, gpu);
-    //console.profileEnd('MMP');
+      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, transFragmentsGrid, activityMeanNames, gpu);
+
 
     this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs,
-      allPairsGrid, casesGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
+      transFragmentsGrid, transPairsGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
       colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu); 
+
+    console.profileEnd('MMP');
   }
 
   findSpecificRule(diffFromSubstrCol: DG.Column): [idxPairs: number, cases: number[]] {
     const idxParent = this.parentTable!.currentRowIdx;
     let idxPairs = -1;
     const cases: number[] = [];
-    const idx = this.allPairsGrid!.table.currentRowIdx;
+    const idx = this.transFragmentsGrid!.table.currentRowIdx;
     if (idx !== -1) {
-      const ruleSmi1 = this.allPairsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
-      const ruleSmi2 = this.allPairsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
+      const ruleSmi1 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
+      const ruleSmi2 = this.transFragmentsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
       const ruleSmiNum1 = this.mmpRules!.smilesFrags.indexOf(ruleSmi1);
       const ruleSmiNum2 = this.mmpRules!.smilesFrags.indexOf(ruleSmi2);
 
@@ -444,7 +460,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         const second = this.mmpRules!.rules[i].smilesRule2;
         for (let j = 0; j < this.mmpRules!.rules[i].pairs.length; j++) {
           if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
-            this.pairsMask!.set(counter, true, false);
+            this.transPairsMask!.set(counter, true, false);
             if (diffFromSubstrCol.get(counter) === null)
               cases.push(counter);
             if (this.mmpRules!.rules[i].pairs[j].firstStructure == idxParent)
@@ -483,23 +499,23 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   async refreshPair(rdkitModule: RDModule) : Promise<void> {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
-    this.pairsMask!.setAll(false);
-    const diffFromSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
-    const diffToSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
-    const diffFrom = this.casesGrid!.dataFrame.getCol(MMP_NAMES.FROM);
-    const diffTo = this.casesGrid!.dataFrame.getCol(MMP_NAMES.TO);
+    this.transPairsMask!.setAll(false);
+    const diffFromSubstrCol = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
+    const diffToSubstrCol = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
+    const diffFrom = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.FROM);
+    const diffTo = this.transPairsGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
     await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
 
-    this.casesGrid!.dataFrame.filter.copyFrom(this.pairsMask!);
+    this.transPairsGrid!.dataFrame.filter.copyFrom(this.transPairsMask!);
 
-    this.casesGrid!.setOptions({
+    this.transPairsGrid!.setOptions({
       pinnedRowColumnNames: [],
       pinnedRowValues: [],
     });
     if (idxPairs >= 0) {
-      this.casesGrid!.setOptions({
+      this.transPairsGrid!.setOptions({
         pinnedRowValues: [idxPairs.toString()],
         pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
       });
@@ -509,9 +525,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   refreshFilterAllPairs() {
-    const consistsBitSet: DG.BitSet = DG.BitSet.create(this.allPairsGrid!.dataFrame.rowCount);
+    const consistsBitSet: DG.BitSet = DG.BitSet.create(this.transFragmentsGrid!.dataFrame.rowCount);
     consistsBitSet.setAll(true);
-    this.allPairsGrid!.dataFrame.filter.copyFrom(consistsBitSet);
+    this.transFragmentsGrid!.dataFrame.filter.copyFrom(consistsBitSet);
   }
 
   /**
@@ -522,7 +538,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     let idxTrue = -1;
     if (rowChanged) {
       const idx = this.parentTable!.currentRowIdx;
-      this.transformationsMask!.setAll(false);
+      this.transFragmentsMask!.setAll(false);
 
       for (let i = 0; i < this.mmpRules!.rules.length; i++) {
         for (let j = 0; j < this.mmpRules!.rules[i].pairs.length; j++) {
@@ -530,7 +546,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           if (idx == fs) {
             if (idxTrue == -1)
               idxTrue = i;
-            this.transformationsMask!.set(i, true, false);
+            this.transFragmentsMask!.set(i, true, false);
             break;
           }
         }
@@ -538,10 +554,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }
 
     if (this.enableFilters) {
-      this.allPairsGrid!.dataFrame.filter.copyFrom(this.transformationsMask!);
-      this.allPairsGrid!.invalidate();
+      this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.transFragmentsMask!);
+      this.transFragmentsGrid!.invalidate();
       if (rowChanged)
-        this.allPairsGrid!.table.currentRowIdx = idxTrue;
+        this.transFragmentsGrid!.table.currentRowIdx = idxTrue;
     }
   }
 

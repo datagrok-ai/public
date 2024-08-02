@@ -140,7 +140,7 @@ function createLines(variates: number, activityPairsIdxs: BitArray[],
   return {linesIdxs, lines, linesActivityCorrespondance};
 }
 
-function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
+function getTransFragmetsGrid(variates: number, fromFrag: string[], toFrag: string[],
   occasions: Int32Array, activities: DG.ColumnList, meanDiffs: Float32Array[]) : [string[], DG.Grid] {
   const fromCol = createColWithDescription('string', MMP_NAMES.FROM, fromFrag);
   const toCol = createColWithDescription('string', MMP_NAMES.TO, toFrag);
@@ -172,7 +172,7 @@ function getAllPairsGrid(variates: number, fromFrag: string[], toFrag: string[],
   return [activityMeanNames, grid];
 }
 
-function getCasesGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
+function getTransPairsGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
   molNumFrom: Int32Array, molNumTo: Int32Array, pairsFromSmiles: string[],
   pairsToSmiles: string[], ruleNum: Int32Array, activities: DG.ColumnList, diffs: Float32Array[]) : DG.Grid {
   const pairsFromCol = createColWithDescription('string',MMP_NAMES.FROM, molFrom);
@@ -215,18 +215,18 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
   meanDiffs: Array<Float32Array>,
   activityMeanNames: Array<string>,
   linesIdxs: Uint32Array,
-  allPairsGrid: DG.Grid,
-  casesGrid: DG.Grid,
+  transFragmentsGrid: DG.Grid,
+  transPairsGrid: DG.Grid,
   lines: ILineSeries,
   linesActivityCorrespondance: Uint32Array
 } {
   const variates = mmpInput.activities.length;
   const activityDiffs = calculateActivityDiffs(mmpInput, mmpRules, variates, allCasesNumber);
 
-  const [activityMeanNames, allPairsGrid] = getAllPairsGrid(variates, activityDiffs.fromFrag, activityDiffs.toFrag,
+  const [activityMeanNames, transFragmentsGrid] = getTransFragmetsGrid(variates, activityDiffs.fromFrag, activityDiffs.toFrag,
     activityDiffs.occasions, mmpInput.activities, activityDiffs.meanDiffs);
 
-  const casesGrid = getCasesGrid(variates, activityDiffs.molFrom, activityDiffs.molTo, activityDiffs.pairNum,
+  const transPairsGrid = getTransPairsGrid(variates, activityDiffs.molFrom, activityDiffs.molTo, activityDiffs.pairNum,
     activityDiffs.molNumFrom, activityDiffs.molNumTo, activityDiffs.pairsFromSmiles,
     activityDiffs.pairsToSmiles, activityDiffs.ruleNum, mmpInput.activities, activityDiffs.diffs);
 
@@ -234,6 +234,6 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
     createLines(variates, activityDiffs.activityPairsIdxs, activityDiffs.molNumFrom, activityDiffs.molNumTo, palette);
 
   return {maxActs: activityDiffs.maxActs, diffs: activityDiffs.diffs, meanDiffs: activityDiffs.meanDiffs,
-    activityMeanNames, linesIdxs: lines.linesIdxs, allPairsGrid, casesGrid,
+    activityMeanNames, linesIdxs: lines.linesIdxs, transFragmentsGrid, transPairsGrid,
     lines: lines.lines, linesActivityCorrespondance: lines.linesActivityCorrespondance};
 }
