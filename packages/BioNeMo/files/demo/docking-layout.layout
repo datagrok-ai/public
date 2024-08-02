@@ -1,0 +1,183 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "vertical",
+    "state": {
+      "width": 1237,
+      "height": 802
+    },
+    "children": [
+      {
+        "containerType": "horizontal",
+        "state": {
+          "width": 1237,
+          "height": 587
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 218,
+              "height": 587,
+              "element": {
+                "id": "5eb527b0-4ce0-11ef-894a-91028b230726",
+                "type": "Filters",
+                "look": {
+                  "#type": "FiltersLook",
+                  "filters": [
+                    {
+                      "type": "Chem:substructureFilter",
+                      "column": "SMILES",
+                      "active": true,
+                      "columnName": "SMILES",
+                      "molBlock": "",
+                      "searchType": "Contains",
+                      "simCutOff": 0.8,
+                      "fp": "Morgan",
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "Cmpd_ID",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "poses",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "confidence",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    }
+                  ]
+                },
+                "title": "Filters"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 1018,
+              "height": 587,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 1018,
+                  "height": 587,
+                  "element": {
+                    "id": "5eb527b0-4ce0-11ef-bb28-d312ef39b5b4",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 100,
+                      "sortByColumnNames": [
+                        "confidence"
+                      ],
+                      "sortTypes": [
+                        true
+                      ],
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 28,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header"
+                        },
+                        {
+                          "width": 77,
+                          "columnName": "Cmpd_ID"
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "SMILES",
+                          "cellType": "Molecule"
+                        },
+                        {
+                          "width": 100,
+                          "columnName": "poses",
+                          "cellType": "xray"
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 150,
+                          "columnName": "confidence",
+                          "customFormat": "0.00",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "colorCodingType": "Linear",
+                          "colorCodingLinear": [
+                            4278255360,
+                            4294901760
+                          ]
+                        },
+                        {
+                          "visible": false,
+                          "columnName": "~posesJson"
+                        },
+                        {
+                          "columnName": "~SMILES.Pattern"
+                        },
+                        {
+                          "columnName": "~SMILES.canonicalSmiles"
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1237,
+          "height": 214,
+          "element": {
+            "id": "5eb54ec0-4ce0-11ef-e59b-5945a8eeed9e",
+            "type": "Markup",
+            "look": {
+              "#type": "MarkupViewerLook",
+              "content": "# What’s Markdown?\n      \nMarkdown is a [lightweight markup language](https://www.markdownguide.org/basic-syntax/)\nthat you can use to add formatting elements to plaintext text documents. It supports the following:\n      \n* [Headings](https://www.markdownguide.org/basic-syntax/#headings)\n* [Bold and italic](https://www.markdownguide.org/basic-syntax/#bold-and-italic)\n* [Lists](https://www.markdownguide.org/basic-syntax/#lists)\n* and much more!"
+            },
+            "title": "Markup"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "36a3af80-4ce0-11ef-992f-cd498420161f",
+    "tableName": "demo_dataset_small (2)"
+  },
+  "name": "DemoDatasetSmall2",
+  "friendlyName": "demo_dataset_small (2)",
+  "author": {
+    "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
+  },
+  "createdOn": "2024-08-02T11:35:50.949Z"
+}

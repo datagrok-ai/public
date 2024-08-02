@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {IPdbHelper, getPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import '../css/bionemo.css';
+import '../../css/bionemo.css';
 
 interface PosesJson {
   ligand_positions: string[];
@@ -13,7 +13,7 @@ interface PosesJson {
 export const CONSTANTS = {
   POSES_COLUMN_NAME: 'poses',
   CONFIDENCE_COLUMN_NAME: 'confidence',
-  VIRTUAL_POSES_COLUMN_NAME: '~popesJson'
+  VIRTUAL_POSES_COLUMN_NAME: '~posesJson'
 };
   
 export class DiffDockModel {
@@ -41,9 +41,10 @@ export class DiffDockModel {
   
   private async calculatePoses() {
     const posesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.POSES_COLUMN_NAME, this.ligands.length);
-    const confidenceColumn = this.createColumn(DG.TYPE.INT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
+    const confidenceColumn = this.createColumn(DG.TYPE.FLOAT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
     const virtualPosesColumn = this.createColumn(DG.TYPE.OBJECT, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, this.ligands.length);
-  
+    const grid = grok.shell.getTableView(this.df.name).grid;
+
     for (let i = 0; i < posesColumn.length; ++i) {
       const posesJson = await this.getPosesJson(this.ligands.get(i));
       const pdbHelper: IPdbHelper = await getPdbHelper();
@@ -51,9 +52,14 @@ export class DiffDockModel {
   
       posesColumn.set(i, await pdbHelper.molToPdb(bestPose));
       posesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
-      //needed in
+      //needed in order not to open custom molstar
       posesColumn.setTag('docking.role', 'ligand');
+
       confidenceColumn.set(i, confidence);
+      confidenceColumn.setTag(DG.TAGS.FORMAT, '0.00');
+      confidenceColumn.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
+      grid.sort([confidenceColumn]);
+
       posesJson.receptor = this.target;
       virtualPosesColumn.set(i, posesJson);
     }
@@ -62,6 +68,14 @@ export class DiffDockModel {
     this.df.columns.add(confidenceColumn);
     this.df.columns.add(virtualPosesColumn);
     await grok.data.detectSemanticTypes(this.df);
+
+    grid.onCellRender.subscribe((args: any) => {
+      grid.setOptions({ 'rowHeight': 100 });
+      grid.col(CONSTANTS.POSES_COLUMN_NAME)!.width = 100;
+      grid.col(CONSTANTS.CONFIDENCE_COLUMN_NAME)!.width = 100 + 50;
+      grid.col(CONSTANTS.CONFIDENCE_COLUMN_NAME)!.isTextColorCoded = true;
+      grid.invalidate();
+    });
   
     return { posesColumn, confidenceColumn, virtualPosesColumn };
   }
@@ -96,9 +110,10 @@ export class DiffDockModel {
     );
   }
   
-  public async createCombinedControl(currentRow: number) {
+  public async createCombinedControl(currentRow: number, fullHeight: boolean = true): Promise<HTMLDivElement> {
     const molstarViewer = await this.createMolstarViewer(currentRow);
-    molstarViewer.root.style.height = '100%';
+    if (fullHeight)
+      molstarViewer.root.style.height = '100%';
     const items = this.createPoseItems(this.virtualPosesColumn.get(currentRow) as PosesJson);
     
     const molstarProps = molstarViewer.getProperties();
@@ -114,14 +129,16 @@ export class DiffDockModel {
     });
   
     comboPopup.classList.add('bionemo-combo-popup');
-    return ui.divV([comboPopup, molstarViewer.root]);
+    const container = ui.divV([comboPopup, molstarViewer.root]);
+    container.style.height = '100%';
+    return container;
   }
   
-  private async createMolstarViewer(currentRow: number) {
-    return await this.posesColumn.dataFrame.plot.fromType('Biostructure', {
+  private async createMolstarViewer(currentRow: number): Promise<DG.Widget> {
+    return await this.ligands.dataFrame.plot.fromType('Biostructure', {
       pdb: this.target,
       ligandColumnName: this.ligands.name,
-      ligandValue: (this.virtualPosesColumn.get(currentRow) as PosesJson).ligand_positions[currentRow],
+      ligandValue: this.ligands.get(currentRow),
       zoom: true,
     });
   }
@@ -131,8 +148,8 @@ export class DiffDockModel {
     if (currentCell && currentCell.column === this.posesColumn) {
       const currentRow = this.df.currentRowIdx;
       const combinedControl = await this.createCombinedControl(currentRow);
+      
       const view = grok.shell.getTableView(this.df.name);
-  
       if (this.currentViewer)
         view.dockManager.close(this.currentViewer);
 

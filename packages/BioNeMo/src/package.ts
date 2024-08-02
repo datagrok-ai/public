@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { CONSTANTS, DiffDockModel } from './diffdock/diffdock-model';
+import { _demoDiffDockModel, _demoEsmFoldModel } from './demo/demo';
 
 export const _package = new DG.Package();
 
@@ -33,11 +35,6 @@ export async function molMIMModel(algorithm: string, num_molecules: number, prop
 export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
   const grid = grok.shell.getTableView(df.name).grid;
   const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
-  //init not working
-  /*protein.init((i: number) => {
-    const value = sequences.get(i);
-    grok.functions.call('BioNeMo:esmfold', {value}).then((res) => res);
-  });*/
   for (let i = 0; i < sequences.length; ++i) {
     const colValue = sequences.get(i);
     const predictedValue = await grok.functions.call('BioNeMo:esmfold', {sequence: colValue});
@@ -49,7 +46,7 @@ export async function esmFoldModel(df: DG.DataFrame, sequences: DG.Column) {
   grid.invalidate();
 }
 
-//name: EsmFoldModelPanel
+//name: Bio | EsmFold
 //input: semantic_value sequence {semType: Macromolecule}
 //output: widget result
 export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.Widget> {
@@ -69,8 +66,62 @@ export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.
 //input: dataframe df
 //input: column ligands {semType: Molecule}
 //input: file target
-//input: int poses = 20
+//input: int poses = 5
 export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: DG.FileInfo, poses: number) {
-  const encodedPoses = await grok.functions.call('BioNeMo:diffdock', {protein: await target.readAsString(), ligand: ligands.get(0), num_poses: poses});
-  const posesJson = new TextDecoder().decode(encodedPoses.data);
+  const receptor = await grok.dapi.files.readAsText(target);
+  const diffDockModel = new DiffDockModel(df, ligands, receptor, poses);
+  await diffDockModel.run();
+}
+
+//name: Biology | DiffDock
+//tags: panel, widgets
+//input: semantic_value smiles { semType: Molecule }
+//output: widget result
+export async function diffDockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
+  const poses = ui.input.int('Poses', { value: 5 });
+
+  const resultsContainer = ui.div();
+  const button = ui.button('Run', async () => {
+    resultsContainer.innerHTML = '';
+
+    const loader = ui.loader();
+    resultsContainer.appendChild(loader);
+
+    const table = smiles.cell.dataFrame;
+    const receptor = await grok.dapi.files.readAsText('System:AppData/Bionemo/targets/protein.pdbqt');
+    const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, poses.value!);
+    const posesJson = await diffDockModel.getPosesJson(smiles.value);
+
+    // Check if the column exists before creating new one
+    let virtualPosesColumn = table.columns.byName(CONSTANTS.VIRTUAL_POSES_COLUMN_NAME);
+    if (!virtualPosesColumn) {
+      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.OBJECT, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, table.rowCount);
+      table.columns.add(virtualPosesColumn);
+    }
+    virtualPosesColumn.set(smiles.cell.rowIndex, posesJson);
+    diffDockModel.virtualPosesColumn = virtualPosesColumn;
+
+    const combinedControl = await diffDockModel.createCombinedControl(smiles.cell.rowIndex, false);
+    resultsContainer.removeChild(loader);
+    resultsContainer.append(combinedControl);
+  });
+
+  const form = ui.form([poses]);
+  const panels = ui.divV([form, button, resultsContainer]);
+
+  return DG.Widget.fromRoot(panels);
+}
+
+//name: Demo EsmFold
+//description: Demonstrates the use of ESMFold to predict the 3D structure of proteins from their amino acid sequences
+//meta.demoPath: Bioinformatics | Folding
+export async function demoEsmFoldModel(): Promise<void> {
+  await _demoEsmFoldModel();
+}
+
+//name: Demo DiffDock
+//description: Demonstrates the use of DiffDock to predict the 3D structure of how a molecule interacts with a protein
+//meta.demoPath: Bioinformatics | DiffDock
+export async function demoDiffDockModel(): Promise<void> {
+  await _demoDiffDockModel();
 }

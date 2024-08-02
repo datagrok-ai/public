@@ -1,14 +1,14 @@
 #name: MolMIMGenerate
 #description: MolMIM performs controlled generation, finding molecules with the right properties
 #language: python
-#input: string algorithm = "CMA-ES"
-#input: int num_molecules = 30 {min: 1; max: 100}
-#input: string property_name = "QED" {choices: ["QED", "plogP"]}
-#input: bool minimize = False
-#input: double min_similarity = 0.3 {min: 0; max: 1}
-#input: int particles = 30 {min: 2; max: 1000}
-#input: int iterations = 10 {min: 1; max: 1000}
-#input: string smi = "[H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34" {semType: Molecule}
+#input: string algorithm
+#input: int num_molecules
+#input: string property_name
+#input: bool minimize
+#input: double min_similarity
+#input: int particles
+#input: int iterations
+#input: string smi
 #output: string response
 import requests
 
