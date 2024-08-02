@@ -507,7 +507,7 @@ export interface IDartApi {
   grok_Func_OutputParamMap_Values(call: any): any;
   grok_Func_OutputParamMap_Clear(call: any): any;
   grok_Func_OutputParamMap_Size(call: any): any;
-  grok_GroupByBuilder_Aggregate(b: any): any;
+  grok_GroupByBuilder_Aggregate(b: any, autoName: Bool): any;
   grok_GroupByBuilder_WhereBitSet(b: any, bitset: any): any;
   grok_GroupByBuilder_Add(b: any, agg: String, colName: String, resultColName: String): any;
   grok_GroupByBuilder_GetGroups(b: any): any;
