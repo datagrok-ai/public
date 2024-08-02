@@ -262,8 +262,13 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
     for (const f of (<any>window).dartTests) {
       const arr = f.name.split(/\s*\|\s*!/g);
-      const name = arr.pop() ?? f.name;
-      const cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
+      let name = arr.pop() ?? f.name;
+      let cat = arr.length ? coreCatName + ': ' + arr.join(': ') : coreCatName;
+      let fullName : string[]=name.split(' | ');
+      name = fullName[fullName.length-1];
+      fullName.unshift(cat);
+      fullName.pop();
+      cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
       moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: STANDART_TIMEOUT }));

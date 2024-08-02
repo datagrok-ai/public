@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.16 (2024-08-02)
+
+Fixed core tests output to the Test Manager app
+
 ## 4.2.15 (2024-07-30)
 
 Removed Unhadled exception test for benchmarks 
