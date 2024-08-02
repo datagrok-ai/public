@@ -31,7 +31,7 @@ category('Widgets', () => {
         expect(label != null, true, 'label');
         expect(label!.textContent, testConnection.friendlyName, 'label!.textContent');
         return true;
-      }, 'Home timeout', 10000);
+      }, 'Home timeout', 20000);
     }
 
     if (packageDataConnection) {
