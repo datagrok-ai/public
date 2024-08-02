@@ -674,6 +674,9 @@ export class BrowseView extends View {
   set preview(preview: View | null) { api.grok_BrowseView_Set_Preview(this.dart, preview?.dart); }
 
   get dockManager(): DockManager { return new DockManager(api.grok_BrowseView_Get_DockManager(this.dart)); }
+
+  get showTree(): boolean { return api.grok_BrowseView_Get_ShowTree(this.dart); }
+  set showTree(x: boolean) { api.grok_BrowseView_Set_ShowTree(this.dart, x); }
 }
 
 
