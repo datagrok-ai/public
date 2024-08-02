@@ -129,13 +129,17 @@
   height: 30px !important;
 }
 
+.chem-scaffold-tree-progress {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 .chem-scaffold-tree-cancel-hint {
   text-align: center;
-  position: absolute;
-  top: 55%;
   font-size: 13px;
-  width: 100% !important;
-  height: 30px !important;
 }
 
 .chem-scaffold-tree-generate-message-hint {
@@ -383,10 +387,6 @@
   margin-left: 0px!important;
 }
 
-.chem-mcs-settings-label {
-  width: 98px!important;
-}
-
 .chem-viewer-grid {
   margin: 6px 0;
   gap: 6px;
@@ -553,13 +553,7 @@
   top: 546px;
 }
 
-.chem-rgroup-replace-latest {
-  position: absolute!important;
-  top: 540px;
-  left: 148px;
-}
-
-.chem-rgroup-settings-div > .ui-input-root {
+.chem-rgroup-settings-div .ui-input-root {
   padding: 0px!important;
 }
 

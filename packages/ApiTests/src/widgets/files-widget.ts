@@ -24,7 +24,8 @@ category('Widgets', () => {
 
     if (testConnection) {
       const testFW = ui.fileBrowser({path: testConnection.nqName});
-      awaitCheck(() => {
+      grok.shell.newView('' ,[testFW.root]);
+      await awaitCheck(() => {
         if (testFW.root.querySelector('.grok-loader')) return false;
         const label = $(testFW.root).find(labelSelector)[0];
         expect(label != null, true, 'label');
@@ -37,7 +38,8 @@ category('Widgets', () => {
       const packageName = 'ApiTests';
       const packageDir = 'datasets';
       const testFW = ui.fileBrowser({path: `${packageDataConnection.nqName}/${packageName}/${packageDir}`});
-      awaitCheck(() => {
+      grok.shell.newView('' ,[testFW.root]);
+      await awaitCheck(() => {
         if (testFW.root.querySelector('.grok-loader')) return false;
         const labels = $(testFW.root).find(labelSelector);
         expect(labels[0] != null, true, 'labels[0]');
@@ -47,5 +49,5 @@ category('Widgets', () => {
         return true;
       }, 'AppData timeout', 10000);
     }
-  });
+  }, {timeout: 100000});
 });

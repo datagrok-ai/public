@@ -4,9 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
-import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM,
-  MMP_VIEW_NAME, MMP_TAB_TRANSFORMATIONS, MMP_TAB_FRAGMENTS,
-  MMP_TAB_CLIFFS, MMP_TAB_GENERATION, MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MMP_NAMES, MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-constants';
 import {MmpRules, MmpInput} from './mmp-constants';
 import {getInverseSubstructuresAndAlign, PaletteCodes, getPalette} from './mmp-mol-rendering';
 import {getMmpFrags, getMmpRules} from './mmp-fragments';
@@ -26,6 +24,7 @@ import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import $ from 'cash-dom';
+import { getGPUDevice } from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
@@ -102,16 +101,33 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       loader.classList.add('mmpa-loader');
       this.root.appendChild(loader);
       const progressMMP = DG.TaskBarProgressIndicator.create(`Running MMP analysis...`);
-      await this.runMMP(
-        {table: this.dataFrame,
-          molecules: this.moleculesCol!,
-          activities: this.activitiesCols!,
-          fragmentCutoff: this.fragmentCutoff!,
-        });
 
-      $(this.root).empty();
-      this.root.appendChild(this.mmpView!.root);
-      progressMMP.close();
+      try {
+        await this.runMMP(
+          {table: this.dataFrame,
+            molecules: this.moleculesCol!,
+            activities: this.activitiesCols!,
+            fragmentCutoff: this.fragmentCutoff!,
+          });
+      }
+      catch (e: any) {}
+      finally {
+        $(this.root).empty();
+        if (this.mmpView)
+          this.root.appendChild(this.mmpView!.root); 
+        else  
+          this.close();
+        progressMMP.close();
+      }
+
+        // let tableInfo = this.parentTable!.getTableInfo();
+        // await grok.dapi.tables.uploadDataFrame(this.parentTable!);
+        // await grok.dapi.tables.save(tableInfo);
+        // console.log(`${grok.dapi.root}/entities/${tableInfo.id}/token`);
+        // const response = await fetch(`${grok.dapi.root}/entities/${tableInfo.id}/token`, {method: "POST"}); //or without POST
+        // const respText = await response.text();
+
+
     }
   }
 
@@ -131,7 +147,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.refreshPair(this.rdkitModule!);
     });
 
-    this.mmpView!.name = MMP_VIEW_NAME;
+    this.mmpView!.name = MMP_NAMES.VIEW_NAME;
     this.mmpView!.box = true;
 
     this.pairsMask!.setAll(false);
@@ -175,13 +191,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           from: this.lines!.from,
           to: this.lines!.to,
           drawArrows: true,
-          opacity: 0.5,
           colors: colors,
           arrowSize: 10,
+          skipMultiLineCalculation: true,
+          width: 0.5
         };
 
         this.lines = lines;
-        this.linesRenderer!.updateLines(lines);
+        this.linesRenderer!.linesToRender = lines;
 
         //refresh trellis plot
         const schemes = new Array<any>(colorInputs.length);
@@ -210,7 +227,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.linesRenderer = linesEditor;
 
-    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
+    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
 
     return ui.box(cliffs);
   }
@@ -229,7 +246,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       return button;
     };
 
-    tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
+    tabs.addPane(MMP_NAMES.TAB_TRANSFORMATIONS, () => {
       const createGridDiv = (name: string, grid: DG.Grid) => {
         const header = ui.h1(name, 'chem-mmpa-transformation-tab-header');
         grid.root.prepend(header);
@@ -247,13 +264,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         createGridDiv('Pairs', this.casesGrid!),
       ], {}, true);
     });
-    tabs.addPane(MMP_TAB_FRAGMENTS, () => {
+    tabs.addPane(MMP_NAMES.TAB_FRAGMENTS, () => {
       return tp.root;
     });
-    tabs.addPane(MMP_TAB_CLIFFS, () => {
+    tabs.addPane(MMP_NAMES.TAB_CLIFFS, () => {
       return cliffs;
     });
-    const genTab = tabs.addPane(MMP_TAB_GENERATION, () => {
+    const genTab = tabs.addPane(MMP_NAMES.TAB_GENERATION, () => {
       return this.generationsGrid!.root;
     });
     genTab.header.append(addToWorkspaceButton(this.generationsGrid!.dataFrame,
@@ -261,13 +278,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     tabs.onTabChanged.subscribe(() => {
       this.currentTab = tabs.currentPane.name;
-      if (tabs.currentPane.name == MMP_TAB_TRANSFORMATIONS) {
+      if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
         this.enableFilters = true;
         this.refilterAllPairs(false);
-      } else if (tabs.currentPane.name == MMP_TAB_FRAGMENTS) {
+      } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
         this.refreshFilterAllPairs();
         this.enableFilters = false;
-      } else if (tabs.currentPane.name == MMP_TAB_CLIFFS) {
+      } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
         this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs!,
@@ -281,11 +298,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const decript2 = 'Analysis of fragments versus explored value';
     const decript3 = 'Cliffs analysis';
 
-    tabs.getPane(MMP_TAB_TRANSFORMATIONS).header.onmouseover =
+    tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header.onmouseover =
       (ev): void => ui.tooltip.show(decript1, ev.clientX, ev.clientY + 5);
-    tabs.getPane(MMP_TAB_FRAGMENTS).header.onmouseover =
+    tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header.onmouseover =
       (ev): void => ui.tooltip.show(decript2, ev.clientX, ev.clientY + 5);
-    tabs.getPane(MMP_TAB_CLIFFS).header.onmouseover =
+    tabs.getPane(MMP_NAMES.TAB_CLIFFS).header.onmouseover =
       (ev): void => ui.tooltip.show(decript3, ev.clientX, ev.clientY + 5);
 
     return tabs;
@@ -359,9 +376,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const module = getRdKitModule();
     const moleculesArray = mmpInput.molecules.toList();
 
+    const gpuCheck = await getGPUDevice();
+    const gpu: boolean = !gpuCheck ? false : true;
+
+    if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
+      grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
+      throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
+    }
+    else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
+      grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
+      throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
+    }
+
     //initial calculations
     const fragsOut = await getMmpFrags(moleculesArray);
-    const [mmpRules, allCasesNumber, gpu] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff);
+    const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
     const palette = getPalette(mmpInput.activities.length);
 
     //Transformations tab
@@ -383,7 +412,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       casesGrid.dataFrame, diffs, module, embedColsNames);
 
     const generationsGrid: DG.Grid =
-      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames);
+      await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, allPairsGrid, activityMeanNames, gpu);
     //console.profileEnd('MMP');
 
     this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs,
@@ -397,8 +426,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const cases: number[] = [];
     const idx = this.allPairsGrid!.table.currentRowIdx;
     if (idx !== -1) {
-      const ruleSmi1 = this.allPairsGrid!.table.getCol(MMP_COLNAME_FROM).get(idx);
-      const ruleSmi2 = this.allPairsGrid!.table.getCol(MMP_COLNAME_TO).get(idx);
+      const ruleSmi1 = this.allPairsGrid!.table.getCol(MMP_NAMES.FROM).get(idx);
+      const ruleSmi2 = this.allPairsGrid!.table.getCol(MMP_NAMES.TO).get(idx);
       const ruleSmiNum1 = this.mmpRules!.smilesFrags.indexOf(ruleSmi1);
       const ruleSmiNum2 = this.mmpRules!.smilesFrags.indexOf(ruleSmi2);
 
@@ -449,10 +478,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
 
     this.pairsMask!.setAll(false);
-    const diffFromSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_STRUCT_DIFF_FROM_NAME);
-    const diffToSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_STRUCT_DIFF_TO_NAME);
-    const diffFrom = this.casesGrid!.dataFrame.getCol(MMP_COLNAME_FROM);
-    const diffTo = this.casesGrid!.dataFrame.getCol(MMP_COLNAME_TO);
+    const diffFromSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_FROM_NAME);
+    const diffToSubstrCol = this.casesGrid!.dataFrame.getCol(MMP_NAMES.STRUCT_DIFF_TO_NAME);
+    const diffFrom = this.casesGrid!.dataFrame.getCol(MMP_NAMES.FROM);
+    const diffTo = this.casesGrid!.dataFrame.getCol(MMP_NAMES.TO);
 
     const [idxPairs, cases] = this.findSpecificRule(diffFromSubstrCol);
     await this.recoverHighlights(cases, diffFrom, diffTo, diffFromSubstrCol, diffToSubstrCol, rdkitModule);
@@ -466,7 +495,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (idxPairs >= 0) {
       this.casesGrid!.setOptions({
         pinnedRowValues: [idxPairs.toString()],
-        pinnedRowColumnNames: [MMP_COL_PAIRNUM],
+        pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
       });
     }
 
