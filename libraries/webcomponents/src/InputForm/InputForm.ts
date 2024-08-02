@@ -22,18 +22,26 @@ export class InputForm extends HTMLElement {
   }
 
   set funcCall(fc: DG.FuncCall | undefined) {
-    this.currentSource = fc;
-    if (!this.currentSource) {
-      this.formInst = undefined;
-      this.attach();
-    } else if (this.formInst)
-      this.formInst.source = this.currentSource;
-    else
+    console.log(this.currentSource?.func.nqName, fc?.func.nqName);
+    if (this.currentSource && this.currentSource?.func.id === fc?.func.id) {
+      this.currentSource = fc;
+      if (!this.currentSource) {
+        this.formInst = undefined;
+        this.attach();
+      } else if (this.formInst)
+        this.formInst.source = this.currentSource;
+      else
+        this.init();
+    } else {
+      this.currentSource = fc;
       this.init();
+    }
   }
 
   private async init() {
-    this.formInst = await DG.InputForm.forFuncCall(this.currentSource!, {twoWayBinding: true});
+    if (!this.currentSource) return;
+
+    this.formInst = await DG.InputForm.forFuncCall(this.currentSource, {twoWayBinding: true});
     this.attach();
   }
 

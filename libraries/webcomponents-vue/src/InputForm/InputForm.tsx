@@ -19,7 +19,7 @@ export const InputForm = defineComponent({
     funcCall: DG.FuncCall,
   },
   emits: {
-    formChanged: (a: DG.Form) => a,
+    formChanged: (a: DG.InputForm) => a,
   },
   setup(props, {emit}) {
     const formChangedCb = (event: any) => {
