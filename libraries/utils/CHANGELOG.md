@@ -1,8 +1,13 @@
 # utils changelog
 
+## 4.2.19 (2024-08-02)
+
+Fix benchmark timeout 
+
+
 ## 4.2.18 (2024-08-02)
 
-Added benchmark timeout to grok test
+Added benchmark timeout as test variable
 
 ## 4.2.17 (2024-08-02)
 
