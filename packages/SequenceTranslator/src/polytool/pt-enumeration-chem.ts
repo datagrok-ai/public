@@ -87,23 +87,8 @@ export async function getEnumerationChem(molString: string, screenLibrary: strin
       //TODO: use RDKit linking function when exposed
       const smiResRaw = `${smiScaffold}.${smilesSubsts[i]}`.replaceAll('[1*]C', 'C([1*])').replaceAll('[1*]c', 'c([1*])').replaceAll('[1*]O', 'O([1*])').replaceAll('[1*]N', 'N([1*])');
       const smiRes = `${smiResRaw}`.replaceAll('([1*])', '9').replaceAll('[1*]', '9');
-      molRes = rdkitModule.get_mol(smiRes);
+      molRes = rdkitModule.get_mol(smiRes, JSON.stringify({mappedDummiesAreRGroups: true}))
       let molV3 = molRes.get_v3Kmolblock();
-
-
-      //TODO: use RDKit when MASS problem is solved
-      while(molV3.includes('MASS')) {
-
-        //MASS=2 VAL=1
-        //RGROUPS=(1 2)
-        const idx = molV3.indexOf('MASS');
-        const rNum = parseInt(molV3.slice(idx + 5, idx + 6));
-        const replace = `RGROUPS=(1 ${rNum})`;
-        molV3 = molV3.substring(0, idx) + replace + molV3.substring(idx + 12);
-      }
-
-      molV3 = molV3.replaceAll('R ', 'R# ')
-
       enumerations[i] = molV3;
     } 
     catch(err:any) {
