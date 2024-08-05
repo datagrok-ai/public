@@ -938,10 +938,12 @@ export async function TestTreeWizardView() {
     wrapperFunccall: 'Compute:ObjectCooling',
     treeData: [
       {
-        text: 'Model name', 
+        text: 'Model name',
+        order: 'sequental', 
         children: [
           {
             text: 'Review phases (sequental + drag + adding)',
+            order: 'sequental',
             children: [
               {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
               {text: 'Filtering', funcCall: 'LibTests:LongScript'},
@@ -950,6 +952,7 @@ export async function TestTreeWizardView() {
           }, 
           {
             text: 'Step 2',
+            order: 'sequental',
             children: [
               {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
               {

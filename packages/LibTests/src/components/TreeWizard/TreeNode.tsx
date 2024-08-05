@@ -33,6 +33,33 @@ const runSequentallly = async (children: AugmentedStat[]) => {
 
 const runInParallel = async (children: AugmentedStat[]) => Promise.all(children.map(async (child) => runByTree(child as AugmentedStat)));
 
+const updateNextStepAndParent = (currentStat: AugmentedStat) => {
+  const parent = currentStat.parent;
+  if (!parent) return;
+
+  const getNextSibling = (step?: AugmentedStat | null) => {
+    const parent = step?.parent;
+    if (!parent) return;
+
+    return parent.children[
+      parent.children.findIndex(
+        (childStat) => childStat === step,
+      ) + 1
+    ];
+  };
+
+  const nextSibling = getNextSibling(currentStat);
+
+  if (nextSibling) 
+    nextSibling.status = `didn't run`;
+  else {
+    parent.status = currentStat.status;
+    const parentNextSibling = getNextSibling(parent);
+    if (parentNextSibling)
+      parentNextSibling.status = `didn't run`;
+  }
+};
+
 const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
   const nodeCall = currentStat.data.funcCall;
   currentStat.status = 'running';
@@ -40,6 +67,8 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
     try {
       await getCall(nodeCall).call();
       currentStat.status = 'succeeded';
+      
+      updateNextStepAndParent(currentStat);
 
       return Promise.resolve(currentStat.status);
     } catch (e) {
@@ -54,6 +83,8 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
     ).then(() => {
       currentStat.status = 'succeeded';
 
+      updateNextStepAndParent(currentStat);
+
       return Promise.resolve(currentStat.status);
     }).catch((e) => {
       currentStat.status = 'failed';
@@ -63,11 +94,20 @@ const runByTree = async (currentStat: AugmentedStat): Promise<Status> => {
   }
 };
 
-const getCurrentStatus = (stat: AugmentedStat) => {
+const getInitialStatus = (stat: AugmentedStat) => {
   if (!stat.parent) return `didn't run`;
   const parent = stat.parent;
 
-  return parent.data.order === 'parallel' && parent.status !== `locked` ? `didn't run`: `locked`;
+  if (parent.data.order === 'sequental') {
+    if (parent.status === 'didn\'t run' && parent.children.at(0) === stat) 
+      return `didn't run`;
+
+    return 'locked';
+  }
+
+  if (parent.data.order === 'parallel' && parent.status !== `locked`) return `didn\'t run`;
+
+  return `locked`;
 };
 
 const statusToIcon = {
@@ -125,7 +165,7 @@ export const TreeNode = defineComponent({
   },
   setup(props, {emit}) {
     if (!props.stat.status)  
-      props.stat.status = getCurrentStatus(props.stat);
+      props.stat.status = getInitialStatus(props.stat);
     
     const runIcon = <IconFA 
       name='play'

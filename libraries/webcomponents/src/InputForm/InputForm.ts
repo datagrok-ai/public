@@ -22,7 +22,7 @@ export class InputForm extends HTMLElement {
   }
 
   set funcCall(fc: DG.FuncCall | undefined) {
-    console.log(this.currentSource?.func.nqName, fc?.func.nqName);
+    // TODO: simplify logic
     if (this.currentSource && this.currentSource?.func.id === fc?.func.id) {
       this.currentSource = fc;
       if (!this.currentSource) {
