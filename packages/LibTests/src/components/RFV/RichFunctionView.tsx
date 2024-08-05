@@ -7,7 +7,7 @@ import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton} from '@datagrok-libraries/webcomponents-vue/src';
 import {GridStack} from 'gridstack';
 import 'gridstack/dist/gridstack.min.css';
-import '../styles/VueRichFunctionView.css';
+import './RichFunctionView.css';
 import {getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 declare global {
@@ -18,8 +18,8 @@ declare global {
   }
 }
 
-export const VueRichFunctionView = defineComponent({
-  name: 'VueRichFunctionView',
+export const RichFunctionView = defineComponent({
+  name: 'RichFunctionView',
   props: {
     funcCall: {
       type: Object as PropType<DG.FuncCall | string>,

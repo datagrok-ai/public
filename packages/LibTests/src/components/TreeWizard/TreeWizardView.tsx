@@ -6,7 +6,7 @@ import {SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {Draggable} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
-import {VueRichFunctionView} from '../VueRichFunctionView';
+import {RichFunctionView} from '../RFV/RichFunctionView';
 import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 import {TreeNode} from './TreeNode';
 import {TreeNodeType, HueTree, AugmentedStat, Data} from './types';
@@ -53,7 +53,7 @@ export const TreeWizardView = defineComponent({
               )
           }
         </Draggable>
-        <VueRichFunctionView funcCall={currentFuncCall.value} style={{height: '100%'}}/> 
+        <RichFunctionView funcCall={currentFuncCall.value} style={{height: '100%'}}/> 
       </SplitH>
     );
   },

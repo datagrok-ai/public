@@ -15,8 +15,9 @@ import {createApp} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElementsTestApp';
-import {VueRichFunctionView} from './components/VueRichFunctionView';
+import {RichFunctionView} from './components/RFV/RichFunctionView';
 import {TreeWizardView} from './components/TreeWizard/TreeWizardView';
+import {RFVTestApp} from './components/RFV/RFVTestApp';
 
 export const _package = new DG.Package();
 
@@ -925,7 +926,7 @@ export async function TestVueElements() {
 //tags: test
 export async function TestVueRFV() {
   const view = new DG.ViewBase();
-  const app = createApp(VueRichFunctionView, {funcCall: 'Compute:ObjectCooling'});
+  const app = createApp(RFVTestApp);
   app.mount(view.root);
   grok.shell.addView(view);
   view.root.classList.remove('ui-panel');
