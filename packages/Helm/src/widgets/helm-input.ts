@@ -12,7 +12,7 @@ import {HelmMol, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getHoveredMonomerFromEditorMol} from '../utils/get-hovered';
 
-import {_package, getMonomerLib} from '../package';
+import {_package} from '../package';
 
 
 export class HelmInput extends DG.JsInputBase<HelmMol> {
@@ -185,7 +185,7 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     const mol = this.viewer.editor.m;
     const seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, mol, this.viewer.editor.div.clientHeight);
     if (seqMonomer) {
-      const monomerLib = getMonomerLib();
+      const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, event.x + 16, event.y + 16);

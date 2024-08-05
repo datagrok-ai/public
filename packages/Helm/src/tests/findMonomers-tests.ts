@@ -53,8 +53,9 @@ category('findMonomers', () => {
   }
 
   function _testFindMonomers(testHelmValue: string, tgtMissedSet: Set<string>): void {
+    const monomerLib = monomerLibHelper.getBioLib();
     const monomerSymbolList: string[] = parseHelm(testHelmValue);
-    const resMissedSet: Set<string> = findMonomers(monomerSymbolList);
+    const resMissedSet: Set<string> = findMonomers(monomerSymbolList, monomerLib);
     expectObject(resMissedSet, tgtMissedSet);
   }
 });

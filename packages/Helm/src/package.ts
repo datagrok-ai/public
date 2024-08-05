@@ -71,10 +71,6 @@ export async function initHelm(): Promise<void> {
   _package.logger.debug(`${logPrefix}, end`);
 }
 
-export function getMonomerLib(): IMonomerLib | null {
-  return _package.monomerLib;
-}
-
 //name: getHelmService
 //output: object result
 export function getHelmService(): HelmServiceBase {

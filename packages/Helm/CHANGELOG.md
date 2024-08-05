@@ -1,5 +1,17 @@
 # Helm changelog
 
+## 2.3.3 (2024-08-05)
+
+### Features
+
+* Load dojo without CDN
+
+### Bug fixes
+
+* Fix monomers palette filling of HWE
+* Fix init dojo require
+* Fix test findMonomers
+
 ## 2.3.2 (2024-07-23)
 
 ### Features
