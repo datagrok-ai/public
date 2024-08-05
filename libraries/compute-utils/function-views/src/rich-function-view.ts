@@ -409,6 +409,8 @@ export class RichFunctionView extends FunctionView {
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
     this.navBtns = navBtns;
+
+    this.buildFormButtons();
   }
 
   /**
