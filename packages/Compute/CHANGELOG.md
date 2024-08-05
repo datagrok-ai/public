@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.36.7 (2024-08-05)
+
+- RFV: Fixed navigation buttons render
+
 ## 1.36.6 (2024-08-01)
 
 - RFV: Added spinning for async validation icon
