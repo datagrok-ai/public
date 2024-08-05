@@ -2,8 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/** Return test dataframe with the specified number of dependent columns */
-export function testDf(samples: number, features: number, dependent: number): DG.DataFrame {
+const TRESHOLD = 0.5;
+const SHIFT = 1;
+const LIMIT = 2;
+
+/** Return dataframe for testing regression & linear methods */
+export function regressionDataset(samples: number, features: number, dependent: number): DG.DataFrame {
   // create main features
   const df = grok.data.demo.randomWalk(samples, features);
   const cols = df.columns;
@@ -62,3 +66,34 @@ export function madError(col1: DG.Column, col2: DG.Column): number {
 
   return mad;
 }
+
+/** Return dataframe for testing classifiers */
+export function classificationDataset(samples: number, features: number, useShift: boolean): DG.DataFrame {
+  const labels = new Array<string>(samples);
+  const raw = new Array<Float32Array>(features);
+
+  for (let j = 0; j < features; ++j) {
+    const arr = new Float32Array(samples);
+
+    for (let i = 0; i < samples; ++i)
+      arr[i] = Math.random();
+
+    raw[j] = arr;
+  }
+
+  const df = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`#${idx}`, arr)));
+
+  for (let i = 0; i < samples; ++i)
+    labels[i] = raw.slice(0, LIMIT).map((arr) => (arr[i] > TRESHOLD) ? 'A' : 'B').join('');
+
+  df.columns.add(DG.Column.fromStrings('Labels', labels));
+
+  if (useShift) {
+    for (let j = 0; j < features; ++j) {
+      for (let i = 0; i < samples; ++i)
+        raw[j][i] += (raw[j][i] > 0 ? 1 : -1) * SHIFT;
+    }
+  }
+
+  return df;
+} // classificationDataset
