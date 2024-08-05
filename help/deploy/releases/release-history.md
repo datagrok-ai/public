@@ -20,6 +20,34 @@ position: 6 # float position is supported
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+## 2024-08-05 1.20.1
+
+### Addressed Issues
+
+* (Bug) [#2949](https://github.com/datagrok-ai/public/issues/2949): #2949: Calculated columns dialog: extra scroll bars (WIP)
+* (Bug) [#2943](https://github.com/datagrok-ai/public/issues/2943): #2943: Categorical filter in column header is broken after removing the same column from filters panel 
+* (Bug) GROK-16296: Notebooks: open table in notebook: error in logs 
+* (Bug) GROK-16371: Bad state: No element 
+* (Bug) GROK-16284: Caret: fix performance / rocauc / confusion matrix  (WIP)
+* GROK-15881: Lightweight Predictive modeling improvements 
+* (Bug) GROK-16337: Bar Chart: Property "Show selected rows" doesn't affect view 
+* GROK-16393: #2948: Colour picker in legend issues 
+* GROK-16398: #2950: Line chart with multiple axes: legend is not updated when Y column is changed using in-plot selector 
+* (Bug) GROK-16385: #2945: Viewers: Color picker HEX\RGB choice input doesn't fit into dialog 
+* GROK-16399: #2951: Line chart: number of Y columns is not updated immediately in properties panel when columns are removed from the plot 
+* GROK-16364: #2942: Export to CSV with 'Molecules As Smiles' fails if there is some filtering (WIP)
+* (Bug) GROK-16383: #2944: Line chart: the color of the line and the legend differs when multiple splits are selected 
+* (Improvement) GROK-11494: Widgets: events (WIP)
+* (Bug) GROK-16379: Bad state: Future already completed 
+* (Bug) GROK-15864: Scripts: default scripts should be created without tags 
+* (Bug) GROK-15211: Databases | New Run_query result creates without name 
+* (Improvement) GROK-15972: Connections | Updates for 'creating a connection' form 
+* (Bug) GROK-16325: Scripting | Usage: Usage does not display runs 
+* (Bug) GROK-16305: Core | Pivot table: Changing columns (pviot, group by or aggregate) through property panel throws error 
+* (Bug) [#2927](https://github.com/datagrok-ai/public/issues/2927): #2927: Heatmap is in a collapsed state after applying saved layout if it was stacked with another viewer 
+* GROK-16239: #2927: Heatmap is in a collapsed state after applying saved layout if it was stacked with another viewer 
+
+
 ## 2024-07-23 1.20.0
 
 ### Addressed Issues
