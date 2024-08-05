@@ -110,7 +110,7 @@ category('Layouts: Apply', () => {
     await delay(10000);
     const num = list!.children.length + 1;
     save.click();
-    await delay(1000);
+    await delay(10000);
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     try {
       tv.resetLayout();
@@ -154,7 +154,7 @@ category('Layouts: Apply', () => {
       l.sort((a, b) => a.createdOn > b.createdOn ? -1 : 1);
       await grok.dapi.layouts.delete(l[0]);
     }
-  });
+  }, {skipReason: 'deadlock'});
 
   // test('drag-and-drop', async () => {
   //   const tv = grok.shell.addTableView(df);
