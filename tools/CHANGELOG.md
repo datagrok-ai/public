@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.12 (2024-08-05)
+
+### Features
+
+* Puppeteer-screen-recorder version fixed to 3.0.3
+
 ## 4.13.11 (2024-07-30)
 
 ### Features
