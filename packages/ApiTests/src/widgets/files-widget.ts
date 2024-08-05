@@ -31,7 +31,7 @@ category('Widgets', () => {
       expect(label != null, true, 'label');
       expect(label!.textContent, testConnection.friendlyName, 'label!.textContent');
     }
-
+    
     if (packageDataConnection) {
       const packageName = 'ApiTests';
       const packageDir = 'datasets';
