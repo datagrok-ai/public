@@ -44,7 +44,7 @@ export async function _demoDiffDockModel(): Promise<void> {
 
   const ligandsCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const target = await grok.dapi.files.readAsText('System:AppData/Docking/targets/BACE1/BACE1.pdbqt');
-  const diffDockModel = new DiffDockModel(table, ligandsCol!, target, 20);
+  const diffDockModel = new DiffDockModel(table, ligandsCol!, target, 'BACE1', 20);
 
   diffDockModel.posesColumn = posesColumn;
   diffDockModel.virtualPosesColumn = table.columns.byName(virtualPosesColumnName);

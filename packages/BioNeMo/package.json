@@ -1,7 +1,12 @@
 {
-  "name": "bionemo",
+  "name": "@datagrok/bionemo",
   "friendlyName": "BioNeMo",
+  "fullName": "BioNeMo",
   "version": "0.0.1",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
@@ -45,5 +50,10 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/BioNeMo"
+  }
 }

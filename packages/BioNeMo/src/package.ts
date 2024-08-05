@@ -61,15 +61,23 @@ export async function esmFoldModelPanel(sequence: DG.SemanticValue): Promise<DG.
   return result;
 }
 
+//name: getTargetFilses
+//output: list<string> targetFiles
+export async function getTargetFiles(): Promise<string[]> {
+  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(CONSTANTS.TARGET_PATH, true);
+  return targetsFiles.filter(file => file.isDirectory).map(file => file.name);
+}
+
 //name: DiffDockModel
 //top-menu: Chem | BioNeMo | DiffDock...
 //input: dataframe df
 //input: column ligands {semType: Molecule}
-//input: file target
+//input: string target {choices: Bionemo: getTargetFiles}
 //input: int poses = 5
-export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: DG.FileInfo, poses: number) {
-  const receptor = await grok.dapi.files.readAsText(target);
-  const diffDockModel = new DiffDockModel(df, ligands, receptor, poses);
+export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: string, poses: number) {
+  const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
+  const receptor = await grok.dapi.files.readAsText(receptorFile);
+  const diffDockModel = new DiffDockModel(df, ligands, receptor, receptorFile.name, poses);
   await diffDockModel.run();
 }
 
@@ -78,38 +86,51 @@ export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function diffDockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
-  const poses = ui.input.int('Poses', { value: 5 });
+  const posesInput = ui.input.int('Poses', { value: 5 });
+  const targetInput = ui.input.choice('Target', { value: (await getTargetFiles())[0], items: await getTargetFiles() });
 
   const resultsContainer = ui.div();
-  const button = ui.button('Run', async () => {
-    resultsContainer.innerHTML = '';
-
-    const loader = ui.loader();
-    resultsContainer.appendChild(loader);
-
-    const table = smiles.cell.dataFrame;
-    const receptor = await grok.dapi.files.readAsText('System:AppData/Bionemo/targets/protein.pdbqt');
-    const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, poses.value!);
-    const posesJson = await diffDockModel.getPosesJson(smiles.value);
-
-    // Check if the column exists before creating new one
-    let virtualPosesColumn = table.columns.byName(CONSTANTS.VIRTUAL_POSES_COLUMN_NAME);
-    if (!virtualPosesColumn) {
-      virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, CONSTANTS.VIRTUAL_POSES_COLUMN_NAME, table.rowCount);
-      table.columns.add(virtualPosesColumn);
-    }
-    virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
-    diffDockModel.virtualPosesColumn = virtualPosesColumn;
-
-    const combinedControl = await diffDockModel.createCombinedControl(smiles.cell.rowIndex, false);
-    resultsContainer.removeChild(loader);
-    resultsContainer.append(combinedControl);
-  });
-
-  const form = ui.form([poses]);
-  const panels = ui.divV([form, button, resultsContainer]);
+  const form = ui.form([posesInput, targetInput]);
+  const panels = ui.divV([form, ui.button('Run', async () => {
+    await handleRunClick(smiles, posesInput.value!, targetInput.value!, resultsContainer);
+  }), resultsContainer]);
 
   return DG.Widget.fromRoot(panels);
+}
+
+async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: string, resultsContainer: HTMLDivElement) {
+  resultsContainer.innerHTML = '';
+  const loader = ui.loader();
+  resultsContainer.appendChild(loader);
+
+  const table = smiles.cell.dataFrame;
+  const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find(file => file.extension === 'pdbqt')!;
+  const receptor = await grok.dapi.files.readAsText(receptorFile);
+
+  const diffDockModel = new DiffDockModel(table, smiles.cell.column, receptor, receptorFile.name, poses);
+  const virtualPosesColumnName = getVirtualPosesColumnName(receptorFile.name);
+
+  let virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
+
+  if (!virtualPosesColumn) {
+    virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualPosesColumnName, table.rowCount);
+    table.columns.add(virtualPosesColumn);
+    const posesJson = await diffDockModel.getPosesJson(smiles.value);
+    virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
+    diffDockModel.virtualPosesColumn = virtualPosesColumn;
+  } else
+    diffDockModel.virtualPosesColumn = virtualPosesColumn;
+
+  const posesJson = JSON.parse(virtualPosesColumn.get(smiles.cell.rowIndex));
+  const { bestId, bestPose, confidence } = diffDockModel.findBestPose(posesJson);
+  const combinedControl = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);
+
+  resultsContainer.removeChild(loader);
+  resultsContainer.append(combinedControl);
+}
+
+function getVirtualPosesColumnName(target: string): string {
+  return `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${target}`;
 }
 
 //name: Demo EsmFold
