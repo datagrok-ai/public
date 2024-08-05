@@ -1,8 +1,18 @@
 # PowerPack changelog
 
+## 1.1.9 (2024-08-05)
+
+### Bug Fixes
+
+* [#2949](https://github.com/datagrok-ai/public/issues/2949): Calculated columns dialog: extra scroll bars
+
 ## 1.1.8 (2024-07-24)
 
 * Dependency: datagarok-api >= 1.20.0*
+
+### Features
+
+* Updated 'Add new column' dialog: autocomplete and hints, formula validation, sorting by column type
 
 ## 1.1.7 (2024-06-12)
 
