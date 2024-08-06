@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.15 (2024-08-06)
+
+MCL layout with force directed graph and atlas
+
 ## 6.6.14 (2024-07-09)
 
 Use only numeric columns without datetime for Activities in activity cliffs editor

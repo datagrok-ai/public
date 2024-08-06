@@ -23,7 +23,7 @@ export async function markovCluster(
   df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10,
-  useWebGPU: boolean = false, inflate: number = 2, scp?: DG.ScatterPlotViewer
+  useWebGPU: boolean = false, inflate: number = 2, minClusterSize: number = 5, scp?: DG.ScatterPlotViewer
 ): Promise<undefined | MCLClusterViewerResult> {
   const scatterPlotProps = {
     showXAxis: false,
@@ -89,7 +89,13 @@ export async function markovCluster(
   const embedYCol = df.columns.addNewFloat(emberdYColName);
   embedYCol.init((i) => res.embedY[i]);
   const clusterCol = df.columns.addNewString(clusterColName);
-  clusterCol.init((i) => res.clusters[i].toString());
+  clusterCol.init((i) => clustersCounter[res.clusters[i]] >= minClusterSize ? res.clusters[i].toString() : '-1');
+  const catColorObj = {'-1': DG.Color.setAlpha(DG.Color.lightBlue, 100)};
+  clusterCol.setTag(DG.TAGS.COLOR_CODING_CATEGORICAL,
+    JSON.stringify(catColorObj));
+  clusterCol.temp[DG.TAGS.COLOR_CODING_CATEGORICAL] = catColorObj;
+  // clusterCol.setCategoryOrder(Array.from(new Set(res.clusters)).sort((a, b) => a - b).map((it) => it.toString()));
+
   const clusterCounterCol = df.columns.addNewInt(clusterCounterColName);
   clusterCounterCol.init((i) => clustersCounter[res.clusters[i]]);
   const connectivityCol = df.columns.addNewInt(connectivityColName);
@@ -102,14 +108,27 @@ export async function markovCluster(
   sc.props.xColumnName = emberdXColName;
   sc.props.yColumnName = emberdYColName;
   sc.props.colorColumnName = clusterColName;
-  sc.props.markerDefaultSize = 5;
+  sc.props.markerDefaultSize = 6;
   terminateSub.unsubscribe();
   // const sc = tv.scatterPlot({x: emberdXColName, y: emberdYColName});
   // sc.props.colorColumnName = clusterColName;
   // sc.props.markerDefaultSize = 5;
   const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
-    {from: res.is as any, to: res.js as any, drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true},
+    {from: res.is as any, to: res.js as any, drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true,
+      skipShortLines: true, skipMouseOverDetection: true, shortLineThreshold: 6},
     ScatterPlotCurrentLineStyle.none);
+
+  // _scLines.lineClicked.subscribe((args) => {
+  //   const id = args.id;
+  //   args.event.preventDefault();
+  //   args.event.stopImmediatePropagation();
+  //   if ((id ?? -1) === -1)
+  //     return;
+  //   const i = _scLines.lines.from[id];
+  //   const j = _scLines.lines.to[id];
+  //   df.selection.init((index) => index === i || index === j);
+  // });
+
   ui.setUpdateIndicator(sc.root, false);
   // sc.close();
   // const scLinesViewer = new ScatterPlotWithLines(sc, res.is, res.js, emberdXColName, emberdYColName);

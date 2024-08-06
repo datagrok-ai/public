@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {mmDistanceFunctionArgs, mmDistanceFunctionType} from './types';
 
 // Blosum 62 matrix for protein sequences
@@ -86,8 +87,8 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
         const diagonal =
           matrix[prevRow][j - 1] +
             scoringMatrix[charCodeArray[seq1.charCodeAt(j - 1)]][charCodeArray[seq2.charCodeAt(i - 1)]];
-        const top = matrix[prevRow][j] - (verticalGaps[j] ? gapExtend : gapOpen );
-        const left = matrix[currRow][j - 1] - (horizontalGaps[j - 1] ? gapExtend : gapOpen);
+        const top = matrix[prevRow][j] - (verticalGaps[j] || i === 1 || i === seq2.length ? gapExtend : gapOpen );
+        const left = matrix[currRow][j - 1] - (horizontalGaps[j - 1] || j === 1 || j === seq1.length ? gapExtend : gapOpen);
         matrix[currRow][j] = Math.max(
           diagonal, left, top
         );
@@ -114,7 +115,7 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
     // const perfectMatchSeq2 = seq2.split('').map((c) => scoringMatrix[alphabetIndexes[c]][alphabetIndexes[c]])
     //   .reduce((a, b) => a + b, 0);
     // const maxScore = Math.max(perfectMatchSeq1, perfectMatchSeq2);
-    const maxScore = Math.max(seq1.length, seq2.length);
+    const maxScore = Math.min(seq1.length, seq2.length);
     return (maxScore - matrix[prevRow][seq1.length]) / maxScore;
   };
 }

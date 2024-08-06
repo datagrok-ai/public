@@ -23,6 +23,7 @@ export type MCLSerializableOptions = {
     maxIterations: number;
     useWebGPU: boolean;
     inflate: number;
+    minClusterSize: number;
 }
 
 export const MCL_OPTIONS_TAG = 'MCL_OPTIONS';
