@@ -68,6 +68,22 @@ export async function getTargetFiles(): Promise<string[]> {
   return targetsFiles.filter(file => file.isDirectory).map(file => file.name);
 }
 
+//name: diffDockModelScript
+//meta.cache: client
+//meta.invalidateOn: 0 0 1 * * ?
+//input: string ligand
+//input: string target
+//input: int poses
+//output: string result
+export async function diffDockModelScript(ligand: string, target: string, poses: number): Promise<string> {
+  const encodedPoses = await grok.functions.call('Bionemo:diffdock', {
+    protein: target,
+    ligand: ligand,
+    num_poses: poses,
+  });
+  return new TextDecoder().decode(encodedPoses.data);
+}
+
 //name: DiffDockModel
 //top-menu: Chem | BioNeMo | DiffDock...
 //input: dataframe df
@@ -115,7 +131,7 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
   if (!virtualPosesColumn) {
     virtualPosesColumn = await diffDockModel.createColumn(DG.TYPE.STRING, virtualPosesColumnName, table.rowCount);
     table.columns.add(virtualPosesColumn);
-    const posesJson = await diffDockModel.getPosesJson(smiles.value);
+    const posesJson = await diffDockModel.getPosesJson(smiles.value, smiles.units);
     virtualPosesColumn.set(smiles.cell.rowIndex, JSON.stringify(posesJson));
     diffDockModel.virtualPosesColumn = virtualPosesColumn;
   } else
