@@ -25,6 +25,7 @@ import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import $ from 'cash-dom';
 import { getGPUDevice } from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import { getMmpFilters, MmpFilters } from './mmp-filters';
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
@@ -62,9 +63,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   currentTab = '';
   lastSelectedPair: number | null = null;
   propPanelViewer: FormsViewer | null = null;
-  sliderInputs: DG.InputBase[] | null = null;
-  colorInputs: DG.InputBase[] | null = null;
-  activeInputs: DG.InputBase[] | null = null;
+  mmpFilters: MmpFilters | null = null;
   calculatedOnGPU: boolean | null = null;
 
   constructor() {
@@ -156,31 +155,26 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.refreshPair(this.rdkitModule!);
   }
 
-  private setupCliffsTab(
-    tp: DG.Viewer, sp: DG.Viewer,
-    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
-    colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
-    linesEditor: ScatterPlotLinesRenderer, linesActivityCorrespondance: Uint32Array): HTMLDivElement {
-    const roots: any[] = new Array<any>(sliderInputs.length);
-    for (let i = 0; i < sliderInputs.length; i ++) {
-      activeInputs[i].onChanged(() => {
-        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
+  private setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer) {
+    for (let i = 0; i < mmpFilters.activitySliderInputs.length; i ++) {
+      mmpFilters.activityActiveInputs[i].onChanged(() => {
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
-      sliderInputs[i].onChanged(() => {
-        sliderInputValueDivs[i].innerText = sliderInputs[i].value === 0 ? '0' :
-          getSigFigs(sliderInputs[i].value, 4).toString();
-        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), true);
+      mmpFilters.activitySliderInputs[i].onChanged(() => {
+        mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
+          getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
-      colorInputs[i].value = this.colorPalette!.hex[i];
-      colorInputs[i].onChanged(() => {
+      mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
+      mmpFilters.activityColorInputs[i].onChanged(() => {
         const progressRendering = DG.TaskBarProgressIndicator.create(`Changing colors...`);
 
         //refresh lines
-        for (let i =0; i < colorInputs.length; i++) {
-          this.colorPalette!.hex[i] = colorInputs[i].value;
-          this.colorPalette!.numerical[i] = DG.Color.fromHtml(colorInputs[i].value);
+        for (let i =0; i < mmpFilters.activityColorInputs.length; i++) {
+          this.colorPalette!.hex[i] = mmpFilters.activityColorInputs[i].value;
+          this.colorPalette!.numerical[i] = DG.Color.fromHtml(mmpFilters.activityColorInputs[i].value);
           this.colorPalette!.rgb[i] = DG.Color.toRgb(this.colorPalette!.numerical[i]);
           this.colorPalette!.rgbCut[i] = this.colorPalette!.rgb[i].replace('rgb(', '').replace(')', '');
         }
@@ -203,46 +197,49 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.linesRenderer!.linesToRender = lines;
 
         //refresh trellis plot
-        const schemes = new Array<any>(colorInputs.length);
-        for (let i = 0; i < colorInputs.length; i++)
+        const schemes = new Array<any>(mmpFilters.activityColorInputs.length);
+        for (let i = 0; i < mmpFilters.activityColorInputs.length; i++)
           schemes[i] = [this.colorPalette!.numerical[i]];
 
         tp.setOptions({'innerViewerLook': {'colorSchemes': schemes}});
         progressRendering.close();
       });
-      roots[i] = ui.divH([activeInputs[i].root, colorInputs[i].root, sliderInputs[i].root],
-        {style: {paddingRight: '20px', height: '20px'}});
-    }
-    const sliders = ui.divV(roots, 'css-flex-wrap mmpa-slider-roots');
-    sp.root.style.width = '100%';
 
-    const cliffs = ui.divV([sliders, ui.box(sp.root,
-      {style: {maxHeight: '100px', paddingRight: '6px'}})], 'css-flex-wrap');
-
-    this.totalCutoffMask!.setAll(true);
-    this.linesMask!.setAll(true);
-
-    for (let i = 0; i < sliderInputs.length; i++) {
       this.cutoffMasks![i] = DG.BitSet.create(this.parentTable!.rowCount);
       this.cutoffMasks![i].setAll(true);
     }
 
-    this.linesRenderer = linesEditor;
-
-    this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), false);
-
-    return ui.box(cliffs);
+    mmpFilters.pairsSliderInput.onChanged(() => {
+      mmpFilters.pairsValueDiv.innerText = mmpFilters.pairsSliderInput.value.toString();
+      //TODO: implement filtering
+    });
   }
 
-  private getTabs(tp: DG.Viewer, sliderInputs: DG.InputBase[], activeInputs: DG.InputBase[],
-    cliffs: HTMLDivElement): DG.TabControl {
+  private setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters,
+    linesEditor: ScatterPlotLinesRenderer): HTMLDivElement {
+
+    sp.root.style.width = '100%';
+
+    this.totalCutoffMask!.setAll(true);
+    this.linesMask!.setAll(true);
+
+    this.linesRenderer = linesEditor;
+
+    this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
+
+    return ui.box(sp.root);
+  }
+
+  private getTabs(tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLDivElement): DG.TabControl {
     const tabs = ui.tabControl(null, false);
 
     const addToWorkspaceButton = (table: DG.DataFrame, name: string, className: string) => {
       const button = ui.iconFA('arrow-square-down', () => {
         const clonedTable = table.clone();
         clonedTable.name = name;
-        grok.shell.addTableView(clonedTable);
+        const tv = grok.shell.addTableView(clonedTable);
+        //without setTimeout tableView is not set as current view
+        setTimeout(() => grok.shell.v = tv, 10);
       }, 'Add table to workspace');
       button.classList.add(className);
       return button;
@@ -285,14 +282,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.enableFilters = true;
         this.refilterAllFragments(false);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
+        tabs.currentPane.content.append(mmpFilters.filtersDiv);
         this.refreshFilterAllFragments();
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
 
+        tabs.currentPane.content.append(mmpFilters.filtersDiv);
+
         if (refilter)
           grok.shell.warning('Cutoff filters were applied for all activities');
 
-        this.refilterCliffs(sliderInputs.map((si) => si.value), activeInputs.map((ai) => ai.value), refilter);
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), refilter);
         refilter = false;
         if (this.lastSelectedPair) {
           grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs!,
@@ -305,13 +305,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const decript1 = 'Shows all fragmental substitutions for a given molecule';
     const decript2 = 'Analysis of fragments versus explored value';
     const decript3 = 'Cliffs analysis';
+    const decript4 = 'Genneration of molecules based on obtained rules';
 
-    tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header.onmouseover =
-      (ev): void => ui.tooltip.show(decript1, ev.clientX, ev.clientY + 5);
-    tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header.onmouseover =
-      (ev): void => ui.tooltip.show(decript2, ev.clientX, ev.clientY + 5);
-    tabs.getPane(MMP_NAMES.TAB_CLIFFS).header.onmouseover =
-      (ev): void => ui.tooltip.show(decript3, ev.clientX, ev.clientY + 5);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_TRANSFORMATIONS).header, decript1);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_FRAGMENTS).header, decript2);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_CLIFFS).header, decript3);
+    ui.tooltip.bind(tabs.getPane(MMP_NAMES.TAB_GENERATION).header, decript4);
 
     return tabs;
   }
@@ -319,9 +318,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   private fillAll(mmpInput: MmpInput, palette: PaletteCodes,
     rules: MmpRules, diffs: Array<Float32Array>,
     linesIdxs: Uint32Array, transFragmentsGrid: DG.Grid, transPairsGrid: DG.Grid, generationsGrid: DG.Grid,
-    tp: DG.Viewer, sp: DG.Viewer,
-    sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[],
-    colorInputs: DG.InputBase[], activeInputs: DG.InputBase[],
+    tp: DG.Viewer, sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer, lines: ILineSeries, linesActivityCorrespondance: Uint32Array,
     rdkitModule: RDModule, gpuUsed: boolean) {
     this.rdkitModule = rdkitModule;
@@ -347,18 +344,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.setupTransformationTab();
 
     //Cliffs tab setup
-    this.sliderInputs = sliderInputs;
-    this.colorInputs = colorInputs;
-    this.activeInputs = activeInputs;
-    this.cutoffMasks = new Array<DG.BitSet>(sliderInputs.length);
+    this.mmpFilters = mmpFilters;
+    this.cutoffMasks = new Array<DG.BitSet>(mmpFilters.activitySliderInputs.length);
     this.totalCutoffMask = DG.BitSet.create(this.parentTable.rowCount);
     this.linesMask = new BitArray(linesIdxs.length);
-    const cliffs = this.setupCliffsTab(tp, sp,
-      sliderInputs, sliderInputValueDivs, colorInputs, activeInputs,
-      linesEditor, linesActivityCorrespondance);
+    this.setupFilters(mmpFilters, linesActivityCorrespondance, tp);
+    const cliffs = this.setupCliffsTab(sp, mmpFilters, linesEditor);
 
     //tabs
-    const tabs = this.getTabs(tp, sliderInputs, activeInputs, cliffs);
+    const tabs = this.getTabs(tp, mmpFilters, cliffs);
 
     this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
       this.linesRenderer!.currentLineId = event.id;
@@ -413,8 +407,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     //Cliffs tab
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
   
-    const [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs] =
-      getMmpScatterPlot(mmpInput, maxActs, embedColsNames);
+    const mmpFilters = getMmpFilters(mmpInput, maxActs, transFragmentsGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
+    console.log(`created mmpa filters`)
+
+    const sp = getMmpScatterPlot(mmpInput, embedColsNames);
 
     drawMoleculeLabels(mmpInput.table, mmpInput.molecules, sp as DG.ScatterPlotViewer, 20, 7, 100, 110);
 
@@ -427,9 +423,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       await getGenerations(mmpInput, moleculesArray, fragsOut, meanDiffs, transFragmentsGrid, activityMeanNames, gpu);
 
 
-    this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs,
-      transFragmentsGrid, transPairsGrid, generationsGrid, tp, sp, sliderInputs, sliderInputValueDivs,
-      colorInputs, activeInputs, linesEditor, lines, linesActivityCorrespondance, module, gpu); 
+    this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
+      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu); 
 
     console.profileEnd('MMP');
   }

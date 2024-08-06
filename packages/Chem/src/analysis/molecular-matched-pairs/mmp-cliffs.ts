@@ -18,9 +18,7 @@ import {MmpInput} from './mmp-constants';
 import $ from 'cash-dom';
 
 export function getMmpScatterPlot(
-  mmpInput: MmpInput, maxActs: number[], axesColsNames: string[]) :
-[sp: DG.Viewer, sliderInputs: DG.InputBase[], sliderInputValueDivs: HTMLDivElement[], colorInputs: DG.InputBase[],
-  activeInputs: DG.InputBase[]] {
+  mmpInput: MmpInput, axesColsNames: string[]) : DG.Viewer {
   mmpInput.table.columns.addNewFloat(axesColsNames[0]);
   mmpInput.table.columns.addNewFloat(axesColsNames[1]);
   const sp = DG.Viewer.scatterPlot(mmpInput.table, {
@@ -32,31 +30,7 @@ export function getMmpScatterPlot(
     showYSelector: false,
     markerDefaultSize: 7,
   });
-
-  const sliderInputs = new Array<DG.InputBase>(maxActs.length);
-  const sliderInputValueDivs = new Array<HTMLDivElement>(maxActs.length);
-  const colorInputs = new Array<DG.InputBase>(maxActs.length);
-  const activeInputs = new Array<DG.InputBase>(maxActs.length);
-
-  for (let i = 0; i < maxActs.length; i ++) {
-    const actName = mmpInput.activities.byIndex(i).name;
-    const sliderInput = ui.input.slider(mmpInput.activities.byIndex(i).name, {value: maxActs[i]/2, min: 0, max: maxActs[i]});
-    const sliderInputValueDiv = ui.divText(sliderInput.stringValue, 'ui-input-description');
-    sliderInput.addOptions(sliderInputValueDiv);
-    sliderInput.root.classList.add('mmpa-slider-input');
-    ui.tooltip.bind(sliderInput.captionLabel, `Select the cutoff by ${actName} difference`);
-    ui.tooltip.bind(sliderInput.input, `${actName} value cutoff`);
-    sliderInputs[i] = sliderInput;
-    sliderInputValueDivs[i] = sliderInputValueDiv;
-    const colorInput = ui.input.color('', {value: '#FF0000'});
-    colorInput.root.classList.add('mmpa-color-input');
-    colorInputs[i] = colorInput;
-    const activeInput = ui.input.bool('', {value: true});
-    activeInput.classList.add('mmpa-bool-input');
-    activeInputs[i] = activeInput;
-  }
-
-  return [sp, sliderInputs, sliderInputValueDivs, colorInputs, activeInputs];
+  return sp;
 }
 
 function drawMolPair(molecules: string[], indexes: number[], substruct: (ISubstruct | null)[], div: HTMLDivElement,

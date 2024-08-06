@@ -299,14 +299,14 @@ category('mmpa', () => {
     checkRandomArrayVals(mmp.linesActivityCorrespondance, [0, 27, 55], [0, 1, 2], 'mmp.linesActivityCorrespondance');
 
     //changing sliders inputs values
-    mmp.sliderInputs![0].value = 11.87;
-    mmp.sliderInputs![1].value = 14.15;
-    mmp.sliderInputs![2].value = 1.627;
+    mmp.mmpFilters!.activitySliderInputs![0].value = 11.87;
+    mmp.mmpFilters!.activitySliderInputs![1].value = 14.15;
+    mmp.mmpFilters!.activitySliderInputs![2].value = 1.627;
     await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 7,
       'Incorrect lines mask after slider input changed', 3000);
 
     //switch of one of activities
-    mmp.activeInputs![2].value = false;
+    mmp.mmpFilters!.activityActiveInputs[2].value = false;
     await awaitCheck(() => DG.BitSet.fromBytes(mmp.linesMask!.buffer.buffer, 81).trueCount === 2,
       'Incorrect lines mask after checkboxes values changed', 3000);
   });
