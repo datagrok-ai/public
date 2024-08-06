@@ -184,6 +184,13 @@ grok.data.query(`${PACKAGE_NAME}:${QUERY_NAME}`, {'parameter': 'value'}, true, 1
 
 To see how this method works, refer to [this example](https://public.datagrok.ai/js/samples/data-access/parameterized-query).
 
+### Queries post-processing and layouts application
+
+You can enhance your queries in the package by adding custom JavaScript scripts (see [Scripting](../../compute/scripting/scripting.mdx)) in the `queries` folder. These scripts allow you to manipulate and refine the data returned by your queries, providing more tailored and insightful results.
+Additionally, if your query returns table data, you can apply [layouts](../../visualize/view-layout.md) to the results. Layouts help in organizing and presenting the data in a more readable and visually appealing manner to all users running your query. 
+Each layout file should have a `.layout` extension. Script and layout files must be named identically to the corresponding query file.
+It’s important to note that each query file should contain only one query. This ensures that the associated post-process script and layout are correctly applied to it.
+
 ### Sharing connections
 
 Data connections can be shared as part of a [project](../../datagrok/concepts/project/project.md)
