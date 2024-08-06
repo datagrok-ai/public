@@ -10,12 +10,12 @@ import {ActionPositions} from './PipelineConfiguration';
 
 export type StepParallelInitialConfig = {
   id: ItemId;
-  allowRemoving: boolean;
+  disableUIRemoving?: boolean;
 }
 
 export type StepSequentialInitialConfig = {
   id: ItemId;
-  allowRemoving: boolean;
+  disableUIRemoving: boolean;
 }
 
 export type StepFunCallInitialConfig = {
@@ -122,7 +122,7 @@ export type PipelineStateStatic = PipelineInstanceBase<{
 
 export type StepSequentialDescription = {
   configId: string;
-  allowAdding: boolean;
+  disableUIAdding?: boolean;
 };
 
 export type StepSequentialState = PipelineState & StepSequentialDescription;
@@ -137,7 +137,7 @@ export type PipelineStateSequential = PipelineInstanceBase<{
 
 export type StepParallelDescription = {
   configId: string;
-  allowAdding: boolean;
+  disableUIAdding?: boolean;
 };
 
 export type StepParallelState = PipelineState & StepParallelDescription;

@@ -148,8 +148,8 @@ export class ParallelPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        const {id: configId, allowAdding} = s;
-        return {configId, allowAdding};
+        const {id: configId, disableUIAdding} = s;
+        return {configId, disableUIAdding};
       }),
     };
     return res;
@@ -172,8 +172,8 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        const {id: configId, allowAdding} = s;
-        return {configId, allowAdding};
+        const {id: configId, disableUIAdding} = s;
+        return {configId, disableUIAdding};
       }),
     };
     return res;

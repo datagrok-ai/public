@@ -1,0 +1,72 @@
+{
+  "id": "pipeline1",
+  "type": "static",
+  "steps": [
+    {
+      "id": "step1",
+      "nqName": "LibTests:TestAdd2",
+      "io": [
+        {
+          "id": "a",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "b",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "res",
+          "type": "double",
+          "direction": "output"
+        }
+      ],
+      "actions": []
+    },
+    {
+      "id": "step2",
+      "nqName": "LibTests:TestMul2",
+      "io": [
+        {
+          "id": "a",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "b",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "res",
+          "type": "double",
+          "direction": "output"
+        }
+      ],
+      "actions": []
+    }
+  ],
+  "links": [
+    {
+      "id": "link1",
+      "from": [
+        [
+          "step1",
+          "res"
+        ]
+      ],
+      "to": [
+        [
+          "step2",
+          "a"
+        ]
+      ],
+      "dataFrameMutations": false,
+      "selectAll": [],
+      "selectFirst": []
+    }
+  ],
+  "actions": [],
+  "hooks": {}
+}

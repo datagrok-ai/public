@@ -5,6 +5,7 @@ import './tests/compute-api/rich-function-view-tests';
 import './tests/utils/expect-tests';
 import './tests/utils/json-serialization-tests';
 import './tests/compute-utils/rich-function-view-tests';
+import './tests/compute-utils/reactive-tree-driver/config-processing';
 
 export const _package = new DG.Package();
 export {tests};

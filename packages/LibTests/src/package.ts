@@ -246,3 +246,21 @@ export async function TestVueElements() {
   app.mount(view.root);
   grok.shell.addView(view);
 }
+
+
+// pipeline steps test fucntions
+
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestAdd2(a: number, b: number) {
+  return a + b;
+}
+
+//input: double a
+//input: double b
+//output: double res
+export async function TestMul2(a: number, b: number) {
+  return a * b;
+}

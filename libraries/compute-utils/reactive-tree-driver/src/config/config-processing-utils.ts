@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineGlobalId, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
+import { AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, PipelineActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineHooks, PipelineLinkConfigurationBase, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, StepActionConfiguraion} from './PipelineConfiguration';
 import {ItemId, ItemPath, ItemPathArray, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 
@@ -29,9 +29,9 @@ export type FuncallStateItem = {
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<ItemPath | ItemPath[], never>;
 type ConfigInitialTraverseItem = PipelineConfigurationInitial | PipelineStepConfigurationInitial;
 
-export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
-export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
-export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef, string | undefined>;
+export type PipelineConfigurationStaticProcessed = AbstractPipelineStaticConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationParallelProcessed = AbstractPipelineParallelConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
+export type PipelineConfigurationSequentialProcessed = AbstractPipelineSequentialConfiguration<ItemPathArray[], FuncallStateItem[], PipelineSelfRef>;
 export type PipelineConfigurationProcessed = PipelineConfigurationStaticProcessed | PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed;
 
 function isPipelineStaticInitial(c: ConfigInitialTraverseItem): c is PipelineConfigurationStaticInitial {
@@ -51,7 +51,7 @@ function isPipelineRefInitial(c: ConfigInitialTraverseItem): c is PipelineRefIni
 }
 
 function isStepConfigInitial(c: ConfigInitialTraverseItem): c is PipelineStepConfigurationInitial {
-  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
+  return !isPipelineStaticInitial(c) && !isPipelineParallelInitial(c) && !isPipelineSequentialInitial(c) && !isPipelineRefInitial(c);
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial): Promise<PipelineConfigurationProcessed> {
@@ -85,7 +85,7 @@ async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines
     }));
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
-    const pconf = await callHandler<PipelineConfigurationInitial & PipelineGlobalId>(conf.provider, conf).toPromise();
+    const pconf = await callHandler<LoadedPipeline>(conf.provider, conf).toPromise();
     if (loadedPipelines.has(pconf.globalId))
       return {selfRef: pconf.globalId, type: 'selfRef'};
     loadedPipelines.add(pconf.globalId);
@@ -147,6 +147,7 @@ function processLinkBase<L extends Partial<PipelineLinkConfigurationBase<ItemPat
   const from = normalizePaths(link.from ?? []);
   const to = normalizePaths(link.to ?? []);
   const dataFrameMutations = Array.isArray(link.dataFrameMutations) ? normalizePaths(link.dataFrameMutations) : !!link.dataFrameMutations;
-  const allTypeNodes = Array.isArray(link.allTypeNodes) ? normalizePaths(link.allTypeNodes) : !!link.allTypeNodes;
-  return {...link, from, to, dataFrameMutations, allTypeNodes};
+  const selectAll = Array.isArray(link.selectAll) ? normalizePaths(link.selectAll) : [];
+  const selectFirst = Array.isArray(link.selectFirst) ? normalizePaths(link.selectFirst) : [];
+  return {...link, from, to, dataFrameMutations, selectAll, selectFirst};
 }
