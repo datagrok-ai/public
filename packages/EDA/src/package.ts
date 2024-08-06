@@ -193,7 +193,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
           df: params.table, cols: params.columns, metrics: params.distanceMetrics,
           weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
           preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
-          useWebGPU: params.useWebGPU, inflate: params.inflateFactor,
+          useWebGPU: params.useWebGPU, inflate: params.inflateFactor, minClusterSize: params.minClusterSize,
         }).call(true);
       }).show();
   } catch (err: any) {
@@ -219,10 +219,12 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: int maxIterations = 10
 //input: bool useWebGPU = false
 //input: double inflate = 2
+//input: int minClusterSize = 5
 //editor: EDA: GetMCLEditor
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false, inflate: number = 0,
+  minClusterSize: number = 5,
 ): Promise< DG.ScatterPlotViewer | undefined> {
   const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
   const serializedOptions: string = JSON.stringify({
@@ -236,6 +238,7 @@ export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMet
     maxIterations: maxIterations,
     useWebGPU: useWebGPU,
     inflate: inflate,
+    minClusterSize: minClusterSize ?? 5,
   } satisfies MCLSerializableOptions);
   df.setTag(MCL_OPTIONS_TAG, serializedOptions);
 
@@ -257,7 +260,7 @@ export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
   const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
   const res = await markovCluster(df, cols, options.metrics, options.weights,
     options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
-    options.maxIterations, options.useWebGPU, options.inflate, sc);
+    options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc);
   return res?.sc;
 }
 

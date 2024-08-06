@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.31 (2024-08-06)
+
+Add MCL layout with force directed graph and atlas
+
 ## 1.1.30 (2024-07-29)
 
 Add PLS regression to predictive modeling tools
