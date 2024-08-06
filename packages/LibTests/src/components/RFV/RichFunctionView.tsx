@@ -2,13 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed} from 'vue';
+import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button} from '@datagrok-libraries/webcomponents-vue/src';
 import {GridStack} from 'gridstack';
+import wu from 'wu';
 import 'gridstack/dist/gridstack.min.css';
 import './RichFunctionView.css';
 import {getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {getDefaultValue} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
 
 declare global {
   namespace JSX {
@@ -27,64 +29,39 @@ export const RichFunctionView = defineComponent({
     },
   },
   setup(props) {
-    let grid = null; 
+    let grid = null as null | GridStack; 
     
-    const currentCall = computed(() => props.funcCall instanceof DG.FuncCall ?
-      props.funcCall : DG.Func.byName(props.funcCall).prepare({
-        ambTemp: 22,
-        initTemp: 100,
-        desiredTemp: 30,
-        area: 0.06, 
-        heatCap: 4200,
-        heatTransferCoeff: 8.3,
-        simTime: 21600,
-        previousRun: null,
-      }));
+    const currentCall = computed(() => {
+      if (props.funcCall instanceof DG.FuncCall) 
+        return props.funcCall;
 
-    const paramsWithViewers = computed(() => {
-      return [
-        ...currentCall.value.func.inputs,
-        ...currentCall.value.func.outputs,
-      ].filter((prop) =>
-        prop.propertyType === DG.TYPE.DATA_FRAME && getPropViewers(prop).config.length !== 0,
-      );
+      const func = DG.Func.byName(props.funcCall);
+      return func.prepare(func.inputs.reduce((acc, prop) => {
+        acc[prop.name] = getDefaultValue(prop);
+        return acc;
+      }, {} as Record<string, any>));
     });
 
-    const viewers = ref([] as Element[]);
+    watch(currentCall, async (newVal, oldVal) => {
+      if (newVal.func.id === oldVal.func.id) return;
+      
+      grid?.removeAll(true);
+      await nextTick();
+      populateGridStack();
+    });
+
+    const paramsWithViewers = computed(() => [
+      ...currentCall.value.func.inputs,
+      ...currentCall.value.func.outputs,
+    ].filter((prop) =>
+      prop.propertyType === DG.TYPE.DATA_FRAME && getPropViewers(prop).config.length !== 0,
+    ));
+
     const formNode = ref(null as null | Element);
 
-    const addViewer = (el: Element) => viewers.value.push(el); 
-
-    const getDefaultCall = () => props.funcCall instanceof DG.FuncCall ?
-      props.funcCall : DG.Func.byName(props.funcCall).prepare({
-        ambTemp: 22,
-        initTemp: 100,
-        desiredTemp: 30,
-        area: 0.06, 
-        heatCap: 4200,
-        heatTransferCoeff: 8.3,
-        simTime: 21600,
-        previousRun: null,
-      });
-
-    const runSimulation = async () => {
-      await currentCall.value.call();
-      triggerRef(currentCall);
-    };
-
-    let inited = false;
-
-    onMounted(async () => {
-      await nextTick();
-      if (inited) return;
-  
-      grid = GridStack.init({
-        float: true,
-        auto: false,
-        column: 30,
-        margin: 0,
-      });
-    
+    const populateGridStack = () => {   
+      if (!grid) return;
+      
       if (formNode.value) {
         grid.addWidget(formNode.value, {
           minW: Math.ceil(160 / grid.cellWidth()), 
@@ -92,23 +69,37 @@ export const RichFunctionView = defineComponent({
           h: Math.ceil(formNode.value.getBoundingClientRect().height / grid.getCellHeight()),
         });
       }
-      
-      let idx = 0;
-      while (document.querySelector(`#viewer${idx}`)) {
-        grid.addWidget(document.querySelector(`#viewer${idx}`)!, {h: 5, w: 12});    
-        idx++;
-      }   
-      
-      inited = true;     
+
+      document.querySelectorAll(`[id^='viewer']`).forEach(
+        (node) => grid!.addWidget(node as HTMLElement, {h: 5, w: 12}),
+      );
+    };
+
+    const runSimulation = async () => {
+      await currentCall.value.call();
+      triggerRef(currentCall);
+    };
+
+    onMounted(async () => {
+      await nextTick();
+
+      grid = GridStack.init({
+        float: true,
+        auto: false,
+        column: 30,
+        margin: 0,
+      });
+       
+      populateGridStack();
     });
           
     return () => (
       <div style={{width: '100%', height: '100%'}}>
-        <div class="grid-stack"></div>
-
+        <div class="grid-stack" />
         <div ref={formNode}>
           <InputForm funcCall={currentCall.value}> </InputForm>
           <div style={{display: 'flex', position: 'sticky', bottom: '10px'}}>
+            <Button> Reset </Button>
             <BigButton onClick={runSimulation}> Run </BigButton>
           </div>
         </div>
