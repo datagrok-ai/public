@@ -26,6 +26,13 @@ export const TreeWizardView = defineComponent({
     const currentFuncCall = shallowRef(props.wrapperFunccall);
     const tree = ref(null as HueTree | null);
 
+    const changeFunccall = (newCall: DG.FuncCall | string) => {
+      isVisibleRfv.value = true;
+      currentFuncCall.value = newCall;
+    };
+
+    const isVisibleRfv = ref(true);
+
     return () => (
       <SplitH resize={true} style={{height: '100%', display: 'block', padding: '8px'}}>
         <Draggable 
@@ -49,11 +56,17 @@ export const TreeWizardView = defineComponent({
                   isDeletable={stat.parent && tree.value?.isDroppable(stat.parent)}
                   onAddNode={(text) => tree.value?.add({text}, stat, stat.children.length)}
                   onRemoveNode={() => tree.value?.remove(stat)}
+                  onClick={() => {
+                    if (stat.data.funcCall) 
+                      changeFunccall(stat.data.funcCall); 
+                    else 
+                      isVisibleRfv.value = false;
+                  }}
                 />
               )
           }
         </Draggable>
-        <RichFunctionView funcCall={currentFuncCall.value} style={{height: '100%'}}/> 
+        <RichFunctionView style={{display: isVisibleRfv, height: '100%'}} funcCall={currentFuncCall.value}/> 
       </SplitH>
     );
   },
