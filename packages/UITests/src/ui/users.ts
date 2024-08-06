@@ -8,8 +8,8 @@ category('UI: Users', () => {
   before(async () => {
     const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
     mng.header.click();
+    await delay(1000);
     let platform: any;
-    await delay(2000);
     await awaitCheck(() => {
       platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
         .find((el) => el.textContent === 'Platform');
@@ -20,7 +20,7 @@ category('UI: Users', () => {
     const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
-
+    await delay(500);
   });
 
   /*
@@ -112,22 +112,17 @@ category('UI: Users', () => {
   });
 
   async function showDialog(label: string) {
-    console.log('ok');
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'New');
-    console.log('ok1');
     if (cng === undefined) throw new Error(`cannot find New User button`);
-    console.log('ok2');
-    (cng as HTMLElement).click();
+    (cng as HTMLButtonElement).click();
     let optn: any;
-    console.log('ok3');
     await awaitCheck(() => {
       optn = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find((el) => el.textContent === label);
       return optn !== undefined;
-    }, '', 1000);
+    }, `Cannot load form by button ${label}`, 1000);
     await delay(500);
-    console.log('ok4');
     // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
     optn.click();
   };
