@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {defineComponent, PropType, ref, shallowRef} from 'vue';
+import {defineComponent, PropType, ref, shallowRef, triggerRef} from 'vue';
 import {SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {Draggable} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
@@ -29,6 +29,7 @@ export const TreeWizardView = defineComponent({
     const changeFunccall = (newCall: DG.FuncCall | string) => {
       isVisibleRfv.value = true;
       currentFuncCall.value = newCall;
+      triggerRef(currentFuncCall);
     };
 
     const isVisibleRfv = ref(true);
@@ -66,7 +67,10 @@ export const TreeWizardView = defineComponent({
               )
           }
         </Draggable>
-        <RichFunctionView style={{display: isVisibleRfv, height: '100%'}} funcCall={currentFuncCall.value}/> 
+        <RichFunctionView 
+          style={{display: !isVisibleRfv.value ? 'none': undefined, height: '100%'}} 
+          funcCall={currentFuncCall.value}
+        /> 
       </SplitH>
     );
   },
