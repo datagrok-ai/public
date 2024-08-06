@@ -165,13 +165,13 @@ export function webGPUNeedlemanWunsch(maxArraySize: number, entryIndex: number) 
               
               let cost: f32 = (*prevRow)[j - 1] + 1f - (*simMatrix)[monA][monB];
               var top = (*prevRow)[j]; // deletion
-              if (verticalGaps[j] > 0) {
+              if (verticalGaps[j] > 0 || i == 1 || i == bLength) {
                   top = top + gapExtensionPenalty;
               } else {
                   top = top + gapOpenPenalty;
               }
               var left = (*curRow)[j - 1]; // insertion
-              if (horizontalGaps[j - 1] > 0) {
+              if (horizontalGaps[j - 1] > 0 || j == 1 || j == aLength) {
                   left = left + gapExtensionPenalty;
               } else {
                   left = left + gapOpenPenalty;
@@ -207,8 +207,8 @@ export function webGPUNeedlemanWunsch(maxArraySize: number, entryIndex: number) 
               return 1.0;
           }
       }
-      return dynamicPassMat[prevIndex][aLength] / f32(maxLength);
-  
+      return dynamicPassMat[prevIndex][aLength] / f32(minLength);
+
   `;
 }
 

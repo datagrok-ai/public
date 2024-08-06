@@ -21,7 +21,7 @@ function getRowIndexes(offsets: Uint32Array) {
 
 // this implementation is not looking at already zeroed out values, and only looks at live cells.
 export async function expandNoRevive(
-  device: GPUDevice, knnSimilarities: Float32Array, knnIndexes: Uint32Array, offsets: Uint32Array, nRows: number
+  device: GPUDevice, knnSimilarities: Float32Array, knnIndexes: Uint32Array, offsets: Uint32Array, _nRows: number
 ): Promise<MCLOpReturnType> {
   const neededThreads = 90000;
   const workGroupThreadsPerDim = 10;
@@ -30,9 +30,9 @@ export async function expandNoRevive(
   const workGroupDim = Math.ceil(Math.sqrt(neededWorkGroups));
   const threadsPerDim = workGroupThreadsPerDim * workGroupDim;
 
-  const order = Math.floor(Math.max(Math.log10(nRows), 2)) + 1;
+  //const order = Math.floor(Math.max(Math.log(nRows), 2));
   // minimum value after expansion.
-  const pruneValue = Math.pow(10, -order);
+  const pruneValue = 0.000000001;//Math.pow(10, -order);
 
   const outKNNSimilarities = new Float32Array(knnSimilarities.length);
   const module = device.createShaderModule({

@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.1.11 (2024-08-06)
+
+Modify MCL and NW calculations on webGPU
+
 ## 1.1.10 (2024-06-07)
 
 MMP generations on webGPU
