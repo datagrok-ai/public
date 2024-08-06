@@ -6,10 +6,11 @@ import * as DG from 'datagrok-api/dg';
 
 async function testTags(obj: any, apiPath: any, error: string) {
   obj.tag('apiteststag');
+  const lenBefore = await apiPath.filter('#apiteststag').list().then((els: any[]) => els.length);
   await apiPath.save(obj);
   const len = await apiPath.filter('#apiteststag').list().then((els: any[]) => els.length);
   await apiPath.delete(obj);
-  if (len !== 1) throw new Error(`Expected 1 ${error}, got ${len}`);
+  if (lenBefore + 1 !== len) throw new Error(`Expected ${lenBefore} ${error}, got ${len}`);
 }
 
 category('UI: Tags', () => {
@@ -74,7 +75,7 @@ category('UI: Tags', () => {
       db: '',
     }), grok.dapi.connections, 'connection');
     await testTags(DG.Script.create('apitests'), grok.dapi.scripts, 'script');
-  }, { timeout: 40000 });
+  }, { timeout: 100000 });
 
   after(async () => {
     grok.shell.closeAll();

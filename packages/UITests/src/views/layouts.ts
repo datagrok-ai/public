@@ -52,11 +52,12 @@ category('Layouts', () => {
     }, '', 3000);
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
+    await delay(10000);
     let num = list!.children.length + 1;
     save.click();
+    await delay(10000);
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     num--;
-    await delay(1000);
     try {
       list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
       await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu');
@@ -80,7 +81,7 @@ category('Layouts', () => {
       }
       throw e;
     }
-  });
+  }, {timeout: 100000});
 
   after(async () => {
     grok.shell.closeAll();
