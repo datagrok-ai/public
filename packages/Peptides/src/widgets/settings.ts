@@ -57,6 +57,8 @@ export enum MCL_INPUTS {
   THRESHOLD = 'Similarity Threshold',
   INFLATION = 'Inflation Factor',
   MAX_ITERATIONS = 'Max Iterations',
+  USE_WEBGPU = 'Use WebGPU',
+  MIN_CLUSTER_SIZE = 'Min Cluster Size',
 }
 
 
@@ -291,10 +293,28 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     onValueChanged: () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value)});
   const mclInflationInput = ui.input.float(MCL_INPUTS.INFLATION, {value: mclParams.inflation ?? 1.4,
     onValueChanged: () => {onMCLParamsChange('inflation', mclInflationInput.value);}});
+
+  const mclUseWebGPU = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {value: mclParams.useWebGPU,
+    onValueChanged: () => onMCLParamsChange('useWebGPU', mclUseWebGPU.value)});
+  mclUseWebGPU.enabled = false;
+  mclParams.webGPUDescriptionPromise.then(() => {
+    if (mclParams.webGPUDescription !== type.webGPUNotSupported) {
+      mclUseWebGPU.setTooltip(`Use WebGPU for MCL algorithm (${mclParams.webGPUDescription})`);
+      mclUseWebGPU.enabled = true;
+    } else {
+      mclUseWebGPU.setTooltip(type.webGPUNotSupported);
+      mclUseWebGPU.enabled = false;
+      mclUseWebGPU.value = false;
+    }
+  });
+
+  const mclMinClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {value: mclParams.minClusterSize ?? 5,
+    onValueChanged: () => onMCLParamsChange('minClusterSize', mclMinClusterSizeInput.value)});
+
   correctMCLInputs();
 
   const mclInputs = [mclThresholdInput, mclDistanceFunctionInput, mclFingerprintTypesInput,
-    mclGapOpenInput, mclGapExtendInput, mclInflationInput, mclMaxIterationsInput];
+    mclGapOpenInput, mclGapExtendInput, mclInflationInput, mclMaxIterationsInput, mclMinClusterSizeInput, mclUseWebGPU];
 
   accordion.addPane(SETTINGS_PANES.MCL, () => ui.inputs(mclInputs), true);
   inputs[SETTINGS_PANES.MCL] = mclInputs;

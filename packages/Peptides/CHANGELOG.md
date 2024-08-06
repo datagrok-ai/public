@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.25 (2024-08-06)
+
+Update MCLalgorytm and Add params to starting menu
+
 ## 1.17.24 (2024-07-29)
 
 Fix invariant map values rendering

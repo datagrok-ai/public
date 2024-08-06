@@ -1260,7 +1260,7 @@ export class PeptidesModel {
     this._mclCols = [];
     const seqCol = this.df.getCol(this.settings!.sequenceColumnName!);
     this.settings!.mclSettings ??= new type.MCLSettings();
-    const mclParams = this.settings?.mclSettings;
+    const mclParams = this.settings!.mclSettings;
     let counter = 0;
     const addedColCount = 5; // embedx, embedy, cluster, cluster size and connectivity count
     const columnAddedSub = this.df.onColumnsAdded.subscribe((colArgs: DG.ColumnsArgs) => {
@@ -1303,9 +1303,22 @@ export class PeptidesModel {
       DistanceAggregationMethods.MANHATTAN, [bioPreprocessingFunc], [{
         gapOpen: mclParams!.gapOpen, gapExtend: mclParams!.gapExtend,
         fingerprintType: mclParams!.fingerprintType,
-      }], mclParams!.threshold, mclParams!.maxIterations, false/** TODO, add webgpu controll */, mclParams!.inflation,
+      }],
+      mclParams!.threshold, mclParams!.maxIterations, mclParams.useWebGPU,
+      mclParams!.inflation, mclParams.minClusterSize,
     );
     mclAdditionSub.unsubscribe();
+
+    // find logo summery viewer and make it rerender
+    const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    if (lstViewer) { // beware, this is accessing private things
+      lstViewer._clusterStats = null;
+      lstViewer._clusterSelection = null;
+      lstViewer._viewerGrid = null;
+      lstViewer._logoSummaryTable = null;
+      lstViewer.render();
+    }
+
     if (mclViewer?.sc) {
       const serializedOptions: string = JSON.stringify({
         cols: [seqCol].map((col) => col.name),
@@ -1319,8 +1332,9 @@ export class PeptidesModel {
         }],
         threshold: mclParams!.threshold,
         maxIterations: mclParams!.maxIterations,
-        useWebGPU: false,
+        useWebGPU: mclParams.useWebGPU,
         inflate: mclParams!.inflation,
+        minClusterSize: mclParams.minClusterSize,
       } satisfies MCLSerializableOptions);
       this.df.setTag(MCL_OPTIONS_TAG, serializedOptions);
 

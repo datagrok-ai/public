@@ -3,6 +3,7 @@ import {ClusterType} from '../viewers/logo-summary';
 import {SCALING_METHODS} from './constants';
 import {AggregationColumns, StatsItem} from './statistics';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 type MONOMER = string;
@@ -36,20 +37,31 @@ export interface PeptidesSettings {
   mclSettings: MCLSettings,
 }
 
+export const webGPUNotSupported = 'WebGPU is not supported on this device';
 export class MCLSettings {
-  maxIterations: number = 5;
+  maxIterations: number = 16;
   inflation: number = 1.4;
-  threshold: number = 80;
+  threshold: number = 70;
   distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
-  gapOpen: number = 1;
-  gapExtend: number = 0.6;
+  gapOpen: number = 1.5;
+  gapExtend: number = 0.2;
   fingerprintType: string = 'Morgan';
+  useWebGPU: boolean = false;
+  minClusterSize: number = 5;
+  webGPUDescription: string = webGPUNotSupported;
+  webGPUDescriptionPromise: Promise<any>;
+  constructor() {
+    this.webGPUDescriptionPromise = getGPUAdapterDescription().then((desc) => {
+      if (desc)
+        this.webGPUDescription = desc;
+    });
+  }
 }
 
 export class SequenceSpaceParams {
   distanceF: MmDistanceFunctionsNames = MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
-  gapOpen: number = 1;
-  gapExtend: number = 0.6;
+  gapOpen: number = 1.5;
+  gapExtend: number = 0.2;
   clusterEmbeddings: boolean = true;
   epsilon: number = 0.01;
   minPts: number = 4;
