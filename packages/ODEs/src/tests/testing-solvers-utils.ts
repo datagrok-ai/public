@@ -1,3 +1,7 @@
+/** Utils for testing solvers. A set of examples can be found at
+    https://archimede.uniba.it/~testset/testsetivpsolvers/?page_id=26#ODE
+*/
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -20,9 +24,9 @@ const stiffTest = {
   name: 'Stiff 2',
   arg: {name: NAMES.T, start: 0, finish: 4, step: 0.01},
   initial: [52.29, 83.82],
-  func: (t: number, _y: Float64Array, _output: Float64Array) => {
-    _output[0] = -5 * _y[0] + 3 * _y[1];
-    _output[1] = 100 * _y[0] - 301 * _y[1];
+  func: (t: number, y: Float64Array, output: Float64Array) => {
+    output[0] = -5 * y[0] + 3 * y[1];
+    output[1] = 100 * y[0] - 301 * y[1];
   },
   tolerance: 0.00005,
   solutionColNames: [NAMES.X, NAMES.Y],
