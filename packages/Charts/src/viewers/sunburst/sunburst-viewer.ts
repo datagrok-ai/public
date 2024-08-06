@@ -134,7 +134,8 @@ export class SunburstViewer extends EChartViewer {
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
           const column = dataFrame.getCol(hierarchyColumnNames[j]);
           const format = column.meta.format;
-          if (format) {
+          const isDate = column.type === DG.TYPE.DATE_TIME;
+          if (format && !isDate) {
             const number = format.indexOf('.');
             const len = format.length - number - 1;
             if ((column.get(i)).toFixed(len) === params.name)
