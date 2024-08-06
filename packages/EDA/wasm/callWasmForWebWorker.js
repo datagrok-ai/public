@@ -107,14 +107,15 @@ export function getCppInput(argsSpecification, inputVals) {
                 // this is OK if type of column and target type coinside
                 //array = inputVals[i].getRawData();
 
-                let col = inputVals[i];
+                const col = inputVals[i];
+                const len = col.length;
 
                 // here, we check types and perform an appropriate transform
                 if( ( (col.type === INT_TYPE) && (type === INT_COLUMN_TYPE) ) 
                    || ( (col.type === DOUBLE_TYPE) && (type === FLOAT_COLUMN_TYPE) ) )
-                     array = col.getRawData();
+                     array = col.getRawData().slice(0, len);
                 else
-                     array = new typeMap[type](col.getRawData());
+                     array = new typeMap[type](col.getRawData().slice(0, len));
 
                 /*if(((col.type == 'int') && (type == INT_COLUMN_TYPE)) 
                      || ((col.type == 'double') && (type == FLOAT_COLUMN_TYPE)))
@@ -124,7 +125,7 @@ export function getCppInput(argsSpecification, inputVals) {
 
                 // check types
                 arg.data = { 'array': array,
-                             'numOfRows': array.length};                             
+                             'numOfRows': len};                             
                
                 i++;
                 break;
@@ -155,13 +156,15 @@ export function getCppInput(argsSpecification, inputVals) {
                 //for(let col of inputVals[i].toList())
                 //  arrays.push(col.getRawData());
 
+                const rowCount = inputVals[i].byIndex(0).length;
+
                 // here, we check types and perform an appropriate transform
-                for(let col of inputVals[i].toList())
+                for(const col of inputVals[i].toList())
                   if( ( (col.type === INT_TYPE) && (type === INT_COLUMN_TYPE) ) 
                     || ( (col.type === DOUBLE_TYPE) && (type === FLOAT_COLUMN_TYPE) ) )
-                    arrays.push(col.getRawData());
+                    arrays.push(col.getRawData().slice(0, rowCount));
                   else
-                    arrays.push(new typeMap[type](col.getRawData()));
+                    arrays.push(new typeMap[type](col.getRawData().slice(0, rowCount)));
                 
                 /*for(let col of inputVals[i].toList())
                     if(((col.type == 'int') && (type == INT_COLUMN_TYPE)) 
@@ -171,7 +174,7 @@ export function getCppInput(argsSpecification, inputVals) {
                       arrays.push(new typeMap[type](col.getRawData()));*/
 
                 arg.data = { 'arrays': arrays,
-                    'numOfRows': arrays[0].length,
+                    'numOfRows': rowCount,
                     'numOfColumns': arrays.length};
 
                 i++;  
