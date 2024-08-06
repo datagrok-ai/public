@@ -598,12 +598,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   pinPair(idx: number) {
-    const idxFrom: number = this.transPairsGrid?.dataFrame.columns.byName(MMP_NAMES.PAIRNUM_FROM).get(idx);
-    const idxToTo: number = this.transPairsGrid?.dataFrame.columns.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
+    const columns = this.transPairsGrid?.dataFrame.columns;
+    const idxFrom: number = columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(idx);
+    const idxToTo: number = columns!.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
     const molFrom = this.parentTable!.columns.byName(this.molecules!).get(idxFrom);
     const molTo = this.parentTable!.columns.byName(this.molecules!).get(idxToTo);
-
     const grid = grok.shell.tv.grid;
+    const indexesPairs = this.transPairsMask?.getSelectedIndexes();
+    const indexesAllFrom = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_FROM).get(ip));
+    const indexesAllTo = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_TO).get(ip));
+    indexesAllFrom?.forEach((i) => grid.dataFrame.selection.set(i, true));
+    indexesAllTo?.forEach((i) => grid.dataFrame.selection.set(i, true));
+    
     grid.setOptions({
         pinnedRowValues: [molFrom, molTo],
         pinnedRowColumnNames: [this.molecules!, this.molecules!],
