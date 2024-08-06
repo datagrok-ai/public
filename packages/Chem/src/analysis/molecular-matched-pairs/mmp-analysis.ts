@@ -129,32 +129,24 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   private setupTransformationTab(): void {
-
-    // this.casesGrid!.setOptions({
-    //   pinnedRowColumnNames: [],
-    //   pinnedRowValues: [],
-    // });
-    // if (idxPairs >= 0) {
-    //   this.casesGrid!.setOptions({
-    //     pinnedRowValues: [idxPairs.toString()],
-    //     pinnedRowColumnNames: [MMP_NAMES.PAIRNUM],
-    //   });
-    // }
-
-
     this.transFragmentsMask!.setAll(true);
     this.parentTable!.onCurrentRowChanged.pipe(debounceTime(1000)).subscribe(() => {
       if (this.parentTable!.currentRowIdx !== -1) {
-        this.refilterAllPairs(true);
+        this.refilterAllFragments(true);
         this.refreshPair(this.rdkitModule!);
       }
     });
 
-    this.refilterAllPairs(true);
+    this.refilterAllFragments(true);
 
     this.transFragmentsGrid!.table.onCurrentRowChanged.subscribe(() => {
       if (this.transFragmentsGrid!.table.currentRowIdx !== -1)
         this.refreshPair(this.rdkitModule!);
+    });
+
+    this.transPairsGrid!.table.onCurrentRowChanged.subscribe(() => {
+      if (this.transPairsGrid!.table.currentRowIdx !== -1)
+        this.pinPair(this.transPairsGrid!.table.currentRowIdx);
     });
 
     this.mmpView!.name = MMP_NAMES.VIEW_NAME;
@@ -291,9 +283,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.currentTab = tabs.currentPane.name;
       if (tabs.currentPane.name == MMP_NAMES.TAB_TRANSFORMATIONS) {
         this.enableFilters = true;
-        this.refilterAllPairs(false);
+        this.refilterAllFragments(false);
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_FRAGMENTS) {
-        this.refreshFilterAllPairs();
+        this.refreshFilterAllFragments();
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
 
@@ -524,17 +516,17 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     progressBarPairs.close();
   }
 
-  refreshFilterAllPairs() {
+  refreshFilterAllFragments() {
     const consistsBitSet: DG.BitSet = DG.BitSet.create(this.transFragmentsGrid!.dataFrame.rowCount);
     consistsBitSet.setAll(true);
     this.transFragmentsGrid!.dataFrame.filter.copyFrom(consistsBitSet);
   }
 
   /**
-  * Gets visible all pairs according to selected molecule in the table.
+  * Gets visible all fragment pairs according to selected molecule in the table.
   * @param {boolean} rowChanged flag if row was changed
   */
-  refilterAllPairs(rowChanged: boolean) {
+  refilterAllFragments(rowChanged: boolean) {
     let idxTrue = -1;
     if (rowChanged) {
       const idx = this.parentTable!.currentRowIdx;
@@ -603,5 +595,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.parentTable!.filter.copyFrom(this.totalCutoffMask!);
     this.linesRenderer!.linesVisibility = this.linesMask!;
+  }
+
+  pinPair(idx: number) {
+    const idxFrom: number = this.transPairsGrid?.dataFrame.columns.byName(MMP_NAMES.PAIRNUM_FROM).get(idx);
+    const idxToTo: number = this.transPairsGrid?.dataFrame.columns.byName(MMP_NAMES.PAIRNUM_TO).get(idx);
+    const molFrom = this.parentTable!.columns.byName(this.molecules!).get(idxFrom);
+    const molTo = this.parentTable!.columns.byName(this.molecules!).get(idxToTo);
+
+    const grid = grok.shell.tv.grid;
+    grid.setOptions({
+        pinnedRowValues: [molFrom, molTo],
+        pinnedRowColumnNames: [this.molecules!, this.molecules!],
+    });
   }
 }

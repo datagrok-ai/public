@@ -1536,7 +1536,8 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): void {//Promise<MmpAnalysis> {
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4): void {
+    
   const viewer = (grok.shell.v as DG.TableView)
     .addViewer('Matched Molecular Pairs Analysis');
 

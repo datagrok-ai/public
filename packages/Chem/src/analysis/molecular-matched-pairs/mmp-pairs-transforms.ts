@@ -183,9 +183,9 @@ function getTransPairsGrid(variates: number, molFrom: string[], molTo: string[],
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_FROM, molNumFrom);
   const pairNumberToCol = DG.Column.fromInt32Array(MMP_NAMES.PAIRNUM_TO, molNumTo);
 
-  const pairsFromSmilesCol = DG.Column.fromStrings('~smi1', pairsFromSmiles);
-  const pairsToSmilesCol = DG.Column.fromStrings('~smi2', pairsToSmiles);
-  const ruleNumCol = DG.Column.fromInt32Array('~ruleNum', ruleNum);
+  const pairsFromSmilesCol = DG.Column.fromStrings(MMP_NAMES.SMI1, pairsFromSmiles);
+  const pairsToSmilesCol = DG.Column.fromStrings(MMP_NAMES.SMI2, pairsToSmiles);
+  const ruleNumCol = DG.Column.fromInt32Array(MMP_NAMES.RULENUM, ruleNum);
 
   pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
