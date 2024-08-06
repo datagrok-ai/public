@@ -115,7 +115,7 @@ export class DiffDockModel {
 
   private createPoseItems(posesJson: PosesJson): string[] {
     return posesJson.ligand_positions.map((_, index) =>
-      `Pose ${index + 1} - Score: ${posesJson.position_confidence[index]}`
+      `Pose ${index + 1} - Score: ${posesJson.position_confidence[index].toFixed(3)}`
     );
   }
 
