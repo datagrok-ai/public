@@ -335,7 +335,7 @@ export class HistoricalRunsList extends DG.Widget {
       this._historyFilters.dataFrame = newRunsGridDf;
       this._historyGrid.dataFrame = newRunsGridDf;
 
-      this.currentDf.getCol(TAGS_COLUMN_NAME).setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+      this.currentDf.getCol(TAGS_COLUMN_NAME).meta.multiValueSeparator = ',';
 
       this.styleHistoryGrid();
       this.styleHistoryFilters();
