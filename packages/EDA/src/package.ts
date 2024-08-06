@@ -739,39 +739,6 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
   return PlsModel.isInteractive(df.columns, predictColumn);
 }
 
-//top-menu: ML | Test Booster ...
-//name: testBooster
-//desription: Method for testing XGBoost
-//input: dataframe df
-//input: column_list features {type: numerical}
-//input: column target
-//input: int iterations = 20
-//input: double eta = 0.3
-//input: int maxDepth = 6
-//input: double lambda = 1
-//input: double alpha = 0
-export async function testBooster(df: DG.DataFrame, features: DG.ColumnList, target: DG.Column,
-  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number) {
-  //testXGBoost();
-
-  if (!XGBooster.isApplicable(features, target)) {
-    grok.shell.error('XGBoost is not applicable!');
-    return;
-  }
-
-  const booster = new XGBooster();
-  await booster.fit(features, target, iterations, eta, maxDepth, lambda, alpha);
-
-  const packedModel = booster.toBytes();
-
-  const unpacked = new XGBooster(packedModel);
-
-  const prediction = unpacked.predict(features);
-
-  if (prediction)
-    df.columns.add(prediction);
-}
-
 //name: trainXGBooster
 //meta.mlname: XGBoost
 //meta.mlrole: train
