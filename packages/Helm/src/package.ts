@@ -28,7 +28,7 @@ import {getRS} from './utils/get-monomer-dummy';
 import {buildWebEditorApp} from './helm-web-editor';
 import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage({debug: true}/**/);
+export const _package = new HelmPackage(/*{debug: true}/**/);
 
 let monomerLib: IMonomerLib | null = null;
 
@@ -51,13 +51,14 @@ export async function initHelm(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    const [_, lib]: [void, IMonomerLib] = await Promise.all([
-      _package.initHelm(),
-      _package.getMonomerLib(),
-    ]);
+    await Promise.all([
+      _package.initHELMWebEditor(),
+      _package.initMonomerLibHelper(),
+    ]).then(() => {
+      _package.initMonomerLib();
+    });
 
     _package.logger.debug(`${logPrefix}, then(), lib loaded`);
-    _package.initMonomerLib(lib);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';

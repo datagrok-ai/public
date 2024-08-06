@@ -1,5 +1,13 @@
 # Helm changelog
 
+## 2.3.4 (2024-08-06)
+
+### Bug fixes
+
+* Fix HelmInput/tooltip flapping test
+* Fix dojo dijit locale to en-us
+* Fix HELMWebEditor and Bio init order to handle monomer lib
+
 ## 2.3.3 (2024-08-05)
 
 ### Features
