@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.0.11 (2024-08-09)
+
+Improved browsing, and added tests & benchmarks
+
 ## 1.0.10 (2024-06-10)
 
 Implemented
