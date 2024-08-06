@@ -805,9 +805,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
     this.updateUI();
 
+    await updateVisibleNodes(thisViewer); //first visible N nodes
     this.updateFilters();
     this.updateTag();
-    await updateVisibleNodes(thisViewer); //first visible N nodes
   }
 
   get molColumn(): DG.Column | null {
@@ -1845,7 +1845,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       await updateVisibleNodes(thisViewer);
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
-      dataFrame.rows.requestFilter();
     }));
 
     this.subs.push(dataFrame.onRowsFiltered.subscribe(() => {
