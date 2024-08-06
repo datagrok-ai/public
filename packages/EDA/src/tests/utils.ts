@@ -6,6 +6,12 @@ const TRESHOLD = 0.5;
 const SHIFT = 1;
 const LIMIT = 2;
 
+/** Check lengths of columns */
+function checkLen(target: DG.Column, prediction: DG.Column): void {
+  if (target.length !== prediction.length)
+    throw new Error(`Non-equal elements count: ${target.length} vs. ${prediction.length}`);
+}
+
 /** Return dataframe for testing regression & linear methods */
 export function regressionDataset(samples: number, features: number, dependent: number): DG.DataFrame {
   // create main features
@@ -51,15 +57,13 @@ export function madNorm(col: DG.Column): number {
 }
 
 /** Max absolute deviation error */
-export function madError(col1: DG.Column, col2: DG.Column): number {
+export function madError(target: DG.Column, prediction: DG.Column): number {
+  checkLen(target, prediction);
+
   let mad = 0;
-  const rows = col1.length;
-
-  if (rows !== col2.length)
-    throw new Error(`Error compuation failed, non-equal elements count: col1 - ${col1.length}, col2 - ${col2.length}`);
-
-  const raw1 = col1.getRawData();
-  const raw2 = col2.getRawData();
+  const rows = target.length;
+  const raw1 = target.getRawData();
+  const raw2 = prediction.getRawData();
 
   for (let i = 0; i < rows; ++i)
     mad = Math.max(mad, Math.abs(raw1[i] - raw2[i]));
@@ -97,3 +101,21 @@ export function classificationDataset(samples: number, features: number, useShif
 
   return df;
 } // classificationDataset
+
+/** Return accuracy */
+export function accuracy(target: DG.Column, prediction: DG.Column): number {
+  checkLen(target, prediction);
+
+  let correctPredictions = 0;
+  const rows = target.length;
+
+  if (rows < 1)
+    return 1;
+
+  for (let i = 0; i < rows; ++i) {
+    if (target.get(i) === prediction.get(i))
+      ++correctPredictions;
+  }
+
+  return correctPredictions / rows;
+}

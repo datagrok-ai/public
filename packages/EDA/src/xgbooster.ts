@@ -6,6 +6,15 @@ import * as DG from 'datagrok-api/dg';
 
 import {predict, fitInWebWorker} from '../wasm/xgbooster';
 
+/** Default hyperparameters */
+enum DEFAULT {
+  ITERATIONS = 20,
+  ETA = 0.3,
+  MAX_DEPTH = 6,
+  LAMBDA = 1,
+  ALPHA = 0,
+};
+
 /** Interactivity tresholds */
 enum INTERACTIVITY {
   SAMLPES_HIGH = 100000,
@@ -112,8 +121,9 @@ export class XGBooster {
   }
 
   /** Fit model */
-  public async fit(features: DG.ColumnList, target: DG.Column, iterations: number, eta: number,
-    maxDepth: number, lambda: number, alpha: number) {
+  public async fit(features: DG.ColumnList, target: DG.Column, iterations: number = DEFAULT.ITERATIONS,
+    eta: number = DEFAULT.ETA, maxDepth: number = DEFAULT.MAX_DEPTH, lambda: number = DEFAULT.LAMBDA,
+    alpha: number = DEFAULT.ALPHA) {
     // Type of the target
     this.targetType = target.type;
 

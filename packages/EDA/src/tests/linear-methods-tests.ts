@@ -1,3 +1,5 @@
+// Tests for PCA, PLS & linear regression
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -10,12 +12,12 @@ import {PlsModel} from '../pls/pls-ml';
 import {getLinearRegressionParams, getPredictionByLinearRegression} from '../regression';
 import {regressionDataset, madNorm, madError} from './utils';
 
-// Tests for PCA & PLS methods
-
+const ROWS = 100;
 const ROWS_K = 100;
 const COLS = 100;
 const COMPONENTS = 3;
 const TIMEOUT = 4000;
+const INDEP_COLS = 2;
 const DEP_COLS = 5;
 const TINY = 0.001;
 
@@ -26,8 +28,13 @@ category('Principal component analysis', () => {
   }, {timeout: TIMEOUT, benchmark: true});
 
   test('Correctness', async () => {
-    const df = regressionDataset(ROWS_K, COMPONENTS, DEP_COLS);
+    // Data
+    const df = regressionDataset(ROWS, COMPONENTS, DEP_COLS);
+
+    // Apply
     const pca = await computePCA(df, df.columns, COMPONENTS + 1, false, false);
+
+    // Check
     const lastPca = pca.columns.byIndex(COMPONENTS);
     const norm = madNorm(lastPca);
 
@@ -38,9 +45,11 @@ category('Principal component analysis', () => {
 
 category('Partial least squares regression', () => {
   test(`Performance: ${ROWS_K}K rows, ${COLS} cols, ${COMPONENTS} components`, async () => {
+    // Data
     const df = grok.data.demo.randomWalk(ROWS_K * 1000, COLS);
     const cols = df.columns;
 
+    // Apply
     await getPlsAnalysis({
       table: df,
       features: cols,
@@ -51,10 +60,12 @@ category('Partial least squares regression', () => {
   }, {timeout: TIMEOUT, benchmark: true});
 
   test('Correctness', async () => {
+    // Data
     const df = regressionDataset(ROWS_K, COMPONENTS, DEP_COLS);
     const cols = df.columns;
     const target = cols.byIndex(COMPONENTS + DEP_COLS - 1);
 
+    // Apply
     const plsRes = await getPlsAnalysis({
       table: df,
       features: cols,
@@ -63,13 +74,12 @@ category('Partial least squares regression', () => {
       names: undefined,
     });
 
+    // Check deviation
     const deviation = madError(target, plsRes.prediction);
-
-    // prediction must coincide with the target
     expect(
       (deviation < TINY),
       true,
-      `Incorrect PLS computations, deviation between target & prediction is too big: ${deviation}`,
+      `Incorrect PLS computations, error is too big: ${deviation}; expected: < ${TINY}`,
     );
   }, {timeout: TIMEOUT});
 
@@ -94,13 +104,13 @@ category('Partial least squares regression', () => {
     expect(
       (deviation < TINY),
       true,
-      `Incorrect PLS (ML) computations, deviation between target & prediction is too big: ${deviation}`,
+      `Incorrect PLS (ML) computations, error is too big: ${deviation}; expected: < ${TINY}`,
     );
   }, {timeout: TIMEOUT, benchmark: true});
 }); // PLS
 
 category('Linear regression', () => {
-  test(`Predictive modeling: ${ROWS_K}K samples, ${COLS} features`, async () => {
+  test(`Performance: ${ROWS_K}K samples, ${COLS} features`, async () => {
     // Prepare data
     const df = regressionDataset(ROWS_K * 1000, COLS, 1);
     const features = df.columns;
@@ -110,7 +120,31 @@ category('Linear regression', () => {
     const params = await getLinearRegressionParams(features, target);
     const packed = new Uint8Array(params.buffer);
 
+    // Unpack & apply model
     const unpackedParams = new Float32Array(packed.buffer);
     getPredictionByLinearRegression(features, unpackedParams);
   }, {timeout: TIMEOUT, benchmark: true});
+
+  test('Correctness', async () => {
+    // Prepare data
+    const df = regressionDataset(ROWS, INDEP_COLS, 1);
+    const features = df.columns;
+    const target = features.byIndex(INDEP_COLS);
+
+    // Train & pack model
+    const params = await getLinearRegressionParams(features, target);
+    const packed = new Uint8Array(params.buffer);
+
+    // Unpack & apply model
+    const unpackedParams = new Float32Array(packed.buffer);
+    const prediction = getPredictionByLinearRegression(features, unpackedParams);
+
+    // Evaluate model
+    const error = madError(prediction, prediction);
+    expect(
+      error < TINY,
+      true,
+      `Incorrect linear regression computations, error is too big: ${error}; expected: < ${TINY}`,
+    );
+  }, {timeout: TIMEOUT});
 }); // Linear regression
