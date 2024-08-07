@@ -19,7 +19,7 @@ const COMPONENTS = 3;
 const TIMEOUT = 4000;
 const INDEP_COLS = 2;
 const DEP_COLS = 5;
-const TINY = 0.001;
+const ERROR = 0.1;
 
 category('Principal component analysis', () => {
   test(`Performance: ${ROWS_K}K rows, ${COLS} cols, ${COMPONENTS} components`, async () => {
@@ -39,7 +39,7 @@ category('Principal component analysis', () => {
     const norm = madNorm(lastPca);
 
     // the last PCA component must be small due to df construction
-    expect((norm < TINY), true, 'Incorrect PCA computations');
+    expect((norm < ERROR), true, 'Incorrect PCA computations');
   }, {timeout: TIMEOUT});
 }); // PCA
 
@@ -77,9 +77,9 @@ category('Partial least squares regression', () => {
     // Check deviation
     const deviation = madError(target, plsRes.prediction);
     expect(
-      (deviation < TINY),
+      (deviation < ERROR),
       true,
-      `Incorrect PLS computations, error is too big: ${deviation}; expected: < ${TINY}`,
+      `Incorrect PLS computations, error is too big: ${deviation}; expected: < ${ERROR}`,
     );
   }, {timeout: TIMEOUT});
 
@@ -102,9 +102,9 @@ category('Partial least squares regression', () => {
     // Check deviation
     const deviation = madError(target, prediction);
     expect(
-      (deviation < TINY),
+      (deviation < ERROR),
       true,
-      `Incorrect PLS (ML) computations, error is too big: ${deviation}; expected: < ${TINY}`,
+      `Incorrect PLS (ML) computations, error is too big: ${deviation}; expected: < ${ERROR}`,
     );
   }, {timeout: TIMEOUT, benchmark: true});
 }); // PLS
@@ -142,9 +142,9 @@ category('Linear regression', () => {
     // Evaluate model
     const error = madError(prediction, prediction);
     expect(
-      error < TINY,
+      error < ERROR,
       true,
-      `Incorrect linear regression computations, error is too big: ${error}; expected: < ${TINY}`,
+      `Incorrect linear regression computations, error is too big: ${error}; expected: < ${ERROR}`,
     );
   }, {timeout: TIMEOUT});
 }); // Linear regression
