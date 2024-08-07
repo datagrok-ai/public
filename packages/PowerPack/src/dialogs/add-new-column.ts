@@ -990,7 +990,9 @@ export class AddNewColumnDialog {
         if (packageFunctionsNames[packName])
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
             options.push({ label: name, type: "variable",
-              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`].map((it)=> it.propType).join(',')})` })
+              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`]
+                .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
+                .map((it)=> it.propType).join(',')})` })
           });
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
@@ -1007,7 +1009,9 @@ export class AddNewColumnDialog {
         coreFunctionsNames.concat(packageNames)
           .forEach((name: string, idx: number) => options.push({
             label: name, type: "variable",
-            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name].map((it)=> it.propType).join(',')})` : `${name}:`,
+            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name]
+              .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
+              .map((it)=> it.propType).join(',')})` : `${name}:`,
             detail: idx < coreFunctionsNames.length ? '' : 'package'
           }));
       return {
