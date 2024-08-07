@@ -147,7 +147,7 @@ export function webGPUNeedlemanWunsch(maxArraySize: number, entryIndex: number) 
       var curIndex: u32 = 1; // we will swap these indices per pass
       // initialize the first row
       for (var i = 0u; i <= aLength; i = i + 1u) {
-          dynamicPassMat[prevIndex][i] = gapOpenPenalty + f32(i - 1) * gapExtensionPenalty;
+          dynamicPassMat[prevIndex][i] = gapExtensionPenalty + f32(i - 1) * gapExtensionPenalty; // accounting for the fact that left and right gaps are less costly
           dynamicPassMat[curIndex][i] = 0.0;
       }
       dynamicPassMat[0][0] = 0.0;
@@ -157,7 +157,7 @@ export function webGPUNeedlemanWunsch(maxArraySize: number, entryIndex: number) 
       for (var i = 1u; i <= bLength; i = i + 1u) {
           let prevRow = &dynamicPassMat[prevIndex];
           let curRow = &dynamicPassMat[curIndex];
-          (*curRow)[0] = gapOpenPenalty + f32(i - 1) * gapExtensionPenalty;
+          (*curRow)[0] = gapExtensionPenalty + f32(i - 1) * gapExtensionPenalty;
           var minEntry: f32 = f32(maxLength);
           let monB = u32(b[i - 1]);
           for (var j = 1u; j <= aLength; j = j + 1u) {
