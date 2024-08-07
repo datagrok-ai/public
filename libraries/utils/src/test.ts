@@ -17,7 +17,7 @@ export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
     beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number,
-    benchmarks?: boolean, benchmarkTimeout?: number,
+    benchmarks?: boolean, benchmarkTimeout?: number, stressTests?: boolean
   }
 } = {};
 
@@ -42,12 +42,14 @@ export interface TestOptions {
   skipReason?: string;
   isAggregated?: boolean;
   benchmark?: boolean;
+  stressTest?: boolean;
 }
 
 export interface CategoryOptions {
   clear?: boolean;
   timeout?: number;
   benchmarks?: boolean;
+  stressTests?: boolean;
 }
 
 export class TestContext {
@@ -229,6 +231,7 @@ export function category(category: string, tests_: () => void, options?: Categor
     tests[currentCategory].clear = options?.clear ?? true;
     tests[currentCategory].timeout = options?.timeout;
     tests[currentCategory].benchmarks = options?.benchmarks;
+    tests[currentCategory].stressTests = options?.stressTests;
   }
 }
 
@@ -409,9 +412,8 @@ export async function runTests(options?:
           if (t[i].options) {
             if (t[i].options?.benchmark === undefined) {
               if (!t[i].options)
-                t[i].options = {}
-              //@ts-ignore
-              t[i].options.benchmark = value.isAllTestsEnabledBenchmarkMode || false;
+                t[i].options = {} 
+              t[i].options!.benchmark = value.benchmarks ?? false;
             }
           }
           let testRun = await execTest(t[i], options?.test, logs,  DG.Test.isInBenchmark? value.benchmarkTimeout :value.timeout, package_.name, options.verbose);

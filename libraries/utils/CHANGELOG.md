@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.21 (2024-08-07)
+
+Added stress test flag to test options
+
 ## 4.2.20 (2024-08-06)
 
 Optimize linesrenderer for short lines and no mouseover checking conditions. add options to items grid
