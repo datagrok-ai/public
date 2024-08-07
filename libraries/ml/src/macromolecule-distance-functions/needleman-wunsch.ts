@@ -75,14 +75,14 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
     let currRow = 1;
     // Initialize first row
     for (let i = 1; i < seq1.length + 1; i++) {
-      matrix[0][i] = -gapOpen - (i - 1) * gapExtend;
+      matrix[0][i] = -gapExtend - (i - 1) * gapExtend;
       matrix[1][i] = 0;
     }
     matrix[0][0] = 0;
 
     // Calculate the rest of the matrix
     for (let i = 1; i < seq2.length + 1; i++) {
-      matrix[currRow][0] = -gapOpen - (i - 1) * gapExtend;
+      matrix[currRow][0] = -gapExtend - (i - 1) * gapExtend;
       for (let j = 1; j < seq1.length + 1; j++) {
         const diagonal =
           matrix[prevRow][j - 1] +

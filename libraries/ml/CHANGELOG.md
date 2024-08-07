@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.16 (2024-08-07)
+
+Correct NW Calculation on webGPU on CPU
+
 ## 6.6.15 (2024-08-06)
 
 MCL layout with force directed graph and atlas
