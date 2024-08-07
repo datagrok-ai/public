@@ -166,7 +166,7 @@ Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.10
 
 |Method|Value|
 |-------------|--------|
-|the modified Rosenbrock triple|`'mrt'`|
+|the modified Rosenbrock triple (MRT)|`'mrt'`|
 |the ROS3PRw method|`'ros3prw'`|
 |the ROS34PRw method|`'ros34prw'`|
 
@@ -187,6 +187,42 @@ Diff Studio alerts you if computations take too long. The default time limit is 
 ```python
 #meta.solver: {method: 'mrt'; maxTimeMs: 50}
 ```
+
+## Performance
+
+Diff Studio solvers ensure fast **in-browser** intergration of ODEs. The following [classic problems](https://archimede.uniba.it/~testset/testsetivpsolvers/?page_id=26#ODE) illustrate their efficiency:
+
+* [Rober](https://archimede.uniba.it/~testset/report/rober.pdf)
+  * a stiff system of 3 nonlinear ODEs
+  * describes the kinetics of an autocatalytic reaction given by Robertson
+* [HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)
+  * a stiff system of 8 non-linear equations
+  * explains the `High Irradiance Responses' (HIRES) of photomorphogenesis on the basis of phytochrome, by means of a chemical reaction involving eight reactants
+* [VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)
+  * a system of 2 ODEs proposed by B. van der Pol
+  * describes the behaviour of nonlinear vacuum tube circuits
+* [OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)
+  * a stiff system of 3 non-linear equations
+  * simulates Belousov-Zhabotinskii reaction
+* [E5](https://archimede.uniba.it/~testset/report/e5.pdf)
+  * a stiff system of 4 non-linear ODEs
+  * represents a chemical pyrolysis model
+* [Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)
+  * a stiff system of 20 non-linear equations
+  * describes a chemical reaction part of the air pollution model designed at The Dutch National Institute of Public Health and Environmental Protection
+
+The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
+
+|Problem|Segment|Points|Tolerance|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
+|-|-|-|-|-|-|-|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|125|1066|507|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|626|931|489|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|1124|2884|904|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|947|1131|440|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|24|52|18|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|112|191|80|
+
+This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 
 ## Export to JavaScript script
 

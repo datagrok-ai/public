@@ -5,7 +5,7 @@
 /** Robertson chemical reaction, updated version (see https://archimede.uniba.it/~testset/problems/rober.php) */
 const robertson = {
   name: 'Robertson',
-  arg: {name: 't', start: 0, finish: 10e11, step: 10e9},
+  arg: {name: 't', start: 0, finish: 10e11, step: 2.5e7},
   initial: [1, 0, 0],
   func: (t: number, y: Float64Array, output: Float64Array) => {
     output[0] = -0.04 * y[0] + 1e4 * y[1] * y[2];

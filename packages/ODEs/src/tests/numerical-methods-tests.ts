@@ -39,7 +39,7 @@ category('Correctness', () => {
 category('Performance', () => {
   methods.forEach((method, methodName) => {
     problems.forEach((odes, odesName) => {
-      test(`Method: ${methodName}, task: ${odesName}`, async () => method(odes), {benchmark: true});
+      test(`Method: ${methodName}, problem: ${odesName}`, async () => method(odes), {benchmark: true});
     });
   });
 }); // Performance
