@@ -227,7 +227,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._positionColumns = this.model.positionColumns;
 
 
-    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION) ??
+    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) ??
       getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES) ??
       splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
     return this._positionColumns!;

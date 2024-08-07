@@ -112,8 +112,8 @@ export function peptidesPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(analyzeObject.host);
 }
 
-//name: Monomer-Position
-//description: Peptides Monomer-Position Viewer
+//name: Sequence Variability Map
+//description: Peptides Sequence Variability Map Viewer
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result

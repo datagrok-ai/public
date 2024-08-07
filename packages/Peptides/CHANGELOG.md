@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.17.26 (2024-08-07)
+
+Rename monomer position viewer to sequence variability map
+
 ## 1.17.25 (2024-08-06)
 
 Update MCLalgorytm and Add params to starting menu
