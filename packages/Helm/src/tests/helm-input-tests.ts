@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {after, before, category, delay, expect, test, timeout} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
@@ -63,15 +63,14 @@ async function _testTooltipOnHelmInput(): Promise<void> {
   helmInput.stringValue = helmValue;
   // Show dialog to the right of the TestManager test tree
   // to prevent interfering mousemove position for tooltip.
-  const tmBcr = grok.shell.v.root.getBoundingClientRect();
+  const tmBcr = grok.shell.v ? grok.shell.v.root.getBoundingClientRect() : null;
   const dlg = ui.dialog('Helm Input Test')
     .add(helmInput)
-    .show({x: tmBcr.right + 20, y: tmBcr.top + 20});
+    .show({...(tmBcr ? {x: tmBcr.right + 20, y: tmBcr.top + 20} : {})});
   try {
     const dialogInputEl = $(dlg.root)
       .find('div.d4-dialog-contents > div.ui-input-helm > div.ui-input-editor').get(0);
     expect(helmInput.getInput(), dialogInputEl);
-
 
     const mon = {i: 0, elem: 'meY'};
     const a = helmInput.value.atoms[mon.i];
@@ -81,10 +80,12 @@ async function _testTooltipOnHelmInput(): Promise<void> {
       cancelable: true, bubbles: true, view: window, button: 0,
       clientX: iBcr.left + a.p.x, clientY: iBcr.top + a.p.y
     });
-    iEl.dispatchEvent(ev);
-    // do not await anything after event dispatch before test tooltip content
-    // await leads to tooltip changed (with TestManager tree node tooltip)
-
+    await testEvent(ui.tooltip.onTooltipShown, () => { /* tooltip shown*/ },
+      () => {
+        iEl.dispatchEvent(ev);
+        // do not await after event dispatch before test tooltip content
+        // await leads to tooltip changed (with TestManager tree node tooltip)
+      }, 100, 'timeout await ui.tooltip.onTooltipShown');
     const tooltipEl = $(document).find('body > div.d4-tooltip').get(0) as HTMLElement;
     const elemDiv = $(tooltipEl).find('div > div.d4-flex-row.ui-div > div:nth-child(1)').get(0);
     expect(tooltipEl.style.display != 'none', true);
