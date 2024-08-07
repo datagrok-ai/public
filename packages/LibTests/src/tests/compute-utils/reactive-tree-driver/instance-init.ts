@@ -1,13 +1,12 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {snapshotCompare} from '../../../test-utils';
+import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 
-category('ComputeUtils: Driver config processing', async () => {
-  before(async () => {});
-
-  test('Process simple static config', async () => {
+category('ComputeUtils: Driver state tree init', async () => {
+  test('Process simple initial config', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',
@@ -28,10 +27,12 @@ category('ComputeUtils: Driver config processing', async () => {
       }]
     };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'simple static config');
+    const tree = StateTree.fromConfig(pconf);
+    const state = tree.toSerializedState(true);
+    await snapshotCompare(state, 'simple initial config');
   });
 
-  test('Process static config with dynamic pipelines', async () => {
+  test('Process initial config with dynamic pipelines', async () => {
     const config: PipelineConfiguration = {
       id: 'pipeline1',
       type: 'static',
@@ -51,6 +52,20 @@ category('ComputeUtils: Driver config processing', async () => {
               friendlyName: 'add',
             }
           ],
+          initialSteps: [
+            {
+              id: 'stepMul',
+            },
+            {
+              id: 'stepAdd',
+            },
+            {
+              id: 'stepMul',
+            },
+            {
+              id: 'stepAdd',
+            },
+          ]
         },
         {
           id: 'pipelinePar',
@@ -67,15 +82,31 @@ category('ComputeUtils: Driver config processing', async () => {
               nqName: 'LibTests:TestAdd2',
               friendlyName: 'add',
             }
+          ],
+          initialSteps: [
+            {
+              id: 'stepAdd',
+            },
+            {
+              id: 'stepAdd',
+            },
+            {
+              id: 'stepMul',
+            },
+            {
+              id: 'stepMul',
+            },
           ]
         }
       ],
-    }
+    };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'static config with dynamic pipelines');
+    const tree = StateTree.fromConfig(pconf);
+    const state = tree.toSerializedState(true);
+    await snapshotCompare(state, 'initial config with dynamic pipelines');
   });
 
-  test('Process config with globalId ref', async () => {
+  test('Process initial config with ref', async () => {
     const config: PipelineConfiguration = {
       id: 'pipelineSeq',
       globalId: 'MyPipelineGobalName',
@@ -91,9 +122,14 @@ category('ComputeUtils: Driver config processing', async () => {
           type: 'ref',
           provider: async (_p: any) => ({globalId: 'MyPipelineGobalName', ...config}),
         }
-      ]
+      ],
+      initialSteps: [{
+        id: 'stepMul',
+      }]
     };
     const pconf = await getProcessedConfig(config);
-    await snapshotCompare(pconf, 'config with globalId ref');
+    const tree = StateTree.fromConfig(pconf);
+    const state = tree.toSerializedState(true);
+    await snapshotCompare(state, 'initial config with ref');
   });
 });

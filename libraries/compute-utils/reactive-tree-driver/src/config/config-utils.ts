@@ -33,18 +33,18 @@ export function isPipelineStepConfig(c: ConfigTraverseItem): c is PipelineStepCo
   return !isPipelineConfig(c) && !isPipelineSelfRef(c);
 }
 
-export function buildRefMap(config: PipelineConfigurationProcessed): Map<string, PipelineConfigurationProcessed> {
-  const res = new Map<string, PipelineConfigurationProcessed>();
 
-  const getNextItem = (item: ConfigTraverseItem, path: ItemPathArray) => {
+export function buildRefMap(config: PipelineConfigurationProcessed): Map<string, PipelineConfigurationProcessed> {
+  const refMap = new Map<string, PipelineConfigurationProcessed>();
+
+  function getNextItem(item: ConfigTraverseItem, path: ItemPathArray) {
     if (isPipelineStepConfig(item))
-      return [] as any;
+      return null;
     else if (isPipelineSelfRef(item)) {
-      const next = res.get(item.selfRef);
+      const next = refMap.get(item.selfRef);
       if (next == null)
         throw new Error(`SelfRef ${item.selfRef} on path ${path.join('/')} not found`);
-      const npath = [...path, next.id];
-      return [next, npath] as const;
+      return null;
     }
     const npath = [...path, item.id];
     return [item, npath] as const;
@@ -54,9 +54,9 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
     if (isPipelineSelfRef(item) || isPipelineStepConfig(item))
       return [] as [ConfigTraverseItem, ItemPathArray][];
     else if (isPipelineStaticConfig(item))
-      return item.steps.map((item) => getNextItem(item, path));
+      return item.steps.map((item) => getNextItem(item, path)!).filter((x) => x);
 
-    return item.stepTypes.map((item) => getNextItem(item, path));
+    return item.stepTypes.map((item) => getNextItem(item, path)!).filter((x) => x);
   });
 
   traverse(config, (res, item, path) => {
@@ -66,31 +66,32 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
       res.set(item.globalId, item);
     }
     return res;
-  }, res);
+  }, refMap);
 
-  return res;
-}
-
-function findNextNode(items: ConfigTraverseItem[], targetSegment: string, currentPath: ItemPathArray, refMap: Map<string, PipelineConfigurationProcessed>) {
-  for (const item of items) {
-    if (isPipelineSelfRef(item)) {
-      const nitem = refMap.get(item.selfRef)!;
-      if (nitem.id === targetSegment)
-        return nitem;
-    } else {
-      if (item.id === targetSegment)
-        return item;
-    }
-  }
-  throw new Error(`Segment ${targetSegment} not found on path ${currentPath.join('/')}`);
+  return refMap;
 }
 
 export function getConfigByInstancePath(instancePath: ItemPathArray, config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>) {
-  const [startId, ...startPath] = instancePath;
-  if (startId !== config.id)
-    throw new Error(`Root segment ${startId} different id ${config.id}`);
+  if (instancePath.length == 0)
+    return config;
+
+  function findNextNode(items: ConfigTraverseItem[], targetSegment: string, currentPath: ItemPathArray, refMap: Map<string, PipelineConfigurationProcessed>) {
+    for (const item of items) {
+      if (isPipelineSelfRef(item)) {
+        const nitem = refMap.get(item.selfRef)!;
+        if (nitem.id === targetSegment)
+          return nitem;
+      } else {
+        if (item.id === targetSegment)
+          return item;
+      }
+    }
+    throw new Error(`Segment ${targetSegment} not found on path ${currentPath.join('/')}`);
+  }
 
   const traverse = buildTraverseD([] as ItemPathArray, (item: ConfigTraverseItem, path: ItemPathArray, remainingPath?: ItemPathArray) => {
+    if (remainingPath?.length == 0)
+      return [];
     const [segment, ...newRemainingPath] = remainingPath!;
     if (isPipelineStaticConfig(item)) {
       const node = findNextNode(item.steps, segment, path, refMap);
@@ -98,16 +99,13 @@ export function getConfigByInstancePath(instancePath: ItemPathArray, config: Pip
     } else if (isPipelineParallelConfig(item) || isPipelineSequentialConfig(item)) {
       const node = findNextNode(item.stepTypes, segment, path, refMap);
       return [[node, [...path, segment] as ItemPathArray, newRemainingPath] as const];
-    } else if (isPipelineStepConfig(item)) {
-      if (item.id !== segment)
-        throw new Error(`Step segment ${segment} has different id ${item.id}`);
     } else if (isPipelineSelfRef(item))
       throw new Error(`Ref segment ${segment} was not mapped`);
 
     if (newRemainingPath.length > 0)
       throw new Error(`Unmatched segments ${newRemainingPath}`);
     return [];
-  }, startPath);
+  }, instancePath);
 
   const node = traverse(config, (_acc, node) => node, undefined as ConfigTraverseItem | undefined);
   return node as ConfigItem;

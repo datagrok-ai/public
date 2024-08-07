@@ -11,7 +11,8 @@ export function buildTraverseB<T, P, S>(startPath: P, getNext: (item: T, path: P
       if (stop)
         return acc;
       const next = getNext(item, path, state);
-      q.push(...next);
+      if (next?.length)
+        q.push(...next);
     }
     return acc;
   };
@@ -28,8 +29,10 @@ export function buildTraverseD<T, P, S>(startPath: P, getNext: (item: T, path: P
       if (stop)
         return acc;
       const next = getNext(item, path, state);
-      const rnext = [...next].reverse();
-      stk.push(...rnext);
+      if (next?.length) {
+        const rnext = [...next].reverse();
+        stk.push(...rnext);
+      }
     }
     return acc;
   };

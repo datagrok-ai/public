@@ -1,1 +1,1 @@
-export { PipelineConfiguration }  from './src/config/PipelineConfiguration';
+export {PipelineConfiguration} from './src/config/PipelineConfiguration';

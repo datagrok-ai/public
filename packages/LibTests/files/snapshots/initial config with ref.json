@@ -1,0 +1,24 @@
+{
+  "configId": "pipelineSeq",
+  "uuid": "",
+  "type": "sequential",
+  "steps": [
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestMul2",
+      "configId": "stepMul",
+      "friendlyName": "mul",
+      "isOuputOutdated": false,
+      "isCurrent": false
+    }
+  ],
+  "stepTypes": [
+    {
+      "configId": "stepMul"
+    },
+    {
+      "configId": "stepRef"
+    }
+  ]
+}

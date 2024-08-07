@@ -71,7 +71,7 @@ export class BaseTree<T> {
     for (const segment of address) {
       const node = current.getChild(segment);
       if (!node)
-        throw new Error(`NodeTree: Failed to get all nodes to: ${address}`); ;
+        throw new Error(`NodeTree: Failed to get all nodes to: ${JSON.stringify(address)}`); ;
       current = node;
       nodes.push(node);
     }

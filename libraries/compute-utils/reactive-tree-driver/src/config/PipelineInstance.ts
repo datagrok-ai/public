@@ -15,7 +15,7 @@ export type StepParallelInitialConfig = {
 
 export type StepSequentialInitialConfig = {
   id: ItemId;
-  disableUIRemoving: boolean;
+  disableUIRemoving?: boolean;
 }
 
 export type StepFunCallInitialConfig = {

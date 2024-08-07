@@ -2,7 +2,7 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: {
     test: {
       filename: 'package-test.js',
@@ -50,9 +50,5 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-  },
-  optimization: {
-    usedExports: true,
-    concatenateModules: false,
   }
 };
