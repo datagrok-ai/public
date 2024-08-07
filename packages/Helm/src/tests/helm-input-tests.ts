@@ -61,26 +61,36 @@ async function _testTooltipOnHelmInput(): Promise<void> {
   const helmValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
   const helmInput = (await ui.input.helmAsync('Macromolecule')) as HelmInput;
   helmInput.stringValue = helmValue;
+  // Show dialog to the right of the TestManager test tree
+  // to prevent interfering mousemove position for tooltip.
+  const tmBcr = grok.shell.v.root.getBoundingClientRect();
   const dlg = ui.dialog('Helm Input Test')
     .add(helmInput)
-    .show();
-  const dialogInputEl = $(dlg.root)
-    .find('div.d4-dialog-contents > div.ui-input-helm > div.ui-input-editor').get(0);
-  expect(helmInput.getInput(), dialogInputEl);
+    .show({x: tmBcr.right + 20, y: tmBcr.top + 20});
+  try {
+    const dialogInputEl = $(dlg.root)
+      .find('div.d4-dialog-contents > div.ui-input-helm > div.ui-input-editor').get(0);
+    expect(helmInput.getInput(), dialogInputEl);
 
-  const mon = {i: 0, elem: 'meY'};
-  const a = helmInput.value.atoms[mon.i];
-  const iEl = helmInput.getInput();
-  const iBcr = iEl.getBoundingClientRect();
-  const ev = new MouseEvent('mousemove', {
-    cancelable: true, bubbles: true, view: window, button: 0,
-    clientX: iBcr.left + a.p.x, clientY: iBcr.top + a.p.y
-  });
-  iEl.dispatchEvent(ev);
-  await delay(200);
 
-  const tooltipEl = $(document).find('body > div.d4-tooltip').get(0) as HTMLElement;
-  const elemDiv = $(tooltipEl).find('div > div.d4-flex-row.ui-div > div:nth-child(1)').get(0);
-  expect(tooltipEl.style.display != 'none', true);
-  expect(elemDiv?.innerText, mon.elem);
+    const mon = {i: 0, elem: 'meY'};
+    const a = helmInput.value.atoms[mon.i];
+    const iEl = helmInput.getInput();
+    const iBcr = iEl.getBoundingClientRect();
+    const ev = new MouseEvent('mousemove', {
+      cancelable: true, bubbles: true, view: window, button: 0,
+      clientX: iBcr.left + a.p.x, clientY: iBcr.top + a.p.y
+    });
+    iEl.dispatchEvent(ev);
+    // do not await anything after event dispatch before test tooltip content
+    // await leads to tooltip changed (with TestManager tree node tooltip)
+
+    const tooltipEl = $(document).find('body > div.d4-tooltip').get(0) as HTMLElement;
+    const elemDiv = $(tooltipEl).find('div > div.d4-flex-row.ui-div > div:nth-child(1)').get(0);
+    expect(tooltipEl.style.display != 'none', true);
+    expect(elemDiv?.innerText, mon.elem);
+  } finally {
+    await delay(50);
+    ui.tooltip.hide();
+  }
 }

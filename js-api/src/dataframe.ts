@@ -870,7 +870,7 @@ export class Column<T = any> {
 
   /** Performs deep cloning, optionally taking mask of the rows to be included.
    * Note that the cloned colum is not added to this column's dataframe. */
-  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, mask)); }
+  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, toDart(mask))); }
 
   /** FOR EXPERT USE ONLY!
    *
@@ -1969,8 +1969,8 @@ export class GroupByBuilder {
 
   /** Performs the aggregation
    *  @returns {DataFrame} */
-  aggregate(): DataFrame {
-    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart));
+  aggregate(options?: {autoName?: boolean}): DataFrame {
+    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart, options?.autoName ?? false));
   }
 
   /**

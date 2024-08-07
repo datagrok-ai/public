@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.7.14",
+  "version": "1.7.16",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Savenko Stanislav",
+    "email": "ssavenko@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -14,7 +14,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.13",
     "cash-dom": "^8.1.1",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",

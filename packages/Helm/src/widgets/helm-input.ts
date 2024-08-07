@@ -12,7 +12,7 @@ import {HelmMol, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {defaultErrorHandler} from '../utils/err-info';
 import {getHoveredMonomerFromEditorMol} from '../utils/get-hovered';
 
-import {_package, getMonomerLib} from '../package';
+import {_package} from '../package';
 
 
 export class HelmInput extends DG.JsInputBase<HelmMol> {
@@ -63,7 +63,10 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
 
     if (name) this.captionLabel.innerText = name;
 
-    this.viewerHost = ui.div([], {classes: 'ui-input-editor', style: {width: '100%', height: '100%'}});
+    this.viewerHost = ui.div([], {
+      classes: 'ui-input-editor',
+      style: {width: '100%', height: '100%', overflow: 'hidden'},
+    });
     this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost);
 
     this.subs = [];
@@ -147,12 +150,12 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
       .add(webEditorHost!)
       .onOK(() => {
         try {
-          const webEditorValue = webEditorApp!.canvas.getHelm(true)
+          const webEditorValue = webEditorApp.canvas!.getHelm(true)
             .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
           this.viewer.editor.setHelm(webEditorValue);
           this.helmString = webEditorValue;
 
-          const selection = webEditorApp!.canvas.helm.jsd.m.atoms;
+          const selection = webEditorApp.canvas!.helm!.jsd.m.atoms;
           this.helmSelection = [];
           for (let i = 0; i < selection.length; i++) {
             if (selection[i].selected)
@@ -182,7 +185,7 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     const mol = this.viewer.editor.m;
     const seqMonomer = getHoveredMonomerFromEditorMol(argsX, argsY, mol, this.viewer.editor.div.clientHeight);
     if (seqMonomer) {
-      const monomerLib = getMonomerLib();
+      const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, event.x + 16, event.y + 16);

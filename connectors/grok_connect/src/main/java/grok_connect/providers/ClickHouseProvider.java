@@ -28,6 +28,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.nameBrackets = "\"";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#^(int(8|16|32))$", serialization.Types.INT);
             put("#^(uint(8|16))$", serialization.Types.INT);
@@ -121,15 +122,10 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
-        try {
-            statement.setTimestamp(parameterIndex, ts);
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setTimestamp(parameterIndex, ts);
     }
 }

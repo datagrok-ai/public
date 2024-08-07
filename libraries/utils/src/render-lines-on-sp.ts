@@ -117,7 +117,7 @@ export class ScatterPlotLinesRenderer {
 
   renderLines(): void {
     const spLook = this.sp.getOptions().look;
-    const individualLineStyles = this.lines.colors || this.lines.width || this.lines.opacities || this.lines.drawArrowsArr;
+    const individualLineStyles = this.lines.colors || this.lines.widths || this.lines.opacities || this.lines.drawArrowsArr;
     if (!individualLineStyles) {
       this.ctx.lineWidth = this.lines.width ?? 1;
       this.ctx.strokeStyle = `rgba(${this.lines.color ?? '0,128,0'},${this.lines.opacity ?? 1})`;
@@ -138,10 +138,10 @@ export class ScatterPlotLinesRenderer {
         this.ctx.beginPath();
         if (aX && aY && bX && bY && Math.hypot(bX! - aX!, bY! - aY!) / minAxis > 0.01) {
           if (individualLineStyles) {
-            const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
-            const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
+            const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : this.lines.color ?? '0,128,0';
+            const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : this.lines.opacity ?? 1;
             this.ctx.strokeStyle = `rgba(${color},${opacity})`;
-            this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : 1;
+            this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : this.lines.width ?? 1;
           }
           if (i === this._currentLineIdx)
             this.toggleCurrentLineStyle(true);
@@ -223,26 +223,27 @@ export class ScatterPlotLinesRenderer {
   }
 
   createMultiLinesIndices(): void {
-    const arrayIdxsBitArray = new BitArray(this.lines.from.length);
-    arrayIdxsBitArray.setAll(true);
-    for (let i = -1; (i = arrayIdxsBitArray.findNext(i)) !== -1;) {
-      const firstLineIdx = i;
-      const p1 = this.lines.from[firstLineIdx];
-      const p2 = this.lines.to[firstLineIdx];
-      let linesPerPair = 1;
-      for (let j = i; (j = arrayIdxsBitArray.findNext(j)) !== -1;) {
-        const pointToCompare1 = this.lines.from[j];
-        const pointToCompare2 = this.lines.to[j];
-        if (pointToCompare1 === p1 && pointToCompare2 === p2 ||
-                    pointToCompare2 === p1 && pointToCompare1 === p2) {
-          this.multipleLinesCounts[j] = ++linesPerPair;
-          arrayIdxsBitArray.setBit(j, false, false);
-        }
+    const linesDict: {[key: string]: number[]} = {};
+    for (let i = 0; i < this.lines.from.length; i++) {
+      let smallerNum = 0;
+      let biggerNum = 0;
+      if (this.lines.from[i] < this.lines.to[i]) {
+        smallerNum = this.lines.from[i];
+        biggerNum = this.lines.to[i];
+      } else {
+        smallerNum = this.lines.to[i];
+        biggerNum = this.lines.from[i];
       }
-      if (linesPerPair > 1)
-        this.multipleLinesCounts[firstLineIdx] = 1;
-      arrayIdxsBitArray.setBit(i, false, false);
-    }
+      if (!linesDict[`${smallerNum}|${biggerNum}`]) {
+        linesDict[`${smallerNum}|${biggerNum}`] = [i];
+      } else {
+        if (linesDict[`${smallerNum}|${biggerNum}`].length === 1) {
+          this.multipleLinesCounts[linesDict[`${smallerNum}|${biggerNum}`][0]] = 1;
+          linesDict[`${smallerNum}|${biggerNum}`].push(1);
+        }
+        this.multipleLinesCounts[i] = ++linesDict[`${smallerNum}|${biggerNum}`][1];
+      }
+    } 
   }
 
   checkCoordsOnLine(x: number, y: number): number {

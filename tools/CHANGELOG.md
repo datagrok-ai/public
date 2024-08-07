@@ -1,6 +1,30 @@
 # Datagrok-tools changelog
 
 
+## 4.13.12 (2024-08-05)
+
+### Features
+
+* Puppeteer-screen-recorder version fixed to 3.0.3
+
+## 4.13.11 (2024-07-30)
+
+### Features
+
+* Added commit label to context panel for 'manually' published versions
+
+## 4.13.10 (2024-07-29)
+
+### Features
+
+* Added ability to select test by args variable 
+
+## 4.13.9 (2024-07-29)
+
+### Features
+
+* Added ability to select category by args variable 
+
 ## 4.13.8 (2024-07-18)
 
 ### Bug Fixes
@@ -9,9 +33,9 @@
 
 ## 4.13.6 (2024-07-15)
 
-### Bug Fixes
+### Features
 
-* Splitt warnings and errors in grok check command
+* Splitted warnings and errors in grok check command
 
 ## 4.13.4 (2024-06-25)
 

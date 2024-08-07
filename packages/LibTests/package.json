@@ -11,7 +11,7 @@
   "dependencies": {
     "@datagrok-libraries/compute-api": "latest",
     "@datagrok-libraries/compute-utils": "latest",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.13",
     "@datagrok-libraries/webcomponents": "^0.0.2",
     "@datagrok-libraries/webcomponents-vue": "^0.0.2",
     "@he-tree/vue": "^2.8.2",

@@ -92,10 +92,8 @@ export function summarizeColumns(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
   const name = ui.input.string('Name', {value: table.columns.getUnusedName('Summary')});
   const sparklineType = ui.input.choice('Type', {value: SparklineType.Sparkline, items: sparklineTypes});
-  const columnsSelector = ui.input.columns('Columns', {table: table,
-    available: names(table.columns.numerical),
-    checked: names(columns),
-  });
+  const columnsSelector = ui.input.columns('Columns', {value: columns, table: table,
+    available: names(table.columns.numerical)});
   const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 
@@ -134,9 +132,7 @@ export function summarizeColumns(columns: DG.Column[]) {
 export function addFormColumn(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
   const name = ui.input.string('Name', {value: table.columns.getUnusedName('Form')});
-  const columnsSelector = ui.input.columns('Columns', {table: table,
-    checked: names(columns),
-  });
+  const columnsSelector = ui.input.columns('Columns', {value: columns, table: table});
   const hide = ui.input.bool('Hide', {value: false});
   hide.setTooltip('Hide source columns in the grid');
 

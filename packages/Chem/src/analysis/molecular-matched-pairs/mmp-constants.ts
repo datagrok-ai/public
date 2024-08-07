@@ -1,27 +1,45 @@
 import * as DG from 'datagrok-api/dg';
 
-export const MMP_COLNAME_FROM = 'From';
-export const MMP_COLNAME_TO = 'To';
-export const MMP_COLNAME_PAIRS = 'Pairs';
-export const MMP_COL_PAIRNUM = '~PairNum';
-export const MMP_COL_PAIRNUM_FROM = '~PairNumFrom';
-export const MMP_COL_PAIRNUM_TO = '~PairNumTo';
-export const MMP_COLNAME_MEANDIFF = 'Mean Difference';
-export const MMP_COLNAME_DIFF = 'Difference';
-export const MMP_VIEW_NAME = 'MMP Analysis';
-export const MMP_TAB_TRANSFORMATIONS = 'Transformations';
-export const MMP_TAB_FRAGMENTS = 'Fragments';
-export const MMP_TAB_CLIFFS = 'Cliffs';
-export const MMP_TAB_GENERATION = 'Generation';
-export const MMP_STRUCT_DIFF_FROM_NAME = '~structDiffFrom';
-export const MMP_STRUCT_DIFF_TO_NAME = '~structDiffTo';
-export const MMP_COLOR = 'color';
+export enum MMP_CONSTRICTIONS {
+  CPU = 1E4,
+  GPU = 1E5
+}
+
+export enum MMP_ERRORS {
+  FRAGMENTS_CPU = 'No GPU found and 10,000 molecules is upper limit for MMPa with CPU',
+  FRAGMENTS_GPU = 'Upper limit for MMPa with GPU is 100,000 molecules',
+  GPU_ABORTED = 'GPU calculations were aborted - faling back to CPU',
+  PAIRS = 'Unable to calculate pairs in MMPa analysis',
+  GENERATIONS = 'Unable to calculate generations in MMPa analysis'
+}
+
+export enum MMP_NAMES {
+  FROM = 'From',
+  TO = 'To',
+  PAIRS = 'Pairs',
+  PAIRNUM = '~PairNum',
+  PAIRNUM_FROM = '~PairNumFrom',
+  PAIRNUM_TO = '~PairNumTo',
+  MEANDIFF = 'Mean Difference',
+  DIFF = 'Difference',
+  VIEW_NAME = 'MMP Analysis',
+  TAB_TRANSFORMATIONS = 'Transformations',
+  TAB_FRAGMENTS = 'Fragments',
+  TAB_CLIFFS = 'Cliffs',
+  TAB_GENERATION = 'Generation',
+  STRUCT_DIFF_FROM_NAME = '~structDiffFrom',
+  STRUCT_DIFF_TO_NAME = '~structDiffTo',
+  COLOR = 'color',
+  SMI1 = '~smi1',
+  SMI2 = '~smi2',
+  RULENUM = '~ruleNum'
+}
 
 export const columnsDescriptions: {[key: string]: string} = {
   'Core': 'Common core',
-  [MMP_COLNAME_FROM]: 'Original fragment',
-  [MMP_COLNAME_TO]: 'Replacement fragment',
-  [MMP_COLNAME_PAIRS]: 'Total number of pairs',
+  [MMP_NAMES.FROM]: 'Original fragment',
+  [MMP_NAMES.TO]: 'Replacement fragment',
+  [MMP_NAMES.PAIRS]: 'Total number of pairs',
   'Generation': 'Transformed molecule',
   'Activity': 'Analyzed Activity/Property',
   'Initial value': 'Initial analyzed activity/property value',

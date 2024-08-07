@@ -40,19 +40,20 @@ export async function TestsListJoined(): Promise<DG.DataFrame| undefined> {
   
   const pacakageTests = await TestAnalysisManager.collectPackageTests();
   const packageTestsListMapped = pacakageTests.map((elem) => {
-    return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+    return { 'type':  "package ", 'test': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
   });
   const manualTest = await TestAnalysisManager.collectManualTestNames();
   const manualTestsListMapped = manualTest.map((elem) => {
-    return { 'name':  "test-manual " + elem };
+    return { 'type':  "manual ", 'test': 'Unknown: ' + elem };
   });
   const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
-  const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
-  const id = builds.get('id', 0); 
+  // const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
+  // const id = builds.get('name', 0); 
 
-  const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
-  return tests;
+  // const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
+  grok.shell.addTableView(resultTestsList!);
+  return resultTestsList;
 }
 
 
@@ -128,7 +129,8 @@ export function usageWidget(): DG.Widget {
 //test: reportsWidget()
 export async function reportsWidget(): Promise<DG.Widget | null> {
   const userGroup = await grok.dapi.groups.find(DG.User.current().group.id);
-  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
+  if (userGroup.memberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators')
+    || userGroup.adminMemberships.some((g) => g.friendlyName === 'Developers' || g.friendlyName === 'Administrators'))
     return new ReportsWidget();
   return null;
 }
@@ -166,40 +168,24 @@ export function describeCurrentObj(): void {
 }
 
 //name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-//tags: panel, widgets
-//input: string msg {semType: ErrorMessage}
-//output: widget result
-//condition: true
-export function createJiraTicket(msg: string): DG.Widget {
-  const root = ui.div();
-
-  const summary = ui.input.string('Summary', {value: ''});
-  const description = ui.input.string('Description', {value: msg});
-
-  const button = ui.bigButton('CREATE', () => {
-    grok.data.query('Vnerozin:JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': summary.value,
-          'description': description.value,
-          'issuetype': {
-            'name': 'Bug',
-          },
+//description: Creates JIRA ticket using current error log  
+export function createJiraTicket(msg: string){ 
+  grok.data.query('JiraCreateIssue', {
+    'createRequest': JSON.stringify({
+      'fields': {
+        'project': {
+          'key': 'GROK',
         },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-    });
-  });
-  button.style.marginTop = '12px';
-
-  root.appendChild(ui.inputs([summary, description]));
-  root.appendChild(button);
-
-  return new DG.Widget(root);
+        'summary': 'test',
+        'description':'',
+        'issuetype': {
+          'name': 'Bug',
+        },
+      },
+    }),
+    'updateHistory': false,
+  }).then((t) => {
+    grok.shell.info('Created');
+    console.log(t);
+  });  
 }

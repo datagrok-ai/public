@@ -78,6 +78,7 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import { calculateScoresWithEmptyValues } from './utils/calculate-scores';
 
 export const _package = new BioPackage();
 
@@ -868,7 +869,7 @@ export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
 export async function sequenceIdentityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScores(table, macromolecule, reference, SCORE.IDENTITY);
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY);
   return scores;
 }
 
@@ -882,7 +883,7 @@ export async function sequenceIdentityScoring(
 export async function sequenceSimilarityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY);
   return scores;
 }
 

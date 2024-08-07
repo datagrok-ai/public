@@ -65,6 +65,30 @@ Once implemented, custom models can be chosen from the list of model engines.
 
 * `#output: dataframe data_out` – single-column dataframe of predicted values
 
+## IsApplicable
+
+`IsApplicable` is a predicate used to determine if a model can be trained to predict the target column using the feature columns. It usually checks the types of input columns as well as their sizes.
+
+### IsApplicable Header Parameters
+
+* `#meta.mlname: CustomName` – Name of the custom IsApplicable function (should match the corresponding train function name)
+* `#meta.mlrole: isApplicable` – Predicate name (isApplicable)
+* `#description: Custom ML IsApplicable function for KNN algorithm` – Description of the function
+* `#language: Python` – Language (Python, R, Julia)
+
+### IsApplicable Input Data Parameters
+
+* `#input: dataframe df` – Dataframe for training
+* `#input: string predict_column` – List of features/column names separated by a comma
+
+### IsApplicable Output Parameters
+
+* `#output: bool result` – Boolean value indicating if the model is applicable to the given data
+
+## IsInteractive
+
+`IsInteractive` is an optional predicate that operates in the same manner as `IsApplicable` but is used to determine if a model can be trained quickly, allowing interactive training.
+
 ## Example
 
 ### `Train` function
@@ -144,6 +168,29 @@ trained_model = pickle.load(open(model, 'rb'))
 predY = trained_model.predict(testX)
 data_out = pd.DataFrame({'pred': predY})
 ```
+
+### `IsApplicable` function
+
+
+```python
+
+#name: PyKNNIsApplicable
+#meta.mlname: PyKNN
+#meta.mlrole: isApplicable
+#description: Custom Python isApplicable function for KNN
+#language: python
+#input: dataframe df
+#input: string predict_column
+#output: bool result
+
+
+# checks all columns are numerical
+import numpy as np
+numeric = df.select_dtypes(include=np.number).columns.tolist()
+result = len(numeric) == df.shape[1]
+
+```
+
 
 See also:
 

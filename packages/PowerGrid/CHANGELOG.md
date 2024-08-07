@@ -1,5 +1,16 @@
 # PowerGrid changelog
 
+## 1.3.1 (2024-07-24)
+
+### Features
+
+* Introduced segments in PieChart
+
+### Bug Fixes
+
+* Added light gray circle border and fixed rendering when width is smaller than expected in PieChart
+* Fixed name null in createTooltip in sparklines
+
 ## 1.3.0 (2024-02-20)
 
 ### Features

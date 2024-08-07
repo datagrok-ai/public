@@ -78,7 +78,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       }
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
-      if (computeData && !this.gridSelect && this.followCurrentRow) {
+      if (computeData && (!this.gridSelect && this.followCurrentRow || this.isEditedFromSketcher)) {
         this.isComputing = true;
         this.error = '';
         this.root.classList.remove(`chem-malformed-molecule-error`);

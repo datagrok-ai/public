@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-api": "^0.0.5",
-    "@datagrok-libraries/utils": "^4.2.11",
+    "@datagrok-libraries/utils": "^4.2.19",
     "codemirror": "^5.65.15",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.20.0",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
@@ -66,6 +66,17 @@
   ],
   "category": "Development",
   "meta": {
-    "dartium": false
+    "dartium": false,
+    "semanticTypes": [
+      {
+        "semType": "GROK_JIRA_TICKET",
+        "description": "GROK ticket in JIRA",
+        "parsers": [
+          {
+            "regexp": "GROK-\\d+"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -9,16 +9,15 @@ import {
   CellRendererBackAsyncBase, RenderServiceBase
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {HelmAux, HelmProps} from '@datagrok-libraries/bio/src/viewers/helm-service';
-
-import {getHoveredMonomerFromEditorMol} from './get-hovered';
-import {_getHelmService} from '../package-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
-
-import {_package, getMonomerLib} from '../package';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {GridCell, GridCellStyle, x} from 'datagrok-api/dg';
+
+import {getHoveredMonomerFromEditorMol} from './get-hovered';
+import {_getHelmService} from '../package-utils';
+
+import {_package} from '../package';
 
 class WrapLogger implements ILogger {
   constructor(
@@ -146,7 +145,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
 
     if (seqMonomer) {
-      const monomerLib = getMonomerLib();
+      const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, e.x + 16, e.y + 16);
@@ -158,9 +157,9 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
   public override render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: GridCell, cellStyle: GridCellStyle) {
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     if (!this.monomerLib) {
-      this.monomerLib = getMonomerLib();
+      this.monomerLib = _package.monomerLib;
       if (this.monomerLib) {
         this.subs.push(this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this)));
       }

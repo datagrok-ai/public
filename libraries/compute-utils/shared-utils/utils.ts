@@ -9,9 +9,12 @@ import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
-import {getStarted} from '../function-views/src/shared/utils';
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // grok.functions.eval creates an ID.
+  // So we should control it and overwrite ID by null again if necessary.
+
   const callCopy: DG.FuncCall = (await grok.functions.eval(call.func.nqName))
     //@ts-ignore
     .prepare([...call.inputs].reduce((acc, [key, val]) => {
@@ -19,6 +22,9 @@ export const createPartialCopy = async (call: DG.FuncCall) => {
       return acc;
     }, {} as Record<string, any>));
   call.options.forEach((key: string) => callCopy.options[key] = call.options[key]);
+
+  //@ts-ignore
+  if (!previousId) callCopy.id = null;
 
   return callCopy;
 };
@@ -63,7 +69,13 @@ export function isInputBase(input: FuncCallInput): input is DG.InputBase {
 }
 
 export const deepCopy = (call: DG.FuncCall) => {
+  const previousId = call.id;
+  // FuncCall.clone() creates an ID for original (!) call if it was null.
+  // So we should control it and overwrite ID by null again if necessary.
   const deepClone = call.clone();
+
+  //@ts-ignore
+  if (!previousId) deepClone.id = null;
 
   call.options.forEach((key: string) => deepClone.options[key] = call.options[key]);
 

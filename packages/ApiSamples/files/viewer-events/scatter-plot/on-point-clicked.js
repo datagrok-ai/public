@@ -1,1 +1,1 @@
-grok.shell.o = ui.divText('Clicked on ' + args.args.rowId);
+grok.shell.o = ui.divText('Clicked on ' + args.rowId);

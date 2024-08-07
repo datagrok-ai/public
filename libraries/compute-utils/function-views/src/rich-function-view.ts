@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -19,7 +19,7 @@ import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
+import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -229,6 +229,9 @@ export class RichFunctionView extends FunctionView {
               input.notify = false;
               input.value = value;
               input.notify = true;
+              this.funcCall.inputs[key] = value;
+
+              this.inputValidationRequests.next({field: key, isRevalidation: false});
             }
 
             grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
@@ -406,6 +409,8 @@ export class RichFunctionView extends FunctionView {
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
     this.navBtns = navBtns;
+
+    this.buildFormButtons();
   }
 
   /**
@@ -652,8 +657,8 @@ export class RichFunctionView extends FunctionView {
 
     reviewDialog.addButton(simulateInputs, () => {
       properUpdateIndicator(uploadDialog.root, true);
-      Promise.all(uploadedFunccalls.map((call) => {
-        const simulatingCall = this.func.prepare(deepCopy(call).inputs);
+      Promise.all(uploadedFunccalls.map(async (call) => {
+        const simulatingCall = await createPartialCopy(call);
         return simulatingCall.call();
       })).then((calls)=> {
         simulatedFunccalls = calls;
@@ -697,7 +702,6 @@ export class RichFunctionView extends FunctionView {
       await this.saveExperimentalRun(this.funcCall);
       return;
     }
-
     await this.saveRun(this.funcCall);
   }
 
@@ -741,7 +745,7 @@ export class RichFunctionView extends FunctionView {
       ...this.hasUploadMode ? [toggleUploadMode]: [],
       ...this.isSaEnabled ? [sensitivityAnalysis]: [],
       ...this.isFittingEnabled ? [fitting]: [],
-      ...this.hasContextHelp ? [contextHelpIcon]: [],
+      ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -1057,18 +1061,18 @@ export class RichFunctionView extends FunctionView {
 
   private async saveLastInputs() {
     try {
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToSave = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
           this.funcCall.inputs[inputParam.name]:
-          await grok.dapi.tables.uploadDataFrame(this.funcCall.inputs[inputParam.name]);
+          Array.from((this.funcCall.inputs[inputParam.name] as DG.DataFrame).toByteArray());
 
         return {
-          ...(await acc),
-          [inputParam.name]: JSON.stringify(valueToSave),
+          ...acc,
+          [inputParam.name]: valueToSave,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, lastInputs);
+      return localStorage.setItem(this.inputsStorage, JSON.stringify(lastInputs));
     } catch (e: any) {
       grok.shell.error(e.toString());
     }
@@ -1076,20 +1080,20 @@ export class RichFunctionView extends FunctionView {
 
   private async loadLastInputs() {
     try {
-      const valuesFromStorage = await grok.dapi.userDataStorage.get(this.inputsStorage);
+      const valuesFromStorage = JSON.parse(localStorage.getItem(this.inputsStorage) ?? '{}');
 
       if (Object.keys(valuesFromStorage).length === 0) return null;
 
-      const lastInputs = await wu(this.funcCall.inputParams.values()).reduce(async (acc, inputParam) => {
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
         const valueToLoad = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
-          JSON.parse(valuesFromStorage[inputParam.name]):
-          await grok.dapi.tables.getTable(JSON.parse(valuesFromStorage[inputParam.name]));
+          valuesFromStorage[inputParam.name]:
+          DG.DataFrame.fromByteArray(new Uint8Array(valuesFromStorage[inputParam.name]));
 
         return {
-          ...(await acc),
+          ...acc,
           [inputParam.name]: valueToLoad,
         };
-      }, Promise.resolve({} as Record<string, any>));
+      }, {} as Record<string, any>);
 
       return lastInputs;
     } catch (e: any) {
@@ -1099,7 +1103,7 @@ export class RichFunctionView extends FunctionView {
 
   private async deleteLastInputs() {
     try {
-      return await grok.dapi.userDataStorage.put(this.inputsStorage, {});
+      return localStorage.removeItem(this.inputsStorage);
     } catch (e: any) {
       grok.shell.error(e.toString());
     }

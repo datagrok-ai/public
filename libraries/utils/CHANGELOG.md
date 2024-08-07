@@ -1,5 +1,34 @@
 # utils changelog
 
+## 4.2.19 (2024-08-02)
+
+Fix benchmark timeout 
+
+
+## 4.2.18 (2024-08-02)
+
+Added benchmark timeout as test variable
+
+## 4.2.17 (2024-08-02)
+
+ScatterPlotLInesRenderer: speed up multiple lines indexes calculations
+
+## 4.2.16 (2024-08-02)
+
+Fixed core tests output to the Test Manager app
+
+## 4.2.15 (2024-07-30)
+
+Removed Unhadled exception test for benchmarks 
+
+## 4.2.14 (2024-07-29)
+
+Fixed setting lines width, color and opacity in ScatterPlotLinesRenderer
+
+## 4.2.13 (2024-07-15)
+
+Added benchmark flag to category options
+
 ## 4.2.12 (2024-07-15)
 
 Added benchmark flag to test options

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {scriptEditor} from './script-editor';
+import {initScriptEditor} from './script-editor';
 import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
@@ -53,7 +53,7 @@ export function describeCurrentObj(): void {
 export function _scriptEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
-      scriptEditor(view);
+      initScriptEditor(view);
   });
 }
 

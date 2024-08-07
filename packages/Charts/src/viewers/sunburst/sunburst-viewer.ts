@@ -57,14 +57,15 @@ export class SunburstViewer extends EChartViewer {
   }
 
   handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((i) => {
-      if (!this.filter.get(i))
+    this.dataFrame.selection.handleClick((index: number) => {
+      if (!this.filter.get(index)) {
         return false;
-      for (let j = 0; j < path.length; j++) {
-        if (this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(i).toString() !== path[j])
-          return false;
       }
-      return true;
+  
+      return path.every((segment, j) => {
+        const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
+        return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
+      });
     }, event);
   }
 
@@ -75,15 +76,14 @@ export class SunburstViewer extends EChartViewer {
   
   buildFilterFunction(path: string[]): (row: any) => boolean {
     return (row) => {
-      for (let i = 0; i < path.length; ++i) {
-        const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
+      return path.every((expectedValue, i) => {
+        const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
         const columnValue = row.get(this.hierarchyColumnNames[i]);
-        const formattedValue = columnType !== 'string' ? columnValue.toString() : columnValue;
-        const expectedValue = path[i];
-        if (formattedValue !== expectedValue)
-          return false;
-      }
-      return true;
+        const formattedValue = columnValue 
+          ? (column.type !== 'string' ? columnValue.toString() : columnValue)
+          : '';
+        return formattedValue === expectedValue;
+      });
     };
   }
 
@@ -134,15 +134,18 @@ export class SunburstViewer extends EChartViewer {
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
           const column = dataFrame.getCol(hierarchyColumnNames[j]);
           const format = column.meta.format;
-          if (format) {
+          const value = column.get(i);
+          const isDate = column.type === DG.TYPE.DATE_TIME;
+          if (format && !isDate) {
             const number = format.indexOf('.');
             const len = format.length - number - 1;
-            if ((column.get(i)).toFixed(len) === params.name)
+            if (value.toFixed(len) === params.name)
               return true;
           }
-          if (column.get(i).toString() === params.name) {
+          if (value && value.toString() === params.name)
             return true;
-          }
+          if (!value && '' === params.name)
+            return true;
         }
         return false;
       }, params.event.event.x, params.event.event.y);

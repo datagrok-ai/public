@@ -13,8 +13,7 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {chemSpace} from '../chem-space';
 import {debounceTime} from 'rxjs/operators';
 import {getInverseSubstructuresAndAlign} from './mmp-mol-rendering';
-import {MMP_COLNAME_FROM, MMP_COLNAME_TO, MMP_COL_PAIRNUM_FROM, MMP_COL_PAIRNUM_TO,
-  MMP_STRUCT_DIFF_FROM_NAME, MMP_STRUCT_DIFF_TO_NAME} from './mmp-constants';
+import {MMP_NAMES} from './mmp-constants';
 import {MmpInput} from './mmp-constants';
 import $ from 'cash-dom';
 
@@ -41,7 +40,7 @@ export function getMmpScatterPlot(
 
   for (let i = 0; i < maxActs.length; i ++) {
     const actName = mmpInput.activities.byIndex(i).name;
-    const sliderInput = ui.input.slider(mmpInput.activities.byIndex(i).name, {value: 0, min: 0, max: maxActs[i]});
+    const sliderInput = ui.input.slider(mmpInput.activities.byIndex(i).name, {value: maxActs[i]/2, min: 0, max: maxActs[i]});
     const sliderInputValueDiv = ui.divText(sliderInput.stringValue, 'ui-input-description');
     sliderInput.addOptions(sliderInputValueDiv);
     sliderInput.root.classList.add('mmpa-slider-input');
@@ -86,12 +85,12 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   const moleculesDiv = ui.divH([]);
   div.append(moleculesDiv);
   const pairIdx = linesIdxs[line];
-  const subsrtFrom = pairsDf.get(MMP_STRUCT_DIFF_FROM_NAME, pairIdx);
-  const subsrtTo = pairsDf.get(MMP_STRUCT_DIFF_TO_NAME, pairIdx);
-  const moleculeFrom = pairsDf.get(MMP_COLNAME_FROM, pairIdx);
-  const moleculeTo = pairsDf.get(MMP_COLNAME_TO, pairIdx);
-  const fromIdx = pairsDf.get(MMP_COL_PAIRNUM_FROM, pairIdx);
-  const toIdx = pairsDf.get(MMP_COL_PAIRNUM_TO, pairIdx);
+  const subsrtFrom = pairsDf.get(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx);
+  const subsrtTo = pairsDf.get(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx);
+  const moleculeFrom = pairsDf.get(MMP_NAMES.FROM, pairIdx);
+  const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
+  const fromIdx = pairsDf.get(MMP_NAMES.FROM, pairIdx);
+  const toIdx = pairsDf.get(MMP_NAMES.TO, pairIdx);
   if (propPanelViewer) {
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
@@ -107,10 +106,10 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
     moleculesDiv.append(ui.divText(`Loading...`));
     getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
       const {inverse1, inverse2, fromAligned, toAligned} = res;
-      pairsDf.set(MMP_STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-      pairsDf.set(MMP_STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-      pairsDf.set(MMP_COLNAME_FROM, pairIdx, fromAligned[0]);
-      pairsDf.set(MMP_COLNAME_TO, pairIdx, toAligned[0]);
+      pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
+      pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
+      pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
+      pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
       drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
         [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
     });
@@ -138,7 +137,6 @@ export function runMmpChemSpace(mmpInput: MmpInput, sp: DG.Viewer, lines: ILineS
 
   const spEditor = new ScatterPlotLinesRenderer(sp as DG.ScatterPlotViewer,
     embedColsNames[0], embedColsNames[1], lines, ScatterPlotCurrentLineStyle.bold);
-
 
   spEditor.lineHover.pipe(debounceTime(500)).subscribe((event: MouseOverLineEvent) => {
     ui.tooltip.show(
