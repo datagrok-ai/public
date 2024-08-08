@@ -141,11 +141,11 @@ category('UI top menu', () => {
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
-    });
+    }, {stressTest: true});
 
     test('to inchi keys', async () => {
         await testGroup('Calculate', 'To InchI Keys...', 'inchi_key', 'To InchI Keys');
-    });
+    }, {stressTest: true});
 
     test('descriptors', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -168,11 +168,11 @@ category('UI top menu', () => {
         isColumnPresent(smiles.columns, 'RingCount');
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {stressTest: true});
 
     test('toxicity risks', async () => {
         await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');
-    });
+    }, {stressTest: true});
 
     test('properties', async () => {
         await testGroup('Calculate', 'Properties...', 'MW', 'Chemical Properties');
