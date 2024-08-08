@@ -110,12 +110,51 @@ export async function markovCluster(
   sc.props.colorColumnName = clusterColName;
   sc.props.markerDefaultSize = 6;
   terminateSub.unsubscribe();
-  // const sc = tv.scatterPlot({x: emberdXColName, y: emberdYColName});
-  // sc.props.colorColumnName = clusterColName;
-  // sc.props.markerDefaultSize = 5;
+
+  // limit cluster interconnectivity to 20 lines
+
+  const maxInterClusterLinks = 20;
+  // I know pushing to array is slow, but it's not a big deal here as its max 100k pushes in most cases
+  const filteredIs: number[] = [];
+  const filteredJs: number[] = [];
+  const clusterInterconnectivity = new Map<number, Map<number, number>>();
+  for (let i = 0; i < res.is.length; i++) {
+    let from = res.clusters[res.is[i]];
+    let to = res.clusters[res.js[i]];
+    if (from === to) {
+      filteredIs.push(res.is[i]);
+      filteredJs.push(res.js[i]);
+      continue;
+    }
+    if (from > to) {
+      const tmp = from;
+      from = to;
+      to = tmp;
+    }
+
+    let fromMap = clusterInterconnectivity.get(from);
+    if (!fromMap) {
+      fromMap = new Map<number, number>();
+      clusterInterconnectivity.set(from, fromMap);
+    }
+    let count = fromMap.get(to);
+    if (!count)
+      count = 0;
+
+    if (count >= maxInterClusterLinks)
+      continue;
+
+    count++;
+    fromMap.set(to, count);
+    filteredIs.push(res.is[i]);
+    filteredJs.push(res.js[i]);
+  }
+
+
   const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
-    {from: res.is as any, to: res.js as any, drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true,
-      skipShortLines: true, skipMouseOverDetection: true, shortLineThreshold: 6},
+    {from: new Uint32Array(filteredIs) as any, to: new Uint32Array(filteredJs) as any,
+      drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true,
+      skipShortLines: true, skipMouseOverDetection: true, shortLineThreshold: 6, width: 0.75, color: '128,128,128'},
     ScatterPlotCurrentLineStyle.none);
 
   // _scLines.lineClicked.subscribe((args) => {

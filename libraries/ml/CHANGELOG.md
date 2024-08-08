@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.17 (2024-08-08)
+
+Add limit to intercluster connections in mcl
+
 ## 6.6.16 (2024-08-07)
 
 Correct NW Calculation on webGPU on CPU
