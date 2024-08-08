@@ -167,7 +167,7 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
 //meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
-  return macromoleculeSarFastaDemoUI();
+  return await macromoleculeSarFastaDemoUI();
 }
 
 //name: LST Pie Chart
