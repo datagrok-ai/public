@@ -166,6 +166,7 @@ export class DemoView extends DG.ViewBase {
     
     for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
       const name = DEMO_APP_HIERARCHY.children[i].name;
+      const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(name));
       //tree.group(name, null, true).root.lastChild?.appendChild(this._groupRoot(name));
       const root = this._createViewRootElement(name);
       root.classList.add('grok-gallery-grid');
@@ -184,28 +185,32 @@ export class DemoView extends DG.ViewBase {
           groupRoot.append(collection[i] as HTMLElement)
       }
 
-      treeGroup.root.lastChild?.appendChild(groupRoot);
       let subCategories = [...new Set(tempArr)];
-      
-      if (subCategories.length > 1) {
+      const subCategoryFuncs = directionFuncs.filter((func) => {
+        for (let i = 0; i < subCategories.length; i++)
+          if (func.path.includes(subCategories[i]))
+            return true;
+        return false;
+      });
+
+      if (subCategories.length > 1 || (subCategories.length > 0 && subCategoryFuncs.length !== directionFuncs.length)) {
         for (let i = 0; i < subCategories.length; i++){
           const subGroupRoot = ui.div([], 'grok-gallery-grid');
           const subTreeGroup = treeGroup.group(String(subCategories[i]), null, true);
-          for (let j = 0; j < collection.length; j++) {
-            if (collection[j].getAttribute('data-sub-category') === subCategories[i]) {
+          for (let j = 0; j < collection.length; j++)
+            if (collection[j].getAttribute('data-sub-category') === subCategories[i])
               subGroupRoot.append(collection[j])
-            }
-          }
           subTreeGroup.root.lastChild?.appendChild(subGroupRoot);
         }
-      } else {
-        for (let i = 0; i < collection.length; i++) {
+      } else
+        for (let i = 0; i < collection.length; i++)
           groupRoot.append(collection[i])
-        }
-      }
+
+      treeGroup.root.lastChild?.appendChild(groupRoot);
     }
 
-    this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
+    const searchInput = this._createSearchInput(this.funcs, tree);
+    this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
   }
 
   private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {
@@ -304,10 +309,15 @@ export class DemoView extends DG.ViewBase {
         groupRoot.append(collection[i] as HTMLElement)
     }
 
-    treeGroup.root.lastChild?.appendChild(groupRoot);
     let subCategories = [...new Set(tempArr)];
+    const subCategoryFuncs = directionFuncs.filter((func) => {
+      for (let i = 0; i < subCategories.length; i++)
+        if (func.path.includes(subCategories[i]))
+          return true;
+      return false;
+    });
 
-    if (subCategories.length > 1) {
+    if (subCategories.length > 1 || (subCategories.length > 0 && subCategoryFuncs.length !== directionFuncs.length)) {
       for (let i = 0; i < subCategories.length; i++){
         const subGroupRoot = ui.div([], 'grok-gallery-grid');
         const subTreeGroup = treeGroup.group(String(subCategories[i]), null, true);
@@ -321,6 +331,8 @@ export class DemoView extends DG.ViewBase {
     } else
       for (let i = 0; i < collection.length; i++)
         groupRoot.append(collection[i])
+
+    treeGroup.root.lastChild?.appendChild(groupRoot);
 
     tree.root.classList.add('demo-app-group-view');
     const searchInput = this._createSearchInput(directionFuncs, tree);
