@@ -10,8 +10,8 @@ import {getValidators,
   validate,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {SYNC_FIELD} from '@datagrok-libraries/compute-utils/shared-utils/consts';
-import {Validator} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import {ValidationResult, Validator} from '@datagrok-libraries/compute-utils/shared-utils/validation';
+import {FuncCallInputValidated, isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {computedAsync} from '@vueuse/core';
 
 declare global {
@@ -43,20 +43,13 @@ export const InputForm = defineComponent({
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
       emit('formReplaced', event.detail);
+      currentForm = event.detail;
+      if (!currentForm) return;
 
-      const form = event.detail;
-
-      currentForm = form;
-
-      if (!form) return;
-
-      [...props.funcCall.inputParams.values()]
-        .map((param) => param.name)
-        .forEach((param) => {
-          const input = form.getInput(param);
-          if (isInputBase(input))
-            injectInputBaseValidation(input);
-        });
+      allParams(props.funcCall)
+        .map((param) => currentForm!.getInput(param))
+        .filter((input) => isInputBase(input))
+        .forEach((input) => injectInputBaseValidation(input));
 
       runValidation();
     };
@@ -77,11 +70,10 @@ export const InputForm = defineComponent({
           funcCall: props.funcCall,
         }, loadedValidators);
 
-      Object.entries(results).forEach(([paramName, res]) => {
-        const t = currentForm!.getInput(paramName);
-        if (isFuncCallInputValidated(t))
-          t.setValidation(res);
-      });
+      Object.keys(results)
+        .map((paramName) => currentForm!.getInput(paramName))
+        .filter((input) => isFuncCallInputValidated(input))
+        .forEach((input) => input.setValidation(results[input.property.name]));
     };
 
     return () => {
