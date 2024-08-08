@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.13.7 (2024-08-08)
+
+* Adjust monomer max lengths for monomer renderer
+
 ## 2.13.6 (2024-07-29)
 
 * SequenceChemSimilarity: warning in case reference monomer not found in monomer library
