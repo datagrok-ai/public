@@ -4,12 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { _package } from '../package';
 import { delay } from '@datagrok-libraries/utils/src/test';
 import { CONSTANTS, DiffDockModel } from '../diffdock/diffdock-model';
-
-async function openDataset(name: string): Promise<DG.TableView> {
-  const df = await _package.files.readAsText(name);
-  const table = DG.DataFrame.fromCsv(df);
-  return grok.shell.addTableView(table);
-}
+import { DIFFDOCK_HELP, ESMFOLD_HELP, openDataset, showHelpPanel } from './utils';
 
 export async function _demoEsmFoldModel(): Promise<void> {
   const tv: DG.TableView = await openDataset('demo/folding-demo.csv');
@@ -17,6 +12,8 @@ export async function _demoEsmFoldModel(): Promise<void> {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
   });
+  tv.dataFrame.currentCell = tv.dataFrame.cell(0, 'Protein');
+  showHelpPanel(ESMFOLD_HELP);
 }
 
 export async function _demoDiffDockModel(): Promise<void> {
@@ -24,7 +21,6 @@ export async function _demoDiffDockModel(): Promise<void> {
   const grid = tv.grid;
   const table = tv.dataFrame;
   const posesColumnName = CONSTANTS.POSES_COLUMN_NAME;
-  const virtualPosesColumnName = CONSTANTS.VIRTUAL_POSES_COLUMN_NAME;
 
   await delay(1000);
 
@@ -42,14 +38,7 @@ export async function _demoDiffDockModel(): Promise<void> {
   const layout = DG.ViewLayout.fromJson(layoutString);
   tv.loadLayout(layout);
 
-  const ligandsCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const target = await grok.dapi.files.readAsText('System:AppData/Docking/targets/BACE1/BACE1.pdbqt');
-  const diffDockModel = new DiffDockModel(table, ligandsCol!, target, 'BACE1', 20);
-
-  diffDockModel.posesColumn = posesColumn;
-  diffDockModel.virtualPosesColumn = table.columns.byName(virtualPosesColumnName);
-
-  diffDockModel.subscribeToCurrentCellChanged();
-  table.currentCell = table.cell(0, posesColumnName);
-  table.fireValuesChanged();
+  const ligandsColName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;
+  table.currentCell = table.cell(0, ligandsColName!);
+  showHelpPanel(DIFFDOCK_HELP);
 }
