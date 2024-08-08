@@ -106,7 +106,7 @@ export async function diffDockPanel(smiles: DG.SemanticValue): Promise<DG.Widget
   const targetInput = ui.input.choice('Target', { value: (await getTargetFiles())[0], items: await getTargetFiles() });
 
   const resultsContainer = ui.div();
-  const form = ui.form([posesInput, targetInput]);
+  const form = ui.form([targetInput, posesInput]);
   const panels = ui.divV([form, ui.button('Run', async () => {
     await handleRunClick(smiles, posesInput.value!, targetInput.value!, resultsContainer);
   }), resultsContainer]);
