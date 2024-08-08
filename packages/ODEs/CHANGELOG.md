@@ -4,6 +4,11 @@
 
 Improved browsing, and added tests & benchmarks
 
+Added
+
+* the Pollution model
+* numerical methods tests & benchmarks
+
 ## 1.0.10 (2024-06-10)
 
 Implemented

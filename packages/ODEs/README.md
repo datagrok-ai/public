@@ -81,6 +81,9 @@ The solver has built-in use cases. Get access to them via the context menu. You 
 * `Bioreactor`
   * simulates the bioreactor [processes](https://doi.org/10.1074/jbc.RA117.000303)
   * illustrates the capability of modeling complex processes described by a large number of equations
+* `Pollution`
+  * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
+  * demonstrates the simulation of processes described by a stiff system of ODEs
 
 Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
 
@@ -220,7 +223,7 @@ The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance
 |[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|1124|2884|904|
 |[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|947|1131|440|
 |[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|24|52|18|
-|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|112|191|80|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|71|139|32|
 
 This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 

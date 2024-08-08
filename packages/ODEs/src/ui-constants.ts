@@ -24,6 +24,7 @@ export enum HINT {
   ACID = 'Gluconic acid production model',
   NIM = 'Nimotuzumab disposition model',
   BIO = 'Bioreactor simulation',
+  POLL = 'The chemical reaction part of the air pollution model',
   CLEAR = 'Clear model',
   TO_JS = 'Export model to JavaScript script',
   APP = 'Export model to platform application with user interface',
@@ -54,6 +55,7 @@ export enum TITLE {
   ACID = 'Acid production',
   NIM = 'Nimotuzumab',
   BIO = 'Bioreactor',
+  POLL = 'Pollution',
   CLEAR = 'Clear',
   TO_JS = 'js',
   MISC = 'Misc',
@@ -81,6 +83,7 @@ export enum LINK {
   PKPD = `${DIF_STUDIO_REL}#pk-pd`,
   ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
   BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
+  POLLUTION = `${DIF_STUDIO_REL}#pollution`,
 };
 
 /** Error messages */

@@ -142,7 +142,7 @@ enum POL {
 const pollution = {
   name: 'Pollution',
   arg: {name: 't', start: 0, finish: 60, step: 0.002},
-  initial: [0, 0.2, 0, 0.4, 0, 0, 0.1, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0, 0.007, 0, 0, 0],
+  initial: [0, 0.2, 0, 0.04, 0, 0, 0.1, 0.3, 0.01, 0, 0, 0, 0, 0, 0, 0, 0.007, 0, 0, 0],
   func: (t: number, y: Float64Array, output: Float64Array) => {
     // extract function values
     const y1 = y[0];

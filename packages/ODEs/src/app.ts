@@ -38,6 +38,7 @@ enum EDITOR_STATE {
   ACID_PROD = 'ga-production',
   NIMOTUZUMAB = 'nimotuzumab',
   BIOREACTOR = 'bioreactor',
+  POLLUTION = 'pollution',
 };
 
 /** State-to-template/use-case map */
@@ -53,10 +54,12 @@ const MODEL_BY_STATE = new Map<EDITOR_STATE, TEMPLATES | USE_CASES>([
   [EDITOR_STATE.ACID_PROD, USE_CASES.ACID_PROD],
   [EDITOR_STATE.NIMOTUZUMAB, USE_CASES.NIMOTUZUMAB],
   [EDITOR_STATE.BIOREACTOR, USE_CASES.BIOREACTOR],
+  [EDITOR_STATE.POLLUTION, USE_CASES.POLLUTION],
 ]);
 
 /** Models & templates */
-const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
+const MODELS: string[] = [
+  EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ADVANCED_TEMPLATE,
   EDITOR_STATE.EXTENDED_TEMPLATE,
   EDITOR_STATE.CHEM_REACT,
@@ -67,6 +70,7 @@ const MODELS: string[] = [EDITOR_STATE.BASIC_TEMPLATE,
   EDITOR_STATE.ACID_PROD,
   EDITOR_STATE.NIMOTUZUMAB,
   EDITOR_STATE.BIOREACTOR,
+  EDITOR_STATE.POLLUTION,
 ];
 
 /** Return help link with respect to IVP editor state */
@@ -95,6 +99,9 @@ function getLink(state: EDITOR_STATE): string {
 
   case EDITOR_STATE.BIOREACTOR:
     return LINK.BIOREACTOR;
+
+  case EDITOR_STATE.POLLUTION:
+    return LINK.POLLUTION;
 
   default:
     return LINK.DIF_STUDIO_REL;
@@ -373,6 +380,7 @@ export class DiffStudio {
       .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
       .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
       .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
       .endGroup();
 
     this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
@@ -450,6 +458,9 @@ export class DiffStudio {
           )
           .item(TITLE.BIO, async () =>
             await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
+          )
+          .item(TITLE.POLL, async () =>
+            await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
           )
           .endGroup()
           .separator()
