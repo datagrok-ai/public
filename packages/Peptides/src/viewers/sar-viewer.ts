@@ -79,7 +79,7 @@ export enum PROPERTY_CATEGORIES {
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
-const AAR_CELL_WIDTH = 30;
+const AAR_CELL_WIDTH = 40;
 
 export interface ISARViewer {
   sequenceColumnName: string;
