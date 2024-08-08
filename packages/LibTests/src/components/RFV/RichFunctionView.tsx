@@ -97,7 +97,7 @@ export const RichFunctionView = defineComponent({
       <div style={{width: '100%', height: '100%'}}>
         <div class="grid-stack" />
         <div ref={formNode}>
-          <InputForm funcCall={currentCall.value}> </InputForm>
+          <InputForm funcCall={currentCall.value} />
           <div style={{display: 'flex', position: 'sticky', bottom: '10px'}}>
             <Button> Reset </Button>
             <BigButton onClick={runSimulation}> Run </BigButton>

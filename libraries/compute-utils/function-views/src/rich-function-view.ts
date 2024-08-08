@@ -11,8 +11,8 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
-import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, getValidators, createPartialCopy, validate} from '../../shared-utils/utils';
+import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
@@ -37,24 +37,6 @@ export interface AfterInputRenderPayload {
 export interface AfterOutputRenderPayload {
   prop: DG.Property;
   output: DG.Viewer;
-}
-
-enum SYNC_FIELD {
-  INPUTS = 'inputs',
-  OUTPUTS = 'outputs'
-}
-
-type SyncFields = SYNC_FIELD.INPUTS | SYNC_FIELD.OUTPUTS;
-const syncParams = {
-  [SYNC_FIELD.INPUTS]: 'inputParams',
-  [SYNC_FIELD.OUTPUTS]: 'outputParams',
-} as const;
-
-interface ValidationRequestPayload {
-  field?: string,
-  isRevalidation: boolean,
-  isNewOutput?: boolean,
-  context?: any,
 }
 
 const getNoDataStub = () => ui.divText('[No data to display]', {style: {
@@ -317,18 +299,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadValidators(isInput: SyncFields = SYNC_FIELD.INPUTS) {
-    const params = [...this.funcCall[syncParams[isInput]].values()];
-    await Promise.all(params.map(async (param) => {
-      if (param.property.options.validatorFunc) {
-        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
-        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
-        await call.call();
-        if (isInput === SYNC_FIELD.INPUTS)
-          this.inputValidators[param.name] = call.outputs.validator;
-        else
-          this.outputValidators[param.name] = call.outputs.validator;
-      }
-    }));
+    const validators = (await getValidators(this.funcCall, isInput))
+
+    if (isInput === SYNC_FIELD.INPUTS)
+      this.inputValidators = validators
+    else
+      this.outputValidators = validators;
   }
 
   private keepOutput() {
@@ -1637,40 +1613,18 @@ export class RichFunctionView extends FunctionView {
     const paramName = payload.field;
     const paramNames = this.getValidatedNames(paramName, isInput);
 
-    const validationItems = await Promise.all(paramNames.map(async (name) => {
-      const v = isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs[name]: this.funcCall.outputs[name];
-      // not allowing null anywhere
-      const standardMsgs = await nonNullValidator(v, {
-        param: name,
-        funcCall: this._funcCall!,
-        lastCall: this.lastCall,
-        signal,
-        isNewOutput: !!payload.isNewOutput,
-        isRevalidation: payload.isRevalidation,
+    return validate(
+      payload,
+      paramNames,
+      signal,
+      isInput,
+      {
         view: this,
-      });
-      let customMsgs;
-      const customValidator = isInput === SYNC_FIELD.INPUTS ? this.inputValidators[name] : this.outputValidators[name];
-      if (customValidator) {
-        customMsgs = await customValidator(v, {
-          param: name,
-          funcCall: this._funcCall!,
-          lastCall: this.lastCall,
-          signal,
-          isNewOutput: !!payload.isNewOutput,
-          isRevalidation: payload.isRevalidation,
-          context: payload.context,
-          view: this,
-        });
-      }
-      // output params could not be nulls, DG will complain
-      const isNullable = isInput === SYNC_FIELD.INPUTS && this.funcCall.inputParams[name].property.options.nullable;
-      return [name, mergeValidationResults(
-        ...isNullable ? []: [standardMsgs],
-        customMsgs,
-      )] as const;
-    }));
-    return Object.fromEntries(validationItems);
+        funcCall: this.funcCall,
+        lastCall: this.lastCall,
+      },
+      isInput === SYNC_FIELD.INPUTS ? this.inputValidators : this.outputValidators,
+    );
   }
 
   private setInputValidationPending(inputName?: string) {

@@ -37,7 +37,7 @@ export const VueFormTestApp = defineComponent({
         <button onClick={logFuncCall}>log funccall inputs</button>
         <button onClick={changeFuncCall}>change funcall</button>
         <button onClick={removeFuncCall}>remove funcall</button>
-        <InputForm funcCall={fc.value}></InputForm>
+        { fc.value && <InputForm funcCall={fc.value}></InputForm> }
       </div>
     );
   },
