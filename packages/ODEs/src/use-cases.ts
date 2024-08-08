@@ -513,11 +513,11 @@ ${CONTROL_EXPR.ARG}: t
   h = 0.01 {units: min; caption: Step; category: Time; min: 0.001; max: 0.1; step: 0.001} [Time step of simlulation]
 
 
-${CONTROL_EXPR.INITS}:  
-  y1 = 0    {caption: NO2; category: Initial concentrations} [Initial concentration of NO2]
-  y2 = 0.2  {caption: NO; category: Initial concentrations} [Initial concentration of NO]
-  y3 = 0    {caption: O3P; category: Initial concentrations} [Initial concentration of O3P]
-  y4 = 0.04 {caption: O3; category: Initial concentrations} [Initial concentration of O3]
+${CONTROL_EXPR.INITS}:
+  y1 = 0    {caption: NO2; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of NO2]
+  y2 = 0.2  {caption: NO; category: Initial concentrations; min: 0; max: 0.4} [Initial concentration of NO]
+  y3 = 0    {caption: O3P; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of O3P]
+  y4 = 0.04 {caption: O3; category: Initial concentrations; min: 0; max: 0.1} [Initial concentration of O3]
   y5 = 0    {caption: HO2; category: Initial concentrations} [Initial concentration of HO2]
   y6 = 0    {caption: OH; category: Initial concentrations} [Initial concentration of OH]
   y7 = 0.1  {caption: HCHO; category: Initial concentrations} [Initial concentration of HCHO]
