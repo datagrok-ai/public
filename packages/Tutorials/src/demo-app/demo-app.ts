@@ -256,7 +256,7 @@ export class DemoView extends DG.ViewBase {
       }
 
       item.onclick = () => {
-        const node = this.tree.items.find(node => node.text === directionFuncs[i].name)?.root;
+        const node = this.tree.items.find(node => node.text.replaceAll('amp;', '') === directionFuncs[i].name)?.root;
         node?.click();
       };
 
