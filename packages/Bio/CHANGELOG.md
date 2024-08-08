@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.13.8 (2024-08-08)
+
+* Downgrade API version
+
 ## 2.13.7 (2024-08-08)
 
 * Adjust monomer max lengths for monomer renderer
