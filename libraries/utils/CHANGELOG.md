@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.23 (2024-08-09)
+
+Forms viewer: Ability to resize header, sending event on input click
+
 ## 4.2.22 (2024-08-09)
 
 Added stress test invocation method
