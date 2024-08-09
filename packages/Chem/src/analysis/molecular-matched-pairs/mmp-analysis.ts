@@ -295,9 +295,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), refilter);
         refilter = false;
         if (this.lastSelectedPair) {
-          grok.shell.o = fillPairInfo(this.lastSelectedPair, this.linesIdxs!,
-            this.linesActivityCorrespondance![this.lastSelectedPair],
-            this.transPairsGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+          setTimeout(() => {
+            grok.shell.o = fillPairInfo(this.lastSelectedPair!, this.linesIdxs!,
+              this.linesActivityCorrespondance![this.lastSelectedPair!],
+              this.transPairsGrid!.dataFrame, this.diffs!, this.parentTable!, this.rdkitModule!);
+          }, 500);
         }
       }
     });
@@ -357,19 +359,29 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.linesRenderer!.lineClicked.subscribe((event: MouseOverLineEvent) => {
       this.linesRenderer!.currentLineId = event.id;
       if (event.id !== -1) {
-        grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
-          transPairsGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
-        this.lastSelectedPair = event.id;
+        setTimeout(() => {
+          grok.shell.o = fillPairInfo(event.id, linesIdxs, linesActivityCorrespondance[event.id],
+            transPairsGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
+          this.lastSelectedPair = event.id;
+          this.propPanelViewer!.fitHeaderToLabelWidth(100);
+        }, 500);
       }
     });
 
     this.mmpView.append(tabs);
 
     const propertiesColumnsNames = this.parentTable.columns.names()
-      .filter((name) => name !== this.parentCol!.name && !name.startsWith('~'));
+      .filter((name) => !name.startsWith('~'));
     this.propPanelViewer = new FormsViewer();
     this.propPanelViewer.dataframe = this.parentTable;
     this.propPanelViewer.columns = propertiesColumnsNames;
+    this.propPanelViewer.inputClicked.subscribe((name: string) => {
+      setTimeout(() => {
+        grok.shell.o = fillPairInfo(this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
+          transPairsGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
+        this.propPanelViewer!.fitHeaderToLabelWidth(100);
+      }, 500);
+    })
   }
 
   async runMMP(mmpInput: MmpInput) {
