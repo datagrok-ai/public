@@ -2,17 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import { PieChartSettings, Sector, Subsector } from '../sparklines/piechart';
-import { CONSTANTS, DEFAULTS, generalProps, groupProps, SectorType, subGroupProps, TAGS } from './constants';
-
-const defaultGeneralProps = generalProps.reduce((acc, prop) => {
-  acc[prop.property.name] = (prop.object as any)[prop.property.name];
-  return acc;
-}, {} as Record <string, any>);
-
-const defaultGroupProps = groupProps.reduce((acc, prop) => {
-  acc[prop.property.name] = (prop.object as any)[prop.property.name];
-  return acc;
-}, {} as Record <string, any>);
+import { CONSTANTS, defaultGeneralProps, defaultGroupProps, DEFAULTS, generalProps, groupProps, SectorType, subGroupProps, TAGS } from './constants';
 
 class VlaaiVisManager {
   private settings: PieChartSettings;

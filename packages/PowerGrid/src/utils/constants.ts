@@ -24,7 +24,6 @@ export const DEFAULTS = {
   WEIGHT: "0.2"
 };
 
-
 export const groupProps = [
   {
     "property": {
@@ -93,3 +92,13 @@ export const subGroupProps = [
     }
   }
 ];
+
+export const defaultGeneralProps = generalProps.reduce((acc, prop) => {
+  acc[prop.property.name] = (prop.object as any)[prop.property.name];
+  return acc;
+}, {} as Record <string, any>);
+
+export const defaultGroupProps = groupProps.reduce((acc, prop) => {
+  acc[prop.property.name] = (prop.object as any)[prop.property.name];
+  return acc;
+}, {} as Record <string, any>);
