@@ -68,11 +68,13 @@ export const RichFunctionView = defineComponent({
       if (!grid) return;
       
       if (formNode.value) {
-        grid.addWidget(formNode.value, {
-          minW: Math.ceil(160 / grid.cellWidth()), 
-          maxW: Math.ceil(formNode.value.getBoundingClientRect().width / grid.cellWidth()), 
-          h: Math.ceil(formNode.value.getBoundingClientRect().height / grid.getCellHeight()),
-        });
+        grid.addWidget(formNode.value,
+          layoutCache[currentCall.value.id]?.children?.[0] ??
+          {
+            minW: Math.ceil(160 / grid.cellWidth()), 
+            maxW: Math.ceil(formNode.value.getBoundingClientRect().width / grid.cellWidth()), 
+            h: Math.ceil(formNode.value.getBoundingClientRect().height / grid.getCellHeight()),
+          });
       }
 
       document.querySelectorAll(`[id^='viewer']`).forEach(
