@@ -49,9 +49,9 @@ export class InputForm extends HTMLElement {
 
   private attach() {
     ui.empty(this);
-    this.dispatchEvent(new CustomEvent('form-replaced', {detail: this.formInst}));
     if (this.formInst)
       this.appendChild(this.formInst.root);
+    this.dispatchEvent(new CustomEvent('form-replaced', {detail: this.formInst}));
   }
 }
 
