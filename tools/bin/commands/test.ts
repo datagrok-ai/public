@@ -270,13 +270,13 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, {
+      const r = await runTest(3600000, {
         path: args.path, verbose: args.verbose, platform: args.platform,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
         core: args.core, category: categoryToCheck, test: testToCheck, stressTest: args['stress-test'] 
       });
 
-      if (r.csv && args.csv) {
+      if (r.csv && args.csv) {  
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
         color.info('Saved `test-report.csv`\n');
       }
