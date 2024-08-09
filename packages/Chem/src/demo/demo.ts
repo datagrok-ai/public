@@ -326,12 +326,11 @@ export async function _demoActivityCliffs(): Promise<void> {
         if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
           cliffsGrid = i;
       }
-      //temporarily commented until docked viewers are available via Browse view
-            // cliffsGrid!.dataFrame.currentRowIdx = 35;
-            // await delay(3000);
-            // cliffsGrid!.dataFrame.currentRowIdx = 6;
-            // await delay(3000);
-            // cliffsGrid!.dataFrame.currentRowIdx = 5;
+      cliffsGrid!.dataFrame.currentRowIdx = 35;
+      await delay(3000);
+      cliffsGrid!.dataFrame.currentRowIdx = 6;
+      await delay(3000);
+      cliffsGrid!.dataFrame.currentRowIdx = 5;
     }, {description: `To zoom scatter plot to exact cliff, click on a row in the cliffs table. 
     Additional information about molecule pair is on the context panel. Non common fragments are highlighted in molecules.`, delay: 3000})
     .start();
