@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.12 (2024-08-09)
+
+### Features
+
+* Added stress test flag
+
 ## 4.13.12 (2024-08-05)
 
 ### Features

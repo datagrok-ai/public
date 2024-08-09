@@ -15,7 +15,7 @@ import * as testUtils from '../utils/test-utils';
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
   const commandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test'];
+    'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -151,7 +151,8 @@ export function test(args: TestArgs): boolean {
 
     function runTest(timeout: number, options: {
       path?: string, catchUnhandled?: boolean, core?: boolean,
-      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?:string, test?:string
+      report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
+      stressTest?: boolean
     } = {}): Promise<resultObject> {
       return testUtils.timeout(async () => {
         const consoleLogOutputDir = './test-console-output.log';
@@ -183,17 +184,19 @@ export function test(args: TestArgs): boolean {
               testContext: testUtils.TestContext,
               skipCore?: boolean,
               verbose?: boolean
+              stressTest?: boolean
             } = {
               testContext: testContext,
               category: options.category,
               test: options.test
             };
+            if (options.stressTest) 
+              params.stressTest = options.stressTest;
             if (options.path) {
               const split = options.path.split(' -- ');
               params.category = split[0];
               params.test = split[1];
             }
-
             if (targetPackage === 'DevTools') {
               params.skipCore = options.core ? false : true;
               params.verbose = options.verbose === true;
@@ -270,7 +273,7 @@ export function test(args: TestArgs): boolean {
       const r = await runTest(7200000, {
         path: args.path, verbose: args.verbose, platform: args.platform,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record, benchmark: args.benchmark,
-        core: args.core, category: categoryToCheck, test: testToCheck
+        core: args.core, category: categoryToCheck, test: testToCheck, stressTest: args['stress-test'] 
       });
 
       if (r.csv && args.csv) {
@@ -323,5 +326,6 @@ interface TestArgs {
   verbose?: boolean,
   benchmark?: boolean,
   platform?: boolean,
-  core?: boolean
+  core?: boolean,
+  'stress-test'?: boolean,
 }
