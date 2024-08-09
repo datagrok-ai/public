@@ -10,7 +10,7 @@ import {
   Hit,
   isSummarySettingsBase
 } from './shared';
-import {PieChartManager} from '../utils/settings';
+import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
 let minRadius: number;
 
@@ -21,8 +21,8 @@ enum PieChartStyle {
 
 export interface Subsector {
   name: string;
-  lowThreshold: number;
-  highThreshold: number;
+  low: number;
+  high: number;
   weight: number;
   applicability?: number;
   probabilities?: number[];
@@ -66,16 +66,16 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 }
 
 function normalizeValue(value: number, subsector: Subsector): number {
-  const { lowThreshold, highThreshold } = subsector;
-  const isMax = highThreshold > lowThreshold;
-  if (isMax ? value < lowThreshold : value > lowThreshold)
+  const { low, high } = subsector;
+  const isMax = high > low;
+  if (isMax ? value < low : value > low)
     return 0;
-  else if (isMax ? value > highThreshold : value < highThreshold)
+  else if (isMax ? value > high : value < high)
     return 1;
   else
     return isMax
-      ? (value - lowThreshold) / (highThreshold - lowThreshold)
-      : (value - highThreshold) / (lowThreshold - highThreshold);
+      ? (value - low) / (high - low)
+      : (value - high) / (low - high);
 }
 
 function renderDiagonalStripes(
@@ -127,8 +127,8 @@ function renderSubsector(
   let erroneous = false;
   if (subsectorCol) {
     value = subsectorCol.get(row);
-    //erroneous = subsector.probabilities[row] < subsector.applicability; 
-    const normalizedValue = value /*&& !erroneous*/ ? normalizeValue(value, subsector) : 1;
+    //erroneous = subsector.probabilities![row] < subsector.applicability!; 
+    const normalizedValue = value ? normalizeValue(value, subsector) : 1;
     r = normalizedValue * (Math.min(box.width, box.height) / 2);
     r = Math.max(r, minRadius);
   }
@@ -362,7 +362,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         function (value: PieChartStyle | string) {
           ui.empty(elementsDiv);
           if (value === 'VlaaiVis')
-            elementsDiv.appendChild(new PieChartManager(settings, gc).createTreeGroup());
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
           else {
             delete settings.sectors;
             settings.style = value as PieChartStyle;

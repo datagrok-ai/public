@@ -2,32 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import { PieChartSettings, Sector, Subsector } from '../sparklines/piechart';
-import { generalProps, groupProps, subGroupProps } from './properties';
-
-enum SectorType {
-  SECTOR = 'sector',
-  SUBSECTOR = 'subsector'
-}
-
-const Constants = {
-  TAG_PREFIX: '.',
-  GROUP_NAME_TAG: '.group-name', //move to tags
-  SECTOR_COLOR_PROPERTY: 'sectorColor'
-};
-
-const TAGS = {
-  SECTOR_COLOR: '.sectorColor',
-  LOW: '.low',
-  HIGH: '.high',
-  WEIGHT: '.weight',
-  GROUP_NAME: '.group-name'
-};
-
-const DEFAULTS = {
-  LOW: '0',
-  HIGH: '1',
-  WEIGHT: '0.0'
-};
+import { CONSTANTS, DEFAULTS, generalProps, groupProps, SectorType, subGroupProps, TAGS } from './constants';
 
 const defaultGeneralProps = generalProps.reduce((acc, prop) => {
   acc[prop.property.name] = (prop.object as any)[prop.property.name];
@@ -39,12 +14,11 @@ const defaultGroupProps = groupProps.reduce((acc, prop) => {
   return acc;
 }, {} as Record <string, any>);
 
-class PieChartManager {
+class VlaaiVisManager {
   private settings: PieChartSettings;
   private gc: DG.GridColumn;
   private columns: DG.Column[];
   private tree: DG.TreeViewGroup;
-  private readonly tag: string = '.group-name';
 
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.settings = settings;
@@ -68,7 +42,7 @@ class PieChartManager {
     const columns = dataFrame.columns.byNames(columnNames);
 
     columns.forEach(col => {
-      const groupName = col.getTag(this.tag);
+      const groupName = col.getTag(TAGS.GROUP_NAME);
       if (groupName) {
         const existingColumns = groupMap.get(groupName) ?? [];
         groupMap.set(groupName, [...existingColumns, col]);
@@ -78,18 +52,18 @@ class PieChartManager {
 
     const sectors = Array.from(groupMap.entries()).map(([groupName, columns]) => ({
       name: groupName,
-      sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) ?? defaultGroupProps["sectorColor"],
+      sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) ?? defaultGroupProps[CONSTANTS.SECTOR_COLOR_PROPERTY],
       subsectors: columns.map(col => ({
         name: col.name,
-        lowThreshold: parseFloat(col.getTag(TAGS.LOW)) ?? 0,
-        highThreshold: parseFloat(col.getTag(TAGS.HIGH)) ?? 1,
+        low: parseFloat(col.getTag(TAGS.LOW)) ?? DEFAULTS.LOW,
+        high: parseFloat(col.getTag(TAGS.HIGH)) ?? DEFAULTS.HIGH,
         weight: parseFloat(col.getTag(TAGS.WEIGHT)) ?? parseFloat(this.generateRandomNumber().toFixed(1)),
       }))
     }));
 
     return {
-      lowerBound: defaultGeneralProps["lowerBound"],
-      upperBound: defaultGeneralProps["upperBound"],
+      lowerBound: defaultGeneralProps[CONSTANTS.LOWER_BOUND],
+      upperBound: defaultGeneralProps[CONSTANTS.UPPER_BOUND],
       sectors,
       values: null
     };
@@ -133,7 +107,8 @@ class PieChartManager {
 
     if (sectorOrSubsector) {
       sectorOrSubsector.entity[propertyName] = value;
-      propertyName === Constants.SECTOR_COLOR_PROPERTY 
+
+      propertyName === CONSTANTS.SECTOR_COLOR_PROPERTY 
         ? this.updateSectorColorTags(name, value)
         : this.updateColumnTag(name, propertyName, value, columnMap);
     } else if (name === '')
@@ -142,13 +117,13 @@ class PieChartManager {
 
   private updateSectorColorTags(name: string, value: any): void {
     this.columns
-      .filter(col => col.getTag(Constants.GROUP_NAME_TAG) === name)
-      .forEach(col => col.setTag(`${Constants.TAG_PREFIX}${Constants.SECTOR_COLOR_PROPERTY}`, value));
+      .filter(col => col.getTag(TAGS.GROUP_NAME) === name)
+      .forEach(col => col.setTag(`${CONSTANTS.TAG_PREFIX}${CONSTANTS.SECTOR_COLOR_PROPERTY}`, value));
   }
 
   private updateColumnTag(name: string, propertyName: keyof (Sector | Subsector), value: any, columnMap: Map<string, DG.Column>): void {
     const column = columnMap.get(name);
-    column?.setTag(`${Constants.TAG_PREFIX}${propertyName}`, value);
+    column?.setTag(`${CONSTANTS.TAG_PREFIX}${propertyName}`, value);
   }
 
   private createInputForProperty(property: any, name: string): HTMLElement {
@@ -229,8 +204,8 @@ class PieChartManager {
   private createSubsector(column: DG.Column | undefined): Subsector {
     return {
       name: column?.name ?? '',
-      lowThreshold: parseFloat(column?.getTag(TAGS.LOW) ?? DEFAULTS.LOW),
-      highThreshold: parseFloat(column?.getTag(TAGS.HIGH) ?? DEFAULTS.HIGH),
+      low: parseFloat(column?.getTag(TAGS.LOW) ?? DEFAULTS.LOW),
+      high: parseFloat(column?.getTag(TAGS.HIGH) ?? DEFAULTS.HIGH),
       weight: parseFloat(column?.getTag(TAGS.WEIGHT) ?? this.generateRandomNumber().toFixed(1)),
     };
   }
@@ -247,7 +222,7 @@ class PieChartManager {
     const groupMap = new Map<string, DG.Column[]>();
 
     this.columns.forEach(col => {
-      const groupName = col.getTag(this.tag);
+      const groupName = col.getTag(TAGS.GROUP_NAME);
       if (groupName) {
         const existingColumns = groupMap.get(groupName) ?? [];
         groupMap.set(groupName, [...existingColumns, col]);
@@ -272,7 +247,11 @@ class PieChartManager {
       });
     });
 
-    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => this.updateInputs(inputs, node.text));
+    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+      if (node.parent.text !== '')
+        this.updateInputs(inputs, node.text)
+    });
+
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: DG.TreeViewNode = args.args.item;
@@ -282,7 +261,8 @@ class PieChartManager {
 
     this.makeUntaggedColumnsDraggable(untaggedColumns);
 
-    const resultingDiv = this.createResultingDiv(inputs);
+    const generalInputs = ui.divV(generalProps.map(prop => this.createInputForProperty(prop, '')));
+    const resultingDiv = this.createResultingDiv(inputs, generalInputs);
 
     resultingDiv.oncontextmenu = (e) => {
       DG.Menu.popup()
@@ -305,7 +285,7 @@ class PieChartManager {
   private createColorPicker(groupName: string): HTMLElement {
     const colorPicker = this.createInputForProperty(groupProps[0], groupName)
       .getElementsByClassName('ui-input-options')[0] as HTMLElement;
-    colorPicker.style.margin = '5px!important';
+    (colorPicker as HTMLElement).style.cssText += ('margin: 5px!important');
     return colorPicker;
   }
 
@@ -318,9 +298,11 @@ class PieChartManager {
     }
   }
 
-  private createResultingDiv(inputs: HTMLDivElement): HTMLElement {
-    const container = ui.divH([this.tree.root, inputs]);
-    container.style.marginRight = '10px';
+  private createResultingDiv(inputs: HTMLDivElement, generalInputs: HTMLDivElement): HTMLElement {
+    generalInputs.style.marginRight = '10px';
+    const tree = ui.divH([this.tree.root, inputs], 'ui-form');
+    const container = ui.divV([generalInputs, tree]);
+    container.style.marginTop = '10px';
     return container;
   }
 
@@ -355,7 +337,7 @@ class PieChartManager {
   }
 
   private getUntaggedColumns(): DG.Column[] {
-    return this.columns.filter(col => !col.getTag(this.tag));
+    return this.columns.filter(col => !col.getTag(TAGS.GROUP_NAME));
   }
 
   private makeUntaggedColumnsDraggable(columns: DG.Column[]): void {
@@ -379,4 +361,4 @@ class PieChartManager {
   }
 }
 
-export { PieChartManager };
+export { VlaaiVisManager };

@@ -1,3 +1,30 @@
+export enum SectorType {
+  SECTOR = "sector",
+  SUBSECTOR = "subsector"
+}
+
+export const CONSTANTS = {
+  TAG_PREFIX: ".",
+  SECTOR_COLOR_PROPERTY: "sectorColor",
+  LOWER_BOUND: "lowerBound",
+  UPPER_BOUND: "upperBound"
+};
+
+export const TAGS = {
+  SECTOR_COLOR: ".sectorColor",
+  LOW: ".low",
+  HIGH: ".high",
+  WEIGHT: ".weight",
+  GROUP_NAME: ".group-name"
+};
+
+export const DEFAULTS = {
+  LOW: "0",
+  HIGH: "1",
+  WEIGHT: "0.2"
+};
+
+
 export const groupProps = [
   {
     "property": {
