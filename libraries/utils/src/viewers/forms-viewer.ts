@@ -238,7 +238,7 @@ export class FormsViewer extends DG.JsViewer {
             input.value = this.dataFrame.get(name, row);
             input.readOnly = true;
 
-            if (this.colorCode) {
+            if (this.colorCode && this.dataFrame.col(name)!.semType !== DG.SEMTYPE.MOLECULE) {
               const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
               if (grid) {
                 const color = grid.cell(name, row).color;

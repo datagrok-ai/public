@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.24 (2024-08-09)
+
+Forms viewer: Don't use color coding with molecule columns
+
 ## 4.2.23 (2024-08-09)
 
 Forms viewer: Ability to resize header, sending event on input click
