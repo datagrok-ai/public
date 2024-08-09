@@ -97,7 +97,6 @@ class VlaaiVisManager {
 
     if (sectorOrSubsector) {
       sectorOrSubsector.entity[propertyName] = value;
-
       propertyName === CONSTANTS.SECTOR_COLOR_PROPERTY 
         ? this.updateSectorColorTags(name, value)
         : this.updateColumnTag(name, propertyName, value, columnMap);
