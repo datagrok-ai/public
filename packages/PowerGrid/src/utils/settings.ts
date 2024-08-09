@@ -78,12 +78,12 @@ class PieChartManager {
 
     const sectors = Array.from(groupMap.entries()).map(([groupName, columns]) => ({
       name: groupName,
-      sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) || defaultGroupProps["sectorColor"],
+      sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) ?? defaultGroupProps["sectorColor"],
       subsectors: columns.map(col => ({
         name: col.name,
-        lowThreshold: parseFloat(col.getTag(TAGS.LOW)) || 0,
-        highThreshold: parseFloat(col.getTag(TAGS.HIGH)) || 1,
-        weight: parseFloat(col.getTag(TAGS.WEIGHT)) || parseFloat(this.generateRandomNumber().toFixed(1)),
+        lowThreshold: parseFloat(col.getTag(TAGS.LOW)) ?? 0,
+        highThreshold: parseFloat(col.getTag(TAGS.HIGH)) ?? 1,
+        weight: parseFloat(col.getTag(TAGS.WEIGHT)) ?? parseFloat(this.generateRandomNumber().toFixed(1)),
       }))
     }));
 
@@ -166,6 +166,9 @@ class PieChartManager {
   }
 
   private makeItemDraggable(item: DG.TreeViewNode<any>): void {
+    item.root.onmouseenter = (e) => ui.tooltip.show('Drag items to move them into a group ', e.x, e.y);
+    item.root.onmouseleave = (e) => ui.tooltip.hide();
+
     ui.makeDraggable(item.root, {
       getDragObject: () => item,
       getDragCaption: () => `You are dragging ${item.text}`
@@ -270,13 +273,23 @@ class PieChartManager {
     });
 
     this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => this.updateInputs(inputs, node.text));
+    this.tree.onNodeContextMenu.subscribe((args: any) => {
+      const menu: DG.Menu = args.args.menu;
+      const node: DG.TreeViewNode = args.args.item;
+      if (node instanceof DG.TreeViewGroup)
+        menu.item('Delete group...', () => this.deleteGroup(node));
+    });
 
-    const generalInputs = this.createGeneralInputs();
     this.makeUntaggedColumnsDraggable(untaggedColumns);
 
-    const resultingDiv = this.createResultingDiv(inputs, generalInputs);
-    resultingDiv.appendChild(this.createAddGroupButton());
+    const resultingDiv = this.createResultingDiv(inputs);
 
+    resultingDiv.oncontextmenu = (e) => {
+      DG.Menu.popup()
+        .item('Add group', () => this.addGroup())
+        .show();
+      e.preventDefault();
+    };
     return resultingDiv;
   }
 
@@ -305,31 +318,40 @@ class PieChartManager {
     }
   }
 
-  private createGeneralInputs(): HTMLElement {
-    const container = ui.divV([this.tree.root, generalProps.map(prop => this.createInputForProperty(prop, ''))]);
+  private createResultingDiv(inputs: HTMLDivElement): HTMLElement {
+    const container = ui.divH([this.tree.root, inputs]);
     container.style.marginRight = '10px';
     return container;
   }
 
-  private createResultingDiv(inputs: HTMLElement, generalInputs: HTMLElement): HTMLElement {
-    const container = ui.divH([generalInputs, inputs]);
-    container.style.marginTop = '10px';
-    return container;
+  private addGroup() {
+    const nameInput = ui.input.string('Name');
+    ui.dialog('Add group')
+      .add(nameInput)
+      .onOK(() => {
+        const newGroup = this.tree.group(nameInput.value, null, false, this.findLastGroupIndex());
+        this.configureGroupNode(newGroup);
+      })
+      .show(); 
   }
 
-  private createAddGroupButton(): HTMLElement {
-    const addGroup = () => {
-      const nameInput = ui.input.string('Name');
-      ui.dialog('Add group')
-        .add(nameInput)
-        .onOK(() => {
-          const newGroup = this.tree.group(nameInput.value, null, false, this.findLastGroupIndex());
-          this.configureGroupNode(newGroup);
-        })
-        .show();
-    };
+  private deleteGroup(group: DG.TreeViewGroup) {
+    const groupChildren = group.children;
+    group.remove();
+    
+    if (groupChildren) {
+      groupChildren.forEach(child => {
+      if (child instanceof DG.TreeViewNode) {
+        const newChild = this.tree.item(child.text);
+        delete this.columns.find((col) => col.name === child.text)?.tags[TAGS.GROUP_NAME];
+        delete this.columns.find((col) => col.name === child.text)?.tags[TAGS.SECTOR_COLOR];
+        this.makeItemDraggable(newChild);
+      }
+    });
 
-    return ui.button('Add Group', addGroup);
+    this.settings.sectors!.sectors = this.settings.sectors!.sectors.filter(sector => sector.name !== group.text);
+    this.gc.grid.invalidate();
+    }
   }
 
   private getUntaggedColumns(): DG.Column[] {
@@ -348,7 +370,12 @@ class PieChartManager {
   }
 
   private findLastGroupIndex(): number {
-    return this.tree.items.reduce((index, item, i) => item instanceof DG.TreeViewGroup ? Math.max(index, i) : index, 0);
+    const {items} = this.tree;
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i] instanceof DG.TreeViewGroup)
+        return i + 1;
+    }
+    return 0;
   }
 }
 
