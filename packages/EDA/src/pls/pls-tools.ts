@@ -110,7 +110,11 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  const view = grok.shell.tableView(input.table.name);
+  //const view = grok.shell.tableView(input.table.name);
+
+  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
+    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
+    grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
   const buffer = DG.DataFrame.fromColumns([
@@ -248,7 +252,9 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = grok.shell.t;
+  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
+    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
+    grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);

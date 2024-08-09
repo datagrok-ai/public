@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.32 (2024-08-09)
+
+Update multivariate analysis
+
 ## 1.1.31 (2024-08-06)
 
 Add MCL layout with force directed graph and atlas
