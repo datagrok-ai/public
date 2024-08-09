@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.22 (2024-08-09)
+
+Added stress test invocation method
+
 ## 4.2.21 (2024-08-07)
 
 Added stress test flag to test options
