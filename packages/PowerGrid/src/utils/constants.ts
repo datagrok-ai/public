@@ -7,7 +7,8 @@ export const CONSTANTS = {
   TAG_PREFIX: ".",
   SECTOR_COLOR_PROPERTY: "sectorColor",
   LOWER_BOUND: "lowerBound",
-  UPPER_BOUND: "upperBound"
+  UPPER_BOUND: "upperBound",
+  VLAAIVIS: "VlaaiVis"
 };
 
 export const TAGS = {

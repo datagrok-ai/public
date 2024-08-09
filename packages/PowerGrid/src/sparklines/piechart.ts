@@ -11,6 +11,7 @@ import {
   isSummarySettingsBase
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
+import { CONSTANTS } from '../utils/constants';
 
 let minRadius: number;
 
@@ -350,7 +351,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     const elementsDiv = ui.div([]);
-    return ui.inputs([
+    const inputs = ui.inputs([
       ui.input.columns('Сolumns', {
         value: gc.grid.dataFrame.columns.byNames(columnNames),
         table: gc.grid.dataFrame,
@@ -360,10 +361,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         },
         available: names(gc.grid.dataFrame.columns.numerical)
       }),
-      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, 'VlaaiVis'],
+      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, CONSTANTS.VLAAIVIS],
         onValueChanged: (input) => {
         ui.empty(elementsDiv);
-        if (input.value === 'VlaaiVis')
+        if (input.value === CONSTANTS.VLAAIVIS)
           elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
         else {
           delete settings.sectors;
@@ -372,5 +373,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         }
       }})
     ]);
+
+    return ui.divV([inputs, elementsDiv]);
   }
 }
