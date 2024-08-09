@@ -180,6 +180,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
+    if (demo) //for grid viewer to be visible in demo app
+      view.addViewer(linesDfGrid);
     view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
@@ -430,7 +432,9 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+    if (demo) //for grid viewer to be visible in demo app
+      view.addViewer(linesDfGrid);
+    view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
   sp.root.append(listCliffsLink);

@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.19 (2024-08-09)
+
+Activity cliffs: make docked grid available in browse view for demo purposes
+
 ## 6.6.18 (2024-08-09)
 
 Activity cliffs: ability to run as demo in Browse view
