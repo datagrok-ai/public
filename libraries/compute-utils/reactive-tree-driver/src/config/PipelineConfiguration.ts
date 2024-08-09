@@ -111,6 +111,8 @@ export type PipelineConfigurationBase<P> = {
   id: ItemId;
   globalId?: string;
   nqName?: NqName;
+  provider?: NqName;
+  version?: string;
   friendlyName?: string;
   hooks?: PipelineHooks<P>;
   actions?: PipelineActionConfiguraion<P>[];
@@ -180,13 +182,5 @@ export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfi
 export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<ItemPath | ItemPath[], never, PipelineRefInitial>;
 
 export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial | PipelineRefInitial;
-
-// extrenal instance config
-
-export type ExternalInitialConfig = {
-  provider: PipelineProvider | NqName;
-  version?: string;
-  config: PipelineInstanceConfig;
-}
 
 export type PipelineConfiguration = PipelineConfigurationInitial;

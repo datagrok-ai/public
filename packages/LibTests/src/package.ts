@@ -9,7 +9,7 @@ import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
 import {ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult} from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
-import {createApp} from 'vue';
+import { createApp, provide } from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElelementsTestApp';
@@ -263,4 +263,33 @@ export async function TestAdd2(a: number, b: number) {
 //output: double res
 export async function TestMul2(a: number, b: number) {
   return a * b;
+}
+
+//name: MockWrapper1
+export async function MockWrapper1() {}
+
+//input: object params
+//output: object result
+export async function MockProvider1(params: any) {
+  return {
+    id: 'pipeline1',
+    nqName: 'LibTests:MockWrapper1',
+    provider: 'LibTests:MockProvider1',
+    type: 'static',
+    steps: [
+      {
+        id: 'step1',
+        nqName: 'LibTests:TestAdd2'
+      },
+      {
+        id: 'step2',
+        nqName: 'LibTests:TestMul2',
+      }
+    ],
+    links: [{
+      id: 'link1',
+      from: 'step1/res',
+      to: 'step2/a',
+    }]
+  };
 }

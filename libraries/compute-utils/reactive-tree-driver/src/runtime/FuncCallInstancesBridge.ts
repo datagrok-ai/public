@@ -6,7 +6,7 @@ import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, Restr
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
   private instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);
   public isRunning$ = new BehaviorSubject(false);
-  public isLoading$ = new BehaviorSubject(false);
+  public isLoading$ = new BehaviorSubject(true);
   public isRunable$ = new BehaviorSubject(false);
   public isOutputOutdated$ = new BehaviorSubject(false);
   public isCurrent$ = new BehaviorSubject(false);

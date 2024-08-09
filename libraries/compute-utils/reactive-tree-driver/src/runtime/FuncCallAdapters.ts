@@ -77,7 +77,7 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   }
 
   setState<T = any>(name: string, value: T | undefined, restrictionType: RestrictionType = 'none') {
-    this.instance.inputs[name].value = value;
+    this.instance.inputs[name] = value;
     const currentRestrictions = this.inputRestrictions$.value;
     const restrictionState = restrictionType === 'none' ? undefined : {type: restrictionType, assignedValue: value};
     this.inputRestrictions$.next({...currentRestrictions, [name]: restrictionState});

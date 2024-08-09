@@ -21,7 +21,7 @@ export type StepSequentialInitialConfig = {
 export type StepFunCallInitialConfig = {
   id: ItemId;
   values?: Record<string, any>;
-  inputRestrictions?: Record<string, RestrictionType>;
+  inputRestrictions?: Record<string, RestrictionState>;
 }
 
 export type InstanceConfRec<C> = {
@@ -35,6 +35,7 @@ export type PipelineInstanceConfig = InstanceConfRec<StepParallelInitialConfig |
 // instance state for view/serialization
 //
 
+// TODO: save backref to pipeline provider when possible
 export interface PipelineInstanceState {
   provider: Function | NqName;
   version?: string;
@@ -70,7 +71,6 @@ export type StepFunCallSerializedState = {
   configId: string;
   uuid: string;
   nqName: string;
-  inputRestrictions?: Record<string, RestrictionState | undefined>;
   friendlyName?: string;
   funcCallId?: string;
   isOuputOutdated?: boolean;
@@ -86,6 +86,7 @@ export type StepAction = {
 export type StepFunCallState = {
   funcCall?: DG.FuncCall;
   validations?: Record<string, ValidationResultBase>;
+  inputRestrictions?: Record<string, RestrictionState | undefined>;
   isLoading?: boolean;
   isRunning?: boolean;
   isRunable?: boolean;
@@ -103,11 +104,9 @@ export type PipelineAction = {
 export type PipelineInstanceBase<S> = {
   uuid: string;
   configId: string;
-  isLoadable?: boolean;
-  isSavable?: boolean;
-  isLocked?: boolean;
   isReadonly?: boolean;
   friendlyName?: string;
+  provider?: NqName;
   nqName?: string;
 } & S;
 
