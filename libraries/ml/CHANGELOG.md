@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
 ## 6.6.17 (2024-08-08)
 
 Add limit to intercluster connections in mcl
