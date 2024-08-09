@@ -2,7 +2,8 @@
 
 ## 1.1.32 (2024-08-09)
 
-Update multivariate analysis
+* Update multivariate analysis
+* Reduced bias in the PLS regression
 
 ## 1.1.31 (2024-08-06)
 
