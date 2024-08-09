@@ -6,12 +6,12 @@ ${CONTROL_EXPR.DIF_EQ}:
   dy/dt = -y + sin(t) / t
 
 ${CONTROL_EXPR.ARG}: t
-  initial = 0.01
-  final = 15
-  step = 0.01
+  initial = 0.01 {min: 0.01; max: 10}
+    final = 15   {min: 15; max: 150}
+    step = 0.01  {min: 0.001; max: 0.1}
 
 ${CONTROL_EXPR.INITS}:  
-  y = 0`;
+  y = 0 {min: 0; max: 9}`;
 
 /** Advanced template illustrating extanded features */
 const TEMPLATE_ADVANCED = `${CONTROL_EXPR.NAME}: Advanced

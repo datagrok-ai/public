@@ -2,12 +2,10 @@
 
 ## 1.0.11 (2024-08-09)
 
-Improved browsing, and added tests & benchmarks
-
-Added
-
-* the Pollution model
-* numerical methods tests & benchmarks
+* Improved browsing
+* Added tests & benchmarks and the Pollution model
+* Updated the basic template
+* Improved the main app start
 
 ## 1.0.10 (2024-06-10)
 

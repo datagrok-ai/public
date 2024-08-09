@@ -147,8 +147,7 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
     yColumnNames: (count > 1) ? colNames.slice(1).filter((name) => name !== STAGE_COL_NAME) : [colNames[0]],
     showTitle: true,
     multiAxis: count > MAX_LINE_CHART,
-    // @ts-ignore
-    multiAxisLegendPosition: 'RightTop',
+    multiAxisLegendPosition: DG.FlexExtendedPosition.RightTop,
     segmentColumnName: colNames.includes(STAGE_COL_NAME) ? STAGE_COL_NAME: undefined,
     showAggrSelectors: false,
   };
@@ -311,6 +310,7 @@ export class DiffStudio {
   private toRunWhenFormCreated = true;
   private toCheckPerformance = true;
   private toShowPerformanceDlg = true;
+  private isStartingRun = true;
   private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
   private modelPane: DG.TabPane;
   private runPane: DG.TabPane;
@@ -538,14 +538,15 @@ export class DiffStudio {
     case EDITOR_STATE.BASIC_TEMPLATE:
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
-      await this.runSolving(false);
-      // dfdf
+      await this.runSolving(this.isStartingRun);
       break;
 
     default:
       await this.runSolving(true);
       break;
     }
+
+    this.isStartingRun = false;
   }; // setState
 
   /** Overwrite the editor content */
