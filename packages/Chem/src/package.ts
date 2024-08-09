@@ -815,10 +815,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
+//input: bool isDemo {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<void> {
+  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -844,9 +845,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       methodName: methodName,
       similarityMetric: similarityMetric,
       options: JSON.stringify(options),
+      isDemo: isDemo
     }).call(undefined, undefined, {processed: false});
 
-    const view = grok.shell.getTableView(table.name);
+    const view = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(table.name);
+
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: axesNames[0],
       yColumnName: axesNames[1],
@@ -893,7 +896,7 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
-    {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement);
+    {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
   const size = sp.getOptions().look['sizeColumnName'];
   drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
   //to draw the lines fro cliffs
@@ -909,9 +912,10 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: string options {optional: true}
+//input: bool isDemo {optional: true}
 export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  options?: string): Promise<void> {
+  options?: string, isDemo?: boolean): Promise<void> {
   const preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   const axesNames = getEmbeddingColsNames(table);
   await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
@@ -922,7 +926,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
     similarityMetric: similarityMetric,
     similarity: similarity,
     options: options ?? {},
-
+    isDemo: isDemo
   };
   table.setTag('activityCliffsParams', JSON.stringify(tagContent));
 }
@@ -1536,10 +1540,11 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): void {
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
+  
+  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.v as DG.TableView;
     
-  const viewer = (grok.shell.v as DG.TableView)
-    .addViewer('Matched Molecular Pairs Analysis');
+  const viewer = view.addViewer('Matched Molecular Pairs Analysis');
 
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
 }
