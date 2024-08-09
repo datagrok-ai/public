@@ -10,7 +10,7 @@ import {
   Hit,
   isSummarySettingsBase
 } from './shared';
-import { createTreeGroup, initializeSectors } from '../utils/settings';
+import {PieChartManager} from '../utils/settings';
 
 let minRadius: number;
 
@@ -28,18 +28,20 @@ export interface Subsector {
   probabilities?: number[];
 }
 
+export interface Sector {
+  name: string;
+  sectorColor: string;
+  subsectors: Subsector[];
+}
+
 export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle;
   sectors?: {
-    lowerBound: number;
-    upperBound: number;
-    sectors: {
-      name: string;
-      sectorColor: string;
-      subsectors: Subsector[];
-    }[];
-    values: string | null;
+      lowerBound: number;
+      upperBound: number;
+      sectors: Sector[];  // Use the Sector interface here
+      values: string | null;
   };
 }
 
@@ -359,12 +361,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius, 'VlaaiVis'],
         function (value: PieChartStyle | string) {
           ui.empty(elementsDiv);
-          const sectors = initializeSectors(settings.columnNames, grok.shell.tv.dataFrame);
-          if (value === 'VlaaiVis') {
-            settings.sectors = sectors;
-            gc.grid.invalidate();
-            elementsDiv.appendChild(createTreeGroup(settings, gc));
-          } else {
+          if (value === 'VlaaiVis')
+            elementsDiv.appendChild(new PieChartManager(settings, gc).createTreeGroup());
+          else {
             delete settings.sectors;
             settings.style = value as PieChartStyle;
             gc.grid.invalidate();

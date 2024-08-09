@@ -1,373 +1,355 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {PieChartSettings,Subsector} from '../sparklines/piechart';
-import {generalProps, groupProps, subGroupProps} from './properties';
+import { PieChartSettings, Sector, Subsector } from '../sparklines/piechart';
+import { generalProps, groupProps, subGroupProps } from './properties';
 
-function generateRandomNumber(): number {
-  return Math.random();
+enum SectorType {
+  SECTOR = 'sector',
+  SUBSECTOR = 'subsector'
 }
 
-function getSectorProperty(settings: PieChartSettings, name: string, propertyName: string): any {
-  for (const sector of settings.sectors!.sectors) {
-    if (sector.name === name) {
-      return sector[propertyName as keyof typeof sector];
+const Constants = {
+  TAG_PREFIX: '.',
+  GROUP_NAME_TAG: '.group-name', //move to tags
+  SECTOR_COLOR_PROPERTY: 'sectorColor'
+};
+
+const TAGS = {
+  SECTOR_COLOR: '.sectorColor',
+  LOW: '.low',
+  HIGH: '.high',
+  WEIGHT: '.weight',
+  GROUP_NAME: '.group-name'
+};
+
+const DEFAULTS = {
+  LOW: '0',
+  HIGH: '1',
+  WEIGHT: '0.0'
+};
+
+const defaultGeneralProps = generalProps.reduce((acc, prop) => {
+  acc[prop.property.name] = (prop.object as any)[prop.property.name];
+  return acc;
+}, {} as Record <string, any>);
+
+const defaultGroupProps = groupProps.reduce((acc, prop) => {
+  acc[prop.property.name] = (prop.object as any)[prop.property.name];
+  return acc;
+}, {} as Record <string, any>);
+
+class PieChartManager {
+  private settings: PieChartSettings;
+  private gc: DG.GridColumn;
+  private columns: DG.Column[];
+  private tree: DG.TreeViewGroup;
+  private readonly tag: string = '.group-name';
+
+  constructor(settings: PieChartSettings, gc: DG.GridColumn) {
+    this.settings = settings;
+    this.gc = gc;
+    this.columns = grok.shell.tv.dataFrame.columns.byNames(settings.columnNames);
+    this.tree = ui.tree();
+
+    if (!this.settings.sectors) {
+      this.settings.sectors = this.initializeSectors(settings.columnNames, grok.shell.tv.dataFrame);
+      this.gc.grid.invalidate();
     }
-    for (const subsector of sector.subsectors) {
-      if (subsector.name === name) {
-        return subsector[propertyName as keyof typeof subsector];
+  }
+
+  private initializeSectors(columnNames: string[], dataFrame: DG.DataFrame): {
+    lowerBound: number;
+    upperBound: number;
+    sectors: Sector[];
+    values: string | null;
+  } {
+    const groupMap = new Map<string, DG.Column[]>();
+    const columns = dataFrame.columns.byNames(columnNames);
+
+    columns.forEach(col => {
+      const groupName = col.getTag(this.tag);
+      if (groupName) {
+        const existingColumns = groupMap.get(groupName) ?? [];
+        groupMap.set(groupName, [...existingColumns, col]);
+        this.updateColumnTags(col);
       }
-    }
-  }
-  return name === '' ? (settings.sectors as any)[propertyName] : undefined;
-}
-
-function updateSectorProperty(
-  settings: PieChartSettings,
-  name: string,
-  propertyName: string,
-  value: any,
-  columns: DG.Column[] // Add tag parameter to match column tag with the name
-): void {
-  let sectorUpdated = false;
-  let columnUpdated = false;
-
-  // Create a map for fast column lookup by name
-  const columnMap = new Map <string, DG.Column> ();
-  columns.forEach(col => columnMap.set(col.name, col));
-
-  // Update the property in the sector or subsector
-  for (const sector of settings.sectors!.sectors) {
-    if (sector.name === name) {
-      sector[propertyName as keyof typeof sector] = value;
-      sectorUpdated = true;
-      break;
-    }
-    for (const subsector of sector.subsectors) {
-      if (subsector.name === name) {
-        (subsector[propertyName as keyof typeof subsector] as any) = value;
-        sectorUpdated = true;
-        break;
-      }
-    }
-    if (sectorUpdated) break;
-  }
-
-  if (name === '') {
-    (settings.sectors as any)[propertyName] = value;
-  }
-
-  // Update column tags using the map for direct access
-  const column = columnMap.get(name);
-  if (propertyName !== 'sectorColor') {
-    if (column) {
-      column.setTag(`.${propertyName}`, value);
-      columnUpdated = true;
-    } else {
-      console.warn(`Column with name ${name} not found.`);
-    }
-  } else {
-    const colsToUpdate = columns.map((c) => {
-      if (c.getTag('.group-name') === name)
-        return c;
     });
-    for (const col of colsToUpdate)
-      col?.setTag(`.${propertyName}`, value);
+
+    const sectors = Array.from(groupMap.entries()).map(([groupName, columns]) => ({
+      name: groupName,
+      sectorColor: columns[0].getTag(TAGS.SECTOR_COLOR) || defaultGroupProps["sectorColor"],
+      subsectors: columns.map(col => ({
+        name: col.name,
+        lowThreshold: parseFloat(col.getTag(TAGS.LOW)) || 0,
+        highThreshold: parseFloat(col.getTag(TAGS.HIGH)) || 1,
+        weight: parseFloat(col.getTag(TAGS.WEIGHT)) || parseFloat(this.generateRandomNumber().toFixed(1)),
+      }))
+    }));
+
+    return {
+      lowerBound: defaultGeneralProps["lowerBound"],
+      upperBound: defaultGeneralProps["upperBound"],
+      sectors,
+      values: null
+    };
   }
-}
 
-function createInputForProperty(property: any, name: string, settings: PieChartSettings, gc: DG.GridColumn, columns: DG.Column[]): HTMLElement {
-  const prop = DG.Property.fromOptions(property.property);
-  const input = DG.InputBase.forProperty(prop, {});
+  private findSectorOrSubsector(name: string): { entity: Sector | Subsector; type: SectorType } | null {
+    const cache = new Map<string, { entity: Sector | Subsector; type: SectorType } | null>();
 
-  const value = getSectorProperty(settings, name, property.property.name);
-  input.value = value !== undefined ? value : property.object[property.property.name];
-  updateSectorProperty(settings, name, property.property.name, input.value, columns);
+    if (cache.has(name)) return cache.get(name)!;
 
-  input.onChanged(() => {
-    updateSectorProperty(settings, name, property.property.name, input.value, columns);
-    settings.sectors = settings.sectors; // Trigger change detection
-    gc.grid.invalidate();
-  });
+    const sectors = this.settings.sectors;
+    if (!sectors) return null;
 
-  return input.root;
-}
+    for (const sector of sectors.sectors) {
+      if (sector.name === name) {
+        const result = { entity: sector, type: SectorType.SECTOR };
+        cache.set(name, result);
+        return result;
+      }
 
-function makeItemDraggable(item: DG.TreeViewNode < any > ): void {
-  ui.makeDraggable(item.root, {
-    getDragObject: () => item,
-    getDragCaption: () => `You are dragging ${item.text}`
-  });
-}
+      const subsector = sector.subsectors.find(sub => sub.name === name);
+      if (subsector) {
+        const result = { entity: subsector, type: SectorType.SUBSECTOR };
+        cache.set(name, result);
+        return result;
+      }
+    }
 
-function makeGroupDroppable(groupNode: DG.TreeViewGroup, settings: PieChartSettings, columns: DG.Column[], tag: string, tree: DG.TreeViewGroup): void {
-  ui.makeDroppable(groupNode.root, {
-    acceptDrop: () => true,
-    doDrop: (draggedItem: any, _) => {
-      const itemText = draggedItem.text;
-      // Find and remove the item from its original group
-      // Remove the item from its original group
-      tree.items.forEach((group) => {
-        if (group.text === itemText) {
-          group.remove();
-          const originalGroup = settings.sectors?.sectors.find(sector => sector.name === group.parent.text);
-          if (originalGroup)
-            originalGroup.subsectors = originalGroup.subsectors.filter(subsector => subsector.name !== itemText);
-        }
+    cache.set(name, null);
+    return null;
+  }
+
+  private getSectorProperty(name: string, propertyName: keyof (Sector | Subsector)) {
+    const result = this.findSectorOrSubsector(name);
+    return result ? result.entity[propertyName] : (name === '' ? (this.settings.sectors as any)[propertyName] : undefined);
+  }
+
+  private updateSectorProperty(name: string, propertyName: keyof (Sector | Subsector), value: any): void {
+    const columnMap = new Map<string, DG.Column>(this.columns.map(col => [col.name, col]));
+    const sectorOrSubsector = this.findSectorOrSubsector(name);
+
+    if (sectorOrSubsector) {
+      sectorOrSubsector.entity[propertyName] = value;
+      propertyName === Constants.SECTOR_COLOR_PROPERTY 
+        ? this.updateSectorColorTags(name, value)
+        : this.updateColumnTag(name, propertyName, value, columnMap);
+    } else if (name === '')
+      (this.settings.sectors as any)[propertyName] = value;
+  }
+
+  private updateSectorColorTags(name: string, value: any): void {
+    this.columns
+      .filter(col => col.getTag(Constants.GROUP_NAME_TAG) === name)
+      .forEach(col => col.setTag(`${Constants.TAG_PREFIX}${Constants.SECTOR_COLOR_PROPERTY}`, value));
+  }
+
+  private updateColumnTag(name: string, propertyName: keyof (Sector | Subsector), value: any, columnMap: Map<string, DG.Column>): void {
+    const column = columnMap.get(name);
+    column?.setTag(`${Constants.TAG_PREFIX}${propertyName}`, value);
+  }
+
+  private createInputForProperty(property: any, name: string): HTMLElement {
+    const prop = DG.Property.fromOptions(property.property);
+    const input = DG.InputBase.forProperty(prop, {});
+    const value = this.getSectorProperty(name, property.property.name as keyof (Sector | Subsector));
+    input.value = value !== undefined ? value : property.object[property.property.name];
+    
+    input.onChanged(() => {
+      this.updateSectorProperty(name, property.property.name as keyof (Sector | Subsector), input.value);
+      this.gc.grid.invalidate();
+    });
+
+    return input.root;
+  }
+
+  private makeItemDraggable(item: DG.TreeViewNode<any>): void {
+    ui.makeDraggable(item.root, {
+      getDragObject: () => item,
+      getDragCaption: () => `You are dragging ${item.text}`
+    });
+  }
+
+  private makeGroupDroppable(groupNode: DG.TreeViewGroup): void {
+    ui.makeDroppable(groupNode.root, {
+      acceptDrop: () => true,
+      doDrop: (draggedItem: any) => {
+        const itemText = draggedItem.text;
+        this.removeItemFromOriginalGroup(itemText);
+        this.addItemToNewGroup(groupNode, itemText);
+      }
+    });
+  }
+
+  private removeItemFromOriginalGroup(itemText: string): void {
+    const group = this.tree.items.find(g => g.text === itemText);
+    if (group) {
+      group.remove();
+      const originalGroup = this.settings.sectors?.sectors.find(sector => sector.name === group.parent.text);
+      if (originalGroup) {
+        originalGroup.subsectors = originalGroup.subsectors.filter(subsector => subsector.name !== itemText);
+      }
+    }
+  }
+
+  private addItemToNewGroup(groupNode: DG.TreeViewGroup, itemText: string): void {
+    const newGroup = this.getOrCreateNewGroup(groupNode.text);
+    const column = this.columns.find(col => col.name === itemText);
+
+    this.updateColumnTags(column);
+
+    if (!newGroup.subsectors.some(subsector => subsector.name === itemText))
+      newGroup.subsectors = [...newGroup.subsectors, this.createSubsector(column)];
+
+    if (column)
+      column.setTag(TAGS.GROUP_NAME, groupNode.text);
+
+    const newItem = groupNode.item(itemText);
+    this.makeItemDraggable(newItem);
+  }
+
+  private getOrCreateNewGroup(groupName: string): Sector {
+    let newGroup = this.settings.sectors?.sectors.find(sector => sector.name === groupName);
+    if (!newGroup) {
+      newGroup = {
+        name: groupName,
+        sectorColor: this.columns.find(col => col.name === groupName)?.getTag(TAGS.SECTOR_COLOR) ?? groupProps[0].object['sectorColor'],
+        subsectors: []
+      };
+      this.settings.sectors!.sectors = [...this.settings.sectors!.sectors, newGroup];
+    }
+    return newGroup;
+  }
+
+  private createSubsector(column: DG.Column | undefined): Subsector {
+    return {
+      name: column?.name ?? '',
+      lowThreshold: parseFloat(column?.getTag(TAGS.LOW) ?? DEFAULTS.LOW),
+      highThreshold: parseFloat(column?.getTag(TAGS.HIGH) ?? DEFAULTS.HIGH),
+      weight: parseFloat(column?.getTag(TAGS.WEIGHT) ?? this.generateRandomNumber().toFixed(1)),
+    };
+  }
+
+  private updateColumnTags(column: DG.Column | undefined): void {
+    if (column) {
+      column.setTag(TAGS.LOW, column.getTag(TAGS.LOW) ?? DEFAULTS.LOW);
+      column.setTag(TAGS.HIGH, column.getTag(TAGS.HIGH) ?? DEFAULTS.HIGH);
+      column.setTag(TAGS.WEIGHT, column.getTag(TAGS.WEIGHT) ?? this.generateRandomNumber().toFixed(1));
+    }
+  }
+
+  private initializeTreeGroups(): Map<string, DG.Column[]> {
+    const groupMap = new Map<string, DG.Column[]>();
+
+    this.columns.forEach(col => {
+      const groupName = col.getTag(this.tag);
+      if (groupName) {
+        const existingColumns = groupMap.get(groupName) ?? [];
+        groupMap.set(groupName, [...existingColumns, col]);
+      }
+    });
+
+    return groupMap;
+  }
+
+  public createTreeGroup(): HTMLElement {
+    const inputs = ui.divV([]);
+    const groupMap = this.initializeTreeGroups();
+    const untaggedColumns = this.getUntaggedColumns();
+
+    groupMap.forEach((groupColumns, groupName) => {
+      const groupNode = this.tree.group(groupName);
+      this.configureGroupNode(groupNode);
+
+      groupColumns.forEach(col => {
+        const colNode = groupNode.item(col.name);
+        this.makeItemDraggable(colNode);
       });
+    });
 
-      // Add the item to the new group
-      let newGroup = settings.sectors?.sectors.find(sector => sector.name === groupNode.text);
-      const column = columns.find(col => col.name === itemText);
+    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => this.updateInputs(inputs, node.text));
 
-      if (!newGroup) {
-        settings.sectors?.sectors.push({
-          name: groupNode.text,
-          sectorColor: column?.getTag('.sectorColor') || defaultGroupProps["sectorColor"],
-          subsectors: []
-        });
-      }
+    const generalInputs = this.createGeneralInputs();
+    this.makeUntaggedColumnsDraggable(untaggedColumns);
 
-      newGroup = settings.sectors?.sectors.find(sector => sector.name === groupNode.text);
-      column?.setTag('.low', column?.getTag('.low') || '0');
-      column?.setTag('.high', column?.getTag('.high') || '1');
-      column?.setTag('.weight', column?.getTag('.weight') || generateRandomNumber().toFixed(1));
-      if (!newGroup?.subsectors.some(subsector => subsector.name === itemText)) {
-        newGroup?.subsectors.push({
-          name: itemText,
-          lowThreshold: parseFloat(column?.getTag('.low') !),
-          highThreshold: parseFloat(column?.getTag('.high') !),
-          weight: parseFloat(column?.getTag('.weight') !),
-        });
-      }
+    const resultingDiv = this.createResultingDiv(inputs, generalInputs);
+    resultingDiv.appendChild(this.createAddGroupButton());
 
-      if (column) {
-        column.setTag(tag, groupNode.text);
-      }
+    return resultingDiv;
+  }
 
-      // Make the new item draggable
-      const newItem = groupNode.item(itemText);
-      makeItemDraggable(newItem);
-    }
-  });
-}
-
-function initializeTreeGroups(settings: PieChartSettings, gc: DG.GridColumn, columns: DG.Column[], tag: string): Map < string, DG.Column[] > {
-  const groupMap = new Map < string,
-    DG.Column[] > ();
-  const propertiesMap = new Map < string,
-    any > ();
-
-  columns.forEach(col => {
-    const groupName = col.getTag(tag);
-    if (groupName) {
-      if (!groupMap.has(groupName)) {
-        groupMap.set(groupName, []);
-        propertiesMap.set(groupName, {});
-      }
-      groupMap.get(groupName) !.push(col);
-      propertiesMap.set(col.name, {});
-    }
-  });
-
-  return groupMap;
-}
-
-export function createTreeGroup(settings: PieChartSettings, gc: DG.GridColumn): HTMLElement {
-  const df = grok.shell.tv.dataFrame;
-  const tag = '.group-name';
-  const tree = ui.tree();
-  const inputs = ui.divV([]);
-  const columns = df.columns.byNames(settings.columnNames);
-
-  // Initialize tree groups and map
-  const groupMap = initializeTreeGroups(settings, gc, columns, tag);
-  const untaggedColumns: string[] = [];
-
-  // Identify columns without tags
-  columns.forEach(col => {
-    if (!col.getTag(tag)) {
-      untaggedColumns.push(col.name);
-    }
-  });
-
-  // Set up tree groups
-  groupMap.forEach((groupColumns, groupName) => {
-    const groupNode = tree.group(groupName);
-    const colorPicker = createInputForProperty(groupProps[0], groupName, settings, gc, columns).getElementsByClassName('ui-input-options')[0];
-    //(colorPicker as HTMLElement).style.margin = '5px!important';
-    (colorPicker as HTMLElement).style.cssText += ('margin: 5px!important');
-    //const colorPicker = ui.input.color('').root;
+  private configureGroupNode(groupNode: DG.TreeViewGroup): void {
+    const colorPicker = this.createColorPicker(groupNode.text);
     const referenceNode = groupNode.root.getElementsByClassName('d4-tree-view-group-label')[0];
     referenceNode.insertAdjacentElement('beforebegin', colorPicker);
 
     groupNode.expanded = false;
-    makeGroupDroppable(groupNode, settings, columns, tag, tree);
+    this.makeGroupDroppable(groupNode);
+  }
 
-    groupColumns.forEach(col => {
-      const colNode = groupNode.item(col.name);
-      colNode.checked = false;
-      makeItemDraggable(colNode);
-    });
-  });
+  private createColorPicker(groupName: string): HTMLElement {
+    const colorPicker = this.createInputForProperty(groupProps[0], groupName)
+      .getElementsByClassName('ui-input-options')[0] as HTMLElement;
+    colorPicker.style.margin = '5px!important';
+    return colorPicker;
+  }
 
-  // Handle node selection changes
-  tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+  private updateInputs(inputs: HTMLElement, nodeText: string): void {
     ui.empty(inputs);
-    const isSubGroup = settings.columnNames.includes(node.text);
-    if (!isSubGroup)
-      return;
-    subGroupProps.forEach(prop => {
-      inputs.appendChild(createInputForProperty(prop, node.text, settings, gc, columns));
+    if (this.settings.columnNames.includes(nodeText)) {
+      subGroupProps.forEach(prop => {
+        inputs.appendChild(this.createInputForProperty(prop, nodeText));
+      });
+    }
+  }
+
+  private createGeneralInputs(): HTMLElement {
+    const container = ui.divV([this.tree.root, generalProps.map(prop => this.createInputForProperty(prop, ''))]);
+    container.style.marginRight = '10px';
+    return container;
+  }
+
+  private createResultingDiv(inputs: HTMLElement, generalInputs: HTMLElement): HTMLElement {
+    const container = ui.divH([generalInputs, inputs]);
+    container.style.marginTop = '10px';
+    return container;
+  }
+
+  private createAddGroupButton(): HTMLElement {
+    const addGroup = () => {
+      const nameInput = ui.input.string('Name');
+      ui.dialog('Add group')
+        .add(nameInput)
+        .onOK(() => {
+          const newGroup = this.tree.group(nameInput.value, null, false, this.findLastGroupIndex());
+          this.configureGroupNode(newGroup);
+        })
+        .show();
+    };
+
+    return ui.button('Add Group', addGroup);
+  }
+
+  private getUntaggedColumns(): DG.Column[] {
+    return this.columns.filter(col => !col.getTag(this.tag));
+  }
+
+  private makeUntaggedColumnsDraggable(columns: DG.Column[]): void {
+    columns.forEach(col => {
+      const colNode = this.tree.item(col.name);
+      this.makeItemDraggable(colNode);
     });
-  });
-
-  // Create general inputs
-  const generalInputs = ui.divV(generalProps.map(prop => createInputForProperty(prop, '', settings, gc, columns)));
-
-  // Make untagged columns draggable
-  untaggedColumns.forEach(colName => {
-    const colNode = tree.item(colName);
-    makeItemDraggable(colNode);
-  });
-
-  tree.root.style.overflow = 'hidden';
-  //@ts-ignore
-  tree.currentItem = tree.children[0];
-  generalInputs.style.marginRight = '10px';
-  const resultingDiv = ui.divV([generalInputs, ui.divH([tree.root, inputs], 'ui-form')]);
-  resultingDiv.style.marginTop = '10px';
-
-  const addGroup = () => {
-    const nameInput = ui.input.string('Name');
-    ui.dialog('Add group')
-      .add(nameInput)
-      .onOK(() => {
-        const lastGroupIndex = findLastGroupIndex(tree.children);
-        const newGroup = tree.group(nameInput.value, null, true, lastGroupIndex);
-        const colorPicker = createInputForProperty(groupProps[0], nameInput.value, settings, gc, columns).getElementsByClassName('ui-input-options')[0];
-        (colorPicker as HTMLElement).style.cssText += ('margin: 5px!important');
-        const referenceNode = newGroup.root.getElementsByClassName('d4-tree-view-group-label')[0];
-        referenceNode.insertAdjacentElement('beforebegin', colorPicker);
-        newGroup.expanded = false;
-        makeGroupDroppable(newGroup, settings, columns, tag, tree);
-      })
-      .show();
   }
 
-  const deleteGroup = () => {
-    const nameInput = ui.input.string('Name');
-
-    ui.dialog('Delete group')
-      .add(nameInput)
-      .onOK(() => {
-        const groupName = nameInput.value;
-        const groupToDelete = tree.children.find(node =>
-          node instanceof DG.TreeViewGroup && node.text === groupName
-        ) as DG.TreeViewGroup;
-
-        const groupChildren = groupToDelete.children;
-        groupToDelete.remove();
-
-        if (groupChildren) {
-          groupChildren.forEach(child => {
-            if (child instanceof DG.TreeViewNode) {
-              //tree.root.appendChild(child.root);
-              //tree.items.push(child);
-              const newChild = tree.item(child.text);
-              console.log('tree items');
-              console.log(tree.items);
-              delete columns.find((col) => col.name === child.text)?.tags['.group-name'];
-              delete columns.find((col) => col.name === child.text)?.tags['.sectorColor'];
-              //tree.items.push(child);
-              makeItemDraggable(newChild);
-            }
-          });
-
-          settings.sectors!.sectors = settings.sectors!.sectors.filter(sector => sector.name !== groupName);
-          gc.grid.invalidate();
-        }
-      })
-      .show();
+  private generateRandomNumber(): number {
+    return Math.random();
   }
 
-  resultingDiv.oncontextmenu = (e) => {
-    DG.Menu.popup()
-      .item('Add group', () => addGroup())
-      .item('Delete group', () => deleteGroup())
-      .show();
-    e.preventDefault();
-  };
-  return resultingDiv;
-}
-
-function findLastGroupIndex(children: DG.TreeViewNode < any > []): number {
-  for (let i = children.length - 1; i >= 0; i--) {
-    if (children[i] instanceof DG.TreeViewGroup) {
-      return i + 1;
-    }
+  private findLastGroupIndex(): number {
+    return this.tree.items.reduce((index, item, i) => item instanceof DG.TreeViewGroup ? Math.max(index, i) : index, 0);
   }
-  return 0; // No group found
 }
 
-const defaultGeneralProps = generalProps.reduce((acc, prop) => {
-    acc[prop.property.name] = (prop.object as any)[prop.property.name];
-    return acc;
-  }, {} as Record <string, any>);
-
-const defaultGroupProps = groupProps.reduce((acc, prop) => {
-    acc[prop.property.name] = (prop.object as any)[prop.property.name];
-    return acc;
-  }, {} as Record <string, any>);
-
-export function initializeSectors(columnNames: string[], dataFrame: DG.DataFrame): {
-  lowerBound: number;
-  upperBound: number;
-  sectors: {
-    name: string;
-    sectorColor: string;
-    subsectors: Subsector[];
-  } [];
-  values: string | null;
-} {
-  const groupMap = new Map < string,
-    DG.Column[] > ();
-  const columns = dataFrame.columns.byNames(columnNames);
-  const tag = '.group-name';
-
-  columns.forEach(col => {
-    const groupName = col.getTag(tag);
-    if (groupName) {
-      if (!groupMap.has(groupName)) {
-        groupMap.set(groupName, []);
-      }
-      groupMap.get(groupName) !.push(col);
-
-      // Set tags for the column if not already set
-      col.setTag('.low', col.getTag('.low') || '0');
-      col.setTag('.high', col.getTag('.high') || '1');
-      col.setTag('.weight', col.getTag('.weight') || generateRandomNumber().toFixed(1));
-    }
-  });
-
-  const sectors = Array.from(groupMap.entries()).map(([groupName, columns]) => ({
-    name: groupName,
-    sectorColor: columns[0].getTag('.sectorColor') || defaultGroupProps["sectorColor"],
-    subsectors: columns.map(col => ({
-      name: col.name,
-      lowThreshold: parseFloat(col.getTag('.low')) || 0,
-      highThreshold: parseFloat(col.getTag('.high')) || 1,
-      weight: parseFloat(col.getTag('.weight')) || parseFloat(generateRandomNumber().toFixed(1)),
-    }))
-  }));
-
-  return {
-    lowerBound: defaultGeneralProps["lowerBound"] || DEFAULT_LOWER_VALUE,
-    upperBound: defaultGeneralProps["upperBound"] || DEFAULT_UPPER_VALUE,
-    sectors,
-    values: null
-  };
-}
-
-const DEFAULT_LOWER_VALUE = 0.7;
-const DEFAULT_UPPER_VALUE = 0.9;
+export { PieChartManager };
