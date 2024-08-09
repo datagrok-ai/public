@@ -438,12 +438,13 @@ export async function getRegionTopMenu(
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: func preprocessingFunction
 //input: object options {optional: true}
+//input: bool demo {optional: true}
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<string>, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
-  options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<DG.Viewer | undefined> {
+  options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(table);
@@ -473,6 +474,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
       createTooltipElement,
       createPropPanelElement,
       createLinesGrid,
+      undefined,
+      demo
     );
     return sp;
   };

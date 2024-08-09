@@ -53,7 +53,7 @@ export async function demoBio01bUI() {
         const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {})) as DG.ScatterPlotViewer;
+          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs
