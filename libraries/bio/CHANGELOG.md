@@ -1,5 +1,32 @@
 # bio changelog
 
+## 5.42.6 (2024-07-29)
+
+### Features
+
+* sequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 5.42.5 (2024-07-23)
+
+### Features
+
+* Add IHelmHelper.createHelmInput, ui.input.helmAsync
+
+### Bug fixes
+
+* Fix identity scoring for seqs of different lengths
+
+## 5.42.4 (2024-07-02)
+
+Fix types ISeqMonomer from Helm
+
+## 5.42.3 (2024-06-26)
+
+### Bug fixes
+
+* GROK-15996: Fix cell renderer for long mode
+* Fix package-lock.json
+
 ## 5.42.2 (2024-06-25)
 
 Bump dependencies versions JSDraw.Lite and HELMWebEditor

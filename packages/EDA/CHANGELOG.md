@@ -1,6 +1,26 @@
 # EDA changelog
 
-## 1.1.25 (2024-05-27)
+## 1.1.31 (2024-08-06)
+
+Add MCL layout with force directed graph and atlas
+
+## 1.1.30 (2024-07-29)
+
+Add PLS regression to predictive modeling tools
+
+## 1.1.29 (2024-07-29)
+
+Add the softmax classifier
+
+## 1.1.28 (2024-07-23)
+
+Bump dependencies versions, datagrok-api to 1.20.0
+
+## 1.1.27 (2024-06-17)
+
+Add linear regression
+
+## 1.1.26 (2024-05-27)
 
 Add inflation factor to MCL
 
@@ -41,6 +61,7 @@ Fixed webGPU numeric distance with 0 range
 ## 1.1.17 (2024-04-14)
 
 ### Features
+
 * Add webGPU UMAP implementation.
 * Add webGPU Sparse matrix calculation.
 * Add webGPU option for MCL.

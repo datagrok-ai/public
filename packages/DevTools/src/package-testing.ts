@@ -79,7 +79,6 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
-  benchmarkMode = DG.Test.isInBenchmark;
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
@@ -90,6 +89,7 @@ export class TestManager extends DG.ViewBase {
   packNodes: any[][] = [];
   isSearchIniting = false;
   timeoutNumber: number | undefined;
+  verboseCheckBox: DG.InputBase = ui.input.bool("verbose");
 
   constructor(name: string, dockLeft?: boolean) {
     super({});
@@ -107,6 +107,11 @@ export class TestManager extends DG.ViewBase {
       pathSegments = TMState.split('/');
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
     }
+
+
+    this.verboseCheckBox.onChanged((e) => {
+
+    })
 
     // we need to init Compute package here, before loading any of
     // compute model packages, since theirs top level might implicitly
@@ -181,8 +186,15 @@ export class TestManager extends DG.ViewBase {
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
+              const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].benchmarks;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
-                return { test: t, packageName: f.package.name };
+                if (t.options.isEnabledBenchmarkMode === undefined) {
+                  if (!t.options)
+                    t.options = {}
+                  t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false;
+                }
+                const result = { test: t, packageName: f.package.name };
+                return result;
               });
               const subcats = cat.split(':');
               let subcatsFromUrl = [];
@@ -342,17 +354,20 @@ export class TestManager extends DG.ViewBase {
     });
     runTestsButton.classList.add('ui-btn-outline');
 
-    const debugButton = ui.boolInput('Debug', this.debugMode, () => { this.debugMode = !this.debugMode; });
+    const debugButton = ui.input.bool('Debug', { value: this.debugMode, onValueChanged: () => { this.debugMode = !this.debugMode; } });
     debugButton.classList.add('tm-button');
 
-    const benchmarkButton = ui.boolInput('Benchmark', this.benchmarkMode, () => {
-      this.benchmarkMode = !this.benchmarkMode;
-      DG.Test.isInBenchmark = this.benchmarkMode;
+    const benchmarkButton = ui.input.bool('Benchmark', {
+      onValueChanged: () => {
+        DG.Test.isInBenchmark = benchmarkButton.value;
+      }
     });
     benchmarkButton.classList.add('tm-button');
 
-    const runSkippedButton = ui.boolInput('Run skipped', this.runSkippedMode,
-      () => { this.runSkippedMode = !this.runSkippedMode; });
+    const runSkippedButton = ui.input.bool('Run skipped', {
+      value: this.runSkippedMode,
+      onValueChanged: () => { this.runSkippedMode = !this.runSkippedMode; }
+    });
     runSkippedButton.classList.add('tm-button');
 
     return {
@@ -454,6 +469,15 @@ export class TestManager extends DG.ViewBase {
 
   async runTest(t: IPackageTest, force?: boolean): Promise<boolean> {
     let runSkipped = false;
+    if (DG.Test.isInBenchmark && !t.test.options?.benchmark) {
+      t.test.options.skipReason = "Test can not be runned in benchmark mode";
+    
+      this.updateTestResultsIcon(t.resultDiv, true, true);
+      return;
+    }
+    else{
+      t.test.options.skipReason = undefined;
+    }
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {
       t.test.options.skipReason = undefined;
@@ -476,9 +500,11 @@ export class TestManager extends DG.ViewBase {
       this.testsResultsDf = res;
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
-      if (res.col('package') == null)
+      if (res.col('package') == null || this.verboseCheckBox.value)
         this.addPackageInfo(res, t.packageName);
-      this.removeTestRow(t.packageName, t.test.category, t.test.name);
+      if (!this.verboseCheckBox.value)
+        this.removeTestRow(t.packageName, t.test.category, t.test.name);
+      res.getCol('logs').convertTo(DG.COLUMN_TYPE.STRING);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
@@ -611,7 +637,7 @@ export class TestManager extends DG.ViewBase {
 
   getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
     nodeType: NODE_TYPE, unhandled?: string): HTMLElement {
-    const acc = ui.accordion();
+    const acc = ui.accordion('test manager results');
     acc.root.style.width = '100%';
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
@@ -620,9 +646,10 @@ export class TestManager extends DG.ViewBase {
     const obj = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType),
       nodeType, false, unhandled, isAggrTest);
     const grid = obj.info;
+    const resultPanel = ui.divV([this.verboseCheckBox, grid]);
     const testInfo = obj.testInfo;
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), { style: { userSelect: 'text' } }), true);
-    const res = acc.addPane('Results', () => ui.div(grid, { style: { width: '100%' } }), true);
+    const res = acc.addPane('Results', () => ui.div(resultPanel, { style: { width: '100%' } }), true);
     res.root.oncontextmenu = (e) => {
       DG.Menu.popup()
         .item('Print to the console', () => console.error(grid.innerText))
@@ -740,7 +767,8 @@ export class TestManager extends DG.ViewBase {
           info.appendChild(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
           info.appendChild(ui.divText(`Category: ${cat}`));
-      } else {
+      }
+      else {
         if (!isTooltip) {
           const resStr = ui.div();
           resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\

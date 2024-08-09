@@ -242,7 +242,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion('Curves property panel');
-    // TODO: make just the base ui.choiceInput after nullable option is added
+    // TODO: make just the base ui.input.choice after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
       defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
     const switchLevelInput = ui.input.forProperty(switchProperty);

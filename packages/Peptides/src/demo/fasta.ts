@@ -20,7 +20,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   const simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
   simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
   simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
-  simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  simpleAlignedSeqCol.meta.units = NOTATION.FASTA;
   simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
   const clustersCol = DG.Column.string('Cluster', simpleTable.rowCount).init('0');

@@ -45,8 +45,12 @@ export class CompositionPipelineView extends PipelineView implements ICompositio
   private actionsMenu?: DG.Menu;
   public customViews = new Map<string, RFVPopup>();
 
-  constructor(funcName: string) {
-    super(funcName, [], {historyEnabled: true, isTabbed: false, skipInit: true});
+  constructor(funcName: string, options: {
+    historyEnabled: boolean,
+    isTabbed: boolean,
+    skipInit?: boolean,
+  } = {historyEnabled: true, isTabbed: false, skipInit: true}) {
+    super(funcName, [], options);
   }
 
   public injectConfiguration(steps: StepSpec[], hooks: HookSpec[], rt: PipelineRuntime, exportConfig?: ExportConfig) {

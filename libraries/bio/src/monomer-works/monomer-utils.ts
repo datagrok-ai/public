@@ -213,8 +213,11 @@ export async function sequenceChemSimilarity(
 
   // Calculate base similarity
   for (let position = 0; position < positionColumns.length; ++position) {
-    const referenceMonomerCanonical = referenceSequence.getCanonical(position);
+    const referenceMonomerCanonical = position < referenceSequence.length ?
+      referenceSequence.getCanonical(position) : GAP_SYMBOL;
     const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomerCanonical)?.smiles ?? '';
+    if (!referenceMol)
+      grok.shell.warning(`Reference monomer ${referenceMonomerCanonical} not found in monomer library`);
 
     const monomerCol = positionColumns[position];
     const monomerColData = monomerCol.getRawData() as Uint32Array;
@@ -228,14 +231,18 @@ export async function sequenceChemSimilarity(
     const molCol = DG.Column.fromStrings('smiles',
       monomerColCategories.map((cat) => monomerLib.getMonomer('PEPTIDE', cat)?.smiles ?? ''));
     const _df = DG.DataFrame.fromColumns([molCol]); // getSimilarities expects that column is in dataframe
-    const similarityCol = (await grok.chem.getSimilarities(molCol, referenceMol))!;
-    const similarityColData = similarityCol.getRawData();
+    const similarityCol: DG.Column<number> | null = (await grok.chem.getSimilarities(molCol, referenceMol))!;
+    const similarityColData: Float32Array | null = similarityCol ? (similarityCol.getRawData() as Float32Array) : null;
 
-    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-      const monomerCategoryIdx = monomerColData[rowIdx];
-      totalSimilarity[rowIdx] += referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx ?
-        similarityColData[monomerCategoryIdx] :
-        referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx ? 1 : 0;
+    if (similarityColData) {
+      for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+        const monomerCategoryIdx = monomerColData[rowIdx];
+        if (referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx) {
+          totalSimilarity[rowIdx] += similarityColData![monomerCategoryIdx];
+        } else if (referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx) {
+          totalSimilarity[rowIdx] += 1;
+        } // Do not increase similarity on mismatch score/penalty equals 0;
+      }
     }
   }
 

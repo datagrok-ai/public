@@ -100,10 +100,10 @@ export class MultiColumnDimReductionEditor {
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
     methodSettingsAnchor: HTMLElement = ui.div();
-    plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
+    plotEmbeddingsInput = ui.input.bool('Plot embeddings', {value: true});
     postProcessingEditor: PostProcessingFuncEditor;
-    aggregationMethodInput = ui.choiceInput('Aggregation', DistanceAggregationMethods.EUCLIDEAN,
-      [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]);
+    aggregationMethodInput = ui.input.choice('Aggregation', {value: DistanceAggregationMethods.EUCLIDEAN,
+      items: [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]});
 
     onColumnsChanged: Subject<void>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
@@ -136,17 +136,17 @@ export class MultiColumnDimReductionEditor {
 
       this.postProcessingEditor = new PostProcessingFuncEditor();
 
-      this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
+      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
         this.onTableInputChanged();
-      });
+      }});
       this.onTableInputChanged();
       let settingsOpened = false;
 
-      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP,
-        [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
+      this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
+        items: [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], onValueChanged: () => {
           if (settingsOpened)
             this.createAlgorithmSettingsDiv(this.methodsParams[this.methodInput.value!]);
-        });
+        }});
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
         if (!settingsOpened) {
@@ -180,7 +180,7 @@ export class MultiColumnDimReductionEditor {
           const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
           const typeSuported = !types.length || types.includes(col.type);
           const unitsSupported = !units.length ||
-            (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+            (col.meta.units && units.includes(col.meta.units));
           if (semTypeSupported && typeSuported && unitsSupported) {
             if (!this.columnFunctionsMap[col.name])
               this.columnFunctionsMap[col.name] = [];
@@ -189,7 +189,7 @@ export class MultiColumnDimReductionEditor {
         });
       });
       const supportedColNames = Object.keys(this.columnFunctionsMap);
-      const columnsInput = ui.columnsInput('Columns', table, () => {
+      const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: () => {
         this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
         ui.empty(this.weightsEditorRoot);
@@ -233,7 +233,7 @@ export class MultiColumnDimReductionEditor {
           this.columnParamsEditorAccordion.root.style.display = 'flex';
         table.classList.add('ml-dim-reduction-column-editor-table-root');
         this.columnOptEditorsRoot.appendChild(table);
-      }, {available: supportedColNames});
+      }, available: supportedColNames});
       columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
         this.columnsInputRoot = columnsInput.root;
@@ -258,15 +258,15 @@ export class MultiColumnDimReductionEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.stringInput(param.uiName, param.value ?? '', () => {
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: () => {
             param.value = (input as DG.InputBase<string>).value;
-          }) : param.type === 'boolean' ?
-            ui.boolInput(param.uiName, param.value ?? false, () => {
+          }}) : param.type === 'boolean' ?
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: () => {
               param.value = (input as DG.InputBase<boolean>).value;
-            }) :
-            ui.floatInput(param.uiName, param.value as any, () => {
+            }}) :
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: () => {
               param.value = input.value;
-            });
+            }});
         if (param.disable) {
           input.enabled = false;
           ui.tooltip.bind(input.input ?? input.root, param.disableTooltip ?? '');
@@ -345,7 +345,7 @@ class DimReductionColumnEditor {
     weight: number = 1;
     colOptEditors: HTMLElement[] = [];
     constructor(column: DG.Column, supportedFunctions: DimRedSupportedFunctions[]) {
-      this.weightInput = ui.floatInput('Weight', 1, () => { this.weight = this.weightInput.value ?? 1; });
+      this.weightInput = ui.input.float('Weight', {value: 1, onValueChanged: () => { this.weight = this.weightInput.value ?? 1; }});
       this.column = column;
       // sort by specificity
       this.supportedFunctions = supportedFunctions.sort((a, b) => {
@@ -362,23 +362,22 @@ class DimReductionColumnEditor {
       this.supportedFunctions.forEach((f) => {
         this.functionsMap[getFuncName(f.func)] = f.func;
       });
-      this.preprocessingFunctionInput = ui.choiceInput('Encoding function',
-        getFuncName(this.supportedFunctions[0].func), this.supportedFunctions.map((it) => getFuncName(it.func)),
-        () => {
-          const val = this.preprocessingFunctionInput.value!;
-          const func = this.functionsMap[val];
-          this.preprocessingFunctionSettings = {};
-          this.hasExtraSettings = func.inputs.length > 2;
-          const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === val)!;
-          this.getSimilarityMetricInput(supF);
-          ui.empty(this.preprocessingFuncSettingsDiv);
-          settingsOpened = false;
-          if (!this.hasExtraSettings)
-            this.preprocessingFuncSettingsIcon.style.display = 'none';
-          else
-            this.preprocessingFuncSettingsIcon.style.display = 'flex';
-        }
-      );
+      this.preprocessingFunctionInput = ui.input.choice('Encoding function',
+        {value: getFuncName(this.supportedFunctions[0].func), items: this.supportedFunctions.map((it) => getFuncName(it.func)),
+          onValueChanged: () => {
+            const val = this.preprocessingFunctionInput.value!;
+            const func = this.functionsMap[val];
+            this.preprocessingFunctionSettings = {};
+            this.hasExtraSettings = func.inputs.length > 2;
+            const supF = this.supportedFunctions.find((it) => getFuncName(it.func) === val)!;
+            this.getSimilarityMetricInput(supF);
+            ui.empty(this.preprocessingFuncSettingsDiv);
+            settingsOpened = false;
+            if (!this.hasExtraSettings)
+              this.preprocessingFuncSettingsIcon.style.display = 'none';
+            else
+              this.preprocessingFuncSettingsIcon.style.display = 'flex';
+          }});
       this.preprocessingFunctionInput.root.style.display = 'flex';
 
       this.createSettingsDiv(this.preprocessingFuncSettingsDiv, this.supportedFunctions[0].func)
@@ -435,7 +434,7 @@ class DimReductionColumnEditor {
     }
 
     getSimilarityMetricInput(preFunc: DimRedSupportedFunctions) {
-      const input = ui.choiceInput('Similarity metric', preFunc.distanceFunctions[0], preFunc.distanceFunctions);
+      const input = ui.input.choice('Similarity metric', {value: preFunc.distanceFunctions[0], items: preFunc.distanceFunctions});
       if (!this.similarityMetricInputRoot) {
         this.similarityMetricInputRoot = input.root;
         this.similarityMetricInput = input;
@@ -510,9 +509,9 @@ class PostProcessingFuncEditor {
     const defaultPostProcessingFunc = Object.keys(this.postProcessingFunctionsMap).find((it) =>
       !!this.postProcessingFunctionsMap[it]?.options?.[DIM_RED_DEFAULT_POSTPROCESSING_FUNCTION_META]) ?? 'None';
     this.postProcessingFunctionInput =
-      ui.choiceInput('Postprocessing', defaultPostProcessingFunc,
-        Object.keys(this.postProcessingFunctionsMap), async () => { await this.onFunctionChanged(); },
-        {nullable: false});
+      ui.input.choice('Postprocessing', {value: defaultPostProcessingFunc,
+        items: Object.keys(this.postProcessingFunctionsMap), onValueChanged: async () => { await this.onFunctionChanged(); },
+        nullable: false});
     this.onFunctionChanged();
     this.postProcessingFunctionInput.nullable = false;
     this.postProcessingFunctionInput.classList.add('ml-dim-reduction-settings-input');

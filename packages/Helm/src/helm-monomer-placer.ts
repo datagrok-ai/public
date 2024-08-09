@@ -10,12 +10,7 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 
 import {getParts, parseHelm} from './utils';
 
-import {_package, getMonomerLib} from './package';
-
-export interface ISeqMonomer {
-  polymerType: PolymerType;
-  symbol: string;
-}
+import {_package} from './package';
 
 export class HelmMonomerPlacer extends CellRendererBackBase<string> {
   private _allPartsList: (string[] | null)[];

@@ -21,7 +21,7 @@ category('server features', () => {
     expect(t.columns.contains('NumHeteroatoms'), true);
     expect(t.columns.contains('NumRotatableBonds'), true);
     expect(t.columns.contains('RingCount'), true);
-  });
+  }, {benchmark: true, stressTest: true});
 
   test('sketcher', async () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');

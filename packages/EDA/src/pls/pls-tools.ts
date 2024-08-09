@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DELAY, DEMO_RESULTS} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -30,8 +30,42 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
-  names : DG.Column | null,
+  names : DG.Column | undefined,
 };
+
+/** Return lines */
+export function getLines(names: string[]): DG.FormulaLine[] {
+  const lines: DG.FormulaLine[] = [];
+
+  const addLine = (formula: string, radius: number) => {
+    lines.push({
+      type: 'line',
+      formula: formula,
+      width: LINE_WIDTH,
+      visible: true,
+      title: ' ',
+      min: -radius,
+      max: radius,
+      color: COLOR.CIRCLE,
+    });
+  };
+
+  names.forEach((xName) => {
+    const x = '${' + xName + '}';
+    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
+
+    names.forEach((yName) => {
+      const y = '${' + yName + '}';
+
+      RADIUS.forEach((r) => {
+        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
+        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
+      });
+    });
+  });
+
+  return lines;
+}
 
 /** Partial least square regression (PLS) */
 export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
@@ -76,7 +110,11 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  const view = grok.shell.tableView(input.table.name);
+  //const view = grok.shell.tableView(input.table.name);
+
+  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
+    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
+    grok.shell.tableView(input.table.name);
 
   // 0.1 Buffer table
   const buffer = DG.DataFrame.fromColumns([
@@ -141,7 +179,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const scoresScatter = DG.Viewer.scatterPlot(input.table, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0],
+    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
     labels: input.names?.name,
     help: LINK.SCORES,
@@ -149,35 +187,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.3) create lines & circles
-  const lines = [] as DG.FormulaLine[];
-
-  const addLine = (formula: string, radius: number) => {
-    lines.push({
-      type: 'line',
-      formula: formula,
-      width: LINE_WIDTH,
-      visible: true,
-      title: ' ',
-      min: -radius,
-      max: radius,
-      color: COLOR.CIRCLE,
-  })};
-
-  scoreNames.forEach((xName) => {
-    const x = '${' + xName + '}';
-    lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
-
-    scoreNames.forEach((yName) => {
-      const y = '${' + yName + '}';
-
-      RADIUS.forEach((r) => {
-        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
-        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
-      });
-    });
-  });
-
-  scoresScatter.meta.formulaLines.addAll(lines);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
   view.addViewer(scoresScatter);
 
   // 5. Explained Variances
@@ -226,12 +236,13 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
-    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((viewer, idx) => {
-      return {
-        text: DEMO_RESULTS[idx].text,
-        showNextTo: viewer.root,
-      }
-    });
+    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar]
+      .map((viewer, idx) => {
+        return {
+          text: DEMO_RESULTS[idx].text,
+          showNextTo: viewer.root,
+        };
+      });
 
     const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
     wizard.helpUrl = LINK.MVA;
@@ -241,7 +252,9 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = grok.shell.t;
+  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
+    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
+    grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
@@ -281,17 +294,16 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // responce (to predict)
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.columnInput(TITLE.PREDICT, table, predict, () => {
+  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: () => {
     predict = predictInput.value!;
     updateIputs();
-  },
-  {filter: (col: DG.Column) => isValidNumeric(col)},
+  }, filter: (col: DG.Column) => isValidNumeric(col)},
   );
   predictInput.setTooltip(HINT.PREDICT);
 
   // predictors (features)
   let features: DG.Column[];
-  const featuresInput = ui.columnsInput(TITLE.USING, table, () => {}, {available: numColNames});
+  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
   featuresInput.onInput(() => updateIputs());
   featuresInput.setTooltip(HINT.FEATURES);
 
@@ -333,9 +345,12 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   };
 
   // names of samples
-  let names = (strCols.length > 0) ? strCols[0] : null;
-  const namesInputs = ui.columnInput(TITLE.NAMES, table, names, () => names = predictInput.value,
-    {filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
+  let names = (strCols.length > 0) ? strCols[0] : undefined;
+  const namesInputs = ui.input.column(TITLE.NAMES, {
+    table: table,
+    value: names,
+    onValueChanged: () => names = predictInput.value ?? undefined,
+    filter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING},
   );
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);

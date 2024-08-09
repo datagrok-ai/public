@@ -7,6 +7,7 @@ import sys
 import json
 import os
 import pandas as pd
+import hashlib
 
 from modeling import get_all_engines, get_engine_by_type
 from chemprop import ChemProp
@@ -53,18 +54,19 @@ def modeling_train():
 
 @bp.route('/modeling/train_chemprop', methods=['POST'])
 def modeling_train_chemprop():
-    id = request.args.get('id', '', type=str)
-    type = request.args.get('type', '', type=str)
-    table_str = request.args.get('table', '', type=str)
+    data = request.get_json()
+    type = data.get('type', '')
+    table_str = data.get('table', '')
+    table_hash = hashlib.sha256(table_str.encode('utf-8')).hexdigest()
     table = pd.read_csv(StringIO(table_str))
-    predict = request.args.get('predict', '', type=str)
-    parameter_values = json.loads(request.data)
+    predict = data.get('predict', '')
+    parameter_values = data.get('parameters', {})
     engine = get_engine_by_type(type)
     chemprop = ChemProp()
     try:
-        model_blob, log = chemprop.train_impl(id, table, predict, parameter_values)
-        performance = engine.estimate_performance_impl(id, model_blob, table, predict,
-                                                     True) if model_blob == '' else chemprop.estimate_performance_impl(id,
+        model_blob, log = chemprop.train_impl(table_hash, table, predict, parameter_values)
+        performance = engine.estimate_performance_impl(table_hash, model_blob, table, predict,
+                                                     True) if model_blob == '' else chemprop.estimate_performance_impl(table_hash,
                                                                                                                    model_blob,
                                                                                                                    table,
                                                                                                                    predict,
@@ -91,19 +93,21 @@ def modeling_predict():
         prediction = engine.predict(id, request.data, table_server_url, table_token)
         # TODO Return column list
         # TODO Add converter Pandas dataframe -> ColumnList or DataFrame
-        return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
+        return _make_response(json.dumps({'outcome': prediction['pred_0'].tolist()}),
                               headers=headers_app_json), 201
     except Exception as e:
         return _make_response(str(e)), 400
 
 @bp.route('/modeling/predict_chemprop', methods=['POST'])
 def modeling_predict_chemprop():
-    id = request.args.get('id', '', type=str)
-    table_str = request.args.get('table', '', type=str)
+    data = request.get_json()
+    model_blob = bytes(data.get('modelBlob'))
+    table_str = data.get('table', '')
+    table_hash = hashlib.sha256(table_str.encode('utf-8')).hexdigest()
     table = pd.read_csv(StringIO(table_str))
     chemprop = ChemProp()
     try: 
-        prediction = chemprop.predict_impl(id, request.data, table)
+        prediction = chemprop.predict_impl(table_hash, model_blob, table)
         return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
                               headers=headers_app_json), 201
     except Exception as e:

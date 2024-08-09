@@ -115,4 +115,6 @@ export class CustomSketcherInput {
         this.onChangeFunc = f;
     }
 
+    addValidator(f: Function) {}
+
 }

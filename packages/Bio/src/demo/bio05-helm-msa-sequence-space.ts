@@ -38,9 +38,8 @@ export async function demoBio05UI(): Promise<void> {
   let pepseaDcStartPromise: Promise<void>;
 
   try {
-    const demoScript = new DemoScript(
-      'Helm, MSA, Sequence Space',
-      'MSA and composition analysis on Helm data');
+    const demoScript = new DemoScript('Helm, MSA, Sequence Space', 'MSA and composition analysis on Helm data',
+      false, {autoStartFirstStep: true});
     await demoScript
       .step(`Load peptides with non-natural aminoacids in 'HELM' notation`, async () => {
         [pepseaDcStatus, df] = await Promise.all([

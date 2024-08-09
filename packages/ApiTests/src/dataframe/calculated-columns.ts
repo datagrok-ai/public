@@ -17,7 +17,7 @@ category('DataFrame: Calculated columns', () => {
     try {
       const column = await df.columns.addNewCalculated('new', '${x}+${y}-${z}');
       expect(df.columns.contains(column.name), true);
-      expect(column.tags[DG.TAGS.FORMULA], '${x}+${y}-${z}');
+      expect(column.meta.formula, '${x}+${y}-${z}');
       expect(column.get(0), -2);
       expect(column.get(1), -1);
       expect(column.get(2), 0);
@@ -85,7 +85,7 @@ category('DataFrame: Calculated columns', () => {
           reject('Dialog not found');
         }, 1000);
         const column = await df.columns.addNewCalculated('editable', '0');
-        column.dialogs.editFormula();
+        column.meta.dialogs.editFormula();
       } finally {
         df.columns.remove('editable');
       }
@@ -96,7 +96,7 @@ category('DataFrame: Calculated columns', () => {
     const t = df.clone();
     subs.push(t.onColumnsAdded.subscribe((data) =>
       data.args.columns.forEach((column: DG.Column) => {
-        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
+        if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 
@@ -109,7 +109,7 @@ category('DataFrame: Calculated columns', () => {
     const t = df.clone();
     subs.push(t.onColumnsRemoved.subscribe((data) =>
       data.args.columns.forEach((column: DG.Column) => {
-        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
+        if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 

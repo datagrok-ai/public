@@ -1,0 +1,184 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "vertical",
+    "state": {
+      "width": 1173,
+      "height": 802
+    },
+    "children": [
+      {
+        "containerType": "horizontal",
+        "state": {
+          "width": 1173,
+          "height": 523
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 202,
+              "height": 523,
+              "element": {
+                "id": "7c453e20-4ce0-11ef-dfbc-85cbf82e5432",
+                "type": "Filters",
+                "look": {
+                  "#type": "FiltersLook",
+                  "filters": [
+                    {
+                      "type": "Chem:substructureFilter",
+                      "column": "SMILES",
+                      "active": true,
+                      "columnName": "SMILES",
+                      "molBlock": "",
+                      "searchType": "Contains",
+                      "simCutOff": 0.8,
+                      "fp": "Morgan",
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "Cmpd_ID",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "poses",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "confidence",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    }
+                  ]
+                },
+                "title": "Filters"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 970,
+              "height": 523,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 970,
+                  "height": 523,
+                  "element": {
+                    "id": "7c458c40-4ce0-11ef-813b-6d98da1cf2fe",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 100,
+                      "sortByColumnNames": [
+                        "confidence"
+                      ],
+                      "sortTypes": [
+                        true
+                      ],
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 28,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header"
+                        },
+                        {
+                          "width": 77,
+                          "columnName": "Cmpd_ID"
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "SMILES",
+                          "cellType": "Molecule"
+                        },
+                        {
+                          "width": 100,
+                          "columnName": "poses",
+                          "cellType": "xray"
+                        },
+                        {
+                          "isColorCoded": true,
+                          "isTextColorCoded": true,
+                          "width": 150,
+                          "columnName": "confidence",
+                          "customFormat": "0.00",
+                          "cellType": "number",
+                          "format": "0.00",
+                          "colorCodingType": "Linear",
+                          "colorCodingLinear": [
+                            4278255360,
+                            4294901760
+                          ]
+                        },
+                        {
+                          "visible": false,
+                          "columnName": "~posesJson",
+                          "cellType": "xray"
+                        },
+                        {
+                          "columnName": "~SMILES.Pattern"
+                        },
+                        {
+                          "columnName": "~SMILES.canonicalSmiles"
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1173,
+          "height": 278,
+          "element": {
+            "id": "7c45b350-4ce0-11ef-d5a8-350bc6739d74",
+            "type": "Markup",
+            "look": {
+              "#type": "MarkupViewerLook",
+              "content": "# DiffDock Demo\n\nThe DiffDock Demo showcases DiffDock, a model that predicts the 3D structure of how a molecule interacts with a protein.\n\nYou can use DiffDock to explore molecular interactions in two ways:\n\n1. **For viewing poses**:\n   - Click on a pose in the dataset.\n   - The Mol* viewer will open, displaying the selected pose.\n\n2. **For viewing other poses and confidence**:\n   - In the Mol* viewer, a combo popup will list other generated poses and their confidence levels.\n   - To visualize other generated poses, click on the pose of your interest."
+            },
+            "title": "Markup"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "d508d770-4ce0-11ef-f5ce-3bdbd48d3b05",
+    "tableName": "Table"
+  },
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
+  },
+  "createdOn": "2024-08-02T14:21:18.972Z"
+}

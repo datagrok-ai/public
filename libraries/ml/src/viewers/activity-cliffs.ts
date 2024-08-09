@@ -92,7 +92,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   encodingFunc: DG.Func, tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  cliffsDockRatio?: number) : Promise<DG.Viewer> {
+  cliffsDockRatio?: number, demo?: boolean) : Promise<DG.Viewer> {
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
   // eslint-disable-next-line prefer-const
@@ -149,7 +149,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
   const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
-  const view = grok.shell.getTableView(df.name);
+  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
   const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -188,7 +188,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
-  const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
+  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: () => {
     if (filterCliffsButton.value) {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, axesNames[0]);
       df.filter.and(cliffsBitSet);
@@ -198,7 +198,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       df.filter.setAll(true);
       filterCliffsSubj.next('');
     }
-  });
+  }});
   filterCliffsButton.root.classList.add('scatter_plot_link', 'show_only_cliffs');
   sp.root.append(filterCliffsButton.root);
 
@@ -375,14 +375,14 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  cliffsDockRatio?: number) : Promise<void> {
+  cliffsDockRatio?: number, demo?: boolean) : Promise<void> {
 
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
     // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
-  const view = grok.shell.getTableView(df.name);
+  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
 
   let sparseMatrixRes: SparseMatrixResult | null = null;
   if (seqSpaceOptions.useWebGPU) {
@@ -438,7 +438,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
-  const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
+  const filterCliffsButton = ui.input.toggle(`Show only cliffs`, {value: false, onValueChanged: () => {
     if (filterCliffsButton.value) {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, axesNames[0]);
       df.filter.and(cliffsMetrics.cliffsBitSet);
@@ -448,7 +448,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       df.filter.setAll(true);
       filterCliffsSubj.next('');
     }
-  });
+  }});
   filterCliffsButton.root.classList.add('scatter_plot_link', 'show_only_cliffs');
   sp.root.append(filterCliffsButton.root);
 

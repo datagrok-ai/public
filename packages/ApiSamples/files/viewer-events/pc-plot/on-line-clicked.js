@@ -1,0 +1,1 @@
+grok.shell.info('Clicked on ' + args.args.rowId);

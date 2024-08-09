@@ -27,7 +27,7 @@ export class AdmeticaBaseEditor {
     this.templatesInput = ui.input.choice('Template', {onValueChanged: async () =>  {
       if(settingsOpened)
         await this.createModelsSettingsDiv(this.modelsSettingsDiv);
-    }});
+    }}) as DG.ChoiceInput<string>;
     this.modelsSettingsIcon = ui.icons.settings(async () => {
       settingsOpened = !settingsOpened;
       if (settingsOpened)
@@ -84,7 +84,7 @@ export class AdmeticaBaseEditor {
     const coloring = model.coloring;
     if (coloring.type === 'Conditional')
       inputs.appendChild(createConditionalInput(coloring, model));
-    else if (coloring.type === 'Linear')
+    else if (coloring.type === DG.COLOR_CODING_TYPE.LINEAR)
       inputs.appendChild(createLinearInput(coloring));
   }
   

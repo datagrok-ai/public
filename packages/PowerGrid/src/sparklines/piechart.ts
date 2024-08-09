@@ -348,29 +348,29 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     const elementsDiv = ui.div([]);
-
-    const inputs = ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+    return ui.inputs([
+      ui.input.columns('Сolumns', {
+        value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame,
+        onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gc.grid.invalidate();
+        },
+        available: names(gc.grid.dataFrame.columns.numerical)
       }),
-      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius, 'VlaaiVis'],
-        function (value: PieChartStyle | string) {
-          ui.empty(elementsDiv);
-          if (value === 'VlaaiVis')
-            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-          else {
-            delete settings.sectors;
-            settings.style = value as PieChartStyle;
-            gc.grid.invalidate();
-          }
-        })
+      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, 'VlaaiVis'],
+        onValueChanged: (input) => {
+        ui.empty(elementsDiv);
+        if (input.value === 'VlaaiVis')
+          elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+        else {
+          delete settings.sectors;
+          settings.style = input.value as PieChartStyle;
+          gc.grid.invalidate();
+        }
+      }})
     ]);
-
-    return ui.divV([inputs, elementsDiv]);
   }
 }

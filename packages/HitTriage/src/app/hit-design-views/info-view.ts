@@ -7,10 +7,12 @@ import {_package} from '../../package';
 import $ from 'cash-dom';
 import {CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
-import {addBreadCrumbsToRibbons, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, checkEditPermissions,
+  checkViewPermissions, loadCampaigns, modifyUrl, popRibbonPannels} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
+import {defaultPermissions, PermissionsDialog} from '../dialogs/permissions-dialog';
 
 export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   constructor(app: HitDesignApp) {
@@ -73,7 +75,10 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       templates.push(presetTemplate.name);
 
     let selectedTemplate: HitDesignTemplate | null = null;
+    let templateChangeFlag = true;
     const onTemmplateChange = async () => {
+      if (!templateChangeFlag)
+        return;
       const templateName = templatesInput.value;
       const template: HitDesignTemplate = presetTemplate && presetTemplate.name === templateName ? presetTemplate :
         JSON.parse(await _package.files.readAsText('Hit Design/templates/' + templateName + '.json'));
@@ -83,10 +88,10 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
-    const templatesInput = ui.choiceInput('Template', presetTemplate?.name ?? templates[0], templates,
-      async () => {
+    const templatesInput = ui.input.choice('Template', {value: presetTemplate?.name ?? templates[0], items: templates,
+      onValueChanged: async () => {
         await onTemmplateChange();
-      });
+      }});
     templatesInput.root.style.width = '100%';
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate();
@@ -96,7 +101,32 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       if (selectedTemplate)
         this.createNewTemplate(selectedTemplate);
     }, 'Clone template');
+
+    const deleteTempleteButton = ui.icons.delete(() => {
+      if (!templatesInput.value || templatesInput.items.length < 2)
+        return;
+      ui.dialog('Delete template')
+        .add(ui.divText(`Are you sure you want to delete template ${templatesInput.value}?`))
+        .onOK(async () => {
+          try {
+            const prevValue = templatesInput.value;
+            await _package.files.delete(`Hit Design/templates/${prevValue}.json`);
+            templateChangeFlag = false;
+            templatesInput.items = templatesInput.items.filter((item) => item !== prevValue);
+            templatesInput.value = templatesInput.items[0];
+            templateChangeFlag = true;
+            await onTemmplateChange();
+            grok.shell.info('Template ' + prevValue + ' was deleted successfully');
+          } catch (e) {
+            templateChangeFlag = true;
+            grok.shell.error('Failed to delete template ' + templatesInput.value);
+            console.error(e);
+          }
+        })
+        .show();
+    }, 'Delete template');
     createNewtemplateButton.style.color = '#2083d5';
+    templatesInput.addOptions(deleteTempleteButton);
     templatesInput.addOptions(cloneTemplateButton);
     templatesInput.addOptions(createNewtemplateButton);
     await onTemmplateChange();
@@ -116,8 +146,16 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       return;
     const campaign: HitDesignCampaign =
       JSON.parse(await _package.files.readAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`));
-    if (campaign)
+    if (campaign) {
+      // in case if the link was opened and user has no permissions to view the campaign
+      if (campaign.authorUserId && campaign.permissions &&
+        !await checkViewPermissions(campaign.authorUserId, campaign.permissions)
+      ) {
+        this.app.setBaseUrl();
+        return;
+      }
       this.app.campaign = campaign;
+    }
     // Load the template and modify it
     const template: HitDesignTemplate = campaign.template ?? JSON.parse(
       await _package.files.readAsText(`Hit Design/templates/${campaign.templateName}.json`),
@@ -135,32 +173,50 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   private async getCampaignsTable() {
     const campaignNamesMap = await loadCampaigns('Hit Design', this.deletedCampaigns);
 
+    const deleteAndShareCampaignIcons = (info: HitDesignCampaign) => {
+      const deleteIcon = ui.icons.delete(async () => {
+        ui.dialog('Delete campaign')
+          .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
+          .onOK(async () => {
+            await this.deleteCampaign('Hit Design', info.name);
+            this.deletedCampaigns.push(info.name);
+            await this.init();
+          })
+          .show();
+      }, 'Delete campaign');
+      const shareIcon = ui.iconFA('share', async () => {
+        await (new PermissionsDialog(info.permissions)).show(async (res) => {
+          try {
+            info.permissions = res;
+            info.authorUserId ??= grok.shell.user.id;
+            await _package.files.writeAsText(
+              `Hit Design/campaigns/${info.name}/${CampaignJsonName}`, JSON.stringify(info));
+            grok.shell.info('Permissions updated for campaign ' + info.name);
+          } catch (e) {
+            grok.shell.error('Failed to update permissions for campaign ' + info.name);
+            console.error(e);
+          }
+        });
+      }, 'Manage campaign permissions');
+      deleteIcon.style.display = 'none';
+      shareIcon.style.display = 'none';
+      const authorId = info.authorUserId ?? DG.User.current().id;
+      const perms = info.permissions ?? defaultPermissions;
+      checkEditPermissions(authorId, perms).then((canEdit) => {
+        if (canEdit) {
+          deleteIcon.style.display = 'inline-block';
+          shareIcon.style.display = 'inline-block';
+        }
+      });
+      return [shareIcon, deleteIcon];
+    };
     const table = ui.table(Object.values(campaignNamesMap), (info) =>
       ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
         info.createDate,
         info.rowCount,
-        //info.filteredRowCount,
         info.status,
-        // ui.icons.copy(async () => {
-        //   const template = info.template ?? JSON.parse(
-        //     await _package.files.readAsText(`Hit Design/templates/${info.templateName}.json`),
-        //   );
-        //   const df = await _package.files.readCsv(`Hit Design/campaigns/${info.name}/${CampaignTableName}`);
-        //   this.app.dataFrame = df;
-        //   await this.app.setTemplate(template);
-        //   this.app.campaignProps = info.campaignFields;
-        //   await this.app.saveCampaign(undefined, false);
-        // }, 'Clone campaign'),
-        ui.icons.delete(async () => {
-          ui.dialog('Delete campaign')
-            .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
-            .onOK(async () => {
-              await this.deleteCampaign('Hit Design', info.name);
-              this.deletedCampaigns.push(info.name);
-              await this.init();
-            })
-            .show();
-        }, 'Delete campaign')]),
+        ...(deleteAndShareCampaignIcons(info)),
+      ]),
     ['Name', 'Created', 'Molecules', 'Status', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';

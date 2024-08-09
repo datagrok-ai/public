@@ -115,18 +115,19 @@ export class TreeUtils {
         selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
+        const value = columns[colIdx].get(i);
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        const name = columns[colIdx].get(i).toString();
+        const name = value ? value.toString() : '';
         const node: TreeDataType = {
           semType: columns[colIdx].semType,
           name: name,
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
-        const colorCodingType = columns[colIdx].getTag(DG.TAGS.COLOR_CODING_TYPE);
-        if (colorCodingType !== 'Off' && colorCodingType !== null && inherit) {
+        const colorCodingType = columns[colIdx].meta.colors.getType();
+        if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
           node.itemStyle = {
-            color: DG.Color.toHtml(columns[colIdx].colors.getColor(i)),
+            color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
           };
         }
         if (colIdx === columns.length - 1)
@@ -155,7 +156,7 @@ export class TreeUtils {
   }
 
   static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], true, selection, inherit);
+    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
     return tree.children;
   }
 

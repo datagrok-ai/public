@@ -17,7 +17,7 @@ export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu): void {
       const srcCol = cell.column;
       const srcRowIdx = cell.rowIndex;
       const srcSh = SeqHandler.forColumn(srcCol);
-      const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.DefaultSeparator : undefined;
+      const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.defaultSeparator : undefined;
       const joiner = srcSh.getJoiner({notation: tgtNotation as NOTATION, separator});
       const srcSS = srcSh.getSplitted(srcRowIdx);
       const tgtSeq = joiner(srcSS);

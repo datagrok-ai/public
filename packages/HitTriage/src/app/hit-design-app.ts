@@ -17,6 +17,7 @@ import {HitBaseView} from './base-view';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
+import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 
 export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   multiView: DG.MultiView;
@@ -124,6 +125,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
     this._submitView ??= new HitDesignSubmitView(this);
     grok.shell.windows.showHelp = false;
+    if (this.campaign)
+      await this.setCanEdit(this.campaign);
+    else
+      this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
 
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
     const designV = this.designView;
@@ -148,6 +153,33 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   set campaign(campaign: HitDesignCampaign | undefined) {this._campaign = campaign;}
 
+  private _duplicateVidCache?: {
+    colVersion: number,
+    valueCounts: Int32Array | Uint32Array,
+    indexes: Int32Array | Uint32Array,
+  };
+
+  private cacheDuplicateVIDs() {
+    const col = this.dataFrame?.col(ViDColName);
+    if (!col) {
+      this._duplicateVidCache = undefined;
+      return;
+    }
+    const colVersion = col.version;
+    const valueCounts = new Uint32Array(col.categories.length).fill(0);
+    const indexes = (col.getRawData() as Uint32Array).subarray(0, col.length);
+    indexes.forEach((v) => valueCounts[v]++);
+    this._duplicateVidCache = {colVersion, valueCounts, indexes};
+  }
+
+  get duplicateVidCache() {
+    const col = this.dataFrame?.col(ViDColName);
+    if (!col)
+      return undefined;
+    if (!this._duplicateVidCache || col.version !== this._duplicateVidCache.colVersion)
+      this.cacheDuplicateVIDs();
+    return this._duplicateVidCache;
+  }
   private getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
@@ -155,14 +187,32 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     this._designViewName = this.campaign?.name ?? this._designViewName;
     view.name = this._designViewName;
     this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+
+    const performSingleCellCalculations = async (newValueIdx: number, newValue?: string) => {
+      const computeObj = this.template!.compute;
+      if (!newValue || newValue === '')
+        return;
+
+      const calcDf =
+              await calculateSingleCellValues(
+                newValue, computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
+
+      for (const col of calcDf.columns.toList()) {
+        if (col.name === HitDesignMolColName) continue;
+        if (!this.dataFrame!.columns.contains(col.name)) {
+          const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
+          newCol.semType = col.semType;
+        }
+            this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
+      }
+          this.dataFrame!.fireValuesChanged();
+          this.saveCampaign(undefined, false);
+    };
+
+
     setTimeout(async () => {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000)); // needed for substruct filter
-      // apply layout.
-      // const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
-      //   .find((l) => l && l.getUserDataValue(HDcampaignName) === this._campaignId);
-      // if (layout)
-      //   view.loadLayout(layout);
 
       const layoutViewState = this._campaign?.layout ?? this.template?.layoutViewState;
       if (layoutViewState) {
@@ -180,8 +230,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
         .subscribe(() => { // TODO, insertion of rows in the middle
           try {
-          // const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
-          // this.processedValues.push(...new Array(newRowsNum).fill(''));
             this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
             if (this.template!.stages?.length > 0) {
               for (let i = 0; i < this.dataFrame!.rowCount; i++) {
@@ -222,7 +270,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             return;
           if (!viewer.tableView || viewer.tableView.id !== view.id)
             return;
-          if (args?.args?.item?.tableColumn?.name !== this.molColName)
+          if (args?.args?.item?.tableColumn?.name !== this.molColName || !args?.args?.item?.isTableCell)
             return;
           const menu: DG.Menu = args?.args?.menu;
           if (!menu)
@@ -248,6 +296,18 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
               console.error(e);
             }
           });
+
+          const cellIndex = args?.args?.item?.tableRowIndex;
+          const cellValue = args?.args?.item?.cell?.value;
+          if (cellValue && (cellIndex ?? -1) > -1) {
+            menu.item('Re-Run Calculations', async () => {
+              try {
+                await performSingleCellCalculations(cellIndex, cellValue);
+              } catch (e) {
+                console.error(e);
+              }
+            });
+          }
         } catch (e: any) {
           grok.log.error(e);
         }
@@ -262,34 +322,68 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             return;
           const newValue = gc.cell.value;
           const newValueIdx = gc.tableRowIndex!;
-
-          if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx) ||
-            this.dataFrame!.col(ViDColName)?.get(newValueIdx) === '')
-              this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
-
-
-          const computeObj = this.template!.compute;
-          if (!newValue || newValue === '')
-            return;
-
-          const calcDf =
-              await calculateSingleCellValues(
-                newValue, computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
-
-          for (const col of calcDf.columns.toList()) {
-            if (col.name === HitDesignMolColName) continue;
-            if (!this.dataFrame!.columns.contains(col.name)) {
-              const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
-              newCol.semType = col.semType;
+          let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
+          let foundMatch = false;
+          // try to find existing molecule
+          if (newValue) {
+            try {
+              const canonicals = gc.tableColumn.toList().map((cv) => {
+                try {
+                  return grok.chem.convert(cv, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+                } catch (e) {
+                  return '';
+                }
+              },
+              );
+              const canonicalNewValue =
+                grok.chem.convert(newValue, grok.chem.Notation.Unknown, grok.chem.Notation.Smiles);
+              if (canonicals?.length === this.dataFrame!.rowCount) {
+                for (let i = 0; i < canonicals.length; i++) {
+                  if (canonicals[i] === canonicalNewValue &&
+                      i !== newValueIdx && this.dataFrame!.col(ViDColName)?.get(i)) {
+                    newVid = this.dataFrame!.col(ViDColName)?.get(i);
+                    foundMatch = true;
+                    break;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error(e);
             }
-            this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
           }
-          this.dataFrame!.fireValuesChanged();
-          this.saveCampaign(undefined, false);
+          // if the vid was duplicated, generate a new one
+          if (this.duplicateVidCache && !foundMatch &&
+            this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[newValueIdx]] > 1)
+            newVid = null;
+
+          if (!newVid || newVid === '')
+            newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
+
+          this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, false);
+
+          performSingleCellCalculations(newValueIdx, newValue);
         } catch (e) {
           console.error(e);
         }
       }));
+
+      subs.push(view.grid.onCellRender.subscribe((args) => {
+        try {
+          // color duplicate vid values
+          const cell = args.cell;
+          if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
+            cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
+            return;
+
+          if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
+            args.cell.style.backColor =
+              DG.Color.setAlpha(DG.Color.getCategoricalColor(this.duplicateVidCache.indexes[cell.tableRowIndex!])
+                , 150);
+          }
+        } catch (e) {}
+      }));
+
+
       const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
         if (v.id === view.id) {
           subs.forEach((s) => s.unsubscribe());
@@ -345,26 +439,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
             this.template!.compute = newComputeObj;
             this.campaign!.template = this.template;
             const uncalculatedDescriptors = newDescriptors.filter((d) => !oldDescriptors.includes(d));
-            // const uncalculatedFunctions = newComputeObj.functions.filter((func) => {
-            //   if (!oldFunctions.some((f) => f.name === func.name && f.package === func.package))
-            //     return true;
-            //   const oldFunc = oldFunctions.find((f) => f.name === func.name && f.package === func.package)!;
-            //   return !Object.entries(func.args).every(([key, value]) => oldFunc.args[key] === value);
-            // });
-
-            // const uncalculatedScripts = newComputeObj.scripts.filter((func) => {
-            //   if (!oldScripts.some((f) => f.id === func.id ))
-            //     return true;
-            //   const oldScript = oldScripts.find((f) => f.id === func.id)!;
-            //   return !Object.entries(func.args).every(([key, value]) => oldScript.args[key] === value);
-            // });
-
-            // const uncalculatedQueries = newComputeObj.queries.filter((func) => {
-            //   if (!oldQueries.some((f) => f.id === func.id ))
-            //     return true;
-            //   const oldQuery = oldQueries.find((f) => f.id === func.id)!;
-            //   return !Object.entries(func.args).every(([key, value]) => oldQuery.args[key] === value);
-            // });
 
             const newFunctions: {[_: string]: IFunctionArgs} = {};
             Object.entries(resultMap?.externals ?? {})
@@ -394,23 +468,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
               }).forEach(([queryName, args]) => {newQueries[queryName] = args;});
             ui.setUpdateIndicator(view.grid.root, true);
             try {
-              // for (let i = 0; i < this.dataFrame!.rowCount; i++) {
-              //   const value = this.dataFrame!.get(this.molColName, i);
-              //   if (!value || value === '')
-              //     continue;
-              //   const calcDf = await calculateSingleCellValues(
-              //     value, uncalculatedDescriptors, uncalculatedFunctions, uncalculatedScripts, uncalculatedQueries);
-
-              //   for (const col of calcDf.columns.toList()) {
-              //     if (col.name === HitDesignMolColName) continue;
-              //     if (!this.dataFrame!.columns.contains(col.name)) {
-              //       const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
-              //       newCol.semType = col.semType;
-              //     }
-              //   this.dataFrame!.col(col.name)!.set(i, col.get(0), false);
-              //   }
-              //   this.dataFrame!.fireValuesChanged();
-              // }
               await calculateColumns({descriptors: uncalculatedDescriptors, externals: newFunctions,
                 scripts: newScripts, queries: newQueries}, this.dataFrame!, this.molColName!);
               this.dataFrame!.fireValuesChanged();
@@ -423,6 +480,12 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
+        const permissionsButton = ui.iconFA('share', async () => {
+          await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
+            this.campaign!.permissions = res;
+            this.saveCampaign(undefined, true);
+          });
+        }, 'Edit campaign permissions');
         const tilesButton = ui.bigButton('Progress tracker', () => {
           if (this.currentTilesViewId && grok.shell.view(this.currentTilesViewId))
             grok.shell.view(this.currentTilesViewId)?.close();
@@ -453,6 +516,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         if (this.campaign && this.template && !this.campaign.template)
           this.campaign.template = this.template;
 
+        if (this.hasEditPermission)
+          ribbonButtons.unshift(permissionsButton);
         ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
         ribbons.push(ribbonButtons);
@@ -493,7 +558,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const getPathEditor = () => {
       const editIcon = ui.icons.edit(() => {
         const folderPath = getFolderPath();
-        const newPathInput = ui.stringInput('Path', folderPath);
+        const newPathInput = ui.input.string('Path', {value: folderPath});
         const labelElement = newPathInput.root.getElementsByTagName('label').item(0);
         if (labelElement)
           labelElement.remove();
@@ -572,6 +637,11 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const colTypeMap: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => colTypeMap[col.name] = col.type);
     const sketchStateString = this._tilesView?.sketchStateString ?? this.campaign?.tilesViewerFormSketch ?? undefined;
+
+    // if its first time save author as current user, else keep the same
+    const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
+    const permissions = this.campaign?.permissions ?? defaultPermissions;
+
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
@@ -585,7 +655,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       columnTypes: colTypeMap,
       tilesViewerFormSketch: sketchStateString,
       version: this.version + 1,
+      authorUserId,
+      permissions,
     };
+    if (!this.hasEditPermission) {
+      grok.shell.error('You do not have permission to modify this campaign');
+      return campaign;
+    }
     const campaignPath = `Hit Design/campaigns/${campaignId}/${CampaignJsonName}`;
     // check if someone already saved the campaign
     let resDf = enrichedDf;

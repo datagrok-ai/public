@@ -1,5 +1,29 @@
 # ml changelog
 
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
+## 6.6.17 (2024-08-08)
+
+Add limit to intercluster connections in mcl
+
+## 6.6.16 (2024-08-07)
+
+Correct NW Calculation on webGPU on CPU
+
+## 6.6.15 (2024-08-06)
+
+MCL layout with force directed graph and atlas
+
+## 6.6.14 (2024-07-09)
+
+Use only numeric columns without datetime for Activities in activity cliffs editor
+
+## 6.6.13 (2024-07-09)
+
+Reverse order of MCL Clusters
+
 ## 6.6.12 (2024-06-24)
 
 Fix activity cliffs styles

@@ -127,7 +127,7 @@ export async function expand2(
     ],
   });
 
-  const order = Math.floor(Math.max(Math.log10(nRows) - 2, 2));
+  const order = Math.floor(Math.max(Math.log10(nRows), 2)) + 2;
   // minimum value after expansion.
   const pruneValue = Math.pow(10, -order);
 

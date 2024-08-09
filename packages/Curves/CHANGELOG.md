@@ -1,5 +1,13 @@
 # Curves changelog
 
+## 1.4.5 (2024-07-24)
+
+## 1.4.4 (2024-07-02)
+
+### Bug fixes
+
+* [#2924](https://github.com/datagrok-ai/public/issues/2924): Fixed connectDots doesn't work if fit is turned off
+
 ## 1.4.3 (2024-05-23)
 
 ### Bug fixes

@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {findMonomers, parseHelm} from '../utils';
+import {initHelmMainPackage} from './utils';
 
 
 /** Tests with default monomer library */
@@ -19,6 +20,7 @@ category('findMonomers', () => {
   let userLibSettings: UserLibSettings;
 
   before(async () => {
+    await initHelmMainPackage();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
@@ -51,8 +53,9 @@ category('findMonomers', () => {
   }
 
   function _testFindMonomers(testHelmValue: string, tgtMissedSet: Set<string>): void {
+    const monomerLib = monomerLibHelper.getBioLib();
     const monomerSymbolList: string[] = parseHelm(testHelmValue);
-    const resMissedSet: Set<string> = findMonomers(monomerSymbolList);
+    const resMissedSet: Set<string> = findMonomers(monomerSymbolList, monomerLib);
     expectObject(resMissedSet, tgtMissedSet);
   }
 });

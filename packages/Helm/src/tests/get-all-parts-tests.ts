@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
 import {getAllParts} from '../helm-monomer-placer';
+import {initHelmMainPackage} from './utils';
 
 category('getAllParts', () => {
   /** All parts of Helm string are required for fallback rendering. */
@@ -20,6 +21,10 @@ category('getAllParts', () => {
       tgt: ['PEPTIDE1{[', 'Ac', '].', 'V', '.', 'A', '}$$$$'],
     }
   };
+
+  before(async () => {
+    await initHelmMainPackage();
+  });
 
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {

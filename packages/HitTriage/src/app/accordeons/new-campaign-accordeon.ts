@@ -45,7 +45,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     }
   };
 
-  const dfInput = ui.tableInput('Dataframe', null, undefined, onFileChange);
+  const dfInput = ui.input.table('Dataframe', {onValueChanged: onFileChange});
   await onFileChange();
   const fileInputDiv = ui.div([dfInput, errorDiv]);
   if (Object.keys(dataSourceFunctionsMap).length === 0) {
@@ -54,11 +54,6 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     // for display purposes we use friendly name of the function
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
-    });
-    const dataSourceQueries = await grok.dapi.queries.include('params,connection')
-      .filter(`#${C.HitTriageDataSourceTag}`).list();
-    dataSourceQueries.forEach((query) => {
-      dataSourceFunctionsMap[query.friendlyName ?? query.name] = query;
     });
   }
   let funcCall: DG.FuncCall | null = null;
@@ -73,9 +68,9 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
     funcEditorDiv.appendChild(editor);
   };
   const funcEditorDiv = ui.div([]);
-  const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
-    Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
+  const dataSourceFunctionInput = ui.input.choice(
+    C.i18n.dataSourceFunction, {value: template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
+      items: Object.keys(dataSourceFunctionsMap), onValueChanged: onDataFunctionChange});
   // call the onchange function to create an editor for the first function
   await onDataFunctionChange();
   if (template.queryFunctionName)

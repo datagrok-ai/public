@@ -40,33 +40,15 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 };
 
 export namespace historyUtils {
-  const scriptsCache = {} as Record<string, DG.Func>;
   const groupsCache = new DG.LruCache();
-
-  export async function augmentCallWithFunc(call: DG.FuncCall, useCache: boolean = true) {
-    const id = call.func.id;
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const fetchFunc = grok.dapi.functions.include('package').allPackageVersions().find(id);
-    const func = useCache ?
-      (scriptsCache[id] ?? await fetchFunc):
-      await fetchFunc;
-
-    if (!scriptsCache[id]) scriptsCache[id] = func;
-
-    call.func = func;
-  }
 
   export async function loadChildRuns(
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
-    const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
-
-    await augmentCallWithFunc(parentRun);
+    const parentRun = await loadRun(funcCallId);
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-      .include('func').filter(`options.parentCallId="${funcCallId}"`).list();
-
-    await Promise.all(childRuns.map(async (childRun) => augmentCallWithFunc(childRun)));
+      .include('func, func.package').filter(`options.parentCallId="${funcCallId}"`).list();
 
     return {parentRun, childRuns};
   }
@@ -82,9 +64,7 @@ export namespace historyUtils {
    */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
-      .include('session.user, inputs, outputs').find(funcCallId);
-
-    await augmentCallWithFunc(pulledRun);
+      .include('session.user,func.package, inputs, outputs').find(funcCallId);
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
@@ -126,7 +106,7 @@ export namespace historyUtils {
     }
 
     const callCopy = deepCopy(callToSave);
-    if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().unix();
+    if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
     const dfOutputs = wu(callCopy.outputParams.values() as DG.FuncCallParam[])
       .filter((output) =>
@@ -232,11 +212,8 @@ export namespace historyUtils {
       await grok.dapi.functions.calls
         .allPackageVersions()
         .filter(`func.name="${funcName}"${filteringString}`)
-        .include(`${includedFields.join(',')}`)
+        .include(`${[...includedFields, 'func.package'].join(',')}`)
         .list(listOptions);
-
-    for (const pulledRun of result)
-      await augmentCallWithFunc(pulledRun);
 
     if ((includedFields.includes('inputs') || includedFields.includes('func.params')) && !skipDfLoad) {
       for (const pulledRun of result) {

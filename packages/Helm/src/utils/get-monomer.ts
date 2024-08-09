@@ -11,9 +11,13 @@ import {
 } from '@datagrok-libraries/bio/src/utils/const';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
-import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, MissingWebEditorMonomer} from './get-monomer-dummy';
+
+import {
+  AmbiguousWebEditorMonomer, GapWebEditorMonomer, getRS, MissingWebEditorMonomer
+} from './get-monomer-dummy';
 import {LibraryWebEditorMonomer} from './get-monomer-of-library';
 import {OrgHelmModule, ScilModule} from '../types';
+import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
 
 import {_package} from '../package';
 
@@ -110,4 +114,48 @@ export function getWebEditorMonomer(
   }
 
   return resWem;
+}
+
+/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
+export function rewriteLibraries(monomerLib: IMonomerLib): void {
+  org.helm.webeditor.Monomers.clear();
+  monomerLib!.getPolymerTypes().forEach((polymerType) => {
+    const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
+    monomerSymbols.forEach((monomerSymbol) => {
+      let isBroken = false;
+      const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
+      const webEditorMonomer: IWebEditorMonomer = {
+        id: monomerSymbol,
+        m: monomer.molfile,
+        n: monomer.name,
+        na: monomer.naturalAnalog,
+        rs: monomer.rgroups.length,
+        type: monomer.polymerType,
+        mt: monomer.monomerType,
+        at: {},
+      };
+
+      if (monomer.rgroups.length > 0) {
+        // @ts-ignore
+        webEditorMonomer.rs = monomer.rgroups.length;
+        const at: { [prop: string]: any } = {};
+        monomer.rgroups.forEach((it) => {
+          at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
+        });
+        webEditorMonomer.at = at;
+      } else if (monomer[SMILES] != null) {
+        // @ts-ignore
+        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
+        webEditorMonomer.at = getRS(monomer[SMILES].toString());
+      } else
+        isBroken = true;
+
+      if (!isBroken)
+        org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
+    });
+  });
+
+  // Obsolete
+  const grid: DG.Grid = grok.shell.tv?.grid;
+  if (grid) grid.invalidate();
 }

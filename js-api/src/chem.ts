@@ -358,7 +358,7 @@ export namespace chem {
       grok.dapi.userDataStorage.getValue(FILTER_KEY, key, true).then((value: string) => {
         input.value = !value || value === 'true' ? true : false;
       });
-      const input = ui.boolInput(inputName, true, callback);
+      const input = ui.input.bool(inputName, {value: true, onValueChanged: callback});
       return input;
     }
 

@@ -1,5 +1,55 @@
 # Bio changelog
 
+## 2.13.8 (2024-08-08)
+
+* Downgrade API version
+
+## 2.13.7 (2024-08-08)
+
+* Adjust monomer max lengths for monomer renderer
+
+## 2.13.6 (2024-07-29)
+
+* SequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 2.13.5 (2024-07-23)
+
+### Bug fixes
+
+* Fix tests for Helm package init wait
+* Add detectMacromolecule tests for fasta single char unknown alphabet
+* Fix detectMacromolecule checkBadMultichar wo RegExp and fail early
+* Fix use allowUnionTypes to allow union types in JSON schema
+* GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
+* Add progress indicator for loading monomer libraries
+
+## 2.13.4 (2024-07-02)
+
+### Bug fixes
+
+* GROK-15798: Fix To Atomic Level for units FASTA, UN alphabet
+* Fix detectMacromolecule to check for bad monomers on separator
+* Fix for review camelCase properties
+
+## 2.13.3 (2024-06-28)
+
+### Bug fixes
+
+* Fix MaxMonomerLength package setting, and column setting
+* Fix loading monomer libs for explicit stuck from tests
+
+## 2.13.2 (2024-06-26)
+
+### Features
+
+* Add package settings for MonomerWidthMode
+
+### Bug fixes
+
+* Fix cell renderer for long mode
+* Fix Cell Renderer column widget for MonomerWidthMode
+* Enable package settings editor widget
+
 ## 2.13.1 (2024-06-25)
 
 Bump dependencies versions JSDraw.Lite and HELMWebEditor

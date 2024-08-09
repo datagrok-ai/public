@@ -32,6 +32,8 @@ export class ViewerEvent {
   set filters(x: {[index: string]: any}) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
   get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
   set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
+  get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
+  set mouseEvent(x: any) {api.grok_ViewerEvent_Set_mouseEvent(this.dart, toDart(x)); }
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
 
 }

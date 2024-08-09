@@ -14,6 +14,7 @@ import {
   getAggregatedColumnValues,
   getAggregatedValue,
   getStats,
+  getStringColAggregatedJSON,
   StatsItem,
 } from '../utils/statistics';
 import wu from 'wu';
@@ -96,8 +97,11 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       {
         category: LST_CATEGORIES.GENERAL,
         nullable: false,
+        columnTypeFilter: DG.TYPE.CATEGORICAL,
       });
-    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {category: LST_CATEGORIES.GENERAL, nullable: false});
+    this.activityColumnName = this.column(LST_PROPERTIES.ACTIVITY, {
+      category: LST_CATEGORIES.GENERAL, nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL,
+    });
     this.activityScaling = this.string(LST_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {
         category: LST_CATEGORIES.GENERAL,
@@ -223,7 +227,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._positionColumns = this.model.positionColumns;
 
 
-    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION) ??
+    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) ??
       getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES) ??
       splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
     return this._positionColumns!;
@@ -276,7 +280,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    * @return - map of columns and aggregations.
    */
   getAggregationColumns(): AggregationColumns {
-    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG]));
+    return Object.fromEntries(this.columns.map((colName) => [colName, this.aggregation] as [string, DG.AGG])
+      .filter(([colName, _]) => this.model.df.columns.contains(colName) &&
+        this.model.df.col(colName)!.matches('numerical')));
   }
 
   /** Processes attached table and sets viewer properties. */
@@ -347,6 +353,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     let doRender = false;
     switch (property.name) {
     case LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD:
+      if (!this.logoSummaryTable.filter.anyTrue)
+        doRender = true;
       this.updateFilter();
       break;
     case `${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
@@ -411,7 +419,12 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   getTotalViewerAggColumns(): [string, DG.AggregationType][] {
     const aggrCols = this.getAggregationColumns();
-    return getTotalAggColumns(this.columns, aggrCols, this.model?.settings?.columns);
+    return getTotalAggColumns(this.model.df, this.columns, aggrCols, this.model?.settings?.columns);
+  }
+
+  getStringAggregatedColumns(): string[] {
+    return this.columns.filter((colName) => this.model.df.columns.contains(colName) &&
+      this.model.df.col(colName)!.matches('categorical')).map((cn) => `dist(${cn})`);
   }
 
   /**
@@ -449,16 +462,18 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const customRatioColData = customLSTCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
 
     let origLSTBuilder = filteredDf.groupBy([clustersColName]);
-    const aggColsEntries = this.getTotalViewerAggColumns();
-    const aggColNames = aggColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
-    const customAggRawCols = new Array(aggColNames.length);
-    const colAggEntries = aggColsEntries.map(
+    const aggNumericColsEntries = this.getTotalViewerAggColumns();
+    const aggStringColNames = this.getStringAggregatedColumns();
+    const aggStringCols = aggStringColNames.map((colName) => customLSTCols.addNewString(colName));
+    const aggNumericColNames = aggNumericColsEntries.map(([colName, aggFn]) => getAggregatedColName(aggFn, colName));
+    const customAggRawCols = new Array(aggNumericColNames.length + aggStringColNames.length);
+    const numericColAggEntries = aggNumericColsEntries.map(
       ([colName, aggFn]) => [filteredDf.getCol(colName), aggFn] as [DG.Column<number>, DG.AggregationType]);
 
-    for (let aggIdx = 0; aggIdx < aggColsEntries.length; ++aggIdx) {
-      const [colName, aggFn] = aggColsEntries[aggIdx];
-      origLSTBuilder = origLSTBuilder.add(aggFn, colName, aggColNames[aggIdx]);
-      const customLSTAggCol = customLSTCols.addNewFloat(aggColNames[aggIdx]);
+    for (let aggIdx = 0; aggIdx < aggNumericColsEntries.length; ++aggIdx) {
+      const [colName, aggFn] = aggNumericColsEntries[aggIdx];
+      origLSTBuilder = origLSTBuilder.add(aggFn, colName, aggNumericColNames[aggIdx]);
+      const customLSTAggCol = customLSTCols.addNewFloat(aggNumericColNames[aggIdx]);
       customAggRawCols[aggIdx] = customLSTAggCol.getRawData();
     }
 
@@ -484,9 +499,14 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       customPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       customRatioColData[rowIdx] = stats.ratio;
 
-      for (let aggColIdx = 0; aggColIdx < aggColNames.length; ++aggColIdx) {
-        const [col, aggFn] = colAggEntries[aggColIdx];
+      for (let aggColIdx = 0; aggColIdx < aggNumericColNames.length; ++aggColIdx) {
+        const [col, aggFn] = numericColAggEntries[aggColIdx];
         customAggRawCols[aggColIdx][rowIdx] = getAggregatedValue(col, aggFn, bsMask);
+      }
+      for (let aggColIdx = aggNumericColNames.length; aggColIdx < customAggRawCols.length; ++aggColIdx) {
+        const colName = aggStringColNames[aggColIdx - aggNumericColNames.length];
+        aggStringCols[aggColIdx - aggNumericColNames.length]
+          .set(rowIdx, getStringColAggregatedJSON(filteredDf, colName, bsMask));
       }
     }
     customWebLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
@@ -512,6 +532,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const origMDColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.MEAN_DIFFERENCE).getRawData();
     const origPValColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.P_VALUE).getRawData();
     const origRatioColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
+    const origAggStringCols = aggStringColNames.map((colName) => origLSTCols.addNewString(colName));
     const origBitsets: DG.BitSet[] = new Array(origLSTLen);
     const origClustMasks = Array.from({length: origLSTLen},
       () => new BitArray(filteredDfRowCount, false));
@@ -527,10 +548,15 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       if (mask.allFalse)
         continue;
 
+
       const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
       const stats = isDfFiltered ? getStats(activityColData, mask) :
         this.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
-
+      for (let aggColIdx = 0; aggColIdx < aggStringColNames.length; ++aggColIdx) {
+        const colName = aggStringColNames[aggColIdx];
+        origAggStringCols[aggColIdx]
+          .set(rowIdx, getStringColAggregatedJSON(filteredDf, colName, bsMask));
+      }
       origMembersColData[rowIdx] = stats.count;
       origBitsets[rowIdx] = bsMask;
       origMDColData[rowIdx] = stats.meanDifference;
@@ -544,6 +570,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     // combine LSTs and create a grid
     const summaryTable = origLST.append(customLST);
     this.bitsets = origBitsets.concat(customBitsets);
+
+    aggStringColNames.forEach((sn) => summaryTable.col(sn)!.semType = 'lst-pie-chart');
+
     return summaryTable;
   }
 
@@ -563,7 +592,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const gridClustersCol = grid.col(C.LST_COLUMN_NAMES.CLUSTER)!;
     gridClustersCol.visible = true;
     grid.columns.setOrder([C.LST_COLUMN_NAMES.CLUSTER, C.LST_COLUMN_NAMES.MEMBERS,
-      C.LST_COLUMN_NAMES.WEB_LOGO, C.LST_COLUMN_NAMES.DISTRIBUTION, C.LST_COLUMN_NAMES.MEAN_DIFFERENCE,
+      C.LST_COLUMN_NAMES.WEB_LOGO, ...this.getStringAggregatedColumns(),
+      C.LST_COLUMN_NAMES.DISTRIBUTION, C.LST_COLUMN_NAMES.MEAN_DIFFERENCE,
       C.LST_COLUMN_NAMES.P_VALUE, C.LST_COLUMN_NAMES.RATIO, ...aggColNames]);
     grid.columns.rowHeader!.visible = false;
     grid.props.rowHeight = 55;
@@ -647,6 +677,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
               showBinSelector: false,
               backColor: DG.Color.toHtml(DG.Color.white),
               xAxisHeight: 1,
+              showSplitSelector: false,
             });
             viewer.root.style.width = 'auto';
             distCache.set(currentRowIdx, viewer);
@@ -778,10 +809,22 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   /** Updates LogoSummaryTable filter. */
   updateFilter(): void {
     const memberstCol = this.logoSummaryTable.getCol(C.LST_COLUMN_NAMES.MEMBERS);
+    const clusterNameCol = this.logoSummaryTable.getCol(C.LST_COLUMN_NAMES.CLUSTER);
+    const clusterNameRawData = clusterNameCol.getRawData();
+    const clusterNameCat = clusterNameCol.categories;
+    const singletonClusterIndex = clusterNameCat.indexOf('-1');
+
     const membersColData = memberstCol.getRawData();
-    const maxCount = memberstCol.stats.max;
+    // as maxCount can be number of singleton clusters, we need to account for that
+    let maxCount = 0;
+    membersColData.forEach((_, i) => {
+      if (clusterNameCat[clusterNameRawData[i]] !== '-1')
+        maxCount = Math.max(maxCount, membersColData[i]);
+    });
     const minMembers = Math.ceil(maxCount * this.membersRatioThreshold);
-    this.logoSummaryTable.filter.init((i) => membersColData[i] > minMembers);
+    this.logoSummaryTable.filter
+      .init((i) => membersColData[i] > minMembers &&
+        (singletonClusterIndex === -1 || clusterNameCat[clusterNameRawData[i]] !== '-1'));
   }
 
   /** Creates a new cluster from current selection and adds to Logo Summary Table. */
@@ -800,12 +843,20 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const aggregatedValues: {
       [colName: string]: number
     } = {};
+    const stringAggregatedValues: {
+      [colName: string]: string
+    } = {};
     const aggColsEntries = this.getTotalViewerAggColumns();
+    const aggStringColNames = this.getStringAggregatedColumns();
     for (const [colName, aggFn] of aggColsEntries) {
       const newColName = getAggregatedColName(aggFn, colName);
       const col = this.dataFrame.getCol(colName);
       aggregatedValues[newColName] = getAggregatedValue(col, aggFn, currentSelection);
     }
+
+    for (const colName of aggStringColNames)
+      stringAggregatedValues[colName] = getStringColAggregatedJSON(this.dataFrame, colName, currentSelection);
+
 
     for (let i = 0; i < viewerDfColsLength; ++i) {
       const col = viewerDfCols.byIndex(i);
@@ -817,7 +868,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
                 col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue :
                   col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio :
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
-                      undefined;
+                      col.name in stringAggregatedValues ? stringAggregatedValues[col.name] :
+                        undefined;
       if (typeof newClusterVals[i] === 'undefined')
         _package.logger.warning(`PeptidesLSTWarn: value for column ${col.name} is undefined`);
     }

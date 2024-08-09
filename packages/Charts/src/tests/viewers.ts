@@ -6,7 +6,9 @@ import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 category('Viewers', () => {
   const df = grok.data.demo.demog(100);
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
-  const viewersToSkip: {[v: string]: string} = {};
+  const viewersToSkip: {[v: string]: string} = {
+    'Globe': 'GROK-14320',
+  };
 
   for (const v of viewers) {
     test(v, async () => {

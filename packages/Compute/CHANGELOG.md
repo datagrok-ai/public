@@ -1,5 +1,58 @@
 # Compute changelog
 
+## 1.36.7 (2024-08-05)
+
+- RFV: Fixed navigation buttons render
+
+## 1.36.6 (2024-08-01)
+
+- RFV: Added spinning for async validation icon
+
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
+## 1.36.4 (2024-07-30)
+
+- Deps update
+
+## 1.36.3 (2024-07-30)
+
+- Wizard: Fixed context info icon duplication
+
+## 1.36.2 (2024-07-23)
+
+- RFV: Added validation tooltip width and text-wrap
+
+## 1.36.1 (2024-07-22)
+
+- RFV: Last inputs are now saved locally
+
+## 1.36.0 (2024-07-10)
+
+- RFV: Added output validators support
+
+## 1.35.10 (2024-07-08)
+
+- CompositionPipeline: Exposed options to public interface
+
+## 1.35.8 (2024-07-03)
+
+- PLV: Fixed run loading to load author
+
+## 1.35.7 (2024-07-01)
+
+- HistoryList: Fixed bug on batch deletion
+- HistoryInput: Added skipDf option
+
+## 1.35.6 (2024-06-27)
+
+- Exposed mergeValidationResultsInst method
+
+## 1.35.5 (2024-06-26)
+
+- getParamChanges fixed empty FuncCall error
+
 ## 1.35.4 (2024-06-25)
 
 - Inputs bugfixes
@@ -292,7 +345,7 @@
 
 - RFV: Added input form adaptiveness
 - RFV: Renamed validator tag to `validatorFunc`
-- RFV: Added `nullable` tag for inputs 
+- RFV: Added `nullable` tag for inputs
 
 ## 1.17.3 (2023-11-22)
 

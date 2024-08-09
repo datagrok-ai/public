@@ -27,9 +27,8 @@ export async function demoBio01bUI() {
   const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
 
   try {
-    const demoScript = new DemoScript(
-      'Activity Cliffs',
-      'Activity Cliffs analysis on Macromolecules data');
+    const demoScript = new DemoScript('Activity Cliffs', 'Activity Cliffs analysis on Macromolecules data', false,
+      {autoStartFirstStep: true});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;

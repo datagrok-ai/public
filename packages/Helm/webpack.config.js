@@ -6,7 +6,8 @@ if (mode !== 'production')
   console.warn(`Building '${packageName}' in '${mode}' mode.`);
 
 module.exports = {
-  ...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  //...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  cache: {type: 'filesystem'},
   mode: mode,
   entry: {
     package: './src/package.ts',
@@ -35,7 +36,7 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: [/node_modules/, /vendor/]},
     ],
   },
-  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -3,20 +3,20 @@
 //language: javascript
 
 // uniqueName ensures that created sticky meta configuration will be unique.
-var uniqueName = (prefix) => 'apisamples-' + prefix + '-' + (Math.random() + 1).toString(36).substring(7);
+const uniqueName = (prefix) => 'apisamples-' + prefix + '-' + (Math.random() + 1).toString(36).substring(7);
 
 // In this sample we will attach metadata to experiments
 // They will be identified through strings: [experiment 1, experiment 2, ..., experiment 6].
-var experiments = DG.Column.fromStrings('experiment', Array.from(Array(6).keys()).map((idx) => 'experiment ' + (idx + 1)));
+const experiments = DG.Column.fromStrings('experiment', Array.from(Array(6).keys()).map((idx) => 'experiment ' + (idx + 1)));
 
 // Objects that store sticky meta should be identifiable through tags or semtypes.
 // We will use tag named "source".
-var experimentTag = uniqueName('experiment-tag');
+const experimentTag = uniqueName('experiment-tag');
 experiments.setTag('source', experimentTag);
 
 // Authors of experiments.
 // We will save them as metadata related to experiment.
-var authors = DG.DataFrame.fromCsv(
+const authors = DG.DataFrame.fromCsv(
   `name,email,age
    Joey,joey@datagrok.ai,25
    Ross,ross@datagrok.ai,26
@@ -29,7 +29,7 @@ var authors = DG.DataFrame.fromCsv(
 
 // Create a schema named Author.
 // Author is connected with experiments and has 3 properties of different types
-var schema = await grok.dapi.stickyMeta.createSchema(
+const schema = await grok.dapi.stickyMeta.createSchema(
   uniqueName('Author'),
   [{name: uniqueName('Experiment'), matchBy: 'source=' + experimentTag}],
   [{name: 'name', type: 'string'}, {name: 'email', type: 'string'}, {name: 'age', type: 'int'}]
@@ -39,12 +39,11 @@ var schema = await grok.dapi.stickyMeta.createSchema(
 await grok.dapi.stickyMeta.setAllValues(schema, experiments, authors);
 
 // Create test data with tagged column of experiment identifiers.
-var testDf = DG.DataFrame.fromCsv(
-`experiment
+const testDf = DG.DataFrame.fromCsv(`experiment
 experiment 1
 experiment 3`
 );
 testDf.columns.byName('experiment').setTag('source', experimentTag);
 
 // Fetch sticky meta related to the test dataframe.
-var dataFrameWithMeta = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));
+const dataFrameWithMeta = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));

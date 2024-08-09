@@ -1,5 +1,41 @@
 # Helm changelog
 
+## 2.3.4 (2024-08-06)
+
+### Bug fixes
+
+* Fix HelmInput/tooltip flapping test
+* Fix dojo dijit locale to en-us
+* Fix HELMWebEditor and Bio init order to handle monomer lib
+
+## 2.3.3 (2024-08-05)
+
+### Features
+
+* Load dojo without CDN
+
+### Bug fixes
+
+* Fix monomers palette filling of HWE
+* Fix init dojo require
+* Fix test findMonomers
+
+## 2.3.2 (2024-07-23)
+
+### Features
+
+* Add HelmInput
+
+### Bug fixes
+
+* Add tooltip to HelmInput showing monomer of lib, test
+* Fix HelmInput to redraw on monomer lib changed
+* Fix HelmInput to handle dialog resize
+
+## 2.3.1 (2024-06-28)
+
+Fix cell renderer error before package initialized
+
 ## 2.3.0 (2024-06-24)
 
 Use forked JSDraw.Lite and HELMWebEditor

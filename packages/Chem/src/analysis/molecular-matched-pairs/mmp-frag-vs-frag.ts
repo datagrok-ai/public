@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {MMP_COLOR} from './mmp-constants';
+import {MMP_NAMES} from './mmp-constants';
 import {PaletteCodes} from './mmp-mol-rendering';
 
 export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Array<string>,
@@ -18,7 +18,7 @@ export function getMmpTrellisPlot(allPairsGrid: DG.Grid, activityMeanNames: Arra
       aggregation: DG.STATS.MED,
       aggregations: [DG.STATS.MED, DG.STATS.MED, DG.STATS.MED],
       visualizationType: 'bars',
-      colorColumnName: MMP_COLOR,
+      colorColumnName: MMP_NAMES.COLOR,
       colorAggrType: DG.STATS.MED,
       colorSchemes: schemes,
     },

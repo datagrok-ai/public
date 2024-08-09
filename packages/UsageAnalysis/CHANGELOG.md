@@ -1,5 +1,18 @@
 # Usage Analysis changelog
 
+## 2.0.2 (2024-07-23)
+
+* Dependency: datagarok-api >= 1.20.0*
+
+### Features
+
+* Reporting: Bugs fixes and improvements in UX
+* Test Track:
+  * Collaborative testing synchronization
+  * Ability to set severity level of errors
+  * Ability to associate test executions with Error reports
+  * Updates Test Track according new tests registration
+
 ## 2.0.1 (2024-06-12)
 
 ### Features
@@ -8,7 +21,7 @@
 
 ## 2.0.0 (2024-03-16)
 
-*Dependency: datagarok-api >= 1.18.0*
+* Dependency: datagarok-api >= 1.18.0*
 
 ### Features
 

@@ -1,5 +1,50 @@
 # utils changelog
 
+## 4.2.22 (2024-08-09)
+
+Added stress test invocation method
+
+## 4.2.21 (2024-08-07)
+
+Added stress test flag to test options
+
+## 4.2.20 (2024-08-06)
+
+Optimize linesrenderer for short lines and no mouseover checking conditions. add options to items grid
+
+## 4.2.19 (2024-08-02)
+
+Fix benchmark timeout 
+
+
+## 4.2.18 (2024-08-02)
+
+Added benchmark timeout as test variable
+
+## 4.2.17 (2024-08-02)
+
+ScatterPlotLInesRenderer: speed up multiple lines indexes calculations
+
+## 4.2.16 (2024-08-02)
+
+Fixed core tests output to the Test Manager app
+
+## 4.2.15 (2024-07-30)
+
+Removed Unhadled exception test for benchmarks 
+
+## 4.2.14 (2024-07-29)
+
+Fixed setting lines width, color and opacity in ScatterPlotLinesRenderer
+
+## 4.2.13 (2024-07-15)
+
+Added benchmark flag to category options
+
+## 4.2.12 (2024-07-15)
+
+Added benchmark flag to test options
+
 ## 4.2.11 (2023-06-20)
 
 New tests reporting method.

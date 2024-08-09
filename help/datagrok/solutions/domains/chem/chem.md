@@ -207,7 +207,7 @@ Datagrok provides integrations with various sketchers, but their availability de
 <summary> How to provide a license path </summary>
 
 1. Go to [**Manage** > **Packages**](https://public.datagrok.ai/packages) and select a package that you want to use.
-1. Navigate to the **Context Panel** > **Settings** and enter the license code in the **License path** field.
+1. Navigate to the **Context Panel** > **Settings** and enter the license path in the **License path** field.
 1. Click **SAVE** to activate the license.
 
 </details>

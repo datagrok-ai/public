@@ -3,20 +3,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  App, Atom, HelmType, GetMonomerFunc, GetMonomerResType
+  App, Atom, HelmType, GetMonomerFunc, GetMonomerResType, HelmString, HelmMol
 } from '@datagrok-libraries/bio/src/helm/types';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {IHelmHelper, IInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
 import {getWebEditorMonomer} from './utils/get-monomer';
+import {HelmInput} from './widgets/helm-input';
 
 import {_package} from './package';
+
 
 declare const scil: ScilModule;
 declare const org: OrgHelmModule;
@@ -32,8 +34,19 @@ export class HelmHelper implements IHelmHelper {
       throw new Error(`HelmHelper must be a single.`);
   }
 
-  createHelmWebEditor(): IHelmWebEditor {
-    return new HelmWebEditor();
+  createHelmInput(name?: string, options?: IInputInitOptions<HelmMol>): DG.InputBase<HelmMol> {
+    try {
+      const monomerLib: IMonomerLib = _package.libHelper.getBioLib();
+      return HelmInput.create(this, monomerLib, name, options);
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      this.logger.error(`Helm: HelmHelper.createHelmInput(), Error: ${errMsg}`, undefined, errStack);
+      throw err;
+    }
+  }
+
+  createHelmWebEditor(host?: HTMLDivElement): IHelmWebEditor {
+    return new HelmWebEditor(host);
   }
 
   createWebEditorApp(host: HTMLDivElement, helm: string): App {
@@ -49,16 +62,16 @@ export class HelmHelper implements IHelmHelper {
       mexfilter: true
     });
     const sizes = webEditorApp.calculateSizes();
-    webEditorApp.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
+    webEditorApp.canvas!.resize(sizes.rightwidth - 100, sizes.topheight - 210);
     let s: Partial<CSSStyleDeclaration> = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
     scil.apply(webEditorApp.sequence.style, s);
-    scil.apply(webEditorApp.notation.style, s);
+    scil.apply(webEditorApp.notation!.style, s);
     s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + webEditorApp.toolbarheight) + 'px'};
-    scil.apply(webEditorApp.properties.parent.style, s);
-    webEditorApp.structureview.resize(sizes.rightwidth, sizes.bottomheight + webEditorApp.toolbarheight);
-    webEditorApp.mex.resize(sizes.topheight - 80);
+    scil.apply(webEditorApp.properties!.parent.style, s);
+    webEditorApp.structureview!.resize(sizes.rightwidth, sizes.bottomheight + webEditorApp.toolbarheight);
+    webEditorApp.mex!.resize(sizes.topheight - 80);
     setTimeout(() => {
-      webEditorApp.canvas.helm.setSequence(helm, 'HELM');
+      webEditorApp.canvas!.helm!.setSequence(helm, 'HELM');
     }, 200);
     return webEditorApp;
   }

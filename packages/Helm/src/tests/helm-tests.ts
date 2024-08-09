@@ -3,8 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+
 //import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
 import {parseHelm} from '../utils';
+import {initHelmMainPackage} from './utils';
 
 import {_package} from '../package-test';
 
@@ -47,7 +49,7 @@ category('Helm', () => {
   //   const df = DG.DataFrame.fromCsv(file);
   //   const col = df.columns.byName('HELM string');
   //   await grok.data.detectSemanticTypes(df);
-  //   expect(col.tags[DG.TAGS.UNITS], 'HELM');
+  //   expect(col.meta.units, 'HELM');
   // });
 
   const complexMonomers = [
@@ -75,6 +77,10 @@ category('Helm', () => {
     'comples-monomer', 'complex-monomer+side-chain', 'complex-monomer+side-chain-RNA',
     'complex-side-chain', 'complex+side-chain+linker'
   ];
+
+  before(async () => {
+    await initHelmMainPackage();
+  });
 
   test('parseHelm', async () => {
     const expectedResults = [

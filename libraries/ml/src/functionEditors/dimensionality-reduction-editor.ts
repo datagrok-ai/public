@@ -52,8 +52,8 @@ export class DimReductionBaseEditor {
     tableInput: DG.InputBase<DG.DataFrame | null>;
     colInput!: DG.InputBase<DG.Column | null>;
     preprocessingFunctionInput: DG.InputBase<string | null>;
-    plotEmbeddingsInput = ui.boolInput('Plot embeddings', true);
-    clusterEmbeddingsInput = ui.boolInput('Cluster embeddings', true);
+    plotEmbeddingsInput = ui.input.bool('Plot embeddings', {value: true});
+    clusterEmbeddingsInput = ui.input.bool('Cluster embeddings', {value: true});
     preprocessingFunctionInputRoot: HTMLElement | null = null;
     colInputRoot!: HTMLElement;
     methods: DimReductionMethods[] = [DimReductionMethods.UMAP, DimReductionMethods.T_SNE];
@@ -127,20 +127,20 @@ export class DimReductionBaseEditor {
         };
       });
 
-      this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, grok.shell.tables, () => {
+      this.tableInput = ui.input.table('Table', {value: grok.shell.tv.dataFrame, items: grok.shell.tables, onValueChanged: () => {
         this.onTableInputChanged();
-      });
+      }});
       this.onTableInputChanged();
 
       this.regenerateColInput();
       this.onColumnInputChanged();
       let settingsOpened = false;
       let dbScanSettingsOpened = false;
-      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP,
-        this.methods, () => {
+      this.methodInput = ui.input.choice('Method', {value: DimReductionMethods.UMAP,
+        items: this.methods, onValueChanged: () => {
           if (settingsOpened)
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
-        });
+        }});
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
         if (!settingsOpened)
@@ -162,10 +162,10 @@ export class DimReductionBaseEditor {
       this.methodSettingsDiv = ui.inputs([]);
       const functions = this.columnFunctionsMap[this.colInput.value!.name];
 
-      this.preprocessingFunctionInput = ui.choiceInput('Encoding function',
-        functions[0], functions, () => {
+      this.preprocessingFunctionInput = ui.input.choice('Encoding function',
+        {value: functions[0], items: functions, onValueChanged: () => {
           this.onPreprocessingFunctionChanged();
-        });
+        }});
       let flagPfi = false;
       if (!this.preprocessingFunctionInputRoot) {
         this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
@@ -187,7 +187,7 @@ export class DimReductionBaseEditor {
       }, 'Modify encoding function parameters');
       this.preprocessingFunctionInputRoot.prepend(this.preprocessingFuncSettingsIcon);
 
-      this.similarityMetricInput = ui.choiceInput('Similarity', '', [], null);
+      this.similarityMetricInput = ui.input.choice('Similarity', {value: '', items: []});
       this.similarityMetricInput.nullable = false;
       if (!this.similarityMetricInputRoot)
         this.similarityMetricInputRoot = this.similarityMetricInput.root;
@@ -197,8 +197,8 @@ export class DimReductionBaseEditor {
     private getColInput() {
       const firstSupportedColumn = this.tableInput.value?.columns.toList()
         .find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
-      const input = ui.columnInput('Column', this.tableInput.value!, firstSupportedColumn,
-        () => this.onColumnInputChanged(), {filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
+      const input = ui.input.column('Column', {table: this.tableInput.value!, value: firstSupportedColumn!,
+        onValueChanged: () => this.onColumnInputChanged(), filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
       if (!this.colInputRoot)
         this.colInputRoot = input.root;
       return input;
@@ -230,7 +230,7 @@ export class DimReductionBaseEditor {
           const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
           const typeSuported = !types.length || types.includes(col.type);
           const unitsSupported = !units.length ||
-            (col.getTag(DG.TAGS.UNITS) && units.includes(col.getTag(DG.TAGS.UNITS)));
+            (col.meta.units && units.includes(col.meta.units));
           if (semTypeSupported && typeSuported && unitsSupported) {
             if (!this.columnFunctionsMap[col.name])
               this.columnFunctionsMap[col.name] = [];
@@ -246,10 +246,10 @@ export class DimReductionBaseEditor {
       if (!col)
         return;
       const supportedPreprocessingFunctions = this.columnFunctionsMap[col.name];
-      this.preprocessingFunctionInput = ui.choiceInput('Preprocessing function',
-        supportedPreprocessingFunctions[0], supportedPreprocessingFunctions, () => {
+      this.preprocessingFunctionInput = ui.input.choice('Preprocessing function',
+        {value: supportedPreprocessingFunctions[0], items: supportedPreprocessingFunctions, onValueChanged: () => {
           this.onPreprocessingFunctionChanged();
-        });
+        }});
       let flag = false;
       if (!this.preprocessingFunctionInputRoot) {
         this.preprocessingFunctionInputRoot = this.preprocessingFunctionInput.root;
@@ -269,7 +269,7 @@ export class DimReductionBaseEditor {
       const fName = this.preprocessingFunctionInput.value!;
       const distanceFs = this.supportedFunctions[fName].distanceFunctions;
       this.availableMetrics = [...distanceFs];
-      this.similarityMetricInput = ui.choiceInput('Similarity', this.availableMetrics[0], this.availableMetrics, null);
+      this.similarityMetricInput = ui.input.choice('Similarity', {value: this.availableMetrics[0], items: this.availableMetrics});
       this.similarityMetricInput.nullable = false;
       if (!this.similarityMetricInputRoot)
         this.similarityMetricInputRoot = this.similarityMetricInput.root;
@@ -293,15 +293,15 @@ export class DimReductionBaseEditor {
           (params as any)[it];
 
         const input = param.type === 'string' ?
-          ui.stringInput(param.uiName, param.value ?? '', () => {
+          ui.input.string(param.uiName, {value: param.value ?? '', onValueChanged: () => {
             param.value = (input as DG.InputBase<string>).value;
-          }) : param.type === 'boolean' ?
-            ui.boolInput(param.uiName, param.value ?? false, () => {
+          }}) : param.type === 'boolean' ?
+            ui.input.bool(param.uiName, {value: param.value ?? false, onValueChanged: () => {
               param.value = (input as DG.InputBase<boolean>).value;
-            }) :
-            ui.floatInput(param.uiName, param.value as any, () => {
+            }}) :
+            ui.input.float(param.uiName, {value: param.value as any, onValueChanged: () => {
               param.value = input.value;
-            });
+            }});
         paramsForm.append(input.root);
         if (param.disable) {
           input.enabled = false;
