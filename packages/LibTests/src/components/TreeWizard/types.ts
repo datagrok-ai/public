@@ -8,7 +8,7 @@ export type TreeNodeType = {
 }
 
 export type Data = {
-  funcCall?: DG.FuncCall | string,
+  funcCall?: string,
   text: string,
   order?: Order,
 }

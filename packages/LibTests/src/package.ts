@@ -946,8 +946,8 @@ export async function TestTreeWizardView() {
             text: 'Review phases (sequental + drag + adding)',
             order: 'sequental',
             children: [
+              {text: 'Filtering', funcCall: 'LibTests:AddMock'},
               {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
-              {text: 'Filtering', funcCall: 'LibTests:LongScript'},
               {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
             ],
           }, 

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {defineComponent, PropType, ref, shallowRef, triggerRef} from 'vue';
+import {defineComponent, KeepAlive, PropType, ref, shallowRef, triggerRef} from 'vue';
 import {SplitH} from '@datagrok-libraries/webcomponents-vue/src';
 import {Draggable} from '@he-tree/vue';
 import '@he-tree/vue/style/default.css';
@@ -11,11 +11,13 @@ import {Stat} from '@he-tree/vue/types/src/components/TreeProcessorVue';
 import {TreeNode} from './TreeNode';
 import {TreeNodeType, HueTree, AugmentedStat, Data} from './types';
 
+const callsCache = {} as Record<string, DG.FuncCall>;
+
 export const TreeWizardView = defineComponent({
   props: {
     wrapperFunccall: {
       required: true,
-      type: Object as PropType<DG.FuncCall | string>,
+      type: String,
     },
     treeData: {
       required: true,
@@ -23,12 +25,16 @@ export const TreeWizardView = defineComponent({
     },
   },
   setup(props) {
-    const currentFuncCall = shallowRef(props.wrapperFunccall);
+    const currentFuncCall = shallowRef<DG.FuncCall | string>(props.wrapperFunccall);
     const tree = ref(null as HueTree | null);
 
-    const changeFunccall = (newCall: DG.FuncCall | string) => {
+    const changeFunccall = (newCall: string) => {
       isVisibleRfv.value = true;
-      currentFuncCall.value = newCall;
+
+      if (!callsCache[newCall]) 
+        callsCache[newCall] = DG.Func.byName(newCall).prepare();
+
+      currentFuncCall.value = callsCache[newCall] ?? newCall;
       triggerRef(currentFuncCall);
     };
 
@@ -67,10 +73,14 @@ export const TreeWizardView = defineComponent({
               )
           }
         </Draggable>
-        <RichFunctionView 
-          style={{display: !isVisibleRfv.value ? 'none': undefined, height: '100%'}} 
-          funcCall={currentFuncCall.value}
-        /> 
+        <div>
+          {
+            isVisibleRfv.value && <RichFunctionView 
+              style={{height: '100%'}} 
+              funcCall={currentFuncCall.value}
+            /> 
+          }
+        </div>
       </SplitH>
     );
   },

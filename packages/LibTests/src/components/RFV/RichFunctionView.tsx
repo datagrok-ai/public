@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef} from 'vue';
+import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch, shallowRef, onActivated, onDeactivated} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton, Button} from '@datagrok-libraries/webcomponents-vue/src';
-import {GridStack} from 'gridstack';
+import {GridStack, GridStackOptions, GridStackWidget} from 'gridstack';
 import wu from 'wu';
 import 'gridstack/dist/gridstack.min.css';
 import './RichFunctionView.css';
@@ -19,6 +19,8 @@ declare global {
     }
   }
 }
+
+const layoutCache = {} as Record<string, GridStackOptions>;
 
 export const RichFunctionView = defineComponent({
   name: 'RichFunctionView',
@@ -45,6 +47,9 @@ export const RichFunctionView = defineComponent({
     watch(currentCall, async (newVal, oldVal) => {
       if (newVal.func.id === oldVal.func.id) return;
       
+      if (!grid) return;
+
+      layoutCache[oldVal.id] = grid.save(false, true) as GridStackOptions;
       grid?.removeAll(true);
       await nextTick();
       populateGridStack();
@@ -59,7 +64,7 @@ export const RichFunctionView = defineComponent({
 
     const formNode = ref(null as null | Element);
 
-    const populateGridStack = () => {   
+    const populateGridStack = () => {  
       if (!grid) return;
       
       if (formNode.value) {
@@ -71,7 +76,10 @@ export const RichFunctionView = defineComponent({
       }
 
       document.querySelectorAll(`[id^='viewer']`).forEach(
-        (node) => grid!.addWidget(node as HTMLElement, {h: 5, w: 12}),
+        (node, idx) => grid!.addWidget(
+          node as HTMLElement, 
+          layoutCache[currentCall.value.id]?.children?.[idx + 1] ?? {h: 5, w: 12},
+        ),
       );
     };
 
@@ -105,7 +113,7 @@ export const RichFunctionView = defineComponent({
         </div>
         { 
           paramsWithViewers.value
-            .map((viewer) => getPropViewers(viewer))
+            .map((prop) => getPropViewers(prop))
             .map(({name, config: allConfigs}) => 
               allConfigs.map((options, idx) => 
                 <div id={`viewer${idx.toString()}`}>
