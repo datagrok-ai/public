@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {defineComponent} from 'vue';
+import {defineComponent, KeepAlive, PropType} from 'vue';
 import type {ViewerT} from '@datagrok-libraries/webcomponents/src';
 
 declare global {
@@ -19,6 +19,7 @@ export const Viewer = defineComponent({
     type: String,
     dataFrame: DG.DataFrame,
     viewer: DG.Viewer,
+    options: Object as PropType<Record<string, string | boolean>>,
   },
   emits: {
     viewerChanged: (a: DG.Viewer<any>) => a,
@@ -29,12 +30,17 @@ export const Viewer = defineComponent({
     };
     return () => {
       const viewer = <dg-viewer
-        type={props.type} dataFrame={props.dataFrame} viewer={props.viewer} onViewerChanged={viewerChangedCb}>
+        type={props.type}
+        options={props.options}
+        dataFrame={props.dataFrame}
+        viewer={props.viewer}
+        onViewerChanged={viewerChangedCb}
+      >
       </dg-viewer>;
       return (
-        <keep-alive>
+        <KeepAlive>
           { viewer }
-        </keep-alive>
+        </KeepAlive>
       );
     };
   },

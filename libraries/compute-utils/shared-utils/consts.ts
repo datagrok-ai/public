@@ -61,6 +61,25 @@ export type INPUT_STATE = 'disabled' | 'restricted' | 'restricted unlocked' | 'i
 
 export type VIEW_STATE = 'inconsistent' | 'consistent';
 
+export enum SYNC_FIELD {
+  INPUTS = 'inputs',
+  OUTPUTS = 'outputs'
+}
+
+export interface ValidationRequestPayload {
+  field?: string,
+  isRevalidation: boolean,
+  isNewOutput?: boolean,
+  context?: any,
+}
+
+
+export type SyncFields = SYNC_FIELD.INPUTS | SYNC_FIELD.OUTPUTS;
+export const syncParams = {
+  [SYNC_FIELD.INPUTS]: 'inputParams',
+  [SYNC_FIELD.OUTPUTS]: 'outputParams',
+} as const;
+
 export const storageName = `ModelStorage`;
 
 export const EXP_COLUMN_NAME = 'Source';

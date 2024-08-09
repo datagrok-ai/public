@@ -14,7 +14,10 @@ import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {createApp} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
-import {VueElementsTestApp} from './components/VueElelementsTestApp';
+import {VueElementsTestApp} from './components/VueElementsTestApp';
+import {RichFunctionView} from './components/RFV/RichFunctionView';
+import {TreeWizardView} from './components/TreeWizard/TreeWizardView';
+import {RFVTestApp} from './components/RFV/RFVTestApp';
 
 export const _package = new DG.Package();
 
@@ -919,3 +922,56 @@ export async function TestVueElements() {
   app.mount(view.root);
   grok.shell.addView(view);
 }
+
+//tags: test
+export async function TestVueRFV() {
+  const view = new DG.ViewBase();
+  const app = createApp(RFVTestApp);
+  app.mount(view.root);
+  grok.shell.addView(view);
+  view.root.classList.remove('ui-panel');
+}
+
+//tags: test
+export async function TestTreeWizardView() {
+  const view = new DG.ViewBase();
+  const app = createApp(TreeWizardView, {
+    wrapperFunccall: 'Compute:ObjectCooling',
+    treeData: [
+      {
+        text: 'Model name',
+        order: 'sequental', 
+        children: [
+          {
+            text: 'Review phases (sequental + drag + adding)',
+            order: 'sequental',
+            children: [
+              {text: 'Filtering', funcCall: 'LibTests:AddMock'},
+              {text: 'Cleaning', funcCall: 'LibTests:LongScript'},
+              {text: 'Post-filtering', funcCall: 'LibTests:LongScript'},
+            ],
+          }, 
+          {
+            text: 'Step 2',
+            order: 'sequental',
+            children: [
+              {text: 'Step 2.1', funcCall: 'LibTests:AddMock'},
+              {
+                text: 'Review days (parallel + no drag + adding)', 
+                order: 'parallel',
+                children: [
+                  {text: 'Day 1', funcCall: 'LibTests:LongFailingScript'},
+                  {text: 'Day 2', funcCall: 'LibTests:LongScript'},
+                ]},
+              {text: 'Step 2.3', funcCall: 'LibTests:AddMock'},
+            ],
+          },
+        ],
+      }],
+  });
+  app.mount(view.root);
+  grok.shell.addView(view);
+  view.name = 'TreeWizard PoC';
+  view.root.classList.remove('ui-panel');
+}
+

@@ -5,9 +5,9 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {AUTHOR_COLUMN_NAME, VIEWER_PATH, viewerTypesMapping} from './consts';
+import {AUTHOR_COLUMN_NAME, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload, VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
-import {ValidationResultBase, getValidationIcon} from './validation';
+import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
 export const createPartialCopy = async (call: DG.FuncCall) => {
@@ -181,6 +181,25 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
   });
 };
 
+export const getValidators = async (funcCall: DG.FuncCall, isInput: SyncFields = SYNC_FIELD.INPUTS) => {
+  const params = [...funcCall[syncParams[isInput]].values()];
+  const resolvedValidators = await Promise.all(
+    params
+      .filter((param) => !!param.property.options.validatorFunc)
+      .map(async (param) => {    
+        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
+        await call.call();
+
+        return [param.name, call.outputs.validator as Validator] as const;
+  }));
+
+  return resolvedValidators.reduce((acc, [name, validator]) => {
+    acc[name] = validator;
+    return acc;
+  }, {} as Record<string, Validator>)
+}
+
 export const updateOutputValidationSign = (
   sign: readonly [HTMLElement, HTMLElement],
   messages: ValidationResultBase | undefined,
@@ -191,6 +210,52 @@ export const updateOutputValidationSign = (
 
   return newSign;
 };
+
+export const validate = async (
+  payload: ValidationRequestPayload,
+  paramNames: string[], 
+  signal: AbortSignal, 
+  isInput: SyncFields,
+  context: {view?: RichFunctionView, funcCall: DG.FuncCall, lastCall?: DG.FuncCall},
+  validarors: Record<string, Validator> 
+) => {
+  const {view, funcCall, lastCall} = context;
+
+  const validationItems = await Promise.all(paramNames.map(async (name) => {
+    const v = isInput === SYNC_FIELD.INPUTS ? funcCall.inputs[name]: funcCall.outputs[name];
+    // not allowing null anywhere
+    const standardMsgs = await nonNullValidator(v, {
+      param: name,
+      funcCall: funcCall,
+      lastCall: lastCall,
+      signal,
+      isNewOutput: !!payload.isNewOutput,
+      isRevalidation: payload.isRevalidation,
+      view: view!,
+    });
+    let customMsgs;
+    const customValidator = validarors[name];
+    if (customValidator) {
+      customMsgs = await customValidator(v, {
+        param: name,
+        funcCall: funcCall,
+        lastCall: lastCall,
+        signal,
+        isNewOutput: !!payload.isNewOutput,
+        isRevalidation: payload.isRevalidation,
+        context: payload.context,
+        view: view!,
+      });
+    }
+    // output params could not be nulls, DG will complain
+    const isNullable = isInput === SYNC_FIELD.INPUTS && funcCall.inputParams[name].property.options.nullable;
+    return [name, mergeValidationResults(
+      ...isNullable ? []: [standardMsgs],
+      customMsgs,
+    )] as const;
+  }));
+  return Object.fromEntries(validationItems);
+}
 
 export const injectInputBaseValidation = (t: DG.InputBase) => {
   const validationIndicator = ui.element('i');
