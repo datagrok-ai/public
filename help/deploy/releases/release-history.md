@@ -39,21 +39,25 @@ See also:
 
 ## 2024-07-23 Datagrok 1.20.0 release 
 
-### Breaking changes:
- 
-* File caching updates.
-* Inputs harmonization.
- 
+The Datagrok 1.20.0 release focuses on improving stability, performance, and usability, introducing refined workflows to make the platform more intuitive and reliable. Some of the key improvements in this release include:
+
+* Lightweight predictive modeling improvements. [MlFlow registry integration](https://youtu.be/RS163zKe7s8?t=1424).
+* File caching feature reduces the time required to access frequently used files by storing them locally in browser cache. This feature is compatible with various file storages, including Amazon S3, Azure Blob Storage, and more (follow our [guideline](https://datagrok.ai/help/access/files/#caching-files-shares) to configure cache for your connection). 
+* Inputs harmonization brought significant stability enhancements and API improvements, ensuring a smoother and more consistent experience across the platform.
+
 ### Visualization and usability improvements:
 
-* MlFlow registry integration.
-* Forms autosize implementation.
-* Lightweight Predictive modeling improvements.
+* Macromolecules updates: 
+  * long sequences visualization optimized.
+  * cell renderer per type for small molecules and column width changes.
+  * monomer tooltip polished.
+  * monomer placer optimization for column width changed.
+  * work with missed monomers in Helm.
+* Improved form autosizing.
+* [Diff Studio](https://datagrok.ai/help/compute/diff-studio#solver-settings): implementing the debugging mode.
 * Layout editing harmonization for Data Query.
-* Macromolecules updates.
-* Diff Studio: implementing the debugging mode.
-* Dragging an entity into a project restyling.
-* Adding the 'Add to favorites' command to objects.  
+* Restyled the process of dragging an entity into a project
+* Objects can be added to the favorites list.
 * No auto running for functions in browse preview.
 * [#2847](https://github.com/datagrok-ai/public/issues/2847): Export CSV without rounding.
  
@@ -111,8 +115,6 @@ See also:
 * Improvements:
   * [#2905](https://github.com/datagrok-ai/public/issues/2905): Add ''Size by" or "Shape by" or "color by'' options. 
   * GROK-9748: Violin-state option. 
-* Fix:
-  * GROK-16244: Violin style: category bug. 
  
 ### JS API
 * Improvements:
@@ -135,7 +137,7 @@ See also:
 * Improvements:
   * GROK-15922: EDA: Linear Regression. 
   * GROK-15759: PowerPack: 'Add new column': Formula edit improvements.
-  * GROK-11494: Widgets: events.
+  * GROK-11494: [Widgets](https://datagrok.ai/help/visualize/widgets): events.
   * [#2902](https://github.com/datagrok-ai/public/issues/2902): Create "Pivot table" tutorial part.
 * Fixes:
   * GROK-15324: Widgets: Recent projects: context menu fixing. 
@@ -157,9 +159,9 @@ See also:
   * GROK-15299: Functions can't be saved to a project with data sync. 
   * GROK-15790: Transform to smiles doesn't change units. 
  
-### Scripting
+### [Scripting](https://datagrok.ai/help/compute/scripting/)
 * Improvements and fixes:
-  * GROK-15424: Cascade parametrized inputs in scripts. 
+  * GROK-15424: [Cascade parametrized inputs in scripts](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#function-inputs). 
   * GROK-15876: Split logic for blobs and file parameters. 
   * GROK-15973: Behavior changes for clicking the 'Save' button. 
   * GROK-15968: Usage: rename 'Run count' into 'Successful Runs'. 
@@ -183,16 +185,12 @@ See also:
 
 
 ## 2024-06-07 Datagrok 1.19.0 release
- 
-### Breaking changes:
- 
+
+### Visualization and usability improvements
 * Updated project`s management.
 * Power Search: updated support for entities.
 * Usage analysis: user report system improvements.
 * Speedup for platform’s startup.
-
-### Visualization and usability improvements
-
 * New hierarchical and expression filters.
 * New recent activity view.
 * Categorize function improvements.
