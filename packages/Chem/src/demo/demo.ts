@@ -12,6 +12,7 @@ import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
 
 export async function _demoChemOverview(): Promise<void> {
   const sketcherType = DG.chem.currentSketcherType;
@@ -744,11 +745,24 @@ export async function _demoDatabases5(): Promise<void> {
 }
 
 export async function _demoScaffoldTree(): Promise<void> {
-  const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
-  _package.files.readAsText('demo_files/scaffold_tree.layout').then((layoutString: string) => {
+  const tv = await openMoleculeDataset('mol1K.csv');
+  
+  _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
-    ((grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView).loadLayout(layout);
+    tv.loadLayout(layout);
+
+    const scaffoldTree = new ScaffoldTreeViewer();
+    const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
+    const table: DG.DataFrame = tv.dataFrame;
+    scaffoldTree.dataFrame = table;
+    scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    scaffoldTree.size = 'normal';
+    scaffoldTree.addOrphanFolders = false;
+      
+    await scaffoldTree.loadTreeStr(treeStr);
+    tv.dockManager.dock(scaffoldTree.root);
+      
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });
-  grok.shell.windows.showHelp = true;
-  grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
 }
