@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.11.3 (2024-08-12)
+
+### Features
+
+* Chem: MMPA: Work with multucomponent entities
+
 ## 1.11.2 (2024-08-12)
 
 ### Features
