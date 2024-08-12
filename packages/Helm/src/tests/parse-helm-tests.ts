@@ -47,12 +47,12 @@ category('parseHelm', () => {
     await setUserLibSettingsForTests();
     await timeout(async () => { await libHelper.awaitLoaded(); }, 5000,
       'await monomerLib to be loaded');
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await libHelper.loadLibraries(true);
+    await libHelper.loadMonomerLib(true);
   });
 
   for (const [testName, {src, tgt}] of Object.entries(testData)) {

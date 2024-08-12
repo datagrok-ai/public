@@ -40,38 +40,19 @@ export class HelmWebEditor implements IHelmWebEditor {
     return `Helm: HelmWebEditor<#>`;
   }
 
-  private hostOnSizeChanged(_: any): void {
-    const logPrefix = `${this.toLog()}.hostOnSizeChanged()`;
-    this.logger.debug(`${logPrefix}`);
-    this.editor.setSize(this.host.clientWidth, this.host.clientHeight);
+  private lastSize: { width: number, height: number } = {width: -1, height: -1};
+
+  private hostOnSizeChanged(value: any): void {
+    const size = {width: value.target.clientWidth, height: value.target.clientHeight};
+    if (this.lastSize.width != size.width || this.lastSize.height != size.height) {
+      const logPrefix = `${this.toLog()}.hostOnSizeChanged()`;
+      this.logger.debug(`${logPrefix}`);
+      this.editor.setSize(this.host.clientWidth, this.host.clientHeight);
+    }
+    this.lastSize = size;
   }
 
   resizeEditor(w: number, h: number) {
     this.editor.setSize(w, h);
   }
-}
-
-export function buildWebEditorApp(view: HTMLDivElement): App {
-  org.helm.webeditor.MolViewer.molscale = 0.8;
-  const app = new org.helm.webeditor.App(view, {
-    showabout: false,
-    mexfontsize: '90%',
-    mexrnapinontab: true,
-    topmargin: 20,
-    mexmonomerstab: true,
-    sequenceviewonly: false,
-    mexfavoritefirst: true,
-    mexfilter: true
-  });
-  const sizes = app.calculateSizes();
-  app.canvas!.resize(sizes.rightwidth - 100, sizes.topheight - 210);
-  let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-  scil.apply(app.sequence.style, s);
-  scil.apply(app.notation!.style, s);
-  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
-  scil.apply(app.properties!.parent.style, s);
-  app.structureview!.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
-  app.mex!.resize(sizes.topheight - 80);
-
-  return app;
 }

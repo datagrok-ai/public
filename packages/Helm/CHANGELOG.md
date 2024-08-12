@@ -1,5 +1,13 @@
 # Helm changelog
 
+## 2.4.0 (2024-08-06)
+
+### Features
+
+* Add monomer placeholders to HELMWebEditor palette
+
+### Bug fixes
+
 ## 2.3.4 (2024-08-06)
 
 ### Bug fixes

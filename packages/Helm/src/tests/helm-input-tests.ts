@@ -30,12 +30,12 @@ category('HelmInput', () => {
     // Test 'helm' requires default monomer library loaded
     await setUserLibSettingsForTests();
     await monomerLibHelper.awaitLoaded();
-    await monomerLibHelper.loadLibraries(true); // load default libraries
+    await monomerLibHelper.loadMonomerLib(true); // load default libraries
   });
 
   after(async () => {
     await setUserLibSettings(userLibSettings);
-    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+    await monomerLibHelper.loadMonomerLib(true); // load user settings libraries
   });
 
   test('inDialog', async () => {
@@ -47,7 +47,7 @@ category('HelmInput', () => {
       .show();
     await delay(500);
 
-    const mol = helmInput.value;
+    const mol = helmInput.molValue;
     expect(mol.atoms.length, 4);
     expect(mol.bonds.length, 3);
   });
@@ -73,7 +73,7 @@ async function _testTooltipOnHelmInput(): Promise<void> {
     expect(helmInput.getInput(), dialogInputEl);
 
     const mon = {i: 0, elem: 'meY'};
-    const a = helmInput.value.atoms[mon.i];
+    const a = helmInput.molValue.atoms[mon.i];
     const iEl = helmInput.getInput();
     const iBcr = iEl.getBoundingClientRect();
     const ev = new MouseEvent('mousemove', {

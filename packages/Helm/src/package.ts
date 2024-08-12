@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
+import {Unsubscribable} from 'rxjs';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -11,8 +12,8 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {App, HelmMol, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
-import {IHelmHelper, IInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {App, Editor, HelmMol, HelmType, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
@@ -25,12 +26,9 @@ import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/get-monomer-dummy';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
-import {buildWebEditorApp} from './helm-web-editor';
-import {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
+import type {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
 
-export const _package = new HelmPackage(/*{debug: true}/**/);
-
-let monomerLib: IMonomerLib | null = null;
+export const _package = new HelmPackage({debug: true});
 
 /*
   Loading modules:
@@ -51,14 +49,13 @@ export async function initHelm(): Promise<void> {
   _package.logger.debug(`${logPrefix}, start`);
 
   try {
-    await Promise.all([
+    const [_, libHelper] = await Promise.all([
       _package.initHELMWebEditor(),
-      _package.initMonomerLibHelper(),
-    ]).then(() => {
-      _package.initMonomerLib();
-    });
+      getMonomerLibHelper(),
+    ]);
 
-    _package.logger.debug(`${logPrefix}, then(), lib loaded`);
+    _package.logger.debug(`${logPrefix}, lib loaded`);
+    _package.initMonomerLib(libHelper);
   } catch (err: any) {
     const [errMsg, errStack] = errInfo(err);
     // const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
@@ -133,14 +130,7 @@ function openWebEditor(cell: DG.Cell, value?: string, units?: string) {
   const col = cell.column as DG.Column<string>;
   const sh = SeqHandler.forColumn(col);
   const rowIdx = cell.rowIndex;
-  let app: App;
-  setTimeout(async () => {
-    app = await buildWebEditorApp(view);
-    if (!!cell && units === undefined)
-      app.canvas!.helm!.setSequence(cell.value, 'HELM');
-    else
-      app.canvas!.helm!.setSequence(value!, 'HELM');
-  }, 20);
+  const app: App = _package.helmHelper.createWebEditorApp(view, !!cell && units === undefined ? cell.value : value!);
   const dlg = ui.dialog({showHeader: false, showFooter: true});
   dlg.add(view)
     .onOK(() => {
@@ -192,7 +182,7 @@ export function getMolfiles(col: DG.Column): DG.Column {
 //input: string name =undefined {optional: true}
 //input: object options =undefined {optional: true}
 //output: object result
-export function helmInput(name: string, options: IInputInitOptions<HelmMol>): DG.InputBase<HelmMol> {
+export function helmInput(name: string, options: IHelmInputInitOptions): HelmInputBase {
   // TODO: Annotate for semType = 'Macromolecule' AND units = 'helm'
   return _package.helmHelper.createHelmInput(name, options);
 }
