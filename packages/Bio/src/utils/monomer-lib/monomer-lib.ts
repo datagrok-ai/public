@@ -6,13 +6,14 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
+import {HelmType, MonomerSetType, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {IMonomerLib, IMonomerSet, Monomer, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
 import {HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import '../../../css/cell-renderer.css';
 
@@ -102,6 +103,20 @@ export class MonomerLib implements IMonomerLib {
     return res;
   }
 
+  private _monomerSets: { [biotype: string /*HelmType*/]: MonomerSetType } | null = null;
+
+  getMonomerSet(biotype: HelmType): MonomerSetType | null {
+    const polymerType: PolymerType = helmTypeToPolymerType(biotype);
+    if (!this._monomerSets)
+      this._monomerSets = {};
+    if (!(biotype in this._monomerSets)) {
+      for (const [monomerSymbol, monomer] of Object.entries(this._monomers[polymerType])) {
+
+      }
+    }
+    return this._monomerSets[biotype];
+  }
+
   getPolymerTypes(): PolymerType[] {
     return Object.keys(this._monomers) as PolymerType[];
   }
@@ -151,7 +166,7 @@ export class MonomerLib implements IMonomerLib {
     return this._onChanged;
   }
 
-  private _updateInt(lib: IMonomerLib): void {
+  private _updateLibInt(lib: IMonomerLib): void {
     const typesNew = lib.getPolymerTypes();
     const types = this.getPolymerTypes();
 
@@ -169,13 +184,15 @@ export class MonomerLib implements IMonomerLib {
   }
 
   public update(lib: IMonomerLib): void {
-    this._updateInt(lib);
+    this._updateLibInt(lib);
     this._onChanged.next();
   }
 
   public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
-    if (reload) this._monomers = {};
-    for (const lib of libList) if (!lib.error) this._updateInt(lib);
+    if (reload)
+      this._monomers = {};
+    for (const lib of libList)
+      if (!lib.error) this._updateLibInt(lib);
     this._onChanged.next();
   }
 
