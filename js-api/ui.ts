@@ -709,23 +709,23 @@ export namespace input {
     width: number;
   }
 
-  const optionsMap: {[key: string]: (input: InputBase, inputType: d4.InputType, option: any) => void} = {
-    value: (input, inputType, x) => input.value = inputType === d4.InputType.File ? toDart(x) : x,
-    nullable: (input, inputType, x) => input.nullable = x, // finish it?
-    property: (input, inputType, x) => input.property = x,
-    tooltipText: (input, inputType, x) => input.setTooltip(x),
-    onCreated: (input, inputType, x) => x(input),
-    onValueChanged: (input, inputType, x) => input.onChanged(() => x(input)),
-    clearIcon: (input, inputType, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
-    escClears: (input, inputType, x) => api.grok_StringInput_AddEscClears(input.dart, x),
-    size: (input, inputType, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
-    placeholder: (input, inputType, x) => (input.input as HTMLInputElement).placeholder = x,
-    items: (input, inputType, x) => inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
-      inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-      inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
-    icon: (input, inputType, x) => api.grok_StringInput_AddIcon(input.dart, x),
-    available: (input, inputType, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
-    checked: (input, inputType, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+  const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    nullable: (input, x) => input.nullable = x, // finish it?
+    property: (input, x) => input.property = x,
+    tooltipText: (input, x) => input.setTooltip(x),
+    onCreated: (input, x) => x(input),
+    onValueChanged: (input, x) => input.onChanged(() => x(input)),
+    clearIcon: (input, x) => api.grok_StringInput_AddClearIcon(input.dart, x),
+    escClears: (input, x) => api.grok_StringInput_AddEscClears(input.dart, x),
+    size: (input, x) => api.grok_TextInput_SetSize(input.dart, x.width, x.height),
+    placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
+    items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
+      input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+    icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
+    available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
+    checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
@@ -744,7 +744,7 @@ export namespace input {
           api.grok_ColumnsInput_ChangeTable(input.dart, (specificOptions as IIndexable)[key].dart, filter);
       }
       if (optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (specificOptions as IIndexable)[key]);
+        optionsMap[key](input, (specificOptions as IIndexable)[key]);
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
@@ -753,7 +753,7 @@ export namespace input {
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property.nullable = baseOptions[key]!;
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
-        optionsMap[key](input, inputType, (baseOptions as IIndexable)[key]);
+        optionsMap[key](input, (baseOptions as IIndexable)[key]);
     }
   }
 
