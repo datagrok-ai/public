@@ -752,15 +752,15 @@ export async function _demoScaffoldTree(): Promise<void> {
     tv.loadLayout(layout);
 
     const scaffoldTree = new ScaffoldTreeViewer();
+    scaffoldTree.root.classList.add('d4-viewer', 'd4-scaffold-tree');
     const treeStr = await _package.files.readAsText('demo_files/scaffold-tree.json');
     const table: DG.DataFrame = tv.dataFrame;
     scaffoldTree.dataFrame = table;
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
     scaffoldTree.size = 'normal';
-    scaffoldTree.addOrphanFolders = false;
-      
+
+    tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
     await scaffoldTree.loadTreeStr(treeStr);
-    tv.dockManager.dock(scaffoldTree.root);
       
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
