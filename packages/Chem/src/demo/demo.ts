@@ -187,7 +187,6 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 export async function _demoMMPA(): Promise<void> {
   let tv = await openMoleculeDataset('demo_files/matched_molecular_pairs.csv');
-  tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;
   await mmpAnalysis(tv.dataFrame, tv.dataFrame.col('smiles')!,
     tv.dataFrame.clone().columns.remove('smiles').remove('CMPD_CHEMBLID'), 0.3, true);
   tv.dataFrame.currentRowIdx = 0;
@@ -761,7 +760,7 @@ export async function _demoScaffoldTree(): Promise<void> {
 
     tv.dockManager.dock(scaffoldTree.root, DG.DOCK_TYPE.LEFT, null, '', 0.45);
     await scaffoldTree.loadTreeStr(treeStr);
-      
+     
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('help/datagrok/solutions/domains/chem/chem#scaffold-tree-analysis');
   });

@@ -1542,10 +1542,16 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
   activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
   
-  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.v as DG.TableView;
-    
+  let view: DG.TableView;
+  
+  if (demo) {
+    const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    view = browseView ? (browseView.preview as DG.TableView) : grok.shell.getTableView(table.name) as DG.TableView;
+  } else {
+    view = grok.shell.getTableView(table.name) as DG.TableView;
+  }
+  
   const viewer = view.addViewer('Matched Molecular Pairs Analysis');
-
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
 }
 
