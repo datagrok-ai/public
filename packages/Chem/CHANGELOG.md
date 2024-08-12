@@ -1,5 +1,22 @@
 # Chem changelog
 
+## 1.11.2 (2024-08-12)
+
+### Features
+
+* Chem: Chemprop: Remove redundant calls in the core and move it fully to package
+* Chem: MMPA: Add meaningfull dataset for demo
+* Chem: MMPA: Restrictions and CPU fallback
+* Chem: MMPA: Compensate filtering by cutoff
+* Chem: MMPA: Add reflection for selection
+* Chem: MMPA: Add pairs filter, expose filters object so it can be used in any tab, minor improvements
+* Chem: Update demos in order to be shown in the Browse
+
+### Bug Fixes
+
+* Chem: MMPA: Fixes for cliffs tab and lines improvements
+* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for some data if scaffold tree is present
+
 ## 1.11.1 (2024-07-25)
 
 ### Bug Fixes
