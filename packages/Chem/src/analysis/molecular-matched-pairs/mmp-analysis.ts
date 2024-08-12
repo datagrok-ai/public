@@ -24,8 +24,8 @@ import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {getEmbeddingColsNames} from
   '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
 import $ from 'cash-dom';
-import { getGPUDevice } from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import { getMmpFilters, MmpFilters } from './mmp-filters';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import {getMmpFilters, MmpFilters} from './mmp-filters';
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
   static TYPE: string = 'MMP';
@@ -107,23 +107,24 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
             activities: this.activitiesCols!,
             fragmentCutoff: this.fragmentCutoff!,
           });
-      }
-      catch (e: any) {}
-      finally {
+      } catch (e: any) {
+
+      } finally {
         $(this.root).empty();
         if (this.mmpView)
-          this.root.appendChild(this.mmpView!.root); 
-        else  
+          this.root.appendChild(this.mmpView!.root);
+        else
           this.close();
         progressMMP.close();
       }
 
-        // let tableInfo = this.parentTable!.getTableInfo();
-        // await grok.dapi.tables.uploadDataFrame(this.parentTable!);
-        // await grok.dapi.tables.save(tableInfo);
-        // console.log(`${grok.dapi.root}/entities/${tableInfo.id}/token`);
-        // const response = await fetch(`${grok.dapi.root}/entities/${tableInfo.id}/token`, {method: "POST"}); //or without POST
-        // const respText = await response.text();
+      // let tableInfo = this.parentTable!.getTableInfo();
+      // await grok.dapi.tables.uploadDataFrame(this.parentTable!);
+      // await grok.dapi.tables.save(tableInfo);
+      // console.log(`${grok.dapi.root}/entities/${tableInfo.id}/token`);
+      // const response = await fetch(`${grok.dapi.root}/entities/${tableInfo.id}/token`, {method: "POST"});
+      //or without POST
+      // const respText = await response.text();
     }
   }
 
@@ -158,13 +159,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   private setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer) {
     for (let i = 0; i < mmpFilters.activitySliderInputs.length; i ++) {
       mmpFilters.activityActiveInputs[i].onChanged(() => {
-        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
       mmpFilters.activitySliderInputs[i].onChanged(() => {
         mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
           getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
-        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), true);
       });
 
       mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
@@ -190,7 +193,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
           colors: colors,
           arrowSize: 10,
           skipMultiLineCalculation: true,
-          width: 0.5
+          width: 0.5,
         };
 
         this.lines = lines;
@@ -217,7 +220,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   private setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters,
     linesEditor: ScatterPlotLinesRenderer): HTMLDivElement {
-
     sp.root.style.width = '100%';
 
     this.totalCutoffMask!.setAll(true);
@@ -225,7 +227,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     this.linesRenderer = linesEditor;
 
-    this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
+    this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+      mmpFilters.activityActiveInputs.map((ai) => ai.value), false);
 
     return ui.box(sp.root);
   }
@@ -286,13 +289,13 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
         this.refreshFilterAllFragments();
         this.enableFilters = false;
       } else if (tabs.currentPane.name == MMP_NAMES.TAB_CLIFFS) {
-
         tabs.currentPane.content.append(mmpFilters.filtersDiv);
 
         if (refilter)
           grok.shell.warning('Cutoff filters were applied for all activities');
 
-        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value), mmpFilters.activityActiveInputs.map((ai) => ai.value), refilter);
+        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+          mmpFilters.activityActiveInputs.map((ai) => ai.value), refilter);
         refilter = false;
         if (this.lastSelectedPair) {
           setTimeout(() => {
@@ -375,13 +378,14 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.propPanelViewer = new FormsViewer();
     this.propPanelViewer.dataframe = this.parentTable;
     this.propPanelViewer.columns = propertiesColumnsNames;
-    this.propPanelViewer.inputClicked.subscribe((name: string) => {
+    this.propPanelViewer.inputClicked.subscribe(() => {
       setTimeout(() => {
-        grok.shell.o = fillPairInfo(this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
+        grok.shell.o = fillPairInfo(
+          this.lastSelectedPair!, linesIdxs, linesActivityCorrespondance[this.lastSelectedPair!],
           transPairsGrid.dataFrame, diffs, mmpInput.table, rdkitModule, this.propPanelViewer!);
         this.propPanelViewer!.fitHeaderToLabelWidth(100);
       }, 500);
-    })
+    });
   }
 
   async runMMP(mmpInput: MmpInput) {
@@ -397,8 +401,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     if (!gpu && mmpInput.molecules.length > MMP_CONSTRICTIONS.CPU) {
       grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
       throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-    }
-    else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
+    } else if (mmpInput.molecules.length > MMP_CONSTRICTIONS.GPU) {
       grok.shell.error(MMP_ERRORS.FRAGMENTS_GPU);
       throw new Error(MMP_ERRORS.FRAGMENTS_GPU);
     }
@@ -418,9 +421,9 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
     //Cliffs tab
     const embedColsNames = getEmbeddingColsNames(mmpInput.table).map((it) => `~${it}`);
-  
+
     const mmpFilters = getMmpFilters(mmpInput, maxActs, transFragmentsGrid.dataFrame.col(MMP_NAMES.PAIRS)!.stats.max);
-    console.log(`created mmpa filters`)
+    console.log(`created mmpa filters`);
 
     const sp = getMmpScatterPlot(mmpInput, embedColsNames);
 
@@ -436,7 +439,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
 
     this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
-      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu); 
+      tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
 
     console.profileEnd('MMP');
   }
@@ -616,10 +619,10 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     const indexesAllTo = indexesPairs?.map((ip) => columns!.byName(MMP_NAMES.PAIRNUM_TO).get(ip));
     indexesAllFrom?.forEach((i) => grid.dataFrame.selection.set(i, true));
     indexesAllTo?.forEach((i) => grid.dataFrame.selection.set(i, true));
-    
+
     grid.setOptions({
-        pinnedRowValues: [molFrom, molTo],
-        pinnedRowColumnNames: [this.molecules!, this.molecules!],
+      pinnedRowValues: [molFrom, molTo],
+      pinnedRowColumnNames: [this.molecules!, this.molecules!],
     });
   }
 }
