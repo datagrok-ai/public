@@ -1,7 +1,7 @@
 import {Observable} from 'rxjs';
 import {IRuntimeController} from '../RuntimeController';
 import {ItemId, NqName, ItemPath, InputState, ItemPathArray} from '../data/common-types';
-import {PipelineInstanceConfig, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 
 //
 // Pipeline public configuration
@@ -12,18 +12,20 @@ export type StateItem = {
   type?: string;
 }
 
-export type PipelineGlobalId = {
-  globalId: string,
+export type LoadedPipelineToplevelNode = {
+  id: string,
+  nqName: string,
 }
 
 export type PipelineSelfRef = {
   type: 'selfRef',
   selfRef: string,
+  id: string,
 }
 
 // handlers
 
-export type LoadedPipeline = PipelineConfigurationInitial & PipelineGlobalId;
+export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
 
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R>) | NqName;
 export type Handler = HandlerBase<{ controller: IRuntimeController }, void>;
@@ -109,7 +111,6 @@ export type PipelineStepConfiguration<P, S> = {
 
 export type PipelineConfigurationBase<P> = {
   id: ItemId;
-  globalId?: string;
   nqName?: NqName;
   provider?: NqName;
   version?: string;
@@ -134,13 +135,12 @@ export type AbstractPipelineStaticConfiguration<P, S, R> = {
 // parallel pipeline
 
 export type ParallelItemContext<P> = {
-  id: ItemId;
   disableUIAdding?: boolean;
   selectorPath?: P;
   selectorExtractor?: SelectorKeyExtractor;
 };
 
-export type PipelineParallelItem<P, S, R> = (PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>;
+export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & ParallelItemContext<P>);
 
 export type AbstractPipelineParallelConfiguration<P, S, R> = {
   initialSteps?: StepParallelInitialConfig[];
@@ -151,11 +151,13 @@ export type AbstractPipelineParallelConfiguration<P, S, R> = {
 // sequential pipeline
 
 export type SequentialItemContext = {
-  id: ItemId;
   disableUIAdding?: boolean;
 };
 
-export type PipelineSequentialItem<P, S, R> = (PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext;
+export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & SequentialItemContext);
+
+
+// SequentialItemContext;
 
 export type AbstractPipelineSequentialConfiguration<P, S, R> = {
   initialSteps?: StepSequentialInitialConfig[];

@@ -4,8 +4,9 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {snapshotCompare} from '../../../test-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import { PipelineInstanceConfig, PipelineStateStatic, StepFunCallState } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import { expectDeepEqual } from '@datagrok-libraries/utils/src/expect';
+import {PipelineInstanceConfig, PipelineStateStatic, StepFunCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {LoadedPipeline} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 category('ComputeUtils: Driver state tree init', async () => {
   test('Process simple initial config', async () => {
@@ -15,18 +16,18 @@ category('ComputeUtils: Driver state tree init', async () => {
       steps: [
         {
           id: 'step1',
-          nqName: 'LibTests:TestAdd2'
+          nqName: 'LibTests:TestAdd2',
         },
         {
           id: 'step2',
           nqName: 'LibTests:TestMul2',
-        }
+        },
       ],
       links: [{
         id: 'link1',
         from: 'step1/res',
         to: 'step2/a',
-      }]
+      }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
@@ -52,7 +53,7 @@ category('ComputeUtils: Driver state tree init', async () => {
               id: 'stepAdd',
               nqName: 'LibTests:TestAdd2',
               friendlyName: 'add',
-            }
+            },
           ],
           initialSteps: [
             {
@@ -67,7 +68,7 @@ category('ComputeUtils: Driver state tree init', async () => {
             {
               id: 'stepAdd',
             },
-          ]
+          ],
         },
         {
           id: 'pipelinePar',
@@ -83,7 +84,7 @@ category('ComputeUtils: Driver state tree init', async () => {
               id: 'stepAdd',
               nqName: 'LibTests:TestAdd2',
               friendlyName: 'add',
-            }
+            },
           ],
           initialSteps: [
             {
@@ -98,8 +99,8 @@ category('ComputeUtils: Driver state tree init', async () => {
             {
               id: 'stepMul',
             },
-          ]
-        }
+          ],
+        },
       ],
     };
     const pconf = await getProcessedConfig(config);
@@ -109,9 +110,9 @@ category('ComputeUtils: Driver state tree init', async () => {
   });
 
   test('Process initial config with ref', async () => {
-    const config: PipelineConfiguration = {
+    const config: LoadedPipeline = {
       id: 'pipelineSeq',
-      globalId: 'MyPipelineGobalName',
+      nqName: 'mockNqName',
       type: 'sequential',
       stepTypes: [
         {
@@ -120,14 +121,13 @@ category('ComputeUtils: Driver state tree init', async () => {
           friendlyName: 'mul',
         },
         {
-          id: 'stepRef',
           type: 'ref',
-          provider: async (_p: any) => ({globalId: 'MyPipelineGobalName', ...config}),
-        }
+          provider: async (_p: any) => config,
+        },
       ],
       initialSteps: [{
         id: 'stepMul',
-      }]
+      }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
@@ -144,18 +144,18 @@ category('ComputeUtils: Driver init calls', async () => {
       steps: [
         {
           id: 'step1',
-          nqName: 'LibTests:TestAdd2'
+          nqName: 'LibTests:TestAdd2',
         },
         {
           id: 'step2',
           nqName: 'LibTests:TestMul2',
-        }
+        },
       ],
       links: [{
         id: 'link1',
         from: 'step1/res',
         to: 'step2/a',
-      }]
+      }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
@@ -163,11 +163,11 @@ category('ComputeUtils: Driver init calls', async () => {
     const state = tree.toState(true);
     (state as PipelineStateStatic).steps.map(
       (x) => {
-        if (!((x as StepFunCallState).funcCall instanceof DG.FuncCall)) {
+        if (!((x as StepFunCallState).funcCall instanceof DG.FuncCall))
           throw new Error(`funcCall is not an instance of DG.FuncCall`);
-        }
-      }
-    )
+
+      },
+    );
   });
 
   test('Init function calls options', async () => {
@@ -177,18 +177,18 @@ category('ComputeUtils: Driver init calls', async () => {
       steps: [
         {
           id: 'step1',
-          nqName: 'LibTests:TestAdd2'
+          nqName: 'LibTests:TestAdd2',
         },
         {
           id: 'step2',
           nqName: 'LibTests:TestMul2',
-        }
+        },
       ],
       links: [{
         id: 'link1',
         from: 'step1/res',
         to: 'step2/a',
-      }]
+      }],
     };
     const instanceConfig: PipelineInstanceConfig = {
       id: 'pipeline1',
@@ -205,12 +205,12 @@ category('ComputeUtils: Driver init calls', async () => {
           inputRestrictions: {
             'a': {
               assignedValue: 2,
-              type: 'disabled'
-            }
-          }
-        }
-      ]
-    }
+              type: 'disabled',
+            },
+          },
+        },
+      ],
+    };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromInstanceConfig(instanceConfig, pconf);
     await tree.init().toPromise();

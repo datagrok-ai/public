@@ -18,7 +18,7 @@
       "configId": "stepMul"
     },
     {
-      "configId": "stepRef"
+      "configId": "pipelineSeq"
     }
   ]
 }

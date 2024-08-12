@@ -64,8 +64,8 @@ export async function getProcessedConfig(conf: PipelineConfigurationInitial): Pr
 }
 
 async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines: Set<string>): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<ItemPathArray[], FuncallStateItem[]> | PipelineSelfRef> {
-  if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.globalId)
-    loadedPipelines.add(conf.globalId);
+  if (isPipelineConfigInitial(conf) && !isPipelineRefInitial(conf) && conf.nqName)
+    loadedPipelines.add(conf.nqName);
 
   if (isStepConfigInitial(conf)) {
     const pconf = await processStepConfig(conf);
@@ -93,9 +93,9 @@ async function configProcessing(conf: ConfigInitialTraverseItem, loadedPipelines
     return {...pconf, stepTypes};
   } else if (isPipelineRefInitial(conf)) {
     const pconf = await callHandler<LoadedPipeline>(conf.provider, conf).toPromise();
-    if (loadedPipelines.has(pconf.globalId))
-      return {selfRef: pconf.globalId, type: 'selfRef'};
-    loadedPipelines.add(pconf.globalId);
+    if (loadedPipelines.has(pconf.nqName))
+      return {id: pconf.id, selfRef: pconf.nqName, type: 'selfRef'};
+    loadedPipelines.add(pconf.nqName);
     return configProcessing(pconf, loadedPipelines);
   }
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);

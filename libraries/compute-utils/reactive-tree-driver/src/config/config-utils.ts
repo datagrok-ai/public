@@ -59,11 +59,10 @@ export function buildRefMap(config: PipelineConfigurationProcessed): Map<string,
     return item.stepTypes.map((item) => getNextItem(item, path)!).filter((x) => x);
   });
 
-  traverse(config, (res, item, path) => {
-    if (isPipelineConfig(item) && item.globalId) {
-      if (res.has(item.globalId))
-        throw new Error(`Duplicate globalId non-ref config ${item.globalId}, path ${path.join('/')}`);
-      res.set(item.globalId, item);
+  traverse(config, (res, item) => {
+    if (isPipelineConfig(item) && item.nqName) {
+      if (!res.has(item.nqName))
+        res.set(item.nqName, item);
     }
     return res;
   }, refMap);

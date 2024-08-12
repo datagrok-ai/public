@@ -8,6 +8,7 @@ import './tests/compute-utils/rich-function-view-tests';
 import './tests/compute-utils/reactive-tree-driver/config-processing';
 import './tests/compute-utils/reactive-tree-driver/instance-init';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
+import './tests/compute-utils/reactive-tree-driver/instance-mutations';
 
 export const _package = new DG.Package();
 export {tests};

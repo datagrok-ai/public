@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, identity, of, merge, Subject} from 'rxjs';
 import {delay, finalize, map, mapTo, toArray, concatMap} from 'rxjs/operators';
-import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
+import {NodePath, BaseTree, TreeNode, NodeAddressSegment} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {buildTraverseD} from '../data/traversable';
@@ -23,6 +23,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
 
   constructor(
     item: StateTreeNode,
+    private config: PipelineConfigurationProcessed,
     private mockMode = false,
   ) {
     super(item);
@@ -103,7 +104,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
     }));
   }
 
-  public moveBranch(uuid: string, pos: number) {
+  public moveMoveSubtree(uuid: string, pos: number) {
     return defer(() => {
       this.globalStructureLock();
       const data = this.find((item) => item.uuid === uuid);
@@ -112,49 +113,83 @@ export class StateTree extends BaseTree<StateTreeNode> {
       const [node, path] = data;
       this.removeBrunch(path);
       const ppath = path.slice(0, -1);
-      const segment = indexFromEnd(ppath)!;
-      this.attachBrunch(ppath, node, segment.id, pos);
+      this.attachBrunch(ppath, node, node.getItem().config.id, pos);
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
       this.emitNewState();
     }));
   }
 
-  public loadSubTree(id: string, uuid: string, config: PipelineConfigurationProcessed, pos?: number) {
-    let branch: PipelineNodeBase;
+  public removeSubtree(uuid: string) {
     return defer(() => {
       this.globalStructureLock();
-      const [root, _nqName, path] = this.findPipelineRootNode(uuid);
-      const tree = StateTree.load(id, config).pipe(
+      const data = this.find((item) => item.uuid === uuid);
+      if (data == null)
+        throw new Error(`Node uuid ${uuid} not found`);
+      const [, path] = data;
+      this.removeBrunch(path);
+    }).pipe(finalize(() => {
+      this.globalStructureUnlock();
+      this.emitNewState();
+    }));
+  }
+
+  public addSubTree(puuid: string, id: string, pos: number) {
+    return defer(() => {
+      this.globalStructureLock();
+      const refMap = buildRefMap(this.config);
+      const [_root, _nqName, path] = this.findPipelineRootNode(puuid);
+      const subConfPath = [...path.map((s) => s.id), id];
+      const subConfig = getConfigByInstancePath(subConfPath, this.config, refMap);
+      if (isPipelineStepConfig(subConfig))
+        this.attachBrunch(path, new TreeNode(new FuncCallNode(subConfig)), id, pos);
+      else
+        StateTree.fromConfig(this.config, subConfig, [...path, {id, idx: pos}], this, this.mockMode);
+    }).pipe(finalize(() => {
+      this.globalStructureUnlock();
+      this.emitNewState();
+    }));
+  }
+
+  public loadSubTree(puuid: string, stateId: string, id: string, pos: number) {
+    return defer(() => {
+      this.globalStructureLock();
+      const [_root, _nqName, path] = this.findPipelineRootNode(puuid);
+      const subPath = [...path, {id, idx: pos}];
+      const tree = StateTree.load(stateId, this.config, subPath, this.mockMode).pipe(
         concatMap((tree) => this.loadOrCreateCalls(tree)),
+      ).pipe(
+        map((tree) => this.attachBrunch(path, tree.root, id, pos)),
       );
-      branch = root.getItem() as PipelineNodeBase;
-      this.attachBrunch(path, root, branch.config.id, pos);
       return tree;
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
-      if (branch)
-        branch.isUpdating$.next(false);
       this.emitNewState();
     }));
   }
 
-  static load(id: string, config: PipelineConfigurationProcessed): Observable<StateTree> {
+  static load(id: string, config: PipelineConfigurationProcessed, startPath: Readonly<NodePath> = [], mockMode = false): Observable<StateTree> {
     return defer(async () => {
       const state = await loadInstanceState(id);
-      const tree = StateTree.fromState(state, config);
+      const tree = StateTree.fromState(state, config, startPath, undefined, mockMode);
       return tree;
     });
   }
 
-  static fromConfig(config: PipelineConfigurationProcessed, mockMode = false): StateTree {
+  static fromConfig(config: PipelineConfigurationProcessed, startNode = config, startPath: Readonly<NodePath> = [], currentState?: StateTree, mockMode = false): StateTree {
     const refMap = buildRefMap(config);
 
     // TODO: initial infinite cycles detection
-    const traverse = buildTraverseD([] as Readonly<NodePath>, (data: ConfigTraverseItem, path) => {
+    const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
       if (isPipelineParallelConfig(data) || isPipelineSequentialConfig(data)) {
         const items = (data?.initialSteps ?? []).map((step, idx) => {
-          const item = data.stepTypes.find((t) => t.id === step.id);
+          const item = data.stepTypes.find((t) => {
+            if (isPipelineSelfRef(t)) {
+              const derefedStep = refMap.get(t.selfRef);
+              return derefedStep?.id === step.id;
+            }
+            return t.id === step.id;
+          });
           if (!item)
             throw new Error(`Node ${step.id} not found on path ${JSON.stringify(path)}`);
           const nextPath = [...path, {id: step.id, idx}];
@@ -173,22 +208,22 @@ export class StateTree extends BaseTree<StateTreeNode> {
       return [] as const;
     }, new Set<ConfigTraverseItem>());
 
-    const tree = traverse(config, (acc, state, path) => {
-      const [node, ppath] = StateTree.makeTreeNode(config, refMap, path);
+    const tree = traverse(startNode, (acc, state, path) => {
+      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path);
       if (isFuncCallNode(node)) {
         if (!isPipelineStepConfig(state))
           throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
         node.initState(state);
       }
-      return StateTree.addTreeNode(acc, node, ppath, mockMode);
-    }, undefined as StateTree | undefined);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
+    }, currentState);
     return tree!;
   }
 
-  static fromState(state: PipelineSerializedState, config: PipelineConfigurationProcessed, mockMode = false): StateTree {
+  static fromState(state: PipelineSerializedState, config: PipelineConfigurationProcessed, startPath: Readonly<NodePath> = [], currentState?: StateTree, mockMode = false): StateTree {
     const refMap = buildRefMap(config);
 
-    const traverse = buildTraverseD([] as Readonly<NodePath>, (item: PipelineState, path) => {
+    const traverse = buildTraverseD(startPath, (item: PipelineState, path) => {
       if (isFuncCallState(item))
         return [];
       else
@@ -196,14 +231,14 @@ export class StateTree extends BaseTree<StateTreeNode> {
     });
 
     const tree = traverse(state, (acc, state, path) => {
-      const [node, ppath] = StateTree.makeTreeNode(config, refMap, path);
+      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path);
       if (isFuncCallNode(node)) {
         if (!isFuncCallState(state))
           throw new Error(`Wrong FuncCall state type ${state.type} on path ${JSON.stringify(path)}`);
         node.restoreState(state);
       }
-      return StateTree.addTreeNode(acc, node, ppath, mockMode);
-    }, undefined as StateTree | undefined);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
+    }, currentState);
     return tree!;
   }
 
@@ -222,10 +257,10 @@ export class StateTree extends BaseTree<StateTreeNode> {
     }, new Set<PipelineInstanceConfig>());
 
     const tree = traverse(instanceConfig, (acc, state, path) => {
-      const [node, ppath] = StateTree.makeTreeNode(config, refMap, path);
+      const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path);
       if (isFuncCallNode(node))
         node.initState(state);
-      return StateTree.addTreeNode(acc, node, ppath, mockMode);
+      return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
     }, undefined as StateTree | undefined);
     return tree!;
   }
@@ -237,14 +272,15 @@ export class StateTree extends BaseTree<StateTreeNode> {
       throw new Error(`Unable to find configuration node on path ${JSON.stringify(path)}`);
     const node = StateTree.makeNode(nodeConf);
     const ppath = path.slice(0, -1);
-    return [node, ppath] as const;
+    const idx = indexFromEnd(path)?.idx ?? 0;
+    return [node, ppath, idx] as const;
   }
 
-  private static addTreeNode(acc: StateTree | undefined, node: StateTreeNode, ppath: NodePath, mockMode: boolean) {
+  private static addTreeNodeOrCreate(acc: StateTree | undefined, config: PipelineConfigurationProcessed, node: StateTreeNode, ppath: NodePath, pos: number, mockMode: boolean) {
     if (acc)
-      acc.addItem(ppath, node, node.config.id);
+      acc.addItem(ppath, node, node.config.id, pos);
     else
-      return new StateTree(node, mockMode);
+      return new StateTree(node, config, mockMode);
     return acc;
   }
 

@@ -1,0 +1,51 @@
+{
+  "configId": "pipelinePar",
+  "uuid": "",
+  "type": "parallel",
+  "steps": [
+    {
+      "configId": "pipeline1",
+      "uuid": "",
+      "nqName": "LibTests:MockWrapper1",
+      "type": "static",
+      "steps": [
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestAdd2",
+          "configId": "step1",
+          "isOuputOutdated": false,
+          "isCurrent": false
+        },
+        {
+          "type": "funccall",
+          "uuid": "",
+          "nqName": "LibTests:TestMul2",
+          "configId": "step2",
+          "isOuputOutdated": false,
+          "isCurrent": false
+        }
+      ]
+    },
+    {
+      "type": "funccall",
+      "uuid": "",
+      "nqName": "LibTests:TestAdd2",
+      "configId": "stepAdd",
+      "friendlyName": "add",
+      "isOuputOutdated": false,
+      "isCurrent": false
+    }
+  ],
+  "stepTypes": [
+    {
+      "configId": "stepAdd"
+    },
+    {
+      "configId": "stepMul"
+    },
+    {
+      "configId": "pipeline1"
+    }
+  ]
+}

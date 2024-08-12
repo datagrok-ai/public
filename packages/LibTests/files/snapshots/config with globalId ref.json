@@ -1,6 +1,6 @@
 {
   "id": "pipelineSeq",
-  "globalId": "MyPipelineGobalName",
+  "nqName": "mockNqName",
   "type": "sequential",
   "stepTypes": [
     {
@@ -27,9 +27,9 @@
       "actions": []
     },
     {
-      "id": "stepRef",
       "type": "selfRef",
-      "selfRef": "MyPipelineGobalName"
+      "id": "pipelineSeq",
+      "selfRef": "mockNqName"
     }
   ],
   "actions": [],

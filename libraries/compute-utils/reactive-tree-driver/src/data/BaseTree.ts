@@ -17,12 +17,13 @@ export type NodePath = {
 }[];
 
 export class BaseTree<T> {
-  protected root = new TreeNode(this.item);
+  protected root: TreeNode<T>;
 
   public traverse = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
 
-
-  constructor(private item: T) {}
+  constructor(item: T) {
+    this.root = new TreeNode(item);
+  }
 
   addItem(paddress: Readonly<NodeAddress>, item: T, id: string, idx?: number) {
     const nodeSeq = this.getNodesFromAddress(paddress);

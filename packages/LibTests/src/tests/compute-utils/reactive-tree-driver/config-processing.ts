@@ -3,6 +3,7 @@ import {category, test, before, delay} from '@datagrok-libraries/utils/src/test'
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {snapshotCompare} from '../../../test-utils';
+import {LoadedPipeline, LoadedPipelineToplevelNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 category('ComputeUtils: Driver config processing', async () => {
   before(async () => {});
@@ -14,18 +15,18 @@ category('ComputeUtils: Driver config processing', async () => {
       steps: [
         {
           id: 'step1',
-          nqName: 'LibTests:TestAdd2'
+          nqName: 'LibTests:TestAdd2',
         },
         {
           id: 'step2',
           nqName: 'LibTests:TestMul2',
-        }
+        },
       ],
       links: [{
         id: 'link1',
         from: 'step1/res',
         to: 'step2/a',
-      }]
+      }],
     };
     const pconf = await getProcessedConfig(config);
     await snapshotCompare(pconf, 'simple static config');
@@ -49,7 +50,7 @@ category('ComputeUtils: Driver config processing', async () => {
               id: 'stepAdd',
               nqName: 'LibTests:TestAdd2',
               friendlyName: 'add',
-            }
+            },
           ],
         },
         {
@@ -66,19 +67,19 @@ category('ComputeUtils: Driver config processing', async () => {
               id: 'stepAdd',
               nqName: 'LibTests:TestAdd2',
               friendlyName: 'add',
-            }
-          ]
-        }
+            },
+          ],
+        },
       ],
-    }
+    };
     const pconf = await getProcessedConfig(config);
     await snapshotCompare(pconf, 'static config with dynamic pipelines');
   });
 
   test('Process config with globalId ref', async () => {
-    const config: PipelineConfiguration = {
+    const config: LoadedPipeline = {
       id: 'pipelineSeq',
-      globalId: 'MyPipelineGobalName',
+      nqName: 'mockNqName',
       type: 'sequential',
       stepTypes: [
         {
@@ -87,11 +88,10 @@ category('ComputeUtils: Driver config processing', async () => {
           friendlyName: 'mul',
         },
         {
-          id: 'stepRef',
           type: 'ref',
-          provider: async (_p: any) => ({globalId: 'MyPipelineGobalName', ...config}),
-        }
-      ]
+          provider: async (_p: any) => config,
+        },
+      ],
     };
     const pconf = await getProcessedConfig(config);
     await snapshotCompare(pconf, 'config with globalId ref');

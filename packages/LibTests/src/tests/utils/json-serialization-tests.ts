@@ -18,7 +18,7 @@ category('Utils: jsonSerialization', async () => {
       DG.Column.fromList('string', 'a', ['a', 'b']),
       DG.Column.fromList('double', 'b', [1.0, 2.2]),
     ])};
-    const results = deserialize(serialize(initial, { useJsonDF: true }));
+    const results = deserialize(serialize(initial, {useJsonDF: true}));
     expectDeepEqual(results, initial);
   });
 
