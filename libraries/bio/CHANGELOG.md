@@ -10,7 +10,6 @@
 
 * Fix cell renderer base dirty flag and reset
 
-
 ## 5.42.6 (2024-07-29)
 
 ### Features
