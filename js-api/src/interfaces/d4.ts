@@ -1479,6 +1479,8 @@ export interface IPieChartSettings {
 
   innerLabelColor: number;
 
+  missingValueColor: number;
+
   showInnerPercent: boolean;
 
   showInnerLabel: boolean;
