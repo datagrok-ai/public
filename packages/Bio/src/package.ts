@@ -40,7 +40,8 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
-import {getMonomerLibraryManagerLink, showManageLibrariesDialog} from './utils/monomer-lib/library-file-manager/ui';
+import {getMonomerLibraryManagerLink, showManageLibrariesDialog,
+  showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -76,9 +77,9 @@ import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/b
 
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
+import { calculateScoresWithEmptyValues } from './utils/calculate-scores';
+import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
 
 export const _package = new BioPackage(/*{debug: true}/**/);
 
@@ -409,6 +410,14 @@ export function getRegion(
 ): DG.Column<string> {
   return getRegionDo(sequence,
     start ?? null, end ?? null, name ?? null);
+}
+
+//top-menu: Bio | Manage | Monomers
+//name: manageMonomersView
+//description: Edit and create monomers
+export async function manageMonomersView() {
+  const monomerManager = await MonomerManager.getInstance();
+  await monomerManager.getViewRoot();
 }
 
 //top-menu: Bio | Convert | Get Region...
@@ -893,11 +902,16 @@ export async function sequenceSimilarityScoring(
 }
 
 
-//top-menu: Bio | Manage | Monomer Libraries
 //name: Manage Monomer Libraries
 //description: Manage HELM monomer libraries
 export async function manageMonomerLibraries(): Promise<void> {
   showManageLibrariesDialog();
+}
+
+//top-menu: Bio | Manage | Monomer Libraries
+//name: Manage Monomer Libraries View
+export async function manageLibrariesView(): Promise<void> {
+  await showManageLibrariesView();
 }
 
 //name: saveAsFasta

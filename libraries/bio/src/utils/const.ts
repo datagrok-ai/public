@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -10,6 +11,9 @@ import HELM_MONOMER_TYPE = MonomerTypes;
 import {RGroup} from '../types';
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
+
+export {PolymerTypes, MonomerTypes};
+
 
 /** Required HELM library monomer fields:
  * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
@@ -95,7 +99,18 @@ export const DUMMY_MONOMER = {
   'id': 0,
   'polymerType': 'PEPTIDE' as PolymerType,
   'symbol': ''
+} as const;
+
+export const MonomerInputProperties: {[key: string]: DG.Property} = {
+  'monomerType': DG.Property.js('monomerType', DG.TYPE.STRING, {choices: [MonomerTypes.BACKBONE, MonomerTypes.BRANCH, MonomerTypes.TERMINAL]}),
+  'molecule': DG.Property.fromOptions({name: 'molecule', type: DG.InputType.Molecule}),
+  'name': DG.Property.js('name', DG.TYPE.STRING),
+  'naturalAnalog': DG.Property.js('naturalAnalog', DG.TYPE.STRING),
+  'id': DG.Property.js('id', DG.TYPE.INT),
+  'polymerType': DG.Property.js('polymerType', DG.TYPE.STRING, {choices: [PolymerTypes.RNA, PolymerTypes.PEPTIDE, PolymerTypes.CHEM, PolymerTypes.BLOB, PolymerTypes.G]}),
+  'symbol': DG.Property.js('symbol', DG.TYPE.STRING),
 };
+
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;

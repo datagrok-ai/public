@@ -82,6 +82,17 @@ export class MonomerLibManager implements IMonomerLibHelper {
   getMonomerSets(): IMonomerSet {
     return this._monomerSets;
   }
+  get duplicateMonomers() {
+    return this._monomerLib.duplicateMonomers;
+  }
+
+  get duplicatesHandled() {
+    return this._monomerLib.duplicatesHandled;
+  }
+
+  assignDuplicatePreferances(settings: UserLibSettings) {
+    this._monomerLib.assignDuplicatePreferances(settings);
+  }
 
   /** Instance promise of {@link getFileManager} */
   private _fileManagerPromise?: Promise<MonomerLibFileManager>;
