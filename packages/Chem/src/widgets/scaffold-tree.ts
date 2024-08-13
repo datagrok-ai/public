@@ -64,7 +64,7 @@ interface ScaffoldLayout {
   scaffoldJson: string;
 }
 
-function value(node: TreeViewNode): ITreeNode {
+export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
 }
 
@@ -284,7 +284,7 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = (e) => ui.tooltip.hide();
 }
 
-async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
+export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
   const visibleNodes = getVisibleNodes(thisViewer);
 
   for (const group of visibleNodes) {
@@ -816,7 +816,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
-  private openEditSketcher(group: TreeViewGroup) {
+  public openEditSketcher(group: TreeViewGroup) {
     if (this.wrapper !== null) {
       this.wrapper.node = group;
       return;

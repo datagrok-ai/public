@@ -4,7 +4,7 @@ import {category, test, before, after, awaitCheck, delay, expect} from '@datagro
 import {_package} from '../package-test';
 import {createTableView, readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
+import {ScaffoldTreeViewer, updateVisibleNodes, value} from '../widgets/scaffold-tree';
 
 category('scaffold tree', () => {
   before(async () => {
@@ -34,19 +34,16 @@ category('scaffold tree', () => {
     tv.close();
   }, {timeout: 70000, benchmark: true, stressTest: true});
 
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
-
   test('parent node contains H atom', async () => {
     const tv = await createTableView('mol1K.csv');
     const scaffoldTree = new ScaffoldTreeViewer();
     const table = tv.dataFrame;
+    await delay(1000);
     
     scaffoldTree.dataFrame = table;
     scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
     tv.dockManager.dock(scaffoldTree.root);
+    await delay(1000);
   
     const molStr = 'Nc1ccccc1';
     const rootGroup = await scaffoldTree.createGroup(molStr, scaffoldTree.tree);
@@ -66,5 +63,47 @@ category('scaffold tree', () => {
     expect(warningExists, false);
     expect(isRedLabel, false);
   });
+
+  test('edit invalid structure', async () => {
+    const tv = await createTableView('mol1K.csv');
+    const scaffoldTree = new ScaffoldTreeViewer();
+    const table = tv.dataFrame;
   
+    scaffoldTree.dataFrame = table;
+    scaffoldTree.molCol = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    tv.dockManager.dock(scaffoldTree.root);
+  
+    // Add valid structure and validate
+    const molStr = 'c1ccccc1';
+    const rootGroup = await scaffoldTree.createGroup(molStr, scaffoldTree.tree);
+    await updateVisibleNodes(scaffoldTree);
+    rootGroup?.checkBox?.click();
+    expect(table.filter.trueCount, 928);
+  
+    // Edit to invalid structure
+    const invalidSmiles = 'CC(C)(C)(C)(C)c1ccccc1';
+    await editStructure(scaffoldTree, rootGroup!, invalidSmiles);
+    await scaffoldTree.updateFilters();
+    expect(table.filter.trueCount, 0);
+  
+    // Revert to valid structure
+    await editStructure(scaffoldTree, rootGroup!, molStr);
+    await scaffoldTree.updateFilters();
+    expect(table.filter.trueCount, 928);
+  });
+  
+  async function editStructure(scaffoldTree: ScaffoldTreeViewer, group: DG.TreeViewGroup, smiles: string) {
+    await scaffoldTree.openEditSketcher(group);
+    scaffoldTree.wrapper?.sketcher.setSmiles(smiles);
+    const saveButton = scaffoldTree.wrapper?.dialog.root.querySelector('button[name="button-Save"]') as HTMLElement;
+    const valueGroup = value(group);
+    valueGroup.smiles = smiles;
+    saveButton.click();
+    await updateVisibleNodes(scaffoldTree);
+  }
+  
+  after(async () => {
+    grok.shell.closeAll();
+    DG.Balloon.closeAll();
+  });
 });
