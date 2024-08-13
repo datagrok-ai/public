@@ -2414,6 +2414,9 @@ export interface ICorrelationPlotSettings {
   /// Shows the tooltip with the corresponding scatter plot inside.
   showTooltip: boolean;
 
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
+
   backColor: number;
 
   /// Determines the rows shown on the plot.
