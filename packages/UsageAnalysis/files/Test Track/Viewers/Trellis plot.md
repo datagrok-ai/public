@@ -29,6 +29,23 @@
 7. Trellis plot "Tooltip" submenu testinng (main focus on options: Hide, Edit, Use a group tooltip, use as group tooltip, remove group tooltip)
 * Changes to the properties should be reflected in the Trellis plot viewer without errors, and the viewer should be updated accordingly. 
 
+8. **Floating viewer** after applying layout:
+  * Open new **demog** dataset.
+  * Adjust Screen Zoom: Zoom out the screen.
+  * Add and Move Viewer: Add a Trellis plot viewer. Detach the viewer and move it to the bottom of the screen.
+  * Save the current layout.
+  * Reset Screen Zoom: Zoom in the screen to its original size.
+  * Apply the previously saved layout.
+Expected Results:
+  * The layout should automatically adjust to fit the current screen size.
+  * All viewers should remain accessible and properly positioned on the screen.
+
+9. **Split updates in properties**. 
+  * Test on the SPGI dataset with opened new Trellis plot viewer: 
+    * Open the Trellis plot's properties panel.
+    * Add or remove X or Y column from the  Trellis plot itself.
+    * Check the number of X or Y columns in the properties panel.
+  * **Expected results**: number of selected columns in properties should be updated immediately on adding or removing a column.
 ---
 {
   "order": 13

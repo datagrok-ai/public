@@ -31,7 +31,30 @@
 10. Formula lines
 11. Line chart: Custom tooltip [#2357](https://github.com/datagrok-ai/public/issues/2357)
 12. [#2623](https://github.com/datagrok-ai/public/issues/2623) Line chart: implement the one-click way to set the Split by columns
----
+13. **Color legend**:
+  * In opened line chart viewer with two or more splits set. Inspect the color legend displayed in the viewer:
+  * Expected result: Visually confirm that the colors in the legend match the colors on the corresponding lines in the viewer. The color legend should be clear and distinguishable, with no two lines sharing the same color unless intended.
+14. **Color-coding while setting filters**:
+  * Open the SPGI dataset. Open the Line Chart viewer. Double-click on any line in the viewer to open a detailed line graph.
+  * **Configure Viewer**:
+    * Splits: Set "Primary Series Name" and "Series".
+    * X-Axis: Set to "Stereo Category".
+    * Y-Axis: Set to (avg) "Average Mass".
+  * Apply Filters:
+    * Open Filters Pane. Find "Primary Series Name" filter. 
+    * Toggle the check-boxes for the "Primary Series Name" filter on and off.
+  * **Expected Result**: Colors in the legend should match consistently with the colors of the corresponding lines in the viewer, both before and after applying filters.
+15. **Split updates in properties**. 
+  * Test on the SPGI dataset with opened new Line Chart viewer: 
+    * Open the Line Chart's properties panel.
+    * Add or remove split columns directly from the Line Chart viewer.
+    * Check the number of selected columns in the properties panel.
+  * **Expected results**: number of selected columns in properties should be updated immediately on adding or removing a column.
+
+
+
+
+---  
 {
   "order": 5
 }
