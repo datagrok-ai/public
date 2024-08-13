@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.32 (2024-08-13)
+
+Add XGBoost to predictive modeling tools
+
 ## 1.1.31 (2024-08-06)
 
 Add MCL layout with force directed graph and atlas
