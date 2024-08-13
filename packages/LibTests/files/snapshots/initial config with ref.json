@@ -1,6 +1,7 @@
 {
   "configId": "pipelineSeq",
   "uuid": "",
+  "nqName": "mockNqName",
   "type": "sequential",
   "steps": [
     {

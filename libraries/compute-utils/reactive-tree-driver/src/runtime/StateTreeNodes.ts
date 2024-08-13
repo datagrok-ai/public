@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-import { isFuncCallState, PipelineInstanceConfig, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import { isFuncCallState, PipelineInstanceBase, PipelineInstanceConfig, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
@@ -114,6 +114,9 @@ export class PipelineNodeBase implements IStoreProvider {
     const state = {
       configId: this.config.id,
       uuid: this.uuid,
+      provider: this.config.provider,
+      version: this.config.version,
+      nqName: this.config.nqName,
     };
     if (disableUUID)
       state.uuid = '';

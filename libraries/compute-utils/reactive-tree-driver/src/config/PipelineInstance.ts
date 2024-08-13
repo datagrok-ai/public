@@ -106,8 +106,9 @@ export type PipelineInstanceBase<S> = {
   configId: string;
   isReadonly?: boolean;
   friendlyName?: string;
-  provider?: NqName;
-  nqName?: string;
+  provider: NqName | undefined;
+  version: string | undefined;
+  nqName: string | undefined;
 } & S;
 
 // static

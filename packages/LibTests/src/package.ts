@@ -275,6 +275,7 @@ export async function MockProvider1(params: any) {
     id: 'pipeline1',
     nqName: 'LibTests:MockWrapper1',
     provider: 'LibTests:MockProvider1',
+    version: '1.0',
     type: 'static',
     steps: [
       {
@@ -305,6 +306,7 @@ export async function MockProvider2(params: any) {
     id: 'pipelinePar',
     nqName: 'LibTests:MockWrapper2',
     provider: 'LibTests:MockProvider2',
+    version: '1.0',
     type: 'parallel',
     stepTypes: [{
       id: 'stepAdd',
@@ -341,6 +343,7 @@ export async function MockProvider3(params: any) {
     id: 'pipelinePar',
     nqName: 'LibTests:MockWrapper3',
     provider: 'LibTests:MockProvider3',
+    version: '1.0',
     type: 'parallel',
     stepTypes: [{
       type: 'ref',
