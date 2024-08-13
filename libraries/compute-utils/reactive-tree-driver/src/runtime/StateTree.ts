@@ -52,17 +52,17 @@ export class StateTree extends BaseTree<StateTreeNode> {
         if (isFuncCallNode(item)) {
           if (item.instancesWrapper.isRunning$.value || item.instancesWrapper.isLoading$.value)
             throw new Error(`FuncCall node ${item.uuid} saving during being updated`);
-          const wrapper = item.instancesWrapper.getInstance();
-          if (wrapper == null)
+          const inst = item.instancesWrapper.getInstance();
+          if (inst == null)
             throw new Error(`FuncCall node ${item.uuid} has no instance`);
           item.instancesWrapper.isLoading$.next(true);
           if (this.mockMode) {
-            const obs$ = of(wrapper).pipe(mockDelay ? delay(mockDelay) : identity).pipe(
+            const obs$ = of(inst).pipe(mockDelay ? delay(mockDelay) : identity).pipe(
               map((adapter) => [item, adapter] as const),
             );
             return [...acc, obs$];
           } else {
-            const obs$ = defer(() => saveFuncCall(wrapper)).pipe(map((nextCall) => [item, new FuncCallAdapter(nextCall)] as const));
+            const obs$ = defer(() => saveFuncCall(inst)).pipe(map((nextCall) => [item, new FuncCallAdapter(nextCall)] as const));
             return [...acc, obs$];
           }
         } else {
@@ -209,11 +209,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
 
     const tree = traverse(state, (acc, state, path) => {
       const [node, ppath, idx] = StateTree.makeTreeNode(config, refMap, path);
-      if (isFuncCallNode(node)) {
-        if (!isFuncCallState(state))
-          throw new Error(`Wrong FuncCall state type ${state.type} on path ${JSON.stringify(path)}`);
-        node.restoreState(state);
-      }
+      node.restoreState(state);
       return StateTree.addTreeNodeOrCreate(acc, config, node, ppath, idx, mockMode);
     }, startState);
     return tree!;
@@ -245,8 +241,6 @@ export class StateTree extends BaseTree<StateTreeNode> {
   private static makeTreeNode(config: PipelineConfigurationProcessed, refMap: Map<string, PipelineConfigurationProcessed>, path: Readonly<NodePath>) {
     const confPath = path.map((p) => p.id);
     const nodeConf = getConfigByInstancePath(confPath, config, refMap);
-    if (nodeConf == null)
-      throw new Error(`Unable to find configuration node on path ${JSON.stringify(path)}`);
     const node = StateTree.makeNode(nodeConf);
     const ppath = path.slice(0, -1);
     const idx = indexFromEnd(path)?.idx ?? 0;

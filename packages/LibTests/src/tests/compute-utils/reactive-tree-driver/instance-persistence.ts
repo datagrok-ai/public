@@ -5,7 +5,6 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {isFuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 category('ComputeUtils: Driver state tree persistence', async () => {
   test('Load and save simple config', async () => {
@@ -13,11 +12,13 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
     await tree.init().toPromise();
-    const sc = tree.toSerializedState(true);
+    const sc = tree.toSerializedState();
     const id = await tree.save().toPromise();
     const loadedTree = await StateTree.load(id, pconf).toPromise();
     await loadedTree.init().toPromise();
-    const lc = loadedTree.toSerializedState(true);
+    const lc = loadedTree.toSerializedState();
+    console.log(sc);
+    console.log(lc);
     expectDeepEqual(lc, sc);
   });
 
@@ -27,7 +28,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
     await tree.init().toPromise();
-    const sc = tree.toSerializedState(true);
+    const sc = tree.toSerializedState();
     const dbId = await tree.save().toPromise();
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {}).toPromise();
@@ -38,7 +39,7 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const root = outerTree.getItem([]);
     await outerTree.loadSubTree(root.uuid, dbId, 'pipelinePar', 1).toPromise();
     const loadedTree = outerTree.getNode([{idx: 1}]);
-    const lc = StateTree.toStateRec(loadedTree, {isSerialized: true, disableUUID: true});
+    const lc = StateTree.toStateRec(loadedTree, {isSerialized: true, disableUUID: false});
     expectDeepEqual(lc, sc);
   });
 
@@ -49,14 +50,14 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const outerTree = StateTree.fromConfig(outerPconf);
     await outerTree.init().toPromise();
     const nestedRoot = outerTree.getNode([{idx: 0}]);
-    const sc = StateTree.toStateRec(nestedRoot, {isSerialized: true, disableUUID: true});
+    const sc = StateTree.toStateRec(nestedRoot, {isSerialized: true, disableUUID: false});
     // save nested pipeline
     const dbId = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
     const pconf = await getProcessedConfig(config);
     const loadedTree = await StateTree.load(dbId, pconf).toPromise();
     await loadedTree.init().toPromise();
-    const lc = loadedTree.toSerializedState(true);
+    const lc = loadedTree.toSerializedState();
     expectDeepEqual(lc, sc);
   });
 

@@ -3,11 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import { isFuncCallState, PipelineInstanceConfig, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
-import {PipelineStepConfigurationProcessed} from '../config/config-utils';
+import { isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 
 
 export interface IStoreProvider {
@@ -15,7 +15,7 @@ export interface IStoreProvider {
 }
 
 export class FuncCallNode implements IStoreProvider {
-  public readonly uuid = uuidv4();
+  public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
   public instancesWrapper = new FuncCallInstancesBridge();
@@ -33,10 +33,13 @@ export class FuncCallNode implements IStoreProvider {
     return this.instancesWrapper;
   }
 
-  restoreState(state: StepFunCallState) {
+  restoreState(state: PipelineState) {
+    if (!isFuncCallState(state))
+      throw new Error(`Wrong FuncCall node state ${JSON.stringify(state)}`);
     this.instancesWrapper.isOutputOutdated$.next(!!state.isOuputOutdated);
     this.instancesWrapper.isCurrent$.next(!!state.isCurrent);
     this.pendingId = state.funcCallId;
+    this.uuid = state.uuid;
   }
 
   initState(initialConfig: StepFunCallInitialConfig) {
@@ -81,7 +84,7 @@ export class FuncCallNode implements IStoreProvider {
 }
 
 export class PipelineNodeBase implements IStoreProvider {
-  public readonly uuid = uuidv4();
+  public uuid = uuidv4();
   private store: MemoryStore;
 
   public isUpdating$ = new BehaviorSubject(false);
@@ -95,6 +98,12 @@ export class PipelineNodeBase implements IStoreProvider {
 
   setLoading(val: boolean) {
     this.isUpdating$.next(val);
+  }
+
+  restoreState(state: PipelineState) {
+    if (isFuncCallState(state))
+      throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
+    this.uuid = state.uuid;
   }
 
   getStateStore() {
