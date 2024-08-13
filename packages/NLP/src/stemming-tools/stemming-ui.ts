@@ -40,7 +40,7 @@ export function modifyMetric(df: DG.DataFrame): void {
     }
   };
 
-  const colsInput = ui.input.columns('Features', {table: df, onValueChanged: (input) => onColumnsChanged(input.value), checked: initCheckedCols});
+  const colsInput = ui.input.columns('Features', {value: df.columns.byNames(initCheckedCols), table: df, onValueChanged: (input) => onColumnsChanged(input.value)});
   colsInput.setTooltip('Features used in computing similarity measure.');
   dlg.add(ui.h3('Source'));
   dlg.add(colsInput);

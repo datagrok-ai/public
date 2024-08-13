@@ -128,7 +128,7 @@ category('Widgets: Mutation cliffs', () => {
   after(async () => await delay(3000));
 
   test('UI', async () => {
-    const sarViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    const sarViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
     sarViewer.keyPressed = true; //required to emulate cell selection
     sarViewer._viewerGrid!.dataFrame.currentCell = sarViewer._viewerGrid?.dataFrame.cell(0, '1')!;
     await delay(1000);

@@ -79,7 +79,7 @@ export enum PROPERTY_CATEGORIES {
 }
 
 const MUTATION_CLIFFS_CELL_WIDTH = 40;
-const AAR_CELL_WIDTH = 30;
+const AAR_CELL_WIDTH = 40;
 
 export interface ISARViewer {
   sequenceColumnName: string;
@@ -223,7 +223,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     else if (this instanceof MonomerPosition)
       this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION);
+      this._positionColumns = getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
 
     this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.LOGO_SUMMARY_TABLE) ??
@@ -269,7 +269,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     else if (this instanceof MonomerPosition)
       this._monomerPositionStats = getSharedStats(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._monomerPositionStats = getSharedStats(VIEWER_TYPE.MONOMER_POSITION);
+      this._monomerPositionStats = getSharedStats(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
 
     const targetCol = this.targetColumnName ? this.dataFrame.col(this.targetColumnName) : null;
@@ -319,7 +319,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     if (this instanceof MonomerPosition)
       this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.MOST_POTENT_RESIDUES);
     else if (this instanceof MostPotentResidues)
-      this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.MONOMER_POSITION);
+      this._mutationCliffs = getSharedMutationCliffs(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
 
 
     return this._mutationCliffs;
@@ -370,10 +370,10 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     this._mutationCliffsSelection = selection;
     const tagSuffix = this instanceof MonomerPosition ? C.SUFFIXES.MP : C.SUFFIXES.MPR;
     this.dataFrame.setTag(`${tagSuffix}${C.TAGS.MUTATION_CLIFFS_SELECTION}`, JSON.stringify(selection));
-    this.model.fireBitsetChanged(this instanceof MonomerPosition ? VIEWER_TYPE.MONOMER_POSITION :
+    this.model.fireBitsetChanged(this instanceof MonomerPosition ? VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP :
       VIEWER_TYPE.MOST_POTENT_RESIDUES);
 
-    const mpViewer = this.model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const mpViewer = this.model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     mpViewer?.viewerGrid.invalidate();
     const mprViewer = this.model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     mprViewer?.viewerGrid.invalidate();
@@ -597,7 +597,7 @@ export class MonomerPosition extends SARViewer {
    * @return - viewer name.
    */
   get name(): string {
-    return VIEWER_TYPE.MONOMER_POSITION;
+    return VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP;
   }
 
   /**
@@ -637,7 +637,7 @@ export class MonomerPosition extends SARViewer {
   set invariantMapSelection(selection: type.Selection) {
     this._invariantMapSelection = selection;
     this.dataFrame.setTag(`${C.SUFFIXES.MP}${C.TAGS.INVARIANT_MAP_SELECTION}`, JSON.stringify(selection));
-    this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
+    this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
     this.model.analysisView.grid.invalidate();
   }
 
@@ -913,7 +913,7 @@ export class MonomerPosition extends SARViewer {
         return;
 
 
-      this.model.fireBitsetChanged(VIEWER_TYPE.MONOMER_POSITION);
+      this.model.fireBitsetChanged(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP);
       grid.invalidate();
     });
     grid.root.addEventListener('click', (ev) => {
@@ -1015,7 +1015,7 @@ export class MonomerPosition extends SARViewer {
 
     $(this.root).empty();
     let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
-    if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
+    if (this.name === VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) {
       const mutationCliffsMode = ui.input.bool(SELECTION_MODE.MUTATION_CLIFFS,
         {value: this.mode === SELECTION_MODE.MUTATION_CLIFFS});
       mutationCliffsMode.root.addEventListener('click', () => {
@@ -1048,12 +1048,12 @@ export class MonomerPosition extends SARViewer {
     viewerRoot.style.width = 'auto';
     // expand button
     const expand = ui.iconFA('expand-alt', () => {
-      const dialog = ui.dialog('Monomer Position');
+      const dialog = ui.dialog();
       dialog.add(ui.divV([switchHost, viewerRoot], {style: {height: '100%'}}));
       dialog.onCancel(() => this.render());
       dialog.showModal(true);
       this.viewerGrid.invalidate();
-    }, 'Show Monomer Position Table in full screen');
+    }, 'Show Sequence Variability Map Table in full screen');
     $(expand).addClass('pep-help-icon');
     this.targetColumnInput && (this.targetColumnInput.root.style.width = '50%');
     const targetInputsHost = ui.divH([this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],

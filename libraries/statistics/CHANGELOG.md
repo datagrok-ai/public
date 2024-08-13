@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.3.6 (2024-08-13)
+
+### Features
+
+* Added exponential fit function
+
 ## 1.3.5 (2024-05-23)
 
 ### Bug fixes

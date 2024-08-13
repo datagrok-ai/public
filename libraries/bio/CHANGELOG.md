@@ -1,5 +1,15 @@
 # bio changelog
 
+## 5.42.7 (2024-08-12)
+
+### Features
+
+* Monomer sets defined with .json files
+
+### Bug fixes
+
+* Fix cell renderer base dirty flag and reset
+
 ## 5.42.6 (2024-07-29)
 
 ### Features

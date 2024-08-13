@@ -34,7 +34,7 @@ category('chemprop', () => {
     const column = await applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv());
         
     expect(column.length, 30);
-  });
+  }, {stressTest: true});
 });
 
 function getParameterValues() {

@@ -17,7 +17,7 @@ import {DemoAppWidget} from './demo-app/widget';
 export const _package = new DG.Package();
 
 const tracks: Track[] = [];
-const PATH_START_INDEX: number = 4;
+const PATH_START_INDEX: number = 5;
 
 //name: Tutorials
 //tags: app
@@ -106,22 +106,33 @@ export async function tutorialsInit() {
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
 //meta.icon: images/icons/demoapp-icon.png
-export function demoApp() {
+//output: view v
+export function demoApp(): DG.ViewBase {
   let pathSegments = window.location.pathname.split('/');
   if (!pathSegments[pathSegments.length - 1])
     pathSegments.splice(pathSegments.length - 1, 1);
 
+  if (grok.shell.view('Browse') === undefined)
+    grok.shell.v = DG.View.createByType('browse');
   const demoView = new DemoView();
-  grok.shell.addView(demoView);
-
   if (pathSegments.length > PATH_START_INDEX) {
     const pathElements = pathSegments.slice(PATH_START_INDEX, pathSegments.length)
       .map((elem) => elem.replaceAll('%20', ' '));
     const path = pathElements.join('/');
 
     const func = DemoView.findDemoFunc(pathElements.join(' | '));
-    func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
+    setTimeout(() => {
+      func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
+    }, 1);
   }
+
+  return demoView;
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowseView) {
+  new DemoView();
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {
@@ -137,7 +148,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
   };
 
   for (const property in properties) {
-    if (property in registry && properties[property] === true)
+    if (property in registry && properties[property])
       tracks.push(registry[property]);
   }
 }
@@ -364,14 +375,14 @@ export async function _tableLinkingDemo() {
   const TABLE2_PATH = 'files/demog.csv';
   const HELP_URL = '/help/transform/link-tables';
 
-	const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
+  const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
   const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
 	
-	grok.shell.addTableView(demog);
-	const demogTypesTableView = grok.shell.addTableView(demogTypes);
+  grok.shell.addTableView(demog);
+  const demogTypesTableView = grok.shell.addTableView(demogTypes);
 
-	grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
-		[DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
+  grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
+    [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
   const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: 'Table'});
   demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, 'demog', 0.7);
   

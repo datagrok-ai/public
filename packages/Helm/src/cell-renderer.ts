@@ -14,7 +14,7 @@ import {HelmMonomerPlacer} from './helm-monomer-placer';
 import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 import {JSDraw2HelmModule} from './types';
 
-import {getMonomerLib} from './package';
+import {_package} from './package';
 
 declare const JSDraw2: JSDraw2HelmModule;
 
@@ -49,6 +49,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const argsX = e.offsetX - gcb.x;
       const argsY = e.offsetY - gcb.y;
 
+      const monomerLib = _package.monomerLib;
       const editorMol: Mol<HelmType> | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
       let seqMonomer: ISeqMonomer | null;
       let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
@@ -57,7 +58,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       else {
         const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
         const monomerList = parseHelm(seq);
-        missedMonomers = findMonomers(monomerList);
+        missedMonomers = findMonomers(monomerList, monomerLib);
         const parsedMonomers = new Set<string>(monomerList);
         seqMonomer = getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
         if (seqMonomer && !parsedMonomers.has(seqMonomer.symbol)) seqMonomer = null;
@@ -76,7 +77,6 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (seqMonomer) {
         if (!missedMonomers.has(seqMonomer.symbol)) {
           const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
-          const monomerLib = getMonomerLib();
           const monomerDiv = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
             ui.divText('Monomer library is not available.');
           tooltipElements.push(monomerDiv);
@@ -128,7 +128,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value);
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
-      const missedMonomers: Set<string> = findMonomers(monomerList);
+      const monomerLib = _package.monomerLib;
+      const missedMonomers: Set<string> = findMonomers(monomerList, monomerLib);
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth

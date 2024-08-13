@@ -28,7 +28,27 @@ const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';
 const PT_UI_DIALOG_ENUMERATION = 'Poly Tool Enumeration';
 const PT_UI_RULES_USED = 'Rules used';
 
-export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
+export function polyToolEnumerateHelmUI(cell?: DG.Cell): void {
+  getPolyToolEnumerationHelmDialog(cell)
+    .then((dialog) => {
+      dialog.show({resizable: true});
+    })
+    .catch((_err: any) => {
+      grok.shell.warning('To run PolyTool Enumeration, sketch the macromolecule and select monomers to vary');
+    });
+}
+
+export function polyToolEnumerateChemUI(cell?: DG.Cell): void {
+  getPolyToolEnumerationChemDialog(cell)
+    .then((dialog) => {
+      dialog.show({resizable: true});
+    })
+    .catch((_err: any) => {
+      grok.shell.warning('To run PolyTool Enumeration, sketch the molecule and specify the R group to vary');
+    });
+}
+
+export async function getPolyToolConversionDialog(targetCol?: DG.Column): Promise<DG.Dialog> {
   const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   if (!targetColumns)
     throw new Error(PT_ERROR_DATAFRAME);
@@ -37,6 +57,8 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
     table: grok.shell.t, value: targetColumns[0],
     filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE
   });
+
+  targetColumnInput.value = targetCol ? targetCol : targetColumnInput.value;
 
   const generateHelmChoiceInput = ui.input.bool(PT_UI_GET_HELM, {value: true});
   ui.tooltip.bind(generateHelmChoiceInput.root, PT_UI_ADD_HELM);
@@ -82,7 +104,7 @@ export async function getPolyToolConversionDialog(): Promise<DG.Dialog> {
   return dialog;
 }
 
-export async function getPolyToolEnumerationHelmDialog(cell?: DG.Cell): Promise<DG.Dialog> {
+async function getPolyToolEnumerationHelmDialog(cell?: DG.Cell): Promise<DG.Dialog> {
   const [libList, helmHelper] = await Promise.all([
     getLibrariesList(), getHelmHelper()]);
 
@@ -137,7 +159,7 @@ export async function getPolyToolEnumerationHelmDialog(cell?: DG.Cell): Promise<
   return dialog;
 }
 
-export async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dialog> {
+async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dialog> {
   const [libList, helmHelper] = await Promise.all([
     getLibrariesList(), getHelmHelper()]);
 
@@ -147,9 +169,6 @@ export async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<
   // sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
   molInput.onChanged.subscribe((_: any) => {
     molValue = molInput.getMolFile();
-    // col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
-    // col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
-    // col.dataFrame?.fireValuesChanged();
   });
   molInput.root.classList.add('ui-input-editor');
   molInput.root.style.marginTop = '3px';

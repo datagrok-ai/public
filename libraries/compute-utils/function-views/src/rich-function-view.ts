@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -19,7 +19,7 @@ import {FunctionView} from './function-view';
 import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {FittingView as Optimization} from './fitting-view';
 import {HistoryInputBase} from '../../shared-components/src/history-input';
-import {deepCopy, getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
+import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
 import {historyUtils} from '../../history-utils';
 import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
@@ -409,6 +409,8 @@ export class RichFunctionView extends FunctionView {
    */
   public setNavigationButtons(navBtns: HTMLElement[]) {
     this.navBtns = navBtns;
+
+    this.buildFormButtons();
   }
 
   /**
@@ -655,8 +657,8 @@ export class RichFunctionView extends FunctionView {
 
     reviewDialog.addButton(simulateInputs, () => {
       properUpdateIndicator(uploadDialog.root, true);
-      Promise.all(uploadedFunccalls.map((call) => {
-        const simulatingCall = this.func.prepare(deepCopy(call).inputs);
+      Promise.all(uploadedFunccalls.map(async (call) => {
+        const simulatingCall = await createPartialCopy(call);
         return simulatingCall.call();
       })).then((calls)=> {
         simulatedFunccalls = calls;
@@ -700,7 +702,6 @@ export class RichFunctionView extends FunctionView {
       await this.saveExperimentalRun(this.funcCall);
       return;
     }
-
     await this.saveRun(this.funcCall);
   }
 

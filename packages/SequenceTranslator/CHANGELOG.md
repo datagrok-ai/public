@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.3.11 (2024-07-31)
+
+### Features
+
+* Added chemical based enumerator
+
 ## 1.3.10 (2024-07-29)
 
 ### Features

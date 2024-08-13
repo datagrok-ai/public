@@ -117,6 +117,14 @@ export type HitTriageCampaign = {
     layout?: string,
     columnTypes?: {[key: string]: string},
     version?: number,
+    permissions?: TriagePermissions,
+    authorUserId?: string
+};
+
+export type TriagePermissions = {
+    // will store the ids of UserGroups that have access to the campaign
+    edit: string[],
+    view: string[],
 };
 
 export type IChemFunctionsDialogResult = {

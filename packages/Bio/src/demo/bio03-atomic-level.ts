@@ -15,10 +15,7 @@ export async function demoBio03UI(): Promise<void> {
   let dlg: DG.Dialog;
 
   try {
-    await new DemoScript(
-      'Atomic Level',
-      'Atomic level structure of Macromolecules',
-    )
+    await new DemoScript('Atomic Level', 'Atomic level structure of Macromolecules', false, {autoStartFirstStep: true})
       .step(`Loading Macromolecules notation 'Helm'`, async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;

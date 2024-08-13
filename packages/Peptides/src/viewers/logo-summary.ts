@@ -227,7 +227,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
       this._positionColumns = this.model.positionColumns;
 
 
-    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.MONOMER_POSITION) ??
+    this._positionColumns ??= getSharedPositionColumns(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) ??
       getSharedPositionColumns(VIEWER_TYPE.MOST_POTENT_RESIDUES) ??
       splitAlignedSequences(this.dataFrame.getCol(this.sequenceColumnName)).columns.toList();
     return this._positionColumns!;
@@ -353,6 +353,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     let doRender = false;
     switch (property.name) {
     case LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD:
+      if (!this.logoSummaryTable.filter.anyTrue)
+        doRender = true;
       this.updateFilter();
       break;
     case `${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`:
@@ -807,10 +809,22 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   /** Updates LogoSummaryTable filter. */
   updateFilter(): void {
     const memberstCol = this.logoSummaryTable.getCol(C.LST_COLUMN_NAMES.MEMBERS);
+    const clusterNameCol = this.logoSummaryTable.getCol(C.LST_COLUMN_NAMES.CLUSTER);
+    const clusterNameRawData = clusterNameCol.getRawData();
+    const clusterNameCat = clusterNameCol.categories;
+    const singletonClusterIndex = clusterNameCat.indexOf('-1');
+
     const membersColData = memberstCol.getRawData();
-    const maxCount = memberstCol.stats.max;
+    // as maxCount can be number of singleton clusters, we need to account for that
+    let maxCount = 0;
+    membersColData.forEach((_, i) => {
+      if (clusterNameCat[clusterNameRawData[i]] !== '-1')
+        maxCount = Math.max(maxCount, membersColData[i]);
+    });
     const minMembers = Math.ceil(maxCount * this.membersRatioThreshold);
-    this.logoSummaryTable.filter.init((i) => membersColData[i] > minMembers);
+    this.logoSummaryTable.filter
+      .init((i) => membersColData[i] > minMembers &&
+        (singletonClusterIndex === -1 || clusterNameCat[clusterNameRawData[i]] !== '-1'));
   }
 
   /** Creates a new cluster from current selection and adds to Logo Summary Table. */

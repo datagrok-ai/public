@@ -23,7 +23,7 @@ category('Connections', () => {
     expect(t.columns.length, 10);
     expect(t.columns.contains('first_name'), true);
     expect(t.columns.byName('first_name').length, 0);
-  });
+  }, {stressTest: true});
 
   test('External Provider: Create, insert, update, drop', async () => {
     // CREATE statement
@@ -50,5 +50,5 @@ category('Connections', () => {
     await call.call();
     table = call.getOutputParamValue() as DG.DataFrame;
     expect(table.toCsv(), "");
-  });
+  }, {stressTest: true});
 });

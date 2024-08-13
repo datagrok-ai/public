@@ -1,5 +1,17 @@
 # compute-utils changelog
 
+## 1.36.7 (2024-08-05)
+
+- RFV: Fixed navigation buttons render
+
+## 1.36.6 (2024-08-01)
+
+- RFV: Added spinning for async validation icon
+
+## 1.36.5 (2024-07-31)
+
+- RFV & Wizard: Historical runs load optimization
+
 ## 1.36.3 (2024-07-30)
 
 - Wizard: Fixed context info icon duplication

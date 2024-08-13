@@ -111,7 +111,6 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
 
   private filterToLog(): string { return `BioSubstructureFilter<${this.filterId}>`; }
 
-
   private viewSubs: Unsubscribable[] = [];
 
   attach(dataFrame: DG.DataFrame): void {
@@ -296,10 +295,12 @@ export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
   constructor() {
     super();
 
-    this.substructureInput = ui.input.string('', {value: '', onValueChanged: () => {
-      this.props = new BioFilterProps(this.substructureInput.value);
-      if (!this._propsChanging) this.onChanged.next();
-    }, placeholder: 'Substructure'});
+    this.substructureInput = ui.input.string('', {
+      value: '', onValueChanged: () => {
+        this.props = new BioFilterProps(this.substructureInput.value);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Substructure'
+    });
   }
 
   public applyProps() {
@@ -336,15 +337,19 @@ export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
   constructor(colSeparator: string) {
     super();
 
-    this.substructureInput = ui.input.string('', {value: '', onValueChanged: () => {
-      this.props = new SeparatorFilterProps(this.substructureInput.value, this.props.separator);
-      if (!this._propsChanging) this.onChanged.next();
-    }, placeholder: 'Substructure'});
-    this.separatorInput = ui.input.string('', {value: this.colSeparator = colSeparator, onValueChanged: () => {
-      const separator: string | undefined = !!this.separatorInput.value ? this.separatorInput.value : undefined;
-      this.props = new SeparatorFilterProps(this.props.substructure, separator);
-      if (!this._propsChanging) this.onChanged.next();
-    }, placeholder: 'Separator'});
+    this.substructureInput = ui.input.string('', {
+      value: '', onValueChanged: () => {
+        this.props = new SeparatorFilterProps(this.substructureInput.value, this.props.separator);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Substructure'
+    });
+    this.separatorInput = ui.input.string('', {
+      value: this.colSeparator = colSeparator, onValueChanged: () => {
+        const separator: string | undefined = !!this.separatorInput.value ? this.separatorInput.value : undefined;
+        this.props = new SeparatorFilterProps(this.props.substructure, separator);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Separator'
+    });
   }
 
   applyProps(): void {

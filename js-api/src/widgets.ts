@@ -1814,8 +1814,8 @@ export class TreeViewGroup extends TreeViewNode {
   set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
   /** Adds new group */
-  group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
+  group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
   }
 
   /** Returns existing, or creates a new node group */

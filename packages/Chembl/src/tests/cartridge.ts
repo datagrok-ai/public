@@ -22,7 +22,7 @@ category('Cartridge usage', () => {
 
     if (df != null)
       grok.shell.closeTable(df);
-  });
+  }, {stressTest: true});
 
   test('Substructure pattern', async () => {
     const df =
@@ -32,5 +32,5 @@ category('Cartridge usage', () => {
 
     if (df != null)
       grok.shell.closeTable(df);
-  });
+  }, {stressTest: true});
 });

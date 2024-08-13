@@ -1,5 +1,25 @@
 # ml changelog
 
+## 6.6.19 (2024-08-09)
+
+Activity cliffs: make docked grid available in browse view for demo purposes
+
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
+## 6.6.17 (2024-08-08)
+
+Add limit to intercluster connections in mcl
+
+## 6.6.16 (2024-08-07)
+
+Correct NW Calculation on webGPU on CPU
+
+## 6.6.15 (2024-08-06)
+
+MCL layout with force directed graph and atlas
+
 ## 6.6.14 (2024-07-09)
 
 Use only numeric columns without datetime for Activities in activity cliffs editor

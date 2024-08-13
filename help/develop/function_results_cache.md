@@ -50,7 +50,7 @@ For example:
 #name: Example
 #language: python
 #meta.cache: client
-#meta.cache.invalidateOn: 0 0 1 * * ?
+#meta.cache.invalidateOn: 0 * * * *
 #input: string table [Data table]
 #output: int result
 

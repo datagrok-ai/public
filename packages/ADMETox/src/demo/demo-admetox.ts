@@ -8,7 +8,8 @@ async function openMoleculeDataset(name: string): Promise<DG.TableView> {
 }
 
 export async function _demoAdmetox(): Promise<void> {
-  const tv = await openMoleculeDataset('System:AppData/Admetox/demo_files/demo_dataset.csv');
+  let tv = await openMoleculeDataset('System:AppData/Admetox/demo_files/demo_dataset.csv');
+  tv.dataFrame.name = 'Table';
 
   const layoutString = await grok.dapi.files.readAsText('System:AppData/Admetox/demo_files/demo.layout');
   const layout = DG.ViewLayout.fromJson(layoutString);

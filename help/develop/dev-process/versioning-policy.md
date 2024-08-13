@@ -58,7 +58,7 @@ or [Datagrok Docker image](https://hub.docker.com/u/datagrok).
 
 ## Release process
 
-Before publishing the release, the new version goes through all [quality assurance](../../datagrok/solutions/enterprise/quality-assurance.md) operations,
+Before publishing the release, the new version goes through all [quality assurance](../qa/quality-assurance.md) operations,
 including the QA Engineer's manual testing of critical changes. The full process of release can be found
 in [wiki](ci-flow.mdx#release-cicd-flow).
 
@@ -109,5 +109,5 @@ Every Docker container has information about the version and branch it was built
 
 - [Changelog policy](changelog-policy.md)
 - [Release History](../../deploy/releases/release-history.md)
-- [Quality assurance](../../datagrok/solutions/enterprise/quality-assurance.md)
+- [Quality assurance](../qa/quality-assurance.md)
 - [CI/CD Flow](ci-flow.mdx)
