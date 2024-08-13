@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {v4 as uuidv4} from 'uuid';
-import {BehaviorSubject, Observable, from, defer} from 'rxjs';
+import {BehaviorSubject, Observable, from, defer, Subject, merge} from 'rxjs';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {StateItem} from '../config/PipelineConfiguration';
-import {delay, map, startWith} from 'rxjs/operators';
+import {delay, map, mapTo, startWith, takeUntil} from 'rxjs/operators';
 
 export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 
@@ -16,6 +16,7 @@ export interface IRunnableWrapper {
   id?: string;
   instance?: DG.FuncCall;
   run(): Observable<any>;
+  close(): void;
   isRunning$: BehaviorSubject<boolean>;
   isOutputOutdated$: BehaviorSubject<boolean>;
 }
@@ -48,13 +49,21 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   validations$ = new BehaviorSubject<Record<string, Record<string, ValidationResultBase | undefined>>>({});
   inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
 
-  constructor(public instance: DG.FuncCall) {}
+  private closed$ = new Subject<true>();
+
+  constructor(public instance: DG.FuncCall) {
+    const allParamsChanges$ = Object.keys(instance.inputs).map((inputName) => this.getStateChanges(inputName));
+    merge(allParamsChanges$).pipe(
+      mapTo(true),
+      takeUntil(this.closed$),
+    ).subscribe(this.isOutputOutdated$);
+  }
 
   run() {
     return from(defer(async () => {
       try {
         this.isRunning$.next(true);
-        this.instance.call();
+        await this.instance.call();
       } finally {
         this.isRunning$.next(false);
         this.isOutputOutdated$.next(false);
@@ -91,6 +100,10 @@ export class FuncCallAdapter implements IFuncCallAdapter {
 
   getFuncCall() {
     return this.instance;
+  }
+
+  close() {
+    this.closed$.next(true);
   }
 
   private getPtype(name: string) {
@@ -165,6 +178,8 @@ export class FuncCallMockAdapter extends MemoryStore implements IFuncCallAdapter
   getFuncCall(): DG.FuncCall {
     throw new Error(`Not implemented for mocks`);
   }
+
+  close() {}
 }
 
 export function isMockAdapter(adapter: IRunnableWrapper): adapter is FuncCallMockAdapter {

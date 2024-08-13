@@ -5,6 +5,7 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {isFuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 category('ComputeUtils: Driver state tree persistence', async () => {
   test('Load and save simple config', async () => {
@@ -17,6 +18,46 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const loadedTree = await StateTree.load(id, pconf).toPromise();
     await loadedTree.init().toPromise();
     const lc = loadedTree.toSerializedState(true);
-    expectDeepEqual(sc, lc);
+    expectDeepEqual(lc, sc);
   });
+
+  test('Load nested pipeline', async () => {
+    // create and save nested pipeline
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromConfig(pconf);
+    await tree.init().toPromise();
+    const sc = tree.toSerializedState(true);
+    const dbId = await tree.save().toPromise();
+    // create outer pipeline
+    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {}).toPromise();
+    const outerPconf = await getProcessedConfig(outerConfig);
+    const outerTree = StateTree.fromConfig(outerPconf);
+    await outerTree.init().toPromise();
+    // load nested tree into outer
+    const root = outerTree.getItem([]);
+    await outerTree.loadSubTree(root.uuid, dbId, 'pipelinePar', 1).toPromise();
+    const loadedTree = outerTree.getNode([{idx: 1}]);
+    const lc = StateTree.toStateRec(loadedTree, {isSerialized: true, disableUUID: true});
+    expectDeepEqual(lc, sc);
+  });
+
+  test('Save nested pipeline', async () => {
+    // create outer pipeline
+    const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {}).toPromise();
+    const outerPconf = await getProcessedConfig(outerConfig);
+    const outerTree = StateTree.fromConfig(outerPconf);
+    await outerTree.init().toPromise();
+    const nestedRoot = outerTree.getNode([{idx: 0}]);
+    const sc = StateTree.toStateRec(nestedRoot, {isSerialized: true, disableUUID: true});
+    // save nested pipeline
+    const dbId = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const loadedTree = await StateTree.load(dbId, pconf).toPromise();
+    await loadedTree.init().toPromise();
+    const lc = loadedTree.toSerializedState(true);
+    expectDeepEqual(lc, sc);
+  });
+
 });

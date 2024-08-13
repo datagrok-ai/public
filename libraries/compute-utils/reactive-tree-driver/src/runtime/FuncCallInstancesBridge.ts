@@ -1,5 +1,5 @@
-import {BehaviorSubject, of, combineLatest, Observable, from, defer} from 'rxjs';
-import {switchMap, map} from 'rxjs/operators';
+import {BehaviorSubject, of, combineLatest, Observable, from, defer, Subject} from 'rxjs';
+import {switchMap, map, takeUntil, take, withLatestFrom} from 'rxjs/operators';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, RestrictionType} from './FuncCallAdapters';
 
@@ -14,12 +14,14 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
   public inputRestrictions$ = new BehaviorSubject({});
   public initialValues: Record<string, any> = {};
 
+  private closed$ = new Subject<true>();
+
   constructor() {
     this.instance$.pipe(
       switchMap((instance) => instance ? instance.isRunning$ : of(false)),
+      takeUntil(this.closed$),
     ).subscribe(this.isRunning$);
 
-    // TODO: add global lock as well
     this.instance$.pipe(
       switchMap((instance) => {
         if (instance == null)
@@ -29,11 +31,21 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
           instance.validations$.pipe(map((validations) => this.isRunnable(validations))),
         ]).pipe(map((isRunning, isValid) => !isRunning && isValid));
       }),
+      takeUntil(this.closed$),
     ).subscribe(this.isRunable$);
 
     this.instance$.pipe(
       switchMap((instance) => instance ? instance.isOutputOutdated$ : of(false)),
+      takeUntil(this.closed$),
     ).subscribe(this.isOutputOutdated$);
+
+    this.closed$.pipe(
+      take(1),
+      withLatestFrom(this.instance$),
+    ).subscribe(([, inst]) => {
+      if (inst)
+        inst.close();
+    });
   }
 
   get id() {
@@ -45,6 +57,9 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
       for (const [key, val] of Object.entries(this.initialValues))
         instance.setState(key, val);
     }
+    if (this.instance$.value)
+      this.instance$.value.close();
+
     this.instance$.next(instance);
   }
 
@@ -91,6 +106,10 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
 
     else
       throw new Error(`Attempting to run an empty FuncCallInstancesBridge`);
+  }
+
+  close() {
+    this.closed$.next(true);
   }
 
   private isRunnable(validations: Record<string, Record<string, ValidationResultBase | undefined>>) {

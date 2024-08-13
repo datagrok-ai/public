@@ -14,7 +14,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const root = tree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'stepAdd', 2).toPromise();
+    await tree.addSubTree(puuid, 'stepAdd', 2, false).toPromise();
     const state = tree.toSerializedState(true);
     await snapshotCompare(state, 'append step subtree');
   });
@@ -25,7 +25,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const root = tree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 2).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 2, false).toPromise();
     const state = tree.toSerializedState(true);
     await snapshotCompare(state, 'append static pipeline subtree');
   });
@@ -36,7 +36,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const root = tree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipelinePar', 0).toPromise();
+    await tree.addSubTree(puuid, 'pipelinePar', 0, false).toPromise();
     const state = tree.toSerializedState(true);
     await snapshotCompare(state, 'append dynamic pipeline subtree');
   });
@@ -47,7 +47,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const root = tree.getItem([]);
     const puuid = root.uuid;
-    await tree.addSubTree(puuid, 'pipeline1', 0).toPromise();
+    await tree.addSubTree(puuid, 'pipeline1', 0, false).toPromise();
     const state = tree.toSerializedState(true);
     await snapshotCompare(state, 'insert subtree');
   });
@@ -70,13 +70,5 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     await tree.moveMoveSubtree(pnode.uuid, 1).toPromise();
     const state = tree.toSerializedState(true);
     await snapshotCompare(state, 'move subtree');
-  });
-
-  test('Pipeline load subtree', async () => {
-
-  });
-
-  test('Pipeline save subtree', async () => {
-
   });
 });

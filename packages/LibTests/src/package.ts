@@ -298,7 +298,6 @@ export async function MockProvider1(params: any) {
 //name: MockWrapper2
 export async function MockWrapper2() {}
 
-
 //input: object params
 //output: object result
 export async function MockProvider2(params: any) {
@@ -334,7 +333,6 @@ export async function MockProvider2(params: any) {
 
 //name: MockWrapper3
 export async function MockWrapper3() {}
-
 
 //input: object params
 //output: object result

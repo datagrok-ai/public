@@ -18,7 +18,7 @@ export async function makeFuncCall(nqName: string) {
 
 export async function saveFuncCall(bridge: IFuncCallAdapter) {
   const fc = bridge.getFuncCall();
-  // TODO: DF handling (?)
+  // TODO: DF restrictions handling (?)
   const restrictions = bridge.inputRestrictions$.value;
   fc.options[RESTRICTIONS_PATH] = JSON.stringify(restrictions);
   return historyUtils.saveRun(fc);

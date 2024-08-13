@@ -33,9 +33,14 @@ export class BaseTree<T> {
   }
 
   getItem(address: Readonly<NodeAddress>) {
+    const node = this.getNode(address);
+    return node.getItem();
+  }
+
+  getNode(address: Readonly<NodeAddress>) {
     const nodeSeq = this.getNodesFromAddress(address);
     const node = indexFromEnd(nodeSeq)!;
-    return node.getItem();
+    return node;
   }
 
   getRoot() {
