@@ -538,6 +538,7 @@ export interface IDartApi {
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
+  grok_Column_FromFloat64Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
   grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;

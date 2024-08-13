@@ -657,6 +657,11 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
+  /** [array] will be not be copied and will be used as column's storage */
+  static fromFloat64Array(name: string, array: Float64Array, length: number | null = null): Column<number> {
+    return toJs(api.grok_Column_FromFloat64Array(name, array, length));
+  }
+
   /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
   static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
     return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
