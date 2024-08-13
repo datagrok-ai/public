@@ -18,6 +18,7 @@ type onClickOptions = 'Select' | 'Filter';
 })
 
 export class SunburstViewer extends EChartViewer {
+  private renderQueue: Promise<void> = Promise.resolve();
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
   onClick: onClickOptions;
@@ -314,17 +315,24 @@ export class SunburstViewer extends EChartViewer {
     return this.dataFrame.columns.length >= 1;
   }
 
-  render() {
+  render(): void {
+    this.renderQueue = this.renderQueue
+      .then(() => this._render());
+  }
+
+  private async _render() {
     if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
+
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
-    this.handleStructures(this.getSeriesData()).then((data) => {
-      this.option.series[0].data = data;
-      this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
-      this.chart.setOption(this.option);
-    });
+    const seriesData = await this.getSeriesData();
+    const data = await this.handleStructures(seriesData);
+
+    this.option.series[0].data = data;
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    this.chart.setOption(this.option);
   }
 
   detach() {
