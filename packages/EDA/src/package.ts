@@ -262,12 +262,10 @@ export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
   const options: MCLSerializableOptions = JSON.parse(mclTag);
   const cols = options.cols.map((colName) => df.columns.byName(colName));
   const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
-  // let presetMatrix = null;
-  // if (df.temp['sparseMatrix'])
-  //   presetMatrix = df.temp['sparseMatrix'];
+
   const res = await markovCluster(df, cols, options.metrics, options.weights,
     options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
-    options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc /**presetMatrix */);
+    options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc);
   return res?.sc;
 }
 

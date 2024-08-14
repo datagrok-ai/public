@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.33 (2024-08-14)
+
+Bump ml version to 1.1.33
+
 ## 1.1.32 (2024-08-13)
 
 Add XGBoost to predictive modeling tools
