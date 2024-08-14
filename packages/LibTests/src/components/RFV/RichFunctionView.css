@@ -6,6 +6,7 @@
   overflow: hidden;
   border: solid 1px var(--grey-2);
   border-radius: 5px;
+  margin: 5px;
 }
 
 .gs-30 > .grid-stack-item {
