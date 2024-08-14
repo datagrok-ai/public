@@ -13,7 +13,7 @@ export function getWebColaLayot(
 } {
   const graph = new Graph();
   for (let i = 0; i < cluster.length; i++)
-    graph.addNode(cluster[i], {x: Math.random() * 1000, y: Math.random() * 1000});
+    graph.addNode(cluster[i], {x: Math.random() * 20000, y: Math.random() * 20000});
 
   for (let it = 0; it < clusterConnections.i.length; it++) {
     const i = clusterConnections.i[it];
@@ -21,7 +21,8 @@ export function getWebColaLayot(
     const v = clusterConnections.v[it];
     if (i === j || v <= 0)
       continue;
-    graph.addEdge(i, j, {weight: v * 100});
+    const weight = _subCluster[i] === _subCluster[j] ? 2 : 1;
+    graph.addEdge(i, j, {weight: v * weight});
   }
 
   const settings = {
@@ -33,9 +34,9 @@ export function getWebColaLayot(
     // adjustSizes: true,
     // weighted: true,
     // strongGravityMode: true,
+    getEdgeWeight: 'weight',
     settings: {...forceAtlas2.inferSettings(graph), weighted: true, edgeWeightInfluence: 1}
   };
-  forceAtlas2.inferSettings(graph);
   forceAtlas2.assign(graph, settings);
 
   const embedX1 = new Float32Array(cluster.length);
