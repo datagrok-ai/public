@@ -75,7 +75,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
         concatMap(() => {
           if (this.mockMode)
             return of('');
-          const state = StateTree.toStateRec(root, true);
+          const state = StateTree.toStateRec(root, true, { disableNodesUUID: true });
           const json = JSON.stringify(state);
           return defer(() => saveInstanceState(nqName, json));
         }),

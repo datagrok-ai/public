@@ -112,7 +112,8 @@ export class PipelineNodeBase implements IStoreProvider {
   restoreState(state: PipelineState) {
     if (isFuncCallState(state))
       throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
-    this.uuid = state.uuid;
+    if (state.uuid)
+      this.uuid = state.uuid;
   }
 
   getStateStore() {

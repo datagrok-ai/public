@@ -20,6 +20,36 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     expectDeepEqual(lc, sc);
   });
 
+  test('Save creates new uuids', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromConfig(pconf);
+    await tree.init().toPromise();
+    const sc = tree.toSerializedState();
+    const id = await tree.save().toPromise();
+    const loadedTree = await StateTree.load(id, pconf).toPromise();
+    await loadedTree.init().toPromise();
+    const lc = loadedTree.toSerializedState();
+
+    expectDeepEqual(!!sc.uuid, true, { prefix: 'pipeline created uuid' });
+    expectDeepEqual(!!lc.uuid, true, { prefix: 'pipeline saved uuid' });
+
+    expectDeepEqual(!!(sc as any).steps[0].uuid, true, { prefix: 'pipeline step1 created uuid' });
+    expectDeepEqual(!!(lc as any).steps[0].uuid, true, { prefix: 'pipeline step1 saved uuid' });
+    expectDeepEqual(!!(sc as any).steps[1].uuid, true, { prefix: 'pipeline step2 created uuid' });
+    expectDeepEqual(!!(lc as any).steps[1].uuid, true, { prefix: 'pipeline step2 saved uuid' });
+    expectDeepEqual(!!(sc as any).steps[0].funcCallId, true, { prefix: 'pipeline step1 created funcCall uuid' });
+    expectDeepEqual(!!(lc as any).steps[0].funcCallId, true, { prefix: 'pipeline step1 saved funcCall uuid' });
+    expectDeepEqual(!!(sc as any).steps[1].funcCallId, true, { prefix: 'pipeline step2 created funcCall uuid' });
+    expectDeepEqual(!!(lc as any).steps[1].funcCallId, true, { prefix: 'pipeline step2 saved funcCall uuid' });
+
+    expectDeepEqual(sc.uuid !== lc.uuid, true, { prefix: 'pipeline different node uuid' });
+    expectDeepEqual((sc as any).steps[0].uuid !== (lc as any).steps[0].uuid, true, { prefix: 'pipeline step1 different node uuid' });
+    expectDeepEqual((sc as any).steps[1].uuid !== (lc as any).steps[1].uuid, true, { prefix: 'pipeline step2 different node uuid' });
+    expectDeepEqual((sc as any).steps[0].funcCallId !== (lc as any).steps[0].funcCallId, true, { prefix: 'pipeline step1 different funcCall uuid' });
+    expectDeepEqual((sc as any).steps[1].funcCallId !== (lc as any).steps[1].funcCallId, true, { prefix: 'pipeline step2 different funcCall uuid' });
+  });
+
   test('Load nested pipeline', async () => {
     // create and save nested pipeline
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
@@ -58,4 +88,5 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const lc = loadedTree.toSerializedState({ disableNodesUUID: true, disableCallsUUID: true });
     expectDeepEqual(lc, sc);
   });
+
 });
