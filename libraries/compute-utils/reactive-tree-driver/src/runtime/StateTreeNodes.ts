@@ -3,12 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
-import { isFuncCallState, PipelineInstanceBase, PipelineInstanceConfig, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
+import {isFuncCallState, PipelineState, PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState} from '../config/PipelineInstance';
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
-import { isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {PipelineStepConfigurationProcessed} from '../config/config-utils';
 
+export type StateTreeSerializationOptions = {
+  disableNodesUUID?: boolean,
+  disableCallsUUID?: boolean,
+};
 
 export interface IStoreProvider {
   getStateStore(): IStateStore;
@@ -39,7 +43,8 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.isOutputOutdated$.next(!!state.isOuputOutdated);
     this.instancesWrapper.isCurrent$.next(!!state.isCurrent);
     this.pendingId = state.funcCallId;
-    this.uuid = state.uuid;
+    if (state.uuid)
+      this.uuid = state.uuid;
   }
 
   initState(initialConfig: StepFunCallInitialConfig) {
@@ -47,7 +52,7 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.initialValues = initialConfig.values ?? {};
   }
 
-  toState(disableUUID = false): StepFunCallState {
+  toState(options: StateTreeSerializationOptions): StepFunCallState {
     const res: StepFunCallState = {
       type: 'funccall',
       uuid: this.uuid,
@@ -61,12 +66,14 @@ export class FuncCallNode implements IStoreProvider {
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
       isCurrent: this.instancesWrapper.isCurrent$.value,
     };
-    if (disableUUID)
+    if (options.disableNodesUUID)
       res.uuid = '';
+    if (options.disableCallsUUID)
+      res.funcCallId = '';
     return res;
   }
 
-  toSerializedState(disableUUID = false): StepFunCallSerializedState {
+  toSerializedState(options: StateTreeSerializationOptions): StepFunCallSerializedState {
     const res: StepFunCallSerializedState = {
       type: 'funccall',
       uuid: this.uuid,
@@ -77,8 +84,10 @@ export class FuncCallNode implements IStoreProvider {
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
       isCurrent: this.instancesWrapper.isCurrent$.value,
     };
-    if (disableUUID)
+    if (options.disableNodesUUID)
       res.uuid = '';
+    if (options.disableCallsUUID)
+      res.funcCallId = '';
     return res;
   }
 }
@@ -110,17 +119,18 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  toState(disableUUID = false) {
-    const state = {
+  toState(options: StateTreeSerializationOptions) {
+    const res = {
       configId: this.config.id,
       uuid: this.uuid,
       provider: this.config.provider,
       version: this.config.version,
       nqName: this.config.nqName,
     };
-    if (disableUUID)
-      state.uuid = '';
-    return state;
+    if (options.disableNodesUUID)
+      res.uuid = '';
+
+    return res;
   }
 }
 
@@ -133,8 +143,8 @@ export class StaticPipelineNode extends PipelineNodeBase {
     super(config);
   }
 
-  toState(disableUUID = false): PipelineStateStatic {
-    const base = super.toState(disableUUID);
+  toState(options: StateTreeSerializationOptions): PipelineStateStatic {
+    const base = super.toState(options);
     const res: PipelineStateStatic = {
       ...base,
       nqName: this.config.nqName,
@@ -154,8 +164,8 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     super(config);
   }
 
-  toState(disableUUID = false): PipelineStateParallel {
-    const base = super.toState(disableUUID);
+  toState(options: StateTreeSerializationOptions): PipelineStateParallel {
+    const base = super.toState(options);
     const res: PipelineStateParallel = {
       ...base,
       type: this.nodeType,
@@ -178,8 +188,8 @@ export class SequentialPipelineNode extends PipelineNodeBase {
     super(config);
   }
 
-  toState(disableUUID = false) {
-    const base = super.toState(disableUUID);
+  toState(options: StateTreeSerializationOptions) {
+    const base = super.toState(options);
     const res: PipelineStateSequential = {
       ...base,
       type: this.nodeType,

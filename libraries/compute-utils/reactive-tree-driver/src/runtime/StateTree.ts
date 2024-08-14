@@ -10,13 +10,8 @@ import {buildTraverseD} from '../data/traversable';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineParallelConfig, isPipelineSelfRef, isPipelineSequentialConfig, isPipelineStaticConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter, IFuncCallAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall, saveFuncCall, saveInstanceState} from './adapter-utils';
-import {FuncCallNode, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StaticPipelineNode} from './StateTreeNodes';
+import {FuncCallNode, isFuncCallNode, ParallelPipelineNode, PipelineNodeBase, SequentialPipelineNode, StateTreeNode, StateTreeSerializationOptions, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
-
-export type StateTreeSaveOptions = {
-  isSerialized?: boolean,
-  disableUUID?: boolean,
-}
 
 const MAX_CONCURENT_SAVES = 5;
 
@@ -31,12 +26,12 @@ export class StateTree extends BaseTree<StateTreeNode> {
     super(item);
   }
 
-  public toSerializedState(disableUUID = false): PipelineSerializedState {
-    return StateTree.toStateRec(this.getRoot(), {isSerialized: true, disableUUID});
+  public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
+    return StateTree.toStateRec(this.getRoot(), true, options);
   }
 
-  public toState(disableUUID = false): PipelineState {
-    return StateTree.toStateRec(this.getRoot(), {isSerialized: false, disableUUID});
+  public toState(options: StateTreeSerializationOptions = {}): PipelineState {
+    return StateTree.toStateRec(this.getRoot(), false, options);
   }
 
   public save(uuid?: string, mockDelay?: number): Observable<string> {
@@ -80,7 +75,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
         concatMap(() => {
           if (this.mockMode)
             return of('');
-          const state = StateTree.toStateRec(root, {isSerialized: true});
+          const state = StateTree.toStateRec(root, true);
           const json = JSON.stringify(state);
           return defer(() => saveInstanceState(nqName, json));
         }),
@@ -313,12 +308,8 @@ export class StateTree extends BaseTree<StateTreeNode> {
       return fn();
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
-      this.emitNewState();
+      this.makeStateRequests.next(true);
     }));
-  }
-
-  private emitNewState() {
-    this.makeStateRequests.next(true);
   }
 
   private globalStructureLock() {
@@ -355,14 +346,14 @@ export class StateTree extends BaseTree<StateTreeNode> {
     throw new Error(`Wrong node type ${nodeConf}`);
   }
 
-  public static toStateRec(node: TreeNode<StateTreeNode>, options: StateTreeSaveOptions = {}): PipelineState {
+  public static toStateRec(node: TreeNode<StateTreeNode>, isSerialized: boolean, options: StateTreeSerializationOptions = {}): PipelineState {
     const item = node.getItem();
     if (isFuncCallNode(item))
-      return options.isSerialized ? item.toSerializedState(options.disableUUID) : item.toState(options.disableUUID);
+      return isSerialized ? item.toSerializedState(options) : item.toState(options);
 
-    const state = item.toState(options.disableUUID);
+    const state = item.toState(options);
     const steps = node.getChildren().map((node) => {
-      const item = this.toStateRec(node.item, options);
+      const item = this.toStateRec(node.item, isSerialized, options);
       return item;
     });
     return {...state, steps} as PipelineState;

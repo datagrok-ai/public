@@ -15,7 +15,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const root = tree.getItem([]);
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'stepAdd', 2, false).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'append step subtree');
   });
 
@@ -26,7 +26,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const root = tree.getItem([]);
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipeline1', 2, false).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'append static pipeline subtree');
   });
 
@@ -37,7 +37,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const root = tree.getItem([]);
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipelinePar', 0, false).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'append dynamic pipeline subtree');
   });
 
@@ -48,7 +48,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const root = tree.getItem([]);
     const puuid = root.uuid;
     await tree.addSubTree(puuid, 'pipeline1', 0, false).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'insert subtree');
   });
 
@@ -58,7 +58,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const pnode = tree.getItem([{idx: 0}]);
     await tree.removeSubtree(pnode.uuid).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'remove subtree');
   });
 
@@ -68,7 +68,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const tree = StateTree.fromConfig(pconf);
     const pnode = tree.getItem([{idx: 0}]);
     await tree.moveMoveSubtree(pnode.uuid, 1).toPromise();
-    const state = tree.toSerializedState(true);
+    const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'move subtree');
   });
 });
