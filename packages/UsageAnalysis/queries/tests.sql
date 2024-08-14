@@ -73,7 +73,6 @@ order by a.date desc
 Select distinct on ((r.params::json->'batchName')::varchar(255))  
   (r.params::json->>'batchName')::varchar(255) as batchName,
   (r.params::json->>'version')::varchar(255) as version,
-   
   (r.params::json->>'start')::varchar(255) as start,
     r.date_time as date
 from tests t full join builds b on 1 = 1

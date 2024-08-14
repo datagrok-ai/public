@@ -203,7 +203,7 @@ export class TestTrack extends DG.ViewBase {
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
     const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
-      { uid: this.uid, version: this.version, start: this.start })) || '"New Testing"';
+      { uid: this.uid, version: this.version, start: this.start })) || 'New Testing';
     const nameP: string = this.testingName || namePFromDb;
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
       { batchName: `${nameP}` });
