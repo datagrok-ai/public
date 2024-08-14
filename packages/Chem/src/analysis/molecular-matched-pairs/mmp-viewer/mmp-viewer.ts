@@ -25,6 +25,7 @@ import $ from 'cash-dom';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {getMmpFilters, MmpFilters} from '../mmp-filters';
 import {Subject} from 'rxjs/internal/Subject';
+import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 
 
 export class MatchedMolecularPairsViewer extends DG.JsViewer {
@@ -95,10 +96,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.moleculesCol = this.dataFrame.col(this.molecules!);
       this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
 
-      //const aa = JSON.parse(this.totalData);
-
       this.render();
-      this.totalDataUpdated = false;
+
       return;
     }
 
@@ -187,8 +186,21 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }
 
     //initial calculations
-    const fragsOut = await getMmpFrags(moleculesArray);
-    const [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+    let fragsOut: IMmpFragmentsResult;
+    let mmpRules: MmpRules;
+    let allCasesNumber: number;
+
+    if (this.totalDataUpdated) {
+      const totalParsed = JSON.parse(this.totalData);
+      this.totalDataUpdated = false;
+      fragsOut = totalParsed['fragments'];
+      mmpRules = totalParsed['rules'];
+      allCasesNumber = totalParsed['cases'];
+    } else {
+      fragsOut = await getMmpFrags(moleculesArray);
+      [mmpRules, allCasesNumber] = await getMmpRules(fragsOut, mmpInput.fragmentCutoff, gpu);
+    }
+
 
     const palette = getPalette(mmpInput.activities.length);
     //Transformations tab
@@ -221,7 +233,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.fillAll(mmpInput, palette, mmpRules, diffs, linesIdxs, transFragmentsGrid, transPairsGrid, generationsGrid,
       tp, sp, mmpFilters, linesEditor, lines, linesActivityCorrespondance, module, gpu);
 
-    this.totalData = JSON.stringify({'lucky key': 'luck'});
+    this.totalData = JSON.stringify({'fragments': fragsOut, 'rules': mmpRules, 'cases': allCasesNumber});
     //console.profileEnd('MMP');
   }
 

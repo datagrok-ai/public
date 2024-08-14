@@ -117,7 +117,7 @@ function(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: D
 
   mmpFilters.pairsSliderInput.onChanged(() => {
     mmpFilters.pairsValueDiv.innerText = mmpFilters.pairsSliderInput.value.toString();
-    //TODO: implement filtering
+    // const value = mmpFilters.pairsSliderInput.value;
   });
 };
 
