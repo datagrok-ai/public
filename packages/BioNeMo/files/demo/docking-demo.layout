@@ -76,7 +76,7 @@
                 },
                 {
                   "visible": false,
-                  "columnName": "~posesJson",
+                  "columnName": "~posesJson_BACE1.pdbqt",
                   "cellType": "Molecule",
                   "contentCellStyle": {},
                   "headerCellStyle": {}
