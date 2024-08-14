@@ -50,8 +50,17 @@
     * Add or remove split columns directly from the Line Chart viewer.
     * Check the number of selected columns in the properties panel.
   * **Expected results**: number of selected columns in properties should be updated immediately on adding or removing a column.
-
-
+16. **Line chart with multiple axes**:
+* Precondition: Open the **SPGI** dataset with **Line chart** viewer.
+* Configure the Line Chart:
+  * Select two Y columns and enable the "Multi Axis" option.
+  * Add a split column to the chart. Ensure that a legend appears on the plot.
+  * Change Y Column: Use the in-plot column selector to change one of the Y columns.
+* Expected Results: The legend should be updated accordingly when the Y column is changed, reflecting the new data associated with the selected column.
+17. **Y Columns Count Update in Properties Panel**:
+* Precondition: Open a **Line chart** viewer with **multiple Y columns**. Properties panel should remain opened. 
+* Remove Y Columns. On the plot itself, click the 'x' buttons to remove some of the Y columns.
+* Expected Results: The number of Y columns in the properties panel should update immediately when columns are removed directly from the plot.
 
 
 ---  
