@@ -18,27 +18,45 @@ export async function _demoEsmFoldModel(): Promise<void> {
 
 export async function _demoDiffDockModel(): Promise<void> {
   const tv = await openDataset('demo/docking-demo.csv');
-  const grid = tv.grid;
-  const table = tv.dataFrame;
-  const posesColumnName = CONSTANTS.POSES_COLUMN_NAME;
-
-  await delay(1000);
-
-  const posesColumn = table.columns.byName(posesColumnName);
-  posesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
-  posesColumn.setTag(DG.TAGS.CELL_RENDERER, 'xray');
-  posesColumn.setTag('docking.role', 'ligand');
-
-  await grok.data.detectSemanticTypes(table);
-  grid.invalidate();
-
-  await delay(100);
-
-  const layoutString = await _package.files.readAsText('demo/docking-demo.layout');
-  const layout = DG.ViewLayout.fromJson(layoutString);
-  tv.loadLayout(layout);
-
-  const ligandsColName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;
-  table.currentCell = table.cell(0, ligandsColName!);
-  showHelpPanel(DIFFDOCK_HELP);
+  _package.files.readAsText('demo/docking-demo.layout').then(async (layoutString) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    tv.loadLayout(layout);
+    
+    const grid = tv.grid;
+    const table = tv.dataFrame;
+    const posesColumnName = CONSTANTS.POSES_COLUMN_NAME;
+    
+    await delay(1000);
+    
+    const posesColumn = table.columns.byName(posesColumnName);
+    posesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
+    posesColumn.setTag(DG.TAGS.CELL_RENDERER, 'xray');
+    posesColumn.setTag('docking.role', 'ligand');
+    
+    await grok.data.detectSemanticTypes(table);
+    grid.invalidate();
+    
+    await delay(100);
+    
+    const ligandsColName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;
+    table.currentCell = table.cell(0, ligandsColName!);
+    showHelpPanel(DIFFDOCK_HELP);
+    await delay(1000);
+    leaveDiffDockPanelOnly();
+  });
 }
+
+const leaveDiffDockPanelOnly = () => {
+  const container = document.querySelectorAll('.panel-content')[1] as HTMLElement;
+  const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]');
+
+  if (container && targetPanel) {
+    ui.empty(container);
+    container.appendChild(targetPanel);
+  }
+
+  setTimeout(() => {
+    const button = targetPanel?.querySelector('button.ui-btn.ui-btn-ok[name="button-Run"]') as HTMLElement;
+    button.click();
+  }, 500);
+};
