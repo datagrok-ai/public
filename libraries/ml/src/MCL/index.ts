@@ -1,4 +1,3 @@
-import { SparseMatrix } from '@datagrok-libraries/math';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
 
