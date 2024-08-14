@@ -48,9 +48,9 @@ async function(rdkitModule: RDModule) : Promise<void> {
 
 
 MatchedMolecularPairsViewer.prototype.refreshFilterAllFragments = function(): void {
-  const consistsBitSet: DG.BitSet = DG.BitSet.create(this.transFragmentsGrid!.dataFrame.rowCount);
-  consistsBitSet.setAll(true);
-  this.transFragmentsGrid!.dataFrame.filter.copyFrom(consistsBitSet);
+  // const consistsBitSet: DG.BitSet = DG.BitSet.create(this.transFragmentsGrid!.dataFrame.rowCount);
+  // consistsBitSet.setAll(true);
+  this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.fragmentsMask!);
 };
 
 /**

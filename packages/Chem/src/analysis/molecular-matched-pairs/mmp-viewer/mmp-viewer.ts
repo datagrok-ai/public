@@ -35,15 +35,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   molecules: string | null = null;
   activities: string[] | null = null;
   fragmentCutoff: number | null;
-
-
-  //saved
   totalData: string;
 
   totalDataUpdated: boolean = false;
 
   moleculesCol: DG.Column | null = null;
-
   activitiesCols: DG.ColumnList | null = null;
 
   parentTable: DG.DataFrame | null = null;
@@ -57,6 +53,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   transFragmentsMask: DG.BitSet | null = null;
   transPairsGrid: DG.Grid | null = null;
   transPairsMask: DG.BitSet | null = null;
+  //fragments tab objects
+  fragmentsMask: DG.BitSet | null = null;
   //cliffs tab objects
   diffs: Array<Float32Array> | null = null;
   linesIdxs: Uint32Array | null = null;
@@ -158,6 +156,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   //setup after calculation
   setupTransformationTab!: ()=> void;
+  setupFragmentsTab!: ()=> void;
   setupFilters!: (mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer) => void;
   setupCliffsTab!: (sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer) => HTMLDivElement;
   getTabs!: (tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLDivElement) => DG.TabControl;

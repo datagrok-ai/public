@@ -18,6 +18,7 @@ import {MatchedMolecularPairsViewer} from './mmp-viewer';
 declare global {
   interface MatchedMolecularPairsViewer {
     setupTransformationTab(): void;
+    setupFragmentsTab(): void;
     setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: DG.Viewer): void;
     setupCliffsTab(sp: DG.Viewer, mmpFilters: MmpFilters, linesEditor: ScatterPlotLinesRenderer): HTMLDivElement;
     getTabs(tp: DG.Viewer, mmpFilters: MmpFilters, cliffs: HTMLDivElement): DG.TabControl;
@@ -56,6 +57,10 @@ MatchedMolecularPairsViewer.prototype.setupTransformationTab = function(): void 
 
   this.transPairsMask!.setAll(false);
   this.refreshPair(this.rdkitModule!);
+};
+
+MatchedMolecularPairsViewer.prototype.setupFragmentsTab = function(): void {
+  this.fragmentsMask!.setAll(true);
 };
 
 MatchedMolecularPairsViewer.prototype.setupFilters =
@@ -117,7 +122,18 @@ function(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array, tp: D
 
   mmpFilters.pairsSliderInput.onChanged(() => {
     mmpFilters.pairsValueDiv.innerText = mmpFilters.pairsSliderInput.value.toString();
-    // const value = mmpFilters.pairsSliderInput.value;
+    const value = mmpFilters.pairsSliderInput.value;
+
+    this.fragmentsMask!.setAll(false);
+
+    const casesCol = this.transFragmentsGrid!.dataFrame.columns.byName(MMP_NAMES.PAIRS);
+
+    for (let i = 0; i < casesCol.length; i++) {
+      if (casesCol.get(i) >= value)
+        this.fragmentsMask!.set(i, true, false);
+    }
+
+    this.transFragmentsGrid!.dataFrame.filter.copyFrom(this.fragmentsMask!);
   });
 };
 
@@ -252,6 +268,10 @@ function(mmpInput: MmpInput, palette: PaletteCodes,
   this.transPairsMask = DG.BitSet.create(this.transPairsGrid.dataFrame.rowCount);
   this.mmpView = DG.View.create();
   this.setupTransformationTab();
+
+  //fragments tab setup
+  this.fragmentsMask = DG.BitSet.create(this.transFragmentsGrid.dataFrame.rowCount);
+  this.setupFragmentsTab();
 
   //Cliffs tab setup
   this.mmpFilters = mmpFilters;
