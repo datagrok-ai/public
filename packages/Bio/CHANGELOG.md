@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.14.1 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
 ## 2.14.0 (2024-08-06)
 
 ### Features
