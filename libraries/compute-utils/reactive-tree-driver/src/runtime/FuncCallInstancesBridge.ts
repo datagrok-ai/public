@@ -99,10 +99,10 @@ export class FuncCallInstancesBridge implements IStateStore, IValidationStore, I
       return currentInstance.setValidation(id, validatorId, validation);
   }
 
-  run() {
+  run(mockResults?: Record<string, any>, mockDelay?: number) {
     const currentInstance = this.instance$.value;
     if (currentInstance)
-      return from(defer(() => currentInstance.run()));
+      return from(defer(() => currentInstance.run(mockResults, mockDelay)));
 
     else
       throw new Error(`Attempting to run an empty FuncCallInstancesBridge`);

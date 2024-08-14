@@ -1,52 +1,61 @@
-import {ItemId} from '../data/common-types';
+import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
+import {ItemId, NqName} from '../data/common-types';
 
 // view config update requests
 
-export interface AddGroupItem {
-  event: 'addGroupItem';
-  parentPipelineUuid: string;
+export interface AddDynamicItem {
+  event: 'addDynamicItem';
+  parentUuid: string;
   itemId: ItemId;
-  postion?: number;
-}
-
-export interface RemoveGroupItem {
-  event: 'removeGroupItem';
-  uuid: string;
-}
-
-export interface MoveGroupItem {
-  event: 'moveGroupItem';
-  uuid: string;
   postion: number;
 }
 
-export interface ChangeCurrentStep {
-  event: 'changeCurrentStep';
+export interface LoadDynamicItem {
+  event: 'loadDynamicItem';
+  parentUuid: string;
+  dbId: string;
+  itemId: ItemId;
+  postion: number;
+  readonly?: boolean; // TODO
+}
+
+export interface SaveDynamicItem {
+  event: 'saveDynamicItem';
   uuid: string;
+}
+
+export interface RemoveDynamicItem {
+  event: 'removeDynamicItem';
+  uuid: string;
+}
+
+export interface MoveDynamicItem {
+  event: 'moveDynamicItem';
+  uuid: string;
+  postion: number;
 }
 
 export interface RunStep {
   event: 'runStep';
   uuid: string;
+  mockResults?: Record<string, any>;
+  mockDelay?: number;
 }
 
 export interface SavePipeline {
   event: 'savePipeline';
-  uuid: string;
 }
 
 export interface LoadPipeline {
   event: 'loadPipeline';
   funcCallId: string;
-  parentPipelineUuid?: string;
-  itemId?: ItemId;
-  postion?: number;
-  isReadonly?: boolean;
+  config?: PipelineConfigurationProcessed;
 }
 
-export interface RunAction {
-  event: 'runAction';
-  uuid: string;
+export interface InitPipeline {
+  event: 'initPipeline';
+  provider: NqName;
+  version?: number;
 }
 
-export type ViewConfigChanges = AddGroupItem | RemoveGroupItem | MoveGroupItem | ChangeCurrentStep | RunStep | SavePipeline | LoadPipeline | RunAction;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | SavePipeline | LoadPipeline | InitPipeline;

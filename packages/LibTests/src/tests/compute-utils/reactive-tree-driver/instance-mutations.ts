@@ -67,7 +67,7 @@ category('ComputeUtils: Driver state tree mutations', async () => {
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromConfig(pconf);
     const pnode = tree.getItem([{idx: 0}]);
-    await tree.moveMoveSubtree(pnode.uuid, 1).toPromise();
+    await tree.moveSubtree(pnode.uuid, 1).toPromise();
     const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'move subtree');
   });

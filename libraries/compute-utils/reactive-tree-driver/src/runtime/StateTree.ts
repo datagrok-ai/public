@@ -75,7 +75,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
         concatMap(() => {
           if (this.mockMode)
             return of('');
-          const state = StateTree.toStateRec(root, true, { disableNodesUUID: true });
+          const state = StateTree.toStateRec(root, true, {disableNodesUUID: true});
           const json = JSON.stringify(state);
           return defer(() => saveInstanceState(nqName, json));
         }),
@@ -89,7 +89,7 @@ export class StateTree extends BaseTree<StateTreeNode> {
     });
   }
 
-  public moveMoveSubtree(uuid: string, pos: number) {
+  public moveSubtree(uuid: string, pos: number) {
     return this.updateWithLock(() => {
       const data = this.find((item) => item.uuid === uuid);
       if (data == null)
@@ -138,6 +138,28 @@ export class StateTree extends BaseTree<StateTreeNode> {
       );
       return tree.pipe(mapTo(this));
     });
+  }
+
+  public runStep(uuid: string, mockResults?: Record<string, any>, mockDelay?: number) {
+    if (!this.mockMode && mockResults)
+      throw new Error(`Mock results passed to runStep while mock mode is off`);
+    const res = this.find((item) => item.uuid === uuid);
+    if (!res)
+      throw new Error(`Step uuid ${uuid} not found`);
+    const [snode] = res;
+    const node = snode.getItem();
+    if (!isFuncCallNode(node))
+      throw new Error(`Step uuid ${uuid} is not FuncCall`);
+    return node.instancesWrapper.run(mockResults, mockDelay);
+  }
+
+  public close() {
+    this.traverse(this.root, (acc, node) => {
+      const item = node.getItem();
+      if (isFuncCallNode(item))
+        item.instancesWrapper.close();
+      return acc;
+    }, undefined);
   }
 
   static load(dbId: string, config: PipelineConfigurationProcessed, mockMode = false): Observable<StateTree> {

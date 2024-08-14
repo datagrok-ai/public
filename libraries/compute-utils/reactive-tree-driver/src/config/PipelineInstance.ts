@@ -50,6 +50,11 @@ export type PipelineSerializedState = PipelineStateStatic | PipelineStateSequent
 export function isFuncCallState(state: PipelineState): state is StepFunCallState {
   return state.type === 'funccall';
 }
+export function isFuncCallSerializedState(state: PipelineSerializedState): state is StepFunCallSerializedState {
+  return state.type === 'funccall';
+}
+
+
 export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic {
   return state.type === 'static';
 }

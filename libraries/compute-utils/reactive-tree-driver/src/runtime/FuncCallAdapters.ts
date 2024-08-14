@@ -15,7 +15,7 @@ export interface RestrictionState {
 export interface IRunnableWrapper {
   id?: string;
   instance?: DG.FuncCall;
-  run(): Observable<any>;
+  run(mockResults?: Record<string, any>, mockDelay?: number): Observable<any>;
   close(): void;
   isRunning$: BehaviorSubject<boolean>;
   isOutputOutdated$: BehaviorSubject<boolean>;

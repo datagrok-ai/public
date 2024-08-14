@@ -31,7 +31,7 @@ export async function saveFuncCall(adapter: IFuncCallAdapter) {
 export async function loadFuncCall(id: string): Promise<IFuncCallAdapter> {
   const fc = await historyUtils.loadRun(id, false);
   const restrictions = JSON.parse(fc.options[RESTRICTIONS_PATH] ?? {});
-  const outputState  = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? false);
+  const outputState = JSON.parse(fc.options[OUTPUT_OUTDATED_PATH] ?? false);
   const adapter = new FuncCallAdapter(fc);
   adapter.inputRestrictions$.next(restrictions);
   adapter.isOutputOutdated$.next(outputState);
