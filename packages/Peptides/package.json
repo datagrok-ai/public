@@ -28,6 +28,8 @@
     "wu": "latest"
   },
   "devDependencies": {
+    "@datagrok-libraries/helm-web-editor": "^1.1.7",
+    "@datagrok-libraries/js-draw-lite": "^0.0.5",
     "@datagrok/bio": "latest",
     "@datagrok/chem": "latest",
     "@datagrok/dendrogram": "latest",
