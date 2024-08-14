@@ -308,7 +308,8 @@ export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerp
   const scoringMatrix: number[][] =
     new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
   const alphabetIndexes: { [id: string]: number } = {};
-  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.smiles ?? '');
+  // note, below specifically boolean OR is used to get either molfile or smiles, because we want to skip '' molfiles
+  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.molfile || monomerLib.getMonomer('PEPTIDE', monomer)?.smiles || '');
   const fingerprintsFunc = DG.Func.find({package: 'Chem', name: 'getFingerprints'})[0];
   if (!fingerprintsFunc) {
     console.warn('Function "Chem:getFingerprints" is not found in chem package. falling back to Morgan fingerprints');
