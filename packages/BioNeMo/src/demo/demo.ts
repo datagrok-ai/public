@@ -46,17 +46,26 @@ export async function _demoDiffDockModel(): Promise<void> {
   });
 }
 
-const leaveDiffDockPanelOnly = () => {
+const waitForButtonAndClick = async (selector: string, timeout: number = 5000) => {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    const button = document.querySelector(selector) as HTMLElement;
+    if (button) {
+      button.click();
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+};
+
+const leaveDiffDockPanelOnly = async () => {
   const container = document.querySelectorAll('.panel-content')[1] as HTMLElement;
   const targetPanel = document.querySelector('div.d4-accordion-pane[d4-title="DiffDock"]');
 
   if (container && targetPanel) {
     ui.empty(container);
     container.appendChild(targetPanel);
+    
+    await waitForButtonAndClick('button.ui-btn.ui-btn-ok[name="button-Run"]');
   }
-
-  setTimeout(() => {
-    const button = targetPanel?.querySelector('button.ui-btn.ui-btn-ok[name="button-Run"]') as HTMLElement;
-    button.click();
-  }, 500);
 };

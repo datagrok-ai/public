@@ -102,7 +102,7 @@ export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function diffDockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
-  const posesInput = ui.input.int('Poses', { value: 5 });
+  const posesInput = ui.input.int('Poses', { value: 10 });
   const targetInput = ui.input.choice('Target', { value: (await getTargetFiles())[0], items: await getTargetFiles() });
 
   const resultsContainer = ui.div();
