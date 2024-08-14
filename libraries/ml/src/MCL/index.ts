@@ -8,10 +8,10 @@ export * from './types';
 export function createMCLWorker(data: any[][], threshold: number,
   weights: number[], aggregationMethod: DistanceAggregationMethod,
   distanceFns: KnownMetrics[], distanceFnArgs: any[], maxIterations: number = 10,
-  useWebGPU: boolean = false, inflate: number = 2, presetMatrix?: SparseMatrix) { // TODO: DONT FORGET TO REMOVE THIS PARAMETER
+  useWebGPU: boolean = false, inflate: number = 2) {
   const worker = new Worker(new URL('mcl-worker', import.meta.url));
   worker.postMessage({data, threshold, weights, aggregationMethod, distanceFns,
-    distanceFnArgs, maxIterations, useWebGPU, inflate, presetMatrix});
+    distanceFnArgs, maxIterations, useWebGPU, inflate});
   let resolveF: Function;
   const promise = new Promise<{
     clusters: number[], embedX: Float32Array, embedY: Float32Array,
