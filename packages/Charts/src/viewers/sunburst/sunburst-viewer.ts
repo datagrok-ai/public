@@ -150,13 +150,7 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
-      const {isSmiles, image} = await this.checkAndCreateMoleculeImage(params.name);
-      if (isSmiles && params.data.semType === 'Molecule') {
-        ui.tooltip.root.innerText = `${matchCount}`;
-        ui.tooltip.root.appendChild(image!);
-      } else {
-        ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;  
-      }
+      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;  
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
@@ -273,44 +267,6 @@ export class SunburstViewer extends EChartViewer {
     return { height, width };
   }
 
-  async checkAndCreateMoleculeImage(name: string): Promise<{ isSmiles: boolean, image: HTMLCanvasElement | null }> {
-    const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
-    let image: HTMLCanvasElement | null = null;
-    if (isSmiles) {
-      const imageContainer = await grok.functions.call('Chem:drawMolecule', {
-        'molStr': name, 'w': 70, 'h': 80, 'popupMenu': false
-      });
-      image = imageContainer.querySelector(".chem-canvas");
-    }
-    return {isSmiles, image};
-  }
-
-  async handleStructures(data: TreeDataType[] | undefined) {
-    for (const entry of data!) {
-      const name = entry.name;
-      const { isSmiles, image } = await this.checkAndCreateMoleculeImage(name);
-      if (isSmiles && entry.semType === 'Molecule') {
-        await delay(5);
-        const img = new Image();
-        img.src = image!.toDataURL('image/png');
-        entry.label = {
-          show: true,
-          formatter: '{b}',
-          color: 'rgba(0,0,0,0)',
-          height: '80',
-          width: '70',
-          backgroundColor: {
-            image: img.src,
-          },
-        }
-      } 
-      if (entry.children) {
-        await this.handleStructures(entry.children);
-      }
-    }
-    return data;
-  }
-
   _testColumns() {
     return this.dataFrame.columns.length >= 1;
   }
@@ -327,8 +283,7 @@ export class SunburstViewer extends EChartViewer {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
-    const seriesData = await this.getSeriesData();
-    const data = await this.handleStructures(seriesData);
+    const data = await this.getSeriesData();
 
     this.option.series[0].data = data;
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);

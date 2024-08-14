@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-
+import * as ui from 'datagrok-api/ui';
 import * as utils from './utils';
 
 export class TreeUtils {
@@ -130,6 +130,27 @@ export class TreeUtils {
             color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
           };
         }
+
+        if (columns[colIdx].semType === DG.SEMTYPE.MOLECULE) {
+          let image: HTMLCanvasElement | null = ui.canvas();
+          image.width = 70;
+          image.height = 80;
+          grok.chem.canvasMol(0, 0, image.width, image.height, image, name).then(() => {
+            const img = new Image();
+            img.src = image!.toDataURL('image/png');
+            node.label = {
+              show: true,
+              formatter: '{b}',
+              color: 'rgba(0,0,0,0)',
+              height: '80',
+              width: '70',
+              backgroundColor: {
+                image: img.src,
+              },
+            }
+          })
+        }
+
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 
