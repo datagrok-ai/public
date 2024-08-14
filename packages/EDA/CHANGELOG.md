@@ -2,7 +2,7 @@
 
 ## 1.1.33 (2024-08-14)
 
-Bump ml version to 1.1.33
+Bump ml version to 6.6.21
 
 ## 1.1.32 (2024-08-13)
 
