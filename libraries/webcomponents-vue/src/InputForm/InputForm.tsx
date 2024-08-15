@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {computed, defineComponent, isReactive, KeepAlive, PropType, ref, watch, watchEffect} from 'vue';
+import {computed, defineComponent, isReactive, KeepAlive, PropType, ref, shallowRef, watch, watchEffect} from 'vue';
 import type {InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {getValidators,
   injectInputBaseValidation,
@@ -12,7 +12,6 @@ import {getValidators,
 import {SYNC_FIELD} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {ValidationResult, Validator} from '@datagrok-libraries/compute-utils/shared-utils/validation';
 import {FuncCallInputValidated, isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
-import {computedAsync} from '@vueuse/core';
 
 declare global {
   namespace JSX {
@@ -36,10 +35,20 @@ export const InputForm = defineComponent({
   setup(props, {emit}) {
     let currentForm = undefined as undefined | DG.InputForm;
 
+    let loadedValidators = shallowRef({});
+
+    watch(() => props.funcCall, () => {
+      console.log('props.funcCall changed', props.funcCall);
+
+      getValidators(props.funcCall, SYNC_FIELD.INPUTS).then((res) => loadedValidators.value = res);
+    })
+
+    watch(loadedValidators, () => {
+      runValidation();
+    })
+
     const allParams = (funcCall: DG.FuncCall) =>
       [...funcCall.inputParams.values() ?? []].map((param) => param.name);
-
-    let loadedValidators = {};
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
       emit('formReplaced', event.detail);
@@ -50,8 +59,6 @@ export const InputForm = defineComponent({
         .map((param) => currentForm!.getInput(param))
         .filter((input) => isInputBase(input))
         .forEach((input) => injectInputBaseValidation(input));
-
-      runValidation();
     };
 
     const inputChangedCb = (event: {detail: DG.EventData<DG.InputArgs>}) => {
@@ -68,7 +75,7 @@ export const InputForm = defineComponent({
       const results = await validate({isRevalidation: false},
         paramsToValidate, controller.signal, SYNC_FIELD.INPUTS, {
           funcCall: props.funcCall,
-        }, loadedValidators);
+        }, loadedValidators.value);
 
       Object.keys(results)
         .map((paramName) => currentForm!.getInput(paramName))
@@ -77,8 +84,6 @@ export const InputForm = defineComponent({
     };
 
     return () => {
-      getValidators(props.funcCall, SYNC_FIELD.INPUTS).then((res) => loadedValidators = res);
-
       const form = <dg-input-form
         funcCall={props.funcCall}
         onFormReplaced={formReplacedCb}
