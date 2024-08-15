@@ -43,6 +43,9 @@
     "release-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild --release",
     "debug-docking-sandbox": "grok publish sandbox --rebuild",
     "release-docking-sandbox": "grok publish sandbox --rebuild --release",
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
