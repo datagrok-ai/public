@@ -245,20 +245,15 @@ class VlaaiVisManager {
       const menu: DG.Menu = args.args.menu;
       const node: DG.TreeViewNode = args.args.item;
       if (node instanceof DG.TreeViewGroup)
-        menu.item('Delete group...', () => this.deleteGroup(node));
+        menu.item('Delete group', () => this.deleteGroup(node));
+      else
+        menu.item('New group', () => this.addGroup(node));
     });
 
     this.makeUntaggedColumnsDraggable(untaggedColumns);
 
     const generalInputs = ui.divV(generalProps.map(prop => this.createInputForProperty(prop, '')));
     const resultingDiv = this.createResultingDiv(inputs, generalInputs);
-
-    resultingDiv.oncontextmenu = (e) => {
-      DG.Menu.popup()
-        .item('Add group', () => this.addGroup())
-        .show();
-      e.preventDefault();
-    };
     return resultingDiv;
   }
 
@@ -295,13 +290,16 @@ class VlaaiVisManager {
     return container;
   }
 
-  private addGroup() {
+  private addGroup(node: DG.TreeViewNode) {
     const nameInput = ui.input.string('Name');
-    ui.dialog('Add group')
+    ui.dialog('New group')
       .add(nameInput)
       .onOK(() => {
         const newGroup = this.tree.group(nameInput.value, null, false, this.findLastGroupIndex());
         this.configureGroupNode(newGroup);
+        this.removeItemFromOriginalGroup(node.text);
+        this.addItemToNewGroup(newGroup, node.text);
+        this.makeItemDraggable(node);
       })
       .show(); 
   }
