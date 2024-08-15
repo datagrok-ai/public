@@ -106,7 +106,7 @@ export async function multiColWebGPUSparseMatrix(
   const sparseResultSizePerThread = 100; // number of iterations per thread (number of pair comparisons)
 
   const combinedComplexity = processInfo.reduce((a, b) => a + b.complexity, 0); // combined complexity of all the columns
-  const maxIterationsPerThread = Math.ceil(10000 / combinedComplexity); // maximum number of iterations per thread
+  const maxIterationsPerThread = Math.ceil(6000 / combinedComplexity); // maximum number of iterations per thread
   const workGroupDivision = 10; // how many threads inside of one workgroup dimension (in this case 10 * 10 threads per workgroup)
   const threadsPerWorkgroup = workGroupDivision * workGroupDivision;
   const workgroupsDim = Math.ceil(

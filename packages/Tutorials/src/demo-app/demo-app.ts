@@ -74,7 +74,12 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       grok.shell.isInDemo = true;
       try {
+        const sub = grok.events.onViewAdded.subscribe((view) => {
+          this.browseView.preview = view;
+          grok.shell.v = this.browseView;
+        });
         await func.apply();
+        sub.unsubscribe();
       }
       finally {
         grok.shell.isInDemo = false;
@@ -166,6 +171,7 @@ export class DemoView extends DG.ViewBase {
     
     for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
       const name = DEMO_APP_HIERARCHY.children[i].name;
+      const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(name));
       //tree.group(name, null, true).root.lastChild?.appendChild(this._groupRoot(name));
       const root = this._createViewRootElement(name);
       root.classList.add('grok-gallery-grid');
@@ -184,28 +190,32 @@ export class DemoView extends DG.ViewBase {
           groupRoot.append(collection[i] as HTMLElement)
       }
 
-      treeGroup.root.lastChild?.appendChild(groupRoot);
       let subCategories = [...new Set(tempArr)];
-      
-      if (subCategories.length > 1) {
+      const subCategoryFuncs = directionFuncs.filter((func) => {
+        for (let i = 0; i < subCategories.length; i++)
+          if (func.path.includes(subCategories[i]))
+            return true;
+        return false;
+      });
+
+      if (subCategories.length > 1 || (subCategories.length > 0 && subCategoryFuncs.length !== directionFuncs.length)) {
         for (let i = 0; i < subCategories.length; i++){
           const subGroupRoot = ui.div([], 'grok-gallery-grid');
           const subTreeGroup = treeGroup.group(String(subCategories[i]), null, true);
-          for (let j = 0; j < collection.length; j++) {
-            if (collection[j].getAttribute('data-sub-category') === subCategories[i]) {
+          for (let j = 0; j < collection.length; j++)
+            if (collection[j].getAttribute('data-sub-category') === subCategories[i])
               subGroupRoot.append(collection[j])
-            }
-          }
           subTreeGroup.root.lastChild?.appendChild(subGroupRoot);
         }
-      } else {
-        for (let i = 0; i < collection.length; i++) {
+      } else
+        for (let i = 0; i < collection.length; i++)
           groupRoot.append(collection[i])
-        }
-      }
+
+      treeGroup.root.lastChild?.appendChild(groupRoot);
     }
 
-    this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
+    const searchInput = this._createSearchInput(this.funcs, tree);
+    this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
   }
 
   private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {
@@ -251,7 +261,7 @@ export class DemoView extends DG.ViewBase {
       }
 
       item.onclick = () => {
-        const node = this.tree.items.find(node => node.text === directionFuncs[i].name)?.root;
+        const node = this.tree.items.find(node => node.text.replaceAll('amp;', '') === directionFuncs[i].name)?.root;
         node?.click();
       };
 
@@ -285,6 +295,7 @@ export class DemoView extends DG.ViewBase {
     view.append(resultContainer);
     this.browseView.path = `${this.DEMO_APP_PATH}/${path}`;
 
+    const directionFuncs = this.funcs.filter((func) => (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewName));
     const root = this._createViewRootElement(viewName);
     root.classList.add('grok-gallery-grid');
 
@@ -303,10 +314,15 @@ export class DemoView extends DG.ViewBase {
         groupRoot.append(collection[i] as HTMLElement)
     }
 
-    treeGroup.root.lastChild?.appendChild(groupRoot);
     let subCategories = [...new Set(tempArr)];
+    const subCategoryFuncs = directionFuncs.filter((func) => {
+      for (let i = 0; i < subCategories.length; i++)
+        if (func.path.includes(subCategories[i]))
+          return true;
+      return false;
+    });
 
-    if (subCategories.length > 1) {
+    if (subCategories.length > 1 || (subCategories.length > 0 && subCategoryFuncs.length !== directionFuncs.length)) {
       for (let i = 0; i < subCategories.length; i++){
         const subGroupRoot = ui.div([], 'grok-gallery-grid');
         const subTreeGroup = treeGroup.group(String(subCategories[i]), null, true);
@@ -321,11 +337,47 @@ export class DemoView extends DG.ViewBase {
       for (let i = 0; i < collection.length; i++)
         groupRoot.append(collection[i])
 
+    treeGroup.root.lastChild?.appendChild(groupRoot);
+
     tree.root.classList.add('demo-app-group-view');
-    view.root.append(ui.div([tree.root], 'grok-gallery-grid'));
+    const searchInput = this._createSearchInput(directionFuncs, tree);
+    view.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
     this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
     this.tree.root.focus();
     this.browseView.preview = view;
+  }
+
+  private _createSearchInput(directionFuncs: DemoFunc[], tree: DG.TreeViewGroup): DG.InputBase<string> {
+    const searchInput = ui.input.search('', {
+      onValueChanged: (input) => {
+        const foundFuncs = directionFuncs.filter((func) => {
+          return func.name.toLowerCase().includes(input.value.toLowerCase()) ||
+              func.func.description.toLowerCase().includes(input.value.toLowerCase()) ||
+              func.keywords.toLowerCase().includes(input.value.toLowerCase())
+        });
+        const cards = tree.root.querySelectorAll('.d4-item-card.ui-div');
+        for (let i = 0; i < cards.length; i++) {
+          const cardTitle = cards[i].querySelector('.tutorials-card-title.ui-div') as HTMLElement;
+          if (foundFuncs.some((func) => func.name.toLowerCase() === cardTitle.innerText.toLowerCase()))
+            cards[i].classList.remove('hidden');
+          else
+            cards[i].classList.add('hidden');
+        }
+      },
+      elementOptions: {classes: 'demo-app-search-input'}
+    });
+
+    searchInput.input.onkeyup = (event) => {
+      if (event.key === 'Escape')
+        searchInput.fireChanged();
+    }
+    const closeIcon = searchInput.root.getElementsByClassName('ui-input-icon-right')[0] as HTMLElement;
+    closeIcon.onclick = () => {
+      searchInput.value = '';
+      searchInput.fireChanged();
+    };
+
+    return searchInput;
   }
 
   private _initTree(): void {
@@ -405,96 +457,6 @@ export class DemoView extends DG.ViewBase {
       panelRoot.scrollTo(0, treeNodeY);
     });
   }
-
-  // private _searchItem(): void {
-  //   const foundFuncs = this.funcs.filter((func) => {
-  //     return func.name.toLowerCase().includes(this.searchInput.value.toLowerCase()) ||
-  //       func.func.description.toLowerCase().includes(this.searchInput.value.toLowerCase()) ||
-  //       func.keywords.toLowerCase().includes(this.searchInput.value.toLowerCase())
-  //   });
-  //
-  //   const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
-  //
-  //   for (let i = 0; i < dom.length; i++) {
-  //     const item = dom[i] as HTMLElement;
-  //     const foundFunc = foundFuncs.find((func) => func.name.toLowerCase() === item.innerText.toLowerCase());
-  //     if (foundFunc) {
-  //       const foundFuncPath = foundFunc.path.split('|').map((s) => s.trim());
-  //       item.classList.remove('hidden');
-  //       if (item.classList.contains('d4-tree-view-item')) {
-  //         for (let i = foundFuncPath.length - 2; i >= 0; i--) {
-  //           const currentCategory = this.tree.root.querySelector(`[data-name="${foundFuncPath[i]}"]`);
-  //           currentCategory?.classList.remove('hidden');
-  //         }
-  //       }
-  //     }
-  //     else if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
-  //       item.classList.remove('hidden');
-  //       let parentCategoryName = getParentCategoryName(item.innerText);
-  //       while (parentCategoryName !== '') {
-  //         const parentCategory = this.tree.root.querySelector(`[data-name="${parentCategoryName}"]`);
-  //         parentCategory?.classList.remove('hidden');
-  //
-  //         parentCategoryName = getParentCategoryName(parentCategoryName);
-  //       }
-  //     }
-  //     else
-  //       item.classList.add('hidden');
-  //   }
-  //
-  //   for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
-  //     for (let j = 0; j < DEMO_APP_HIERARCHY.children[i].children.length; j++){
-  //       if (grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}` ||
-  //       grok.shell.v.path === `/apps/Tutorials/Demo` ||
-  //       grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}/${DEMO_APP_HIERARCHY.children[i].children[j].name}`
-  //       ){
-  //         grok.shell.v.root.lastElementChild?.classList.add('hidden');
-  //
-  //         const root = ui.div([]);
-  //         for (let i = 0; i < foundFuncs.length; i++) {
-  //           const img = ui.div('', 'ui-image');
-  //           img.style.backgroundImage = `url(${foundFuncs[i].imagePath}`;
-  //
-  //           let item = ui.card(ui.divV([
-  //             img,
-  //             ui.div([foundFuncs[i].name], 'tutorials-card-title'),
-  //             ui.div([foundFuncs[i].func.description], 'tutorials-card-description')
-  //           ], 'demo-app-card'));
-  //
-  //           item.onclick = () => {
-  //             const node = this.tree.items.find(node => node.text === foundFuncs[i].name)?.root;
-  //             node?.click();
-  //           };
-  //
-  //           const packageMessage = `Part of the ${foundFuncs[i].func.package.name === 'Tutorials' ?
-  //             'platform core' : `${foundFuncs[i].func.package.name} package`}`;
-  //           ui.tooltip.bind(item, () => foundFuncs[i].func.description ?
-  //             ui.divV([foundFuncs[i].func.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
-  //
-  //           root.append(item);
-  //         }
-  //
-  //         root.classList.add('grok-gallery-grid');
-  //
-  //         const tree = ui.tree();
-  //         const treeGroup = tree.group(`${foundFuncs.length} results found`, null, true);
-  //
-  //         treeGroup.root.lastChild?.appendChild(root);
-  //         tree.root.classList.add('demo-app-group-view');
-  //         resultContainer.innerHTML = '';
-  //         resultContainer.classList.remove('hidden');
-  //         resultContainer.append(ui.div([tree.root], 'grok-gallery-grid'));
-  //       }
-  //     }
-  //
-  //   }
-  //
-  //   if (this.searchInput.value === ''){
-  //       resultContainer.innerHTML = '';
-  //       resultContainer.classList.add('hidden');
-  //       grok.shell.v.root.lastElementChild?.classList.remove('hidden');
-  //     }
-  // }
 
   private _initWindowOptions(): void {
     grok.shell.windows.showToolbox = false;

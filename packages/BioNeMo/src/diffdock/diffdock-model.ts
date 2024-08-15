@@ -53,7 +53,7 @@ export class DiffDockModel {
     const grid = grok.shell.getTableView(this.df.name).grid;
 
     for (let i = 0; i < posesColumn.length; ++i) {
-      const posesJson = await this.getPosesJson(this.ligands.get(i));
+      const posesJson = await this.getPosesJson(this.ligands.get(i), this.ligands.getTag(DG.TAGS.UNITS));
       const pdbHelper: IPdbHelper = await getPdbHelper();
       const { bestId, bestPose, confidence } = this.findBestPose(posesJson);
   
@@ -88,13 +88,11 @@ export class DiffDockModel {
     grid.invalidate();
   }
 
-  public async getPosesJson(ligand: string): Promise<PosesJson> {
-    const encodedPoses = await grok.functions.call('Bionemo:diffdock', {
-      protein: this.target,
-      ligand: ligand,
-      num_poses: this.poses,
-    });
-    return JSON.parse(new TextDecoder().decode(encodedPoses.data));
+  public async getPosesJson(ligand: string, units: string): Promise<PosesJson> {
+    const isSmiles = units === DG.UNITS.Molecule.SMILES;
+    const ligandValue = isSmiles ? DG.chem.convert(ligand, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) : ligand;
+    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', {ligand: ligandValue, target: this.target, poses: this.poses});
+    return JSON.parse(jsonText);
   }
 
   public createColumn(type: DG.ColumnType, name: string, length: number): DG.Column {

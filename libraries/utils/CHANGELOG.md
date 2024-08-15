@@ -1,5 +1,25 @@
 # utils changelog
 
+## 4.2.24 (2024-08-09)
+
+Forms viewer: Don't use color coding with molecule columns
+
+## 4.2.23 (2024-08-09)
+
+Forms viewer: Ability to resize header, sending event on input click
+
+## 4.2.22 (2024-08-09)
+
+Added stress test invocation method
+
+## 4.2.21 (2024-08-07)
+
+Added stress test flag to test options
+
+## 4.2.20 (2024-08-06)
+
+Optimize linesrenderer for short lines and no mouseover checking conditions. add options to items grid
+
 ## 4.2.19 (2024-08-02)
 
 Fix benchmark timeout 

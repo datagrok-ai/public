@@ -43,7 +43,7 @@ jobs:
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
-            packages
+            ./packages
       - name: Get changed files
         uses: tj-actions/changed-files@v42
         id: changed-files
@@ -221,11 +221,11 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            libraries
-            packages/${{ matrix.package }}
-            js-api
-            .github
-            docker
+            ./libraries
+            ./packages/${{ matrix.package }}
+            ./js-api
+            ./.github
+            ./docker
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

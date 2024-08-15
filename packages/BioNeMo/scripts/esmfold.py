@@ -1,6 +1,8 @@
 #name: esmfold
 #description: Predicts the 3D structure of a protein from its amino acid sequence
 #language: python
+#meta.cache: all
+#meta.cache.invalidateOn: 0 0 1 * * ?
 #input: string sequence
 #output: string response
 

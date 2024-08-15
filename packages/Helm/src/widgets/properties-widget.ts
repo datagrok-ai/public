@@ -47,8 +47,8 @@ export function getPropertiesDict(seq: string, sh: SeqHandler): {} {
 }
 
 
-export function getPropertiesWidget(value: DG.SemanticValue): DG.Widget {
-  const sh = SeqHandler.forColumn(value.cell.column);
+export function getPropertiesWidget(value: DG.SemanticValue<string>): DG.Widget {
+  const sh = SeqHandler.forColumn(value.cell.column as DG.Column<string>);
   try {
     const propDict = getPropertiesDict(value.value, sh);
     return new DG.Widget(

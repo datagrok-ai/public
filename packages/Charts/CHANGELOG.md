@@ -1,5 +1,11 @@
 # Charts changelog
 
+## 1.3.3 (2024-08-08)
+
+### Bug Fixes
+
+* [#2954](https://github.com/datagrok-ai/public/issues/2954): Sunburst: Unsupported columns are not filtered out in column selector
+
 ## 1.3.2 (2024-07-24)
 
 ## 1.3.1 (2024-07-02)

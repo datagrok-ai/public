@@ -1,7 +1,7 @@
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {KnownMetrics} from '../typed-metrics';
 
-export * from './marcov-cluster';
+export * from './markov-cluster';
 export * from './types';
 
 export function createMCLWorker(data: any[][], threshold: number,

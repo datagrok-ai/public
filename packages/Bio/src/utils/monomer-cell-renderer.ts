@@ -105,6 +105,9 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     const color = palette.get(s);
 
     g.fillStyle = color;
-    g.fillText(monomerToShort(s, 6), x + (w / 2), y + (h / 2), w);
+    //cell width of monomer should dictate how many characters can be displayed
+    // for width 40, 6 characters can be displayed (0.15 is 6 / 40)
+    const maxChars = Math.max(2, Math.floor(w * 0.15));
+    g.fillText(monomerToShort(s, maxChars), x + (w / 2), y + (h / 2), w);
   }
 }

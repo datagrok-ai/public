@@ -278,3 +278,9 @@ div.demo-script-countdown svg>circle {
 .demo-app-widget .d4-tree-view-group {
 	width: 100%;
 }
+
+.demo-app-search-input {
+	width: 250px;
+	margin-bottom: 12px;
+	margin-left: 7px;
+}

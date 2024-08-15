@@ -64,7 +64,7 @@ interface ScaffoldLayout {
   scaffoldJson: string;
 }
 
-function value(node: TreeViewNode): ITreeNode {
+export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
 }
 
@@ -284,7 +284,7 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = (e) => ui.tooltip.hide();
 }
 
-async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
+export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer) {
   const visibleNodes = getVisibleNodes(thisViewer);
 
   for (const group of visibleNodes) {
@@ -816,7 +816,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
-  private openEditSketcher(group: TreeViewGroup) {
+  public openEditSketcher(group: TreeViewGroup) {
     if (this.wrapper !== null) {
       this.wrapper.node = group;
       return;
@@ -1503,7 +1503,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     molHost.children[0].insertBefore(ui.divV([iconsDivLeft], 'chem-mol-box-info'), c[0]);
   }
 
-  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null , checked: boolean = false, isNot: boolean = false, expanded: boolean = true, orphansBitset: DG.BitSet | null = null) : TreeViewGroup | null {
+  public createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null , checked: boolean = false, isNot: boolean = false, expanded: boolean = true, orphansBitset: DG.BitSet | null = null) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
 

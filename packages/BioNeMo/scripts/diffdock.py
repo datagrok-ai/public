@@ -5,7 +5,6 @@
 #input: string ligand
 #input: int num_poses
 #output: blob result
-#meta.cache: all
 
 import sys
 import requests

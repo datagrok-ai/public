@@ -1,0 +1,83 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1462,
+      "height": 802,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1462,
+          "height": 802,
+          "element": {
+            "id": "0b8c57f0-4ce0-11ef-dd99-d38d4287bfd3",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "rowHeight": 100,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 44,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header"
+                },
+                {
+                  "width": 200,
+                  "columnName": "molecule",
+                  "cellType": "Molecule"
+                },
+                {
+                  "width": 67,
+                  "columnName": "prID",
+                  "cellType": "number"
+                },
+                {
+                  "width": 82,
+                  "columnName": "IDDB",
+                  "cellType": "number"
+                },
+                {
+                  "width": 148,
+                  "columnName": "pIC50_HIV_Integrase",
+                  "cellType": "number",
+                  "format": "0.0000000"
+                },
+                {
+                  "width": 93,
+                  "columnName": "Q",
+                  "cellType": "number",
+                  "format": "0.0000000"
+                },
+                {
+                  "width": 130,
+                  "columnName": "Activity_Integrase"
+                }
+              ]
+            },
+            "title": "mol1K",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "09e6e550-4ce0-11ef-9fb1-45cbbb90bb36",
+    "tableName": "mol1K"
+  },
+  "name": "Mol1K",
+  "friendlyName": "mol1K",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2024-08-10T14:51:37.578Z"
+}

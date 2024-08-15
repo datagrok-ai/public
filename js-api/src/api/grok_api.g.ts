@@ -538,6 +538,7 @@ export interface IDartApi {
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
+  grok_Column_FromFloat64Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
   grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;
@@ -1133,7 +1134,7 @@ export interface IDartApi {
   grok_TreeViewNode_Get_CurrentItem(node: any): any;
   grok_TreeViewNode_Set_CurrentItem(group: any, node: any): any;
   grok_TreeViewNode_Text(node: any): any;
-  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool): any;
+  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool, index: Num): any;
   grok_TreeViewNode_GetOrCreateGroup(node: any, text: String, value: any, expanded: Bool): any;
   grok_TreeViewNode_Item(node: any, text: any, value: any): any;
   grok_TreeViewNode_Items(node: any): any;

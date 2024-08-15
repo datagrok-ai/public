@@ -6,16 +6,15 @@ import $ from 'cash-dom';
 import {fromEvent, Unsubscribable} from 'rxjs';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {IHelmHelper, IInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmMol, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 
 import {defaultErrorHandler} from '../utils/err-info';
 import {getHoveredMonomerFromEditorMol} from '../utils/get-hovered';
 
 import {_package} from '../package';
 
-
-export class HelmInput extends DG.JsInputBase<HelmMol> {
+export class HelmInput extends HelmInputBase {
   /** Input type identifier (such as "Slider" for the slider input). See {@link InputType}. */
   get inputType(): string {
     return 'Macromolecule';
@@ -30,12 +29,12 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     return this.viewerHost;
   }
 
-  getValue(): HelmMol {
-    return this.viewer.editor.m;
+  getValue(): HelmString {
+    return this.viewer.editor.getHelm();
   }
 
-  setValue(value: HelmMol): void {
-    this.viewer.editor.setMol(value);
+  setValue(value: HelmString): void {
+    this.viewer.editor.setHelm(value);
   }
 
   getStringValue(): string {
@@ -46,8 +45,20 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     this.viewer.editor.setHelm(value);
   }
 
-  viewerHost: HTMLDivElement;
-  viewer: IHelmWebEditor;
+  // -- IHelmInput --
+
+  get molValue(): HelmMol {
+    return this.viewer.editor.m;
+  }
+
+  set molValue(value: HelmMol) {
+    this.viewer.editor.setMol(value);
+  }
+
+  readonly viewerHost: HTMLDivElement;
+  readonly viewer: IHelmWebEditor;
+  readonly editHintDiv: HTMLDivElement;
+
   helmString: string = '';
   helmSelection: number[];
 
@@ -69,16 +80,31 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     });
     this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost);
 
+    this.editHintDiv = ui.divH([
+      ui.link('Click to edit', () => { this.viewer.host.click(); }, undefined, {}),
+    ], {style: {display: 'none', position: 'absolute', top: '0', right: '0'}});
+
     this.subs = [];
     this.subs.push(this.monomerLib.onChanged
       .subscribe(() => this.viewer.editor.redraw()));
-    this.subs.push(fromEvent<MouseEvent>(this.viewer.host, 'mousemove')
-      .subscribe(this.viewerOnMouseMove.bind(this)));
-    this.subs.push(fromEvent<MouseEvent>(this.viewer.host, 'click')
-      .subscribe(this.viewerOnClick.bind(this)));
+    /* eslint-disable rxjs/no-ignored-subscription */
+    fromEvent<MouseEvent>(this.viewer.host, 'mousemove')
+      .subscribe(this.viewerOnMouseMove.bind(this));
+    fromEvent<MouseEvent>(this.viewer.host, 'mouseenter')
+      .subscribe(this.viewerOnMouseEnter.bind(this));
+    fromEvent<MouseEvent>(this.viewer.host, 'mouseleave')
+      .subscribe(this.viewerOnMouseLeave.bind(this));
+    fromEvent<MouseEvent>(this.viewer.host, 'click')
+      .subscribe(this.viewerOnClick.bind(this));
+    /* eslint-enable rxjs/no-ignored-subscription */
 
     this.root.classList.add('ui-input-helm');
-    this.root.append(this.viewerHost);
+    this.root.append(this.viewerHost, this.editHintDiv);
+  }
+
+  detach(): void {
+    for (const sub of this.subs)
+      sub.unsubscribe();
   }
 
   protected toLog(): string {
@@ -86,8 +112,8 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
   }
 
   /** Inspired by {@link DG.MarkdownInput}, {@link ui._create} */
-  static create(
-    helmHelper: IHelmHelper, monomerLib: IMonomerLib, name?: string, options?: IInputInitOptions<HelmMol>
+  static create(helmHelper: IHelmHelper, monomerLib: IMonomerLib,
+    name?: string, options?: IHelmInputInitOptions
   ): HelmInput {
     const input = new HelmInput(helmHelper, monomerLib, name);
     // TODO: Apply options
@@ -95,42 +121,13 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     if (value !== undefined) {
       if (value instanceof String || typeof value === 'string')
         input.stringValue = value as any as string;
+      else if (typeof value === 'object' /* && value.T === 'MOL'*/)
+        input.molValue = value;
       else
-        input.value = value;
+        throw new Error(`Unsupported value of type '${typeof value}'.`);
     }
 
     return input;
-  }
-
-  // static async init(host?: HTMLElement, cell?: DG.Cell): Promise<HelmInput> {
-  //   const helmHelper = await getHelmHelper();
-  //   const libHelper = await getMonomerLibHelper();
-  //
-  //   const editor = helmHelper.createHelmWebEditor();
-  //   editor.host.style.width = '270px';
-  //   editor.host.style.height = '150px';
-  //   editor.host.style.paddingLeft = '40px';
-  //
-  //   cell = cell ?? grok.shell.tv.dataFrame.currentCell;
-  //
-  //   if (cell.column.semType === DG.SEMTYPE.MACROMOLECULE && cell.column.tags[DG.TAGS.UNITS] === NOTATION.HELM)
-  //     editor.editor.setHelm(cell.value);
-  //   else
-  //     editor.editor.setHelm(PT_HELM_EXAMPLE);
-  //
-  //   return new HelmInput(helmHelper, editor, libHelper);
-  // }
-
-  setHelmString(helm: string): void {
-    this.helmString = helm;
-    this.viewer.editor.setHelm(helm);
-    this.helmSelection = [];
-  }
-
-  getDiv(): HTMLDivElement {
-    const title = ui.divText('Macromolecule', {style: {paddingTop: '43px', color: 'var(--grey-4)'}});
-
-    return ui.divH([title, this.viewer.host], {style: {paddingLeft: '48px'}});
   }
 
   // -- Handle events --
@@ -146,16 +143,16 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
     };
 
     // Edit the molecule and select monomers to enumerate
-    const dlg = ui.dialog({showHeader: false, showFooter: true})
+    const _editorDialog = ui.dialog({showHeader: false, showFooter: true})
       .add(webEditorHost!)
       .onOK(() => {
         try {
-          const webEditorValue = webEditorApp.canvas!.getHelm(true)
+          const webEditorValue = webEditorApp!.canvas!.getHelm(true)
             .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
           this.viewer.editor.setHelm(webEditorValue);
           this.helmString = webEditorValue;
 
-          const selection = webEditorApp.canvas!.helm!.jsd.m.atoms;
+          const selection = webEditorApp!.canvas!.helm!.jsd.m.atoms;
           this.helmSelection = [];
           for (let i = 0; i < selection.length; i++) {
             if (selection[i].selected)
@@ -178,7 +175,6 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
 
   private viewerOnMouseMove(event: MouseEvent): void {
     const logPrefix = `${this.toLog()}.viewerOnMouseMove()`;
-    const dpr = window.devicePixelRatio;
 
     const argsX = event.offsetX;
     const argsY = event.offsetY;
@@ -189,10 +185,23 @@ export class HelmInput extends DG.JsInputBase<HelmMol> {
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');
       ui.tooltip.show(tooltipEl, event.x + 16, event.y + 16);
-    } else {
-      // Tooltip for missing monomers
+      event.preventDefault();
+      event.stopPropagation();
+    } else
       ui.tooltip.hide();
-    }
-    this.logger.debug(`${logPrefix}, x = ${event.x}, y = ${event.y}`);
+
+    //this.logger.debug(`${logPrefix}, x = ${event.x}, y = ${event.y}`);
+  }
+
+  private viewerOnMouseEnter(_event: MouseEvent): void {
+    //this.logger.debug(`${this.toLog()}.viewerOnMouseEnter()`);
+    this.editHintDiv.style.removeProperty('display');
+  }
+
+  private viewerOnMouseLeave(event: MouseEvent): void {
+    if (this.editHintDiv.contains(event.relatedTarget as Node)) return; // prevents flickering
+
+    //this.logger.debug(`${this.toLog()}.viewerOnMouseLeave()`);
+    this.editHintDiv.style.display = 'none';
   }
 }

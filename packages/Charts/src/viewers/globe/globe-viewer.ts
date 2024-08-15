@@ -94,6 +94,7 @@ export class GlobeViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.init();
+    this.filter = this.dataFrame.filter;
     this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name || '';
     this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name || '';
     if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
