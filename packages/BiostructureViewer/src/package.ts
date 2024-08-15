@@ -697,19 +697,3 @@ export function biostructureDataToJson(
 ): string {
   return BiostructureDataJson.fromData({binary, data, ext, options});
 }
-
-
-//name: Molstar
-//description: proteint representation
-//tags: panel, bio, widgets
-//input: semantic_value molecule { semType: Molecule3D }
-//output: widget result
-export async function structureMolstar(molecule: DG.SemanticValue): Promise<DG.Widget> {
-  const result = new DG.Widget(ui.div());
-  const {dataFrame, valueString} = molecule.cell;
-  const molstarViewer = await dataFrame.plot.fromType('Biostructure', {
-    pdb: valueString
-  });
-  result.root.appendChild(molstarViewer.root);
-  return result;
-}
