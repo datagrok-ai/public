@@ -30,7 +30,7 @@ export class SunburstViewer extends EChartViewer {
     this.initCommonProperties();
     this.initEventListeners();
 
-    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
     this.inheritFromGrid = this.bool('inheritFromGrid', true, {category: 'Color'});
