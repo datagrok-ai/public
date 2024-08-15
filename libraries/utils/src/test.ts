@@ -537,7 +537,7 @@ async function getResult(x: any): Promise<string> {
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
   categoryTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
   logs.length = 0;
-  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
+  let r: { startDatetime: Date, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string };
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
@@ -553,16 +553,16 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const start = Date.now();
   try {
     if (skip)
-      r = { success: true, result: skipReason!, ms: 0, skipped: true };
+      r = { startDatetime: new Date(), success: true, result: skipReason!, ms: 0, skipped: true };
     else {
       let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
       timeout_ = (timeout_ === STANDART_TIMEOUT && DG.Test.isInBenchmark) ? BENCHMARK_TIMEOUT : timeout_;
-      r = { success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+      r = { startDatetime: new Date(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
     }
   } catch (x: any) {
     stdError(x);
-    r = { success: false, result: await getResult(x), ms: 0, skipped: false };
+    r = { startDatetime: new Date(), success: false, result: await getResult(x), ms: 0, skipped: false };
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -585,7 +585,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'invocation_time': r.startDatetime
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
@@ -696,7 +696,6 @@ export async function testViewer(v: string, df: DG.DataFrame, options?: {
   detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
   packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
 }): Promise<void> {
-
   const packageName = options?.packageName ?? '';
   if (options?.detectSemanticTypes)
     await grok.data.detectSemanticTypes(df);

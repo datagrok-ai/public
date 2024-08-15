@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.25 (2024-08-15)
+
+Added invocation time to tests 
+
 ## 4.2.24 (2024-08-09)
 
 Forms viewer: Don't use color coding with molecule columns
