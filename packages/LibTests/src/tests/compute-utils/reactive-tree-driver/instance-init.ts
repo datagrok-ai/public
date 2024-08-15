@@ -30,7 +30,7 @@ category('ComputeUtils: Driver state tree init', async () => {
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
+    const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'simple initial config');
   });
@@ -104,7 +104,7 @@ category('ComputeUtils: Driver state tree init', async () => {
       ],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
+    const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'initial config with dynamic pipelines');
   });
@@ -130,7 +130,7 @@ category('ComputeUtils: Driver state tree init', async () => {
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
+    const tree = StateTree.fromConfig({config: pconf});
     const state = tree.toSerializedState({ disableNodesUUID: true });
     await snapshotCompare(state, 'initial config with ref');
   });
@@ -158,8 +158,8 @@ category('ComputeUtils: Driver init calls', async () => {
       }],
     };
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
-    await tree.init().toPromise();
+    const tree = StateTree.fromConfig({config: pconf});
+    await tree.initFuncCalls().toPromise();
     const state = tree.toState();
     (state as PipelineStateStatic).steps.map(
       (x) => {
@@ -213,7 +213,7 @@ category('ComputeUtils: Driver init calls', async () => {
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromInstanceConfig(instanceConfig, pconf);
-    await tree.init().toPromise();
+    await tree.initFuncCalls().toPromise();
     const state = tree.toState();
     const fc = ((state as PipelineStateStatic).steps[1] as StepFunCallState).funcCall!;
     expectDeepEqual(fc.inputs.a, 1);

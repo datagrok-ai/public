@@ -13,6 +13,7 @@ import {getProcessedConfig} from './config/config-processing-utils';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
+  public currentMetaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
   private commands$ = new Subject<ViewConfigCommands>();
@@ -43,6 +44,11 @@ export class Driver {
       map((state) => state ? state.toState() : undefined),
       takeUntil(this.closed$),
     ).subscribe(this.currentState$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.metaCall$: of(undefined)),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentMetaCall$);
   }
 
   public sendCommand(msg: ViewConfigCommands) {
@@ -116,20 +122,20 @@ export class Driver {
 
   private loadPipeline(msg: LoadPipeline) {
     return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap((stateLoaded) => {
+      concatMap(([metaCall, stateLoaded]) => {
         if (isFuncCallSerializedState(stateLoaded))
           throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
         if (!stateLoaded.provider)
           throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing provider`);
         if (msg.config)
-          return of([stateLoaded, msg.config] as const);
+          return of([stateLoaded, msg.config, metaCall] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.provider, {version: stateLoaded.version}).pipe(
           concatMap((conf) => from(getProcessedConfig(conf))),
-          map((config) => [stateLoaded, config] as const),
+          map((config) => [stateLoaded, config, metaCall] as const),
         );
       }),
-      map(([stateLoaded, config]) => StateTree.fromState(stateLoaded, config, [], undefined, this.mockMode)),
-      concatMap((state) => state.init()),
+      map(([state, config, metaCall]) => StateTree.fromState({state, config, metaCall, mockMode: this.mockMode})),
+      concatMap((state) => state.initFuncCalls()),
       tap((nextState) => this.states$.next(nextState)),
     );
   }
@@ -137,8 +143,9 @@ export class Driver {
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
-      map((config) => StateTree.fromConfig(config)),
-      concatMap((state) => state.init()),
+      map((config) => StateTree.fromConfig({config, mockMode: this.mockMode})),
+      concatMap((state) => state.initFuncCalls()),
+      concatMap((state) => state.initMetaCall().pipe(mapTo(state))),
       tap((nextState) => this.states$.next(nextState)),
     );
   }

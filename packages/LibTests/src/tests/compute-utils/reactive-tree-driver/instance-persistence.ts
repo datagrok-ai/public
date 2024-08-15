@@ -10,12 +10,12 @@ category('ComputeUtils: Driver state tree persistence', async () => {
   test('Load and save simple config', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
-    await tree.init().toPromise();
+    const tree = StateTree.fromConfig({config: pconf});
+    await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({ disableNodesUUID: true, disableCallsUUID: true });
-    const id = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(id, pconf).toPromise();
-    await loadedTree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
+    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({ disableNodesUUID: true, disableCallsUUID: true });
     expectDeepEqual(lc, sc);
   });
@@ -23,12 +23,12 @@ category('ComputeUtils: Driver state tree persistence', async () => {
   test('Save creates new uuids', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider1', {}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
-    await tree.init().toPromise();
+    const tree = StateTree.fromConfig({config: pconf});
+    await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState();
-    const id = await tree.save().toPromise();
-    const loadedTree = await StateTree.load(id, pconf).toPromise();
-    await loadedTree.init().toPromise();
+    const metaCall = await tree.save().toPromise();
+    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState();
 
     expectDeepEqual(!!sc.uuid, true, { prefix: 'pipeline created uuid' });
@@ -54,18 +54,18 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     // create and save nested pipeline
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const tree = StateTree.fromConfig(pconf);
-    await tree.init().toPromise();
+    const tree = StateTree.fromConfig({config: pconf});
+    await tree.initFuncCalls().toPromise();
     const sc = tree.toSerializedState({ disableNodesUUID: true, disableCallsUUID: true });
-    const dbId = await tree.save().toPromise();
+    const metaCall = await tree.save().toPromise();
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
-    const outerTree = StateTree.fromConfig(outerPconf);
-    await outerTree.init().toPromise();
+    const outerTree = StateTree.fromConfig({config: outerPconf});
+    await outerTree.initFuncCalls().toPromise();
     // load nested tree into outer
     const root = outerTree.getItem([]);
-    await outerTree.loadSubTree(root.uuid, dbId, 'pipelinePar', 1).toPromise();
+    await outerTree.loadSubTree(root.uuid, metaCall.id, 'pipelinePar', 1).toPromise();
     const loadedTree = outerTree.getNode([{idx: 1}]);
     const lc = StateTree.toStateRec(loadedTree, true, { disableNodesUUID: true, disableCallsUUID: true });
     expectDeepEqual(lc, sc);
@@ -75,16 +75,16 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     // create outer pipeline
     const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockProvider3', {version: '1.0'}).toPromise();
     const outerPconf = await getProcessedConfig(outerConfig);
-    const outerTree = StateTree.fromConfig(outerPconf);
-    await outerTree.init().toPromise();
+    const outerTree = StateTree.fromConfig({config: outerPconf});
+    await outerTree.initFuncCalls().toPromise();
     const nestedRoot = outerTree.getNode([{idx: 0}]);
     const sc = StateTree.toStateRec(nestedRoot, true, { disableNodesUUID: true, disableCallsUUID: true });
     // save nested pipeline
-    const dbId = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
+    const metaCall = await outerTree.save(nestedRoot.getItem().uuid).toPromise();
     const config = await callHandler<PipelineConfiguration>('LibTests:MockProvider2', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);
-    const loadedTree = await StateTree.load(dbId, pconf).toPromise();
-    await loadedTree.init().toPromise();
+    const loadedTree = await StateTree.load(metaCall.id, pconf).toPromise();
+    await loadedTree.initFuncCalls().toPromise();
     const lc = loadedTree.toSerializedState({ disableNodesUUID: true, disableCallsUUID: true });
     expectDeepEqual(lc, sc);
   });

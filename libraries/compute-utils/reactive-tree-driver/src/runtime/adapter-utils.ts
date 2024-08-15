@@ -38,16 +38,22 @@ export async function loadFuncCall(id: string): Promise<IFuncCallAdapter> {
   return adapter;
 }
 
-export async function saveInstanceState(nqName: string, stateJson: string) {
-  const metaCall = await makeFuncCall(nqName);
-  metaCall.instance.options[CONFIG_PATH] = stateJson;
-  metaCall.instance.newId();
-  const fc = await historyUtils.saveRun(metaCall.instance);
-  return fc.id;
+export async function makeMetaCall(nqName: string) {
+  const func: DG.Func = await grok.functions.eval(nqName);
+  const metaCall = func.prepare({});
+  return metaCall;
+}
+
+export async function saveInstanceState(nqName: string, stateJson: string, currentMetaCall?: DG.FuncCall) {
+  const metaCall = currentMetaCall ?? await makeMetaCall(nqName);
+  metaCall.options[CONFIG_PATH] = stateJson;
+  metaCall.newId();
+  const fc = await historyUtils.saveRun(metaCall);
+  return fc;
 }
 
 export async function loadInstanceState(id: string) {
-  const fc = await historyUtils.loadRun(id, false);
-  const config = JSON.parse(fc.options[CONFIG_PATH] ?? {});
-  return config as PipelineSerializedState;
+  const metaCall = await historyUtils.loadRun(id, false);
+  const config: PipelineSerializedState = JSON.parse(metaCall.options[CONFIG_PATH] ?? {});
+  return [metaCall, config] as const;
 }
