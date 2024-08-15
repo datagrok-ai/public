@@ -534,7 +534,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   addToFilters() {
     const summary = `${this.getFilterSum()} (viewer)`;
-    const { filters } = grok.shell.tv.dataFrame.rows;
+    const dataFrame = grok.shell.tv.dataFrame;
+    if (!dataFrame)
+      return;
+
+    const { filters } = dataFrame.rows;
     const checkedNodes = this.tree.items.filter((node) => node.checked);
   
     if (checkedNodes.length > 0) {
