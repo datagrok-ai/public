@@ -48,7 +48,7 @@
     "debug-ml": "grok publish",
     "release-ml": "grok publish --release",
     "build-ml": "git clean -f -X -d ./src && tsc",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
     "debug-ml-public": "grok publish public",
     "release-ml-public": "grok publish public --release",
     "debug-ml-local": "grok publish local",
