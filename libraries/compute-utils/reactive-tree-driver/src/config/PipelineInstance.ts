@@ -127,6 +127,8 @@ export type PipelineStateStatic = PipelineInstanceBase<{
 
 export type StepSequentialDescription = {
   configId: string;
+  nqName?: string;
+  friendlyName?: string;
   disableUIAdding?: boolean;
 };
 
@@ -142,6 +144,8 @@ export type PipelineStateSequential = PipelineInstanceBase<{
 
 export type StepParallelDescription = {
   configId: string;
+  nqName?: string;
+  friendlyName?: string;
   disableUIAdding?: boolean;
 };
 

@@ -16,8 +16,9 @@ import {indexFromEnd} from '../utils';
 const MAX_CONCURENT_SAVES = 5;
 
 export class StateTree extends BaseTree<StateTreeNode> {
-  public makeStateRequests = new Subject<true>();
+  public makeStateRequests$ = new Subject<true>();
   public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
+  public isLocked$ = new BehaviorSubject(false);
 
   constructor(
     item: StateTreeNode,
@@ -62,9 +63,6 @@ export class StateTree extends BaseTree<StateTreeNode> {
             const obs$ = defer(() => saveFuncCall(inst)).pipe(map((nextCall) => [item, new FuncCallAdapter(nextCall)] as const));
             return [...acc, obs$];
           }
-        } else {
-          if (item.isUpdating$.value && item !== rootItem)
-            throw new Error(`Pipeline node ${item.uuid} saving during being updated`);
         }
         return acc;
       }, [] as Array<Observable<Readonly<[FuncCallNode, IFuncCallAdapter]>>>);
@@ -336,22 +334,20 @@ export class StateTree extends BaseTree<StateTreeNode> {
       return fn();
     }).pipe(finalize(() => {
       this.globalStructureUnlock();
-      this.makeStateRequests.next(true);
+      this.makeStateRequests$.next(true);
     }));
   }
 
   private globalStructureLock() {
-    const item = this.root.getItem() as PipelineNodeBase;
-    if (item.isUpdating$.value)
+    if (this.isLocked$.value)
       throw new Error(`Global structure double lock`);
-    item.setLoading(true);
+    this.isLocked$.next(true);
   }
 
   private globalStructureUnlock() {
-    const item = this.root.getItem() as PipelineNodeBase;
-    if (!item.isUpdating$.value)
+    if (!this.isLocked$.value)
       throw new Error(`Global structure double unlock`);
-    item.setLoading(false);
+    this.isLocked$.next(false);
   }
 
   private getSubConfig(path: NodePath, id: string) {

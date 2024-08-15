@@ -58,7 +58,8 @@
           "configId": "stepMul"
         },
         {
-          "configId": "pipeline1"
+          "configId": "pipeline1",
+          "nqName": "LibTests:MockWrapper1"
         }
       ]
     },
@@ -114,14 +115,16 @@
           "configId": "stepMul"
         },
         {
-          "configId": "pipeline1"
+          "configId": "pipeline1",
+          "nqName": "LibTests:MockWrapper1"
         }
       ]
     }
   ],
   "stepTypes": [
     {
-      "configId": "pipelinePar"
+      "configId": "pipelinePar",
+      "nqName": "LibTests:MockWrapper2"
     }
   ]
 }

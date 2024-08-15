@@ -7,7 +7,7 @@ import {isFuncCallState, PipelineState, PipelineStateParallel, PipelineStateSequ
 import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
-import {PipelineStepConfigurationProcessed} from '../config/config-utils';
+import {isPipelineConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 
 export type StateTreeSerializationOptions = {
   disableNodesUUID?: boolean,
@@ -61,7 +61,7 @@ export class FuncCallNode implements IStoreProvider {
       friendlyName: this.config.friendlyName,
       funcCallId: this.instancesWrapper.getInstance()?.getFuncCall()?.id,
       funcCall: this.instancesWrapper.getInstance()?.getFuncCall(),
-      isRunning: false,
+      isRunning: this.instancesWrapper.isRunning$.value,
       isRunable: this.instancesWrapper.isRunable$.value,
       isOuputOutdated: this.instancesWrapper.isOutputOutdated$.value,
       isCurrent: this.instancesWrapper.isCurrent$.value,
@@ -96,17 +96,12 @@ export class PipelineNodeBase implements IStoreProvider {
   public uuid = uuidv4();
   private store: MemoryStore;
 
-  public isUpdating$ = new BehaviorSubject(false);
   public isReadonly$ = new BehaviorSubject(false);
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
   ) {
     this.store = new MemoryStore(config.states ?? []);
-  }
-
-  setLoading(val: boolean) {
-    this.isUpdating$.next(val);
   }
 
   restoreState(state: PipelineState) {
@@ -172,8 +167,13 @@ export class ParallelPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        const {id: configId, disableUIAdding} = s;
-        return {configId, disableUIAdding};
+        if (isPipelineConfig(s)) {
+          const {id: configId, disableUIAdding, nqName, friendlyName} = s;
+          return {configId, disableUIAdding, nqName, friendlyName};
+        } else {
+          const {id: configId, disableUIAdding} = s;
+          return {configId, disableUIAdding};
+        }
       }),
     };
     return res;
@@ -196,8 +196,13 @@ export class SequentialPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       stepTypes: this.config.stepTypes.map((s) => {
-        const {id: configId, disableUIAdding} = s;
-        return {configId, disableUIAdding};
+        if (isPipelineConfig(s)) {
+          const {id: configId, disableUIAdding, nqName, friendlyName} = s;
+          return {configId, disableUIAdding, nqName, friendlyName};
+        } else {
+          const {id: configId, disableUIAdding} = s;
+          return {configId, disableUIAdding};
+        }
       }),
     };
     return res;

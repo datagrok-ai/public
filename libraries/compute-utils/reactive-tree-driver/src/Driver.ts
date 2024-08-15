@@ -13,6 +13,7 @@ import {getProcessedConfig} from './config/config-processing-utils';
 
 export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
+  public stateLocked$ = new BehaviorSubject(false);
   public currentMetaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
 
   private states$ = new BehaviorSubject<StateTree | undefined>(undefined);
@@ -40,7 +41,7 @@ export class Driver {
     });
 
     this.states$.pipe(
-      switchMap((state) => state ? state.makeStateRequests.pipe(startWith(null), mapTo(state)) : of(undefined)),
+      switchMap((state) => state ? state.makeStateRequests$.pipe(startWith(null), mapTo(state)) : of(undefined)),
       map((state) => state ? state.toState() : undefined),
       takeUntil(this.closed$),
     ).subscribe(this.currentState$);
@@ -49,6 +50,11 @@ export class Driver {
       switchMap((state) => state ? state.metaCall$: of(undefined)),
       takeUntil(this.closed$),
     ).subscribe(this.currentMetaCall$);
+
+    this.states$.pipe(
+      switchMap((state) => state ? state.isLocked$ : of(false)),
+      takeUntil(this.closed$),
+    ).subscribe(this.stateLocked$)
   }
 
   public sendCommand(msg: ViewConfigCommands) {
