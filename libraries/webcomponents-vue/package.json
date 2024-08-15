@@ -5,6 +5,7 @@
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
     "@datagrok-libraries/webcomponents": "^0.0.2",
+    "@vueuse/core": "^10.11.1",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",

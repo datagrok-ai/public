@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {computed, defineComponent, isReactive, KeepAlive, PropType, ref, shallowRef, watch, watchEffect} from 'vue';
+import {defineComponent, PropType, watch} from 'vue';
 import type {InputFormT} from '@datagrok-libraries/webcomponents/src';
 import {getValidators,
   injectInputBaseValidation,
@@ -10,8 +10,8 @@ import {getValidators,
   validate,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {SYNC_FIELD} from '@datagrok-libraries/compute-utils/shared-utils/consts';
-import {ValidationResult, Validator} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {FuncCallInputValidated, isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import {isFuncCallInputValidated} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
+import { computedAsync } from '@vueuse/core'
 
 declare global {
   namespace JSX {
@@ -35,17 +35,11 @@ export const InputForm = defineComponent({
   setup(props, {emit}) {
     let currentForm = undefined as undefined | DG.InputForm;
 
-    let loadedValidators = shallowRef({});
-
-    watch(() => props.funcCall, () => {
-      console.log('props.funcCall changed', props.funcCall);
-
-      getValidators(props.funcCall, SYNC_FIELD.INPUTS).then((res) => loadedValidators.value = res);
-    })
+    let loadedValidators = computedAsync(() => getValidators(props.funcCall, SYNC_FIELD.INPUTS), {}, {shallow: true});
 
     watch(loadedValidators, () => {
       runValidation();
-    })
+    });
 
     const allParams = (funcCall: DG.FuncCall) =>
       [...funcCall.inputParams.values() ?? []].map((param) => param.name);
