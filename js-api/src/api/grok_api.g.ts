@@ -556,6 +556,7 @@ export interface IDartApi {
   grok_Column_GetRawDataDartium(c: any): any;
   grok_Column_GetRawData(c: any): any;
   grok_Column_SetRawData(c: any, rawData: any, notify: any): any;
+  grok_Column_AsDoubleList(c: any): any;
   grok_Column_Scale(c: any, i: Num): any;
   grok_Column_GetValue(c: any, i: Num): any;
   grok_Column_SetValue(c: any, i: Num, x: any, notify: Bool): any;
@@ -592,6 +593,8 @@ export interface IDartApi {
   grok_Column_GetAutoFormat(column: any): any;
   grok_Column_Get_Is_Categorical(column: any): any;
   grok_Column_Get_Is_Numerical(column: any): any;
+  grok_FloatColumn_GetDoublePrecision(c: any): any;
+  grok_FloatColumn_SetDoublePrecision(c: any, doublePrecision: Bool): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
