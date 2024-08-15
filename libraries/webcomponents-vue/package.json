@@ -4,13 +4,12 @@
   "version": "0.0.2",
   "description": "Datagrok web components vue wrappers",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "latest",
     "@datagrok-libraries/webcomponents": "^0.0.2",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
     "rxjs": "^6.6.7",
-    "vue": "^3.4.37",
+    "vue": "^3.4.27",
     "wu": "^2.1.0"
   },
   "devDependencies": {
