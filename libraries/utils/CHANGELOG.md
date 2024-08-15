@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.2.26 (2024-08-15)
+
+Invocation time refactoring 
+
 ## 4.2.25 (2024-08-15)
 
 Added invocation time to tests 

@@ -585,7 +585,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!filter) {
     let params = {
       'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'invocation_time': r.startDatetime
+      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'date': r.startDatetime.toISOString()
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
