@@ -17,13 +17,13 @@ export const VueElementsTestApp = defineComponent({
         <div style={{width: '100%', height: '100%'}}>
           <TabHeaderStripe items={items.value} selected={selected.value} onUpdate:selected={(v) => selected.value = v}/>
         
-          <button onClick={() => grok.shell.info('Button clicked')} is='dg-button'>click me</button>
-          <button onClick={() => {
-            resize.value = !resize.value;
-          }} is='dg-big-button'>click me</button>
           <SplitH resize={resize.value}>
-            <Button onClick={() => grok.shell.info('Button clicked')}>click me</Button>
-            <BigButton onClick={() => grok.shell.info('Big Button clicked')}>click me</BigButton>
+            <button onClick={() => items.value = [{label: 'Test anme'}, {label: 'Seocnd tab'}]} is='dg-button'>
+            Change tab name
+            </button>
+            <button onClick={() => {
+              resize.value = !resize.value;
+            }} is='dg-big-button'>click me</button>  
           </SplitH>  
         </div>
       </keep-alive>
