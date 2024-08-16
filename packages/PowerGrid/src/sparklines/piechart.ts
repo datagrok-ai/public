@@ -11,13 +11,13 @@ import {
   isSummarySettingsBase
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
-import { CONSTANTS } from '../utils/constants';
 
 let minRadius: number;
 
 enum PieChartStyle {
   Radius = 'Radius',
-  Angle = 'Angle'
+  Angle = 'Angle',
+  Vlaaivis = 'VlaaiVis'
 }
 
 export interface Subsector {
@@ -37,7 +37,7 @@ export interface Sector {
 
 export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
-  style: PieChartStyle.Radius | PieChartStyle.Angle;
+  style: PieChartStyle.Radius | PieChartStyle.Angle | PieChartStyle.Vlaaivis;
   sectors?: {
       lowerBound: number;
       upperBound: number;
@@ -361,17 +361,22 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         },
         available: names(gc.grid.dataFrame.columns.numerical)
       }),
-      ui.input.choice('Style', {value: PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, CONSTANTS.VLAAIVIS],
+      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (input) => {
-        ui.empty(elementsDiv);
-        if (input.value === CONSTANTS.VLAAIVIS)
-          elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-        else {
-          delete settings.sectors;
-          settings.style = input.value as PieChartStyle;
-          gc.grid.invalidate();
+          settings.style = input.value;
+          ui.empty(elementsDiv);
+          if (input.value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+          else {
+            delete settings.sectors;
+            gc.grid.invalidate();
+          }
+        },
+        onCreated: (input) => {
+          if (input.value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
         }
-      }})
+      })
     ]);
 
     return ui.divV([inputs, elementsDiv]);
