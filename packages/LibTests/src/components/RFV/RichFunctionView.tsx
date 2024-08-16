@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
 import 'gridstack/dist/gridstack.min.css';
 import './RichFunctionView.css';
 import {categoryToDfParamMap, getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -64,7 +64,7 @@ export const RichFunctionView = defineComponent({
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
-        <div> 
+        <div style={{padding: '8px'}}> 
           <InputForm funcCall={currentCall.value}/>
           <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
             <BigButton onClick={runSimulation}> Run </BigButton>
@@ -74,9 +74,10 @@ export const RichFunctionView = defineComponent({
           items={tabLabels.value.map((label) => ({label}))} 
           selected={selectedIdx.value} 
           onUpdate:selected={(v) => selectedIdx.value = v}
+          style={{width: '100%'}}
         >
-          { 
-            tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
+          {{
+            default: () => tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
               .flatMap((tabProps) => tabProps.map((prop) => getPropViewers(prop)))
               .map(({name, config: allConfigs}) => 
@@ -90,8 +91,9 @@ export const RichFunctionView = defineComponent({
                     /> 
                   </div>,
                 ),
-              )
-          }
+              ),
+            stripePostfix: () => <IconFA name='info' tooltip='Open help panel'/>,
+          }}
         </Tabs>
       </div>
     );

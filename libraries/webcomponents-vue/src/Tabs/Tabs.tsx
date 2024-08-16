@@ -19,8 +19,10 @@ export const Tabs = defineComponent({
     },
   },
   slots: Object as SlotsType<{
-    default?: any,
-    header: HeaderItem
+    default: any,
+    header: HeaderItem,
+    stripePrefix: any,
+    stripePostfix: any,
   }>,
   emits: {
     'update:selected': (item: number) => item,
@@ -30,7 +32,11 @@ export const Tabs = defineComponent({
     return () => (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <TabHeaderStripe items={props.items} selected={props.selected} onUpdate:selected={(v) => emit('update:selected', v)}>
-          {{header: slots.header }}
+          {{
+            header: slots.header,
+            prefix: slots.stripePrefix,
+            postfix: slots.stripePostfix,
+          }}
         </TabHeaderStripe>
         <TabArea selectedIdx={props.selected}> 
           { ...slots.default?.() }
