@@ -5,6 +5,7 @@ import {Point, Rect, GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 import * as rxjs from "rxjs";
 import {StreamSubscription} from "./events";
+import { ViewerType } from './const';
 
 const api: IDartApi = <any>window;
 
@@ -725,6 +726,11 @@ export namespace Test {
 
   export function getInputTestDataGeneratorByType(inputType: string) {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
+  }
+
+  
+  export async function testViewerPropertiesByName(viewerType: ViewerType) {
+    await api.grok_Test_RunViewerTest(viewerType);
   }
 }
 

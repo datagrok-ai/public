@@ -29,6 +29,12 @@ category('Viewers: Core Viewers', () => {
   }
 });
 
+category('Viewers: Viewers Cases', ()=>{
+  test('Box plot - valueColumnName', async ()=>{
+    await grok.functions.call("UITests: testViewerProperties", {df: grok.data.demo.demog(100), viewerType: 'box plot', properties: {valueColumnName: 'started'}});
+  });
+});
+
 category('Viewers', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;

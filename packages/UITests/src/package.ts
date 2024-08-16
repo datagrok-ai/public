@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
 import {TestCustomFilter} from './viewers/test-custom-filter';
-
+import { delay } from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 
 // -- Viewers --
@@ -16,6 +16,21 @@ export const _package = new DG.Package();
 //output: viewer result
 export function testViewerForProperties() {
   return new TestViewerForProperties();
+}
+
+//name: TestViewerProperties
+//description: Viewer to test properties and others
+//input: dataframe df
+//input: string viewerType
+//input: dynamic properties
+//tags: viewer, panel
+//output: viewer result 
+export async function testViewerProperties(df : DG.DataFrame, viewerType: DG.ViewerType, properties: { [key: string]: any}) {
+  var tv = DG.TableView.create(df, true);
+  var viewer = tv.addViewer(viewerType);
+  viewer.setOptions(properties);
+  await delay(1000);
+  return tv
 }
 
 // -- Filters --
