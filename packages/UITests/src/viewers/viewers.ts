@@ -29,9 +29,9 @@ category('Viewers: Core Viewers', () => {
   }
 });
 
-category('Viewers: Viewers Cases', ()=>{
-  test('Box plot - valueColumnName', async ()=>{
-    await grok.functions.call("UITests: testViewerProperties", {df: grok.data.demo.demog(100), viewerType: 'box plot', properties: {valueColumnName: 'started'}});
+category('Viewers: Viewers Cases', ()=> {
+  test('Box plot - valueColumnName', async ()=> {
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, {valueColumnName: 'started'});
   });
 });
 
