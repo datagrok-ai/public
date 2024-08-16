@@ -12,12 +12,13 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
-import {HelmTabKeys} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
+import {HelmTabKeys, IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
 import {getWebEditorMonomer} from './utils/get-monomer';
 import {HelmInput} from './widgets/helm-input';
+import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 
 import {_package} from './package';
 
@@ -47,8 +48,8 @@ export class HelmHelper implements IHelmHelper {
     }
   }
 
-  createHelmWebEditor(host?: HTMLDivElement): IHelmWebEditor {
-    return new HelmWebEditor(host);
+  createHelmWebEditor(host?: HTMLDivElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor {
+    return new HelmWebEditor(host, drawOptions);
   }
 
   createWebEditorApp(host: HTMLDivElement, helm: string): App {
@@ -247,7 +248,7 @@ export class HelmHelper implements IHelmHelper {
     const logPrefix = `Helm: HelmHelper.buildGetMonomerFromLib()`;
 
     return {
-      getMonomer: (a: Atom<HelmType> | HelmType, name?: string): GetMonomerResType => {
+      getMonomer: (a: HelmAtom | HelmType, name?: string): GetMonomerResType => {
         const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
         try {
           // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
@@ -307,5 +308,9 @@ export class HelmHelper implements IHelmHelper {
       }
     }
     throw new Error(`Not supported monomer polymerType: '${polymerType}', monomerType: '${monomerType}'.`);
+  }
+
+  public getHoveredAtom(x: number, y: number, mol: HelmMol, height: number): HelmAtom | null {
+    return getHoveredMonomerFromEditorMol(x, y, mol, height);
   }
 }

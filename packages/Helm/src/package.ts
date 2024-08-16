@@ -26,7 +26,7 @@ import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {getRS} from './utils/get-monomer-dummy';
 
 // Do not import anything than types from @datagrok/helm-web-editor/src/types
-import type {JSDraw2HelmModule, OrgHelmModule, ScilModule} from './types';
+import type {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
 
 export const _package = new HelmPackage({debug: true});
 
@@ -40,7 +40,7 @@ export const _package = new HelmPackage({debug: true});
 
 declare const window: Window & HweWindow;
 declare const scil: ScilModule;
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 declare const org: OrgHelmModule;
 
 //tags: init

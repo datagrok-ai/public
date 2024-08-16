@@ -2,17 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {HelmType, PolymerType, Atom, Mol, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmType, PolymerType, Atom, Mol, ISeqMonomer, HelmMol, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 import {HelmMonomerPlacer} from '../helm-monomer-placer';
 
 export function getHoveredMonomerFromEditorMol(
-  argsX: number, argsY: number, mol: Mol<HelmType>, cellHeight? : number
-): ISeqMonomer | null {
-  let hoveredSeqMonomer: ISeqMonomer | null = null;
-
+  argsX: number, argsY: number, mol: HelmMol, cellHeight?: number
+): HelmAtom | null {
   /** @return {[number, number]} [atom, distance] */
   function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
     let atom: number | undefined = undefined;
@@ -34,18 +32,18 @@ export function getHoveredMonomerFromEditorMol(
   const [firstAtomI, firstDistance] = getNearest([]);
   const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
 
+  let resAtom: HelmAtom | null = null;
   if (firstAtomI !== undefined && firstDistance !== undefined) {
     const firstAtom = mol.atoms[firstAtomI];
-    const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
     if (secondAtomI !== undefined && secondDistance !== undefined) {
       if (firstDistance < secondDistance * 0.45)
-        hoveredSeqMonomer = firstSeqMonomer;
+        resAtom = firstAtom;
     } else {
       if (cellHeight && firstDistance < 0.35 * cellHeight)
-        hoveredSeqMonomer = firstSeqMonomer;
+        resAtom = firstAtom;
     }
   }
-  return hoveredSeqMonomer;
+  return resAtom;
 }
 
 export function getHoveredMonomerFallback(
@@ -83,7 +81,7 @@ export function getHoveredMonomerFallback(
   return hoveredSeqMonomer;
 }
 
-function getSeqMonomerFromHelmAtom(atom: Atom<HelmType>): ISeqMonomer {
+export function getSeqMonomerFromHelmAtom(atom: HelmAtom): ISeqMonomer {
   const polymerType = helmTypeToPolymerType(atom.bio!.type);
   return {symbol: atom.elem, polymerType: polymerType};
 }
