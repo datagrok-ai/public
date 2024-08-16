@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {defineComponent, onMounted, PropType, ref, triggerRef, nextTick, computed, watch} from 'vue';
 import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
-import {Viewer, InputForm, BigButton, Button, TabHeaderStripe} from '@datagrok-libraries/webcomponents-vue/src';
+import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs} from '@datagrok-libraries/webcomponents-vue/src';
 import 'gridstack/dist/gridstack.min.css';
 import './RichFunctionView.css';
 import {categoryToDfParamMap, getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -46,18 +46,16 @@ export const RichFunctionView = defineComponent({
       prop.propertyType === DG.TYPE.DATA_FRAME && getPropViewers(prop).config.length !== 0,
     ));
 
+    const categoryToDfParam = computed(() => categoryToDfParamMap(currentCall.value.func));
+
     const tabLabels = computed(() => {
       return [
-        ...Object.keys(categoryToDfParamMap(currentCall.value.func).inputs),
-        ...Object.keys(categoryToDfParamMap(currentCall.value.func).outputs),
-      ].map((label) => ({label}));
+        ...Object.keys(categoryToDfParam.value.inputs),
+        ...Object.keys(categoryToDfParam.value.outputs),
+      ];
     });
 
     const selectedIdx = ref(0);
-
-    const selectedTab = computed(() => {
-      return tabLabels.value[selectedIdx.value];
-    });
 
     const runSimulation = async () => {
       await currentCall.value.call();
@@ -72,14 +70,18 @@ export const RichFunctionView = defineComponent({
             <BigButton onClick={runSimulation}> Run </BigButton>
           </div>
         </div>
-        <div style={{display: 'flex', flexDirection: 'column'}}>
-          <TabHeaderStripe items={tabLabels.value} selected={selectedIdx.value}/>
+        <Tabs 
+          items={tabLabels.value.map((label) => ({label}))} 
+          selected={selectedIdx.value} 
+          onUpdate:selected={(v) => selectedIdx.value = v}
+        >
           { 
-            paramsWithViewers.value
-              .map((prop) => getPropViewers(prop))
+            tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
+                categoryToDfParam.value.outputs[tabLabel])            
+              .flatMap((tabProps) => tabProps.map((prop) => getPropViewers(prop)))
               .map(({name, config: allConfigs}) => 
                 allConfigs.map((options, idx) => 
-                  <div id={`viewer${idx.toString()}`}>
+                  <div key={`${currentCall.value.id}_${idx}`} style={{height: '300px'}}>
                     <Viewer
                       type={options['type'] as string}
                       options={options}
@@ -90,7 +92,7 @@ export const RichFunctionView = defineComponent({
                 ),
               )
           }
-        </div>
+        </Tabs>
       </div>
     );
   },

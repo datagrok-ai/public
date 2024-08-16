@@ -28,7 +28,7 @@ export const Tabs = defineComponent({
   setup(props, {emit, slots}) {
     console.log(slots.default?.(), ' in tabs');
     return () => (
-      <div>
+      <div style={{display: 'flex', flexDirection: 'column'}}>
         <TabHeaderStripe items={props.items} selected={props.selected} onUpdate:selected={(v) => emit('update:selected', v)}>
           {{header: slots.header }}
         </TabHeaderStripe>
