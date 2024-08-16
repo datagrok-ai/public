@@ -1,0 +1,1 @@
+export type HeaderItem  = {label: string, key?: string};

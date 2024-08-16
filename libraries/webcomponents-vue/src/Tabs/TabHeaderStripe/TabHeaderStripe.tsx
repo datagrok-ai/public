@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { defineComponent, PropType, SlotsType } from 'vue';
-
-type HeaderItem  = {label: string, key?: string};
+import { HeaderItem } from '../shared';
 
 export const TabHeaderStripe = defineComponent({
   props: {
