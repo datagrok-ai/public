@@ -62,7 +62,7 @@ export function isParallelPipelineState(state: PipelineState): state is Pipeline
   return state.type === 'parallel';
 }
 export function isSequentialPipelineState(state: PipelineState): state is PipelineStateSequential {
-  return state.type === 'static';
+  return state.type === 'sequential';
 }
 
 export const pipelineMenuCategories = ['export', 'mock', 'template'] as const;

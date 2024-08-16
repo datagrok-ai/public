@@ -13,6 +13,7 @@ import {createApp, provide} from 'vue';
 import {VueViewerTestApp} from './components/VueViewerTestApp';
 import {VueFormTestApp} from './components/VueFormTestApp';
 import {VueElementsTestApp} from './components/VueElelementsTestApp';
+import { VueDriverTestApp } from './components/VueDriverTestApp';
 
 export const _package = new DG.Package();
 
@@ -243,6 +244,15 @@ export async function TestVueFormComponent() {
 export async function TestVueElements() {
   const view = new DG.ViewBase();
   const app = createApp(VueElementsTestApp);
+  app.mount(view.root);
+  grok.shell.addView(view);
+}
+
+//tags: test
+export async function TestVueDriver() {
+  // TODO: close view handling
+  const view = new DG.ViewBase();
+  const app = createApp(VueDriverTestApp);
   app.mount(view.root);
   grok.shell.addView(view);
 }

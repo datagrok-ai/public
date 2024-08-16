@@ -35,7 +35,8 @@ export class Driver {
     this.states$.pipe(
       pairwise(),
       takeUntil(this.closed$),
-    ).subscribe(([oldval]) => {
+    ).subscribe(([oldval, cVal]) => {
+      console.log(cVal);
       if (oldval)
         oldval.close();
     });
@@ -93,12 +94,12 @@ export class Driver {
 
   private addDynamicItem(msg: AddDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.addSubTree(msg.parentUuid, msg.itemId, msg.postion);
+    return state.addSubTree(msg.parentUuid, msg.itemId, msg.position);
   }
 
   private loadDynamicItem(msg: LoadDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.postion);
+    return state.loadSubTree(msg.parentUuid, msg.dbId, msg.itemId, msg.position);
   }
 
   private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
@@ -113,7 +114,7 @@ export class Driver {
 
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    return state.moveSubtree(msg.uuid, msg.postion);
+    return state.moveSubtree(msg.uuid, msg.position);
   }
 
   private runStep(msg: RunStep, state?: StateTree) {
@@ -150,8 +151,7 @@ export class Driver {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
       concatMap((conf) => from(getProcessedConfig(conf))),
       map((config) => StateTree.fromConfig({config, mockMode: this.mockMode})),
-      concatMap((state) => state.initFuncCalls()),
-      concatMap((state) => state.initMetaCall().pipe(mapTo(state))),
+      concatMap((state) => state.initAll()),
       tap((nextState) => this.states$.next(nextState)),
     );
   }

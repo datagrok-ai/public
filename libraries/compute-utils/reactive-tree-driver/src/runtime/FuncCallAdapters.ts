@@ -3,7 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {BehaviorSubject, Observable, from, defer, Subject, merge} from 'rxjs';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {StateItem} from '../config/PipelineConfiguration';
-import {delay, map, mapTo, startWith, takeUntil} from 'rxjs/operators';
+import {delay, map, mapTo, skip, startWith, takeUntil} from 'rxjs/operators';
 
 export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 
@@ -52,8 +52,8 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   private closed$ = new Subject<true>();
 
   constructor(public instance: DG.FuncCall) {
-    const allParamsChanges$ = Object.keys(instance.inputs).map((inputName) => this.getStateChanges(inputName));
-    merge(allParamsChanges$).pipe(
+    const allParamsChanges = Object.keys(instance.inputs).map((inputName) => this.getStateChanges(inputName).pipe(skip(1)));
+    merge(...allParamsChanges).pipe(
       mapTo(true),
       takeUntil(this.closed$),
     ).subscribe(this.isOutputOutdated$);

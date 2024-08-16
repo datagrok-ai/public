@@ -7,7 +7,7 @@ export interface AddDynamicItem {
   event: 'addDynamicItem';
   parentUuid: string;
   itemId: ItemId;
-  postion: number;
+  position: number;
 }
 
 export interface LoadDynamicItem {
@@ -15,7 +15,7 @@ export interface LoadDynamicItem {
   parentUuid: string;
   dbId: string;
   itemId: ItemId;
-  postion: number;
+  position: number;
   readonly?: boolean; // TODO
 }
 
@@ -32,7 +32,7 @@ export interface RemoveDynamicItem {
 export interface MoveDynamicItem {
   event: 'moveDynamicItem';
   uuid: string;
-  postion: number;
+  position: number;
 }
 
 export interface RunStep {

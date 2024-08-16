@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, identity, of, merge, Subject, BehaviorSubject} from 'rxjs';
-import {delay, finalize, map, mapTo, toArray, concatMap, filter, tap} from 'rxjs/operators';
+import { delay, finalize, map, mapTo, toArray, concatMap, filter, tap, takeUntil, switchMap, skip, withLatestFrom } from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -20,12 +20,27 @@ export class StateTree extends BaseTree<StateTreeNode> {
   public metaCall$ = new BehaviorSubject<DG.FuncCall | undefined>(undefined);
   public isLocked$ = new BehaviorSubject(false);
 
+  private closed$ = new Subject<true>();
+  private funcallStatesWatchers$ = new Subject<Observable<true>>();
+
   constructor(
     item: StateTreeNode,
     private config: PipelineConfigurationProcessed,
     private mockMode = false,
   ) {
     super(item);
+
+    this.makeStateRequests$.pipe(
+      takeUntil(this.closed$)
+    ).subscribe(() => this.updateWatchers())
+
+    this.funcallStatesWatchers$.pipe(
+      switchMap(watchers$ => watchers$),
+      withLatestFrom(this.isLocked$),
+      filter(([, isLocked]) => !isLocked),
+      mapTo(true as const),
+      takeUntil(this.closed$)
+    ).subscribe(this.makeStateRequests$);
   }
 
   public toSerializedState(options: StateTreeSerializationOptions = {}): PipelineSerializedState {
@@ -78,17 +93,15 @@ export class StateTree extends BaseTree<StateTreeNode> {
     });
   }
 
-  public initFuncCalls() {
+  public initAll() {
     return this.updateWithLock(() => {
-      return StateTree.loadOrCreateCalls(this, this.mockMode);
+      return merge(StateTree.loadOrCreateCalls(this, this.mockMode), this.initMetaCall()).pipe(tap(() => console.log('asdf')), toArray(), mapTo(this));
     });
   }
 
-  public initMetaCall() {
+  public initFuncCalls() {
     return this.updateWithLock(() => {
-      return this.makeMetaCall().pipe(
-        tap((call) => this.metaCall$.next(call)),
-      );
+      return StateTree.loadOrCreateCalls(this, this.mockMode);
     });
   }
 
@@ -144,16 +157,18 @@ export class StateTree extends BaseTree<StateTreeNode> {
   }
 
   public runStep(uuid: string, mockResults?: Record<string, any>, mockDelay?: number) {
-    if (!this.mockMode && mockResults)
-      throw new Error(`Mock results passed to runStep while mock mode is off`);
-    const res = this.find((item) => item.uuid === uuid);
-    if (!res)
-      throw new Error(`Step uuid ${uuid} not found`);
-    const [snode] = res;
-    const node = snode.getItem();
-    if (!isFuncCallNode(node))
-      throw new Error(`Step uuid ${uuid} is not FuncCall`);
-    return node.instancesWrapper.run(mockResults, mockDelay);
+    return this.updateWithLock(() => {
+      if (!this.mockMode && mockResults)
+        throw new Error(`Mock results passed to runStep while mock mode is off`);
+      const res = this.find((item) => item.uuid === uuid);
+      if (!res)
+        throw new Error(`Step uuid ${uuid} not found`);
+      const [snode] = res;
+      const node = snode.getItem();
+      if (!isFuncCallNode(node))
+        throw new Error(`Step uuid ${uuid} is not FuncCall`);
+      return node.instancesWrapper.run(mockResults, mockDelay);
+    });
   }
 
   public close() {
@@ -350,6 +365,22 @@ export class StateTree extends BaseTree<StateTreeNode> {
     this.isLocked$.next(false);
   }
 
+  private updateWatchers() {
+    const watchers = this.traverse(this.root, (acc, node) => {
+      const item = node.getItem();
+      if (isFuncCallNode(item)) {
+        const watcher = merge(
+          item.instancesWrapper.isOutputOutdated$.pipe(skip(1)),
+          item.instancesWrapper.isRunning$.pipe(skip(1)),
+          item.instancesWrapper.isRunable$.pipe(skip(1)),
+        ).pipe(mapTo(true as const));
+        return [...acc, watcher];
+      }
+      return acc;
+    }, [] as Observable<true>[]);
+    this.funcallStatesWatchers$.next(merge(...watchers));
+  }
+
   private getSubConfig(path: NodePath, id: string) {
     const refMap = buildRefMap(this.config);
     const subConfPath = [...path.map((s) => s.id), id];
@@ -368,6 +399,12 @@ export class StateTree extends BaseTree<StateTreeNode> {
       return new SequentialPipelineNode(nodeConf);
 
     throw new Error(`Wrong node type ${nodeConf}`);
+  }
+
+  private initMetaCall() {
+    return this.makeMetaCall().pipe(
+      tap((call) => this.metaCall$.next(call)),
+    );
   }
 
   private makeMetaCall() {
