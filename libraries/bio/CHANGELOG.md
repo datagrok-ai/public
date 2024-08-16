@@ -1,5 +1,13 @@
 # bio changelog
 
+## 5.42.9
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
 ## 5.42.8 (2024-08-14)
 
 Fix monomer substitution matrix calculation
