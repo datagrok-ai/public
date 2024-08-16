@@ -1,8 +1,12 @@
 # utils changelog
 
+## 4.2.27 (2024-08-16)
+
+Invocation time refactoring
+
 ## 4.2.26 (2024-08-15)
 
-Invocation time refactoring 
+Invocation time refactoring
 
 ## 4.2.25 (2024-08-15)
 
