@@ -34,6 +34,7 @@ category('Viewers', ()=> {
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, {valueColumnName: 'started'});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {sortByColumnNames: ['age']});
     await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {pinnedRowColumnNames: ['subj']});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PC_PLOT, {colorColumnName: 'started'});
   });
 });
 
