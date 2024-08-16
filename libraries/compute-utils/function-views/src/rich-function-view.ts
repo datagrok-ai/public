@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
-import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, getValidators, createPartialCopy, validate} from '../../shared-utils/utils';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, getValidators, createPartialCopy, validate, categoryToDfParamMap} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -996,39 +996,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   protected get categoryToDfParamMap() {
-    const map = {
-      inputs: {} as Record<string, DG.Property[]>,
-      outputs: {} as Record<string, DG.Property[]>,
-    };
-
-    this.func.inputs
-      .filter((inputProp) =>
-        inputProp.propertyType === DG.TYPE.DATA_FRAME &&
-        getPropViewers(inputProp).config.length !== 0,
-      )
-      .forEach((p) => {
-        const category = p.category === 'Misc' ? 'Input': p.category;
-
-        if (map.inputs[category])
-          map.inputs[category].push(p);
-        else
-          map.inputs[category] = [p];
-      });
-
-    this.func.outputs
-      .forEach((p) => {
-        const category = p.category === 'Misc' ? 'Output': p.category;
-
-        if (p.propertyType === DG.TYPE.DATA_FRAME &&
-          getPropViewers(p).config.length === 0) return;
-
-        if (map.outputs[category])
-          map.outputs[category].push(p);
-        else
-          map.outputs[category] = [p];
-      });
-
-    return map;
+    return categoryToDfParamMap(this.funcCall.func)
   }
 
   private get inputsStorage() {

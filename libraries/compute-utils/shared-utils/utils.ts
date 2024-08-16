@@ -10,6 +10,42 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const categoryToDfParamMap = (func: DG.Func) => {
+  const map = {
+    inputs: {} as Record<string, DG.Property[]>,
+    outputs: {} as Record<string, DG.Property[]>,
+  };
+
+  func.inputs
+    .filter((inputProp) =>
+      inputProp.propertyType === DG.TYPE.DATA_FRAME &&
+      getPropViewers(inputProp).config.length !== 0,
+    )
+    .forEach((p) => {
+      const category = p.category === 'Misc' ? 'Input': p.category;
+
+      if (map.inputs[category])
+        map.inputs[category].push(p);
+      else
+        map.inputs[category] = [p];
+    });
+
+  func.outputs
+    .forEach((p) => {
+      const category = p.category === 'Misc' ? 'Output': p.category;
+
+      if (p.propertyType === DG.TYPE.DATA_FRAME &&
+        getPropViewers(p).config.length === 0) return;
+
+      if (map.outputs[category])
+        map.outputs[category].push(p);
+      else
+        map.outputs[category] = [p];
+    });
+
+  return map;
+}
+
 export const createPartialCopy = async (call: DG.FuncCall) => {
   const previousId = call.id;
   // grok.functions.eval creates an ID.
