@@ -10,10 +10,10 @@ export const TabHeaderStripe = defineComponent({
     items: {
       type: Array<HeaderItem>,
       required: true,
-      default: []
     },
     selected: {
-      type: Number
+      type: Number,
+      default: 0
     },
   },
   slots: Object as SlotsType<{
