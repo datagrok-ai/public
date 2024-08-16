@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BigButton, Button, IconFA, SplitH, TabHeaderStripe} from '@datagrok-libraries/webcomponents-vue/src';
+import {BigButton, Button, IconFA, SplitH, TabArea, TabHeaderStripe} from '@datagrok-libraries/webcomponents-vue/src';
 import {defineComponent, ref} from 'vue';
 
 export const VueElementsTestApp = defineComponent({
@@ -17,6 +17,11 @@ export const VueElementsTestApp = defineComponent({
         <div style={{width: '100%', height: '100%'}}>
           <TabHeaderStripe items={items.value} selected={selected.value} onUpdate:selected={(v) => selected.value = v}/>
         
+          <TabArea selectedIdx={selected.value}> 
+            <div> <span> 1 </span> </div>
+            <div> <span> 2 </span> </div>
+          </TabArea>
+
           <SplitH resize={resize.value}>
             <button onClick={() => items.value = [{label: 'Test anme'}, {label: 'Seocnd tab'}]} is='dg-button'>
             Change tab name
