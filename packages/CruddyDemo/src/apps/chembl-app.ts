@@ -2,7 +2,6 @@ import {DbColumn, DbSchema, DbTable} from "../cruddy/table";
 import {DbEntityType} from "../cruddy/entity";
 import {CruddyApp, CruddyConfig, CruddyEntityView} from "../cruddy/app";
 
-// Cruddy template
 const compoundStructuresTable = new DbTable({
   name: 'compound_structures',
   columns: [
@@ -14,7 +13,6 @@ const compoundStructuresTable = new DbTable({
   ]
 });
 
-// Cruddy template
 const researchCompaniesTable = new DbTable({
   name: 'research_companies',
   columns: [
@@ -26,7 +24,6 @@ const researchCompaniesTable = new DbTable({
   ]
 });
 
-// Cruddy template
 const drugMechanismTable = new DbTable({
   name: 'drug_mechanism',
   columns: [
@@ -47,7 +44,6 @@ const drugMechanismTable = new DbTable({
   ]
 });
 
-// Cruddy template
 const moleculeSynonymsTable = new DbTable({
   name: 'molecule_synonyms',
   columns: [
@@ -59,9 +55,43 @@ const moleculeSynonymsTable = new DbTable({
   ]
 });
 
+const moleculeDictionaryTable = new DbTable({
+  name: 'molecule_dictionary',
+  columns: [
+    new DbColumn({name: 'chemical_probe', type: 'int'}),
+    new DbColumn({name: 'molregno', type: 'int', ref: 'compound_structures.molregno'}),
+    new DbColumn({name: 'pref_name', type: 'string'}),
+    new DbColumn({name: 'chembl_id', type: 'string'}),
+    new DbColumn({name: 'max_phase', type: 'double'}),
+    new DbColumn({name: 'therapeutic_flag', type: 'int'}),
+    new DbColumn({name: 'dosed_ingredient', type: 'int'}),
+    new DbColumn({name: 'structure_type', type: 'string'}),
+    new DbColumn({name: 'chebi_par_id', type: 'int'}),
+    new DbColumn({name: 'molecule_type', type: 'string'}),
+    new DbColumn({name: 'first_approval', type: 'int'}),
+    new DbColumn({name: 'oral', type: 'int'}),
+    new DbColumn({name: 'parenteral', type: 'int'}),
+    new DbColumn({name: 'topical', type: 'int'}),
+    new DbColumn({name: 'black_box_warning', type: 'int'}),
+    new DbColumn({name: 'natural_product', type: 'int'}),
+    new DbColumn({name: 'first_in_class', type: 'int'}),
+    new DbColumn({name: 'chirality', type: 'int'}),
+    new DbColumn({name: 'prodrug', type: 'int'}),
+    new DbColumn({name: 'inorganic_flag', type: 'int'}),
+    new DbColumn({name: 'usan_year', type: 'int'}),
+    new DbColumn({name: 'availability_type', type: 'int'}),
+    new DbColumn({name: 'usan_stem', type: 'string'}),
+    new DbColumn({name: 'polymer_flag', type: 'int'}),
+    new DbColumn({name: 'usan_substem', type: 'string'}),
+    new DbColumn({name: 'usan_stem_definition', type: 'string'}),
+    new DbColumn({name: 'indication_class', type: 'string'}),
+    new DbColumn({name: 'withdrawn_flag', type: 'int'}),
+    new DbColumn({name: 'orphan', type: 'int'})
+  ]
+});
 
 const chemblSchema: DbSchema = new DbSchema('chembl',
-  [compoundStructuresTable, researchCompaniesTable, drugMechanismTable, moleculeSynonymsTable]);
+  [compoundStructuresTable, researchCompaniesTable, drugMechanismTable, moleculeSynonymsTable, moleculeDictionaryTable]);
 
 export const chemblConfig = new CruddyConfig({
   connection: 'Chembl:Chembl',
@@ -69,13 +99,12 @@ export const chemblConfig = new CruddyConfig({
   entityTypes: [
     new DbEntityType({ type: 'Compound', table: compoundStructuresTable,
       gridColumnsNames: [
-        'canonical_smiles', 'drug_mechanism.action_type', 'drug_mechanism.mechanism_of_action'
+        'canonical_smiles', 'molecule_dictionary.chembl_id', 'drug_mechanism.action_type', 'drug_mechanism.mechanism_of_action'
       ],
+      defaultView: 'cards',
       filters: [
-        // { type: 'distinct', column: 'shipcountry'},
-        // { type: 'combo', column: 'shipcity'},
-        // { type: 'range', column: 'orderid'},
-        // { type: 'expression', column: 'shipcity'},
+        { type: 'distinct', column: 'molecule_dictionary.molecule_type' },
+        { type: 'distinct', column: 'drug_mechanism.action_type' },
     ]}),
   ]
 });

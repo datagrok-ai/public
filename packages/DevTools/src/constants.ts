@@ -183,6 +183,8 @@ view.append(ui.h1('New fascinating content'))`,
       'character varying': 'string',
       'text': 'string',
       'smallint': 'int',
+      'numeric': 'double',
+      'integer': 'int',
     }
 
     return `// Cruddy template 

@@ -2330,6 +2330,7 @@ export class DataFramePlotHelper {
 
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  tile(options: object | null = null): Grid { return DG.Viewer.tile(this.df, options); }
   form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
   histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
   bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
