@@ -1,4 +1,3 @@
-version: "3"
 services:
   datagrok:
     privileged: true
@@ -72,19 +71,7 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "notebook", "scripting",
-                "grok_compute", "jupyter_kernel_gateway", "jkg", "h2o" ]
-
-  grok_compute:
-    image: datagrok/grok_compute:${GROK_COMPUTE_VERSION:-latest}
-    environment:
-      GROK_COMPUTE_NUM_CORES: 2
-    networks:
-      datagrok:
-        aliases:
-          - grok_compute
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "chem", "grok_compute" ]
+    profiles: [ "all", "nginx", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_notebook:
     image: datagrok/jupyter_notebook:${GROK_JUPYTER_NOTEBOOK_VERSION:-latest}
@@ -122,18 +109,6 @@ services:
         condition: service_healthy
         restart: false
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
-
-  h2o:
-    image: datagrok/h2o:latest
-    ports:
-      - "${DATAGROK_H2O_PORT:-54321}:54321/tcp"
-      - "${DATAGROK_H2O_HELPER_PORT:-5005}:5005/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - h2o
-    restart: unless-stopped
-    profiles: [ "all", "cvm", "modeling", "h2o" ]
 
   db:
     image: postgres:12.9

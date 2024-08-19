@@ -1,10 +1,12 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE} from "./const";
-import {Point, Rect, GridCell} from "./grid";
-import {IDartApi} from "./api/grok_api.g";
-import * as rxjs from "rxjs";
-import {StreamSubscription} from "./events";
+import {MARKER_TYPE, ViewerType} from './const';
+import {Point, Rect} from './grid';
+import {IDartApi} from './api/grok_api.g';
+import * as rxjs from 'rxjs';
+import {StreamSubscription} from './events';
+import {DataFrame} from './dataframe';
+import {TableView} from './views/view';
 
 const api: IDartApi = <any>window;
 
@@ -129,7 +131,7 @@ export namespace Paint {
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
-      img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
+      img.src = 'data:image/jpeg;base64,' + window.btoa(r.result as string);
     };
   }
 }
@@ -701,6 +703,11 @@ export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
 
+/* Waits [ms] milliseconds */
+export async function delay(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
 
 /** Autotest-related helpers */
 export namespace Test {
@@ -725,6 +732,18 @@ export namespace Test {
 
   export function getInputTestDataGeneratorByType(inputType: string) {
     return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
+  }
+
+  export async function testViewerProperties(df: DataFrame, viewerType: ViewerType, properties: { [key: string]: any}): Promise<TableView> {
+    const tv = TableView.create(df, true);
+    const viewer = tv.addViewer(viewerType);
+    viewer.setOptions(properties);
+    await delay(1000);
+    return tv;
+  }
+
+  export async function testViewer(viewerType: ViewerType) {
+    await api.grok_Test_RunViewerTest(viewerType);
   }
 }
 

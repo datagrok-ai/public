@@ -5,10 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import {northwindConfig} from "./apps/northwind-app";
 
 import {CruddyApp} from "./cruddy/app";
+import {chemblConfig} from "./apps/chembl-app";
 
 export const _package = new DG.Package();
 
 //tags: app
 export function northwindDemo() {
   new CruddyApp(northwindConfig).run();
+}
+
+//tags: app
+export function chemblDemo() {
+  new CruddyApp(chemblConfig).run();
 }

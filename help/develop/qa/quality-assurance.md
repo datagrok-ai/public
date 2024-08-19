@@ -72,7 +72,7 @@ automatically in the continuous integration process, enabling us to detect
 regression bugs.
 * **Integration tests**. These tests cover interactions
 between different modules, while unit tests tend to address isolated modules.
-* **JS API tests**. We have a  a regular
+* **JS API tests**. We have a regular
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests)
 containing a suite of tests for the
 [JS API](../../../develop/packages/js-api.md). These tests are
@@ -162,6 +162,13 @@ Usage Analysis is the
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) that facilitates understanding of Datagrok platform usage through different viewers, displaying data on usage statistics, errors, and platform events.
 See [Usage Analysis](../../../govern/audit/usage-analysis.md)
 to learn more.
+
+### Error Reporting Tool and Error Analysis Dashboard
+
+Errors encountered by users 
+
+
+
 
 See also:
 

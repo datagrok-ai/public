@@ -3,6 +3,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import './tests/widgets';
 import './tests/search';
 import './tests/dialogs';
+import './tests/add-new-column';
 import './tests/utils';
 
 export const _package = new DG.Package();

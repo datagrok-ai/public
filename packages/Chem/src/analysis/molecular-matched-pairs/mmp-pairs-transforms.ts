@@ -175,7 +175,7 @@ function getTransFragmetsGrid(variates: number, fromFrag: string[], toFrag: stri
 function getTransPairsGrid(variates: number, molFrom: string[], molTo: string[], pairNum: Int32Array,
   molNumFrom: Int32Array, molNumTo: Int32Array, pairsFromSmiles: string[],
   pairsToSmiles: string[], ruleNum: Int32Array, activities: DG.ColumnList, diffs: Float32Array[]) : DG.Grid {
-  const pairsFromCol = createColWithDescription('string',MMP_NAMES.FROM, molFrom);
+  const pairsFromCol = createColWithDescription('string', MMP_NAMES.FROM, molFrom);
   const pairsToCol = createColWithDescription('string', MMP_NAMES.TO, molTo);
   const structureDiffFromCol = DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_FROM_NAME, molFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_NAMES.STRUCT_DIFF_TO_NAME, molFrom.length);
@@ -223,8 +223,8 @@ export function getMmpActivityPairsAndTransforms(mmpInput: MmpInput, mmpRules: M
   const variates = mmpInput.activities.length;
   const activityDiffs = calculateActivityDiffs(mmpInput, mmpRules, variates, allCasesNumber);
 
-  const [activityMeanNames, transFragmentsGrid] = getTransFragmetsGrid(variates, activityDiffs.fromFrag, activityDiffs.toFrag,
-    activityDiffs.occasions, mmpInput.activities, activityDiffs.meanDiffs);
+  const [activityMeanNames, transFragmentsGrid] = getTransFragmetsGrid(variates, activityDiffs.fromFrag,
+    activityDiffs.toFrag, activityDiffs.occasions, mmpInput.activities, activityDiffs.meanDiffs);
 
   const transPairsGrid = getTransPairsGrid(variates, activityDiffs.molFrom, activityDiffs.molTo, activityDiffs.pairNum,
     activityDiffs.molNumFrom, activityDiffs.molNumTo, activityDiffs.pairsFromSmiles,

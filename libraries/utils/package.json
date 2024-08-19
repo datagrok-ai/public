@@ -8,7 +8,7 @@
     "email": "amuzychyna@datagrok.ai"
   },
   "fullName": "Utils",
-  "version": "4.2.19",
+  "version": "4.2.27",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",
@@ -31,7 +31,8 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "git clean -f -X -d ./src && tsc",
+    "build": "tsc",
+    "build-utils": "git clean -f -X -d ./src  && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

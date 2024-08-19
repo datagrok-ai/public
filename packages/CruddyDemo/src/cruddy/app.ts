@@ -22,6 +22,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
   entityType: DbEntityType;
   crud: DbQueryEntityCrud;
   grid?: DG.Grid;
+  mainViewer?: DG.Viewer;
   host: HTMLDivElement = ui.divH([]);
   filters: CruddyFilterHost = new CruddyFilterHost();
   ribbonPanel: HTMLDivElement = ui.ribbonPanel([]);
@@ -36,13 +37,17 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.root.classList.add('cruddy-view');
     this.setRibbonPanels([[this.ribbonPanel]]);
 
-    this.crud.read().then((df) => {
+    this.crud.read(undefined, {limit: 100}).then(async (df) => {
       this.grid = df.plot.grid();
+      await grok.data.detectSemanticTypes(df);
       this.append(this.host);
       this.host.appendChild(this.filters.root);
-      this.host.appendChild(this.grid.root);
-      this.grid.root.style.flexGrow = '1';
-      this.grid.root.style.height = 'inherit';
+
+      this.mainViewer = this.entityType.defaultView == 'cards' ? DG.Viewer.tile(df) : this.grid;
+      this.host.appendChild(this.mainViewer.root);
+
+      this.mainViewer.root.style.flexGrow = '1';
+      this.mainViewer.root.style.height = 'inherit';
       this.initBehaviors();
       this.initFilters();
     });
@@ -52,7 +57,7 @@ export class CruddyEntityView<TEntity extends DbEntityType = DbEntityType> exten
     this.filters.init(this.entityType);
     this.filters.onChanged.pipe(debounceTime(100)).subscribe((_) => {
       this.crud.read(this.filters.getCondition()).then((df) => {
-        this.grid!.dataFrame = df;
+        (this.mainViewer ?? this.grid)!.dataFrame = df;
       });
     });
   }
@@ -160,12 +165,6 @@ export class CruddyConfig {
     Object.assign(this, init);
     for (let e of this.entityTypes) {
       e.crud.connectionId = this.connection;
-      for (let c of e.table.columns)
-        if (c.ref) {
-          const [table, column] = c.ref.split('.');
-          c.references = this.getTable(table).getColumn(column);
-          c.references.referencedBy.push(c);
-        }
     }
   }
 }

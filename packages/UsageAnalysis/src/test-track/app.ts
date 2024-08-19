@@ -203,7 +203,7 @@ export class TestTrack extends DG.ViewBase {
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
     const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
-      { uid: this.uid, version: this.version, start: this.start })) || '"New Testing"';
+      { uid: this.uid, version: this.version, start: this.start })) || 'New Testing';
     const nameP: string = this.testingName || namePFromDb;
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
       { batchName: `${nameP}` });
@@ -233,14 +233,14 @@ export class TestTrack extends DG.ViewBase {
           this.openReasonLink(reason || '');
         });
         reasonList = (listLink);
-      } 
-      else{
+      }
+      else {
         reasonList = ui.label('list');
       }
 
       this.map[path] = {
         name: '', path, text: ui.markdown(''), status, history: ui.divH([], 'tt-history'),
-        icon: icon, reason: ui.div((reason.includes("\n") ? reasonList: reasonTooltipValue), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
+        icon: icon, reason: ui.div((reason.includes("\n") ? reasonList : reasonTooltipValue), 'tt-reason'), fullReason: reason, datasets: [], projects: [], layouts: [],
       };
       const map: StatusInfo = {
         'User': user,
@@ -691,7 +691,7 @@ export class TestTrack extends DG.ViewBase {
               errorSeverityLevelJiraNames[errorTypeSelector.value],
               this.version
             ],
-            'customfield_10439':this.testingName
+            'customfield_10439': this.testingName
           },
         }),
         'updateHistory': false,

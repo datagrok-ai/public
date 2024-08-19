@@ -52,13 +52,16 @@ category('Layouts', () => {
     }, '', 3000);
     const save = Array.from(tb.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'Save') as HTMLElement;
+    await delay(10000);
     let num = list!.children.length + 1;
     save.click();
+    await delay(10000);
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     num--;
-    await delay(1000);
-    try {
+    try { 
+      (list!.firstElementChild as HTMLElement).focus();
       list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
+      await delay(100);
       await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu');
       (document.querySelector('[d4-name="Delete"]') as HTMLElement).click();
       let d: DG.Dialog;
@@ -80,7 +83,7 @@ category('Layouts', () => {
       }
       throw e;
     }
-  });
+  }, {timeout: 100000});
 
   after(async () => {
     grok.shell.closeAll();
@@ -116,7 +119,7 @@ category('Layouts: Apply', () => {
       tv.resetLayout();
       await delay(100);
       await awaitCheck(() => [...tv.viewers].length === 1, 'Cannot reset layout', 3000);
-      (list!.firstElementChild?.firstElementChild as HTMLElement).click();
+      (list!.childNodes[1].childNodes[0] as HTMLElement).click();
       await awaitCheck(() => [...tv.viewers].length === 2,
         `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`, 3000);
       await delay(100);

@@ -293,6 +293,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       //   cellImageData.remove();
     }
     this.imageCache = new Map<number, ImageData>();
+    super.reset();
   }
 
   protected abstract getRenderService(): RenderServiceBase<TProps, TAux>;
@@ -304,6 +305,13 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   public render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
+    if (this.dirty) {
+      try { this.reset(); } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        this.logger.error(errMsg, undefined, errStack);
+      }
+    }
+
     const dpr = window.devicePixelRatio;
     const service = this.getRenderService();
 

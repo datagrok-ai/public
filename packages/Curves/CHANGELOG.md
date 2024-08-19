@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.4.6 (2024-08-13)
+
+### Features
+
+* Added exponential fit function
+
 ## 1.4.5 (2024-07-24)
 
 ## 1.4.4 (2024-07-02)

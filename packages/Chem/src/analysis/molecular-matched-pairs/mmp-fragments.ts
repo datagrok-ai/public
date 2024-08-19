@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {getRdKitService} from '../../utils/chem-common-rdkit';
 import {webGPUMMP} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-mmp';
-import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+//import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {MmpRules, MMP_CONSTRICTIONS, MMP_ERRORS} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 
@@ -26,7 +26,9 @@ export async function getMmpFrags(molecules: string[]): Promise<IMmpFragmentsRes
   return res;
 }
 
-export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff: number, gpu: boolean, strictCPU = false): Promise<[MmpRules, number, boolean]> {
+export async function getMmpRules(
+  fragsOut: IMmpFragmentsResult, fragmentCutoff: number, gpu: boolean, strictCPU = false):
+  Promise<[MmpRules, number, boolean]> {
   let rules: MmpRules | null = null;
   let allCaseesNumber = 0;
   let useGpu = false;
@@ -37,13 +39,11 @@ export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff:
         throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
 
       [rules, allCaseesNumber, useGpu] = getMmpRulesCPU(fragsOut, fragmentCutoff);
-    }
-    else {
+    } else {
       useGpu = true;
       [rules, allCaseesNumber, useGpu] = await getMmpRulesGPU(fragsOut, fragmentCutoff);
     }
-  } 
-  catch (e: any) {
+  } catch (e: any) {
     const eMsg: string = e instanceof Error ? e.message : e.toString();
     if (eMsg === MMP_ERRORS.FRAGMENTS_CPU) {
       grok.shell.warning(MMP_ERRORS.GPU_ABORTED);
@@ -53,8 +53,7 @@ export async function getMmpRules(fragsOut: IMmpFragmentsResult, fragmentCutoff:
     if (useGpu) {
       grok.shell.warning(MMP_ERRORS.GPU_ABORTED);
       [rules, allCaseesNumber, useGpu] = await getMmpRules(fragsOut, fragmentCutoff, gpu, true);
-    }
-    else {
+    } else {
       grok.shell.error(MMP_ERRORS.PAIRS);
       throw new Error(MMP_ERRORS.PAIRS);
     }
@@ -208,7 +207,8 @@ function getMmpRulesCPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): 
   return [mmpRules, allCasesCounter, false];
 }
 
-async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number): Promise<[MmpRules, number, boolean]> {
+async function getMmpRulesGPU(fragsOut: IMmpFragmentsResult, fragmentCutoff: number):
+  Promise<[MmpRules, number, boolean]> {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
 
   const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);

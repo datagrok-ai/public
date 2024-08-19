@@ -92,7 +92,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   encodingFunc: DG.Func, tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  cliffsDockRatio?: number) : Promise<DG.Viewer> {
+  cliffsDockRatio?: number, demo?: boolean) : Promise<DG.Viewer> {
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
   // eslint-disable-next-line prefer-const
@@ -149,7 +149,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
   const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
-  const view = grok.shell.getTableView(df.name);
+  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
   const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -180,6 +180,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
+    if (demo) //for grid viewer to be visible in demo app
+      view.addViewer(linesDfGrid);
     view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
@@ -375,14 +377,14 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  cliffsDockRatio?: number) : Promise<void> {
+  cliffsDockRatio?: number, demo?: boolean) : Promise<void> {
 
   activityCliffsIdx++;
   const similarityLimit = similarity / 100;
     // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
-  const view = grok.shell.getTableView(df.name);
+  const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(df.name);
 
   let sparseMatrixRes: SparseMatrixResult | null = null;
   if (seqSpaceOptions.useWebGPU) {
@@ -430,7 +432,9 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+    if (demo) //for grid viewer to be visible in demo app
+      view.addViewer(linesDfGrid);
+    view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
   sp.root.append(listCliffsLink);

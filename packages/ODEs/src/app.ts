@@ -221,9 +221,12 @@ export class DiffStudio {
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-    this.solverView.dockManager.dock(divHelp, DG.DOCK_TYPE.RIGHT, undefined, undefined, 0.3);
+    grok.shell.windows.help.showHelp(divHelp);
+    grok.shell.windows.context.visible = true;
+    grok.shell.windows.showContextPanel = false;
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.help.visible = true;
     await this.runSolving(false);
-    // dfdf
   } // runSolverDemoApp
 
   /** Return file preview view */

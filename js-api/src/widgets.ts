@@ -1724,7 +1724,8 @@ export class TreeViewNode<T = any> {
   set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.dart, checked); }
 
   /** Node text */
-  get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
+  get text(): string { return api.grok_TreeViewNode_Get_Text(this.dart); }
+  set text(value: string) {api.grok_TreeViewNode_Set_Text(this.dart, value); }
 
   get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
   set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
@@ -1814,8 +1815,8 @@ export class TreeViewGroup extends TreeViewNode {
   set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
   /** Adds new group */
-  group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
+  group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
   }
 
   /** Returns existing, or creates a new node group */

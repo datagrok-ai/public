@@ -5,23 +5,21 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Subject, Unsubscribable} from 'rxjs';
 
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {Editor, HelmType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {svgToImage} from '@datagrok-libraries/utils/src/svg';
 
-import {JSDraw2HelmModule} from '../types';
+import {JSDraw2Module} from '../types';
 
 import {_package} from '../package';
 
-declare const JSDraw2: JSDraw2HelmModule;
+declare const JSDraw2: JSDraw2Module;
 
 export class HelmService extends HelmServiceBase {
   private readonly hostDiv: HTMLDivElement;
 
-  private editor!: Editor<HelmType>;
+  private editor!: HelmEditor;
   private image: HTMLImageElement | null = null;
 
   constructor() {

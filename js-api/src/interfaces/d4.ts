@@ -1483,6 +1483,8 @@ export interface IPieChartSettings {
 
   innerLabelColor: number;
 
+  missingValueColor: number;
+
   showInnerPercent: boolean;
 
   showInnerLabel: boolean;
@@ -2411,6 +2413,9 @@ export interface ICorrelationPlotSettings {
 
   /// Shows the tooltip with the corresponding scatter plot inside.
   showTooltip: boolean;
+
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
 
   backColor: number;
 

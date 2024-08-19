@@ -1,5 +1,11 @@
 # PowerPack changelog
 
+## 1.1.10 (2024-08-07)
+
+### Bug Fixes
+
+* Add new column: incorrect input parameters when autocomplete
+
 ## 1.1.9 (2024-08-05)
 
 ### Bug Fixes

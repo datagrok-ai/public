@@ -18,6 +18,7 @@ type onClickOptions = 'Select' | 'Filter';
 })
 
 export class SunburstViewer extends EChartViewer {
+  private renderQueue: Promise<void> = Promise.resolve();
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
   onClick: onClickOptions;
@@ -29,7 +30,7 @@ export class SunburstViewer extends EChartViewer {
     this.initCommonProperties();
     this.initEventListeners();
 
-    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.hierarchyLevel = 3;
     this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
     this.inheritFromGrid = this.bool('inheritFromGrid', true, {category: 'Color'});
@@ -40,6 +41,9 @@ export class SunburstViewer extends EChartViewer {
         {
           type: 'sunburst',
           nodeClick: false,
+          emphasis: {
+            focus: 'series',
+          },
           label: {
             rotate: 'radial',
             fontSize: 10,
@@ -57,14 +61,15 @@ export class SunburstViewer extends EChartViewer {
   }
 
   handleDataframeSelection(path: string[], event: any) {
-    this.dataFrame.selection.handleClick((i) => {
-      if (!this.filter.get(i))
+    this.dataFrame.selection.handleClick((index: number) => {
+      if (!this.filter.get(index)) {
         return false;
-      for (let j = 0; j < path.length; j++) {
-        if (this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(i).toString() !== path[j])
-          return false;
       }
-      return true;
+  
+      return path.every((segment, j) => {
+        const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
+        return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
+      });
     }, event);
   }
 
@@ -75,15 +80,14 @@ export class SunburstViewer extends EChartViewer {
   
   buildFilterFunction(path: string[]): (row: any) => boolean {
     return (row) => {
-      for (let i = 0; i < path.length; ++i) {
-        const columnType = this.dataFrame.getCol(this.hierarchyColumnNames[i]).type;
+      return path.every((expectedValue, i) => {
+        const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
         const columnValue = row.get(this.hierarchyColumnNames[i]);
-        const formattedValue = columnType !== 'string' ? columnValue.toString() : columnValue;
-        const expectedValue = path[i];
-        if (formattedValue !== expectedValue)
-          return false;
-      }
-      return true;
+        const formattedValue = columnValue 
+          ? (column.type !== 'string' ? columnValue.toString() : columnValue)
+          : '';
+        return formattedValue === expectedValue;
+      });
     };
   }
 
@@ -134,16 +138,18 @@ export class SunburstViewer extends EChartViewer {
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
           const column = dataFrame.getCol(hierarchyColumnNames[j]);
           const format = column.meta.format;
+          const value = column.get(i);
           const isDate = column.type === DG.TYPE.DATE_TIME;
           if (format && !isDate) {
             const number = format.indexOf('.');
             const len = format.length - number - 1;
-            if ((column.get(i)).toFixed(len) === params.name)
+            if (value.toFixed(len) === params.name)
               return true;
           }
-          if (column.get(i).toString() === params.name) {
+          if (value && value.toString() === params.name)
             return true;
-          }
+          if (!value && '' === params.name)
+            return true;
         }
         return false;
       }, params.event.event.x, params.event.event.y);
@@ -312,17 +318,24 @@ export class SunburstViewer extends EChartViewer {
     return this.dataFrame.columns.length >= 1;
   }
 
-  render() {
+  render(): void {
+    this.renderQueue = this.renderQueue
+      .then(() => this._render());
+  }
+
+  private async _render() {
     if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
+
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
-    this.handleStructures(this.getSeriesData()).then((data) => {
-      this.option.series[0].data = data;
-      this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
-      this.chart.setOption(this.option);
-    });
+    const seriesData = await this.getSeriesData();
+    const data = await this.handleStructures(seriesData);
+
+    this.option.series[0].data = data;
+    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    this.chart.setOption(this.option);
   }
 
   detach() {
