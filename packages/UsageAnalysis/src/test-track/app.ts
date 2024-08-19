@@ -203,7 +203,7 @@ export class TestTrack extends DG.ViewBase {
     // Generate tree
     const filesP = _package.files.list('Test Track', true);
     const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
-      { uid: this.uid, version: this.version, start: this.start })) || 'New Testing';
+      { uid: this.uid, version: this.version, start: this.start })) || NEW_TESTING;
     const nameP: string = this.testingName || namePFromDb;
     const history: DG.DataFrame = await grok.functions.call('UsageAnalysis:TestTrack',
       { batchName: `${nameP}` });
@@ -327,7 +327,7 @@ export class TestTrack extends DG.ViewBase {
       });
     }, 'Expand/collapse');
     ec.classList.add('tt-ribbon-button');
-    const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), () => this.refresh(), 'Refresh');
+    const refresh = ui.button(getIcon('sync-alt', { style: 'fas' }), async () => await this.refresh(), 'Refresh');
     refresh.classList.add('tt-ribbon-button');
     ec.classList.add('tt-ribbon-button');
     const start = ui.button(getIcon('plus', { style: 'fas' }), async () => await this.showStartNewTestingDialog(), 'Select testing');
@@ -890,7 +890,7 @@ export class TestTrack extends DG.ViewBase {
     dialog.add(check);
     dialog.add(versionSelector);
     dialog.add(newNameInput);
-    dialog.onOK(() => {
+    dialog.onOK(async () => {
       let testingToOpen: string | undefined | null = undefined;
 
       if (check.value) {
@@ -908,7 +908,7 @@ export class TestTrack extends DG.ViewBase {
         const start = Date.now().toString();
         this.testingName = testingToOpen;
         localStorage.setItem('TTState', start);
-        this.reload();
+        await this.refresh();
       }
       else {
         grok.shell.error('Testing Name is not valid');
@@ -940,8 +940,22 @@ export class TestTrack extends DG.ViewBase {
     grok.shell.dockManager.close(oldRoot);
   }
 
-  refresh(): void {
-    this.updateBatchData();
+  async refresh(): Promise<void> {
+    this.nameDiv.innerText = this.testingName;
+    for (let node of this.tree.items) {
+      node.value.status = undefined;
+      if (node?.value?.fullReason){
+        node.value.fullReason = undefined;
+        node.value.reason.innerHTML = '';
+      }
+      if (node?.value?.history) {
+        for (let i = node.value.history.length - 1; i >= 0; i--) {
+          node.value.history[i].remove(node.value.history[i].firstChild);
+        }
+
+      }
+    }
+    await this.updateBatchData();
   }
 
   getReason(reason: string): HTMLElement {
@@ -1040,14 +1054,12 @@ export class TestTrack extends DG.ViewBase {
       if (path.length === 0)
         continue;
 
-      if (this.map[path] && this.isTestCase(this.map[path])) {
-        const caseValue: TestCase = this.map[path] as TestCase;
-
+      if (this.map[path] && this.isTestCase(this.map[path])) { 
         const node = this.nodes[path];
 
-        if (caseValue.status !== status ||
-          caseValue.fullReason !== reason) {
-          if (caseValue.status === row.status) {
+        if (node.value.status !== status ||
+          node.value.fullReason !== reason) {
+          if (node.value.status === row.status) {
             this.changeNodeReason(node, status, reason, uid, false);
           }
           else {
