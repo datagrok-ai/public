@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.1.32 (2024-08-09)
+## 1.1.34 (2024-08-09)
 
 * Update multivariate analysis
 * Reduced bias in the PLS regression
