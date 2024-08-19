@@ -25,6 +25,7 @@ export class DGIconFA extends HTMLElement {
   _cursor = 'pointer';
   _animation = null as null | string;
   _tooltip = null as null | string;
+  _faStyle = 'fal' as 'fal' | 'fas' | 'far' | 'fad';
 
   constructor() {
     super();
@@ -35,6 +36,8 @@ export class DGIconFA extends HTMLElement {
     const t = ui.iconFA(this._name, null, this._tooltip);
     t.style.cursor = this._cursor;
     if (this._animation) t.classList.add(`fa-${this._animation}`);
+    t.classList.remove('fal', 'fas', 'far', 'fad');
+    t.classList.add(this._faStyle);
     this.appendChild(t);
   }
 
@@ -55,6 +58,11 @@ export class DGIconFA extends HTMLElement {
 
   set tooltip(val: string | null) {
     this._tooltip = val;
+    this.render();
+  }
+
+  set faStyle(val: typeof this._faStyle) {
+    this._faStyle = val;
     this.render();
   }
 }

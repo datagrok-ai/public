@@ -67,6 +67,10 @@ export const IconFA = defineComponent({
       type: String as PropType<string | null>,
       default: null,
     },
+    faStyle: {
+      type: String as PropType<'fal' | 'fas' | 'far' | 'fad'>,
+      default: 'fal'
+    }
   },
   emits: [
     'click',
@@ -78,6 +82,7 @@ export const IconFA = defineComponent({
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
+        faStyle={props.faStyle}
         onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);

@@ -5,10 +5,109 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {AUTHOR_COLUMN_NAME, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload, VIEWER_PATH, viewerTypesMapping} from './consts';
+import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME, COMPLETE_COLUMN_NAME, DESC_COLUMN_NAME, EXP_COLUMN_NAME, EXPERIMENTAL_TAG, FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, HISTORY_SUPPORTED_COL_TYPES, SYNC_FIELD, SyncFields, syncParams, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, ValidationRequestPayload, VIEWER_PATH, viewerTypesMapping, storageName} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
+import dayjs from 'dayjs';
+import { ID_COLUMN_NAME } from '../shared-components/src/history-input';
+
+export const getFavStorageName = (runs: Map<string, DG.FuncCall>) => {
+  return `${storageName}_${[...runs.values()][0].func.name}_Fav`;
+}
+
+export const getColumnName = (key: string) => {
+  return camel2title(key);
+};
+
+export const getRunsDfFromList = async (
+  runs: Map<string, DG.FuncCall>,
+  options?: HistoryOptions,
+) => {
+  const newRuns = [...runs.values()];
+
+  const getColumnByProp = (prop: DG.Property) => {
+    if (prop.propertyType === DG.TYPE.DATE_TIME) {
+      return DG.Column.dateTime(prop.caption ?? getColumnName(prop.name), newRuns.length)
+        // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+        .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].inputs[prop.name]));
+    }
+
+    return DG.Column.fromType(
+      prop.propertyType as any,
+      prop.caption ?? getColumnName(prop.name),
+      newRuns.length,
+    ).init((idx) =>
+      (options?.propFuncs?.[prop.name])?.(newRuns[idx]) ??
+      extractStringValue(newRuns[idx], prop.name),
+    );
+  };
+
+  const getColumnByName = (key: string) => {
+    if (key === STARTED_COLUMN_NAME) {
+      return DG.Column.dateTime(getColumnName(key), newRuns.length)
+        // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+        .init((idx) =>
+          (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
+            newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
+        );
+    }
+
+    if (key === COMPLETE_COLUMN_NAME) {
+      return DG.Column.bool(getColumnName(key), newRuns.length)
+        // Workaround for https://reddata.atlassian.net/browse/GROK-15286
+        .init((idx) =>getStartedOrNull(newRuns[idx]));
+    }
+
+    return DG.Column.fromStrings(
+      getColumnName(key),
+      newRuns.map((run) => (options?.propFuncs?.[key])?.(run) ?? extractStringValue(run, key)),
+    );
+  };
+
+  const favoritesRecord: Record<string, string> = await grok.dapi.userDataStorage.get(getFavStorageName(runs)) ?? {};
+  const favorites = Object.keys(favoritesRecord);
+
+  const func = newRuns[0].func;
+
+  const getColumn = (key: string) => {
+    const prop =
+    func.inputs.find((prop) => prop.name === key) ??
+    func.outputs.find((prop) => prop.name === key);
+    if (prop)
+      return getColumnByProp(prop);
+    else
+      return getColumnByName(key);
+  };
+
+  const newRunsGridDf = DG.DataFrame.fromColumns([
+    DG.Column.string(EXP_COLUMN_NAME, newRuns.length).init((idx) => {
+      const immutableTags = newRuns[idx].options['immutable_tags'] as string[];
+      return immutableTags && immutableTags.includes(EXPERIMENTAL_TAG) ? 'Experimental': 'Simulated';
+    }),
+    ...options?.isHistory ?
+      [DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
+        .init((idx) => favorites.includes(newRuns[idx].id))]: [],
+    ...options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
+    getColumnByName(STARTED_COLUMN_NAME),
+    getColumnByName(COMPLETE_COLUMN_NAME),
+    getColumnByName(AUTHOR_COLUMN_NAME),
+    DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
+      newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
+    ),
+    DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
+    DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
+  ]);
+
+  getVisibleProps(func).map((key) => getColumn(key)).forEach((col) => {
+    col.name = newRunsGridDf.columns.getUnusedName(col.name);
+    newRunsGridDf.columns.add(col, false);
+  });
+
+  newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
+
+  return newRunsGridDf;
+}
 
 export const showHelpWithDelay = async(helpContent: string) => {
   grok.shell.windows.help.visible = true;
@@ -130,6 +229,12 @@ export const extractStringValue = (run: DG.FuncCall, key: string) => {
 export const getMainParams = (func: DG.Func): string[] | null => {
   return func.options['mainParams'] ? JSON.parse(func.options['mainParams']): null;
 };
+
+export const getVisibleProps = (func: DG.Func, options?: HistoryOptions): string[] => {
+  return options?.visibleProps ?? getMainParams(func) ?? func.inputs
+      .filter((input) => HISTORY_SUPPORTED_COL_TYPES.includes(input.propertyType as any))
+      .map((prop) => prop.name);
+}
 
 export const camel2title = (camelCase: string) => camelCase
   .replace(/([A-Z])/g, (match) => ` ${match.toLowerCase()}`)

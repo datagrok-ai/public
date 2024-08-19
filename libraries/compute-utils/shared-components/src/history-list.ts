@@ -10,29 +10,19 @@ import {HistoricalRunsDelete, HistoricalRunEdit} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXPERIMENTAL_TAG, EXP_COLUMN_NAME,
-  FAVORITE_COLUMN_NAME, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
+  FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME
   , storageName} from '../../shared-utils/consts';
 import {ID_COLUMN_NAME} from './history-input';
-import {camel2title, extractStringValue, getMainParams, getStartedOrNull} from '../../shared-utils/utils';
+import {camel2title, extractStringValue, getColumnName, getMainParams, getRunsDfFromList, getStartedOrNull, getVisibleProps} from '../../shared-utils/utils';
 import {getStarted} from '../../function-views/src/shared/utils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
 dayjs.extend(utc);
 
-const SUPPORTED_COL_TYPES = Object.values(DG.COLUMN_TYPE).filter((type: any) => type !== DG.TYPE.DATA_FRAME);
-
-const getColumnName = (key: string) => {
-  return camel2title(key);
-};
-
 const runCache = new DG.LruCache<string, DG.FuncCall>();
 
 export class HistoricalRunsList extends DG.Widget {
-  private storageName(runs: Map<string, DG.FuncCall>) {
-    return `${storageName}_${[...runs.values()][0].func.name}_Fav`;
-  }
-
   private onRunsChanged = new BehaviorSubject<Map<string, DG.FuncCall>>(this.initialRuns.reduce((acc, run) => {
     acc.set(run.id, run);
     return acc;
@@ -167,28 +157,12 @@ export class HistoricalRunsList extends DG.Widget {
   ], 'ui-box');
 
   private visibleProps(func: DG.Func) {
-    return this.options?.visibleProps ?? getMainParams(func) ?? func.inputs
-      .filter((input) => SUPPORTED_COL_TYPES.includes(input.propertyType as any))
-      .map((prop) => prop.name);
+    return getVisibleProps(func, this.options)
   };
 
   constructor(
     private readonly initialRuns: DG.FuncCall[],
-    private options?: {
-      // FuncCall props (inputs, outputs, options) to be visible. By default, all input params will be visible.
-      // You may add outputs and/or options.
-      visibleProps?: string[],
-      // Text to show if no runs has been found
-      fallbackText?: string,
-      // Flag to show per-element edit and delete actions. Default is false
-      showActions?: boolean,
-      // Flag to show delete and compare actions. Default is false
-      showBatchActions?: boolean,
-      // Flag used in HistoryPanel. Default is false
-      isHistory?: boolean,
-      // Custom mapping between prop name and it's extraction logic. Default is empty
-      propFuncs?: Record<string, (currentRun: DG.FuncCall) => string>
-    }) {
+    private options?: HistoryOptions) {
     super(ui.div([], {style: {height: '100%', width: '100%'}}));
 
     const batchActions = ui.divH([
@@ -219,89 +193,12 @@ export class HistoricalRunsList extends DG.Widget {
     this.setGridCellRendering();
 
     const listChangedSub = this.onRunsChanged.subscribe(async (runs) => {
-      const newRuns = [...runs.values()];
-
-      const getColumnByProp = (prop: DG.Property) => {
-        if (prop.propertyType === DG.TYPE.DATE_TIME) {
-          return DG.Column.dateTime(prop.caption ?? getColumnName(prop.name), newRuns.length)
-            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) => (<any>window).grok_DayJs_To_DateTime(newRuns[idx].inputs[prop.name]));
-        }
-
-        return DG.Column.fromType(
-          prop.propertyType as any,
-          prop.caption ?? getColumnName(prop.name),
-          newRuns.length,
-        ).init((idx) =>
-          (this.options?.propFuncs?.[prop.name])?.(newRuns[idx]) ??
-          extractStringValue(newRuns[idx], prop.name),
+      if (runs.size > 0) {
+        const newRunsDf = await getRunsDfFromList(
+          runs, 
+          this.options
         );
-      };
-
-      const getColumnByName = (key: string) => {
-        if (key === STARTED_COLUMN_NAME) {
-          return DG.Column.dateTime(getColumnName(key), newRuns.length)
-            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) =>
-              (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
-                newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
-            );
-        }
-
-        if (key === COMPLETE_COLUMN_NAME) {
-          return DG.Column.bool(getColumnName(key), newRuns.length)
-            // Workaround for https://reddata.atlassian.net/browse/GROK-15286
-            .init((idx) =>getStartedOrNull(newRuns[idx]));
-        }
-
-        return DG.Column.fromStrings(
-          getColumnName(key),
-          newRuns.map((run) => (this.options?.propFuncs?.[key])?.(run) ?? extractStringValue(run, key)),
-        );
-      };
-
-      if (newRuns.length > 0) {
-        const favoritesRecord: Record<string, string> =
-          await grok.dapi.userDataStorage.get(this.storageName(runs)) ?? {};
-        const favorites = Object.keys(favoritesRecord);
-
-        const func = newRuns[0].func;
-
-        const getColumn = (key: string) => {
-          const prop =
-          func.inputs.find((prop) => prop.name === key) ??
-          func.outputs.find((prop) => prop.name === key);
-          if (prop)
-            return getColumnByProp(prop);
-          else
-            return getColumnByName(key);
-        };
-
-        const newRunsGridDf = DG.DataFrame.fromColumns([
-          DG.Column.string(EXP_COLUMN_NAME, newRuns.length).init((idx) => {
-            const immutableTags = newRuns[idx].options['immutable_tags'] as string[];
-            return immutableTags && immutableTags.includes(EXPERIMENTAL_TAG) ? 'Experimental': 'Simulated';
-          }),
-          ...this.options?.isHistory ?
-            [DG.Column.bool(FAVORITE_COLUMN_NAME, newRuns.length)
-              .init((idx) => favorites.includes(newRuns[idx].id))]: [],
-          ...this.options?.showActions ? [DG.Column.string(ACTIONS_COLUMN_NAME, newRuns.length).init('')]: [],
-          getColumnByName(STARTED_COLUMN_NAME),
-          getColumnByName(COMPLETE_COLUMN_NAME),
-          getColumnByName(AUTHOR_COLUMN_NAME),
-          DG.Column.string(TAGS_COLUMN_NAME, newRuns.length).init((idx) =>
-            newRuns[idx].options['tags'] ? newRuns[idx].options['tags'].join(','): '',
-          ),
-          DG.Column.string(TITLE_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['title']),
-          DG.Column.string(DESC_COLUMN_NAME, newRuns.length).init((idx) => newRuns[idx].options['description']),
-        ]);
-
-        this.visibleProps(func).map((key) => getColumn(key)).forEach((col) => {
-          col.name = newRunsGridDf.columns.getUnusedName(col.name);
-          newRunsGridDf.columns.add(col, false);
-        });
-
-        newRunsGridDf.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, newRuns.map((newRun) => newRun.id)));
+        const func = runs.values().next().value.func as DG.Func;
 
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], false);
         ui.setDisplayAll([
@@ -313,9 +210,9 @@ export class HistoricalRunsList extends DG.Widget {
           this.compareIcon,
           this.showFiltersIcon,
         ], true);
-        ui.setDisplay(this.showInputsIcon.root, this.visibleProps(func).length > 0);
+        ui.setDisplay(this.showInputsIcon.root, getVisibleProps(func, this.options).length > 0);
 
-        this._onRunsDfChanged.next(newRunsGridDf);
+        this._onRunsDfChanged.next(newRunsDf);
       } else {
         ui.setDisplayAll([this.defaultGridText, this.defaultFiltersText], true);
         ui.setDisplayAll([
@@ -844,7 +741,7 @@ export class HistoricalRunsList extends DG.Widget {
 
   private styleHistoryFilters() {
     if (this.runs.size > 0) {
-      const func = [...this.runs.values()][0].func;
+      const func = this.runs.values().next().value.func as DG.Func;
 
       const tagCol = this.currentDf.getCol(TAGS_COLUMN_NAME);
       const showMetadata = this.showMetadataIcon.value;
