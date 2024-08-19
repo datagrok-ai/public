@@ -89,7 +89,7 @@ export const History = defineComponent({
 
     return () => {
       const controls = <div style={{display: 'flex', justifyContent: 'space-between'}}>
-        <div style={{display: 'flex'}}>
+        <div style={{'display': 'flex', 'padding': '6px 0px', 'gap': '6px'}}>
           <IconFA 
             name={isFullMode.value ? 'compress-alt': 'expand-alt'} 
             tooltip={isFullMode.value ? 'Switch to compact mode': 'Switch to full mode'}
@@ -106,18 +106,26 @@ export const History = defineComponent({
           
         </div>
       </div>;
-      const grid = <Viewer type='Grid' dataFrame={historicalRunsDf.value} style={{height: '300px'}}/>;
-      const filters = <Viewer type='Filters' dataFrame={historicalRunsDf.value} style={{height: '300px'}}/>;
+      const grid = <Viewer type='Grid' dataFrame={historicalRunsDf.value} style={{height: '100%', width: '100%'}}/>;
+      const filters = <Viewer 
+        type='Filters' 
+        dataFrame={historicalRunsDf.value} 
+        style={{height: '100%', width: '100%', display: !showFilters.value ? 'none': null}}
+      />;
 
-      return <div>
+      return <div style={{height: '100%'}}>
         {isLoading.value ? 
           <span> Loading... </span>: 
-          <div style={{display: 'flex', flexDirection: isFullMode.value ? 'row': 'column'}}> 
-            <div style={{display: 'flex', flexDirection: 'column'}}>
+          <div style={{
+            display: 'flex', 
+            flexDirection: isFullMode.value ? 'row': 'column', 
+            height: '100%', width: '100%',
+          }}> 
+            <div style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%'}}>
               { controls }
               { grid }
             </div>
-            { showFilters.value ? filters : null }
+            { filters }
           </div>
         }
       </div>;
