@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
 import {TestCustomFilter} from './viewers/test-custom-filter';
-
 export const _package = new DG.Package();
 
 // -- Viewers --
@@ -25,6 +24,5 @@ export function testViewerForProperties() {
 //tags: filter
 //output: filter result
 export function testCustomFilter(): DG.Filter {
-  const flt: TestCustomFilter = new TestCustomFilter();
-  return flt;
+  return new TestCustomFilter();
 }

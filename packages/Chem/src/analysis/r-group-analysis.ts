@@ -86,7 +86,7 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export function rGroupAnalysis(col: DG.Column): void {
+export function rGroupAnalysis(col: DG.Column, demo = false): void {
   const sketcher = new DG.chem.Sketcher();
 
   //General fields
@@ -182,7 +182,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         }).call(undefined, undefined, { processed: false });
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
-          const view = grok.shell.getTableView(col.dataFrame.name);
+          const view = demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(col.dataFrame.name);
           //make highlight column invisible
           if (res.highlightColName)
             view.grid.col(res.highlightColName)!.visible = false;

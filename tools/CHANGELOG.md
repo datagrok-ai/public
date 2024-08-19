@@ -1,6 +1,12 @@
 # Datagrok-tools changelog
 
 
+## 4.13.13 (2024-08-09)
+
+### Features
+
+* Timeout update for test runs up to 1 hour
+
 ## 4.13.12 (2024-08-09)
 
 ### Features

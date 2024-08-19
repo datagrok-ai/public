@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import {assure, delay} from '@datagrok-libraries/utils/src/test';
+import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
@@ -51,7 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp, loadRGroupUserSettings} from './analysis/r-group-analysis';
-import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-analysis';
+import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -815,10 +815,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: func preprocessingFunction {optional: true}
 //input: object options {optional: true}
+//input: bool isDemo {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<void> {
+  preprocessingFunction: DG.Func, options?: (IUMAPOptions | ITSNEOptions) & Options, isDemo?: boolean): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -844,9 +845,11 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
       methodName: methodName,
       similarityMetric: similarityMetric,
       options: JSON.stringify(options),
+      isDemo: isDemo,
     }).call(undefined, undefined, {processed: false});
 
-    const view = grok.shell.getTableView(table.name);
+    const view = isDemo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.getTableView(table.name);
+
     view.addViewer(DG.VIEWER.SCATTER_PLOT, {
       xColumnName: axesNames[0],
       yColumnName: axesNames[1],
@@ -893,7 +896,7 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 
   await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
     actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options, DG.SEMTYPE.MOLECULE,
-    {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement);
+    {'units': molCol.meta.units!}, createTooltipElement, createPropPanelElement, undefined, undefined, actCliffsParams.isDemo);
   const size = sp.getOptions().look['sizeColumnName'];
   drawMoleculeLabels(sp.dataFrame, molCol, sp, 20, -1, 100, 105, size);
   //to draw the lines fro cliffs
@@ -909,9 +912,10 @@ export async function activityCliffsInitFunction(sp: DG.ScatterPlotViewer): Prom
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: string options {optional: true}
+//input: bool isDemo {optional: true}
 export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics,
-  options?: string): Promise<void> {
+  options?: string, isDemo?: boolean): Promise<void> {
   const preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   const axesNames = getEmbeddingColsNames(table);
   await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
@@ -922,7 +926,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
     similarityMetric: similarityMetric,
     similarity: similarity,
     options: options ?? {},
-
+    isDemo: isDemo,
   };
   table.setTag('activityCliffsParams', JSON.stringify(tagContent));
 }
@@ -1536,11 +1540,16 @@ export function mmpViewer(): MatchedMolecularPairsViewer {
 //input: double fragmentCutoff = 0.4 { description: Max length of fragment in % of core }
 //output: viewer result
 export function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
-  activities: DG.ColumnList, fragmentCutoff: number = 0.4): void {
-    
-  const viewer = (grok.shell.v as DG.TableView)
-    .addViewer('Matched Molecular Pairs Analysis');
+  activities: DG.ColumnList, fragmentCutoff: number = 0.4, demo = false): void {
+  let view: DG.TableView;
 
+  if (demo) {
+    const browseView = grok.shell.view('Browse') as DG.BrowseView;
+    view = browseView ? (browseView.preview as DG.TableView) : grok.shell.getTableView(table.name) as DG.TableView;
+  } else
+    view = grok.shell.getTableView(table.name) as DG.TableView;
+
+  const viewer = view.addViewer('Matched Molecular Pairs Analysis');
   viewer.setOptions({molecules: molecules.name, activities: activities.names(), fragmentCutoff});
 }
 
@@ -1742,18 +1751,18 @@ export async function getContainer() {
 
 export async function trainModelChemprop(table: string, predict: string, parameterValues: Record<string, any>): Promise<Uint8Array> {
   const container = await getContainer();
-  
+
   const body = {
     type: 'Chemprop',
     table: table,
     predict: predict,
-    parameters: parameterValues
+    parameters: parameterValues,
   };
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/train_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' }
+    headers: {'Content-Type': 'application/json'},
   });
 
   if (response.status !== 201)
@@ -1766,18 +1775,18 @@ export async function applyModelChemprop(modelBlob: Uint8Array, table: string): 
 
   const body = {
     modelBlob: Array.from(modelBlob),
-    table: table
+    table: table,
   };
 
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/modeling/predict_chemprop', {
     method: 'POST',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' }
+    headers: {'Content-Type': 'application/json'},
   });
 
   if (response.status !== 201)
     throw new Error(`Error applying model: ${response.statusText}`);
-  
+
   const data = await response.json();
   return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
 }

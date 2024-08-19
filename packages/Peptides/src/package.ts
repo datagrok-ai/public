@@ -165,7 +165,6 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
-//meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return await macromoleculeSarFastaDemoUI();
 }

@@ -5,7 +5,7 @@ import {MMP_CONSTRICTIONS, MMP_ERRORS, MMP_NAMES, columnsDescriptions} from './m
 import {MmpInput} from './mmp-constants';
 import {IMmpFragmentsResult} from '../../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+//import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {generationsGPU} from '@datagrok-libraries/math/src/webGPU/mmp/webGPU-generations';
 
 export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[],
@@ -43,8 +43,8 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
 
 
   await calculateGenerations(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-        activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
-        rulesFrom, rulesTo, rulesFromCats, rulesToCats, gpu);
+    activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
+    rulesFrom, rulesTo, rulesFromCats, rulesToCats, gpu);
 
   // if (gpu) {
   //   await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
@@ -56,8 +56,6 @@ export async function getGenerations(mmpInput: MmpInput, moleculesArray: string[
   //     activityName, activities, activityNames, fragsOut.frags, meanDiffs, prediction, cores, from, to,
   //     rulesFrom, rulesTo, rulesFromCats, rulesToCats);
   // }
-
-
 
   //console.timeEnd('generations');
 
@@ -84,38 +82,35 @@ async function calculateGenerations(structuresN: number, activityN: number, mole
   activityNames: string[], frags: [string, string][][], meanDiffs: Float32Array[], prediction: Float32Array,
   cores: string[], from: string[], to: string[], rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
   rulesFromCats: string[], rulesToCats: string[], gpu: boolean, strictCPU: boolean = false) {
-    try {
-      if (structuresN < 10 || !gpu || strictCPU) {
-        if (structuresN > MMP_CONSTRICTIONS.CPU)
-          throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-  
-        await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-          activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
-          rulesFrom, rulesTo, rulesFromCats, rulesToCats);
-      }
-      else {
-        await generationsCPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-          activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
-          rulesFrom, rulesTo, rulesFromCats, rulesToCats);
-      }
-    } 
-    catch (e: any) {
-      const eMsg: string = e instanceof Error ? e.message : e.toString();
-      if (eMsg === MMP_ERRORS.FRAGMENTS_CPU) {
-        grok.shell.warning(MMP_ERRORS.GPU_ABORTED);
-        grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
+  try {
+    if (structuresN < 10 || !gpu || strictCPU) {
+      if (structuresN > MMP_CONSTRICTIONS.CPU)
         throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
-      }
-      if (gpu) {
-        await calculateGenerations(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
-          activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
-          rulesFrom, rulesTo, rulesFromCats, rulesToCats, gpu, true);
-      }
-      else {
-        grok.shell.error(MMP_ERRORS.GENERATIONS);
-        throw new Error(MMP_ERRORS.GENERATIONS);
-      }
+
+      await generationsCPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
+        activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
+        rulesFrom, rulesTo, rulesFromCats, rulesToCats);
+    } else {
+      await generationsGPU(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
+        activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
+        rulesFrom, rulesTo, rulesFromCats, rulesToCats);
     }
+  } catch (e: any) {
+    const eMsg: string = e instanceof Error ? e.message : e.toString();
+    if (eMsg === MMP_ERRORS.FRAGMENTS_CPU) {
+      grok.shell.warning(MMP_ERRORS.GPU_ABORTED);
+      grok.shell.error(MMP_ERRORS.FRAGMENTS_CPU);
+      throw new Error(MMP_ERRORS.FRAGMENTS_CPU);
+    }
+    if (gpu) {
+      await calculateGenerations(structuresN, activityN, moleculesArray, allStructures, allInitActivities,
+        activityName, activities, activityNames, frags, meanDiffs, prediction, cores, from, to,
+        rulesFrom, rulesTo, rulesFromCats, rulesToCats, gpu, true);
+    } else {
+      grok.shell.error(MMP_ERRORS.GENERATIONS);
+      throw new Error(MMP_ERRORS.GENERATIONS);
+    }
+  }
 }
 
 // eslint-disable-next-line max-params

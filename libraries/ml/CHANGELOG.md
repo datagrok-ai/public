@@ -1,5 +1,21 @@
 # ml changelog
 
+## 6.6.21 (2024-08-14)
+
+Fix Worker import
+
+## 6.6.20 (2024-08-14)
+
+MCL Optimization: Remove use of extra column major map sparse matrix.
+
+## 6.6.19 (2024-08-09)
+
+Activity cliffs: make docked grid available in browse view for demo purposes
+
+## 6.6.18 (2024-08-09)
+
+Activity cliffs: ability to run as demo in Browse view
+
 ## 6.6.17 (2024-08-08)
 
 Add limit to intercluster connections in mcl

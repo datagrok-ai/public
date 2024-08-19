@@ -63,8 +63,8 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
   const subsrtTo = pairsDf.get(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx);
   const moleculeFrom = pairsDf.get(MMP_NAMES.FROM, pairIdx);
   const moleculeTo = pairsDf.get(MMP_NAMES.TO, pairIdx);
-  const fromIdx = pairsDf.get(MMP_NAMES.FROM, pairIdx);
-  const toIdx = pairsDf.get(MMP_NAMES.TO, pairIdx);
+  const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
+  const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
   if (propPanelViewer) {
     const props = getMoleculesPropertiesDiv(propPanelViewer, [fromIdx, toIdx]);
     div.append(props);
@@ -72,21 +72,21 @@ export function fillPairInfo(line: number, linesIdxs: Uint32Array, activityNum: 
     const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[activityNum][pairIdx], 4)});
     diff.style.maxWidth = '150px';
     div.append(diff);
-  }
-  if (subsrtFrom || subsrtTo) {
-    drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx],
-      [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
-  } else {
-    moleculesDiv.append(ui.divText(`Loading...`));
-    getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
-      const {inverse1, inverse2, fromAligned, toAligned} = res;
-      pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
-      pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
-      pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
-      pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
-      drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
-        [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
-    });
+    if (subsrtFrom || subsrtTo) {
+      drawMolPair([moleculeFrom, moleculeTo], [fromIdx, toIdx],
+        [subsrtFrom, subsrtTo], moleculesDiv, parentTable, !propPanelViewer);
+    } else {
+      moleculesDiv.append(ui.divText(`Loading...`));
+      getInverseSubstructuresAndAlign([moleculeFrom], [moleculeTo], rdkitModule).then((res) => {
+        const {inverse1, inverse2, fromAligned, toAligned} = res;
+        pairsDf.set(MMP_NAMES.STRUCT_DIFF_FROM_NAME, pairIdx, inverse1[0]);
+        pairsDf.set(MMP_NAMES.STRUCT_DIFF_TO_NAME, pairIdx, inverse2[0]);
+        pairsDf.set(MMP_NAMES.FROM, pairIdx, fromAligned[0]);
+        pairsDf.set(MMP_NAMES.TO, pairIdx, toAligned[0]);
+        drawMolPair([fromAligned[0], toAligned[0]], [fromIdx, toIdx],
+          [inverse1[0], inverse2[0]], moleculesDiv, parentTable, !!propPanelViewer);
+      });
+    }
   }
   return div;
 };

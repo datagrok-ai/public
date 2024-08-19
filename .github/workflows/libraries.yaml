@@ -41,7 +41,7 @@ jobs:
         with:
           fetch-depth: ${{ env.FETCH_DEPTH }}
           sparse-checkout: |
-            libraries
+            ./libraries
       - name: Get changed files
         uses: tj-actions/changed-files@v42
         id: changed-files
@@ -148,8 +148,8 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN || github.token }}
           sparse-checkout: |
-            libraries
-            js-api
+            ./libraries
+            ./js-api
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |

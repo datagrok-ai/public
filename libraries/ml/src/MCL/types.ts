@@ -6,6 +6,7 @@ export type MCLOptions = {
     maxIterations: number,
     inflateFactor: number,
     multFactor: number,
+    pruneValue: number,
 }
 
 export type SparseMatrixObject = {[_: number]: {[_: number]: number}};

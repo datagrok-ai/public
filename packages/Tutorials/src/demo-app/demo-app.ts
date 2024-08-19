@@ -74,7 +74,12 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       grok.shell.isInDemo = true;
       try {
+        const sub = grok.events.onViewAdded.subscribe((view) => {
+          this.browseView.preview = view;
+          grok.shell.v = this.browseView;
+        });
         await func.apply();
+        sub.unsubscribe();
       }
       finally {
         grok.shell.isInDemo = false;

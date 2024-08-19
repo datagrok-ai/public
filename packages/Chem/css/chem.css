@@ -163,6 +163,10 @@
   align-items: center;
 }
 
+.chem-scaffold-tree-toolbar .ui-input-choice.ui-input-root {
+  width: 50px;
+}
+
 .chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-down,
 .chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-up {
   font-size: 17px;

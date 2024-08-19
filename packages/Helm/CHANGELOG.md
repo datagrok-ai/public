@@ -1,5 +1,25 @@
 # Helm changelog
 
+## 2.4.1 (2024-08-16)
+
+### Features
+
+* HWE option for continuous number, typing
+* Add HelmInput mouse events, redraw, showTooltip
+* Bump HWE dependencies versions
+
+### Bug fixes
+
+* Polish HelmInput size handling, tooltip
+
+## 2.4.0 (2024-08-06)
+
+### Features
+
+* Add monomer placeholders to HELMWebEditor palette
+
+### Bug fixes
+
 ## 2.3.4 (2024-08-06)
 
 ### Bug fixes

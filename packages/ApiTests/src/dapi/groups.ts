@@ -68,10 +68,11 @@ category('Dapi: groups', () => {
 
   test('delete group', async () => {
     const localTestGroupName = 'js-api-test-group1';
+    const countBefore = await grok.dapi.groups.filter(localTestGroupName).count;
     const localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
     expect((await grok.dapi.groups.filter(localTestGroupName).first())?.name, localTestGroupName);
     await grok.dapi.groups.delete(localTestGroup);
-    expect((await grok.dapi.groups.filter(localTestGroupName).first()) == undefined);
+    expect((await grok.dapi.groups.filter(localTestGroupName)).count == countBefore);
   }, {stressTest: true});
 
   after(async () => {
