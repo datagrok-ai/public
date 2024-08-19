@@ -18,6 +18,55 @@ declare global {
   }
 }
 
+export const ScalarTable = defineComponent({
+  name: 'ScalarTable',
+  props: {
+    funcCall: {
+      type: Object as PropType<DG.FuncCall>,
+      required: true,
+    },
+    category: {
+      type: String,
+      required: true,
+    },
+  },
+  setup(props) {
+    const categoryScalars = computed(() => {
+      return [
+        ...props.funcCall.func.inputs,
+        ...props.funcCall.func.outputs,
+      ].filter((prop) => 
+        prop.propertyType !== DG.TYPE.DATA_FRAME && 
+        prop.propertyType !== DG.TYPE.GRAPHICS &&
+        prop.category === props.category,
+      );
+    });
+
+    return () => 
+      <table>
+        { 
+          categoryScalars.value.map((prop) => {
+            const precision = prop.options.precision;
+
+            const scalarValue = precision && 
+                prop.propertyType === DG.TYPE.FLOAT && props.funcCall.outputs[prop.name] ?
+              props.funcCall.outputs[prop.name].toPrecision(precision):
+              props.funcCall.outputs[prop.name];
+            const units = prop.options['units'] ? ` [${prop.options['units']}]`: ``;
+            
+            return <tr> 
+              <td>
+                { prop.caption ?? prop.name }{units}
+              </td> 
+              <td>
+                { scalarValue ?? '[No value]' }
+              </td> 
+            </tr>;
+          }) 
+        }
+      </table>;
+  },
+});
 
 export const RichFunctionView = defineComponent({
   name: 'RichFunctionView',
@@ -38,13 +87,6 @@ export const RichFunctionView = defineComponent({
         return acc;
       }, {} as Record<string, any>));
     });
-
-    const paramsWithViewers = computed(() => [
-      ...currentCall.value.func.inputs,
-      ...currentCall.value.func.outputs,
-    ].filter((prop) =>
-      prop.propertyType === DG.TYPE.DATA_FRAME && getPropViewers(prop).config.length !== 0,
-    ));
 
     const categoryToDfParam = computed(() => categoryToDfParamMap(currentCall.value.func));
 
@@ -77,21 +119,30 @@ export const RichFunctionView = defineComponent({
           style={{width: '100%'}}
         >
           {{
-            default: () => tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
+            default: () =>
+              tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
-              .flatMap((tabProps) => tabProps.map((prop) => getPropViewers(prop)))
-              .map(({name, config: allConfigs}) => 
-                allConfigs.map((options, idx) => 
-                  <div key={`${currentCall.value.id}_${idx}`} style={{height: '300px'}}>
-                    <Viewer
-                      type={options['type'] as string}
-                      options={options}
-                      dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
-                      style={{width: '100%'}} 
-                    /> 
-                  </div>,
+                .flatMap((tabProps) => tabProps.map((prop) => getPropViewers(prop)))
+                .map(({name, config: allConfigs}) => 
+                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                    {
+                      allConfigs.map((options, idx) => 
+                        <div key={`${currentCall.value.id}_${idx}`} style={{height: '300px'}}>
+                          <Viewer
+                            type={options['type'] as string}
+                            options={options}
+                            dataFrame={currentCall.value.inputs[name] ?? currentCall.value.outputs[name]}
+                            style={{width: '100%'}} 
+                          /> 
+                        </div>,
+                      )
+                    }
+                    <ScalarTable 
+                      funcCall={currentCall.value} 
+                      category={tabLabels.value[selectedIdx.value]}
+                    />
+                  </div>, 
                 ),
-              ),
             stripePostfix: () => <IconFA name='info' tooltip='Open help panel'/>,
           }}
         </Tabs>
