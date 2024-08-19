@@ -141,7 +141,10 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
   s = s.toLowerCase();
   for (let wf of widgetFunctions)
     if (wf.name.toLowerCase() == s)
-      wf.apply().then((w: DG.Widget) => host.appendChild(ui.div([widgetHost(w)])));
+      wf.apply().then((w: DG.Widget) => {
+        if (w)
+          host.appendChild(ui.div([widgetHost(w)]));
+      });
 }
 
 
