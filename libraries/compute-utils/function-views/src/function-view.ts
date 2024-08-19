@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {createPartialCopy, deepCopy, fcToSerializable, getContextHelp, getStartedOrNull, hasContextHelp, isIncomplete} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
 import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
@@ -879,35 +879,11 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get hasContextHelp() {
-    const readmePath = this.func.options['help'] as string | undefined;
-
-    return !!readmePath;
+    return !!hasContextHelp(this.func); 
   }
 
-  private helpCache = null as string | null;
-
   public async getContextHelp() {
-    const helpPath = this.func.options['help'];
-
-    if (!helpPath) return null;
-
-    if (this.helpCache) return this.helpCache;
-
-    const packagePath = `System:AppData/${helpPath}`;
-    if (await grok.dapi.files.exists(packagePath)) {
-      const readme = await grok.dapi.files.readAsText(packagePath);
-      this.helpCache = readme;
-      return readme;
-    }
-
-    const homePath = `${grok.shell.user.name}.home/${helpPath}`;
-    if (await grok.dapi.files.exists(homePath)) {
-      const readme = await grok.dapi.files.readAsText(homePath);
-      this.helpCache = readme;
-      return readme;
-    }
-
-    return null;
+    return getContextHelp(this.func)
   }
 
   protected get features(): Record<string, boolean> | string[] {

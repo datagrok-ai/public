@@ -7,7 +7,7 @@ import {type ViewerT} from '@datagrok-libraries/webcomponents/src';
 import {Viewer, InputForm, BigButton, Button, TabHeaderStripe, Tabs, IconFA} from '@datagrok-libraries/webcomponents-vue/src';
 import 'gridstack/dist/gridstack.min.css';
 import './RichFunctionView.css';
-import {categoryToDfParamMap, getPropViewers} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getDefaultValue} from '@datagrok-libraries/compute-utils/function-views/src/shared/utils';
 
 declare global {
@@ -88,7 +88,7 @@ export const RichFunctionView = defineComponent({
       }, {} as Record<string, any>));
     });
 
-    const categoryToDfParam = computed(() => categoryToDfParamMap(currentCall.value.func));
+    const categoryToDfParam = computed(() => Utils.categoryToDfParamMap(currentCall.value.func));
 
     const tabLabels = computed(() => {
       return [
@@ -105,6 +105,8 @@ export const RichFunctionView = defineComponent({
     };
 
     const formHidden = ref(false);
+
+    const hasContextHelp = computed(() => Utils.hasContextHelp(currentCall.value.func));
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
@@ -135,7 +137,7 @@ export const RichFunctionView = defineComponent({
             default: () =>
               tabLabels.value.map((tabLabel) => categoryToDfParam.value.inputs[tabLabel] ?? 
                 categoryToDfParam.value.outputs[tabLabel])            
-                .flatMap((tabProps) => tabProps.map((prop) => getPropViewers(prop)))
+                .flatMap((tabProps) => tabProps.map((prop) => Utils.getPropViewers(prop)))
                 .map(({name, config: allConfigs}) => 
                   <div style={{display: 'flex', flexDirection: 'column'}}>
                     {
@@ -156,7 +158,11 @@ export const RichFunctionView = defineComponent({
                     />
                   </div>, 
                 ),
-            stripePostfix: () => <IconFA name='info' tooltip='Open help panel'/>,
+            stripePostfix: () => hasContextHelp.value && <IconFA 
+              name='info' 
+              tooltip='Open help panel' 
+              onClick={async () => Utils.showHelpWithDelay((await Utils.getContextHelp(currentCall.value.func))!)}
+            />,
           }}
         </Tabs>
       </div>

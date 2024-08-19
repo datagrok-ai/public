@@ -10,6 +10,43 @@ import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, Validator, getValidationIcon, mergeValidationResults, nonNullValidator} from './validation';
 import {FunctionView, RichFunctionView} from '../function-views';
 
+export const showHelpWithDelay = async(helpContent: string) => {
+  grok.shell.windows.help.visible = true;
+  // Workaround to deal with help panel bug
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  grok.shell.windows.help.showHelp(ui.markdown(helpContent));
+}
+
+const helpCache = new DG.LruCache<string, string>();
+
+export const getContextHelp = async (func: DG.Func) => {
+  const helpPath = func.options['help'];
+
+  if (!helpPath) return null;
+
+  if (helpCache.get(func.id)) return helpCache.get(func.id);
+
+  const packagePath = `System:AppData/${helpPath}`;
+  if (await grok.dapi.files.exists(packagePath)) {
+    const readme = await grok.dapi.files.readAsText(packagePath);
+    helpCache.set(func.id, readme);
+    return readme;
+  }
+
+  const homePath = `${grok.shell.user.name}.home/${helpPath}`;
+  if (await grok.dapi.files.exists(homePath)) {
+    const readme = await grok.dapi.files.readAsText(homePath);
+    helpCache.set(func.id, readme);
+    return readme;
+  }
+
+  return null;
+}
+
+export const hasContextHelp = (func: DG.Func) => {
+  return !!(func.options['help'] as string | undefined);
+}; 
+
 export const categoryToDfParamMap = (func: DG.Func) => {
   const map = {
     inputs: {} as Record<string, DG.Property[]>,
