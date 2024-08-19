@@ -163,6 +163,10 @@
   align-items: center;
 }
 
+.chem-scaffold-tree-toolbar .ui-input-choice.ui-input-root {
+  width: 50px;
+}
+
 .chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-down,
 .chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-up {
   font-size: 17px;
@@ -675,4 +679,14 @@
 .mmpa-slider-input > input[type="range"]::-moz-range-thumb {
   height: 8px;
   width: 8px;
+}
+
+.mmpa-filters-expand-icon {
+  transform-origin: center;
+  padding-top: 6px;
+}
+
+.mmpa-filters-expand-icon-collapsed {
+  transform: rotate(-180deg);
+  padding-top: 0px;
 }

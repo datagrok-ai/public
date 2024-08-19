@@ -14,6 +14,11 @@ export class DbTable {
     return this.columns.find((c) => c.name == name)!;
   }
 
+  // /** Finds a column that references the specified column in another table, written in the 'table.column' format */
+  // getRefColumn(ref: string): DbColumn {
+  //   return this.columns.find((c) => c.ref == ref)!;
+  // }
+
   constructor(init?: Partial<DbTable>) {
     Object.assign(this, init);
     for (let col of this.columns)
@@ -33,6 +38,9 @@ export class DbColumn {
   references?: DbColumn;
   referencedBy: DbColumn[] = [];
   prop: DG.Property;  // works with the DbEntity
+
+  /** Table-qualified name, such as "employee.first_name". */
+  get tqName(): string { return `${this.table.name}.${this.name}`; }
 
   constructor(init?: Partial<DbColumn>) {
     Object.assign(this, init);
@@ -57,6 +65,14 @@ export class DbSchema {
 
     for (let table of this.tables)
       table.schema = this;
+
+    for (const table of tables)
+      for (const c of table.columns)
+        if (c.ref) {
+          const [table, column] = c.ref.split('.');
+          c.references = this.getTable(table).getColumn(column);
+          c.references.referencedBy.push(c);
+        }
   }
 
   getTable(name: string): DbTable {

@@ -507,7 +507,7 @@ export interface IDartApi {
   grok_Func_OutputParamMap_Values(call: any): any;
   grok_Func_OutputParamMap_Clear(call: any): any;
   grok_Func_OutputParamMap_Size(call: any): any;
-  grok_GroupByBuilder_Aggregate(b: any): any;
+  grok_GroupByBuilder_Aggregate(b: any, autoName: Bool): any;
   grok_GroupByBuilder_WhereBitSet(b: any, bitset: any): any;
   grok_GroupByBuilder_Add(b: any, agg: String, colName: String, resultColName: String): any;
   grok_GroupByBuilder_GetGroups(b: any): any;
@@ -538,6 +538,7 @@ export interface IDartApi {
   grok_Column_FromStrings(name: String, list: any): any;
   grok_Column_FromInt32Array(name: String, data: any, length: Num): any;
   grok_Column_FromFloat32Array(name: String, data: any, length: Num): any;
+  grok_Column_FromFloat64Array(name: String, data: any, length: Num): any;
   grok_Column_FromList(type: String, name: String, list: any): any;
   grok_Column_FromIndexes(name: String, categories: any, indexes: any): any;
   grok_Column_FromType(type: String, name: String, length: Num): any;
@@ -555,6 +556,7 @@ export interface IDartApi {
   grok_Column_GetRawDataDartium(c: any): any;
   grok_Column_GetRawData(c: any): any;
   grok_Column_SetRawData(c: any, rawData: any, notify: any): any;
+  grok_Column_AsDoubleList(c: any): any;
   grok_Column_Scale(c: any, i: Num): any;
   grok_Column_GetValue(c: any, i: Num): any;
   grok_Column_SetValue(c: any, i: Num, x: any, notify: Bool): any;
@@ -591,6 +593,8 @@ export interface IDartApi {
   grok_Column_GetAutoFormat(column: any): any;
   grok_Column_Get_Is_Categorical(column: any): any;
   grok_Column_Get_Is_Numerical(column: any): any;
+  grok_FloatColumn_GetDoublePrecision(c: any): any;
+  grok_FloatColumn_SetDoublePrecision(c: any, doublePrecision: Bool): any;
   grok_BigIntColumn_GetValue(c: any, i: Num): any;
   grok_BigIntColumn_SetValue(c: any, i: Num, x: String, notify: Bool): any;
   grok_BigIntJs_To_BigInt(bigint: String): any;
@@ -1132,8 +1136,9 @@ export interface IDartApi {
   grok_TreeViewNode_Set_Tag(node: any, tag: any): any;
   grok_TreeViewNode_Get_CurrentItem(node: any): any;
   grok_TreeViewNode_Set_CurrentItem(group: any, node: any): any;
-  grok_TreeViewNode_Text(node: any): any;
-  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool): any;
+  grok_TreeViewNode_Get_Text(node: any): any;
+  grok_TreeViewNode_Set_Text(node: any, value: String): any;
+  grok_TreeViewNode_Group(node: any, text: any, value: any, expanded: Bool, index: Num): any;
   grok_TreeViewNode_GetOrCreateGroup(node: any, text: String, value: any, expanded: Bool): any;
   grok_TreeViewNode_Item(node: any, text: any, value: any): any;
   grok_TreeViewNode_Items(node: any): any;
@@ -1144,6 +1149,7 @@ export interface IDartApi {
   grok_TreeViewNode_Get_Expanded(node: any): any;
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
+  grok_Test_RunViewerTest(viewerName: String): Promise<any>;
   grok_Windows_Get_Sidebar(): any;
   grok_Windows_Get_ShowSidebar(): any;
   grok_Windows_Set_ShowSidebar(x: Bool): any;
@@ -1452,6 +1458,9 @@ export interface IDartApi {
   grok_BrowseView_Get_MainTree(view: any): any;
   grok_BrowseView_Get_Preview(view: any): any;
   grok_BrowseView_Set_Preview(view: any, preview: any): any;
+  grok_BrowseView_Get_DockManager(view: any): any;
+  grok_BrowseView_Get_ShowTree(view: any): any;
+  grok_BrowseView_Set_ShowTree(view: any, x: Bool): any;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;

@@ -30,7 +30,9 @@ const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
   'number': ['num', 'int', 'double', 'float'],
   'double': ['int', 'float', 'number', 'num'],
   'float': ['int'],
-  'int': ['num', 'number']
+  'int': ['num', 'number'],
+  'bool': ['boolean'],
+  'boolean': ['bool']
 };
 
 const COLUMN_FUNCTION_NAME = 'GetCurrentRowField';
@@ -39,7 +41,8 @@ const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
   'GetRowIndex': DG.TYPE.INT,
 }
 
-const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`
+const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`;
+const FUNC_OUTPUT_TYPE = 'output';
 
 export class AddNewColumnDialog {
   addColumnTitle: string = 'Add New Column';
@@ -57,7 +60,7 @@ export class AddNewColumnDialog {
   maxAutoNameLength: number = 50;
   maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
-  colNamePattern: RegExp = /\${(.+?)}/g;
+  colNamePattern: RegExp = /\${(.+?)}|\$\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
     type: 'Column type. When set to "auto", type is determined based on the expression.',
@@ -98,6 +101,8 @@ export class AddNewColumnDialog {
   functionAutocomplete = false;
   autocompleteEnter = false;
   selectedColumn: DG.Column | null = null;
+  error = '';
+  mutationObserver: MutationObserver | null = null;
 
   constructor(call: DG.FuncCall | null = null) {
     const table = call?.getParamValue('table');
@@ -139,6 +144,10 @@ export class AddNewColumnDialog {
       .onOK(async () => await this.addNewColumnAction())
       .show({resizable: true, width: 750, height: 500});
 
+    this.uiDialog.onClose.subscribe((_) => {
+      this.mutationObserver?.disconnect(); 
+    })
+
     this.uiDialog.history(
       () => this.saveInputHistory(),
       (x) => this.loadInputHistory(x),
@@ -162,11 +171,14 @@ export class AddNewColumnDialog {
 
   prepareFunctionsListForAutocomplete() {
     //filter functions with one input (multiple inputs or functions returning void are not included)
-    const allFunctionsList = DG.Func.find().filter((it) => it.outputs.length === 1);
+    const allFunctionsList = DG.Func.find()
+      .filter((it) => it.outputs.length === 1 && (DG.TYPES_SCALAR.has(it.outputs[0].propertyType) || it.outputs[0].propertyType === 'dynamic' || it.outputs[0].propertyType === DG.TYPE.DATE_TIME));
     for (const func of allFunctionsList) {
       const params: PropInfo[] = func.inputs.map((it) => {
         return {propName: it.name, propType: it.semType ?? it.propertyType};
       });
+      //the last param in the list is return value
+      params.push({propName: FUNC_OUTPUT_TYPE, propType: func.outputs[0].semType ?? func.outputs[0].propertyType});
       try {
         const packageName = func.package.name;
         if (!this.packageFunctionsNames[packageName]) {
@@ -386,14 +398,13 @@ export class AddNewColumnDialog {
             if (!e.docChanged)
               return;
 
-            ui.empty(this.errorDiv);
             const cmValue = cm.state.doc.toString();
 
             //remove highlight
             setSelection(cm, [{from: 0, to: cmValue.length}], removeHighlight);
 
             //add column highlight
-            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}');
+            const cursor = new RegExpCursor(cm.state.doc, '\\$\\{(.+?)\\}|\\$\\[(.+?)\\]');
 
             const colSelections = [];
             while (!cursor.done) {
@@ -429,7 +440,7 @@ export class AddNewColumnDialog {
 
             (this.inputName!.input as HTMLInputElement).placeholder =
               ((!cmValue || (cmValue.length > this.maxAutoNameLength)) ? this.placeholderName : cmValue).trim();
-            let error = '';
+            this.error = '';
             if (cmValue) {
               if (this.packageAutocomplete)
                 setTimeout(() => {
@@ -438,35 +449,43 @@ export class AddNewColumnDialog {
               else if(fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
                 if (!this.packageNames.includes(packAndFuncNames[0]))
-                  error = `Package ${packAndFuncNames[0]} not found`;
+                  this.error = `Package ${packAndFuncNames[0]} not found`;
                 else if (!packAndFuncNames[1])
-                  error = `Start typing to see ${packAndFuncNames[0]} package functions`;
+                  this.error = `Start typing to see ${packAndFuncNames[0]} package functions`;
                 else if (!this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
-                  error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
+                  this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else
-                  error = this.validateFormula(cmValue);
+                this.error = this.validateFormula(cmValue);
               } else {
                 if (this.functionAutocomplete)
                   this.setSelection(cm.state.selection.main.head, true);
-                error = this.validateFormula(cmValue);
+                this.error = this.validateFormula(cmValue);
               }
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            await this.updatePreview(cmValue, error);
-            if (error) {
-              //need to wait for autocompletion to appear, in case autocoplete is opened - do not show error             
-              setTimeout(() => {
-                ui.empty(this.errorDiv);
-                if (!this.codeMirrorDiv.getElementsByClassName('cm-tooltip-autocomplete').length) {
-                  this.errorDiv.append(ui.divText(error, 'cm-error-div'));
-                }
-              }, 100);
-            }
+            await this.updatePreview(cmValue, this.error);
+            ui.empty(this.errorDiv);
+            if (this.error)
+              this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
           }),
         ],
       }),
     });  
+
+    //remove error in case autocomplete is open
+    this.mutationObserver = new MutationObserver((mutationsList, observer) => {
+      mutationsList.forEach((m) => {
+        if (Array.from(m.removedNodes).filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length) {
+          ui.empty(this.errorDiv);
+          this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+          return;
+        }
+        if (Array.from(m.addedNodes).filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length)
+          ui.empty(this.errorDiv);
+      });
+    });
+    this.mutationObserver.observe(cm.dom, {attributes: true, childList: true});
 
     if (this.call)
       cm!.dispatch({changes: {
@@ -492,22 +511,23 @@ export class AddNewColumnDialog {
     const matchesAll = [...formula.matchAll(this.colNamePattern)];
     const unmatchedCols: string[] = [];
     if (matchesAll.length) {
-      for (const match of matchesAll)
-        if (!this.columnNamesLowerCase.includes(match[1].toLowerCase()))
-          unmatchedCols.push(match[1]);
+      for (const match of matchesAll) {
+        const matchCol = match[1] ?? match[2];
+        if (!this.columnNamesLowerCase.includes(matchCol.toLowerCase()))
+          unmatchedCols.push(matchCol);
+      }
     }
     if (unmatchedCols.length)
       return unmatchedCols.length > 1 ? `Columns ${unmatchedCols.join(',')} are missing` :
         `Column ${unmatchedCols[0]} is missing`;
     //check cases when only one column is entered
-    const singleColumnPattern = /^\${(.+?)}$/;
+    const singleColumnPattern = /^\${(.+?)}$|^\$\[(.+?)\]$/;
     const found = formula.trim().match(singleColumnPattern);
     if (found)
       return '';
     //check syntax errors
     try {
       const funcCall = grok.functions.parse(formula, false);
-      console.log(funcCall);
       this.validateFuncCallTypes(funcCall);
     } catch (e: any) {
       return e.message;
@@ -581,10 +601,10 @@ export class AddNewColumnDialog {
   }
 
   getFunctionNameAtPosition(view: EditorView, pos: number, side: number,
-    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] }):
-      { funcName: string, start: number, end: number } | null {
-    let { from, to, text } = view.state.doc.lineAt(pos)
-    let start = pos, end = pos
+    packageFunctionsParams: { [key: string]: PropInfo[] }, coreFunctionsParams: { [key: string]: PropInfo[] },
+    withoutSignature?: boolean): { funcName: string, start: number, end: number } | null {
+    let { from, to, text } = view.state.doc.lineAt(pos);
+    let start = pos, end = pos;
     while (start > from && /\w|:/.test(text[start - from - 1]))
       start--;
     while (end < to && /\w|:/.test(text[end - from]))
@@ -594,9 +614,16 @@ export class AddNewColumnDialog {
     const funcName = text.slice(start - from, end - from);
     if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
       return null;
+    if (withoutSignature)
+      return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
+    const funcInputs = funcParams.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
+    const funcOutputs = funcParams.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
+    let funcOutputType = '';
+    if (funcOutputs.length)
+      funcOutputType = funcOutputs[0].propType;
     return {
-      funcName: `${funcName}${funcParams ? `(${funcParams.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}`,
+      funcName: `${funcName}${funcInputs.length ? `(${funcInputs.map((it) => `${it.propName}:${it.propType}`).join(', ')})` : ''}: ${funcOutputType}`,
       start: start,
       end: end
     }
@@ -680,6 +707,16 @@ export class AddNewColumnDialog {
   async initUiColumns(): Promise<HTMLDivElement> {
     this.widgetColumns = await DG.Func.byName('ColumnGridWidget').apply({df: this.sourceDf});
 
+    if (this.widgetColumns!.getProperties().filter((it => it.name === 'grid')).length) { //added check for grid property for backward compatibility
+      const columnsGrid = DG.toJs(this.widgetColumns!.props.grid) as DG.Grid;
+      columnsGrid.autoSize(350, 345, undefined, undefined, true);
+      columnsGrid.root.classList.add('add-new-column-columns-grid');
+      ui.onSizeChanged(this.uiDialog!.root).subscribe(() => {
+        const newHeight = this.uiDialog!.root.getElementsByClassName('add-new-column-columns-grid')[0].clientHeight - 5;
+        columnsGrid.autoSize(350, newHeight, undefined, undefined, true);
+      });
+    }
+    
     this.columnsDf = DG.toJs(this.widgetColumns!.props.dfColumns);
     this.columnsDf?.onCurrentRowChanged.subscribe(() => {
       if (this.columnsDf && this.columnsDf!.currentRowIdx !== -1) {
@@ -804,13 +841,25 @@ export class AddNewColumnDialog {
   insertIntoCodeMirror(x: any, cm: EditorView): void {
     let snippet: string = '';
 
-    if (this.typeOf(x, DG.Column))
-      snippet = `\${${x.name}}`;
+    if (this.typeOf(x, DG.Column)) {
+      const cursorPos = cm.state.selection.main.head;
+      let parenthesesPos = cursorPos;
+      while (parenthesesPos > 0) {
+        if (cm.state.doc.toString()[parenthesesPos] === '(')
+          break;
+        parenthesesPos--;
+      }
+      const funcName = this.getFunctionNameAtPosition(cm, parenthesesPos, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)?.funcName;
+      const isAggr = funcName ? Object.values(DG.AGG).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
+      snippet = isAggr ? `\$[${x.name}]` : `\${${x.name}}`;
+    }
     else if (this.typeOf(x, DG.Func)) {
       const params = (x as DG.Func).inputs.map((it) => it.semType ?? it.propertyType);
       const colPos = this.findColumnTypeMatchingParam(x);
-      if (colPos !== -1)
-        params[colPos] = `\${${this.selectedColumn!.name}}`;
+      if (colPos !== -1) {
+        const isAggr = Object.values(DG.AGG).includes((x as DG.Func).name.toLocaleLowerCase() as DG.AGG);
+        params[colPos] = isAggr ? `\$[${this.selectedColumn!.name}]` : `\${${this.selectedColumn!.name}}`;
+      }
       const paramsStr = params.join(', ');
       const funcName = (x as DG.Func).nqName.startsWith('core:') ? (x as DG.Func).name : (x as DG.Func).nqName;
       snippet = `${funcName}(${paramsStr})`;
@@ -838,16 +887,16 @@ export class AddNewColumnDialog {
     let bestDynamicTypePosFound = false;
     for (let i = 0; i < f.inputs.length; i++) {
       const mappedTypes = VALIDATION_TYPES_MAPPING[f.inputs[i].propertyType] ?? [];
-      if (this.selectedColumn.semType && f.inputs[i].semType == this.selectedColumn.semType) {
+      if (this.selectedColumn.semType && f.inputs[i].semType === this.selectedColumn.semType) {
         finalPos = i;
         break;
-      } else if ((this.selectedColumn.type == f.inputs[i].propertyType ||
+      } else if ((this.selectedColumn.type === f.inputs[i].propertyType ||
         mappedTypes.includes(this.selectedColumn.type)) && f.inputs[i].semType == null && !bestTypePosFound) {
         bestTypePosFound = true;
         finalPos = i;
         if (!this.selectedColumn.semType)
           break;
-      } else if (f.inputs[i].propertyType == 'dynamic' && !bestDynamicTypePosFound) {
+      } else if (f.inputs[i].propertyType === 'dynamic' && !bestDynamicTypePosFound) {
         bestDynamicTypePosFound = true;
         finalPos = i;
       }
@@ -943,7 +992,7 @@ export class AddNewColumnDialog {
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
     packageFunctionsParams: {[key: string]: PropInfo[]}, coreFunctionsParams:  {[key: string]: PropInfo[]}) {
     return (context: CompletionContext) => {
-      let word = context.matchBefore(/[\w|:|$|${]*/);
+      let word = context.matchBefore(/[\w|:|$|${|$\[]*/);
       if (!word || word?.from === word?.to && !context.explicit)
         return null;
       let options: Completion[] = [];
@@ -955,22 +1004,28 @@ export class AddNewColumnDialog {
         if (packageFunctionsNames[packName])
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
             options.push({ label: name, type: "variable",
-              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`].map((it)=> it.propType).join(',')})` })
+              apply: `${name}(${packageFunctionsParams[`${packName}:${name}`]
+                .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
+                .map((it)=> it.propType).join(',')})` })
           });
         index = word!.from + colonIdx + 1;
         filter = !word.text.endsWith(':');
-      } else if (word.text.includes('$') || word.text.includes('${')) {
-        const openingBracketIdx = word.text.indexOf("{");
-        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === '}' : false;
+      } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
+        const openingSym = word.text.includes('$[') ? '[' : '{';
+        const closingSym = openingSym === '{' ? '}' : ']';
+        const openingBracketIdx = word.text.indexOf(openingSym);
+        const closingBracket = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === openingSym : false;
         colNames.forEach((name: string) => options.push({ label: name, type: "variable",
-          apply: openingBracketIdx !== -1 ? closingBracket ? `${name}` : `${name}}` :  closingBracket ? `{${name}` : `{${name}}`}));
+          apply: openingBracketIdx !== -1 ? closingBracket ? `${name}` : `${name}${closingSym}` :  closingBracket ? `${openingSym}${name}` : `${openingSym}${name}${closingSym}`}));
         index = word!.from + (openingBracketIdx === -1 ? word.text.indexOf("$") + 1 : openingBracketIdx + 1);
-        filter = !word.text.endsWith('$') && !word.text.endsWith('{');
+        filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else
         coreFunctionsNames.concat(packageNames)
           .forEach((name: string, idx: number) => options.push({
             label: name, type: "variable",
-            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name].map((it)=> it.propType).join(',')})` : `${name}:`,
+            apply: idx < coreFunctionsNames.length ? `${name}(${coreFunctionsParams[name]
+              .filter((it) => it.propName !== FUNC_OUTPUT_TYPE)
+              .map((it)=> it.propType).join(',')})` : `${name}:`,
             detail: idx < coreFunctionsNames.length ? '' : 'package'
           }));
       return {

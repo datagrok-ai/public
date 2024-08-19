@@ -2,6 +2,11 @@ import fs from 'fs';
 import path from 'path';
 
 
+/* Waits [ms] milliseconds */
+export async function delay(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
 export function isEmpty(dir: string): boolean {
   return fs.readdirSync(dir).length === 0;
 }

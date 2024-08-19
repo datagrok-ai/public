@@ -11,8 +11,11 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * Partial least squares regression ([PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression))
 * Supervised machine learning
   * Least-squares support vector machine ([LS-SVM](https://en.wikipedia.org/wiki/Least-squares_support_vector_machine))
+  * [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)
+  * [Softmax](https://en.wikipedia.org/wiki/Multinomial_logistic_regression) classifier
+  * [PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression) regression
+  * [Gradient Boosting](https://en.wikipedia.org/wiki/Gradient_boosting)
 * Analysis of variances (ANOVA)
   * One-way ANOVA ([link](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
 * Missing data imputation
   * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))
-* [Linear regression](https://en.wikipedia.org/wiki/Linear_regression)

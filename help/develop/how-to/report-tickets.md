@@ -25,10 +25,7 @@ epics. Here we provide recommendations for each item:
   (enhancement of existing functionality or UI), and _new feature_ (requesting
   new capability or software feature).
 * **Title (Summary)**. Start the title with the platform module or package name,
-  then name unexpected behavior for a bug and a new feature name or improvement
-  summary for an enhancement. If relevant, use a hierarchical representation of
-  the issue location: list modules and submodules in their logical order using
-  the “|” symbol.
+  then name unexpected behavior for a bug and a new feature name or improvement SWsummary for an enhancement. 
 
 |Issue type|Formula|Example|
 |----------|-------|-------|

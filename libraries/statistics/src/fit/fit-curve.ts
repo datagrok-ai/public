@@ -276,6 +276,27 @@ export class LogLinearFunction extends FitFunction {
   }
 }
 
+/** Class that implements the exponential function */
+export class ExponentialFunction extends FitFunction {
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  get parameterNames(): string[] {
+    return ['Mantissa', 'Power'];
+  }
+
+  y(params: Float32Array, x: number): number {
+    return exponential(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([100, -2]);
+    return params;
+  }
+}
+
 /** Class that implements user JS functions */
 export class JsFunction extends FitFunction {
   private _name: string;
@@ -314,6 +335,7 @@ export const fitFunctions: {[index: string]: FitFunction} = {
   'linear': new LinearFunction(),
   'sigmoid': new SigmoidFunction(),
   'log-linear': new LogLinearFunction(),
+  'exponential': new ExponentialFunction(),
 };
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
@@ -394,6 +416,7 @@ export const fitSeriesProperties: DG.Property[] = [
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
 export const FIT_FUNCTION_LINEAR = 'linear';
 export const FIT_FUNCTION_LOG_LINEAR = 'log-linear';
+export const FIT_FUNCTION_EXPONENTIAL = 'exponential';
 
 export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
@@ -558,6 +581,12 @@ export function logLinear(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
   return A * Math.log(x + 1) + B;
+}
+
+export function exponential(params: Float32Array, x: number): number {
+  const A = params[0];
+  const B = params[1];
+  return A * Math.exp(x * B);
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {

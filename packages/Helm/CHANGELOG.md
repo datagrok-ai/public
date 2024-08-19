@@ -1,5 +1,45 @@
 # Helm changelog
 
+## 2.4.1 (2024-08-16)
+
+### Features
+
+* HWE option for continuous number, typing
+* Add HelmInput mouse events, redraw, showTooltip
+* Bump HWE dependencies versions
+
+### Bug fixes
+
+* Polish HelmInput size handling, tooltip
+
+## 2.4.0 (2024-08-06)
+
+### Features
+
+* Add monomer placeholders to HELMWebEditor palette
+
+### Bug fixes
+
+## 2.3.4 (2024-08-06)
+
+### Bug fixes
+
+* Fix HelmInput/tooltip flapping test
+* Fix dojo dijit locale to en-us
+* Fix HELMWebEditor and Bio init order to handle monomer lib
+
+## 2.3.3 (2024-08-05)
+
+### Features
+
+* Load dojo without CDN
+
+### Bug fixes
+
+* Fix monomers palette filling of HWE
+* Fix init dojo require
+* Fix test findMonomers
+
 ## 2.3.2 (2024-07-23)
 
 ### Features

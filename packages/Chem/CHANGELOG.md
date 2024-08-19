@@ -1,5 +1,48 @@
 # Chem changelog
 
+## 1.11.3 (2024-08-12)
+
+### Features
+
+* Chem: MMPA: Work with multucomponent entities
+
+## 1.11.2 (2024-08-12)
+
+### Features
+
+* Chem: Chemprop: Remove redundant calls in the core and move it fully to package
+* Chem: MMPA: Add meaningfull dataset for demo
+* Chem: MMPA: Restrictions and CPU fallback
+* Chem: MMPA: Compensate filtering by cutoff
+* Chem: MMPA: Add reflection for selection
+* Chem: MMPA: Add pairs filter, expose filters object so it can be used in any tab, minor improvements
+* Chem: Update demos in order to be shown in the Browse
+
+### Bug Fixes
+
+* Chem: MMPA: Fixes for cliffs tab and lines improvements
+* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for some data if scaffold tree is present
+
+## 1.11.1 (2024-07-25)
+
+### Bug Fixes
+
+* Removed unnecessary code
+
+## 1.11.0 (2024-07-24)
+
+*Dependency: datagarok-api >= 1.20.0*
+
+### Bug Fixes
+
+* GROK-16328: Chem: R-Group analysis: Broken styles
+* GROK-16329: Chem: R-Group analysis: Error when none R groups were found
+* GROK-16338: Chem: Chemical space: Reseting marker type to circles
+* Chem: Scaffold Tree: Fix representation when the viewers are stacked
+* Chem: Chemprop: Fix applying the model to different datasets
+* Chem: Fix substructure filter style
+* Chem: Do not render molecules with invisible width
+
 ## 1.10.0 (2024-06-12)
 
 ### Features

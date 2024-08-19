@@ -10,7 +10,7 @@ export const FILENAME = 'test-cases.csv';
 export const PASSED = 'passed';
 export const CRITICALFAIL = 'failed';
 export const MINORFAIL = 'minor';
-export const BLOCKFAIL = 'blocked';
+export const BLOCKFAIL = 'blocker';
 export const SKIPPED = 'skipped';
 export type Status = typeof PASSED | typeof MINORFAIL | typeof CRITICALFAIL | typeof BLOCKFAIL | typeof SKIPPED;
 

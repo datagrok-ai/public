@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -11,7 +12,7 @@ import wu from 'wu';
 import {getTreeHelperInstance} from '../package';
 import {
   MmDistanceFunctionsNames,
-  MmDistanceFunctionsNames as distFNames
+  MmDistanceFunctionsNames as distFNames,
 } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 type PaneInputs = { [paneName: string]: DG.InputBase[] };
@@ -56,6 +57,8 @@ export enum MCL_INPUTS {
   THRESHOLD = 'Similarity Threshold',
   INFLATION = 'Inflation Factor',
   MAX_ITERATIONS = 'Max Iterations',
+  USE_WEBGPU = 'Use WebGPU',
+  MIN_CLUSTER_SIZE = 'Min Cluster Size',
 }
 
 
@@ -130,7 +133,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
       }
       if (result.showSequenceSpace === settings?.showSequenceSpace)
         delete result.showSequenceSpace;
-  }});
+    }});
   clusterMaxActivity.setTooltip('Show cluster max activity viewer');
   dendrogram.setTooltip('Show dendrogram viewer');
   dendrogram.enabled = getTreeHelperInstance() !== null;
@@ -215,7 +218,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // SEQ SPACE INPUTS
   const distanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(SEQUENCE_SPACE_INPUTS.DISTANCE_FUNCTION,
     {value: seqSpaceParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.HAMMING, distFNames.LEVENSHTEIN, distFNames.MONOMER_CHEMICAL_DISTANCE],
-    onValueChanged: () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>
+      onValueChanged: () => onSeqSpaceParamsChange('distanceF', distanceFunctionInput.value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   distanceFunctionInput.setTooltip('Distance function for sequences');
   const gapOpenInput = ui.input.float(SEQUENCE_SPACE_INPUTS.GAP_OPEN, {value: seqSpaceParams.gapOpen,
     onValueChanged: () => onSeqSpaceParamsChange('gapOpen', gapOpenInput.value)});
@@ -276,7 +279,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
 
   const mclDistanceFunctionInput: DG.ChoiceInput<MmDistanceFunctionsNames> = ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
     {value: mclParams.distanceF, items: [distFNames.NEEDLEMANN_WUNSCH, distFNames.MONOMER_CHEMICAL_DISTANCE, distFNames.HAMMING, distFNames.LEVENSHTEIN],
-    onValueChanged: () => onMCLParamsChange('distanceF', mclDistanceFunctionInput.value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+      onValueChanged: () => onMCLParamsChange('distanceF', mclDistanceFunctionInput.value)}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
   const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclParams.gapOpen,
     onValueChanged: () => onMCLParamsChange('gapOpen', mclGapOpenInput.value)});
   const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclParams.gapExtend,
@@ -290,10 +293,28 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     onValueChanged: () => onMCLParamsChange('maxIterations', mclMaxIterationsInput.value)});
   const mclInflationInput = ui.input.float(MCL_INPUTS.INFLATION, {value: mclParams.inflation ?? 1.4,
     onValueChanged: () => {onMCLParamsChange('inflation', mclInflationInput.value);}});
+
+  const mclUseWebGPU = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {value: mclParams.useWebGPU,
+    onValueChanged: () => onMCLParamsChange('useWebGPU', mclUseWebGPU.value)});
+  mclUseWebGPU.enabled = false;
+  mclParams.webGPUDescriptionPromise.then(() => {
+    if (mclParams.webGPUDescription !== type.webGPUNotSupported) {
+      mclUseWebGPU.setTooltip(`Use WebGPU for MCL algorithm (${mclParams.webGPUDescription})`);
+      mclUseWebGPU.enabled = true;
+    } else {
+      mclUseWebGPU.setTooltip(type.webGPUNotSupported);
+      mclUseWebGPU.enabled = false;
+      mclUseWebGPU.value = false;
+    }
+  });
+
+  const mclMinClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {value: mclParams.minClusterSize ?? 5,
+    onValueChanged: () => onMCLParamsChange('minClusterSize', mclMinClusterSizeInput.value)});
+
   correctMCLInputs();
 
   const mclInputs = [mclThresholdInput, mclDistanceFunctionInput, mclFingerprintTypesInput,
-    mclGapOpenInput, mclGapExtendInput, mclInflationInput, mclMaxIterationsInput];
+    mclGapOpenInput, mclGapExtendInput, mclInflationInput, mclMaxIterationsInput, mclMinClusterSizeInput, mclUseWebGPU];
 
   accordion.addPane(SETTINGS_PANES.MCL, () => ui.inputs(mclInputs), true);
   inputs[SETTINGS_PANES.MCL] = mclInputs;

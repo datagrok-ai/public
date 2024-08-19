@@ -120,13 +120,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
     colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
-      ui.input.columns('Columns', {table: gc.grid.dataFrame, onValueChanged: (input) => {
-        settings.columnNames = names(input.value);
-        gc.grid.invalidate();
-      }, available: names(gc.grid.dataFrame.columns.numerical),
-      checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      ui.input.columns('Columns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame, onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gc.grid.invalidate();
+        }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput
     ]);

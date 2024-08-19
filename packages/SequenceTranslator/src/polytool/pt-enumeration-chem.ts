@@ -29,7 +29,7 @@ export const PT_CHEM_EXAMPLE = `
     2.4544    0.4877    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
    -1.8175   -1.9896    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
    -3.2453    0.4877    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
-    3.1670    1.7285    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
+    3.1670    1.7285    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
     1.7149    2.5513    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
   2  1  2  0  0  0  0
   3  1  1  0  0  0  0
@@ -55,18 +55,15 @@ export const PT_CHEM_EXAMPLE = `
  14 10  1  0  0  0  0
  15 21  1  0  0  0  0
  12 22  1  0  0  0  0
-M  RGP  2  21   1  22   2
+M  RGP  1  22   1
 M  END`;
 
 export async function getEnumerationChem(molString: string, screenLibrary: string):
   Promise<string[]> {
+
   const variableMonomers = await getAvailableMonomers(screenLibrary);
   const variableMols = await getAvailableMonomerMols(screenLibrary);
-
-	const idx = molString.indexOf('M  RGP');
-	const rCount = parseInt(molString.slice(idx + 6, idx + 9)); //extracting from molfile positions
-  const size = 1 * variableMonomers.length;
-  const enumerations = new Array<string>(size);
+  const enumerations = new Array<string>(variableMonomers.length);
 
 	const rdkitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
   const molScaffold: RDMol = rdkitModule.get_mol(molString);
@@ -84,22 +81,24 @@ export async function getEnumerationChem(molString: string, screenLibrary: strin
     molSubst.delete();
   }
 
-	//TODO: get for all R groups
-  for (let i = 0; i < 1; i++) {
-    for (let j = 0; j < variableMonomers.length; j++) {
-      try {
-        const smiResRaw = `${smiScaffold}.${smilesSubsts[j]}`.replaceAll('[1*]C', 'C([1*])').replaceAll('[1*]c', 'c([1*])').replaceAll('[1*]O', 'O([1*])').replaceAll('[1*]N', 'N([1*])');
-        const smiRes = `${smiResRaw}`.replaceAll('([1*])', '9').replaceAll('[1*]', '9');
-        const molRes: RDMol = rdkitModule.get_mol(smiRes);
-
-        enumerations[i * variableMonomers.length + j] = molRes.get_v3Kmolblock();
-        molRes.delete();
-      } 
-      catch(err:any) {
-        enumerations[i * variableMonomers.length + j] = '';
-      }
-		}
+  for (let i = 0; i < variableMonomers.length; i++) {
+    let molRes: RDMol | null = null;
+    try {
+      //TODO: use RDKit linking function when exposed
+      const smiResRaw = `${smiScaffold}.${smilesSubsts[i]}`.replaceAll('[1*]C', 'C([1*])').replaceAll('[1*]c', 'c([1*])').replaceAll('[1*]O', 'O([1*])').replaceAll('[1*]N', 'N([1*])');
+      const smiRes = `${smiResRaw}`.replaceAll('([1*])', '9').replaceAll('[1*]', '9');
+      molRes = rdkitModule.get_mol(smiRes, JSON.stringify({mappedDummiesAreRGroups: true}))
+      let molV3 = molRes.get_v3Kmolblock();
+      enumerations[i] = molV3;
+    } 
+    catch(err:any) {
+      enumerations[i] = '';
+    }
+    finally {
+      molRes?.delete();
+    }
   }
+  
 
   return enumerations;
 }

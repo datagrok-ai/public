@@ -11,7 +11,7 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
@@ -78,8 +78,9 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 
-export const _package = new BioPackage();
+export const _package = new BioPackage(/*{debug: true}/**/);
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -106,6 +107,7 @@ export class SeqPaletteCustom implements SeqPalette {
 }
 
 let monomerLib: IMonomerLib | null = null;
+let monomerSets: IMonomerSet | null = null;
 
 //tags: init
 export async function initBio() {
@@ -122,8 +124,9 @@ export async function initBio() {
         libSettings.explicit = [];
         await setUserLibSettings(libSettings);
       }
-      await monomerLibManager.loadLibraries();
-      monomerLib = monomerLibManager.getBioLib();
+      await Promise.all([monomerLibManager.loadMonomerLib(), monomerLibManager.loadMonomerSets()]);
+      monomerLib = monomerLibManager.getMonomerLib();
+      monomerSets = monomerLibManager.getMonomerSets();
     })(),
     (async () => {
       const pkgProps = await _package.getProperties();
@@ -437,12 +440,13 @@ export async function getRegionTopMenu(
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: func preprocessingFunction
 //input: object options {optional: true}
+//input: bool demo {optional: true}
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<string>, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
-  options?: (IUMAPOptions | ITSNEOptions) & Options): Promise<DG.Viewer | undefined> {
+  options?: (IUMAPOptions | ITSNEOptions) & Options, demo?: boolean): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(table);
@@ -472,6 +476,8 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<s
       createTooltipElement,
       createPropPanelElement,
       createLinesGrid,
+      undefined,
+      demo
     );
     return sp;
   };
@@ -594,7 +600,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
   try {
-    const monomerLib = (await getMonomerLibHelper()).getBioLib();
+    const monomerLib = (await getMonomerLibHelper()).getMonomerLib();
     await sequenceToMolfile(table, seqCol, nonlinear, monomerLib);
   } finally {
     pi.close();
@@ -868,7 +874,7 @@ export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
 export async function sequenceIdentityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScores(table, macromolecule, reference, SCORE.IDENTITY);
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY);
   return scores;
 }
 
@@ -882,7 +888,7 @@ export async function sequenceIdentityScoring(
 export async function sequenceSimilarityScoring(
   table: DG.DataFrame, macromolecule: DG.Column, reference: string
 ): Promise<DG.Column<number>> {
-  const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
+  const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY);
   return scores;
 }
 

@@ -1,5 +1,31 @@
 # Sequence Translator changelog
 
+## 1.13.12 (2024-08-16)
+
+PolyTool Enumerator Single and Matrix, dialog, tests
+
+## Bug fixes
+
+* PolyTool Enumerator dialog grid input for placeholders, to atomic level option
+* PolyTool Enumerator dialog mouse interactivity, to atomic level, dialog size
+* PolyTool Enumerator dialog size and fit molecule input
+
+## 1.3.11 (2024-07-31)
+
+### Features
+
+* Added chemical based enumerator
+
+## 1.3.10 (2024-07-29)
+
+### Features
+
+* Add 'Create/Modified' date metadata to patterns
+
+### Bug fixes
+
+* Load new patterns upon saving / overwriting
+
 ## 1.3.9 (2024-07-23)
 
 * Dependency: datgarok-api >= 1.20.0

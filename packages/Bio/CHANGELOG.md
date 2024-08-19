@@ -1,5 +1,31 @@
 # Bio changelog
 
+## 2.14.1 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 2.14.0 (2024-08-06)
+
+### Features
+
+* Add loading monomer sets from .json files
+
+### Bug fixes
+
+* Fix cell renderer dirty flag and reset
+
+## 2.13.8 (2024-08-08)
+
+* Downgrade API version
+
+## 2.13.7 (2024-08-08)
+
+* Adjust monomer max lengths for monomer renderer
+
+## 2.13.6 (2024-07-29)
+
+* SequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
 ## 2.13.5 (2024-07-23)
 
 ### Bug fixes
@@ -10,6 +36,7 @@
 * Fix use allowUnionTypes to allow union types in JSON schema
 * GROK-15793: Fix Calculate Identity, Similarity error Index out of bounds
 * Add progress indicator for loading monomer libraries
+* Fix detectMacromolecule to reject FASTA with numeric monomer
 
 ## 2.13.4 (2024-07-02)
 

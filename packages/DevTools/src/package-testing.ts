@@ -79,7 +79,6 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
-  benchmarkMode = DG.Test.isInBenchmark;
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
@@ -359,9 +358,8 @@ export class TestManager extends DG.ViewBase {
     debugButton.classList.add('tm-button');
 
     const benchmarkButton = ui.input.bool('Benchmark', {
-      value: this.benchmarkMode, onValueChanged: () => {
-        this.benchmarkMode = !this.benchmarkMode;
-        DG.Test.isInBenchmark = this.benchmarkMode;
+      onValueChanged: () => {
+        DG.Test.isInBenchmark = benchmarkButton.value;
       }
     });
     benchmarkButton.classList.add('tm-button');
@@ -476,6 +474,9 @@ export class TestManager extends DG.ViewBase {
     
       this.updateTestResultsIcon(t.resultDiv, true, true);
       return;
+    }
+    else{
+      t.test.options.skipReason = undefined;
     }
     const skipReason = t.test.options?.skipReason;
     if ((force || this.runSkippedMode) && skipReason) {

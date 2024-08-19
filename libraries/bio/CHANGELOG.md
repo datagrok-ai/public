@@ -1,6 +1,34 @@
 # bio changelog
 
-## 5.42.5 (WIP)
+## 5.42.9
+
+### Features
+
+* HWE option for continuous monomer numbering
+* Add HelmInput mouse events redraw, showTooltip
+* Bump HWE dependencies versions
+
+## 5.42.8 (2024-08-14)
+
+Fix monomer substitution matrix calculation
+
+## 5.42.7 (2024-08-12)
+
+### Features
+
+* Monomer sets defined with .json files
+
+### Bug fixes
+
+* Fix cell renderer base dirty flag and reset
+
+## 5.42.6 (2024-07-29)
+
+### Features
+
+* sequenceChemSimilarity: warning in case reference monomer not found in monomer library
+
+## 5.42.5 (2024-07-23)
 
 ### Features
 

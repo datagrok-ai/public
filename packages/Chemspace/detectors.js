@@ -4,7 +4,7 @@ class ChemspacePackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectCsId(col) {
-    if (col.name === 'CS-id') {
+    if (['CS-id', 'csId'].includes(col.name)) {
       col.semType = 'chemspace-id';
       return col.semType;
     }

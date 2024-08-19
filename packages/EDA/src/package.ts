@@ -8,7 +8,6 @@ import * as DG from 'datagrok-api/dg';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName, addOneWayAnovaVizualization} from './eda-ui';
-import {testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
   getTrainedModel, getPrediction, isApplicableSVM, isInteractiveSVM, showTrainReport, getPackedModel} from './svm';
 
@@ -31,7 +30,12 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {markovCluster} from '@datagrok-libraries/ml/src/MCL/clustering-view';
 import {MCL_OPTIONS_TAG, MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression, getTestDatasetForLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
+import {PlsModel} from './pls/pls-ml';
+import {SoftmaxClassifier} from './softmax-classifier';
+
+import {initXgboost} from '../wasm/xgbooster';
+import {XGBooster} from './xgbooster';
 
 export const _package = new DG.Package();
 
@@ -43,6 +47,7 @@ export function info() {
 //tags: init
 export async function init(): Promise<void> {
   await _initEDAAPI();
+  await initXgboost();
 }
 
 //top-menu: ML | Cluster | DBSCAN...
@@ -192,7 +197,7 @@ export function GetMCLEditor(call: DG.FuncCall): void {
           df: params.table, cols: params.columns, metrics: params.distanceMetrics,
           weights: params.weights, aggregationMethod: params.aggreaggregationMethod, preprocessingFuncs: params.preprocessingFunctions,
           preprocessingFuncArgs: params.preprocessingFuncArgs, threshold: params.threshold, maxIterations: params.maxIterations,
-          useWebGPU: params.useWebGPU, inflate: params.inflateFactor,
+          useWebGPU: params.useWebGPU, inflate: params.inflateFactor, minClusterSize: params.minClusterSize,
         }).call(true);
       }).show();
   } catch (err: any) {
@@ -218,10 +223,12 @@ export function GetMCLEditor(call: DG.FuncCall): void {
 //input: int maxIterations = 10
 //input: bool useWebGPU = false
 //input: double inflate = 2
+//input: int minClusterSize = 5
 //editor: EDA: GetMCLEditor
 export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMetrics[],
   weights: number[], aggregationMethod: DistanceAggregationMethod, preprocessingFuncs: (DG.Func | null | undefined)[],
   preprocessingFuncArgs: any[], threshold: number = 80, maxIterations: number = 10, useWebGPU: boolean = false, inflate: number = 0,
+  minClusterSize: number = 5,
 ): Promise< DG.ScatterPlotViewer | undefined> {
   const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
   const serializedOptions: string = JSON.stringify({
@@ -235,6 +242,7 @@ export async function MCL(df: DG.DataFrame, cols: DG.Column[], metrics: KnownMet
     maxIterations: maxIterations,
     useWebGPU: useWebGPU,
     inflate: inflate,
+    minClusterSize: minClusterSize ?? 5,
   } satisfies MCLSerializableOptions);
   df.setTag(MCL_OPTIONS_TAG, serializedOptions);
 
@@ -254,9 +262,10 @@ export async function MCLInitializationFunction(sc: DG.ScatterPlotViewer) {
   const options: MCLSerializableOptions = JSON.parse(mclTag);
   const cols = options.cols.map((colName) => df.columns.byName(colName));
   const preprocessingFuncs = options.preprocessingFuncs.map((funcName) => funcName ? DG.Func.byName(funcName) : null);
+
   const res = await markovCluster(df, cols, options.metrics, options.weights,
     options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
-    options.maxIterations, options.useWebGPU, options.inflate, sc);
+    options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, sc);
   return res?.sc;
 }
 
@@ -296,38 +305,7 @@ export async function MVA(): Promise<void> {
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate analysis
 export async function demoMultivariateAnalysis(): Promise<any> {
-  runDemoMVA();
-}
-
-//name: Generate linear separable dataset
-//description: Generates linear separble dataset for testing binary classificators
-//input: string name = 'Data' {caption: name; category: Dataset}
-//input: int samplesCount = 1000 {caption: samples; category: Size}
-//input: int featuresCount = 2 {caption: features; category: Size}
-//input: double min = -39 {caption: min; category: Range}
-//input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
-//output: dataframe df
-export async function testDataLinearSeparable(name: string, samplesCount: number, featuresCount: number,
-  min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-  return await testDataForBinaryClassification(LINEAR, [0, 0], name, samplesCount, featuresCount,
-    min, max, violatorsPercentage);
-}
-
-//name: Generate linear non-separable dataset
-//description: Generates linear non-separble dataset for testing binary classificators
-//input: string name = 'Data' {caption: name; category: Dataset}
-//input: double sigma = 90  {caption: sigma; category: Hyperparameters} [RBF-kernel paramater]
-//input: int samplesCount = 1000 {caption: samples; category: Size}
-//input: int featuresCount = 2 {caption: features; category: Size}
-//input: double min = -39 {caption: min; category: Range}
-//input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
-//output: dataframe df
-export async function testDataLinearNonSeparable(name: string, sigma: number, samplesCount: number,
-  featuresCount: number, min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> {
-  return await testDataForBinaryClassification(RBF, [sigma, 0], name, samplesCount, featuresCount,
-    min, max, violatorsPercentage);
+  await runDemoMVA();
 }
 
 //name: trainLinearKernelSVM
@@ -593,48 +571,6 @@ export async function kNNImputationForTable(table: DG.DataFrame) {
   await runKNNImputer(table);
 }
 
-//name: linearRegression
-//description: Linear Regression demo
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: column target {type: numerical}
-//input: bool plot = true {caption: plot}
-export async function linearRegression(table: DG.DataFrame, features: DG.ColumnList, target: DG.Column, plot: boolean): Promise<void> {
-  const t1 = performance.now();
-  const params = await getLinearRegressionParams(features, target);
-  const t2 = performance.now();
-  console.log(`Fit: ${t2 - t1} ms.`);
-  const prediction = getPredictionByLinearRegression(features, params);
-  console.log(`Predict: ${performance.now() - t2} ms.`);
-
-  prediction.name = table.columns.getUnusedName(prediction.name);
-
-  table.columns.add(prediction);
-
-  if (plot) {
-    const view = grok.shell.tableView(table.name);
-    view.addViewer(DG.VIEWER.SCATTER_PLOT, {
-      xColumnName: target.name,
-      yColumnName: prediction.name,
-      showRegressionLine: true,
-    });
-  }
-}
-
-//name: generateDatasetForLinearRegressionTest
-//description: Create demo dataset for linear regression
-//input: int rowCount = 10000 {min: 1000; max: 10000000; step: 10000}
-//input: int colCount = 10 {min: 1; max: 1000; step: 10}
-//input: double featuresScale = 10 {min: -1000; max: 1000; step: 10}
-//input: double featuresBias = 10 {min: -1000; max: 1000; step: 10}
-//input: double paramsScale = 10 {min: -1000; max: 1000; step: 10}
-//input: double paramsBias = 10 {min: -1000; max: 1000; step: 10}
-//output: dataframe table
-export function generateDatasetForLinearRegressionTest(rowCount: number, colCount: number,
-  featuresScale: number, featuresBias: number, paramsScale: number, paramsBias: number): DG.DataFrame {
-  return getTestDatasetForLinearRegression(rowCount, colCount, featuresScale, featuresBias, paramsScale, paramsBias);
-}
-
 //name: trainLinearRegression
 //meta.mlname: Linear Regression
 //meta.mlrole: train
@@ -671,10 +607,8 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
     if (!col.matches('numerical'))
       return false;
   }
-  if (!predictColumn.matches('numerical'))
-    return false;
 
-  return true;
+  return predictColumn.matches('numerical');
 }
 
 //name: isInteractiveLinearRegression
@@ -685,4 +619,178 @@ export function isApplicableLinearRegression(df: DG.DataFrame, predictColumn: DG
 //output: bool result
 export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
   return df.rowCount <= 100000;
+}
+
+//name: trainSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: double rate = 1.0 {category: Hyperparameters; min: 0.001; max: 20} [Learning rate]
+//input: int iterations = 100 {category: Hyperparameters; min: 1; max: 10000; step: 10} [Fitting iterations count]
+//input: double penalty = 0.1 {category: Hyperparameters; min: 0.0001; max: 1} [Regularization rate]
+//input: double tolerance = 0.001 {category: Hyperparameters; min: 0.00001; max: 0.1} [Fitting tolerance]
+//output: dynamic model
+export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, rate: number,
+  iterations: number, penalty: number, tolerance: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  const model = new SoftmaxClassifier({
+    classesCount: predictColumn.categories.length,
+    featuresCount: features.length,
+  });
+
+  await model.fit(features, predictColumn, rate, iterations, penalty, tolerance);
+
+  return model.toBytes();
+}
+
+//name: applySoftmax
+//meta.mlname: Softmax
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applySoftmax(df: DG.DataFrame, model: any): DG.DataFrame {
+  const features = df.columns;
+  const unpackedModel = new SoftmaxClassifier(undefined, model);
+
+  return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
+}
+
+//name: isApplicableSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicableSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return SoftmaxClassifier.isApplicable(df.columns, predictColumn);
+}
+
+//name: isInteractiveSoftmax
+//meta.mlname: Softmax
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
+}
+
+//name: trainPLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: int components = 3 {min: 1; max: 10} [Number of latent components]
+//output: dynamic model
+export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Column, components: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  if (components > features.length)
+    throw new Error('Number of components is greater than features count');
+
+  const model = new PlsModel();
+  await model.fit(features, predictColumn, components);
+
+  return model.toBytes();
+}
+
+//name: applyPLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyPLSRegression(df: DG.DataFrame, model: any): DG.DataFrame {
+  const unpackedModel = new PlsModel(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+}
+
+//name: isApplicablePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicablePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isApplicable(df.columns, predictColumn);
+}
+
+//name: visualizePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: visualize
+//input: dataframe df
+//input: column targetColumn
+//input: column predictColumn
+//input: dynamic model
+//output: dynamic widget
+export async function visualizePLSRegression(df: DG.DataFrame, targetColumn: DG.Column, predictColumn: DG.Column, model: any): Promise<any> {
+  const unpackedModel = new PlsModel(model);
+  const viewers = unpackedModel.viewers();
+
+  return viewers.map((v) => v.root);
+}
+
+//name: isInteractivePLSRegression
+//meta.mlname: PLS Regression
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return PlsModel.isInteractive(df.columns, predictColumn);
+}
+
+//name: trainXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: train
+//input: dataframe df
+//input: column predictColumn
+//input: int iterations = 20 {min: 1; max: 100} [Number of training iterations]
+//input: double eta = 0.3 {caption: Rate; min: 0; max: 1} [Learning rate]
+//input: int maxDepth = 6 {min: 0; max: 20} [Maximum depth of a tree]
+//input: double lambda = 1 {min: 0; max: 100} [L2 regularization term]
+//input: double alpha = 0 {min: 0; max: 100} [L1 regularization term]
+//output: dynamic model
+export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
+  iterations: number, eta: number, maxDepth: number, lambda: number, alpha: number): Promise<Uint8Array> {
+  const features = df.columns;
+
+  const booster = new XGBooster();
+  await booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
+
+  return booster.toBytes();
+}
+
+//name: applyXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyXGBooster(df: DG.DataFrame, model: any): DG.DataFrame {
+  const unpackedModel = new XGBooster(model);
+  return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+}
+
+//name: isInteractiveXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isInteractive
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isInteractiveXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isInteractive(df.columns, predictColumn);
+}
+
+//name: isApplicableXGBooster
+//meta.mlname: XGBoost
+//meta.mlrole: isApplicable
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return XGBooster.isApplicable(df.columns, predictColumn);
 }
