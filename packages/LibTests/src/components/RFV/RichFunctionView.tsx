@@ -103,14 +103,27 @@ export const RichFunctionView = defineComponent({
       await currentCall.value.call();
       triggerRef(currentCall);
     };
+
+    const formHidden = ref(false);
           
     return () => (
       <div style={{width: '100%', height: '100%', display: 'flex'}}>
-        <div style={{padding: '8px'}}> 
-          <InputForm funcCall={currentCall.value}/>
-          <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
-            <BigButton onClick={runSimulation}> Run </BigButton>
+        <div style={{display: 'flex', flexDirection: 'column'}}>
+          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', padding: '0px 8px'}}>
+            <IconFA 
+              name={formHidden.value ? 'chevron-double-right': 'chevron-double-left'} 
+              tooltip={formHidden.value ? 'Show input form': 'Hide input form'}
+              onClick={() => formHidden.value = !formHidden.value}
+            />
           </div>
+          {
+            !formHidden.value && <div style={{padding: '8px'}}> 
+              <InputForm funcCall={currentCall.value}/>
+              <div style={{display: 'flex', position: 'sticky', bottom: '0px'}}>
+                <BigButton onClick={runSimulation}> Run </BigButton>
+              </div>
+            </div>
+          }
         </div>
         <Tabs 
           items={tabLabels.value.map((label) => ({label}))} 
