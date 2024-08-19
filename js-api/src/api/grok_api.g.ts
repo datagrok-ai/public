@@ -820,6 +820,7 @@ export interface IDartApi {
   grok_Property_Get_Set(p: any): any;
   grok_Property_Set_Set(p: any, x: any): any;
   grok_Property_Get_Caption(p: any): any;
+  grok_Property_Set_Caption(p: any, x: String): any;
   grok_Property_Get_Name(p: any): any;
   grok_Property_Set_Name(p: any, x: String): any;
   grok_Property_Get_Category(p: any): any;

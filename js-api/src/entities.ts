@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {ColumnType, FUNC_TYPES, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -421,7 +421,7 @@ export class DataQuery extends Func {
 /** Represents a table query
  * @extends DataQuery */
 export class TableQuery extends DataQuery {
-  /** @constructs TableQeury */
+  /** @constructs TableQuery */
   constructor(dart: any) { super(dart); }
 
   /** Creates a TableQuery
@@ -1191,8 +1191,12 @@ export interface PropertyOptions {
   /** List of value validators (functions that take a value and return error message or null) */
   valueValidators?: ValueValidator<any>[];
 
-  /** Custom field caption shown in [PropertyGrid] */
+  /** Custom field caption shown in [PropertyGrid]
+   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
   caption?: string;
+
+  /** Custom field friendly name shown in [PropertyGrid] */
+  friendlyName?: string;
 
   /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
   postfix?: string;
@@ -1238,6 +1242,7 @@ export class Property {
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
+  set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
