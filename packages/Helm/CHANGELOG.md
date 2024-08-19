@@ -1,5 +1,11 @@
 # Helm changelog
 
+## 2.4.2 (2024-08-19)
+
+### Bug fixes
+
+* Fix Helm editor default tab to Helm
+
 ## 2.4.1 (2024-08-16)
 
 ### Features

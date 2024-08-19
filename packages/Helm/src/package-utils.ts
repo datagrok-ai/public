@@ -203,6 +203,8 @@ export class HelmPackage extends DG.Package {
 
     // Alternatively load old bundles by package.json/sources
     _package.logger.debug(`${logPrefix}, HelmWebEditor awaiting …`);
+    // require('../helm/JSDraw/Scilligence.JSDraw2.Lite-uncompressed');
+    // require('../helm/JSDraw/Pistoia.HELM-uncompressed');
     require('../node_modules/@datagrok-libraries/helm-web-editor/dist/package.js');
     await window.helmWebEditor$.initPromise;
     _package.logger.debug(`${logPrefix}, HelmWebEditor loaded`);

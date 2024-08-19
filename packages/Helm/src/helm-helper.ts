@@ -63,7 +63,7 @@ export class HelmHelper implements IHelmHelper {
       sequenceviewonly: false,
       mexfavoritefirst: true,
       mexfilter: true,
-      // currentTabKey: HelmTabKeys.Helm,
+      currentTabKey: HelmTabKeys.Helm,
       overrideTabs: (tabs: Partial<TabDescType>[]): Partial<TabDescType>[] => {
         const res: Partial<TabDescType>[] = [...tabs,
           {caption: 'Placeholders', tabkey: 'placeholders'},

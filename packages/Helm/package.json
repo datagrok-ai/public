@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -26,8 +26,8 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.8",
-    "@datagrok-libraries/js-draw-lite": "^0.0.6",
+    "@datagrok-libraries/helm-web-editor": "^1.1.9",
+    "@datagrok-libraries/js-draw-lite": "^0.0.7",
     "@datagrok/bio": "^2.14.1",
     "@datagrok/chem": "^1.9.2",
     "@types/node": "17.0.45",
