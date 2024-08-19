@@ -159,6 +159,9 @@ export async function initChemAutostart(): Promise<void> { }
 //input: column col {semType: Molecule}
 //output: widget result
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
+  const initialWidth = 255;
+  const initialHeight = 90;
+  const tooltipMaxWidth = 500;
   const version = col.version;
 
   for (let i = 0; i < col.length; ++i) {
@@ -167,14 +170,14 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   }
 
   const divMain = ui.div();
-  divMain.append(ui.divText('Most diverse structures', {style: {'position': 'relative', 'left': '20px'}}));
+  divMain.append(ui.divText('Most diverse structures', 'chem-tooltip-text'));
   const divStructures = ui.div([ui.loader()]);
-  divStructures.classList.add('d4-flex-wrap');
+  divStructures.classList.add('chem-tooltip-structure-div');
 
   const getDiverseStructures = async (): Promise<void> => {
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
-        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 6, Fingerprint.Morgan, DG.BitSet.create(col.length).setAll(true), true);
 
       Object.assign(col.temp, {
         'version': version,
@@ -189,7 +192,26 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   divMain.append(divStructures);
   const widget = new DG.Widget(divMain);
-  widget.root.classList.add('chem-tooltip-widget');
+  
+  Object.assign(widget.root.style, {
+    position: 'relative',
+    width: `${initialWidth}px`,
+    height: `${initialHeight}px`,
+  });
+
+  const tooltip = document.querySelector('.d4-tooltip');
+  if (tooltip) {
+    const {width, height} = tooltip.getBoundingClientRect();
+    const isWideTooltip = width + initialWidth > tooltipMaxWidth;
+
+    Object.assign(widget.root.style, {
+      left: isWideTooltip ? '0' : `${width - widget.root.offsetWidth}px`,
+      top: isWideTooltip ? '0' : `${30 - height}px`,
+      width: `${isWideTooltip ? initialWidth : initialWidth + width}px`,
+      height: isWideTooltip ? `${initialHeight}px` : '0',
+    });
+  }
+
   setTimeout(() => getDiverseStructures(), 10);
   return widget;
 }
