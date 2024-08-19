@@ -55,7 +55,7 @@ export class Driver {
     this.states$.pipe(
       switchMap((state) => state ? state.isLocked$ : of(false)),
       takeUntil(this.closed$),
-    ).subscribe(this.stateLocked$)
+    ).subscribe(this.stateLocked$);
   }
 
   public sendCommand(msg: ViewConfigCommands) {

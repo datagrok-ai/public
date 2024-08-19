@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, identity, of, merge, Subject, BehaviorSubject} from 'rxjs';
-import { delay, finalize, map, mapTo, toArray, concatMap, filter, tap, takeUntil, switchMap, skip, withLatestFrom } from 'rxjs/operators';
+import {delay, finalize, map, mapTo, toArray, concatMap, filter, tap, takeUntil, switchMap, skip, withLatestFrom} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -31,15 +31,15 @@ export class StateTree extends BaseTree<StateTreeNode> {
     super(item);
 
     this.makeStateRequests$.pipe(
-      takeUntil(this.closed$)
-    ).subscribe(() => this.updateWatchers())
+      takeUntil(this.closed$),
+    ).subscribe(() => this.updateWatchers());
 
     this.funcallStatesWatchers$.pipe(
-      switchMap(watchers$ => watchers$),
+      switchMap((watchers$) => watchers$),
       withLatestFrom(this.isLocked$),
       filter(([, isLocked]) => !isLocked),
       mapTo(true as const),
-      takeUntil(this.closed$)
+      takeUntil(this.closed$),
     ).subscribe(this.makeStateRequests$);
   }
 

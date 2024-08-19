@@ -1,7 +1,8 @@
 import {BehaviorSubject, of, combineLatest, Observable, from, defer, Subject} from 'rxjs';
 import {switchMap, map, takeUntil, take, withLatestFrom} from 'rxjs/operators';
 import {ValidationResultBase} from '../../../shared-utils/validation';
-import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter, RestrictionType} from './FuncCallAdapters';
+import {IStateStore, IValidationStore, IRunnableWrapper, IFuncCallAdapter} from './FuncCallAdapters';
+import {RestrictionType} from '../data/common-types';
 
 export class FuncCallInstancesBridge implements IStateStore, IValidationStore, IRunnableWrapper {
   private instance$ = new BehaviorSubject<IFuncCallAdapter | undefined>(undefined);

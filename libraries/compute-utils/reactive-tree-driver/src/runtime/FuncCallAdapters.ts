@@ -4,8 +4,8 @@ import {BehaviorSubject, Observable, from, defer, Subject, merge} from 'rxjs';
 import {ValidationResultBase} from '../../../shared-utils/validation';
 import {StateItem} from '../config/PipelineConfiguration';
 import {delay, map, mapTo, skip, startWith, takeUntil} from 'rxjs/operators';
+import {RestrictionType} from '../data/common-types';
 
-export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 
 export interface RestrictionState {
   type: RestrictionType,

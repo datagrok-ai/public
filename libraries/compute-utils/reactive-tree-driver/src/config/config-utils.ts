@@ -1,10 +1,11 @@
 import {ItemPathArray} from '../data/common-types';
 import {buildTraverseD} from '../data/traversable';
 import {FuncallStateItem, PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from './config-processing-utils';
+import {LinkInput, LinkOutput} from './LinkSpec';
 import {PipelineSelfRef, PipelineStepConfiguration} from './PipelineConfiguration';
 
 
-export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<ItemPathArray[], FuncallStateItem[]>;
+export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<LinkInput[], LinkOutput[], FuncallStateItem[]>;
 export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | PipelineSelfRef;
 
 export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;

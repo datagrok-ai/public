@@ -14,6 +14,7 @@
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.18.6",
     "dayjs": "=1.11.10",
+    "ebnf": "^1.9.1",
     "exceljs": "^4.3.0",
     "fflate": "^0.7.4",
     "html2canvas": "^1.4.1",

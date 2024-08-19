@@ -1,9 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import {PipelineState} from '../config/PipelineInstance';
-import {HooksSpec, PipelineHooks} from '../config/PipelineConfiguration';
+import {PipelineHooks} from '../config/PipelineConfiguration';
 import {callHandler} from '../utils';
 import {Observable, concat} from 'rxjs';
 import {ItemPathArray} from '../data/common-types';
+import {LinkInput, LinkOutput} from '../config/LinkSpec';
+
+type HooksSpec = {
+  path: ItemPathArray;
+  hooks: PipelineHooks<LinkInput[], LinkOutput[]>;
+}
 
 export class HooksRunner {
   constructor(private rt: any, private hooks: HooksSpec[]) {}
@@ -57,17 +63,13 @@ export class HooksRunner {
     return this.execHooks('onClose');
   }
 
-  private execHooks(category: keyof PipelineHooks<ItemPathArray>, additionalParams: Record<string, any> = {}) {
+  private execHooks(category: keyof PipelineHooks<LinkInput[], LinkOutput[]>, additionalParams: Record<string, any> = {}) {
     const observables: Observable<any>[] = [];
     for (const {hooks, path} of this.hooks!) {
       const items = hooks[category];
       for (const item of items ?? []) {
         const handler = item.handler!;
-        // const ctrlConf = new ControllerConfig(path, item.from, item.to);
-        // const controller = new RuntimeControllerImpl(item.id, ctrlConf, this.rt!);
-        // const params = {...additionalParams, controller};
-        // const obs$ = callHandler(handler, params);
-        // observables.push(obs$);
+        console.log('path', path, 'handler', handler, 'args', additionalParams);
       }
     }
     return concat(observables);

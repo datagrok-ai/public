@@ -1,11 +1,12 @@
 
 export type ItemId = string;
-export type ItemPath = string;
+export type FromSpec = string | string[];
+export type ToSpec = string | string[];
 export type ItemPathArray = string[];
 export type ItemAddress = string[];
 export type NqName = string;
 export type TypeKey = string;
-export type InputState = 'disabled' | 'restricted' | 'user input';
+export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 export type StateType = 'input' | 'output' | 'state';
 export type Constructor = new (...args: any[]) => {};
 export type GConstructor<T = {}> = new (...args: any[]) => T;
