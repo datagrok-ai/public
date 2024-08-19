@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.13.13 (2024-08-19)
+
+### Bug fixes
+
+* Fix PolyTool Enumerate dialog hanging on monomer click
+
 ## 1.13.12 (2024-08-16)
 
 PolyTool Enumerator Single and Matrix, dialog, tests

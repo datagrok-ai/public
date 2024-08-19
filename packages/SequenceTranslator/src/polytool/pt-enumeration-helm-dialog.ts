@@ -159,8 +159,8 @@ export class PolyToolEnumerateDialog extends DG.Dialog {
       for (let aI = 0; aI < mol.atoms.length; aI++) {
         const a = mol.atoms[aI];
         a.highlighted = aI in inputs.placeholders.placeholdersValue;
-        inputs.macromolecule.redraw();
       }
+      inputs.macromolecule.redraw();
     };
 
     const dialog = new PolyToolEnumerateDialog()

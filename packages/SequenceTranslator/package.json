@@ -39,10 +39,10 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.8",
-    "@datagrok-libraries/js-draw-lite": "^0.0.6",
+    "@datagrok-libraries/helm-web-editor": "^1.1.9",
+    "@datagrok-libraries/js-draw-lite": "^0.0.7",
     "@datagrok/bio": "^2.14.2",
-    "@datagrok/helm": "^2.4.1",
+    "@datagrok/helm": "^2.4.2",
     "@datagrok/chem": "^1.11.3",
     "@types/jquery": "^3.5.14",
     "@types/js-yaml": "^4.0.5",
