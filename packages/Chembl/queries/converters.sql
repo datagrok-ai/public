@@ -3,13 +3,14 @@
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
 --connection: ChemblSql
---input: string id = "CHEMBL1185"
+--input: string id = "CHEMBL1185" { semType: CHEMBL_ID }
 --output: string smiles { semType: Molecule }
 --tags: unit-test
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
 where d.chembl_id = @id
 --end
+
 
 --name: molregnoToSmiles
 --friendlyName: Converters | Molregno to SMILES
@@ -19,10 +20,11 @@ where d.chembl_id = @id
 select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
+
 --name: nameToSmiles
 --friendlyName: Converters | Name to SMILES
 --meta.role: converter
---meta.inputRegexp: (^[\w()_+\-=\[\]{};':"\\|,.<>\s\/?]+)
+--meta.inputRegexp: (^[A-Z, a-z]+|\s+$)
 --connection: ChemblSql
 --input: string compoundName
 --output: string smiles { semType: Molecule }
@@ -35,6 +37,25 @@ inner join
   group by compound_name
   having compound_name = @compoundName
 ) as cr on cr.molregno = cs.molregno
+--end
+
+
+--name: namesToSmiles
+--friendlyName: Converters | Names to SMILES
+--connection: ChemblSql
+--input: list<string> names
+WITH names AS (
+    SELECT unnest as name FROM unnest(@names)
+)
+select canonical_smiles from names t1 left join
+(
+  select name, min(canonical_smiles) as canonical_smiles 
+  from public.compound_records cr
+  right join names on name = compound_name
+  left join public.compound_structures cs on cr.molregno = cs.molregno
+  group by name
+) t2
+on t1.name = t2.name
 --end
 
 
@@ -51,6 +72,7 @@ from
   order by ids.order
 --end
 
+
 --name: inchiKeyToSmiles
 --friendlyName: Converters | Inchi Key to SMILES
 --connection: ChemblSql
@@ -62,6 +84,7 @@ from
   right join ids on compound_structures.standard_inchi_key = ids.key
   order by ids.order
 --end
+
 
 --name: inchiKeyToInchi
 --friendlyName: Converters | Inchi Key to Inchi
@@ -88,6 +111,7 @@ from
   order by ids.order
 --end
 
+
 --name: chemblToInchi
 --friendlyName: Converters | ChEMBL to Inchi
 --connection: ChemblSql
@@ -100,6 +124,7 @@ from
   right join ids on molecule_dictionary.chembl_id = ids.key
   order by ids.order
 --end
+
 
 --name: chemblToInchiKey
 --friendlyName: Converters | ChEMBL to Inchi Key

@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('DataFrame', () => {
+category('DataFrame: Calculated columns', () => {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
     DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),
@@ -17,10 +17,30 @@ category('DataFrame', () => {
     try {
       const column = await df.columns.addNewCalculated('new', '${x}+${y}-${z}');
       expect(df.columns.contains(column.name), true);
-      expect(column.tags[DG.TAGS.FORMULA], '${x}+${y}-${z}');
+      expect(column.meta.formula, '${x}+${y}-${z}');
       expect(column.get(0), -2);
       expect(column.get(1), -1);
       expect(column.get(2), 0);
+    } finally {
+      df.columns.remove('new');
+    }
+  });
+
+  test('Create a calculated column with script formula', async () => {
+    try {
+      const column = await df.columns.addNewCalculated('new', 'ApiTests:FormulaScript(${x})');
+      expect(df.columns.contains(column.name), true);
+      expect(column.get(0), 11);
+    } finally {
+      df.columns.remove('new');
+    }
+  });
+
+  test('Create a calculated column with async formula', async () => {
+    try {
+      const column = await df.columns.addNewCalculated('new', 'ApiTests:testIntAsync(${x})');
+      expect(df.columns.contains(column.name), true);
+      expect(column.get(0), 11);
     } finally {
       df.columns.remove('new');
     }
@@ -65,7 +85,7 @@ category('DataFrame', () => {
           reject('Dialog not found');
         }, 1000);
         const column = await df.columns.addNewCalculated('editable', '0');
-        column.dialogs.editFormula();
+        column.meta.dialogs.editFormula();
       } finally {
         df.columns.remove('editable');
       }
@@ -76,7 +96,7 @@ category('DataFrame', () => {
     const t = df.clone();
     subs.push(t.onColumnsAdded.subscribe((data) =>
       data.args.columns.forEach((column: DG.Column) => {
-        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
+        if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 
@@ -89,7 +109,7 @@ category('DataFrame', () => {
     const t = df.clone();
     subs.push(t.onColumnsRemoved.subscribe((data) =>
       data.args.columns.forEach((column: DG.Column) => {
-        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
+        if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 

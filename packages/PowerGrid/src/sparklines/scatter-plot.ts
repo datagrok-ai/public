@@ -1,6 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {ScatterPlotViewer} from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
+@grok.decorators.cellRenderer({
+  name: 'Scatter Plot',
+  cellType: 'scatterplot',
+  virtual: true,
+})
 export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
   get name() : string { return 'scatterplot'; }
   get cellType() : string { return 'scatterplot'; }
@@ -49,7 +54,7 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
     if (gridCell!.tableRowIndex == null)
       return;
 
-    const plot = gridCell!.gridColumn!.column!.get(gridCell!.tableRowIndex) as ScatterPlotViewer;
+    const plot = gridCell!.gridColumn!.column!.get(gridCell!.tableRowIndex) as DG.ScatterPlotViewer;
     if (w < 20 || h < 10 || gridCell.grid.dataFrame === void 0) return;
 
     const c = plot.root.getElementsByTagName('CANVAS');

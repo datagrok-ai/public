@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {MmDistanceFunctionsNames, mmDistanceFunctions}
   from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -27,34 +27,35 @@ category('Distance', async () => {
   const prot6 = 'FWRRRRY';
 
   const protTable = `seq
-      FWRWYVKHP
-      YNRWYVKHP
-      MWRSWYCKHP`;
+FWRWYVKHPFWRWYVKHP
+YNRWYVKHPYNRWYVKHP
+MWRSWYCKHPMWRSWYCKHP`;
 
   const DNATable = `seq
-      ATAACG
-      ATCGA
-      ATCGA`;
+ATAACGATAACG
+ATCGAATCGA
+ATCGAATCGA`;
 
   const MSATable = `seq
-      ATAAC
-      ATCGA
-      ATCGA`;
+ATAACATAAC
+ATCGAATCGA
+ATCGAATCGA`;
+
   test('protein-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(protTable);
-    const distFunc = uh.getDistanceFunctionName();
-    expect(distFunc, MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH);
+    const sh = await _initMacromoleculeColumn(protTable);
+    const distFunc = sh.getDistanceFunctionName();
+    expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(DNATable);
-    const distFunc = uh.getDistanceFunctionName();
+    const sh = await _initMacromoleculeColumn(DNATable);
+    const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('MSA-distance-function', async () => {
-    const uh = await _initMacromoleculeColumn(MSATable);
-    const distFunc = uh.getDistanceFunctionName();
+    const sh = await _initMacromoleculeColumn(MSATable);
+    const distFunc = sh.getDistanceFunctionName();
     expect(distFunc, MmDistanceFunctionsNames.HAMMING);
   });
 
@@ -75,13 +76,13 @@ category('Distance', async () => {
   // Note that here the result is actually an inverted value of alignment score, which is coorelated with distance
   // tests using default BLOSUM62 matrix are in agreement with the results of the online tool
   test('needleman-blosum62', async () => {
-    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]();
-    _testDistance(prot1, prot2, df, 0.205);
+    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]({gapOpen: 8, gapExtend: 2});
+    _testDistance(prot1, prot2, df, -6);
   });
 
   test('needleman-blosum62-del', async () => {
-    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]();
-    _testDistance(prot3, prot4, df, 0.65);
+    const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]({gapOpen: 8, gapExtend: 2});
+    _testDistance(prot3, prot4, df, -3.667);
   });
 
   test('needleman-custom-sub', async () => {
@@ -95,21 +96,21 @@ category('Distance', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
       {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1},
     );
-    _testDistance(prot3, prot4, df, 0.8);
+    _testDistance(prot3, prot4, df, 0.667);
   });
 
   test('needleman-custom-zero-extend', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
       {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 0},
     );
-    _testDistance(prot5, prot6, df, 0.714);
+    _testDistance(prot5, prot6, df, 0.333);
   });
 
   test('needleman-custom-half-extend', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
       {scoringMatrix, alphabetIndexes, gapOpen: 2, gapExtend: 1},
     );
-    _testDistance(prot5, prot6, df, 1.286);
+    _testDistance(prot5, prot6, df, 1.667);
   });
 
   test('needleman-custom-same-extend', async () => {
@@ -120,11 +121,12 @@ category('Distance', async () => {
       const seq1 = Array(10000).fill('FWRY').join('');
       const seq2 = Array(10000).fill('FYWRRY').join('');
       _testDistance(seq1, seq2, df, 0.667);
-    } else { _testDistance(prot5, prot6, df, 1.143); }
-  });
+    } else
+      _testDistance(prot5, prot6, df, 1.333);
+  }, {benchmark: true});
 });
 
-async function _initMacromoleculeColumn(csv: string): Promise<UnitsHandler> {
+async function _initMacromoleculeColumn(csv: string): Promise<SeqHandler> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
   const seqCol = srcDf.col('seq')!;
   const semType: string = await grok.functions
@@ -132,8 +134,8 @@ async function _initMacromoleculeColumn(csv: string): Promise<UnitsHandler> {
   if (semType)
     seqCol.semType = semType;
   await grok.data.detectSemanticTypes(srcDf);
-  const uh = new UnitsHandler(seqCol);
-  return uh;
+  const sh = SeqHandler.forColumn(seqCol);
+  return sh;
 }
 
 function _testDistance(seq1: string, seq2: string, df: (a: string, b: string) => number, expected: number) {

@@ -1,0 +1,443 @@
+#file: noinspection YAMLIncompatibleTypes
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components in new VPC"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Network configuration"
+        Parameters:
+          - CIDR
+          - InternetIngressAccess
+    #          - InternetEgressAccess
+    ParameterLabels:
+      CIDR:
+        default: "CIDR: VPC CIDR"
+      InternetIngressAccess:
+        default: "InternetIngressAccess: Access from internet"
+      #      InternetEgressAccess:
+      #        default: "InternetEgressAccess: Access to internet"
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8001
+        - W8003
+Parameters:
+  CIDR:
+    Type: String
+    Default: '10.0.0.0/17'
+    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
+    Description: CIDR block for the new Datagrok VPC
+  InternetIngressAccess:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: "Do you want Datagrok to be available from internet? The exact subnet from which Datagrok will be available can be specified in 'InternetSubnetAllow: Allow connect to Datagrok from CIDR' parameter."
+  #  InternetEgressAccess:
+  #    Type: String
+  #    Default: 'true'
+  #    AllowedValues:
+  #      - 'true'
+  #      - 'false'
+  #    Description: Do you want Datagrok to be able to access internet? The access will be created using NAT Gateway. Either access to the internet from Datagrok or configured proxy are required to install Datagrok packages (https://datagrok.ai/help/develop#packages).
+Conditions:
+  InternetIngressAccess:
+    Fn::Equals:
+      - Ref: InternetIngressAccess
+      - 'true'
+  InternetEgressAccess:
+    Fn::Equals:
+      #      - Ref: InternetEgressAccess
+      - 'true'
+      - 'true'
+  CreatePublicSubnets:
+    Fn::Or:
+      - Condition: InternetIngressAccess
+      - Condition: InternetEgressAccess
+  UseVPCEndpoint:
+    Fn::Equals:
+      - 'true'
+      - 'true'
+  CreateVPC:
+    Fn::Equals:
+      - 'create'
+      - 'create'
+Resources:
+  DatagrokVPC:
+    Properties:
+      CidrBlock:
+        Ref: CIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok VPC"
+        - Key: datagrok.component
+          Value: common
+    Type: AWS::EC2::VPC
+  DatagrokInternetGateway:
+    Condition: CreatePublicSubnets
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Internet Gateway"
+        - Key: datagrok.component
+          Value: common
+  DatagrokInternetGatewayAttach:
+    Condition: CreatePublicSubnets
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: DatagrokInternetGateway
+      VpcId:
+        Ref: DatagrokVPC
+  DatagrokPublicSubnetRouteTable:
+    Condition: CreatePublicSubnets
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Public Subnet Route Table"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokPublicSubnetPublicRoute:
+    Condition: CreatePublicSubnets
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: DatagrokInternetGateway
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+  DatagrokPublicSubnet1:
+    Condition: CreatePublicSubnets
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 0
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Public Subnet 1"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokPublicSubnetRouteAssos1:
+    Condition: CreatePublicSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPublicSubnet1
+  DatagrokPublicSubnet2:
+    Condition: CreatePublicSubnets
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 1
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Public Subnet 2"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokPublicSubnetRouteAssos2:
+    Condition: CreatePublicSubnets
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPublicSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPublicSubnet2
+  DatagrokNatGatewayEIP:
+    Condition: InternetEgressAccess
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Nat Gateway EIP"
+        - Key: datagrok.component
+          Value: common
+  DatagrokNatGateway:
+    Condition: InternetEgressAccess
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - DatagrokNatGatewayEIP
+          - AllocationId
+      ConnectivityType: public
+      SubnetId:
+        Ref: DatagrokPublicSubnet1
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Nat Gateway"
+        - Key: datagrok.component
+          Value: common
+  DatagrokPrivateSubnetRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Private Subnet Route Table"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokPrivateSubnetNatRoute:
+    Condition: InternetEgressAccess
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: DatagrokNatGateway
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+  DatagrokPrivateSubnet1:
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 2
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Private Subnet 1"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokPrivateSubnetRouteAssos1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPrivateSubnet1
+  DatagrokPrivateSubnet2:
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 3
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Private Subnet 2"
+        - Key: datagrok.component
+          Value: common
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokPrivateSubnetRouteAssos2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokPrivateSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokPrivateSubnet2
+  DatagrokDataSubnetRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Data Subnet Route Table"
+        - Key: datagrok.component
+          Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::EC2::RouteTable
+  DatagrokDataSubnet1:
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 4
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Data Subnet 1"
+        - Key: datagrok.component
+          Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokDataSubnetRouteAssos1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokDataSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokDataSubnet1
+  DatagrokDataSubnet2:
+    Properties:
+      CidrBlock:
+        Fn::Select:
+          - 5
+          - Fn::Cidr:
+              - Fn::GetAtt:
+                  - DatagrokVPC
+                  - CidrBlock
+              - 6
+              - 6
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok Data Subnet 2"
+        - Key: datagrok.component
+          Value: rds
+      VpcId:
+        Ref: DatagrokVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs:
+              Ref: AWS::Region
+    Type: AWS::EC2::Subnet
+  DatagrokDataSubnetRouteAssos2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: DatagrokDataSubnetRouteTable
+      SubnetId:
+        Ref: DatagrokDataSubnet2
+  DatagrokS3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Effect: Allow
+            Principal: "*"
+            Condition: { }
+            Resource:
+              - Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+              - Fn::Sub:
+                  - "${bucket}/*"
+                  - bucket:
+                      Fn::GetAtt:
+                        - DatagrokS3
+                        - Arn
+              - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
+              - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
+              - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
+              - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
+              - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
+              - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
+              - "arn:aws:s3:::docker-images-prod"
+              - "arn:aws:s3:::docker-images-prod/*"
+              - "arn:aws:s3:::datagrok-data"
+              - "arn:aws:s3:::datagrok-data/*"
+              - Fn::Sub:
+                  - "arn:aws:s3:::cloudformation-custom-resource-response-${region}"
+                  - region:
+                      Fn::Join:
+                        - ''
+                        - Fn::Split:
+                            - '-'
+                            - Ref: AWS::Region
+              - Fn::Sub:
+                  - "arn:aws:s3:::cloudformation-custom-resource-response-${region}/*"
+                  - region:
+                      Fn::Join:
+                        - ''
+                        - Fn::Split:
+                            - '-'
+                            - Ref: AWS::Region
+      RouteTableIds:
+        - Ref: DatagrokPrivateSubnetRouteTable
+      ServiceName:
+        Fn::Sub: com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      VpcId:
+        Ref: DatagrokVPC
+#      Tags:
+#        - Key: 'Name'
+#          Value:
+#            Fn::Sub: "${AWS::StackName} Datagrok VPC Endpoint"

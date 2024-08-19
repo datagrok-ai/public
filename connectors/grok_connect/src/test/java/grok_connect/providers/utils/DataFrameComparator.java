@@ -10,6 +10,7 @@ import serialization.StringColumn;
 import serialization.Types;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DataFrameComparator {
     public boolean isDataFramesEqual(DataFrame that, DataFrame other) {
@@ -18,7 +19,32 @@ public class DataFrameComparator {
 
     }
 
-    private boolean isColumnsEqual(List<Column> columns, List<Column> columns1) {
+    public boolean isDataFramesEqualUnOrdered(DataFrame that, DataFrame other) {
+        return that.getClass().equals(other.getClass())
+                && that.rowCount.equals(other.rowCount) && isColumnsEqualUnOrdered(that.columns, other.columns);
+
+    }
+
+    public boolean isColumnsEqualUnOrdered(List<Column> columns, List<Column> columns1) {
+        if (columns.size() != columns1.size()) {
+            return false;
+        }
+        for (Column column: columns) {
+            List<Column> filtered = columns1.stream()
+                    .filter(col -> col.name.equals(column.name))
+                    .collect(Collectors.toList());
+            if (filtered.size() == 0) {
+                return false;
+            }
+            Column compared = filtered.get(0);
+            if (!isTwoColumnsEqual(column, compared)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isColumnsEqual(List<Column> columns, List<Column> columns1) {
         if (columns.size() != columns1.size()) {
             return false;
         }
@@ -32,7 +58,7 @@ public class DataFrameComparator {
         return true;
     }
 
-    private boolean isTwoColumnsEqual(Column<?> column, Column<?> column1) {
+    public boolean isTwoColumnsEqual(Column<?> column, Column<?> column1) {
         if (!column.getType().equals(column1.getType())) {
             return false;
         }

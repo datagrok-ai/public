@@ -7,7 +7,7 @@ See [JS API class reference](https://datagrok.ai/js-api/modules/ui) for details.
 
 The UI library provides primitives (buttons, dialogs, accordions, popups, etc), as well as
 [input controls](ui.md),
-[spreadsheets](ui.md#grid), and viewers such as [scatter plots](../../visualize/viewers/scatter-plot.md).
+[spreadsheets](ui.md#grid), and viewers such as [scatterplots](../../visualize/viewers/scatter-plot.md).
 See [UI class reference](https://datagrok.ai/js-api/modules/ui) for details.
 
 ### Live examples
@@ -771,8 +771,8 @@ A form is used to present UI controls and allow to enter data in a structured wa
 
 ```javascript
 ui.inputs([
-  ui.stringInput('Name'),
-  ui.intInput('Age'),
+  ui.input.string('Name'),
+  ui.input.int('Age'),
   ui.buttonsInput([
     ui.bigButton('Apply'),
     ui.button('Cancel')
@@ -791,20 +791,20 @@ Input field allows users to enter and edit text or numeric values in one line. T
   clears the input.
 
 ```javascript
-ui.intInput('Age', 30);
-ui.stringInput('Name', 'Arthur Dent');
-ui.searchInput('');
+ui.input.int('Age', {value: 30});
+ui.input.string('Name', {value: 'Arthur Dent'});
+ui.input.search('');
 ```
 
 You can also customize string input like this. Parameters in curly braces are optional.
 
 ```javascript
 // You can just set the string name for the icon:
-ui.stringInput('', '', null, {icon: 'filter', clearIcon: true, escClears: true, placeholder: 'Filter models'});
+ui.input.string('', {icon: 'filter', clearIcon: true, escClears: true, placeholder: 'Filter models'});
 
 // Or you can set icon with the ui-element:
 let myIcon = ui.iconFA('');
-ui.stringInput('', '', null, {icon: myIcon, clearIcon: true});
+ui.input.string('', {icon: myIcon, clearIcon: true});
 ```
 
 #### Text area
@@ -812,7 +812,7 @@ ui.stringInput('', '', null, {icon: myIcon, clearIcon: true});
 The text area is an input control that allows the user to enter several lines of text.
 
 ```javascript
-ui.textInput('Label', 'Text area text data');
+ui.input.textArea('Label', {value: 'Text area text data'});
 ```
 
 #### Dropdown selection
@@ -820,7 +820,7 @@ ui.textInput('Label', 'Text area text data');
 The select control is used to select an item from a predefined list.
 
 ```javascript
-ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
+ui.input.choice('Label', {value: 'Value 1', items: ['Value 1', 'Value 2']});
 ```
 
 #### Selection
@@ -829,7 +829,7 @@ The select control let's option to set a binary value (true/false). When the use
 toggles between checked and unchecked.
 
 ```javascript
-ui.boolInput('Name', false);
+ui.input.bool('Name', {value: false});
 ```
 
 #### Group selection
@@ -837,7 +837,7 @@ ui.boolInput('Name', false);
 Group selection is commonly used to select one or more option from the predefined list.
 
 ```javascript
-ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
+ui.input.multiChoice('Group label', {value: ['Value 1', 'Value 2'], items: ['Value 3', 'Value 4']});
 ```
 
 #### Switch
@@ -845,7 +845,7 @@ ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4'
 The toggle switch allows users to set individual features to either active or inactive.
 
 ```javascript
-ui.switchInput('Active', true);
+ui.input.toggle('Active', {value: true});
 ```
 
 #### Range slider
@@ -862,7 +862,7 @@ UI element that lets a user specify a color, either by using a visual color pick
 into a text field in hexadecimal format.
 
 ```javascript
-ui.colorInput('Hair color', '#ff0000');
+ui.input.color('Hair color', {value: '#ff0000'});
 ```
 
 ### Icons
@@ -895,7 +895,7 @@ let acc = ui.accordion();
 acc.addPane('Pane label', () => ui.div([
   ui.h1('Header 1'),
   ui.button(' Button'),
-  ui.textInput('multi\nline\ntext')])
+  ui.input.textArea('label', {value: 'multi\nline\ntext'})])
 );
 ```
 
@@ -916,7 +916,7 @@ Drag and drop is an option for elements in which the user selects the element by
 droppable place.
 
 ```javascript
-let dropElement = ui.stringInput('Drop here...', '');
+let dropElement = ui.input.string('Drop here...', {value: ''});
 let dragElement = ui.div('Drag it');
 ui.makeDroppable(dropElement.input, {
     acceptDrop: (o) => true,
@@ -983,7 +983,7 @@ per lin. Menu can also have a multilevel list of choices.
 let showMenu = () => {
   let showBalloon = (item) => grok.shell.info(item);
   DG.Menu.popup()
-      .item("Show info", () => {}))
+      .item("Show info", () => {})
       .separator()
       .items(["First", "Second"], showBalloon)
       .show();

@@ -16,9 +16,16 @@ export abstract class Tutorial extends DG.Widget {
   track: Track | null = null;
   prerequisites: TutorialPrerequisites = {};
   demoTable: string = 'demog.csv';
+  currentSection: HTMLElement | undefined;
+  // manualMode: boolean = false;
   private _t: DG.DataFrame | null = null;
+
   get t(): DG.DataFrame | null {
     return this._t;
+  }
+
+  set t(df: DG.DataFrame | null) {
+    this._t = df;
   }
 
   get url(): string {
@@ -56,7 +63,7 @@ export abstract class Tutorial extends DG.Widget {
 
   async updateStatus(): Promise<void> {
     const info = await grok.dapi.userDataStorage.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
-    this.status = info ? true : false;
+    this.status = !!info;
   }
 
   constructor() {
@@ -116,6 +123,7 @@ export abstract class Tutorial extends DG.Widget {
     }
     this.closed = false;
     await this._run();
+    this.endSection();
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
@@ -220,6 +228,12 @@ export abstract class Tutorial extends DG.Widget {
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
 
+    // const manualMode = ui.button(ui.iconFA('forward'), () => {
+    //   this.manualMode = !this.manualMode;
+    //   $(manualMode.firstChild).toggleClass('fal fas');
+    // }, 'Self-paced mode');
+    // if (this.manualMode)
+    //   $(manualMode.firstChild).toggleClass('fal fas');
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
 
     const linkIcon = ui.button(ui.iconFA('link'), () => {
@@ -227,21 +241,52 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.info('Link copied to clipboard');
     }, `Copy the tutorial link`);
 
+    // manualMode.style.minWidth = '30px';
     closeTutorial.style.minWidth = '30px';
     this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
+    // this.headerDiv.append(ui.div([manualMode, closeTutorial]));
     this.headerDiv.append(closeTutorial);
   }
 
-  title(text: string): void {
-    this.activity.append(ui.h3(text));
+  title(text: string, startSection: boolean = false): void {
+    const h3 = ui.h3(text);
+    if (this.currentSection) {
+      if (startSection) {
+        this.endSection();
+        this.currentSection = ui.div(ui.divH([h3], 'tutorials-section-header'));
+        this.activity.append(this.currentSection);
+      } else
+        this.currentSection.append(h3);
+    } else if (startSection) {
+      this.currentSection = ui.div(ui.divH([h3], 'tutorials-section-header'));
+      this.activity.append(this.currentSection);
+    } else
+      this.activity.append(h3);
   }
 
   describe(text: string): void {
-    const div = ui.div([]);
+    const div = ui.div();
     div.innerHTML = text;
-    this.activity.append(div);
+    if (this.currentSection)
+      this.currentSection.append(div);
+    else
+      this.activity.append(div);
     div.scrollIntoView();
+  }
+
+  endSection() {
+    if (!this.currentSection) return;
+    this.currentSection.classList.add('tutorials-done-section');
+    const chevron = ui.iconFA('chevron-left');
+    chevron.classList.add('tutorials-chevron');
+    const s = this.currentSection;
+    s.children[0].append(chevron);
+    $(chevron).on('click', () => {
+      $(chevron).toggleClass('tutorials-chevron-expanded');
+      $(s).toggleClass('tutorials-done-section tutorials-done-section-expanded');
+    });
+    this.currentSection = undefined;
   }
 
   _placeHints(hint: HTMLElement | HTMLElement[]) {
@@ -255,6 +300,13 @@ export abstract class Tutorial extends DG.Widget {
           ui.hints.addHintIndicator(h, false);
       });
     }
+  }
+
+  _setHintVisibility(hints: HTMLElement[], visibility: boolean) {
+    hints.forEach((hint) => {
+      if (hint != null)
+        hint.style.visibility = visibility ? 'visible' : 'hidden';
+    });
   }
 
   _removeHints(hint: HTMLElement | HTMLElement[]) {
@@ -277,20 +329,33 @@ export abstract class Tutorial extends DG.Widget {
     if (hint != null)
       this._placeHints(hint);
 
+    const view = grok.shell.v;
+    const hints = Array.from(document.getElementsByClassName('ui-hint-blob')) as HTMLElement[];
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if (hint)
+        this._setHintVisibility(hints, grok.shell.v === view);
+    });
+
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const descriptionDiv = ui.divText('', {classes: 'grok-tutorial-step-description', style: {
       margin: '0px 0px 0px 15px',
     }});
-    const chevron = ui.iconFA('chevron-down');
+    const chevron = ui.iconFA('chevron-left');
+    chevron.classList.add('tutorials-chevron');
     const instructionIndicator = ui.div([], 'grok-tutorial-entry-indicator');
     const entry = ui.divH([
       instructionIndicator,
       instructionDiv,
     ], 'grok-tutorial-entry');
-
-    this.activity.append(entry);
     descriptionDiv.innerHTML = description;
-    this.activity.append(descriptionDiv);
+
+    if (this.currentSection) {
+      this.currentSection.append(entry);
+      this.currentSection.append(descriptionDiv);
+    } else {
+      this.activity.append(entry);
+      this.activity.append(descriptionDiv);
+    }
     descriptionDiv.scrollIntoView();
 
     const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
@@ -299,21 +364,31 @@ export abstract class Tutorial extends DG.Widget {
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
 
+    if (hint != null)
+      this._removeHints(hint);
+    sub.unsubscribe();
+
+    // if (this.manualMode && manual !== false) {
+    //   const nextStepIcon = ui.iconFA('forward', undefined, 'Next step');
+    //   nextStepIcon.className = 'grok-icon fas fa-forward tutorials-next-step';
+    //   entry.append(nextStepIcon);
+    //   await this.firstEvent(fromEvent(nextStepIcon, 'click'));
+    //   nextStepIcon.remove();
+    // }
+
     $(descriptionDiv).hide();
     if (description.length != 0)
       entry.append(chevron);
 
-    $(entry).on('click', () => {
-      $(chevron).toggleClass('fa-chevron-down fa-chevron-up');
+    $(chevron).on('click', () => {
+      $(chevron).toggleClass('tutorials-chevron-expanded');
       $(descriptionDiv).toggle();
     });
     ui.tooltip.bind(entry, description);
+
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
-
-    if (hint != null)
-      this._removeHints(hint);
   }
 
   clearRoot(): void {
@@ -338,8 +413,10 @@ export abstract class Tutorial extends DG.Widget {
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
   _closeAll(): void {
     // TODO: Take into account dialogs and other views
-    if (this.t?.name)
+    if (this.t?.name) {
       grok.shell.tableView(this.t.name)?.close();
+      grok.shell.closeTable(this.t);
+    }
   }
 
   _onClose: Subject<void> = new Subject();
@@ -355,8 +432,8 @@ export abstract class Tutorial extends DG.Widget {
     return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
   }
 
-  protected getMenuItem(name: string): HTMLElement | null {
-    return this.getElement(this.menuRoot, 'div.d4-menu-item.d4-menu-group',
+  protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
+    return this.getElement(this.menuRoot, `div.d4-menu-item.d4-menu-group${horizontalMenu ? '.d4-menu-item-horz' : ''}`,
       (idx, el) => Array.from(el.children).some((c) => c.textContent === name));
   }
 
@@ -494,7 +571,7 @@ export abstract class Tutorial extends DG.Widget {
         }
         return false;
       })) : grok.shell.v.type === view.type ?
-        new Promise<void>((resolve, reject) => resolve()) :
+        new Promise<void>((resolve, _) => resolve()) :
         grok.events.onCurrentViewChanged.pipe(filter((_) => grok.shell.v.type === view.type)),
     hint, description);
 

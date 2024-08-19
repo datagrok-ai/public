@@ -5,16 +5,16 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "1.2.16",
+  "version": "1.2.30",
   "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.30.3",
-    "@datagrok-libraries/gridext": "^1.3.22",
-    "@datagrok-libraries/math": "^1.0.2",
-    "@datagrok-libraries/ml": "^6.3.31",
-    "@datagrok-libraries/utils": "^4.0.7",
+    "@datagrok-libraries/bio": "^5.40.8",
+    "@datagrok-libraries/gridext": "^1.3.71",
+    "@datagrok-libraries/math": "^1.1.3",
+    "@datagrok-libraries/ml": "^6.6.4",
+    "@datagrok-libraries/utils": "^4.2.13",
     "cash-dom": "latest",
-    "datagrok-api": "^1.15.0",
+    "datagrok-api": "^1.20.0",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.16",
     "file-loader": "latest",
@@ -40,7 +40,7 @@
   },
   "scripts": {
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/gridext @datagrok-libraries/ml",
+    "link-all": "npm link datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils @datagrok-libraries/math @datagrok-libraries/ml @datagrok-libraries/bio",
     "build": "webpack",
     "debug-dendrogram": "webpack && grok publish",
     "release-dendrogram": "webpack && grok publish --release",
@@ -54,7 +54,8 @@
     "lint-fix": "eslint src --ext .ts --fix",
     "test": "grok test",
     "test-local": "grok test --host localhost",
-    "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json"
+    "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/math run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/bio run build && npm run build"
   },
   "canEdit": [
     "Developers"

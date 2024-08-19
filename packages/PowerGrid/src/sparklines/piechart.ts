@@ -1,31 +1,59 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import {
   getSettingsBase,
   names,
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit
+  Hit,
+  isSummarySettingsBase
 } from './shared';
+import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
-const minRadius = 10;
+let minRadius: number;
 
 enum PieChartStyle {
   Radius = 'Radius',
-  Angle = 'Angle'
+  Angle = 'Angle',
+  Vlaaivis = 'VlaaiVis'
 }
 
-interface PieChartSettings extends SummarySettingsBase {
-  radius: number;
-  style: PieChartStyle.Radius | PieChartStyle.Angle;
+export interface Subsector {
+  name: string;
+  low: number;
+  high: number;
+  weight: number;
+  applicability?: number;
+  probabilities?: number[];
 }
+
+export interface Sector {
+  name: string;
+  sectorColor: string;
+  subsectors: Subsector[];
+}
+
+export interface PieChartSettings extends SummarySettingsBase {
+  radius: number;
+  style: PieChartStyle.Radius | PieChartStyle.Angle | PieChartStyle.Vlaaivis;
+  sectors?: {
+      lowerBound: number;
+      upperBound: number;
+      sectors: Sector[];  // Use the Sector interface here
+      values: string | null;
+  };
+}
+
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.style ??= PieChartStyle.Radius;
-
-  return gc.settings;
+  const sectors = gc.settings.sectors;
+  const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
+  settings.style ??= PieChartStyle.Radius;
+  settings.sectors ??= sectors;
+  return settings;
 }
 
 function getColumnsSum(cols: DG.Column[], row: number) {
@@ -33,10 +61,106 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   for (let i = 0; i < cols.length; i++) {
     if (cols[i].isNone(row))
       continue;
-    sum += cols[i].get(row);
+    sum += cols[i].getNumber(row);
   }
   return sum;
 }
+
+function normalizeValue(value: number, subsector: Subsector): number {
+  const { low, high } = subsector;
+  const isMax = high > low;
+  if (isMax ? value < low : value > low)
+    return 0;
+  else if (isMax ? value > high : value < high)
+    return 1;
+  else
+    return isMax
+      ? (value - low) / (high - low)
+      : (value - high) / (low - high);
+}
+
+function renderDiagonalStripes(
+  g: CanvasRenderingContext2D, box: DG.Rect, r: number,
+  currentAngle: number, subsectorAngle: number
+) {
+  const patternSize = r;
+  const patternCanvas = ui.canvas();
+  patternCanvas.width = patternSize;
+  patternCanvas.height = patternSize;
+  const patternCtx = patternCanvas.getContext('2d')!;
+  patternCtx.strokeStyle = '#535659';
+  patternCtx.lineWidth = 0.5;
+  const numLines = 15;
+  const spacing = patternSize / (numLines + 1);
+  for (let i = 1; i <= numLines; i++) {
+    const y = i * spacing;
+    patternCtx.beginPath();
+    patternCtx.moveTo(0, y);
+    patternCtx.lineTo(patternSize, y);
+    patternCtx.stroke();
+  }
+  const pattern = g.createPattern(patternCanvas, 'repeat')!;
+  g.beginPath();
+  g.moveTo(box.midX, box.midY);
+  g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
+  g.closePath();
+  g.save();
+  g.translate(box.midX, box.midY);
+  g.rotate(Math.PI / 6);
+  g.translate(-box.midX, -box.midY);
+  g.fillStyle = pattern;
+  g.fill();
+  g.restore();
+}
+
+function renderSubsector(
+  g: CanvasRenderingContext2D, box: DG.Rect, sectorColor: string,
+  sectorAngle: number, currentAngle: number, subsector: Subsector,
+  minRadius: number, cols: DG.Column[], row: number,
+  sectorWeight: number
+): number {
+  const normalizedSubsectorWeight = subsector.weight / sectorWeight;
+  const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
+  let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
+  const subsectorName = subsector.name;
+  const subsectorCol = cols.find((col) => col.name === subsectorName);
+  let value;
+  let erroneous = false;
+  if (subsectorCol) {
+    value = subsectorCol.get(row);
+    //erroneous = subsector.probabilities![row] < subsector.applicability!; 
+    const normalizedValue = value ? normalizeValue(value, subsector) : 1;
+    r = normalizedValue * (Math.min(box.width, box.height) / 2);
+    r = Math.max(r, minRadius);
+  }
+  if (erroneous)
+    renderDiagonalStripes(g, box, r, currentAngle, subsectorAngle);
+  else {
+    g.beginPath();
+    g.moveTo(box.midX, box.midY);
+    g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
+    g.closePath();
+    g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+    g.lineWidth = 0.6;
+    g.stroke();
+    g.fillStyle = value ? hexToRgbA(sectorColor, 0.6) : 'rgba(255, 255, 255, 1)';
+    g.fill();
+  }
+  return currentAngle + subsectorAngle;
+}
+
+function hexToRgbA(hex: string, opacity: number): string {
+  const bigint = parseInt(hex.substring(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r},${g},${b},${opacity})`;
+}
+
+function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsector[]; }): number {
+  return sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
+}
+
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
@@ -49,11 +173,41 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   let activeColumn = -1;
   const row: number = gridCell.cell.row.idx;
 
-  let r: number;
-  if (settings.style == PieChartStyle.Radius) {
+  let r: number = (gridCell.bounds.width - 4) / 2;
+  if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-    r = r < minRadius ? minRadius : r;
+    r = Math.max(r, minRadius);
+  } else if (settings.sectors) {
+    const { sectors } = settings.sectors;
+    let currentAngle = 0;
+    const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
+    for (const sector of sectors) {
+      const sectorWeight = calculateSectorWeight(sector);
+      const normalizedSectorWeight = sectorWeight / totalSectorWeight;
+      const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
+      const sectorStartAngle = currentAngle;
+      const sectorEndAngle = currentAngle + sectorAngle;
+
+      if (angle >= sectorStartAngle && angle < sectorEndAngle) {
+        const subsectors = sector.subsectors;
+        const totalSubsectorWeight = subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
+        let subsectorStartAngle = sectorStartAngle;
+        for (const subsector of subsectors) {
+          const subsectorWeight = subsector.weight;
+          const normalizedSubsectorWeight = subsectorWeight / totalSubsectorWeight;
+          const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
+          const subsectorEndAngle = subsectorStartAngle + subsectorAngle;
+          if (angle >= subsectorStartAngle && angle < subsectorEndAngle) {
+            activeColumn = cols.findIndex((col) => col && col.name === subsector.name);
+            break;
+          }
+          subsectorStartAngle = subsectorEndAngle;
+        }
+        break;
+      }
+      currentAngle += sectorAngle;
+    }
   } else {
     const sum = getColumnsSum(cols, row);
     r = (gridCell.bounds.width - 4) / 2;
@@ -62,7 +216,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].isNone(gridCell.cell.row.idx))
         continue;
-      const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+      const endAngle = currentAngle + 2 * Math.PI * cols[i].getNumber(row) / sum;
       if ((angle > currentAngle) && (angle < endAngle)) {
         activeColumn = i;
         break;
@@ -110,16 +264,17 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     if (w < 5 || h < 5 || df === void 0) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const row: number = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    let row: number = gridCell.cell.row.idx;
+    let cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
-    if (settings.style == PieChartStyle.Radius) {
+    minRadius = Math.min(box.width, box.height) / 10;
+    if (settings.style == PieChartStyle.Radius && !settings.sectors) {
       for (let i = 0; i < cols.length; i++) {
         if (cols[i].isNone(row))
           continue;
 
         let r = cols[i].scale(row) * box.width / 2;
-        r = r < minRadius ? minRadius : r;
+        r = Math.max(r, minRadius);
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r,
@@ -128,6 +283,45 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
         g.fill();
+        g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+        g.stroke();
+      }
+    } else if (settings.sectors) {
+      const { lowerBound, upperBound, sectors, values } = settings.sectors;
+      cols = values ? Array.from(DG.DataFrame.fromCsv(values).columns) : cols;
+      row = values ? 0 : row;
+      sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
+
+      let currentAngle = 0;
+      const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
+
+      for (const sector of sectors) {
+        const sectorWeight = calculateSectorWeight(sector);
+        const normalizedSectorWeight = sectorWeight / totalSectorWeight;
+        const sectorAngle = 2 * Math.PI * normalizedSectorWeight;
+
+        // Render sector
+        g.beginPath();
+        g.moveTo(box.midX, box.midY);
+        g.arc(box.midX, box.midY, Math.min(box.width, box.height) / 2, currentAngle, currentAngle + sectorAngle);
+        g.closePath();
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
+        g.fill();
+
+        // Render subsectors
+        let subsectorCurrentAngle = currentAngle;
+        for (const subsector of sector.subsectors)
+          subsectorCurrentAngle = renderSubsector(g, box, sector.sectorColor, sectorAngle, subsectorCurrentAngle, subsector, minRadius, cols, row, sectorWeight);
+
+        // Render inner circle representing the range
+        g.beginPath();
+        g.arc(box.midX, box.midY, lowerBound * (Math.min(box.width, box.height) / 2), currentAngle, currentAngle + sectorAngle);
+        g.arc(box.midX, box.midY, upperBound * (Math.min(box.width, box.height) / 2), currentAngle + sectorAngle, currentAngle, true);
+        g.closePath();
+        g.fillStyle = hexToRgbA(sector.sectorColor, 0.4);
+        g.fill();
+
+        currentAngle += sectorAngle;
       }
     } else {
       const sum = getColumnsSum(cols, row);
@@ -136,7 +330,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i].isNone(row))
           continue;
         const r = box.width / 2;
-        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+        const endAngle = currentAngle + 2 * Math.PI * cols[i].getNumber(row) / sum;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r, currentAngle, endAngle);
@@ -144,28 +338,47 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
         g.fill();
+        g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
+        g.stroke();
         currentAngle = endAngle;
       }
     }
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings = gc.settings;
+    const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
-    return ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
-      }),
-      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
-        function(value: string) {
-          settings.style = value;
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
+    const elementsDiv = ui.div([]);
+    const inputs = ui.inputs([
+      ui.input.columns('Сolumns', {
+        value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame,
+        onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
           gc.grid.invalidate();
-        }),
+        },
+        available: names(gc.grid.dataFrame.columns.numerical)
+      }),
+      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+        onValueChanged: (input) => {
+          settings.style = input.value;
+          ui.empty(elementsDiv);
+          if (input.value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+          else {
+            delete settings.sectors;
+            gc.grid.invalidate();
+          }
+        },
+        onCreated: (input) => {
+          if (input.value === PieChartStyle.Vlaaivis)
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+        }
+      })
     ]);
+
+    return ui.divV([inputs, elementsDiv]);
   }
 }

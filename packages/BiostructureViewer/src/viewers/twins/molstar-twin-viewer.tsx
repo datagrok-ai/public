@@ -32,6 +32,12 @@ export class RcsbFv3DCustom extends RcsbFv3dBase {
   }
 }
 
+export const BiostructureAndTrackPropsDefault = new class {
+
+}();
+
+export type BiostructureAndTrackProps = typeof BiostructureAndTrackPropsDefault;
+
 export class BiostructureAndTrackViewer extends DG.JsViewer {
 
 }

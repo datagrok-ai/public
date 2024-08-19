@@ -2,6 +2,9 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
     package: ['./src/package.ts'],
@@ -29,9 +32,9 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.mjs', '.ts', '.js', '.json', '.tsx'],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

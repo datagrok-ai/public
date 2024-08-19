@@ -13,7 +13,7 @@ The platform is very extensible, and almost anything could be implemented as a p
 * Visualizations, such as [Leaflet](packages/Leaflet/README.md)
 * Importing and previewing files, such as
   [SQLite](packages/SQLite),
-  [PDF](packages/PdfViewer/README.md), or
+  [PDF](packages/FileEditors/README.md), or
   [CIF](packages/NglViewer/README.md)
 * Scientific methods implemented in R, Python, or Julia
 * File metadata extractors, such as [Tika](packages/Tika/README.md)
@@ -46,7 +46,7 @@ unique benefits that are specifically important to academia:
   using [data augmentation](help/discover/data-augmentation.md) capabilities. The platform
   proactively suggests contextual actions and enriches the current object
   using [functions](help/datagrok/functions/function.md)
-  implemented in [R, Python, Julia, Matlab, or other language](help/compute/scripting.md). In other
+  implemented in [R, Python, Julia, Matlab, or other language](help/compute/scripting/scripting/scripting.mdxx). In other
   words, Datagrok not only can run a function, but also suggests _what_ could be derived from your
   dataset. This cross-pollination of knowledge could be transformative within and across a broad
   range of scientific disciplines.
@@ -82,5 +82,5 @@ our [community forum](https://community.datagrok.ai/).
 ## See also
 
 * [Datagrok home](https://datagrok.ai/)
-* [JavaScript development](https://datagrok.ai/help/develop/develop)
+* [JavaScript development](https://datagrok.ai/help/develop)
 * [Community forum](https://community.datagrok.ai/)

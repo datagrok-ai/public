@@ -1,0 +1,17 @@
+npts 100 100 100                        # num.grid points in xyz    # CAN  TO THE USER INPUT
+gridfld 3swz.maps.fld                # grid_data_file   # NEED TO CHANGE ACCORDING TO RECEPTOR FILE
+spacing 0.325                        # spacing(A)
+receptor_types A C Fe N NA OA SA     # receptor atom types
+ligand_types A C F NA OA HD          # ligand atom types
+receptor 3swz.pdbqt                  # macromolecule      # NEED TO CHANGE ACCORDING TO RECEPTOR FILE
+gridcenter auto                      # xyz-coordinates or auto
+smooth 0.5                           # store minimum energy w/in rad(A)
+map 3swz.A.map                       # atom-specific affinity map
+map 3swz.C.map                       # atom-specific affinity map
+map 3swz.F.map                       # atom-specific affinity map
+map 3swz.NA.map                      # atom-specific affinity map
+map 3swz.OA.map                      # atom-specific affinity map
+map 3swz.HD.map                      # atom-specific affinity map
+elecmap 3swz.e.map                   # electrostatic potential map
+dsolvmap 3swz.d.map              # desolvation potential map
+dielectric -0.1465                   # <0, AD4 distance-dep.diel;>0, constant

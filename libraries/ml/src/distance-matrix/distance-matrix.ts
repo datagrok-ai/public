@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isNil} from '.';
+import {isNil} from './utils';
 
 /** Distance matrix class compatible with data structure of scipy.spatial.distance.pdist */
 export class DistanceMatrix {

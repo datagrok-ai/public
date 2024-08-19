@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/simpkpd",
   "friendlyName": "SimPKPD",
-  "version": "1.0.3",
+  "version": "1.0.12",
   "description": "PKPD simulations tools",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
   },
   "fullName": "SimPKPD",
   "repository": {
@@ -14,15 +14,19 @@
     "directory": "packages/SimPKPD"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
-    "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.11.1",
-    "file-loader": "^6.2.0",
-    "ts-loader": "latest"
+    "@datagrok-libraries/tutorials": "^1.3.13",
+    "@datagrok-libraries/utils": "^4.2.13",
+    "@datagrok/compute": "^1.15.1",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.20.1",
+    "dayjs": "latest",
+    "ts-loader": "^9.5.0"
   },
   "devDependencies": {
+    "@types/node": "^20.8.4",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "@datagrok/compute": "^1.15.1",
     "css-loader": "latest",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
@@ -31,7 +35,6 @@
     "webpack": "latest",
     "webpack-cli": "latest"
   },
-  "sources": [],
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
@@ -46,5 +49,9 @@
   "canView": [
     "All users"
   ],
-  "category": "Health"
+  "category": "Health",
+  "sources": [
+    "wasm/TwoCompartmentPK.js",
+    "wasm/OneCompartmentPK.js"
+  ]
 }

@@ -6,6 +6,9 @@ Pie chart is useful for reflecting numerical proportions. Conceptually, it is si
 represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to
 the entire dataset (the whole pie).
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Pie chart');`
+
 Controls:
 
 |               |                     |
@@ -22,5 +25,5 @@ See also:
 
 * [Column Selectors](column-selectors.md)
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)

@@ -14,10 +14,10 @@ category('View: Docking', () => {
   });
 
   test('dock', async () => {
-    expect(wu(tv.viewers).find((v) => v.tags['test']) == undefined);
+    expect(wu(tv.viewers).find((v: DG.Viewer) => v.tags['test']) == undefined);
     const viewer = df.plot.scatter();
     viewer.tags['test'] = 'true';
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
-    expect(wu(tv.viewers).find((v) => v.tags['test'])?.tags['test'], 'true');
+    expect(wu(tv.viewers).find((v: DG.Viewer) => v.tags['test'])?.tags['test'], 'true');
   });
 });

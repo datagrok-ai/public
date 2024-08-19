@@ -21,7 +21,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     const id = `ocl-sketcher-${sketcherId++}`;
     this.root.id = id;
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
-    this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
+    this._sketcher.setChangeListenerCallback((_) => {
       if (this.setSavedMolecule) {
         this.setSavedMolecule = false;
         this.molFile = this.savedMolecule!;
@@ -37,10 +37,10 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     TODO!!!:  create issue on openChemLib github*/
 
     const canvas = this.root.querySelectorAll('canvas')[1];
-    canvas!.addEventListener('pointerdown', (e) => {
+    canvas!.addEventListener('pointerdown', (_) => {
       this.mouseDown = true;
     });
-    canvas!.addEventListener('pointerup', (e) => {
+    canvas!.addEventListener('pointerup', (_) => {
       if (this.mouseDown)
         this.mouseDown = false;
       else {

@@ -1,50 +1,25 @@
 package grok_connect.table_query;
 
-import java.util.*;
-import java.util.stream.*;
-import org.apache.commons.lang.StringUtils;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import grok_connect.connectors_info.DataConnection;
 
-
-public class TableQuery
-{
-    public String tableName;
-    public String schema;
+public class TableQuery {
+    public String whereOp = "and";
+    public String havingOp = "and";
     public List<String> fields = new ArrayList<>();
     public List<String> pivots = new ArrayList<>();
-
-    /// Logical operator applied to all [where] conditions.
-    /// Allowed values are 'or' and 'and'.
-    public String whereOp = "and";
-
-    /// Conditions applied to the rows before they are aggregated.
-    /// Translates into SQL's WHERE clause.
     public List<FieldPredicate> whereClauses = new ArrayList<>();
 
-    /// Aggregations to apply.
     public List<GroupAggregation> aggregations = new ArrayList<>();
-
     public List<String> groupByFields = new ArrayList<>();
-
-    public List<GroupAggregation> getAggFuncs() {
-        List<GroupAggregation> aggrs = new ArrayList<>();
-        for (GroupAggregation aggregation: aggregations)
-            if (!aggregation.aggType.equals(Stats.KEY))
-                aggrs.add(aggregation);
-        return aggrs;
-    }
-
-    /// Logical operator applied to all [having] conditions.
-    /// Allowed values are 'or' and 'and'.
-    public String havingOp = "and";
-
-    /// Conditions applied to the rows before they are aggregated.
-    /// Translates into SQL's HAVING clause.
     public List<FieldPredicate> having = new ArrayList<>();
-
-    /// Order to apply.
     public List<FieldOrder> orderBy = new ArrayList<>();
-
-    /// Number of records to return, null means there is no limit.
+    public String tableName;
+    public String schema;
+    public DataConnection connection;
     public Integer limit;
 
     public TableQuery() {
@@ -52,75 +27,114 @@ public class TableQuery
 
     public String toSql(AggrToSql aggrToSql, PatternToSql patternToSql, LimitToSql limitToSql, AddBrackets addBrackets,
                         boolean limitAtEnd) {
-        if (aggrToSql == null)
-            aggrToSql = GroupAggregation::toSqlString;
-        if (patternToSql == null)
-            patternToSql = (fp) -> fp.field + " " + fp.pattern;
-        if (limitToSql == null)
-            limitToSql = (query, limit) -> query + "limit " + limit.toString();
-
-        String sql = "";
-        String str = "";
-        List<String> selectFields = fields.stream().map(addBrackets::convert).collect(Collectors.toList());
-        for (GroupAggregation func : getAggFuncs()) {
-            String convert = aggrToSql.convert(func);
-            if (convert != null) {
-                selectFields.add(convert);
-            }
+        StringBuilder sql = new StringBuilder();
+        String table = tableName;
+        if (table.contains(".")) {
+            int idx = table.indexOf(".");
+            schema = table.substring(0, idx);
+            table = table.substring(idx + 1);
         }
-
-        if (selectFields.size() == 0)
-            return "";
-        selectFields = pad(selectFields);
-        str += StringUtils.join(selectFields,",\n") + "\n";
-        String _tableName = tableName;
-        if (_tableName.contains(".")) {
-            int idx = _tableName.indexOf(".");
-            schema = _tableName.substring(0, idx);
-            _tableName = _tableName.substring(idx + 1);
+        table = addBrackets.convert(table);
+        table = schema != null && !schema.isEmpty() && !connection.dataSource.equals("SQLite") ? addBrackets.convert(schema) + "." + table : table;
+        sql.append("SELECT");
+        sql.append(System.lineSeparator());
+        if (limit != null && !limitAtEnd) {
+            sql.append(limitToSql.convert("", limit));
+            sql.append(System.lineSeparator());
         }
-        _tableName = addBrackets.convert(_tableName);
-        _tableName = (schema != null && schema.length() != 0) ? schema + "." + _tableName : _tableName;
-        sql += "select \n" + ((limit != null && !limitAtEnd) ? limitToSql.convert("", limit) + "\n" : "") +
-                str + "from \n  " + _tableName + "\n";
-
+        sql.append(getSelectFields(aggrToSql, addBrackets));
+        sql.append("FROM");
+        sql.append(System.lineSeparator());
+        sql.append(table);
         if (!whereClauses.isEmpty()) {
+            sql.append(System.lineSeparator());
             List<String> clauses = new ArrayList<>();
-            sql += "where\n";
+            sql.append("WHERE");
+            sql.append(System.lineSeparator());
             for (FieldPredicate clause: whereClauses)
-                clauses.add("  (" + patternToSql.convert(clause) + ")");
-            sql += StringUtils.join(clauses, " " + whereOp + "\n") + "\n";
+                clauses.add(String.format("  (%s)", patternToSql.convert(clause)));
+            sql.append(clauses.stream()
+                    .collect(Collectors
+                            .joining(String.format(" %s%s", whereOp, System.lineSeparator())))
+            );
         }
 
-        if (!groupByFields.isEmpty())
-            sql += "group by\n  " + StringUtils.join(groupByFields, ", ") + "\n";
+        if (!groupByFields.isEmpty()) {
+            sql.append(System.lineSeparator());
+            sql.append("GROUP BY");
+            sql.append(System.lineSeparator());
+            sql.append(
+                    String.join(", ", groupByFields));
+        }
 
-        // the actual pivoting is done on the client, this code is only for the query to look good
-        if (!pivots.isEmpty())
-            sql += "pivot on\n  " + StringUtils.join(pivots, ", ") + "\n";
+        if (!pivots.isEmpty()) {
+            sql.append(System.lineSeparator());
+            sql.append("PIVOT ON");
+            sql.append(System.lineSeparator());
+            sql.append(String.join(", ", pivots));
+        }
 
         if (!having.isEmpty()) {
-            sql += "having\n";
-            sql += "";
+            sql.append(System.lineSeparator());
+            sql.append("HAVING");
+            sql.append(System.lineSeparator());
+            List<String> clauses = new ArrayList<>();
+            for (FieldPredicate clause: having)
+                clauses.add(String.format("\t(%s)", patternToSql.convert(clause)));
+            sql.append(String.join(String.format(" %s%s", havingOp, System.lineSeparator()), clauses));
         }
 
         if (!orderBy.isEmpty()) {
+            sql.append(System.lineSeparator());
             List<String> orders = new ArrayList<>();
-            sql += "order by\n";
-            for (FieldOrder order: orderBy)
-                orders.add("\"" + order.field + "\"" +(order.asc ? " asc" : " desc"));
-            sql += StringUtils.join(pad(orders), ", ") + "\n";
+            sql.append("ORDER BY");
+            sql.append(System.lineSeparator());
+            for (FieldOrder order: orderBy) {
+                String orderField = connection.dataSource.equals("Access") ?
+                        String.format("[%s]", order.field) : String.format("\"%s\"", order.field);
+                orders.add(String.format("%s%s", orderField, order.asc ? " asc" : " desc"));
+            }
+            sql.append(String.join(", ", pad(orders)));
         }
-
-        if (limit != null && limitAtEnd)
-            sql = limitToSql.convert(sql, limit);
-
-        return sql;
+        String result;
+        if (limit != null && limitAtEnd) {
+            sql.append(System.lineSeparator());
+            result = limitToSql.convert(sql.toString(), limit);
+        }
+        else
+            result = sql.toString();
+        return result;
     }
 
-    private static List<String> pad(List<String> strings) {
-        for (int n = 0; n < strings.size(); n++)
-            strings.set(n, "  " + strings.get(n));
+    private String getSelectFields(AggrToSql aggrToSql, AddBrackets addBrackets) {
+        List<String> preparedFields = new ArrayList<>();
+        for (String field : fields) {
+            int num = 1;
+            String bracket = addBrackets.convert(field);
+            while (true) {
+                if (!preparedFields.contains(bracket)) {
+                    preparedFields.add(bracket);
+                    break;
+                }
+                bracket = String.format("%s AS %s", addBrackets.convert(field),
+                        addBrackets.convert(String.format("%s(%d)", field, num++)));
+            }
+        }
+        preparedFields.addAll(getAggFuncs().stream().map(aggrToSql::convert).filter(Objects::nonNull).collect(Collectors.toList()));
+        return preparedFields.isEmpty() ? "*\n" : preparedFields.stream()
+                .collect(Collectors.joining(String.format(",%s", System.lineSeparator()), "", System.lineSeparator()));
+    }
+
+    private List<GroupAggregation> getAggFuncs() {
+        List<GroupAggregation> aggrs = new ArrayList<>();
+        for (GroupAggregation aggregation: aggregations)
+            if (!aggregation.aggType.equals(Stats.KEY))
+                aggrs.add(aggregation);
+        return aggrs;
+    }
+
+    private List<String> pad(List<String> strings) {
+        strings.replaceAll(s -> "  " + s);
         return strings;
     }
 }

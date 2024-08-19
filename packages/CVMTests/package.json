@@ -1,17 +1,18 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.0.1",
+  "version": "1.0.9",
   "author": {
-    "name": "Anna Muzychyna",
-    "email": "amuzychyna@datagrok.ai"
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
   },
+  "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.20.0",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.0.10"
+    "@datagrok-libraries/utils": "^4.2.22"
   },
   "devDependencies": {
     "webpack": "latest",
@@ -47,6 +48,7 @@
   "canView": [
     "All users"
   ],
+  "category": "Development",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

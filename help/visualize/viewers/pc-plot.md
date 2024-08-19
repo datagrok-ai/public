@@ -12,6 +12,9 @@ time, and therefore do not have a natural order. Therefore, different axis arran
 To change columns, set "Column Names" via the context panel. To rearrange columns, drag column name into the desired
 location.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('PC plot');`
+
 General:
 
 |                    |                     |
@@ -30,5 +33,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: PC plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)

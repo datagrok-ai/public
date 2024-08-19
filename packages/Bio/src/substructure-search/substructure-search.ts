@@ -17,64 +17,92 @@ export const enum MONOMERIC_COL_TAGS {
 
 const SUBSTR_HELM_COL_NAME = 'substr_helm';
 
-/**
- * Searches substructure in each row of Macromolecule column
- *
- * @param {DG.column} col Column with 'Macromolecule' semantic type
- */
-export function substructureSearchDialog(col: DG.Column<string>): void {
-  const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(bioTAGS.separator);
-  // const notations = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
+export class SubstructureSearchDialog {
+  units: string;
+  separator: string;
+  inputsDiv: HTMLDivElement;
+  substructureInput: DG.InputBase<string>;
+  separatorInput: DG.InputBase<string>;
+  editHelmLink: HTMLAnchorElement;
+  columnsInput: DG.InputBase<DG.Column | null>;
+  grid: DG.Grid;
+  col: DG.Column;
+  dialog: DG.Dialog;
 
-  const substructureInput = ui.textInput('Substructure', '');
+  constructor(columns: DG.Column<string>[]) {
+    this.col = columns[0];
+    this.createUI();
+  }
 
-  const editHelmLink = ui.link('Edit helm', async () => {
-    updateDivInnerHTML(inputsDiv, grid.root);
-    await ui.tools.waitForElementInDom(grid.root);
-    setTimeout(() => {
-      grid.cell(SUBSTR_HELM_COL_NAME, 0).element.children[0].dispatchEvent(
-        new KeyboardEvent('keydown', {key: 'Enter'}));
-    }, 100);
-  });
+  editHelmLinkAction(): void {
+    updateDivInnerHTML(this.inputsDiv, this.grid.root);
+    ui.tools.waitForElementInDom(this.grid.root).then(() => {
+      setTimeout(() => {
+        this.grid.cell(SUBSTR_HELM_COL_NAME, 0).element.children[0].dispatchEvent(
+          new KeyboardEvent('keydown', {key: 'Enter'})
+        );
+      }, 100);
+    });
+  }
 
-  const df = DG.DataFrame.create(1);
-  df.columns.addNewString(SUBSTR_HELM_COL_NAME).init((_i) => '');
-  df.col(SUBSTR_HELM_COL_NAME)!.semType = col.semType;
-  df.col(SUBSTR_HELM_COL_NAME)!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-  const grid = df.plot.grid();
-  const separatorInput = ui.textInput('Separator', separator);
+  updateInputs(): void {
+    const selectedInput = this.units === NOTATION.HELM ? ui.divV([this.columnsInput, this.editHelmLink]) :
+      this.units === NOTATION.SEPARATOR ? ui.inputs([this.columnsInput, this.substructureInput, this.separatorInput]) :
+        ui.inputs([this.columnsInput, this.substructureInput]);
 
-  const inputsDiv = ui.div();
+    updateDivInnerHTML(this.inputsDiv, selectedInput);
+  }
 
-  const inputs = units === NOTATION.HELM ? ui.divV([editHelmLink]) :
-    units === NOTATION.SEPARATOR ? ui.inputs([substructureInput, separatorInput]) :
-      ui.inputs([substructureInput]);
+  updateNotationDiv(): void {
+    this.units = this.col.meta.units!;
+    this.separator = this.col.getTag(bioTAGS.separator);
+    const notationDiv = this.dialog.root.getElementsByClassName('notation-text')[0];
+    if (notationDiv)
+      notationDiv.textContent = `Notation: ${this.units}`;
+  }
 
-  updateDivInnerHTML(inputsDiv, inputs);
+  createUI(): void {
+    const dataframe = grok.shell.tv.dataFrame;
+    this.columnsInput = ui.input.column('Column', {table: dataframe, value: this.col, onValueChanged: (input) => {
+      this.col = input.value;
+      this.updateNotationDiv();
+      this.updateInputs();
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
 
-  ui.dialog('Substructure Search')
-    .add(ui.divV([
-      ui.divText(`Notation: ${units}`),
-      inputsDiv,
-    ]))
-    .onOK(async () => {
-      let substructure = units === NOTATION.HELM ? df.get(SUBSTR_HELM_COL_NAME, 0) : substructureInput.value;
-      if (units === NOTATION.SEPARATOR && separatorInput.value !== separator && separatorInput.value !== '')
-        substructure = substructure.replaceAll(separatorInput.value, separator);
-      const matchesColName = `Matches: ${substructure}`;
-      const colExists = col.dataFrame.columns.names()
-        .filter((it) => it.toLocaleLowerCase() === matchesColName.toLocaleLowerCase()).length > 0;
-      if (!colExists) {
+    this.substructureInput = ui.input.string('Substructure', {value: ''});
+
+    this.editHelmLink = ui.link('Edit helm', () => this.editHelmLinkAction(), undefined, {style: {position: 'relative', left: '95px'}});
+
+    const df = DG.DataFrame.create(1);
+    df.columns.addNewString(SUBSTR_HELM_COL_NAME).init((_i) => '');
+    df.col(SUBSTR_HELM_COL_NAME)!.semType = this.col.semType;
+    df.col(SUBSTR_HELM_COL_NAME)!.meta.units = NOTATION.HELM;
+    this.grid = df.plot.grid();
+    this.separatorInput = ui.input.string('Separator', {value: this.separator});
+
+    this.inputsDiv = ui.div();
+    this.units = this.col.meta.units!;
+    this.separator = this.col.getTag(bioTAGS.separator);
+    this.updateInputs();
+
+    this.dialog = ui.dialog('Substructure Search')
+      .add(ui.divV([
+        ui.divText(`Notation: ${this.units}`, 'notation-text'),
+        this.inputsDiv,
+      ]))
+      .onOK(async () => {
+        let substructure = this.units === NOTATION.HELM ? df.get(SUBSTR_HELM_COL_NAME, 0) : this.substructureInput.value;
+        if (this.units === NOTATION.SEPARATOR && this.separatorInput.value !== this.separator && this.separatorInput.value !== '')
+          substructure = substructure.replaceAll(this.separatorInput.value, this.separator);
         let matches: DG.BitSet;
-        if (units === NOTATION.HELM)
-          matches = await helmSubstructureSearch(substructure, col);
+        if (this.units === NOTATION.HELM)
+          matches = await helmSubstructureSearch(substructure, this.col);
         else
-          matches = linearSubstructureSearch(substructure, col);
-        col.dataFrame.columns.add(DG.Column.fromBitSet(matchesColName, matches));
-      } else { grok.shell.warning(`Search ${substructure} is already performed`); }
-    })
-    .show();
+          matches = linearSubstructureSearch(substructure, this.col);
+        this.col.dataFrame.filter.and(matches);
+      })
+      .show();
+  }
 }
 
 export function linearSubstructureSearch(substructure: string, col: DG.Column<string>, separator?: string): DG.BitSet {
@@ -105,7 +133,8 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(col, true);
   const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((_i) => substructure);
-  substructureCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  substructureCol.semType = DG.SEMTYPE.MACROMOLECULE;
+  substructureCol.meta.units = NOTATION.HELM;
   const substructureMolsCol =
     await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
   const matchesCol = await grok.functions.call('Chem:searchSubstructure', {
@@ -118,11 +147,14 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
 
 export async function invalidateMols(col: DG.Column<string>, pattern: boolean) {
   const progressBar = DG.TaskBarProgressIndicator.create(`Invalidating molfiles for ${col.name}`);
-  await delay(10);
-  const monomersDict = new Map();
-  const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
-  col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
-  col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
-  col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
-  progressBar.close();
+  try {
+    await delay(10);
+    const monomersDict = new Map();
+    const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
+    col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
+    col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
+    col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
+  } finally {
+    progressBar.close();
+  }
 }

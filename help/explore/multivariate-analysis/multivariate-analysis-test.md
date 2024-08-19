@@ -9,7 +9,7 @@
 
 1. Open table "demog"
 
-2. Open "Partial Least Squares (PLS)" from **Tools | Data Science | Multivariate Analysis (PLS)...**
+2. Open "Partial Least Squares (PLS)" from **ML | Analyze | Multivariate Analysis...**
 
 3. Set value of the field "Outcome" as a column which have empty rows (HEIGHT)
 
@@ -19,22 +19,22 @@
 4. Select columns with nulls for "Features". (WEIGHT)
 
     * After selecting a column with nulls for, a warning is displayed
-    * "OK" does not avaible for clicking
+    * "OK" does not available for clicking
     * In warning there is an opportunity to
-      use ["MissingValuesImputation"](../../transform/missing-values-imputation.md)
+      use ["MissingValuesImputation"](../missing-values-imputation.md)
 
-5. Click on ["MissingValuesImputation"](../../transform/missing-values-imputation.md) on the warning about nulls values.
-   Use ["MissingValuesImputation"](../../transform/missing-values-imputation.md)
-   instrument for input missing values to WEIGNT column.
+5. Click on ["MissingValuesImputation"](../missing-values-imputation.md) on the warning about nulls values.
+   Use ["MissingValuesImputation"](../missing-values-imputation.md)
+   instrument for input missing values to WEIGHT column.
 
-    * After clicking on the ["MissingValuesImputation"](../../transform/missing-values-imputation.md), an appropriate
+    * After clicking on the ["MissingValuesImputation"](../missing-values-imputation.md), an appropriate
       dialog was opened
     * After imputation missing values, WEIGHT column became available for selection and does not cause notifications
 
 6. Select another columns with nulls for "Features". (HEIGHT)
 
     * After selecting a column with nulls for, a warning is displayed.
-    * "OK" does not avaible for clicking
+    * "OK" does not available for clicking
 
 7. Without closing "PLS" dialog, open **Select | "Missing Values"**, then select the "HEIGHT" column and delete the
    selected empty rows.

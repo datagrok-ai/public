@@ -1,12 +1,10 @@
-//name: testSubstructureSearch
-//description: Substructure search via RDKit
-//language: javascript
+// Substructure search via RDKit
 
 async function time(name, n, f) {
   let start = new Date();
-  for (let k = 0; k < n; ++k) {
+  for (let k = 0; k < n; ++k) 
     await f();
-  }
+  
   let stop = new Date();
   console.log(`${name}: ${(stop - start) / n} ms`);
 }
@@ -26,7 +24,7 @@ async function time(name, n, f) {
 
   await time(`Graph-based search on ${df.rowCount} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.searchSubstructure(col, s, {substructLibrary: false});
+      await grok.chem.searchSubstructure(col, s, {substructLibrary: false});
       // console.log(s + ": " + result.toString());
     }
   });
@@ -37,9 +35,8 @@ async function time(name, n, f) {
 
   await time(`Searching the library on ${searchFor.length} molecules`, n, async () => {
     for (let s of searchFor) {
-      let result = await grok.chem.searchSubstructure(col, s);
+      await grok.chem.searchSubstructure(col, s);
       // console.log(s + ": " + result.toString());
     }
   });
-
 })();

@@ -76,7 +76,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
   }
 
   render(g: any, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
+    gridCell: DG.GridCell): void {
     const reactionString = gridCell.cell.value;
     if (reactionString == null || reactionString === '')
       return;

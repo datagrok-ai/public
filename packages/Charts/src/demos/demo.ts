@@ -28,7 +28,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.help.syncCurrentObject = false;
 
   if (viewerName === 'Globe') {
-    DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
+    DG.debounce(df.onSemanticTypeDetected, 1000).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       grok.shell.windows.help.showHelp(viewer.helpUrl);
       dockViewers(tableView, viewer, viewerName);

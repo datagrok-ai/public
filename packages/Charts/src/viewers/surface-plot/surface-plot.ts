@@ -1,10 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-//import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
 import 'echarts-gl';
-
 
 type AxisArray = {data: number[], min: number, max: number, type: string}
 
@@ -30,38 +29,45 @@ export class SurfacePlot extends EChartViewer {
   rawData: number[][] = [[]];
   colsDict: {[name: string]: {data: any[], min: number, max: number, type: string}} = {};
 
-  generateX = (start: number, stop: number, rows: number) => {
-    const arr: number[] = [];
-    const num = Math.ceil(Math.sqrt(rows));
-    const step = (stop - start) / (num - 1);
-    for (let i = 0; i < num; i++) arr.push(start + (step * i));
-    return Array(...Array(num)).map(() => arr).flat();
-  };
-
-  generateY = (start: number, stop: number, rows: number) => {
-    return this.generateX(start, stop, rows).sort((a, b) => a - b);
-  };
-
   zip = (a: any[], b: any[], c: any[]) => a.map((k, i) => [k, b[i], c[i]]);
-
-  filter = () => {
-    const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
-    return this.rawData.map((v, i) => ind.includes(i) ? v : [null, null, null]);
+  sort = (a: any[], b: any[]) => {
+    const x = this.switch(a, b, 0, this.XArr.type);
+    const y = this.switch(a, b, 1, this.YArr.type);
+    return y || x;
+  };
+  plotFilter = () => {
+    const ind = Array.from(this.filter.getSelectedIndexes());
+    return ind.map((id) => this.rawData[id]);
+  };
+  switch = (a: any[], b: any[], n: number, type: string) => {
+    if (a[n] === undefined || b[n] === undefined) return 0;
+    let res;
+    switch (type) {
+    case 'category':
+      res = a[n].localeCompare(b[n]);
+      break;
+    case 'time':
+      res = a[n].getTime() - b[n].getTime();
+      break;
+    default:
+      res = a[n] - b[n];
+      break;
+    }
+    return res;
   };
 
   constructor() {
     super();
     this.initCommonProperties();
-
     this.XColumnName = this.string('XColumnName', null);
     this.YColumnName = this.string('YColumnName', null);
     this.ZColumnName = this.string('ZColumnName', null);
     this.projection = this.string('projection', 'perspective', {choices: ['perspective', 'orthographic']});
     this.bkgcolor = this.int('backgroundColor', 0xFFF);
     this.visualMapComponent = this.bool('legendVisualMapComponent', false);
+    this.grid = this.bool('axisGrid', true);
     this.axisLabel = this.bool('axisLabel', true);
     this.wireframe = this.bool('wireframe', true);
-    this.grid = this.bool('axisGrid', true);
 
     this.option = {
       tooltip: {},
@@ -89,16 +95,25 @@ export class SurfacePlot extends EChartViewer {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       yAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       zAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       grid3D: {
         show: true,
@@ -130,21 +145,19 @@ export class SurfacePlot extends EChartViewer {
   }
 
   onTableAttached() {
+    if (!this.dataFrame.columns.length) {
+      this._showErrorMessage('Table is empty');
+      return;
+    }
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() => this.render(false)));
     this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
-
-    const cols = Array.from(this.dataFrame.columns);
-    const numCols = Array.from(this.dataFrame.columns.numerical);
-    if (cols.length < 3)
-      grok.shell.error(`Error: insufficient number of columns: expected 3+, got ${cols.length}`);
-    if (numCols.length < 2)
-      grok.shell.error(`Error: insufficient number of numerical columns: expected 2+, got ${numCols.length}`);
-
-    for (const c of cols) {
-      let type: string; let isTime = false;
+    this.colsDict = {};
+    const num = Array.from(this.dataFrame.columns);
+    num.forEach((c) => {
+      let type: string;
+      let isTime = false;
       switch (c.type) {
-      case ('string' || 'object' || 'bool' || 'dataframe'):
+      case 'string':
         type = 'category';
         break;
       case 'datetime':
@@ -157,28 +170,23 @@ export class SurfacePlot extends EChartViewer {
       }
       if (isTime)
         this.colsDict[c.name] = {data: c.toList().map((val) => new Date(val)), min: c.min, max: c.max, type: type};
-      else
-        this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
-    };
+      else this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
+    });
+    let indx = [0, 1, 2];
+    if (num.length === 1) {
+      grok.shell.error('Error: insufficient number of columns: expected 3+, got 1');
+      indx = [0, 0, 0];
+    } else if (num.length === 2) {
+      grok.shell.warning('Error: insufficient number of columns: expected 3+, got 2');
+      indx = [0, 1, 1];
+    }
 
-    this.XColumnName = numCols[0].name;
-    this.YColumnName = numCols[1].name;
-    this.ZColumnName = numCols.length > 2 ? numCols[2].name : Array.from(this.dataFrame.columns.categorical)[0].name;
-
-    this.XArr = {data: this.generateX(this.colsDict[this.XColumnName].min,
-      this.colsDict[this.XColumnName].max, this.dataFrame.rowCount),
-    min: this.colsDict[this.XColumnName].min,
-    max: this.colsDict[this.XColumnName].max,
-    type: 'value'};
-
-    this.YArr = {data: this.generateY(this.colsDict[this.YColumnName].min,
-      this.colsDict[this.YColumnName].max, this.dataFrame.rowCount),
-    min: this.colsDict[this.YColumnName].min,
-    max: this.colsDict[this.YColumnName].max,
-    type: 'value'};
-
+    this.XColumnName = Object.keys(this.colsDict)[indx[0]];
+    this.YColumnName = Object.keys(this.colsDict)[indx[1]];
+    this.ZColumnName = Object.keys(this.colsDict)[indx[2]];
+    this.XArr = this.colsDict[this.XColumnName];
+    this.YArr = this.colsDict[this.YColumnName];
     this.ZArr = this.colsDict[this.ZColumnName];
-
     this.render(true, false);
   }
 
@@ -189,27 +197,18 @@ export class SurfacePlot extends EChartViewer {
       switch (property.name) {
       case 'XColumnName':
         this.XColumnName = newVal;
-        if (col.type !== 'value') {
-          grok.shell.warning(`${newVal} column is not numerical`);
-          this.XArr = col;
-        } else {
-          this.XArr = {data: this.generateX(col.min, col.max, this.dataFrame.rowCount),
-            min: col.min, max: col.max, type: 'value'};
-        }
+        this.XArr = col;
+        this.option.xAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'YColumnName':
         this.YColumnName = newVal;
-        if (col.type !== 'value') {
-          grok.shell.warning(`${newVal} column is not numerical`);
-          this.YArr = col;
-        } else {
-          this.YArr = {data: this.generateY(col.min, col.max, this.dataFrame.rowCount),
-            min: col.min, max: col.max, type: 'value'};
-        }
+        this.YArr = col;
+        this.option.yAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'ZColumnName':
         this.ZColumnName = newVal;
         this.ZArr = col;
+        this.option.zAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       }
       this.render(true);
@@ -233,12 +232,27 @@ export class SurfacePlot extends EChartViewer {
       case 'wireframe':
         this.wireframe = newVal;
         break;
+      case 'table':
+        this.updateTable();
+        this.onTableAttached();
+        return;
       }
       this.render();
     }
   }
 
+  _testColumns() {
+    return this.dataFrame.columns.toList().length >= 3;
+  }
+
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+
   render(computeData=false, filter=true) {
+    // if (!this._testColumns()) {
+    //   this._showErrorMessage('The Surface Plot viewer requires a minimum of 3 columns.');
+    //   return;
+    // }
+
     this.option.grid3D.viewControl.projection = this.projection;
     this.option.backgroundColor = this.bkgcolor;
     this.option.visualMap.show = this.visualMapComponent;
@@ -255,12 +269,20 @@ export class SurfacePlot extends EChartViewer {
       this.option.xAxis3D.type = this.XArr.type;
       this.option.yAxis3D.type = this.YArr.type;
       this.option.zAxis3D.type = this.ZArr.type;
+      const s = Math.round(Math.sqrt(this.XArr.data.length));
+      this.option.series[0].dataShape = [s, s];
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 
-    if (filter) this.option.series[0].data = this.filter();
-    else this.option.series[0].data = this.rawData;
-
+    if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
+    else this.option.series[0].data = this.rawData.sort(this.sort);
+    this.chart.resize();
     this.chart.setOption(this.option);
   }
 }
+
+const formatter = (val: any) => {
+  if (typeof val === 'number' && !Number.isInteger(val))
+    return val.toFixed(2);
+  return val;
+};

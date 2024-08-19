@@ -206,7 +206,6 @@ export function installPinnedColumns(grid : DG.Grid) : void {
     }
   }
 
-
   const colGrid0 = !bPinned ? null : grid.columns.byIndex(0);
   if(colGrid0 !== null && colGrid0 !== undefined) {//DG Bug from reading layout
     try{
@@ -273,48 +272,95 @@ export function registerPinnedColumns() {
   if(PINNED_COLUMNS_REGISTERED)
     return;
 
+  const TABLE_ROW_HEIGHT_KEY = 'TABLE_ROW_HEIGHT_KEY';
+
   grok.events.onContextMenu.subscribe((args : any) => {
     PinnedUtils.handleContextMenu(args, (menu : DG.Menu, colGridOrPinned : DG.GridColumn | PinnedColumn,
                                          grid : DG.Grid) => {
+      const pinMenu = menu.group('Pin');
       if (colGridOrPinned instanceof PinnedColumn) {
         const colGrid = colGridOrPinned.getGridColumn();
         if (colGrid !== null && !GridUtils.isRowHeader(colGrid)) {
-          menu.item('Unpin Column', () => {
+          pinMenu.item('Unpin Column', () => {
             colGridOrPinned.close();
           });
         }
-        menu.item('Unpin All Columns', () => {
+        pinMenu.item('Unpin All Columns', () => {
           PinnedUtils.closeAllPinnedColumns(grid);
         });
       } else {
-        menu.item('Pin Column', async () => {
+        pinMenu.item('Pin Column', async () => {
           PinnedUtils.addPinnedColumn(colGridOrPinned);
         });
       }
     });
   });
 
-  grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
+  grok.events.onViewLayoutGenerated.subscribe((layout : DG.ViewInfo) => {
     const view : DG.TableView = layout.view as TableView;
     if(view === null) {
       //console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
       return;
     }
 
+    if (!view.viewers)
+      return;
     const itViewers = view.viewers;
     const arViewers = Array.from(itViewers);
-
     let viewer = null;
     const nViewerCount = arViewers.length;
     for (let n = 0; n < nViewerCount; ++n) {
       viewer = arViewers[n];
-      if (viewer.type !== "Grid")
+      if (viewer.type !== DG.VIEWER.GRID)
         continue;
-
-      PinnedUtils.installPinnedColumns(viewer as DG.Grid);
+      const grid: DG.Grid = viewer as DG.Grid;
+      const nPinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
+      if (nPinnedColCount > 0)
+        layout.setUserDataValue(TABLE_ROW_HEIGHT_KEY, GridUtils.getGridRowHeight(grid).toString());
+      else
+        layout.setUserDataValue(TABLE_ROW_HEIGHT_KEY, null as any);
     }
   });
 
+  //grok.events.onV
+
+  grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewInfo) => {
+    const view : DG.TableView = layout.view as TableView;
+    if(view === null) {
+      //console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
+      return;
+    }
+
+    if (!view.viewers)
+      return;
+    const itViewers = view.viewers;
+    const arViewers = Array.from(itViewers);
+    let viewer = null;
+    const nViewerCount = arViewers.length;
+    for (let n = 0; n < nViewerCount; ++n) {
+      viewer = arViewers[n];
+      if (viewer.type !== DG.VIEWER.GRID)
+        continue;
+
+      PinnedUtils.installPinnedColumns(viewer as DG.Grid);
+      const grid: DG.Grid = viewer as DG.Grid;
+      const strRowHeight = layout.getUserDataValue(TABLE_ROW_HEIGHT_KEY);
+      if (strRowHeight !== null && strRowHeight !== undefined) {
+        setTimeout(() => {
+          grid.setOptions({rowHeight: parseInt(strRowHeight)});
+          grid.columns.byIndex(0)!.visible = false;
+
+          const nPinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
+          let colPinned = null;
+          for (let nC = 0; nC < nPinnedColCount; ++nC) {
+            colPinned = PinnedUtils.getPinnedColumn(nC, grid);
+            colPinned.getGridColumn()!.settings
+            colPinned.invalidate();
+          }
+        }, 200);
+      }
+    }
+  });
 
   PINNED_COLUMNS_REGISTERED = true;
 }

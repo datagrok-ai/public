@@ -1,70 +1,51 @@
 ---
-title: "Multivariate analysis based on partial least squares (PLS)"
+title: "Multivariate analysis based on partial least squares regression"
+sidebar_position: 0
 ---
 
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.
 
-Partial least squares regression (PLS regression) is a statistical method that bears some relation to principal
-components regression; instead of finding hyperplanes of maximum variance between the response and independent
-variables, it finds a linear regression model by projecting the predicted variables and the observable variables to a
-new space. Because both the X and Y data are projected to new spaces, the PLS family of methods are known as bilinear
-factor models.
+Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests and ANOVA. It constructs linear model using **latent factors** that
 
-## Regress and analyse
+* maximally summarize the variation of the predictors
+* maximize correlation with the response variable.
 
-* Open a table
-* Run from the top menu: `ML | Multivariate Analysis (PLS)...`
-* Select a table that contains features
-* Select an outcome column
-* Select feature columns
-* Select the number of extracted PLS components
-* Set checkbox to plot `Scores`, if required
-* Set checkbox to plot `Explained Variance`, if required
-* Set checkbox to plot `Correlation Loadings`, if required
-* Set checkbox to plot `Predicted vs. Reference`, if required
-* Set checkbox to plot `Regression Coefficients`, if required
-* Run PLS
+## Regress and analyze
 
-## Outputs
+1. Open a table.
+2. On the Top Menu, select `ML | Analyze | Multivariate Analysis...`. A dialog opens.
+3. In the dialog, specify
+   * the column with responce variable (in the `Predict` field)
+   * the columns with the predictors (in the `Using` field)
+   * the number of `Components`, i.e. latent factors
+   * `Names` of data samples
+4. Press `Run` to execute. You get
+   * the [Observed vs. Predicted](https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference) scatterplot comparing the responce to its prediction
+   * the [Regression Coefficients](https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients) bar chart presenting parameters of the obtained linear model
+   * the [Loadings](https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings) scatterplot indicating the impact of each feature on the latent factors
+   * the [Scores](https://datagrok.ai/help/explore/multivariate-analysis/plots/scores) scatterplot reflecting data samples similarities and dissimilarities
+   * the [Explained Variance](https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance) bar chart measuring how well the latent factors fit source data
 
-### [Scores](plots/scores.md)
+![add-to-workspace](pls.gif)
 
-Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
+## PLS components
 
-![Scores](../../uploads/features/stats/scores.png "Scores Scatter Plot")
+Compute the predictors representation by the latent factors:
 
-### [Explained variance](plots/explained-variance.md)
+1. Open a table.
+2. On the Top Menu, select `ML | Analyze | PLS...`. A dialog opens.
+3. In the dialog, specify
+   * the column with responce variable (in the `Predict` field)
+   * the columns with the predictors (in the `Using` field)
+   * the number of `Components`, i.e. latent factors
 
-Bar chart with explained variance of variables by PLS-components, cumulative sum by each of components.
+PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)). The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates this:
 
-![Explained Variance](../../uploads/features/stats/explained-variance.png "Explained Variance Bar Chart")
+![add-to-workspace](pls_vs_pca.png)
 
-### [Correlation loadings](plots/correlation-loadings.md)
+## See also
 
-Scatter plot of correlations between the variables and the PLS components.
-
-The loadings plot shows correlations between variables. Comparing the correlation loadings to the scores shows how the
-variables relate to the observations.
-
-![Correlation Loadings](../../uploads/features/stats/correlation-loadings.png "Correlation Loadings Scatter Plot")
-
-### [Predicted vs. reference](plots/predicted-vs-reference.md)
-
-Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
-
-The scores plot shows correlations between observations (how observations related to each other, occurrence groups or
-trends).
-
-![Predicted vs. Reference](../../uploads/features/stats/predicted-vs-reference.png "Predicted vs. Reference Scatter Plot")
-
-### [Regression coefficients](plots/regression-coefficients.md)
-
-Bar chart with regression coefficients (used with the original data scale).
-
-![Regression Coefficients](../../uploads/features/stats/regression-coefficients.png "Regression Coefficients Bar Chart")
-
-See also:
-
-* [Multivariate analysis](https://en.wikipedia.org/wiki/Multivariate_analysis)
-* [Partial Least Squares (PLS)](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+* [Partial least squares regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+* [Principal component analysis](https://datagrok.ai/help/explore/dim-reduction#pca)
+* [Principal component regression](https://en.wikipedia.org/wiki/Principal_component_regression)

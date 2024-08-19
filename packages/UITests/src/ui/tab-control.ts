@@ -77,4 +77,4 @@ category('UI: Tab control', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

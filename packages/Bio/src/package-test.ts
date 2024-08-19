@@ -1,3 +1,5 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
@@ -11,23 +13,27 @@ import './tests/msa-tests';
 import './tests/splitters-test';
 import './tests/monomer-libraries-tests';
 import './tests/renderers-test';
+import './tests/renderers-monomer-placer-tests';
 import './tests/converters-test';
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';
 import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
+import './tests/WebLogo-project-tests';
+import './tests/WebLogo-layout-tests';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
-import './tests/units-handler-tests';
+import './tests/seq-handler-tests';
+import './tests/seq-handler-splitted-tests';
+import './tests/seq-handler-get-region';
 import './tests/to-atomic-level-tests';
 import './tests/mm-distance-tests';
-
-// Tests hanging github CI
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
+import './tests/scoring';
 
 
 export const _package = new DG.Package();
@@ -38,8 +44,9 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }

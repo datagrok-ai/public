@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +14,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
@@ -24,8 +21,7 @@ import serialization.IntColumn;
 import serialization.Types;
 
 public class VerticaDataProvider extends JdbcDataProvider {
-    public VerticaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public VerticaDataProvider() {
         driverClassName = "com.vertica.jdbc.Driver";
 
         descriptor = new DataSource();
@@ -86,12 +82,12 @@ public class VerticaDataProvider extends JdbcDataProvider {
     }
 
     /**
-     * Vertica doesn't have a 32 bit integers, so is_view column is BigInt.
+     * Vertica doesn't have a 32-bit integers, so is_view column is BigInt.
      * Replace it with InColumn for easy handle in next steps
      */
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws ClassNotFoundException,
-            SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+            GrokConnectException {
         String columnName = "is_view";
         DataFrame dataFrame = super.getSchema(connection, schema, table);
         Column oldColumn = dataFrame.columns.stream()
@@ -99,9 +95,8 @@ public class VerticaDataProvider extends JdbcDataProvider {
                 .collect(Collectors.toList()).get(0);
         dataFrame.columns.remove(oldColumn);
         Column newColumn = new IntColumn();
-        for (int i = 0; i< oldColumn.length; i++) {
+        for (int i = 0; i< oldColumn.length; i++)
             newColumn.add(Integer.valueOf(oldColumn.get(i).toString()));
-        }
         newColumn.name = columnName;
         dataFrame.columns.add(newColumn);
         return dataFrame;

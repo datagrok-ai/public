@@ -89,7 +89,20 @@ function datagrok_start() {
         datagrok_install
     fi
     message "Starting Datagrok containers"
-    docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    update_installation=false
+    if [ ! -z "$1" ] && [ "$1"=="update" ]; then
+        update_installation=true
+    fi
+    # Checking do we need tu run update
+    if [ "$update_installation" = true ] ; then
+        message "Updating Datagrok config file"
+        curl -o ${compose_config_path} ${datagrok_public_repo_url}
+        message "Updating Datagrok to the latest version"
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all pull
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all  up -d --force-recreate
+    else
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    fi
     message "Waiting while the Datagrok server is starting"
     echo "When the browser opens, use the following credentials to log in:"
     echo "------------------------------"
@@ -104,6 +117,10 @@ function datagrok_start() {
     xdg-open ${datagrok_local_url}
     message "If the browser hasn't open, use the following link: $datagrok_local_url"
     message "To extend Datagrok fucntionality, install extension packages on the 'Manage -> Packages' page"
+    if [ "$update_installation" = true ] ; then
+        message "Removing old images"
+        docker image prune -f
+    fi
 }
 
 function datagrok_stop() {
@@ -113,6 +130,7 @@ function datagrok_stop() {
     fi
     message "Stopping Datagrok containers"
     docker compose -f "${compose_config_path}" --project-name datagrok --profile all stop
+    docker rm -f $(docker ps --format {{.Names}} | grep datagrok)
 }
 
 function datagrok_reset() {
@@ -146,9 +164,10 @@ install) datagrok_install ;;
 start) datagrok_start ;;
 stop) datagrok_stop ;;
 reset) datagrok_reset ;;
+update) datagrok_start update ;;
 purge) datagrok_purge ;;
 help | "-h" | "--help")
-    echo "usage: $script_name install|start|stop|reset" >&2
+    echo "usage: $script_name install|start|stop|update|reset|purge" >&2
     exit 1
     ;;
 *) datagrok_start ;;

@@ -43,9 +43,9 @@ function _take(order: Int32Array, values: Float32Array): Float32Array {
 function _give(values: Float32Array, order: Int32Array): Float32Array {
   const v = Float32Array.from(values);
 
-  for (let i = 0; i < order.length; ++i) {
+  for (let i = 0; i < order.length; ++i)
     v[order[i]] = values[i];
-  }
+
   return v;
 }
 
@@ -59,9 +59,9 @@ function _give(values: Float32Array, order: Int32Array): Float32Array {
 function _giveb(values: Array<boolean>, order: Int32Array): Array<boolean> {
   const v = Array.from(values);
 
-  for (let i = 0; i < order.length; ++i) {
+  for (let i = 0; i < order.length; ++i)
     v[order[i]] = values[i];
-  }
+
   return v;
 }
 
@@ -84,9 +84,9 @@ function _ecdf(x: Float32Array): Float32Array {
  */
 function _cm(n: number): number {
   let sum = 0;
-  for (let i = 0; i < n; ++i) {
+  for (let i = 0; i < n; ++i)
     sum += 1 / (i+1);
-  }
+
   return sum;
 }
 
@@ -124,9 +124,9 @@ function _minimumAccumulate(values: Float32Array): Float32Array {
   const nItems = values.length;
   const r = Float32Array.from(values);
 
-  for (let i = 0; i < nItems; ++i) {
+  for (let i = 0; i < nItems; ++i)
     r[i] = values.slice(0, i+1).reduce((a, b, _, __) => (_operations['min'](a, b)));
-  }
+
   return r;
 }
 
@@ -185,37 +185,31 @@ export function fdrcorrection(
 
   let ecdffactor = _ecdf(pvalsSorted);
 
-  if (['i', 'indep', 'p', 'poscorr'].includes(method)) {
-    ;
-  } else if (['n', 'negcorr'].includes(method)) {
+  if (['n', 'negcorr'].includes(method)) {
     cm = _cm(nItems);
     ecdffactor = _factor(ecdffactor, cm, '/');
-  } else {
+  } else if (!['i', 'indep', 'p', 'poscorr'].includes(method))
     throw new Error('only indep and negcorr implemented');
-  }
 
   const reject: boolean[] = new Array(nItems).fill(false);
   let rejectmax = -1;
 
   for (let i = 0; i < nItems; ++i) {
-    if (pvalsSorted[i] <= ecdffactor[i]*alpha) {
+    if (pvalsSorted[i] <= ecdffactor[i]*alpha)
       rejectmax = i;
-    }
   }
 
   if (rejectmax >= 0) {
-    for (let i = 0; i < rejectmax; ++i) {
+    for (let i = 0; i < rejectmax; ++i)
       reject[i] = true;
-    }
   }
 
   let pvalsCorrected = _vfactor(pvalsSorted, ecdffactor, '/');
   pvalsCorrected = _minimumAccumulate(pvalsCorrected.reverse()).reverse();
 
   for (let i = 0; i < nItems; ++i) {
-    if (pvalsCorrected[i] > 1) {
+    if (pvalsCorrected[i] > 1)
       pvalsCorrected[i] = 1;
-    }
   }
 
   if (!isSorted) {

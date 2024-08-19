@@ -83,4 +83,4 @@ dedicated view.
 See also:
 
 * [Packages](../develop.md#packages)
-* [JavaScript API](../js-api.md)
+* [JavaScript API](../packages/js-api.md)

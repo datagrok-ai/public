@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, after, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
   for (let i = 0; i < colTags.length; i++) {
     for (let j = 0; j < colTags[i].length; j++) {
-      console.log('TAG Value: ' + colTags[i][j]);
+      // console.log('TAG Value: ' + colTags[i][j]);
       if (colTags[i][j] == colTagValue)
         return true;
     }
@@ -15,23 +15,20 @@ export function hasTag(colTags: string[], colTagValue: string): boolean {
 }
 
 category('Grid', () => {
-  let v: DG.TableView;
   let grid: DG.Grid;
-  const demog = grok.data.demo.demog(1000);
+  const demog = grok.data.demo.demog(100);
   demog.columns.byName('study').name = '~study';
 
   before(async () => {
-    v = grok.shell.addTableView(demog);
-    grid = v.grid;
+    grid = demog.plot.grid();
   });
 
   test('setOrder', async () => {
     grid.columns.setOrder(['race', 'age']);
     const firstCol = grid.columns.byIndex(4);
     const secondCol = grid.columns.byIndex(6);
-    if (firstCol?.name != 'race' || secondCol?.name != 'age')
-      
-      throw new Error('grid.setOrder does not work');
+    expect(firstCol?.name, 'race');
+    expect(secondCol?.name, 'age');
   });
 
   test('resizeColumn', async () => {
@@ -41,9 +38,7 @@ category('Grid', () => {
 
   test('filter', async () => {
     demog.rows.match('sex = M').filter();
-    if (demog.filter.trueCount != 605)
-      
-      throw new Error('Filtering error');
+    expect(demog.filter.trueCount, 73);
   });
 
   test('colorCoding', async () => {
@@ -54,64 +49,41 @@ category('Grid', () => {
       'Other': 0XFFE4DD47,
     };
 
-    demog.col('height')!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    demog.col('height')!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"20-170":"#00FF00","170-190":"#220505"}`;
-
-    demog.col('age')!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
-    demog.col('age')!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.orange}, ${DG.Color.green}]`;
+    demog.col('height')?.meta.colors.setConditional({'20-170': '#00FF00', '170-190': '#220505'});
+    demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
 
     //categorical RACE column check
-    const raceTags: string[] = Array.from(demog.col('race')!.tags);
-    if (!hasTag(raceTags, '.color-coding-categorical') ||
-      !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
-      
+    const raceCol = demog.col('race')!;
+    if (raceCol.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL) !== '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}')
       throw new Error('Categorical Color Coding error');
 
     //numerical HEIGHT column check for Conditional ColorCoding
-    const heightTags: string[] = Array.from(demog.col('height')!.tags);
-    if (!hasTag(heightTags, '.color-coding-type') ||
-      !hasTag(heightTags, 'Conditional') ||
-      !hasTag(heightTags, '.color-coding-conditional') ||
-      !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
-      
+    const heightCol = demog.col('height')!;
+    if (heightCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CONDITIONAL ||
+      heightCol.getTag(DG.TAGS.COLOR_CODING_CONDITIONAL) !== '{"20-170":"#00FF00","170-190":"#220505"}')
       throw new Error('Conditional Color Coding error');
 
     //numerical AGE column check for Linear ColorCoding
-    const ageTags: string[] = Array.from(demog.col('age')!.tags);
-    if (!hasTag(ageTags, '.color-coding-type') ||
-      !hasTag(ageTags, 'Linear') ||
-      !hasTag(ageTags, '.color-coding-linear') ||
-      !hasTag(ageTags, '[4294944000, 4278255360]'))
-      
+    const ageCol = demog.col('age')!;
+    if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]')
       throw new Error('Linear Color Coding error');
   });
 
   test('columnVisibility', async () => {
     const studyColVisible = grid.columns.byName('~study')!.visible;
-
     grid.columns.setVisible(['age', 'sex', 'race', 'height', 'weight', 'site', 'subj', 'started']);
     const diseaseColVisible = grid.columns.byName('disease')!.visible;
-
-    if (studyColVisible)
-      
-      throw new Error('Hiding a column by adding ~ to the name doesn\'t work');
-
-    if (diseaseColVisible)
-      
-      throw new Error('Hiding a column by using columns.setVisible doesn\'t work');
+    expect(studyColVisible, false, 'Hiding a column by adding ~ to the name doesn\'t work');
+    expect(diseaseColVisible, false, 'Hiding a column by using columns.setVisible doesn\'t work');
   });
 
   test('columnControlledValues', async () => {
-    demog.col('site')!.tags[DG.TAGS.CHOICES] = '["New York", "Buffalo"]';
-    demog.col('site')!.tags[DG.TAGS.AUTO_CHOICES] = 'New York';
+    const col = demog.col('site');
+    col!.meta.choices = ['New York', 'Buffalo'];
+    col!.meta.autoChoices = false;
 
-    const siteTags: string[] = Array.from(demog.col('site')!.tags);
-
-    if (!hasTag(siteTags, '.choices') ||
-      !hasTag(siteTags, '["New York", "Buffalo"]') ||
-      !hasTag(siteTags, '.auto-choices') ||
-      !hasTag(siteTags, 'New York'))
-      
+    if (JSON.stringify(col?.meta.choices) !== '["New York","Buffalo"]' || col?.meta.autoChoices !== false)
       throw new Error('Column Controlled Values (Choices) error');
   });
 
@@ -123,7 +95,12 @@ category('Grid', () => {
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
   });
 
-  after(async () => {
-    grok.shell.closeAll();
+  test('getOptions', async () => {
+    expect(Object.keys(grid.getOptions().look).length, 2);
   });
-}, false);
+
+  test('setOptions', async () => {
+    grid.setOptions({allowEdit: false, showColumnLabels: false, colHeaderHeight: 100});
+    expect(Object.keys(grid.getOptions().look).length, 5);
+  });
+});

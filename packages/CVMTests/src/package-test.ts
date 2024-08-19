@@ -1,6 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import './scripts/scripts-params';
+
+// import './scripts/scripts';
 import './shell/ml';
+import './scripts/scripts_tests';
+import './docker/docker';
+import './files/files'
+// import './gui/dialogs'; To fix!
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
@@ -11,8 +16,9 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }

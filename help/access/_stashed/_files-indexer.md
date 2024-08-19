@@ -10,7 +10,7 @@ data job with hourly recurrence that indexes files with
 
 >Key concept: _File share_
 >
->We use the term _file share_ to refer to a _file storage connection_ or any folder or file shared with others. To learn more about file shares, see [File storage](../files/files.mdx).
+>We use the term _file share_ to refer to a _file storage connection_ or any folder or file shared with others. To learn more about file shares, see [File storage](../files/files.md).
 
 For _file storage_<!--add link when ready--> Datagrok supports indexing of folders and _supported file formats_<!--add link when ready--> (including archives such as .tar or .zip).
 
@@ -23,7 +23,7 @@ File indexing is a recurring _data job_<!--add link when ready--> that runs ever
 * Filename
 * File size, in bytes
 * Number of rows and columns
-* Column-level information such as name, data type, and [semantic type](../discover/semantic-types.md).
+* Column-level information such as name, data type, and [semantic type](../govern/catalog/semantic-types.md).
 
 For example, thanks to indexing, you can browse columns within a CSV file residing within a ZIP file.
 
@@ -39,6 +39,6 @@ Indexing helps you find datasets quicker as indexed files appear in the search r
 
 See also:
 
-* [File shares](../files/files.mdx)
+* [File shares](../files/files.md)
 * [Data connection](../access.md#data-connection)
 * [Data job](_data-job.md)

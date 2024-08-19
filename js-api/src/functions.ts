@@ -7,9 +7,11 @@ import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
+import {IDartApi} from "./api/grok_api.g";
 declare let grok: any;
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 
 const FuncCallParamMapProxy = new Proxy(class {
@@ -62,7 +64,7 @@ const FuncCallParamMapProxy = new Proxy(class {
     construct(target, args) {
       // @ts-ignore
       return new Proxy(new target(...args), {
-        get: function (target: any, prop) {
+        get: function (target: any, prop: string) {
           const val = target[prop];
           if (typeof val === 'function') {
             return function (...args :string[]) {
@@ -72,16 +74,16 @@ const FuncCallParamMapProxy = new Proxy(class {
             return DG.toJs(target.input ? api.grok_Func_InputParamMap_Get(target.dart, prop) : api.grok_Func_OutputParamMap_Get(target.dart, prop));
           }
         },
-        set: function (target, prop, value) {
+        set: function (target, prop: string, value) {
           target.input ? api.grok_Func_InputParamMap_Set(target.dart, prop, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(target.dart, prop, DG.toDart(value));
           return true;
         },
-        deleteProperty: function (target, prop) {
+        deleteProperty: function (target, prop: string) {
           target.input ? api.grok_Func_InputParamMap_Delete(target.dart, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Delete(target.dart, DG.toDart(prop));
           return true;
         },
-        has: function (target, prop) {
-          return target.input ? api.grok_InputParamMap_Has(target.dart, DG.toDart(prop)) : api.grok_OutputParamMap_Has(target.dart, DG.toDart(prop));
+        has: function (target, prop: string) {
+          return target.input ? api.grok_Func_InputParamMap_Has(target.dart, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Has(target.dart, DG.toDart(prop));
         },
         getOwnPropertyDescriptor(target, prop) {
           return {
@@ -98,11 +100,39 @@ const FuncCallParamMapProxy = new Proxy(class {
 );
 
 
+export interface IFunctionRegistrationData {
+  signature: string;    // int foo(string bar)
+  run: Function;
+  tags?: string;        // comma-separated tags
+  isAsync?: boolean;    // whether is can be called synchronously
+  namespace?: string;
+  options?: {[key: string]: string}
+}
+
+
+export interface IFunctionCallOptions {
+  /** Function call context. */
+  context: Context;
+
+  /** Specifies if this call could be cached, even if the parent function/connection is not. */
+  cacheable?: boolean;
+
+  /** Whether Func.beforeCommandExecuted and afterCommandExecuted events are fired. */
+  reportable?: boolean;
+
+  progress?: ProgressIndicator;
+}
+
+
 /** Grok functions */
 export class Functions {
 
-  register(func: Func): void {
-    api.grok_RegisterFunc(func);
+  /** Controls client caching. */
+  get clientCache(): ClientCache { return new ClientCache(); }
+
+  /** Registers a function globally. */
+  register(func: IFunctionRegistrationData): Func {
+    return new Func(api.grok_RegisterFunc(func));
   }
 
   registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
@@ -117,7 +147,11 @@ export class Functions {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
 
-  /** Returns a function with the specified name, or throws an error if
+  parse(command: string, safe: boolean = true): any {
+    return toJs(api.grok_Parse_Command(command, safe));
+  }
+
+ /** Returns a function with the specified name, or throws an error if
    * there is no such function. See also {@link find}. */
   async get(name: string): Promise<Func> {
     let f = await this.find(name);
@@ -144,6 +178,30 @@ export class Functions {
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
   get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
+}
+
+
+/** Client caching service that caches results of function invocations and stores
+ * them in the IndexedDb. */
+export class ClientCache {
+
+  /** Clears cache content. */
+  clear(metaId?:string): Promise<void> { return api.grok_ClientCache_Clear(metaId); }
+
+  /** Starts client function caching service. */
+  start(): Promise<void> { return api.grok_ClientCache_Start(); }
+
+  /** Stops client function caching service. */
+  stop(): void { api.grok_ClientCache_Stop(); }
+
+  /** Removes expired records. Normally, Datagrok does it automatically when needed. */
+  cleanup(): Promise<void> { return api.grok_ClientCache_Cleanup(); }
+
+  /** Returns the number of */
+  getRecordCount(): Promise<number> { return api.grok_ClientCache_GetRecordCount(); }
+
+  /** Indicates whether the caching service is running. */
+  get isRunning() { return api.grok_ClientCache_Get_IsRunning(); }
 }
 
 
@@ -210,18 +268,15 @@ export class Context {
   }
 }
 
-class FuncCallParams {
-  [name: string]: FuncCallParam,
-
-  //@ts-ignore
-  public values(): FuncCallParam[];
-}
+type FuncCallParams = {
+  [name: string]: FuncCallParam;
+} & { values(): FuncCallParam[]; }
 
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
-  public readonly dart: any;
+  declare readonly dart: any;
 
   /** Named input values. See {@link inputParams} for parameter metadata. */
   public inputs: {[name: string]: any};
@@ -261,7 +316,19 @@ export class FuncCall extends Entity {
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+
+  set started(value: dayjs.Dayjs) {
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
+    api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
+  }
+
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
+
+  get status(): string { return api.grok_FuncCall_Get_Status(this.dart); }
+
+  get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
+  set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 
@@ -293,17 +360,18 @@ export class FuncCall extends Entity {
   }
 
   /** Executes the function call */
-  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  async call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
+    await api.grok_FuncCall_Call(this.dart, showProgress, toDart(progress), options?.processed, options?.report);
+    return this;
   }
 
   cancel(): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
+    return api.grok_FuncCall_Cancel(this.dart);
   }
 
   /** Executes the function call synchronously*/
-  callSync(options?: {processed?: boolean, report?: boolean}):FuncCall {
-     return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
+  callSync(options?: {processed?: boolean, report?: boolean}): FuncCall {
+    return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
   }
 
   /** Shows the corresponding dialog (or view). */
@@ -326,24 +394,4 @@ export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params
   if (dartResult)
     return toDart(f.apply(null, jsParams));
   return f.apply(null, jsParams);
-}
-
-export class StepEditor extends DartWidget {
-
-  constructor(dart: any) {
-    super(dart);
-  }
-
-  static create(): StepEditor {
-    return toJs(api.grok_StepEditor_Create());
-  }
-
-  loadScript(script: String): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.dart, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
-  }
-
-  toScript(): string {
-    return api.grok_StepEditor_ToScript(this.dart);
-  }
-
 }

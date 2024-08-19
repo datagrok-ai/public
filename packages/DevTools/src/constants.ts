@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
 
@@ -5,7 +6,7 @@ export type EntityType = DG.Entity | DG.DataFrame | DG.Column | DG.ViewBase;
 
 export const supportedEntityTypes = [
   'FileInfo', 'DataConnection', 'DataQuery', 'User', 'Group', 'DataFrame',
-  'Column', 'Package', 'Project', 'Script', 'Func', 'ViewLayout', 'View',
+  'Column', 'Package', 'Project', 'Script', 'Func', 'ViewLayout', 'View', 'TableInfo'
 ];
 
 export const dfExts = ['csv', 'xlsx'];
@@ -27,15 +28,15 @@ export const entExtract = {
 };
 
 export const helpUrls = {
-  Column: {wiki: 'https://datagrok.ai/help/datagrok/table', class: 'https://datagrok.ai/js-api/classes/dg.Column'},
+  Column: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table#column', class: 'https://datagrok.ai/js-api/classes/dg.Column'},
   DataConnection: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataConnection'},
-  DataFrame: {wiki: 'https://datagrok.ai/help/datagrok/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame'},
+  DataFrame: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame'},
   DataQuery: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataQuery'},
   FileInfo: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.FileInfo'},
   Script: {wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.Script'},
   ViewLayout: {wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.ViewLayout',
     additional: {'How to upload data': 'https://datagrok.ai/help/develop/how-to/upload-data'}},
-  View: {wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.View'},
+  View: {wiki: 'https://datagrok.ai/help/develop/advanced/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.View'},
 };
 
 export const tags = {
@@ -63,11 +64,13 @@ grok.shell.info(JSON.stringify(connection.parameters));
 // Find the connection's queries
 const queries = await grok.dapi.queries.filter(\`connection.id = "\${connection.id}"\`).list();
 grok.shell.info('Found queries: ' + queries.length);`,
+
   DataQuery: (ent: DG.DataQuery) =>
     `const q = await grok.dapi.queries.find("${ent.id}");
 
 // Run a query
 const res = await grok.data.query("${ent.nqName}", {});`,
+
   User: (ent: DG.User) =>
     `const user = await grok.dapi.users.include("group.memberships, group.adminMemberships").find("${ent.id}");
 const userGroup = user.group;
@@ -83,6 +86,7 @@ let canEdit = false;
 await grok.dapi.permissions.grant(entity, userGroup, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(userGroup, entity);`,
+
   Group: (ent: DG.Group) =>
     `const group = await grok.dapi.groups.find("${ent.id}");
 
@@ -93,11 +97,14 @@ let canEdit = false;
 await grok.dapi.permissions.grant(entity, group, canEdit);
 console.log(await grok.dapi.permissions.get(entity));
 await grok.dapi.permissions.revoke(group, entity);`,
+
   DataFrame: (ent: DG.DataFrame) =>
     `const df = grok.shell.table("${ent.name}");`,
+
   Column: (ent: DG.Column) =>
-    `const df = grok.shell.table("${ent.dataFrame.name}");
+    `const df = grok.shell.table("${ent.dataFrame?.name}");
 const col = df.col("${ent.name}");`,
+
   Package: (ent: DG.Package) =>
     `// Find package functions
 const funcs = DG.Func.find({ package: "${ent.name}" });
@@ -114,12 +121,14 @@ if (credentialsResponse == null) {
 } else {
   grok.shell.info(credentialsResponse.parameters);
 }`,
+
   Project: (ent: DG.Project) =>
     `// Find a project by its name and open it in the workspace
 const project = await grok.dapi.projects.open("${ent.friendlyName}");
 
 // Read permissions
 console.log(await grok.dapi.permissions.get(project));`,
+
   Script: (ent: DG.Script) =>
     `const script = await grok.dapi.scripts.find("${ent.id}");
 
@@ -128,6 +137,7 @@ const res = await grok.functions.call("${ent.nqName}", {});
 
 // Read a script
 grok.shell.info(script.script);`,
+
   Func: (ent: DG.Func) =>
     `// Find a function by package, name, tags, or returnType
 const f = DG.Func.find({ name: "${ent.name}" })[0];
@@ -141,6 +151,7 @@ const params = f.inputs.reduce((obj, p) => {
 
 // Call a function
 const res = await f.apply(params);`,
+
   ViewLayout: (ent: DG.ViewLayout) =>
     `// Apply to the original table
 const layout = await grok.dapi.layouts.find("${ent.id}");
@@ -156,6 +167,7 @@ grok.shell.info("Layouts found: " + layouts.length);
 // Save and serialize
 const savedLayout = view.saveLayout();
 console.log(savedLayout.toJson());`,
+
   View: (ent: DG.View) =>
     `// Get a view by its name
 const view = grok.shell.view("${ent.name}");
@@ -165,6 +177,23 @@ grok.shell.v = view
 
 // Append new elements
 view.append(ui.h1('New fascinating content'))`,
+
+  TableInfo: (ti: DG.TableInfo) => {
+    const typeMap = {
+      'character varying': 'string',
+      'text': 'string',
+      'smallint': 'int',
+      'numeric': 'double',
+      'integer': 'int',
+    }
+
+    return `// Cruddy template 
+const ${ti.name}Table = new DbTable({
+  name: '${ti.name}',
+  columns: [ ${ti.columns.map((c) => `\n    new DbColumn({name: '${c.name}', type: '${typeMap[c.type] ?? c.type}'})`)}
+  ]
+});`;
+  },
 };
 
 export const viewerConst = Object.entries(DG.VIEWER)

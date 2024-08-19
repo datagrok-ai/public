@@ -28,7 +28,9 @@ to use parameters: `true`
 - [Div](#div)
 - [Eq](#eq)
 - [Exp](#exp)
+- [Fixed](#fixed)
 - [Floor](#floor)
+- [FormatFloat](#formatfloat)
 - [Greater](#greater)
 - [If](#if)
 - [Ln](#ln)
@@ -51,7 +53,7 @@ to use parameters: `true`
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
-- [Round10](#round10)
+- [RoundFloat](#roundfloat)
 - [Sin](#sin)
 - [Smaller](#smaller)
 - [Sqrt](#sqrt)
@@ -59,7 +61,7 @@ to use parameters: `true`
 - [Tan](#tan)
 - [Xor](#xor)
 
-## <a name="abs"></a>Abs(`x`)
+## Abs(`x`) {#abs}
 
 Returns the absolute value of a number [x].
 
@@ -67,7 +69,7 @@ Returns the absolute value of a number [x].
 Abs(-10)    // 10
 ```
 
-## <a name="acos"></a>Acos(`x`)
+## Acos(`x`) {#acos}
 
 Returns the arccosine of a number [x] as an angle expressed in radians in the interval 0..PI. `x`
 must be in the interval -1..1.
@@ -76,7 +78,7 @@ must be in the interval -1..1.
 Acos(0.5)    // 1.047197580337524
 ```
 
-## <a name="add"></a>Add(`x`, `y`)
+## Add(`x`, `y`) {#add}
 
 Returns the sum of two numbers `x` and `y`.
 
@@ -84,7 +86,7 @@ Returns the sum of two numbers `x` and `y`.
 Add(24.06, 100)    // 124.06
 ```
 
-## <a name="and"></a>And(`a`, `b`)
+## And(`a`, `b`) {#and}
 
 Returns logical conjunction of boolean `a` and `b`.
 
@@ -93,7 +95,7 @@ And(true, false)        // false
 And(5 == 5, 10 < 20)    // true
 ```
 
-## <a name="asin"></a>Asin(`x`)
+## Asin(`x`) {#asin}
 
 Returns the arcsine of a number `x` as an angle expressed in radians in the interval -PI/2..PI/2. `x` must be in the
 interval -1..1.
@@ -102,7 +104,7 @@ interval -1..1.
 Asin(0.5)    // 0.479425549507141
 ```
 
-## <a name="atan"></a>Atan(`x`)
+## Atan(`x`) {#atan}
 
 Returns the arc tangent of a number `x` as an angle expressed in radians in the interval -PI/2..PI/2.
 
@@ -110,7 +112,7 @@ Returns the arc tangent of a number `x` as an angle expressed in radians in the 
 Atan(1)    // 0.785398185253143
 ```
 
-## <a name="atan2"></a>Atan2(`x`, `y`)
+## Atan2(`x`, `y`) {#atan2}
 
 Returns the angle in radians between the positive X-axis and the vector (`y`,`x`). The result is in the range -PI..PI.
 If `y` is positive, this is the same as `Atan(x / y)`.
@@ -123,7 +125,7 @@ vector along the X-axis.
 Atan2(0, -0)    // 3.141592741012573
 ```
 
-## <a name="avg"></a>Avg([`x1`, `x2`, `x3`...])
+## Avg([`x1`, `x2`, `x3`...]) {#avg}
 
 Returns the average (arithmetic mean) of the numbers. Arguments are a set of numbers enclosed in square brackets.
 
@@ -132,7 +134,7 @@ Avg([-1, 3.5, 6.5])    // 3
 Avg([1, 2, 3, 4])      // 2.5
 ```
 
-## <a name="ceil"></a>Ceil(`x`)
+## Ceil(`x`) {#ceil}
 
 Returns the least integer no smaller than `x`.
 
@@ -141,7 +143,7 @@ Ceil(3.5)     // 4
 Ceil(-3.5)    // -3
 ```
 
-## <a name="cos"></a>Cos(`x`)
+## Cos(`x`) {#cos}
 
 Returns the cosine of a number [x].
 
@@ -150,7 +152,7 @@ Cos(0)         // 1
 Cos(PI / 3)    // 0.5
 ```
 
-## <a name="div"></a>Div(`x`, `y`)
+## Div(`x`, `y`) {#div}
 
 Returns the result of dividing `x` by `y`.
 
@@ -158,7 +160,7 @@ Returns the result of dividing `x` by `y`.
 Div(7.5, 2)    // 3.75
 ```
 
-## <a name="eq"></a>Eq(`x`, `y`)
+## Eq(`x`, `y`) {#eq}
 
 Returns true if `x` equal to `y` and false otherwise.
 
@@ -167,7 +169,7 @@ Eq(5, 5)           // true
 Eq(true, false)    // false
 ```
 
-## <a name="exp"></a>Exp(`x`)
+## Exp(`x`) {#exp}
 
 Returns the natural exponent (E) to the power `x`.
 
@@ -175,7 +177,16 @@ Returns the natural exponent (E) to the power `x`.
 Exp(2)    // 7.389056205749512
 ```
 
-## <a name="floor"></a>Floor(`x`)
+## Fixed(`x`, `decimalPlaces`) {#fixed}
+
+Returns the rounded number `x` to the specified number of `decimalPlaces`.
+
+```javascript
+Fixed(3.5, 2)   // 3.50
+Fixed(-3.5, 0)  // -4
+```
+
+## Floor(`x`) {#floor}
 
 Returns the greatest integer no greater than `x`.
 
@@ -184,7 +195,16 @@ Floor(3.5)     // 3
 Floor(-3.5)    // -4
 ```
 
-## <a name="greater"></a>Greater(`x`, `y`)
+## FormatFloat(`x`, `format`) {#formatfloat}
+
+Returns the number `x` formatted according to the specified format.
+
+```javascript
+FormatFloat(12345.12345, 'scientific')    // 1.23E4
+FormatFloat(12345.12345, '#0.00')         // 12345.12
+```
+
+## Greater(`x`, `y`) {#greater}
 
 Returns true if `x` is greater than `y` and false otherwise.
 
@@ -193,7 +213,7 @@ Greater(5, 5)    // false
 Greater(5, 4)    // true
 ```
 
-## <a name="if"></a>If(`condition`, `ifTrue`, `ifFalse`)
+## If(`condition`, `ifTrue`, `ifFalse`) {#if}
 
 Returns `ifTrue`, if `condition` is true, or `ifFalse` otherwise.
 
@@ -204,7 +224,7 @@ If(true, If(true, "a", "b"), "c")  // "a"
 If(Eq(10, 50), 1, 0)               // 0
 ```
 
-## <a name="ln"></a>Ln(`x`)
+## Ln(`x`) {#ln}
 
 Returns the natural logarithm of `x`.
 
@@ -213,7 +233,7 @@ Ln(1)    // 0
 Ln(E)    // 1
 ```
 
-## <a name="log"></a>Log(`x`, `base`)
+## Log(`x`, `base`) {#log}
 
 Returns the logarithm of `x` expressed in the base specified by `base`.
 
@@ -221,7 +241,7 @@ Returns the logarithm of `x` expressed in the base specified by `base`.
 Log(25, 5)    // 2
 ```
 
-## <a name="log10"></a>Log10(`x`)
+## Log10(`x`) {#log10}
 
 Returns the 10-based logarithm of `x`.
 
@@ -229,7 +249,7 @@ Returns the 10-based logarithm of `x`.
 Log10(100)    // 2
 ```
 
-## <a name="max"></a>Max([`x1`, `x2`, `x3` ...])
+## Max([`x1`, `x2`, `x3` ...]) {#max}
 
 Returns the maximum value from the specified array of numbers.
 
@@ -237,7 +257,7 @@ Returns the maximum value from the specified array of numbers.
 Max([15, 21])    // 21
 ```
 
-## <a name="median"></a>Median([`x1`, `x2`, `x3`...])
+## Median([`x1`, `x2`, `x3`...]) {#median}
 
 Calculates the median of the numbers. Arguments are a set of numbers enclosed in square brackets.
 
@@ -246,7 +266,7 @@ Median([0, 2, 5])       // 2
 Median([0, 2, 5, 9])    // 2.5
 ```
 
-## <a name="min"></a>Min([`x1`, `x2`, `x3` ...])
+## Min([`x1`, `x2`, `x3` ...]) {#min}
 
 Returns the minimum value from the specified array of numbers.
 
@@ -254,7 +274,7 @@ Returns the minimum value from the specified array of numbers.
 Min([15, 21])    // 15
 ```
 
-## <a name="mod"></a>Mod(`x`, `y`)
+## Mod(`x`, `y`) {#mod}
 
 Returns the remainder of dividing `x` by `y`.
 
@@ -262,7 +282,7 @@ Returns the remainder of dividing `x` by `y`.
 Mod(8, 3)    // 2
 ```
 
-## <a name="mul"></a>Mul(`x`, `y`)
+## Mul(`x`, `y`) {#mul}
 
 Returns the product of `x` and `y`.
 
@@ -270,7 +290,7 @@ Returns the product of `x` and `y`.
 Mul(10, 1.5)    // 15
 ```
 
-## <a name="neg"></a>Neg(`x`)
+## Neg(`x`) {#neg}
 
 Returns `x` with opposite sign.
 
@@ -279,7 +299,7 @@ Neg(-5)    // 5
 Neg(12)    // -12
 ```
 
-## <a name="not"></a>Not(`a`)
+## Not(`a`) {#not}
 
 Returns logical negation of the `a`.
 
@@ -288,7 +308,7 @@ Not(true)     // false
 Not(5 < 1)    // true
 ```
 
-## <a name="noteq"></a>NotEq(`x`, `y`)
+## NotEq(`x`, `y`) {#noteq}
 
 Returns false if `x` equal to `y` and true otherwise.
 
@@ -297,7 +317,7 @@ NotEq(5, 5)           // false
 NotEq(true, false)    // true
 ```
 
-## <a name="notgreater"></a>NotGreater(`x`, `y`)
+## NotGreater(`x`, `y`) {#notgreater}
 
 Returns true if `x` is less than or equal to `y` and false otherwise.
 
@@ -306,7 +326,7 @@ NotGreater(5, 5)    // true
 NotGreater(6, 5)    // false
 ```
 
-## <a name="notsmaller"></a>NotSmaller(`x`, `y`)
+## NotSmaller(`x`, `y`) {#notsmaller}
 
 Returns true if `x` is greater than or equal to `y`  and false otherwise.
 
@@ -315,7 +335,7 @@ NotSmaller(5, 5)    // true
 NotSmaller(5, 6)    // false
 ```
 
-## <a name="or"></a>Or(`a`, `b`)
+## Or(`a`, `b`) {#or}
 
 Returns logical disjunction of boolean `a` and `b`.
 
@@ -324,7 +344,7 @@ Or(true, false)        // true
 Or(5 == 6, 20 < 10)    // false
 ```
 
-## <a name="percentile"></a>Percentile(`nums`, `percentage`)
+## Percentile(`nums`, `percentage`) {#percentile}
 
 Returns a value from `nums` below which a given `percentage` of values fall. `percentage` is in the range 0..1
 
@@ -333,7 +353,7 @@ Percentile(([1, 2, 3, 4], 0.25))     // 2
 Percentile(([1, 2, 3, 4], 0.75))     // 4
 ```
 
-## <a name="pow"></a>Pow(`x`, `exponent`)
+## Pow(`x`, `exponent`) {#pow}
 
 Returns `x` to the power of `exponent`.
 
@@ -342,7 +362,7 @@ Pow(2, 3)     // 8
 Pow(2, -2)    // 0.25
 ```
 
-## <a name="qualifier"></a>Qualifier(`x`)
+## Qualifier(`x`) {#qualifier}
 
 Extracts the qualifier from a qualified number `x`.
 
@@ -352,7 +372,7 @@ Qualifier(Qnum(1.5, "<"))   // <
 Qualifier(Qnum(1.5, ">"))   // >
 ```
 
-## <a name="randbetween"></a>RandBetween(`m`, `n`)
+## RandBetween(`m`, `n`) {#randbetween}
 
 Returns a random integer number within the range from `m`, inclusive, to `n`, exclusive.
 
@@ -360,7 +380,7 @@ Returns a random integer number within the range from `m`, inclusive, to `n`, ex
 RandBetween(5, 7)    // Randomly returns 5 or 6
 ```
 
-## <a name="rnd"></a>Rnd(`limit`)
+## Rnd(`limit`) {#rnd}
 
 Returns a random integer number within the range from 0, inclusive, to `n`, exclusive. The absolute value is taken if
 the number is negative.
@@ -369,7 +389,7 @@ the number is negative.
 Rnd(2)    // Randomly returns 0 or 1
 ```
 
-## <a name="round"></a>Round(`x`)
+## Round(`x`) {#round}
 
 Returns the integer closest to `x`. Function rounds away from zero when there is no closest integer.
 
@@ -379,18 +399,18 @@ Round(3.5)     // 4
 Round(-3.5)    // -4
 ```
 
-## <a name="round10"></a>Round10(`x`, `decimalPlaces`)
+## RoundFloat(`x`, `decimalPlaces`) {#roundfloat}
 
 Returns the number rounded up `x` to the number of decimal places specified by `decimalPlaces`.
 
 `decimalPlaces` can be negative to round to even 10s, 100s, etc.
 
 ```javascript
-Round10(PI, 2)      // 3.14
-Round10(25, -1)     // 30
+RoundFloat(PI, 2)      // 3.14
+RoundFloat(25, -1)     // 30
 ```
 
-## <a name="sin"></a>Sin(`x`)
+## Sin(`x`) {#sin}
 
 Returns the sine of the `x`.
 
@@ -399,7 +419,7 @@ Sin(0)         // 0
 Sin(PI / 6)    // 0.5
 ```
 
-## <a name="smaller"></a>Smaller(`x`, `y`)
+## Smaller(`x`, `y`) {#smaller}
 
 Returns true if `x` is less than `y` and false otherwise.
 
@@ -408,7 +428,7 @@ Smaller(5, 5)    // false
 Smaller(5, 6)    // true
 ```
 
-## <a name="sqrt"></a>Sqrt(`x`)
+## Sqrt(`x`) {#sqrt}
 
 Returns the square root of the `x`.
 
@@ -416,7 +436,7 @@ Returns the square root of the `x`.
 Sqrt(6.25)    // 2.5
 ```
 
-## <a name="sub"></a>Sub(`x`, `y`)
+## Sub(`x`, `y`) {#sub}
 
 Returns the difference between `x` and `y`.
 
@@ -424,7 +444,7 @@ Returns the difference between `x` and `y`.
 Sub(10, 3)    // 7
 ```
 
-## <a name="tan"></a>Tan(`x`)
+## Tan(`x`) {#tan}
 
 Returns the tangent of the `x`.
 
@@ -433,7 +453,7 @@ Tan(0)         // 0
 Tan(PI / 6)    // 0.5
 ```
 
-## <a name="xor"></a>Xor(`a`, `b`)
+## Xor(`a`, `b`) {#xor}
 
 Returns logical exclusive disjunction of boolean `a` and `b`.
 

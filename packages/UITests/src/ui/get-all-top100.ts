@@ -55,4 +55,4 @@ category('Connections', () => {
     table = document.querySelector('.d4-sketch-item') as HTMLElement;
     schema = grok.shell.v;
   }
-}, false);
+}, {clear: false});

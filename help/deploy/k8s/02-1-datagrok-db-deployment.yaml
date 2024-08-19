@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  name: database
+  labels:
+    service: database
+    network: "datagrok"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      service: database
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: database
+        network: "datagrok"
+    spec:
+      containers:
+        - name: database
+          image: postgres:12
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: database-credentials
+          volumeMounts:
+            - mountPath: /var/lib/postgres/data
+              name: datagrok-db
+          tty: true
+      restartPolicy: Always
+      volumes:
+        - name: datagrok-db
+          persistentVolumeClaim:
+            claimName: datagrok-db

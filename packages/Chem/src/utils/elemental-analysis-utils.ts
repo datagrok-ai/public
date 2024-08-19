@@ -10,7 +10,7 @@ import {_rdKitModule} from './chem-common-rdkit';
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
   const elements: Map<string, Int32Array> = new Map();
   const invalid: number[] = new Array<number>(molCol.length);
-  const smiles = molCol.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+  const smiles = molCol.meta.units === DG.UNITS.Molecule.SMILES;
   const v3Kmolblock = molCol.get(0).includes('V3000');
   elements.set('Molecule Charge', new Int32Array(molCol.length));
   for (let rowI = 0; rowI < molCol.length; rowI++) {
@@ -29,6 +29,7 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
         invalid[rowI] = rowI;
         continue;
       }
+      mol?.delete();
     }
     let curPos = 0;
     curPos = el.indexOf('\n', curPos) + 1;

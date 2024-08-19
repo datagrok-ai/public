@@ -3,33 +3,49 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import wu from 'wu';
 
-import {getMonomerLibHelper, toAtomicLevel} from '../package';
+import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
+import {toAtomicLevel} from '../package';
+import {_package} from '../package-test';
 
 const appPath = 'System:AppData/Bio';
 const fileSource = new DG.FileSource(appPath);
 
-const testNames: { [k: string]: string } = {
-  PT: 'peptides fasta',
-  DNA: 'dna fasta',
-  MSA: 'msa separator',
-};
+const enum Tests {
+  PT = 'peptides-fasta',
+  DNA = 'dna-fasta',
+  MSA_SEPARATOR = 'msa-separator',
+  MSA_FASTA = 'msa-fasta',
+}
 
-const inputPath: { [k: string]: string } = {
-  PT: 'tests/to-atomic-level-peptides-fasta-input.csv',
-  DNA: 'tests/to-atomic-level-dna-fasta-input.csv',
-  MSA: 'tests/to-atomic-level-msa-separator-input.csv',
-};
-
-const outputPath: { [k: string]: string } = {
-  PT: 'tests/to-atomic-level-peptides-output.csv',
-  DNA: 'tests/to-atomic-level-dna-output.csv',
-  MSA: 'tests/to-atomic-level-msa-output.csv',
+const TestsData: { [testName: string]: { inPath: string, outPath: string } } = {
+  [Tests.PT]: {
+    inPath: 'tests/to-atomic-level-peptides-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-peptides-fasta-output.csv'
+  },
+  [Tests.DNA]: {
+    inPath: 'tests/to-atomic-level-dna-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-dna-fasta-output.csv'
+  },
+  [Tests.MSA_SEPARATOR]: {
+    inPath: 'tests/to-atomic-level-msa-separator-input.csv',
+    outPath: 'tests/to-atomic-level-msa-separator-output.csv'
+  },
+  [Tests.MSA_FASTA]: {
+    inPath: 'tests/to-atomic-level-msa-fasta-input.csv',
+    outPath: 'tests/to-atomic-level-msa-fasta-output.csv'
+  },
 };
 
 const inputColName = 'sequence';
@@ -41,47 +57,50 @@ category('toAtomicLevel', async () => {
 
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
-  let userLibrariesSettings: any = null;
+  let userLibSettings: UserLibSettings;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+    userLibSettings = await getUserLibSettings();
     // Clear settings to test default
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, {}, true);
-    await monomerLibHelper.loadLibraries(true);
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.loadMonomerLib(true);
 
-    for (const key in testNames) {
-      sourceDf[key] = await fileSource.readCsv(inputPath[key]);
-      await grok.data.detectSemanticTypes(sourceDf[key]);
-      targetDf[key] = await fileSource.readCsv(outputPath[key]);
+    for (const [testName, testData] of Object.entries(TestsData)) {
+      const inputPath = testData.inPath;
+
+      sourceDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.inPath)).replace(/\n$/, ''));
+      await grok.data.detectSemanticTypes(sourceDf[testName]);
+      targetDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.outPath)).replace(/\n$/, ''));
     }
   });
 
   after(async () => {
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
-    await monomerLibHelper.loadLibraries(true);
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
   });
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
-    await toAtomicLevel(source, inputCol);
+    await toAtomicLevel(source, inputCol, false);
     const obtainedCol = source.getCol(outputColName);
     const expectedCol = target.getCol(outputColName);
-    const obtainedArray = [...obtainedCol.values()];
-    const expectedArray = [...expectedCol.values()];
+    const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
+    const expectedArray: string[] = wu(expectedCol.values()).map((mol) => polishMolfile(mol)).toArray();
     expectArray(obtainedArray, expectedArray);
   }
 
-  for (const key in testNames) {
-    test(`${testNames[key]}`, async () => {
-      await getTestResult(sourceDf[key], targetDf[key]);
-    }, {skipReason: 'GROK-13100'});
+  for (const [testName, testData] of Object.entries(TestsData)) {
+    test(`${testName}`, async () => {
+      await getTestResult(sourceDf[testName], targetDf[testName]);
+    });
   }
 
   enum csvTests {
     fastaDna = 'fastaDna',
     fastaRna = 'fastaRna',
     fastaPt = 'fastaPt',
+    fastaUn = 'fastaUn',
 
     separatorDna = 'separatorDna',
     separatorRna = 'separatorRna',
@@ -93,46 +112,42 @@ category('toAtomicLevel', async () => {
 
   const csvData: { [key in csvTests]: string } = {
     [csvTests.fastaDna]: `seq
-ACGTC
-CAGTGT
-TTCAAC
-`,
+ACGTCACGTC
+CAGTGTCAGTGT
+TTCAACTTCAAC`,
     [csvTests.fastaRna]: `seq
-ACGUC
-CAGUGU
-UUCAAC
-`,
+ACGUCACGUC
+CAGUGUCAGUGU
+UUCAACUUCAAC`,
     [csvTests.fastaPt]: `seq
-FWPHEY
-YNRQWYV
-MKPSEYV
-`,
+FWPHEYFWPHEY
+YNRQWYVYNRQWYV
+MKPSEYVMKPSEYV`,
+    [csvTests.fastaUn]: `seq
+[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
+[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`,
     [csvTests.separatorDna]: `seq
-A/C/G/T/C
-C/A/G/T/G/T
-T/T/C/A/A/C
-`,
+A/C/G/T/C/A/C/G/T/C
+C/A/G/T/G/T/C/A/G/T/G/T
+T/T/C/A/A/C/T/T/C/A/A/C`,
     [csvTests.separatorRna]: `seq
-A*C*G*U*C
-C*A*G*U*G*U
-U*U*C*A*A*C
-`,
+A*C*G*U*C*A*C*G*U*C
+C*A*G*U*G*U*C*A*G*U*G*U
+U*U*C*A*A*C*U*U*C*A*A*C`,
     [csvTests.separatorPt]: `seq
-F-W-P-H-E-Y
-Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V
-`,
+F-W-P-H-E-Y-F-W-P-H-E-Y
+Y-N-R-Q-W-Y-V-Y-N-R-Q-W-Y-V
+M-K-P-S-E-Y-V-M-K-P-S-E-Y-V`,
     [csvTests.separatorUn]: `seq
-meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
-meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-`,
+meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D-meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
+meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2-meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
+Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2`,
 
     [csvTests.helm]: `seq
-PEPTIDE1{meI.D-gGlu.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$
-PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
-PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
-`,
+PEPTIDE1{meI.D-gGlu.Aca.N.T.dE.Thr_PO3H2.Aca.D.Thr_PO3H2.Aca.D}$$$
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr_PO3H2}$$$`,
   };
 
   /** Also detects semantic types
@@ -142,7 +157,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
   async function readCsv(key: csvTests): Promise<DG.DataFrame> {
     // Always recreate test data frame from CSV for reproducible detector behavior in tests.
     const csv: string = csvData[key];
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv.replace(/\n$/, ''));
     await grok.data.detectSemanticTypes(df);
     return df;
   }
@@ -157,6 +172,10 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
 
   test('fastaPt', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.fastaPt), 'seq', monomerLibHelper);
+  });
+
+  test('fastaUn', async () => {
+    await _testToAtomicLevel(await readCsv(csvTests.fastaUn), 'seq', monomerLibHelper);
   });
 
   test('separatorDna', async () => {
@@ -178,10 +197,35 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
   test('helm', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.helm), 'seq', monomerLibHelper);
   });
+
+  test('ptFasta2', async () => {
+    const srcCsv: string = `seq\nAR`;
+    const tgtMol: string = await _package.files.readAsText('tests/to-atomic-level-pt-fasta-2.mol');
+
+    const srcDf = DG.DataFrame.fromCsv(srcCsv);
+    const seqCol = srcDf.getCol('seq');
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.meta.units = NOTATION.FASTA;
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+    const sh = SeqHandler.forColumn(seqCol);
+    const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
+    expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
+  });
 });
 
-async function _testToAtomicLevel(df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper) {
+async function _testToAtomicLevel(
+  df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
+): Promise<DG.Column | null> {
   const seqCol: DG.Column<string> = df.getCol(seqColName);
-  const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
-  const _resCol = await _toAtomicLevel(df, seqCol, monomerLib);
+  const monomerLib: IMonomerLib = monomerLibHelper.getMonomerLib();
+  const res = await _toAtomicLevel(df, seqCol, monomerLib);
+  if (res.warnings.length > 0)
+    _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
+  return res.col;
+}
+
+function polishMolfile(mol: string): string {
+  return mol.replaceAll('\r\n', '\n')
+    .replace(/\n$/, '')
+    .split('\n').map((l) => l.trimEnd()).join('\n');
 }

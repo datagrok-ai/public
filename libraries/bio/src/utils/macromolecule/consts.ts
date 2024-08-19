@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UnitsHandler} from '../units-handler';
 import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
-export const enum NOTATION {
+export enum NOTATION {
   FASTA = 'fasta',
   SEPARATOR = 'separator',
   HELM = 'helm',
@@ -17,7 +16,7 @@ export const enum ALIGNMENT {
   SEQ = 'SEQ',
 }
 
-export const enum ALPHABET {
+export enum ALPHABET {
   DNA = 'DNA',
   RNA = 'RNA',
   PT = 'PT',
@@ -25,16 +24,24 @@ export const enum ALPHABET {
   UN = 'UN',
 }
 
-export const enum TAGS {
+export enum TAGS {
   aligned = 'aligned',
   alphabet = 'alphabet',
   alphabetSize = '.alphabetSize',
   alphabetIsMultichar = '.alphabetIsMultichar',
   separator = 'separator',
   isHelmCompatible = '.isHelmCompatible',
+  positionNames = '.positionNames',
+  positionLabels = '.positionLabels',
+  regions = '.regions',
 }
 
-export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;
+export const positionSeparator: string = ', ';
+
+export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;
+
+export const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+export const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
 
 export const Alphabets = new class {
   fasta = {

@@ -1,25 +1,25 @@
 {
   "name": "@datagrok/ketcher-sketcher",
-  "friendlyName": "Ketcher",
-  "version": "2.1.3",
+  "friendlyName": "Ketcher Sketcher",
+  "version": "2.1.9",
   "author": {
     "name": "Maria Dolotova",
-    "email": "maria.dolotova@arcadia.spb.ru"
+    "email": "mdolotova@datagrok.ai"
   },
   "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Ketcher"
+    "directory": "packages/KetcherSketcher"
   },
   "dependencies": {
     "@types/react-dom": "^18.2.0",
-    "datagrok-api": "^1.15.0",
-    "@datagrok-libraries/utils": "^1.19.3",
+    "datagrok-api": "^1.20.0",
+    "@datagrok-libraries/utils": "^4.2.13",
     "file-loader": "^6.2.0",
-    "ketcher-core": "^2.9.0",
-    "ketcher-react": "^2.9.0",
-    "ketcher-standalone": "^2.9.0"
+    "ketcher-core": "^2.21.0",
+    "ketcher-react": "^2.21.0",
+    "ketcher-standalone": "^2.21.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
@@ -33,7 +33,8 @@
     "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
-    "puppeteer": "^13.7.0"
+    "puppeteer": "^13.7.0",
+    "@datagrok/chem": "^1.8.10"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

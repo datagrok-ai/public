@@ -44,13 +44,13 @@ and [datagrok-api package](https://github.com/datagrok-ai/public/actions/workflo
 
 If the package can not be pushed to the NPM registry, you can publish it to the platform directly.
 
-First, you need to [configure local environment](../set-up-environment.md)  to access your Datagrok instance. Then, you can
+First, you need to [configure local environment](../dev-process/set-up-environment.md)  to access your Datagrok instance. Then, you can
 publish the package to the platform. See [this guide](../develop.md#publishing) for details.
 
 ```shell
 grok publish <HOST>
 ```
 
-If you want to use this package with other users, share the package with the [group](../../govern/group.md).
+If you want to use this package with other users, share the package with the [group](../../govern/access-control/users-and-groups#groups).
 
 ![Share package](share-package.png)

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: jupyter-kernel-gateway
+  name: jupyter-kernel-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: jupyter-kernel-gateway
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: jupyter-kernel-gateway
+        network: "datagrok"
+    spec:
+      containers:
+        - image: datagrok/jupyter_kernel_gateway:latest
+          imagePullPolicy: Always
+          name: jkg
+          ports:
+            - containerPort: 8888
+            - containerPort: 5005
+      restartPolicy: Always

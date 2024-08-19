@@ -1,8 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
-import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
+
+import {runTests, tests, TestContext, test as _test, category} from '@datagrok-libraries/utils/src/test';
 import './connections/queries-test';
+import './sync/data-sync-test';
+import './benchmarks/benchmark';
+import './cache/cache-test';
 
 export const _package = new DG.Package();
 export {tests};
@@ -11,15 +14,15 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //input: object testContext {optional: true}
+//input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext});
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }
 
 //name: testConnections
 //output: dataframe result
-//top-menu: Tools | Dev | Test Connections
 export async function testConnections(): Promise<DG.DataFrame> {
   const connections: string[] = ['PostgreSQLDBTests', 'SnowflakeDBTests', 'MSSQLDBTests', 'OracleDBTests'];
   const tables: string[] = ['Long', 'Normal', 'Wide', 'Tiny'];
@@ -28,13 +31,13 @@ export async function testConnections(): Promise<DG.DataFrame> {
   // const queriesFriendlyNames: string[] = ['PostgresNormal', 'PostgresLong', 'PostgresWide'];
   const l = connections.length * tables.length * fetchSizes.length;
 
-  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l),
-    Column.string('db', l), Column.int('TTFR', l), Column.int('TTC', l)]);
+  const df = DG.DataFrame.fromColumns([DG.Column.string('type', l), DG.Column.string('fetch', l),
+    DG.Column.string('db', l), DG.Column.int('TTFR', l), DG.Column.int('TTC', l)]);
 
   let startTime: number;
   let ttfr: number;
 
-  let callCheck: (value: FuncCall) => boolean;
+  let callCheck: (value: DG.FuncCall) => boolean;
   let ttfrSet = false;
   // @ts-ignore
   grok.functions.onParamsUpdated.pipe(filter((c) => callCheck(c) && !ttfrSet)).subscribe(() => {
@@ -57,9 +60,9 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('fetch').set(row, fetchSize);
         df.columns.byName('db').set(row, con);
 
-        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize &&
+        callCheck = (c: DG.FuncCall) => c.aux.get('fetchSize') == fetchSize &&
             // @ts-ignore
-            (c.func as DataQuery).connection.name == con;
+            (c.func as DG.DataQuery).connection.name == con;
 
         const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
 
@@ -91,10 +94,34 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('TTC').set(row, Date.now() - startTime);
 
         row++;
-      };
-    };
-  };
-  df;
+      }
+    }
+  }
   grok.shell.addTableView(df);
   return df;
+}
+
+const skip = ['Redshift', 'Athena', 'Files'];
+
+//tags: init
+export async function initTests() {
+  const connections = await grok.dapi.connections.list();
+  const categories: {[_:string]: DG.DataConnection[]} = {};
+  for (const c of connections) {
+    const cat = c.dart.dataSource ?? c.dart.z;
+    if (skip.includes(cat)) continue;
+    categories[cat] ??= [];
+    categories[cat].push(c);
+  }
+  for (const cat of Object.keys(categories))
+    category('Providers: ' + cat, () => {
+      for (const conn of categories[cat]) {
+        if (!conn.friendlyName) continue;
+        _test(conn.friendlyName, async () => {
+          const res = await conn.test();
+          if (res !== 'ok')
+            throw new Error(res);
+        });
+      }
+    });
 }

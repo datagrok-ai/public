@@ -14,16 +14,17 @@ To add new columns, you can use data from existing columns as follows:
 - To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
   example you can use this expression in function like that: `Avg($[Width])`.
 
-While editing the formula, press '$' to opens up a column list popup; use arrows and Enter to select it. You can also
-use the Drag-n-Drop mechanism to drag and drop the desired column directly into the text of the formula. To do this,
-grab the column heading and drag it to the formula window.
+To add a column to a formula, drag it to the editor. Alternatively, use the keyboard:
+
+1. Open a column list popup by pressing '**$**'.
+1. Select the column you want using the **up** and **down arrows**, then press **Enter**.
 
 For formulas where row index is required, `row` variable is available.
 
 Example:
 
 ```javascript
-1.57 * Round10(${Weight}, 2) / Avg($[Weight]) - log(${IC50} * PI)
+1.57 * RoundFloat(${Weight}, 2) / Avg($[Weight]) - log(${IC50} * PI)
 ```
 
 To treat data as strings use quotes, for example:
@@ -51,6 +52,6 @@ corresponding sections of the help system:
 
 See also:
 
-- [Scripting](../datagrok/grok-script.md)
-- [Function](../datagrok/functions/functions.md)
+- [Scripting](../develop/under-the-hood/grok-script.md)
+- [Function](../datagrok/concepts/functions/functions.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)

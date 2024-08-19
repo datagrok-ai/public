@@ -41,6 +41,16 @@
     overflow: auto;
 }
 
+.power-pack-learn-icon {
+    text-align: center;
+    width: 30px;
+    height: 30px;
+    align-content: center;
+    margin-right: 6px;
+    color: white;
+    visibility: visible !important;
+}
+
 .d4-tab-header-stripe.about-widget>.d4-tab-header{
     display: none;
 }
@@ -134,6 +144,7 @@
     display: flex;
     flex-direction: row;
     flex-grow: 1;
+    width: 100%;
 }
 
 .ui-addnewcolumn-element {
@@ -172,8 +183,16 @@
   flex-grow: 1;
 }
 
+.ui-widget-addnewcolumn-functions #categories-div {
+    overflow-y: scroll !important;
+    margin-bottom: 10px;
+    min-height: 70px;
+}
+
 .dlg-add-new-column{
     flex-direction: row;
+    overflow: hidden;
+    max-width: 100%
 }
 
 .ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {
@@ -185,4 +204,238 @@
     top: 0px !important;
     width: 6px !important;
     bottom: 15px !important;
+}
+
+body.dartium .power-pack-widgets-host.ui-div .power-pack-widget-host {
+    min-width: 250px!important;
+    max-width: 400px;
+    flex-shrink: 0;
+    margin: 0 10px 10px 0;
+    flex-grow: 1;
+}
+
+body.dartium .power-pack-widgets-host.ui-div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+
+/** Formula lines */
+
+.dlg-formula-lines .d4-accordion-pane-content .d4-flex-row > .ui-input-root {
+    flex-grow: 1;
+}
+
+
+/** Viewers gallery */
+
+
+.viewer-gallery-root > .ui-div {
+    padding-right:24px;
+}
+
+.viewer-gallery {
+    flex-wrap: wrap;
+}
+
+.vg-controls.grok-gallery-search-bar {
+    margin: 0;
+    padding: 0;
+}
+
+.vg-controls.grok-gallery-search-bar>.ui-div>input {
+    width: 100%;
+    padding-left: 22px;
+}
+
+.vg-controls.grok-gallery-search-bar>.ui-div>input:focus {
+    width: 100%;
+    border-color: var(--blue-1);
+}
+
+.vg-controls.grok-gallery-search-bar>.ui-div>input::placeholder {
+    width: 100%;
+    font-weight: lighter;
+    color:var(--grey-4);
+}
+
+.vg-card-small {
+    width: 200px;
+    margin: 0 10px 10px 0;
+    padding: 5px;
+    text-align: left;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    color: var(--grey-6);
+    text-decoration: none;
+}
+
+.vg-card-small:hover {
+    cursor: pointer;
+    color: var(--blue-1);
+}
+
+.vg-card-small:focus {
+    outline: none;
+    border-color: var(--blue-1);
+    background-color: rgba(32,131,213,.15);
+    cursor: pointer;
+    color: var(--blue-1);
+}
+
+.vg-card-small > .d4-flex-row {
+    align-items: center;
+}
+
+.vg-card-small i.svg-icon {
+    height: 30px;
+    width: 30px;
+}
+
+.card-label {
+    margin: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+    cursor: pointer;
+    text-transform: capitalize;
+}
+
+.vg-card-small.disabled {
+    background: var(--grey-1);
+    filter: grayscale(1);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.vg-card.disabled {
+    background: var(--grey-1);
+    filter: grayscale(1);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+
+.vg-counter-label {
+    color: var(--grey-5);
+    margin: 12px 0;
+}
+
+.vg-tags {
+    width: 235px;
+}
+
+.vg-tags label {
+    color: var(--grey-4);
+    margin: 12px 0;
+}
+
+.vg-tags .d4-tag {
+    margin: 0 6px 6px 0;
+    border-radius: 4px;
+    background: white;
+    border:1px solid var(--grey-2);
+    color: var(--grey-4);
+}
+.vg-tags .d4-tag:hover {
+    margin: 0 6px 6px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    background:var(--grey-2);
+    border:1px solid var(--grey-2);
+    color: var(--grey-6);
+}
+
+.vg-search-icon {
+    color:var(--grey-4);
+    position: absolute;
+    left: 2px;
+    top: 6px;
+}
+
+.vg-clear-icon {
+    visibility: hidden;
+}
+
+.vg-controls.grok-gallery-search-bar>.ui-div>input:focus + .vg-clear-icon {
+    visibility: visible;
+    position: absolute;
+    color: var(--grey-4);
+    right: 2px;
+    top: 6px;
+}
+
+
+/** Windows Manager */
+
+.windows-manager-sidebar {
+    background: var(--warm-grey-1);
+    border-left: 1px solid var(--warm-grey-2);
+    padding: 12px 0;
+    width: 24px
+}
+
+.windows-manager-sidebar .windows-manager-toggle i.grok-icon {
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.windows-manager-toggle {
+    color: var(--warm-grey-4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.windows-manager-toggle:hover {
+    cursor: pointer;
+    background: var(--warm-grey-2);
+}
+
+.windows-manager-toggle.active {
+    background: var(--warm-grey-2);
+}
+
+.windows-manager-toggle.active:hover {
+    cursor: pointer;
+}
+
+.windows-manager-statusbar {
+    display: flex;
+    flex-direction: row;
+    align-self: stretch;
+}
+
+.windows-manager-statusbar .windows-manager-toggle {
+    width: 28px;
+}
+
+
+/* Stretch editor to fit inside its containing div */
+.cm-editor {
+    height: 100%;
+    width: 100%;
+}
+
+.cm-error-div {
+    color: red;
+}
+
+.cm-hint-div {
+    padding-top: 2px;
+    min-height: 33px;
+}
+
+.cm-tooltip-hover {
+    color: #4A4A49;
+    background: #fdffe5e0!important;
+    border: 1px solid #E4E6CE;
+    border-radius: 2px;
+    padding: 5px;
+    box-shadow: 0 0 5px #E4E6CE;
+    font-size: 0.9rem;
+    backdrop-filter: blur(5px);
 }

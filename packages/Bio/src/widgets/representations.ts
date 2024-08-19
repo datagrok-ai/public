@@ -1,61 +1,101 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+
+import {
+  Temps as mmcrTemps, rendererSettingsChangedState, Temps
+} from '../utils/cell-renderer-consts';
+
+import {_package} from '../package';
+import {max} from 'rxjs/operators';
+
 
 /**
  * @export
  * @param {DG.Column} col macromolecule cell.
  * @return {Promise<DG.Widget>} Widget.
  */
-export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
+export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
   const columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
-  const monomerWidth = ui.choiceInput('Monomer width',
-    (col?.temp['monomer-width'] != null) ? col.temp['monomer-width'] : 'short',
-    ['short', 'long'],
-    (s: string) => {
-      col.temp['monomer-width'] = s;
-      col.setTag('.calculatedCellRender', '0');
-      col.dataFrame.fireValuesChanged();
-    });
-  monomerWidth.setTooltip(
-    'In short mode, only the first character should be visible, followed by .. if there are more characters',
-  );
+  let maxMonomerLength: number | null = (_package.properties ? _package.properties.maxMonomerLength : 4);
+  if (mmcrTAGS.maxMonomerLength in col.tags) {
+    const v = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
+    maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
+  }
+  if (Temps.maxMonomerLength in col.temp) {
+    const v = parseInt(col.temp[Temps.maxMonomerLength]);
+    maxMonomerLength = !isNaN(v) ? v : maxMonomerLength;
+  }
+  const maxMonomerLengthInput = ui.input.int('Max Monomer Length', {
+    value: maxMonomerLength!,
+    nullable: true, min: 1, max: 50, step: 1,
+    onValueChanged: () => {
+      if (maxMonomerLengthInput.value == 0)
+        setTimeout(() => { maxMonomerLengthInput.value = null!; }, 0);
+      else {
+        const value = maxMonomerLengthInput.value ?? '';
+        const tagValue = value == null ? '' : value.toString();
+        col.temp[Temps.maxMonomerLength] = tagValue;
+        col.temp[Temps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        col.dataFrame.fireValuesChanged();
+      }
+    },
+    tooltipText: `The max length of monomer symbol displayed without shortening, empty to no limit`
+  });
 
-  const colorCode = ui.boolInput('Color code',
-    (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
-    (v: boolean) => {
-      col.temp['color-code'] = v;
+  const gapLengthInput = ui.input.int('Monomer Margin', {
+    value: col.temp[mmcrTemps.gapLength] ?? 0,
+    onValueChanged: () => {
+      col.temp[mmcrTemps.gapLength] = gapLengthInput.value;
+      col.temp[mmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
       col.dataFrame.fireValuesChanged();
-    });
-  colorCode.setTooltip('Color code');
+    },
+    tooltipText: 'The size of margin between monomers (in pixels)'
+  });
 
-  const referenceSequence = ui.stringInput('Reference sequence',
-    (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '', (v: string) => {
-      col.temp['reference-sequence'] = v;
+  const colorCodeInput = ui.input.bool('Color Code', {
+    value: (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
+    onValueChanged: () => {
+      col.temp['color-code'] = colorCodeInput.value;
       col.dataFrame.fireValuesChanged();
-    });
-  referenceSequence.setTooltip('Reference sequence is not empty, then the sequence will be render ' + '\n' +
-    'as a difference from the reference sequence');
+    },
+    tooltipText: 'Color code'
+  });
 
-  const compareWithCurrent = ui.boolInput('Compare with current',
-    (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
-    (v: boolean) => {
-      col.temp['compare-with-current'] = v;
+  const referenceSequenceInput = ui.input.string('Reference Sequence', {
+    value: (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '',
+    nullable: true,
+    onValueChanged: () => {
+      col.temp['reference-sequence'] = referenceSequenceInput.value;
       col.dataFrame.fireValuesChanged();
-    });
-  compareWithCurrent.setTooltip('When on, all sequences get rendered in the "diff" mode');
+    },
+    tooltipText: 'Reference sequence is not empty, then the sequence will be render ' + '\n' +
+      'as a difference from the reference sequence'
+  });
+
+  const compareWithCurrentInput = ui.input.bool('Compare with current', {
+    value: (col?.temp['compare-with-current'] != null) ? col.temp['compare-with-current'] : true,
+    onValueChanged: () => {
+      col.temp['compare-with-current'] = compareWithCurrentInput.value;
+      col.dataFrame.fireValuesChanged();
+    },
+    tooltipText: 'When on, all sequences get rendered in the "diff" mode'
+  });
 
   const rdKitInputs = ui.inputs([
-    monomerWidth,
-    colorCode,
-    referenceSequence,
-    compareWithCurrent,
+    maxMonomerLengthInput,
+    gapLengthInput,
+    referenceSequenceInput,
+    colorCodeInput,
+    compareWithCurrentInput,
   ]);
 
   return new DG.Widget(rdKitInputs);

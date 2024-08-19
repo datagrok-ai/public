@@ -1,18 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {toDart} from "datagrok-api/dg";
+
 import * as rxjs from 'rxjs';
 import * as GridUtils from '../utils/GridUtils';
 
 const VIEWERS : Array<DG.Viewer> = [];
 
 function indexofViewer(viewer: DG.Viewer) : number {
-  const dart = toDart(viewer);
+  const dart = DG.toDart(viewer);
   if (dart === null)
     return -1;
 
   for (let n = 0; n < VIEWERS.length; ++n) {
-    if(toDart(VIEWERS[n]) === toDart(viewer))
+    if(DG.toDart(VIEWERS[n]) === DG.toDart(viewer))
       return n;
   }
   return -1;

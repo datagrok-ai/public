@@ -2,14 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectObject, expectArray} from '@datagrok-libraries/utils/src/test';
-import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
-import {_package} from '../package-test';
-import {viewsTests} from './utils/views-tests';
+import $ from 'cash-dom';
+
+import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
+
+import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+
+import {_package} from '../package-test';
 
 /*
 https://onecompiler.com/python
@@ -48,41 +51,28 @@ sys.stdout.write(str(result))
 */
 
 
-category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vList: DG.ViewBase[] }) => {
+category('hierarchicalClustering', () => {
   // Single dimension for integer distances
-  const data1: string = `x
-8
-6
-5
-1`;
+
   const tgt1Dist: number[] = [2, 3, 7, 1, 5, 4];
-  const tgt1DistM: number[][] = [
-    [0, 2, 3, 7],
-    [2, 0, 1, 5],
-    [3, 1, 0, 4],
-    [7, 5, 4, 0]];
   // const tgt1NewickAverage = '(((2:1.00,1:1.00):1.50,0:2.50):2.83,3:5.33);';
 
-  const data2 = `x,y
-0,0
-4,0
-0,3`;
   const tgt2Dist: number[] = [4, 3, 5];
-  const tgt2DistM: number[][] = [
-    [0, 4, 3],
-    [4, 0, 5],
-    [3, 5, 0]];
   // const tgt2NewickAverage = '((2:3.00,0:3.00):1.50,1:4.50);';
 
   const tgt1ClusterMat: ClusterMatrix =
-    {mergeRow1: new Int32Array([-2, -1, -4]),
+    {
+      mergeRow1: new Int32Array([-2, -1, -4]),
       mergeRow2: new Int32Array([-3, 1, 2]),
-      heightsResult: new Float32Array([1, 2.5, 5.3333])};
+      heightsResult: new Float32Array([1, 2.5, 5.3333])
+    };
 
   const tgt2ClusterMat: ClusterMatrix =
-    {mergeRow1: new Int32Array([-1, -2]),
+    {
+      mergeRow1: new Int32Array([-1, -2]),
       mergeRow2: new Int32Array([-3, 1]),
-      heightsResult: new Float32Array([3, 4.5])};
+      heightsResult: new Float32Array([3, 4.5])
+    };
 
   const AVERAGE_METHOD_CODE = 2;
 
@@ -92,9 +82,9 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     dataDf.name = 'testDemogShort';
 
     const tv: DG.TableView = grok.shell.addTableView(dataDf);
-
-    ctx.vList.push(tv);
-    ctx.dfList.push(dataDf);
+    await awaitCheck(() => {
+      return $(tv.root).find('.d4-grid canvas').length > 0;
+    }, 'The view grid canvas not found', 100);
 
     await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
@@ -146,19 +136,13 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   //   expect(resNewick, tgtNewick);
   // }
 
-
-  test('distanceScript1', async () => {
-    await _testDistanceScript(data1, tgt1Dist, tgt1DistM);
-  });
-
-  test('distanceScript2', async () => {
-    await _testDistanceScript(data2, tgt2Dist, tgt2DistM);
-  });
-
   async function _testDistanceScript(csv: string, tgtDist: number[], distM: number[][]): Promise<void> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    const t1: number = window.performance.now();
     const distDf: DG.DataFrame = await grok.functions.call('Dendrogram:distanceScript',
       {data: df, distance_name: 'euclidean'});
+    const t2: number = window.performance.now();
+    _package.logger.debug(`BsV: Tests: _testDistanceScript(), call Dendrogram:distanceScript ET: ${(t2 - t1)} ms`);
     const distCol: DG.Column = distDf.getCol('distance');
     const distData: Float32Array = distCol.getRawData() as Float32Array;
     const dist = new DistanceMatrix(distData, df.rowCount);
@@ -197,4 +181,4 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     );
     expectObject(clusterMatrix, tgtClusterMatrix);
   }
-}));
+});

@@ -6,6 +6,9 @@ Use 3D scatter plot to plot data points on three axes to show the relationship b
 data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes.
 Additionally, you can color-code and size-code points, as well as display labels next to markers.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('3DScatterplot');`
+
 Controls:
 
 |                           |              |
@@ -25,6 +28,6 @@ See also:
 
 * [2D Scatter plot](scatter-plot.md)
 * [Column selectors](column-selectors.md)
-* [Table View](../../datagrok/table-view.md)
-* [Viewers](../viewers/viewers.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Viewers](viewers.md)
 * [JS API: 3D Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)

@@ -1,6 +1,6 @@
 # Charts
 
-Charts is a [package](https://datagrok.ai/help/develop/develop#packages) for the
+Charts is a [package](https://datagrok.ai/help/develop/#packages) for the
 [Datagrok](https://datagrok.ai) platform. It provides visualizations built using
 the [ECharts](https://echarts.apache.org/en/index.html) and [D3.js](https://d3js.org/)
 libraries. Individual data visualizations use Javascript libraries, such as
@@ -85,7 +85,8 @@ categories.
 
 ## Radar
 
-Radar charts are used on multivariate data to plot groups of values over several common variables.
+The `Radar` viewer is a visual tool for understanding multivariate data. It plots values across multiple variables, making comparisons easy and aiding in decision-making by revealing patterns.
+
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 
 ![radar](./img/radar.gif)
@@ -137,7 +138,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ## Sunburst
 
-The `Sunburst` viewer is used to display hierarchical data.
+The `Sunburst` viewer is utilized for visualizing hierarchical data.
 
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
@@ -230,7 +231,7 @@ See also:
 - [D3](https://d3js.org/)
 - [Circos](https://github.com/nicgirault/circosJS)
 - [Three.js](https://threejs.org/)
-- [Datagrok JavaScript API](https://datagrok.ai/help/develop/js-api)
-- [Packages](https://datagrok.ai/help/develop/develop#packages)
+- [Datagrok JavaScript API](https://datagrok.ai/help/develop/packages/js-api)
+- [Packages](https://datagrok.ai/help/develop/#packages)
 - [Viewers](https://datagrok.ai/help/visualize/viewers)
 - [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)

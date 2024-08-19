@@ -4,8 +4,9 @@
  * */
 
 import {DataFrame} from "./dataframe";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 export namespace ml {
   /** Applies predictive model to the specified table.
@@ -17,9 +18,9 @@ export namespace ml {
    * @param {boolean} showProgress - Maximum number of results to return.
    * @returns {Promise<DataFrame>}
    * */
-  export function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_ML_ApplyModel(name, table.dart, (t: any) => resolve(new DataFrame(t)), (e: any) => reject(e), columnNamesMap, showProgress));
+  export async function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
+    await api.grok_ML_ApplyModel(name, table.dart, columnNamesMap, showProgress);
+    return table;
   }
 
   /** Imputes missing values.
@@ -31,9 +32,9 @@ export namespace ml {
    * @param {number} nearestNeighbours - Number of nearest neighbours.
    * @returns {Promise<DataFrame>}
    * */
-  export function missingValuesImputation(table: DataFrame, impute: string[], data: string[], nearestNeighbours: number): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_ML_MissingValuesImputation(table.dart, impute, data, nearestNeighbours, () => resolve(table), (e: any) => reject(e)));
+  export async function missingValuesImputation(table: DataFrame, impute: string[], data: string[], nearestNeighbours: number): Promise<DataFrame> {
+    await api.grok_ML_MissingValuesImputation(table.dart, impute, data, nearestNeighbours);
+    return table;
   }
 
   /** Clusters data.
@@ -44,9 +45,9 @@ export namespace ml {
    * @param {number} clusters - Number of clusters.
    * @returns {Promise<DataFrame>}
    * */
-  export function cluster(table: DataFrame, features: string[], clusters: number): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_ML_Cluster(table.dart, features, clusters, () => resolve(table), (e: any) => reject(e)));
+  export async function cluster(table: DataFrame, features: string[], clusters: number): Promise<DataFrame> {
+    await api.grok_ML_Cluster(table.dart, features, clusters);
+    return table;
   }
 
   /** Principal component analysis.
@@ -59,9 +60,9 @@ export namespace ml {
    * @param {boolean} scale - Scale features data before PCA.
    * @returns {Promise<DataFrame>}
    * */
-  export function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_ML_PCA(table.dart, features, components, center, scale, () => resolve(table), (e: any) => reject(e)));
+  export async function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame> {
+    await api.grok_ML_PCA(table.dart, features, components, center, scale);
+    return table;
   }
 
   /** Creates a table with random values from the specified distribution.
@@ -74,8 +75,8 @@ export namespace ml {
    * @param {number} seed - Initial seed.
    * @returns {Promise<DataFrame>}
    * */
-  export function randomData(table: DataFrame, distribution: string, params: object, seed: number): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_ML_RandomData(table.dart, distribution, params, seed, () => resolve(table), (e: any) => reject(e)));
+  export async function randomData(table: DataFrame, distribution: string, params: object, seed: number): Promise<DataFrame> {
+    await api.grok_ML_RandomData(table.dart, distribution, params, seed);
+    return table;
   }
 }

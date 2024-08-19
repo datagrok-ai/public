@@ -23,7 +23,7 @@ identify these records, select
 
 See also:
 
-* Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:
+* Applicable tables: #\{x.demo:germany_grp_by_state}, #\{x.demo:pa_income_by_county}, #\{x.demo:
   ua_population}
 * [Viewers](../viewers/viewers.md)
 * [JS API: Shape map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)

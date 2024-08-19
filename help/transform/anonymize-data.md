@@ -21,4 +21,4 @@ well as on the old value:
   ```
 
 For selecting a random subset of the (possibly already anonymized) dataset,
-see [Selecting random rows](../explore/select-random-rows.md).
+see [Selecting random rows](select-random-rows.md).

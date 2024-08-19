@@ -1,0 +1,18 @@
+{
+  "tables": [
+    {
+      "name": "customers",
+      "columns": [
+        { "name": "id", "type": "int", "isKey": true },
+        { "name": "firstName", "type": "string", "isKey": true },
+        { "name": "lastName", "type": "string", "isKey": true }
+      ]
+    }
+  ],
+  "entityTypes": [
+    {
+      "type": "Customer",
+      "columns": ["customers.id", "customers.firstName", "customers.lastName"]
+    }
+  ]
+}

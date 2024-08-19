@@ -1,0 +1,7 @@
+#name: Grok Date
+#description: datetime input/output
+#language: grok
+#input: datetime input_datetime
+#output: datetime output_datetime
+
+output_datetime = dateAdd(input_datetime, 86400000)

@@ -3,24 +3,35 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import ExcelJS from 'exceljs';
-import html2canvas from 'html2canvas';
+import type ExcelJS from 'exceljs';
+import type html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
+import {debounceTime, delay, distinctUntilChanged, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
-import {FunctionView} from './function-view';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults, getValidationIcon} from '../../shared-utils/validation';
+import {getFuncRunLabel, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet, isInputBase, updateOutputValidationSign, createPartialCopy} from '../../shared-utils/utils';
+import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
-import {FileInput} from '../../shared-components/src/file-input';
-import {startWith} from 'rxjs/operators';
-import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {FunctionView} from './function-view';
+import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {FittingView as Optimization} from './fitting-view';
+import {HistoryInputBase} from '../../shared-components/src/history-input';
+import {getDefaultValue, getObservable, properUpdateIndicator} from './shared/utils';
+import {historyUtils} from '../../history-utils';
+import {HistoricalRunsList} from '../../shared-components/src/history-list';
 
 const FILE_INPUT_TYPE = 'file';
+const VALIDATION_DEBOUNCE_TIME = 250;
+const RUN_WAIT_TIME = 500;
+
+export type InputVariants = DG.InputBase | FuncCallInput;
 
 export interface AfterInputRenderPayload {
   prop: DG.Property;
-  input: DG.InputBase | FileInput;
+  input: InputVariants;
 }
 
 export interface AfterOutputRenderPayload {
@@ -28,18 +39,79 @@ export interface AfterOutputRenderPayload {
   output: DG.Viewer;
 }
 
+enum SYNC_FIELD {
+  INPUTS = 'inputs',
+  OUTPUTS = 'outputs'
+}
+
+type SyncFields = SYNC_FIELD.INPUTS | SYNC_FIELD.OUTPUTS;
+const syncParams = {
+  [SYNC_FIELD.INPUTS]: 'inputParams',
+  [SYNC_FIELD.OUTPUTS]: 'outputParams',
+} as const;
+
+interface ValidationRequestPayload {
+  field?: string,
+  isRevalidation: boolean,
+  isNewOutput?: boolean,
+  context?: any,
+}
+
+const getNoDataStub = () => ui.divText('[No data to display]', {style: {
+  'text-align': 'center',
+  'align-content': 'center',
+  'width': '100%',
+  'height': '100%',
+}});
+
+/**
+ * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
+ *
+ * It provides the following functionality out-of-the-box, where each section could be customized:
+ * - a structured way to represent input and output parameters: {@link parameters}
+ * - generic way to generate UI for inputs, outputs, and interactivity (running the model, etc)
+ *   - persisting historical results to the db (via {@link parameters})
+ * - export (to Excel and PDF): {@link export}
+ * - easy loading of historical runs
+ * - routing
+ * - entering the real, measured (as opposed to predicted) values manually
+ * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
+ * */
 export class RichFunctionView extends FunctionView {
-  // emitted when runButton disability should be checked
-  private checkDisability = new Subject();
+  private inputValidationRequests = new Subject<ValidationRequestPayload>();
+  private outputValidationRequests = new Subject<ValidationRequestPayload>();
+  private inputValidationUpdates = new Subject<null>();
+  private outputValidationUpdates = new Subject<null>();
+  private runRequests = new Subject<null>();
 
   // stores the running state
-  private isRunning = false;
+  private isRunning = new BehaviorSubject(false);
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
 
-  private controllsDiv?: HTMLElement;
-  private customObjectInput?: HTMLElement;
+  private inputsOverride: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private inputsMap: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private outputValidationSigns: Record<string, readonly [HTMLElement, HTMLElement]> = {};
+
+  // validators
+  private inputValidators: Record<string, Validator> = {};
+  private outputValidators: Record<string, Validator> = {};
+  private inputValidationState: Record<string, ValidationResult | undefined> = {};
+  private outputValidationState: Record<string, ValidationResult | undefined> = {};
+
+  private externalValidatorsUpdates = new Subject<string>();
+  private externalValidatorsState: Record<string, ValidationResult | undefined> = {};
+
+  public pendingInputValidations = this.inputValidationUpdates.pipe(
+    startWith(null),
+    map(() => this.inputValidationState),
+  );
+
+  private _isOutputOutdated = new BehaviorSubject<boolean>(true);
+  public isOutputOutdated = this._isOutputOutdated.pipe(distinctUntilChanged());
+
+  public blockRuns = new BehaviorSubject(false);
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -51,100 +123,332 @@ export class RichFunctionView extends FunctionView {
 
   constructor(
     initValue: string | DG.FuncCall,
-    public options: { historyEnabled: boolean, isTabbed: boolean} =
+    public options: {historyEnabled: boolean, isTabbed: boolean} =
     {historyEnabled: true, isTabbed: false},
   ) {
     super(initValue, options);
   }
 
-  protected async onFuncCallReady() {
+  public async onFuncCallReady() {
+    await this.loadInputsOverrides();
+    await this.loadValidators(SYNC_FIELD.INPUTS);
+    await this.loadValidators(SYNC_FIELD.OUTPUTS);
     await super.onFuncCallReady();
-    this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
-    if (this.runningOnStart) await this.doRun();
+    const fcReplacedSub = this.funcCallReplaced.subscribe(() => {
+      this.inputValidationRequests.next({isRevalidation: false});
+      this.outputValidationRequests.next({isRevalidation: false});
+    });
+    this.subs.push(fcReplacedSub);
+
+    const mapValidations = (isInput: SyncFields) => mergeMap((fieldValidations$: Observable<ValidationRequestPayload>) => {
+      return fieldValidations$.pipe(
+        tap((payload) => {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.setInputValidationPending(payload.field);
+          else
+            this.setOutputValidationPending(payload.field);
+        }),
+        switchMap((payload) => {
+          const controller = new AbortController();
+          const signal = controller.signal;
+          let done = false;
+          const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+            const sub = from(this.runValidation({...payload}, signal, isInput)).subscribe((val) => {
+              done = true;
+              observer.next(val);
+            });
+            return () => {
+              if (!done)
+                controller.abort();
+              sub.unsubscribe();
+            };
+          });
+          return obs$.pipe(
+            tap((results) => {
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.setInputValidationResults(results);
+              else
+                this.setOutputValidationResults(results);
+              this.runRevalidations(payload, results, isInput);
+              if (isInput === SYNC_FIELD.INPUTS)
+                this.inputValidationUpdates.next(null);
+              else
+                this.outputValidationUpdates.next(null);
+            }),
+            mapTo(payload),
+          );
+        }));
+    });
+
+    const inputValidationSub = this.inputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.INPUTS),
+    ).subscribe((payload) => {
+      if (payload.field && this.runningOnInput && this.isRunnable())
+        this.doRun();
+    });
+
+    this.subs.push(inputValidationSub);
+
+    const outputValidationSub = this.outputValidationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mapValidations(SYNC_FIELD.OUTPUTS),
+    ).subscribe();
+
+    this.subs.push(outputValidationSub);
+
+    const externalValidationSub = this.externalValidatorsUpdates.subscribe((name) => {
+      this.updateInputValidationResults(name);
+    });
+
+    this.subs.push(externalValidationSub);
+
+    // waiting for debounce and validation after enter is pressed
+    const runSub = combineLatest([
+      this.runRequests.pipe(
+        switchMap(() => of(false).pipe(
+          delay(RUN_WAIT_TIME),
+          startWith(true),
+        ))),
+      this.inputValidationUpdates.pipe(debounceTime(0)),
+    ]).pipe(
+      filter(([needToRun]) => needToRun && this.isRunnable()),
+    ).subscribe(() => this.doRun());
+    this.subs.push(runSub);
+
+    const lastInputs = (!this.options.isTabbed) ? (await this.loadLastInputs()): null;
+
+    if (lastInputs) {
+      grok.shell.info(ui.div([
+        ui.divText('Do you want to load last inputs?'),
+        ui.divH([
+          ui.bigButton('Load', () => {
+            for (const [key, value] of Object.entries(lastInputs)) {
+              const input = this.getInput(key);
+              input.notify = false;
+              input.value = value;
+              input.notify = true;
+              this.funcCall.inputs[key] = value;
+
+              this.inputValidationRequests.next({field: key, isRevalidation: false});
+            }
+
+            grok.shell.info(ui.divText('Change the loaded inputs to run computations'));
+          }),
+        ]),
+      ]));
+    } else {
+      // run validations on start
+      const controller = new AbortController();
+      const results = await this.runValidation({isRevalidation: false}, controller.signal);
+      this.setInputValidationResults(results);
+      this.runRevalidations({isRevalidation: false}, results);
+      this.inputValidationUpdates.next(null);
+
+      if (this.runningOnStart && this.isRunnable())
+        await this.doRun();
+    }
+  }
+
+  protected prevOpenedTab = null as DG.TabPane | null;
+  /**
+   * Saving previously opened tab
+   * @param runFunc
+   */
+  public override onBeforeRun(): Promise<void> {
+    if (this.tabsElem.currentPane)
+      this.prevOpenedTab = this.inputTabsLabels.includes(this.tabsElem.currentPane.name) ? null: this.tabsElem.currentPane;
+
+    return Promise.resolve();
   }
 
   /**
    * Showing UI after completion of function call.
    * @param runFunc
    */
-  public override onAfterSaveRun(): Promise<void> {
-    const firstOutputTab = this.outputsTabsElem.panes.find((tab) => tab.name !== 'Input');
-    if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
+  public override onAfterRun(): Promise<void> {
+    this.showOutput();
+    this.tabsElem.panes.forEach((tab) => {
+      $(tab.header).show();
+    });
+
+    if (this.prevOpenedTab) {
+      this.tabsElem.currentPane = this.prevOpenedTab;
+      return Promise.resolve();
+    }
+
+    const firstOutputTab = this.tabsElem.panes
+      .find((tab) => this.outputTabsLabels.includes(tab.name));
+    if (firstOutputTab) this.tabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
   }
 
   // scripting api events
+  // regular and experimental inputs
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
-  public beforeRenderControlls = new Subject<true>();
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  // output scalars table
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeRenderControlls subscriber.
-   */
-  public replaceControlls(div: HTMLElement) {
-    this.controllsDiv = div;
-  }
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeInputPropertyRender subscriber.
-   */
-  public addCustomObjectInput(div: HTMLElement) {
-    this.customObjectInput = div;
-  }
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const disabilitySub = this.checkDisability.subscribe(() => {
+    const validationSub = merge(this.inputValidationUpdates, this.externalValidatorsUpdates, this.isRunning, this.blockRuns).subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
-    this.subs.push(disabilitySub);
+    this.subs.push(validationSub);
+
     return runButton;
   }
 
+  public async loadInputsOverrides() {
+    const inputParams = [...this.funcCall.inputParams.values()];
+    await Promise.all(inputParams.map(async (param) => {
+      if (param.property.options.input) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.input);
+        const call = func.prepare({params: JSON.parse(param.property.options.inputOptions || '{}')});
+        await call.call();
+        this.inputsOverride[param.name] = call.outputs.input;
+      }
+    }));
+  }
+
+  public async loadValidators(isInput: SyncFields = SYNC_FIELD.INPUTS) {
+    const params = [...this.funcCall[syncParams[isInput]].values()];
+    await Promise.all(params.map(async (param) => {
+      if (param.property.options.validatorFunc) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validatorFunc);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorFuncOptions || '{}')});
+        await call.call();
+        if (isInput === SYNC_FIELD.INPUTS)
+          this.inputValidators[param.name] = call.outputs.validator;
+        else
+          this.outputValidators[param.name] = call.outputs.validator;
+      }
+    }));
+  }
+
+  private keepOutput() {
+    return this.func?.options['keepOutput'] === 'true';
+  }
+
+  private getSaveButton(name = 'Save') {
+    const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
+      this.buildRibbonPanels();
+
+      if (newValue)
+        $(saveButton).show();
+      else
+        $(saveButton).hide();
+    });
+    this.subs.push(uploadSub);
+
+    return saveButton;
+  }
+
+  private getStandardButtons(): HTMLElement[] {
+    const runButton = this.getRunButton() as HTMLButtonElement;
+    const runButtonWrapper = ui.div([runButton]);
+    ui.tooltip.bind(
+      runButtonWrapper,
+      () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
+    const saveButton = this.getSaveButton();
+
+    return [
+      ...this.isHistoryEnabled && !this.options.isTabbed ? [saveButton]:[],
+      ...!this.runningOnInput ? [runButtonWrapper]: [],
+    ];
+  }
+
+  private formButtons = ui.div();
+  private buildFormButtons() {
+    const standardButtons = this.getStandardButtons();
+
+    const newFormButtons = ui.buttonsInput();
+    $(newFormButtons.firstChild).css({'display': 'none'});
+    newFormButtons.lastChild?.replaceWith(ui.div([
+      ...this.navBtns,
+      ...this.additionalBtns,
+      ...standardButtons,
+    ], 'ui-input-editor'));
+    $(newFormButtons).addClass('rfv-buttons');
+    $(newFormButtons).css({'max-width': '100%'});
+
+    this.formButtons.replaceWith(newFormButtons);
+    this.formButtons = newFormButtons;
+
+    return newFormButtons;
+  }
+
   /**
-   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * Override to change additional buttons placed between navigation and run buttons.
+   */
+  protected additionalBtns = [] as HTMLElement[];
+  /**
+   * Changes additional buttons to provided ones.
+   * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
+   */
+  public setAdditionalButtons(additionalBtns: HTMLElement[]) {
+    this.additionalBtns = additionalBtns;
+
+    this.buildFormButtons();
+  }
+
+  /**
+   * Override to change navigation buttons placed next to the additional buttons.
+   */
+  protected navBtns = [] as HTMLElement[];
+  /**
+   * Changes navigation buttons to provided ones.
+   * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
+   */
+  public setNavigationButtons(navBtns: HTMLElement[]) {
+    this.navBtns = navBtns;
+
+    this.buildFormButtons();
+  }
+
+  /**
+   * RichFunctionView has advanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
    * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
    * @returns HTMLElement attached to the root of the view
    */
   public buildIO(): HTMLElement {
-    const {inputBlock, inputForm, outputForm} = this.buildInputBlock();
+    const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
+    const inputElements = ([
+      ...Array.from(inputForm.childNodes),
+      ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
+    ]);
 
     ui.tools.handleResize(inputBlock, () => {
-      if (([
-        ...Array.from(inputForm.childNodes),
-        ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-      ]).some((child) => $(child).width() < 250) ||
-      $(inputBlock).width() < 350) {
+      if ($(inputBlock).width() < 300) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
+        $(controlsWrapper).addClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100px'));
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
+        $(controlsWrapper).removeClass('ui-form-condensed');
+        inputElements.forEach((elem) => $(elem).css('min-width', '100%'));
       }
     });
 
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    this.outputsTabsElem.root.style.display = 'none';
 
-    if (!!this.outputsTabsElem.getPane('Input')) {
-      this.outputsTabsElem.panes.forEach((tab) => {
-        tab.header.style.display = 'none';
-      });
-    }
+    this.hideOutput();
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
-    inputBlock.style.maxWidth = '450px';
+    inputBlock.style.maxWidth = '360px';
 
     return out;
   }
@@ -152,60 +456,253 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
+    this.buildFormButtons();
 
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
-      $(saveButton).hide();
+    const controlsForm = ui.div(this.formButtons, 'ui-form ui-form-wide');
+    $(controlsForm).css({
+      'padding-left': '0px',
+      'padding-bottom': '0px',
+      'padding-right': '6px',
+      'max-width': '100%',
+      'min-height': '50px',
+    });
 
-      this.isUploadMode.subscribe((newValue) => {
-        if (newValue) {
-          $(saveButton).show();
-          $(runButton).hide();
-        } else {
-          $(saveButton).hide();
-          $(runButton).show();
-        }
-
-        this.buildRibbonPanels();
-      });
-
-      ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([
-        saveButton,
-        runButtonWrapper as any,
-      ]);
-      $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
-    }
-
-    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
-    $(controlsWrapper).css('padding', '0px');
-
-    const form = ui.divV([
-      inputFormDiv,
-      ...this.hasUploadMode ? [
-        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
-        outputFormDiv,
-      ]: [],
-      ...this.runningOnInput ? []: [controlsWrapper],
-    ], 'ui-box');
-
-    this.isUploadMode.subscribe((newValue) => {
+    const experimentalDataSwitch = ui.input.toggle('', {value: this.isUploadMode.value, onValueChanged: () => this.isUploadMode.next(experimentalDataSwitch.value)});
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
+      experimentalDataSwitch.notify = false;
+      experimentalDataSwitch.value = newValue,
+      experimentalDataSwitch.notify = true;
       if (newValue)
         $(outputFormDiv).show();
       else
         $(outputFormDiv).hide();
     });
+    this.subs.push(uploadSub);
+
+    const form = ui.divV([
+      inputFormDiv,
+      ...this.hasUploadMode && !this.uploadFunc ? [
+        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
+        outputFormDiv,
+      ]: [],
+      controlsForm,
+    ], 'ui-box rfv-form');
 
     return {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
+      controlsWrapper: controlsForm,
     };
+  }
+
+  private async processCustomDataUpload() {
+    const getCompareDialog = () => {
+      const compareDialog = DG.Dialog.create({'title': 'Select to compare'});
+
+      const historyRuns = new HistoricalRunsList(simulatedFunccalls.length > 0 ?
+        simulatedFunccalls:
+        [...this.historyBlock!.history.values()],
+      {
+        fallbackText: 'No historical runs found',
+        showActions: !(simulatedFunccalls.length > 0),
+        showBatchActions: !(simulatedFunccalls.length > 0),
+      });
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls,
+        {
+          fallbackText: 'No runs uploaded',
+          showActions: false,
+          showBatchActions: false,
+        });
+
+      compareDialog.add(ui.divV([
+        ui.divV([
+          ui.label('Uploaded runs'),
+          ui.element('div', 'splitbar-horizontal'),
+          uploadedRuns.root,
+        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
+        ui.divV([
+          ui.label(simulatedFunccalls.length > 0 ? 'Simulated': 'History', {style: {'padding': '0px 10px 0px 9px'}}),
+          ui.element('div', 'splitbar-horizontal'),
+          historyRuns.root,
+        ], {style: {'height': '50%', 'overflow-y': 'hidden'}}),
+      ], {style: {'justify-content': 'space-between', 'gap': '10px', 'overflow-y': 'scroll', 'height': '100%'}}));
+
+      $(compareDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
+
+      const compareSelected = 'Compare selected' as const;
+
+      if (simulatedFunccalls.length === 0) {
+        compareDialog
+          .addButton(compareSelected, async () => {
+            const fullHistoryRuns = await Promise.all([...historyRuns.selected].map((funcCall) => historyUtils.loadRun(funcCall.id)));
+            this.onComparisonLaunch([...fullHistoryRuns, ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      } else {
+        compareDialog
+          .addButton(compareSelected, async () => {
+            this.onComparisonLaunch([...historyRuns.selected.values(), ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      }
+      compareDialog.getButton(compareSelected).disabled = true;
+      this.subs.push(
+        merge(historyRuns.onSelectedChanged, uploadedRuns.onSelectedChanged).subscribe(() => {
+          if (historyRuns.selected.size + uploadedRuns.selected.size > 1)
+            compareDialog.getButton(compareSelected).disabled = false;
+          else
+            compareDialog.getButton(compareSelected).disabled = true;
+        }),
+      );
+
+      if (this.isHistorical.value) {
+        compareDialog
+          .addButton(compareWithCurrent, async () => {
+            this.onComparisonLaunch([this.funcCall, ...uploadedRuns.selected.values()]);
+
+            compareDialog.close();
+          });
+      }
+
+      $(compareDialog.getButton('CANCEL')).hide();
+
+      return compareDialog;
+    };
+
+    const func = await grok.functions.eval(this.uploadFunc!) as DG.Func;
+    const funcCall = await func.prepare({params: {'func': this.func}}).call();
+    const uploadWidget = funcCall.outputs.uploadWidget;
+    const uploadFuncCall = funcCall.outputs.uploadFuncCall as DG.FuncCall;
+    let uploadedFunccalls = [] as DG.FuncCall[];
+    let simulatedFunccalls = [] as DG.FuncCall[];
+
+    const uploadDialog = DG.Dialog.create({'title': 'Upload'});
+    $(uploadDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
+    const reviewDialog = DG.Dialog.create({'title': 'Review uploaded runs'});
+    $(reviewDialog.root.querySelector('.d4-dialog-contents')).removeClass('ui-form');
+
+    const saveToHistory = 'Save to history' as const;
+    const simulateInputs = 'Simulate w/ same inputs' as const;
+    const compareWithHistory = 'Compare w/ history' as const;
+    const compareWithCurrent = 'Compare w/ current' as const;
+
+    uploadDialog.add(uploadWidget.root);
+
+    uploadDialog.addButton(saveToHistory, async () => {
+      properUpdateIndicator(uploadDialog.root, true);
+
+      uploadedFunccalls.forEach((call) => {
+        if (call.options['immutable_tags'])
+          call.options['immutable_tags'].push(EXPERIMENTAL_TAG);
+        else
+          call.options['immutable_tags'] = [EXPERIMENTAL_TAG];
+      });
+
+      return Promise.all(uploadedFunccalls.map(async (call) => {
+        const valid = await this.getValidExpRun(call);
+
+        return historyUtils.saveRun(valid);
+      })).then((savedRuns) => {
+        // SaveRun returns a funccall without an author
+        return Promise.all(savedRuns.map((savedRun) => {
+          return historyUtils.loadRun(savedRun.id);
+        }));
+      }).then((loadedRuns) =>{
+        loadedRuns.forEach((run) => this.historyBlock!.addRun(run));
+      }).catch((e) => {
+        grok.shell.error(e);
+      }).finally(() => {
+        properUpdateIndicator(uploadDialog.root, false);
+
+        uploadDialog.close();
+
+        const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+          fallbackText: 'No runs uploaded',
+          showActions: true,
+          showBatchActions: true,
+        });
+
+        reviewDialog.add(uploadedRuns);
+
+        reviewDialog.show({modal: true, fullScreen: true});
+      });
+    });
+    uploadDialog.addButton('Next', () => {
+      uploadDialog.close();
+
+      uploadedFunccalls.forEach((call) => {
+        if (call.options['immutable_tags'])
+          call.options['immutable_tags'].push(EXPERIMENTAL_TAG);
+        else
+          call.options['immutable_tags'] = [EXPERIMENTAL_TAG];
+      });
+
+      const uploadedRuns = new HistoricalRunsList(uploadedFunccalls, {
+        fallbackText: 'No runs uploaded',
+        showActions: true,
+        showBatchActions: true,
+      });
+
+      reviewDialog.add(uploadedRuns.root);
+
+      reviewDialog.show({modal: true, fullScreen: true});
+    });
+    $(uploadDialog.getButton('CANCEL')).hide();
+    uploadDialog.getButton(saveToHistory).disabled = true;
+    uploadDialog.getButton('Next').disabled = true;
+    $(reviewDialog.getButton('CANCEL')).hide();
+
+    reviewDialog.addButton(simulateInputs, () => {
+      properUpdateIndicator(uploadDialog.root, true);
+      Promise.all(uploadedFunccalls.map(async (call) => {
+        const simulatingCall = await createPartialCopy(call);
+        return simulatingCall.call();
+      })).then((calls)=> {
+        simulatedFunccalls = calls;
+
+        reviewDialog.close();
+
+        getCompareDialog().show({modal: true, fullScreen: true});
+      }).catch((e) => {
+        grok.shell.error(e);
+      }).finally(() => {
+        properUpdateIndicator(uploadDialog.root, false);
+      });
+    });
+
+    reviewDialog.addButton(compareWithHistory, () => {
+      reviewDialog.close();
+
+      getCompareDialog().show({modal: true, fullScreen: true});
+    });
+
+    const uploadSub = grok.functions.onAfterRunAction.pipe(
+      filter((fc) => fc.id === uploadFuncCall.id),
+    ).subscribe(() => {
+      uploadedFunccalls = uploadFuncCall.outputs.uploadedCalls;
+
+      uploadDialog.getButton(saveToHistory).disabled = false;
+      uploadDialog.getButton('Next').disabled = false;
+    });
+
+    const closingSub = uploadDialog.onClose.subscribe(() => {
+      this.isUploadMode.next(false);
+    });
+
+    uploadDialog.subs.push(closingSub, uploadSub);
+
+    uploadDialog.show({modal: true, center: true, resizable: true});
+  }
+
+  protected override async onSaveClick(): Promise<void> {
+    if (this.isUploadMode.value) {
+      await this.saveExperimentalRun(this.funcCall);
+      return;
+    }
+    await this.saveRun(this.funcCall);
   }
 
   buildRibbonPanels(): HTMLElement[][] {
@@ -214,26 +711,13 @@ export class RichFunctionView extends FunctionView {
     const play = ui.iconFA('play', async () => await this.doRun(), 'Run computations');
     play.classList.add('fas');
 
-    const save = ui.iconFA('save', async () => {
-      if (this.isUploadMode.value) {
-        await this.saveExperimentalRun(this.funcCall);
-        return;
-      }
-
-      if (this.lastCall)
-        await this.saveRun(this.lastCall);
-      else
-        grok.shell.warning('Function was not called. Call it before saving');
-    }, this.isUploadMode.value ? 'Save uploaded data': 'Save the last run');
-
     const toggleUploadMode = ui.iconFA('arrow-to-top', async () => {
-      this.isUploadMode.next(!this.isUploadMode.value);
-
-      if (boundImportFunction(this.func)) {
-        const func = await grok.functions.eval(boundImportFunction(this.func)!) as DG.Func;
-        func.prepare().edit();
+      if (this.uploadFunc) {
+        await this.processCustomDataUpload();
         return;
       }
+
+      this.isUploadMode.next(!this.isUploadMode.value);
 
       toggleUploadMode.classList.toggle('d4-current');
     }, 'Upload experimental data');
@@ -242,54 +726,91 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
-    const newRibbonPanels = [
-      ...this.getRibbonPanels(),
-      [
-        ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
-        ...this.hasUploadMode ? [toggleUploadMode]: [],
-      ],
-    ];
+    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+
+    const fitting = ui.iconFA('chart-line', async () => await this.onFittingLaunch(), 'Fit inputs');
+
+    const contextHelpIcon = ui.iconFA('info', async () => {
+      if (this.hasContextHelp) {
+        grok.shell.windows.help.visible = true;
+        // Workaround to deal with help panel bug
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        grok.shell.windows.help.showHelp(ui.markdown((await this.getContextHelp())!));
+      }
+    });
+
+    const newRibbonPanels = [[
+      ...super.buildRibbonPanels().flat(),
+      ...this.runningOnInput || this.options.isTabbed ? []: [play],
+      ...this.hasUploadMode ? [toggleUploadMode]: [],
+      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
+      ...this.isFittingEnabled ? [fitting]: [],
+      ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
+    ]];
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
 
   // Main element of the output block. Stores all the tabs for the output and input
-  private outputsTabsElem = ui.tabControl();
+  private tabsElem = ui.tabControl();
+
+  private showOutput(): void {
+    ui.setDisplay(this.tabsElem.root, true);
+    this._isOutputOutdated.next(false);
+  }
+
+  public getViewers(propName: string): DG.Viewer[] {
+    return this.dfToViewerMapping[propName];
+  }
 
   public buildOutputBlock(): HTMLElement {
-    this.outputsTabsElem.root.style.width = '100%';
+    this.tabsElem.root.style.width = '100%';
 
     this.tabsLabels.forEach((tabLabel) => {
-      const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
-      const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
+
+      const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.GRAPHICS);
+      const tabOutputScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.GRAPHICS);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
+      let prevDfBlockTitle = '';
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
-        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}) => {
-          const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
+        this.dfToViewerMapping[dfProp.name] = [];
+
+        const promisedViewers: Promise<{viewer: DG.Viewer, stub: HTMLElement}>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, _) => {
+          const initialValue: DG.DataFrame =
+            this.funcCall.outputs[dfProp.name]?.value ??
+            this.funcCall.inputParams[dfProp.name]?.value ??
+            grok.data.demo.demog(0);
 
           const viewerType = viewerDesc['type'] as string;
           const viewer = Object.values(viewerTypesMapping).includes(viewerType) ? DG.Viewer.fromType(viewerType, initialValue): await initialValue.plot.fromType(viewerType) as DG.Viewer;
           viewer.setOptions(viewerDesc);
 
-          if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
-
+          this.dfToViewerMapping[dfProp.name].push(viewer);
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
-          return viewer;
+          const stub = getNoDataStub();
+          // Workaround since viewers cannot work with null values instead of DF
+          if (initialValue.rowCount === 0 && initialValue.name === 'demog 0') {
+            ui.setDisplay(viewer.root, false);
+            ui.setDisplay(stub, true);
+          }
+
+          return {viewer, stub};
         });
 
-        const reactiveViewers = promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
-          const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+        const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then(({viewer: loadedViewer, stub}) => {
+          const updateViewerSource = async () => {
+            const currentParam =
+              this.funcCall.outputParams[dfProp.name] ??
+              this.funcCall.inputParams[dfProp.name];
 
-            const paramSub = currentParam.onChanged.subscribe(async () => {
-              $(this.outputsTabsElem.root).show();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
-
+            if (currentParam.value) {
+              ui.setDisplay(loadedViewer.root, true);
+              ui.setDisplay(stub, false);
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
                 loadedViewer.dataFrame = currentParam.value;
               else {
@@ -298,457 +819,988 @@ export class RichFunctionView extends FunctionView {
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
+              // Workaround for https://reddata.atlassian.net/browse/GROK-13884
+              if (Object.keys(parsedTabDfProps[dfIndex][viewerIdx]).includes('color')) loadedViewer.setOptions({'color': parsedTabDfProps[dfIndex][viewerIdx]['color']});
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
-            });
-
-            this.funcCallReplaced.subscribe(async () => {
-              const currentParamValue = this.funcCall.outputs[dfProp.name] ?? this.funcCall.inputs[dfProp.name];
-
-              $(this.outputsTabsElem.root).show();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
-
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
-                loadedViewer.dataFrame = currentParamValue;
-              else {
-                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-                const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
-                loadedViewer.root.replaceWith(newViewer.root);
-                loadedViewer = newViewer;
-              }
-            });
-
-            this.subs.push(paramSub);
+            } else {
+              ui.setDisplay(loadedViewer.root, false);
+              ui.setDisplay(stub, true);
+            }
           };
 
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateViewerSource);
+          this.subs.push(paramSub);
 
-          return loadedViewer;
+          return {loadedViewer, stub};
         }));
 
-        const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
+        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: ' ';
+        prevDfBlockTitle = dfBlockTitle;
 
-        if (tabLabel === 'Input') {
-          const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
-
-            const paramSub = currentParam.onChanged.subscribe(() => {
-              $(this.outputsTabsElem.root).show();
-              $(this.outputsTabsElem.getPane('Input').header).show();
+        if (isInputTab) {
+          const inputTabSub = this.funcCallReplaced.pipe(
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged;
+            }),
+          ).subscribe(() => {
+            this.showOutput();
+            this.inputTabsLabels.forEach((inputTabName) => {
+              $(this.tabsElem.getPane(inputTabName).header).show();
             });
-
-            this.subs.push(paramSub);
-          };
-
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          });
+          this.subs.push(inputTabSub);
         }
 
         const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
-          const viewerRoot = ui.wait(async () => (await promisedViewer).root);
-          $(viewerRoot).css({
+          const viewerWithStubRoot = ui.wait(async () => {
+            const viewerWithStub = await promisedViewer;
+            $(viewerWithStub.loadedViewer.root).css({
+              'height': '100%',
+              'width': '100%',
+            });
+            return ui.divV(
+              [
+                viewerWithStub.loadedViewer.root,
+                viewerWithStub.stub,
+              ],
+              {style: {width: '100%'}},
+            );
+          });
+          $(viewerWithStubRoot).css({
             'min-height': '300px',
             'flex-grow': '1',
           });
 
+          const validationSign = getValidationIcon();
+          this.outputValidationSigns[dfProp.name] = validationSign;
+
           return ui.divV([
-            ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
-            viewerRoot,
+            ui.divH([
+              ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
+              ...viewerIndex === 0 ? [ui.div([
+                this.outputValidationSigns[dfProp.name][0],
+                this.outputValidationSigns[dfProp.name][1],
+              ], {style: {'margin': '10.79px'}})]:[]]),
+            viewerWithStubRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
             'max-width': `${blockWidth}%`,
+            'max-height': '100%',
           } : {
             'flex-grow': '1',
           }}});
         });
 
+        if (dfProp.propertyType === DG.TYPE.GRAPHICS) {
+          const blockWidth = dfProp.options.block;
+          const graphics = getNoDataStub();
+          graphics.classList.add('grok-scripting-image-container');
+          const graphicsWrapper = ui.divV([
+            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            graphics,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+            'max-height': '100%',
+          } : {
+            'flex-grow': '1',
+          }}});
+
+          const updateGraphics = () => {
+            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+
+            if (currentParam.value) {
+              graphics.style.backgroundImage = `url("data:image/png;base64,${currentParam.value}")`;
+              graphics.textContent = '';
+            } else {
+              graphics.style.removeProperty('background-image');
+              graphics.textContent = '[No data to display]';
+            }
+          };
+
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateGraphics);
+          this.subs.push(paramSub);
+          acc.append(graphicsWrapper);
+        }
+
         acc.append(...wrappedViewers);
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1', 'max-height': '100%'}}));
+
+      tabOutputScalarProps.forEach((scalarProp) => {
+        const validationSign = getValidationIcon();
+        this.outputValidationSigns[scalarProp.name] = validationSign;
+      });
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
-          tabScalarProps,
-          (scalarProp: DG.Property) =>
-            [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
+          tabOutputScalarProps,
+          (scalarProp: DG.Property) => {
+            const precision = scalarProp.options.precision;
+
+            const scalarValue = precision && scalarProp.propertyType === DG.TYPE.FLOAT && this.funcCall.outputs[scalarProp.name] ?
+              this.funcCall.outputs[scalarProp.name].toPrecision(precision):
+              this.funcCall.outputs[scalarProp.name];
+
+            const units = scalarProp.options['units'] ? ` [${scalarProp.options['units']}]`: ``;
+
+            return [
+              `${scalarProp.caption ?? scalarProp.name}${units}`,
+              scalarValue ?? '[No value]',
+              ui.div([this.outputValidationSigns[scalarProp.name][0], this.outputValidationSigns[scalarProp.name][1]]),
+            ];
+          },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
 
       let scalarsTable = generateScalarsTable();
 
-      tabScalarProps.forEach((tabScalarProp) => {
-        const subscribeOnFcChanges = () => {
-          const paramSub = (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-          });
-
-          this.funcCallReplaced.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-          });
-
-          this.subs.push(paramSub);
-        };
-
-        subscribeOnFcChanges();
-        this.subs.push(
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-        );
+      const tableSub = merge(this.funcCallReplaced, this.isRunning.pipe(filter((x) => x === false), skip(1))).subscribe(() => {
+        const newScalarsTable = generateScalarsTable();
+        scalarsTable.replaceWith(newScalarsTable);
+        scalarsTable = newScalarsTable;
+        $(this.tabsElem.getPane(tabLabel).header).show();
       });
+      this.subs.push(tableSub);
 
-      if (tabScalarProps.length > 0 || tabDfProps.reduce((viewersCount, prop) => {viewersCount+= getPropViewers(prop).config.length; return viewersCount;}, 0) > 0) {
-        this.outputsTabsElem.addPane(tabLabel, () => {
-          return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
-        });
-      }
+      this.tabsElem.addPane(tabLabel, () => {
+        return ui.divV([
+          ...tabDfProps.length ? [dfBlocks]: [],
+          ...tabOutputScalarProps.length ? [scalarsTable]: [],
+        ]);
+      });
     });
 
     const outputBlock = ui.box();
-    outputBlock.append(this.outputsTabsElem.root);
+    outputBlock.append(this.tabsElem.root);
 
     return outputBlock;
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.outputsTabsElem.root.style.removeProperty('display');
-    this.outputsTabsElem.panes.forEach((tab) => {
-      tab.header.style.removeProperty('display');
-    });
+    this.showOutput();
   }
 
   // Stores mapping between DF and its' viewers
   private dfToViewerMapping: {[key: string]: DG.Viewer[]} = {};
 
-  protected get isInputPanelRequired() {
-    return this.func?.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null) || false;
-  }
-
   protected get tabsLabels() {
-    return Object.keys(this.categoryToParamMap);
+    return [
+      ...this.inputTabsLabels,
+      ...this.outputTabsLabels,
+    ];
   }
 
-  protected get categoryToParamMap() {
-    const map = {} as Record<string, DG.Property[]>;
+  protected get outputTabsLabels() {
+    return Object.keys(this.categoryToDfParamMap.outputs);
+  }
 
-    if (this.isInputPanelRequired) {
-      this.func!.inputs.
-        filter((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null).
-        forEach((p) => map['Input'] ? map['Input'].push(p): map['Input'] = [p]);
-    }
+  protected get inputTabsLabels() {
+    return Object.keys(this.categoryToDfParamMap.inputs);
+  }
 
-    this.func!.outputs.forEach((p) => {
-      const category = p.category === 'Misc' ? 'Output': p.category;
+  protected get categoryToDfParamMap() {
+    const map = {
+      inputs: {} as Record<string, DG.Property[]>,
+      outputs: {} as Record<string, DG.Property[]>,
+    };
 
-      if (map[category])
-        map[category].push(p);
-      else
-        map[category] = [p];
-    });
+    this.func.inputs
+      .filter((inputProp) =>
+        inputProp.propertyType === DG.TYPE.DATA_FRAME &&
+        getPropViewers(inputProp).config.length !== 0,
+      )
+      .forEach((p) => {
+        const category = p.category === 'Misc' ? 'Input': p.category;
+
+        if (map.inputs[category])
+          map.inputs[category].push(p);
+        else
+          map.inputs[category] = [p];
+      });
+
+    this.func.outputs
+      .forEach((p) => {
+        const category = p.category === 'Misc' ? 'Output': p.category;
+
+        if (p.propertyType === DG.TYPE.DATA_FRAME &&
+          getPropViewers(p).config.length === 0) return;
+
+        if (map.outputs[category])
+          map.outputs[category].push(p);
+        else
+          map.outputs[category] = [p];
+      });
 
     return map;
   }
 
-  private async doRun(): Promise<void> {
-    this.isRunning = true;
-    this.checkDisability.next();
+  private get inputsStorage() {
+    return `RFV_LastInputs_${this.funcCall.func.name}`;
+  };
+
+  private async saveLastInputs() {
     try {
-      await this.run();
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
+        const valueToSave = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
+          this.funcCall.inputs[inputParam.name]:
+          Array.from((this.funcCall.inputs[inputParam.name] as DG.DataFrame).toByteArray());
+
+        return {
+          ...acc,
+          [inputParam.name]: valueToSave,
+        };
+      }, {} as Record<string, any>);
+
+      return localStorage.setItem(this.inputsStorage, JSON.stringify(lastInputs));
     } catch (e: any) {
-      grok.shell.error(e);
-    } finally {
-      this.isRunning = false;
-      this.checkDisability.next();
+      grok.shell.error(e.toString());
     }
   }
 
+  private async loadLastInputs() {
+    try {
+      const valuesFromStorage = JSON.parse(localStorage.getItem(this.inputsStorage) ?? '{}');
+
+      if (Object.keys(valuesFromStorage).length === 0) return null;
+
+      const lastInputs = wu(this.funcCall.inputParams.values()).reduce((acc, inputParam) => {
+        const valueToLoad = (inputParam.property.propertyType !== DG.TYPE.DATA_FRAME) ?
+          valuesFromStorage[inputParam.name]:
+          DG.DataFrame.fromByteArray(new Uint8Array(valuesFromStorage[inputParam.name]));
+
+        return {
+          ...acc,
+          [inputParam.name]: valueToLoad,
+        };
+      }, {} as Record<string, any>);
+
+      return lastInputs;
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+    }
+  }
+
+  private async deleteLastInputs() {
+    try {
+      return localStorage.removeItem(this.inputsStorage);
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+    }
+  }
+
+  public async doRun(): Promise<void> {
+    this.isRunning.next(true);
+    try {
+      if (!this.options.isTabbed) await this.saveLastInputs();
+      await this.run();
+      if (!this.options.isTabbed) await this.deleteLastInputs();
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+      console.log(e);
+    } finally {
+      this.isRunning.next(false);
+      this.inputValidationRequests.next({isRevalidation: false, isNewOutput: true});
+      this.outputValidationRequests.next({isRevalidation: false});
+    }
+  }
+
+  public setExternalValidationResults(inputName: string, results: ValidationResult) {
+    this.externalValidatorsState[inputName] = results;
+    this.externalValidatorsUpdates.next(inputName);
+  }
+
+  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
+    if (state === 'restricted') {
+      this.funcCall.options[RESTRICTED_PATH] = {
+        ...this.funcCall.options[RESTRICTED_PATH],
+        [paramName]: value,
+      };
+    }
+
+    if (state) {
+      this.funcCall.options[EDIT_STATE_PATH] = {
+        ...this.funcCall.options[EDIT_STATE_PATH],
+        [paramName]: state,
+      };
+    }
+
+    this.updateConsistencyState();
+  }
+
+  private getInputLockState(paramName: string): INPUT_STATE | undefined {
+    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
+  }
+
+  private updateConsistencyState() {
+    const isInconsistent = Object.values(this.funcCall.options[EDIT_STATE_PATH]).some((inputState) => inputState === 'inconsistent');
+
+    this.consistencyState.next(isInconsistent ? 'inconsistent': 'consistent');
+  }
+
+  public getInput(name: string) {
+    return this.inputsMap[name];
+  }
+
+  public setInput(name: string, value: any, state?: 'disabled' | 'restricted' | 'user input') {
+    const input = this.getInput(name);
+    if (!input)
+      throw new Error(`No input named ${name}`);
+
+    if (
+      this.funcCall.inputParams[name].property.propertyType === DG.TYPE.DATA_FRAME &&
+      state === 'restricted'
+    )
+      throw new Error(`Param ${name} is dataframe. Restricted state is not supported for them.`);
+
+    if (!state)
+      state = (this.funcCall.inputParams[name].property.propertyType === DG.TYPE.DATA_FRAME) ? 'disabled': 'restricted';
+
+    this.funcCall.inputs[name] = value;
+    this.setInputLockState(input, name, value, state);
+  }
+
+  public getParamChanges<T = any>(name: string): Observable<T | null> {
+    return this.funcCallReplaced.pipe(
+      startWith(null),
+      filter(() => !!this.funcCall),
+      map(() => this.funcCall['inputParams'][name] ? 'inputParams' : 'outputParams'),
+      switchMap((ptype) => this.funcCall[ptype][name].onChanged.pipe(
+        startWith(null),
+        map(() => this.funcCall[ptype][name].value as T),
+      )),
+    );
+  }
+
+  public getParamValue<T = any>(name: string): T | null {
+    const ptype = this.funcCall?.['inputParams'][name] ? 'inputParams' : 'outputParams';
+    return this.funcCall?.[ptype][name].value;
+  }
+
+  private setInputLockState(input: FuncCallInput, paramName: string, value: any, state?: INPUT_STATE) {
+    // if the state is undefined, it is common input with no special state.
+    // thus, no need to save it.
+    if (state)
+      this.saveInputLockState(paramName, value, state);
+
+    if (!isInputLockable(input)) return;
+
+    if (state === 'disabled')
+      input.setDisabled();
+
+    if (state === 'restricted')
+      input.setRestricted();
+
+    if (state === 'restricted unlocked')
+      input.setRestrictedUnlocked();
+
+    if (state === 'inconsistent')
+      input.setInconsistent();
+
+    if (state === 'user input')
+      input.setUserInput();
+  }
+
+  private getRestrictedValue(paramName: string) {
+    return this.funcCall.options[RESTRICTED_PATH]?.[paramName];
+  }
+
   private renderOutputForm(): HTMLElement {
-    const outputs = ui.divV([], 'ui-form ui-form-wide');
-    $(outputs).css({
-      'flex-wrap': 'wrap',
-      'flex-grow': '0',
-    });
-    let prevCategory = 'Misc';
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
-      .filter((val) => !!val)
-      .forEach((val) => {
-        const prop = val.property;
+    return this.renderIOForm(SYNC_FIELD.OUTPUTS);
+  }
 
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.outputs[prop.name] = file;
-          });
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+  private async onSALaunch(): Promise<void> {
+    await SensitivityAnalysis.fromEmpty(this.func);
+  }
 
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          // Should be onInput. DEALING WITH BUG:
-          t.onChanged(() => {
-            this.funcCall.outputs[val.name] = t.value;
-            if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-          });
-
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        }
-        prevCategory = prop.category;
-      });
-
-    outputs.classList.remove('ui-panel');
-    outputs.style.paddingTop = '0px';
-    outputs.style.paddingLeft = '0px';
-    outputs.style.maxWidth = '100%';
-
-    return outputs;
+  private async onFittingLaunch(): Promise<void> {
+    await Optimization.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {
+    return this.renderIOForm(SYNC_FIELD.INPUTS);
+  }
+
+  private renderIOForm(field: SyncFields) {
     const inputs = ui.divH([], 'ui-form ui-form-wide');
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
+      'padding-right': '12px',
+      'padding-top': '0px',
+      'padding-left': '0px',
+      'max-width': '100%',
+      'gap': '4px',
     });
+
     let prevCategory = 'Misc';
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
+    const params = this.funcCall[syncParams[field]].values();
+    wu(params)
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
         this.beforeInputPropertyRender.next(prop);
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.inputs[prop.name] = file;
-            this.checkDisability.next();
-          });
-
-          if (this.runningOnInput) {
-            const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
-            this.subs.push(sub);
-          }
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
-        } else if (prop.propertyType.toString() === DG.TYPE.OBJECT) {
-          if (this.customObjectInput) {
-            inputs.append(this.customObjectInput);
-            this.customObjectInput === null;
-          }
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          t.input.onkeydown = async (ev) => {
-            if (ev.key == 'Enter')
-              await this.doRun();
-          };
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          this.syncFuncCallReplaced(t, val);
-          this.syncOnInput(t, val);
-          this.syncValOnChanged(t, val);
-
-          if (this.runningOnInput)
-            this.runOnInput(t, val);
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
+        const input = this.getInputForVal(val);
+        if (!input) {
+          prevCategory = prop.category;
+          return;
         }
+        this.inputsMap[val.property.name] = input;
+        if (field === SYNC_FIELD.INPUTS) {
+          this.syncInput(val, input, field);
+          this.checkForMapping(val, input);
+          if (!this.runningOnInput)
+            this.disableInputsOnRun(val.property.name, input);
+
+          this.bindOnHotkey(input);
+        }
+
+        this.renderCategory(inputs, val.property.category, prevCategory);
+        this.renderInput(inputs, val, input);
+        this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const buttonWrapper = ui.div([runButton]);
-      ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    };
+
+    Object.keys(this.foldedCategoryInputs)
+      .forEach((key) =>
+        this.foldedCategoryInputs[key].forEach((t) => $(t.input.root).hide()),
+      );
 
     inputs.classList.remove('ui-panel');
-    inputs.style.paddingTop = '0px';
-    inputs.style.paddingLeft = '0px';
-    inputs.style.maxWidth = '100%';
-    this.checkDisability.next();
 
     return inputs;
   }
 
-  private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const prop = val.property;
-    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
-      else {
-        t.value = newValue;
-        this.funcCall!.inputs[val.name] = newValue;
-      }
-    });
-    this.subs.push(sub);
+  focusedInput = null as HTMLElement | null;
+
+  private saveFocusedElement(t: HTMLElement) {
+    this.focusedInput = t;
   }
 
-  private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const syncSub = () => {
-      const newValue = this.funcCall!.inputs[val.name];
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
-      // there is no notify for DG.FuncCallParam, so we need to
-      // check if the value is not the same for floats, otherwise we
-      // will overwrite a user input with a lower precicsion decimal
-      // representation
-      else if (((typeof newValue === 'number') && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) || typeof newValue !== 'number') {
+  private restoreFocusedElement() {
+    this.focusedInput?.focus();
+  }
+
+  private disableInputsOnRun(paramName: string, t: InputVariants) {
+    const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
+      if (this.getInputLockState(paramName) !== 'user input' && this.getInputLockState(paramName)) return;
+
+      if (isRunning) {
+        if (isInputBase(t) && $(t.input).is(':focus')) this.saveFocusedElement(t.input);
+        t.enabled = false;
+      } else {
+        t.enabled = true;
+        if (isInputBase(t)) this.restoreFocusedElement();
+      }
+    });
+    this.subs.push(disableOnRunSub);
+  }
+
+  private checkForMapping(val: DG.FuncCallParam, funcCallInput: InputVariants) {
+    const isHistoryInputBase = (input: InputVariants): input is HistoryInputBase => funcCallInput.hasOwnProperty('_chosenRun');
+
+    if (!isHistoryInputBase(funcCallInput)) return;
+
+    const mappingJson = val.property.options.funccallMapping;
+    if (!mappingJson) return;
+
+    const mapping = JSON.parse(mappingJson) as Record<string, string>;
+    const paramSub = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const currentParam = this.funcCall.inputParams[val.property.name];
+        return currentParam.onChanged;
+      }),
+    ).subscribe(() => {
+      const extractValue = (key: string) => funcCallInput.chosenRun?.inputs[key] ?? funcCallInput.chosenRun?.outputs[key] ?? funcCallInput.chosenRun?.options[key] ?? null;
+      Object.entries(mapping).forEach(([input, key]) => this.setInput(
+        input,
+        funcCallInput.chosenRun ? extractValue(key): getDefaultValue(this.funcCall.inputParams[input].property),
+        funcCallInput.chosenRun ? 'restricted': 'user input',
+      ));
+    });
+    this.subs.push(paramSub);
+  }
+
+  private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
+    const prop = val.property;
+    if (this.inputsOverride[val.property.name])
+      return this.inputsOverride[val.property.name];
+
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices && !prop.options.propagateChoice) {
+      return ui.input.choice(prop.caption ?? prop.name, {
+        value: getDefaultValue(prop),
+        items: JSON.parse(prop.options.choices),
+        nullable: prop.nullable,
+      });
+    }
+
+    switch (prop.propertyType as any) {
+    case FILE_INPUT_TYPE:
+      return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+    case DG.TYPE.FLOAT:
+      const floatInput = ui.input.forProperty(prop);
+      const format = prop.options.format;
+      if (format) floatInput.format = format;
+      return floatInput;
+    default:
+      return ui.input.forProperty(prop);
+    }
+  }
+
+  private bindOnHotkey(t: InputVariants) {
+    if (isInputBase(t)) {
+      t.input.onkeydown = async (ev) => {
+        if (ev.key == 'Enter') this.runRequests.next();
+      };
+    }
+  }
+
+  private get foldedCategories(): string[] {
+    return JSON.parse(this.func.options['foldedCategories'] ?? '[]');
+  }
+
+  private foldedCategoryInputs = {} as Record<string, {paramName: string, input: InputVariants}[]>;
+
+  private getCategoryWarningIcon(category: string) {
+    const warningIcon = ui.iconFA('exclamation-circle', null, 'This category has inconsistent inputs');
+    $(warningIcon).css({'color': `var(--orange-2)`, 'padding-left': '5px'}).hide();
+
+    const sub = this.funcCallReplaced.subscribe(() => {
+      if (this.foldedCategoryInputs[category].some((e) =>
+        this.getInputLockState(e.paramName) === 'inconsistent' &&
+        e.input.value !== this.getRestrictedValue(e.paramName),
+      ))
+        $(warningIcon).show();
+      else
+        $(warningIcon).hide();
+    });
+    this.subs.push(sub);
+    return warningIcon;
+  }
+
+  private renderCategory(inputsDiv: HTMLDivElement, currentCategory: string, prevCategory: string) {
+    if (currentCategory === prevCategory) return;
+
+    if (this.foldedCategories.includes(currentCategory)) {
+      const warningIcon = this.getCategoryWarningIcon(currentCategory);
+
+      const chevronToOpen = ui.iconFA('chevron-right', () => {
+        $(chevronToClose).show();
+        $(chevronToOpen).hide();
+        $(warningIcon).hide();
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).css({'display': ''}));
+      }, 'Open category');
+      $(chevronToOpen).css('padding-right', '5px');
+      const chevronToClose = ui.iconFA('chevron-down', () => {
+        $(chevronToClose).hide();
+        $(chevronToOpen).show();
+        if (this.foldedCategoryInputs[currentCategory].some((e) => this.getInputLockState(e.paramName) === 'inconsistent'))
+          $(warningIcon).show();
+        else
+          $(warningIcon).hide();
+
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).hide());
+      }, 'Close category');
+      $(chevronToClose).css('padding-right', '5px');
+
+      //@ts-ignore
+      inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(currentCategory, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
+      $(chevronToClose).hide();
+    } else
+      inputsDiv.append(ui.h2(currentCategory, {style: {'width': '100%'}}));
+  }
+
+  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants) {
+    const prop = val.property;
+
+    if (this.foldedCategories.includes(prop.category))
+      this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), {paramName: val.property.name, input: t}];
+
+    this.injectLockIcons(val, t);
+    injectLockStates(t);
+
+    if (isInputBase(t)) {
+      inputBaseAdditionalRenderHandler(val, t);
+      this.bindTooltips(val, t);
+      injectInputBaseValidation(t);
+    }
+
+    inputsDiv.append(t.root);
+  }
+
+  private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
+    const paramName = param.property.name;
+
+    const generateTooltip = () => {
+      const desc = `${param.property.description ?? param.property.caption ?? param.property.name}.`;
+
+      const getExplanation = () => {
+        if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
+        if (this.getInputLockState(paramName) === 'inconsistent') return `The entered value is inconsistent to the computed value.`;
+        if (this.getInputLockState(paramName) === 'restricted') return `The value is dependent and computed automatically. Click to edit`;
+
+        return null;
+      };
+      const exp = getExplanation();
+
+      return desc || exp ?
+        ui.divV([
+          ...desc ? [ui.divText(desc)]: [],
+          ...exp ? [ui.divText(exp)]: [],
+        ], {style: {'max-width': '300px'}}) : null;
+    };
+    ui.tooltip.bind(t.captionLabel, generateTooltip);
+    ui.tooltip.bind(t.input, generateTooltip);
+  }
+
+  private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {
+    const paramName = param.property.name;
+
+    t.root.addEventListener('click', () => {
+      if (this.getInputLockState(paramName) === 'restricted')
+        this.setInputLockState(t, param.name, param.value, 'restricted unlocked');
+    });
+
+    const lockIcon = ui.iconFA('lock');
+    $(lockIcon).addClass('rfv-icon-lock');
+    $(lockIcon).css({color: `var(--grey-2)`});
+
+    const unlockIcon = ui.iconFA('lock-open');
+    $(unlockIcon).addClass('rfv-icon-unlock');
+    $(unlockIcon).css({color: `var(--grey-2)`});
+
+    const resetIcon = ui.iconFA('undo', (e: MouseEvent) => {
+      this.setInput(param.name, this.getRestrictedValue(paramName), 'restricted');
+      e.stopPropagation();
+    }, 'Reset value to computed value');
+    $(resetIcon).addClass('rfv-icon-undo');
+    $(resetIcon).css({color: `var(--blue-2)`});
+
+    const warningIcon = ui.iconFA('exclamation-circle', null);
+    ui.tooltip.bind(warningIcon, () => `Current value is incosistent. Computed value was ${DG.TYPES_SCALAR.has(param.property.propertyType) ? this.getRestrictedValue(paramName): 'different'}`);
+    $(warningIcon).addClass('rfv-icon-warning');
+    $(warningIcon).css({color: `var(--orange-2)`});
+
+    function defaultPlaceLockStateIcons(
+      lockIcon: HTMLElement,
+      unlockIcon: HTMLElement,
+      resetIcon: HTMLElement,
+      warningIcon: HTMLElement,
+    ) {
+      // If custom input is not DG.InputBase instance then do nothing
+      if (!isInputBase(t)) return;
+
+      t.addOptions(lockIcon);
+      t.addOptions(unlockIcon);
+      t.addOptions(resetIcon);
+      t.addOptions(warningIcon);
+    }
+
+    const tAny = (t as any);
+    // if no custom place for lock state icons is provided then use default placing
+    if (!tAny.placeLockStateIcons)
+      tAny.placeLockStateIcons = defaultPlaceLockStateIcons;
+    tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
+  }
+
+  private syncInput(val: DG.FuncCallParam, t: InputVariants, field: SyncFields) {
+    const name = val.name;
+
+    let stopUIUpdates = false;
+
+    const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newParam = this.funcCall[syncParams[field]][name];
+      const newValue = this.funcCall[field][name] ?? getDefaultValue(newParam.property) ?? null;
+      t.notify = false;
+      t.value = newValue;
+      t.notify = true;
+      this.funcCall[field][name] = newValue;
+      this.setInputLockState(t, name, newValue, this.getInputLockState(name));
+    });
+    this.subs.push(sub1);
+
+    const sub2 = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam));
+      }),
+    ).subscribe((newParam) => {
+      const newValue = this.funcCall[field][newParam.name];
+      // don't update UI if an update is triggered by UI
+      if (!stopUIUpdates) {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
-      this.hideOutdatedOutput();
-      this.checkDisability.next();
-    };
+      if (field === SYNC_FIELD.INPUTS) {
+        this.isHistorical.next(false);
 
-    const sub = val.onChanged.subscribe(syncSub);
-    this.subs.push(sub);
+        this.hideOutput();
+        this.inputValidationRequests.next({field: newParam.name, isRevalidation: false});
 
-    this.subs.push(
-      this.funcCallReplaced.subscribe(() => {
-        const newParam = this.funcCall.inputParams[val.property.name];
+        const currentState = this.getInputLockState(newParam.name);
+        if (currentState === 'restricted unlocked' || currentState === 'inconsistent') {
+          this.setInputLockState(t, newParam.name, newValue,
+            newValue === this.getRestrictedValue(newParam.name) ? 'restricted unlocked' : 'inconsistent',
+          );
+        }
+      }
+    });
+    this.subs.push(sub2);
 
-        const sub = newParam.onChanged.subscribe(syncSub);
-        this.subs.push(sub);
+    // handling mutations of dataframes
+    const sub3 = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam), startWith(newParam));
       }),
-    );
+      filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
+      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>(
+        (param) => param.value.onDataChanged.pipe(mapTo(param)),
+      ),
+    ).subscribe((param) => {
+      if (field === SYNC_FIELD.INPUTS)
+        this.inputValidationRequests.next({field: param.name, isRevalidation: false});
+      else
+        this.outputValidationRequests.next({field: param.name, isRevalidation: false});
+    });
+    this.subs.push(sub3);
+
+    const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+      try {
+        stopUIUpdates = true;
+        this.funcCall[field][val.name] = t.value;
+      } finally {
+        stopUIUpdates = false;
+      }
+    });
+    this.subs.push(sub4);
   }
 
-  private isRunnable() {
-    return (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+  public isRunnable() {
+    if (this.isRunning.value || this.blockRuns.value)
+      return false;
+
+    return this.isValid();
   }
 
-  private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
+  public isValid() {
+    for (const [_, v] of Object.entries(this.inputValidationState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+    for (const [_, v] of Object.entries(this.externalValidatorsState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+
+    return true;
+  }
+
+  public getValidationState() {
+    return this.inputValidationState;
+  }
+
+  public getValidationMessage() {
+    const msgs: string[] = [];
+    for (const [name, v] of Object.entries(this.inputValidationState)) {
+      if (!isValidationPassed(v))
+        msgs.push(`${name}: ${getErrorMessage(v)}`);
+    }
+    return msgs.join('\n');
+  }
+
+  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal, isInput = SYNC_FIELD.INPUTS) {
+    const paramName = payload.field;
+    const paramNames = this.getValidatedNames(paramName, isInput);
+
+    const validationItems = await Promise.all(paramNames.map(async (name) => {
+      const v = isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs[name]: this.funcCall.outputs[name];
+      // not allowing null anywhere
+      const standardMsgs = await nonNullValidator(v, {
+        param: name,
+        funcCall: this._funcCall!,
+        lastCall: this.lastCall,
+        signal,
+        isNewOutput: !!payload.isNewOutput,
+        isRevalidation: payload.isRevalidation,
+        view: this,
+      });
+      let customMsgs;
+      const customValidator = isInput === SYNC_FIELD.INPUTS ? this.inputValidators[name] : this.outputValidators[name];
+      if (customValidator) {
+        customMsgs = await customValidator(v, {
+          param: name,
+          funcCall: this._funcCall!,
+          lastCall: this.lastCall,
+          signal,
+          isNewOutput: !!payload.isNewOutput,
+          isRevalidation: payload.isRevalidation,
+          context: payload.context,
+          view: this,
+        });
+      }
+      // output params could not be nulls, DG will complain
+      const isNullable = isInput === SYNC_FIELD.INPUTS && this.funcCall.inputParams[name].property.options.nullable;
+      return [name, mergeValidationResults(
+        ...isNullable ? []: [standardMsgs],
+        customMsgs,
+      )] as const;
+    }));
+    return Object.fromEntries(validationItems);
+  }
+
+  private setInputValidationPending(inputName?: string) {
+    const inputNames = this.getValidatedNames(inputName);
+    for (const name of inputNames) {
+      this.inputValidationState[name] = makePendingValidationResult();
+      const input = this.inputsMap[name];
+      if (isFuncCallInputValidated(input))
+        input.setValidation(makePendingValidationResult());
+    }
+    this.inputValidationUpdates.next(null);
+  }
+
+  private setOutputValidationPending(inputName?: string) {
+    const outputNames = this.getValidatedNames(inputName, SYNC_FIELD.OUTPUTS);
+    for (const name of outputNames) {
+      this.outputValidationState[name] = makePendingValidationResult();
+      const sign = this.outputValidationSigns[name];
+      if (sign) {
+        const newSign = getValidationIcon(makePendingValidationResult());
+        sign[0].replaceWith(newSign[0]);
+        sign[1].replaceWith(newSign[1]);
+        this.outputValidationSigns[name] = newSign;
+      }
+    }
+    this.outputValidationUpdates.next(null);
+  }
+
+  private setInputValidationResults(results: Record<string, ValidationResult | undefined>) {
+    for (const [inputName, validationMessages] of Object.entries(results)) {
+      this.inputValidationState[inputName] = validationMessages;
+      this.updateInputValidationResults(inputName);
+    }
+  }
+
+  private setOutputValidationResults(results: Record<string, ValidationResult | undefined>) {
+    for (const [outputName, validationMessages] of Object.entries(results)) {
+      this.outputValidationState[outputName] = validationMessages;
+      this.updateOutputValidationResults(outputName);
+    }
+  }
+
+  private updateOutputValidationResults(outputName: string) {
+    const results = this.outputValidationState[outputName];
+    const sign = this.outputValidationSigns[outputName];
+    if (sign)
+      this.outputValidationSigns[outputName] = updateOutputValidationSign(sign, results);
+  }
+
+  private updateInputValidationResults(inputName: string) {
+    const results = mergeValidationResults(this.inputValidationState[inputName], this.externalValidatorsState[inputName]);
+    const input = this.inputsMap[inputName];
+    if (isFuncCallInputValidated(input))
+      input.setValidation(results);
+  }
+
+  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>, isInput = SYNC_FIELD.INPUTS) {
+    // allow only 1 level of revalidations
+    if (payload.isRevalidation)
+      return;
+    for (const [, result] of Object.entries(results)) {
+      if (result?.revalidate) {
+        for (const field of result.revalidate) {
+          if (isInput === SYNC_FIELD.INPUTS)
+            this.inputValidationRequests.next({field, context: result.context, isRevalidation: true});
+          else
+            this.outputValidationRequests.next({field, context: result.context, isRevalidation: true});
+        }
+      }
+    }
+  }
+
+  private getValidatedNames(inputName?: string, isInput = SYNC_FIELD.INPUTS): string[] {
+    return (inputName ? [inputName]: [...isInput === SYNC_FIELD.INPUTS ? this.funcCall.inputs.keys(): this.funcCall.outputs.keys()]);
+  }
+
+  private async getValidExpRun(expFuncCall: DG.FuncCall) {
     // Dirty hack to set readonly 'started' field
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    const tags = expFuncCall.options['tags'] || [];
-    expFuncCall.options['tags'] = tags.includes(EXPERIMENTAL_TAG) ? tags: [...tags, EXPERIMENTAL_TAG];
+    const immutableTags = expFuncCall.options['immutable_tags'] || [];
+    expFuncCall.options['immutable_tags'] = immutableTags.includes(EXPERIMENTAL_TAG) ? immutableTags: [...immutableTags, EXPERIMENTAL_TAG];
 
     expFuncCall.newId();
 
-    await this.saveRun(expFuncCall);
+    return expFuncCall;
   }
 
-  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
-    const prop = val.property;
-    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-    $(newTableInput.root).css({
-      'width': `${prop.options['block'] ?? '100'}%`,
-      'box-sizing': 'border-box',
-      'padding-right': '5px',
-    });
-
-    t.root.replaceWith(newTableInput.root);
-    t = newTableInput;
-    this.syncOnInput(t, val);
-    if (this.runningOnInput)
-      this.runOnDgInput(t, val);
-    this.afterInputPropertyRender.next({prop, input: t});
+  private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
+    const validExpRun = await this.getValidExpRun(expFuncCall);
+    await this.saveRun(validExpRun);
   }
 
-  private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onInput(() => {
-      this.funcCall!.inputs[val.name] = t.value;
-      if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-      this.checkDisability.next();
+  private hideOutput() {
+    this._isOutputOutdated.next(true);
+    if (this.keepOutput())
+      return;
 
-      this.hideOutdatedOutput();
-    });
+    this.outputTabsLabels.forEach((label) => $(this.tabsElem.getPane(label)?.header).hide());
+
+    const firstInputTab = this.tabsElem.panes
+      .find((tab) => this.inputTabsLabels.includes(tab.name));
+    if (firstInputTab)
+      this.tabsElem.currentPane = firstInputTab;
+    else
+      $(this.tabsElem.root).hide();
   }
 
-  private runOnInput(t: DG.InputBase, val: DG.FuncCallParam) {
-    t.onInput(async () => {
-      if (this.isRunnable())
-        await this.doRun();
-    });
-  }
+  private sheetNamesCache = {} as Record<string, string>;
 
-  private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
-    t.onInput(async () => await this.doRun());
+  private getSheetName(initialName: string, wb: ExcelJS.Workbook) {
+    if (this.sheetNamesCache[initialName]) return this.sheetNamesCache[initialName];
 
-    // DataFrame inputs have internal mutability, so we need check for it
-    const ref = t.value as DG.DataFrame | null;
-    if (ref) {
-      const sub = ref.onDataChanged.subscribe(async () => {
-        if (this.isRunnable())
-          await this.doRun();
-      });
-      this.subs.push(sub);
+    let name = `${initialName}`;
+    if (name.length > 31)
+      name = `${name.slice(0, 31)}`;
+    let i = 1;
+    while (wb.worksheets.some((sheet) => sheet.name.toLowerCase() === name.toLowerCase())) {
+      let truncatedName = `${initialName}`;
+      if (truncatedName.length > (31 - `-${i}`.length))
+        truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+      name = `${truncatedName}-${i}`;
+      i++;
     }
-  }
 
-  private hideOutdatedOutput() {
-    this.outputsTabsElem.panes
-      .filter((tab) => tab.name !== 'Input')
-      .forEach((tab) => $(tab.header).hide());
+    this.sheetNamesCache[initialName] = name;
 
-    if (this.outputsTabsElem.getPane('Input')) this.outputsTabsElem.currentPane = this.outputsTabsElem.getPane('Input');
-  }
+    return name;
+  };
 
   /**
    * RichFunctionView know everything about its UI, so it exports not only data, but also viewer screenshots.
@@ -756,193 +1808,225 @@ export class RichFunctionView extends FunctionView {
    * @param format format needed to export. See {@link this.defaultSupportedExportFormats} for available formats.
    * @returns Promise<Blob> with data ready for download
    */
-  protected defaultExport = async (format: string) => {
-    const lastCall = this.lastCall;
+  protected richFunctionExport = async (format: string) => {
+    if (format === 'Excel') {
+      try {
+        const lastCall = this.lastCall;
 
-    if (!lastCall) throw new Error(`Function was not called`);
+        if (!lastCall) throw new Error(`Function was not called`);
 
-    if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
+        if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
 
-    if (!this.func) throw new Error('The correspoding function is not specified');
+        if (!this.func) throw new Error('The correspoding function is not specified');
 
-    const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-    const exportWorkbook = new ExcelJS.Workbook();
+        await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
+        //@ts-ignore
+        const loadedExcelJS = window.ExcelJS as ExcelJS;
+        const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        const exportWorkbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
 
-    const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
+        const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
-    const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
+        const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
-    const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
-    const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
-    const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
-    const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
+        const dfInputs = this.func.inputs.filter((input) => isDataFrame(input));
+        const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
+        const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output));
+        const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-    const inputParams = [...lastCall.inputParams.values()] as DG.FuncCallParam[];
-    const outputParams = [...lastCall.outputParams.values()] as DG.FuncCallParam[];
+        dfInputs.forEach((dfInput) => {
+          const visibleTitle = dfInput.options.caption || dfInput.name;
+          const currentDfSheet =
+        exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
+        exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
-    dfInputs.forEach((dfInput) => {
-      const visibleTitle = dfInput.options.caption || dfInput.name;
-      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
-
-      const currentDf = lastCall.inputs[dfInput.name];
-      dfToSheet(currentDfSheet, currentDf);
-    });
-
-    if (scalarInputs.length) {
-      const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-      scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-        caption: scalarInput.options['caption'] || scalarInput.name,
-        value: lastCall.inputs[scalarInput.name],
-        units: scalarInput.options['units'] || '',
-      })));
-    }
-
-    dfOutputs.forEach((dfOutput) => {
-      const visibleTitle = dfOutput.options.caption || dfOutput.name;
-      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
-
-      const currentDf = lastCall.outputs[dfOutput.name];
-      dfToSheet(currentDfSheet, currentDf);
-    });
-
-
-    if (scalarOutputs.length) {
-      const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
-      scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-        caption: scalarOutput.options['caption'] || scalarOutput.name,
-        value: lastCall.outputs[scalarOutput.name],
-        units: scalarOutput.options['units'] || '',
-      })));
-    }
-
-    const tabControl = this.outputsTabsElem;
-    for (const tabLabel of this.tabsLabels) {
-      if (!tabControl.getPane(tabLabel)) continue;
-
-      tabControl.currentPane = tabControl.getPane(tabLabel);
-      await new Promise((r) => setTimeout(r, 100));
-      if (tabLabel === 'Input') {
-        for (const inputParam of inputParams.filter((inputParam) => inputParam.property.propertyType === DG.TYPE.DATA_FRAME)) {
-          const nonGridViewers = this.dfToViewerMapping[inputParam.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
-
-          const dfInput = dfInputs.find((input) => input.name === inputParam.name)!;
-          const visibleTitle = dfInput!.options.caption || inputParam.name;
           const currentDf = lastCall.inputs[dfInput.name];
+          dfToSheet(currentDfSheet, currentDf);
+        });
 
-          for (const [index, viewer] of nonGridViewers.entries()) {
-            await plotToSheet(
-              exportWorkbook,
-              exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
-              viewer.root,
-              currentDf.columns.length + 2,
-              (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
-            );
-          };
+        if (scalarInputs.length) {
+          const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+          scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
+            caption: scalarInput.options['caption'] ?? scalarInput.name,
+            value: lastCall.inputs[scalarInput.name] ?? '',
+            units: scalarInput.options['units'] ?? '',
+          })));
         }
-      } else {
-        for (const outputParam of outputParams.filter(
-          (outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME &&
-          (
-            (tabLabel === 'Output' && outputParam.property.category === 'Misc' || outputParam.property.category === 'Output') ||
-            (tabLabel !== 'Output' && outputParam.property.category === tabLabel)
-          ),
-        )) {
-          const nonGridViewers = this.dfToViewerMapping[outputParam.property.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-          const dfOutput = dfOutputs.find((output) => output.name === outputParam.property.name)!;
-          const visibleTitle = dfOutput.options.caption || outputParam.property.name;
+        dfOutputs.forEach((dfOutput) => {
+          const visibleTitle = dfOutput.options.caption || dfOutput.name;
+          const currentDfSheet =
+        exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
+        exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
+
           const currentDf = lastCall.outputs[dfOutput.name];
+          dfToSheet(currentDfSheet, currentDf);
+        });
 
-          for (const [index, viewer] of nonGridViewers.entries()) {
-            if (viewer.type === DG.VIEWER.STATISTICS) {
-              const length = currentDf.columns.length;
-              const stats = DG.DataFrame.fromColumns([
-                DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
-                DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
-                DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
-                DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
-                DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
-                DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
-                DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
-              ]);
-              dfToSheet(
-                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
-                stats,
-                currentDf.columns.length + 2,
-                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
-              );
-            } else {
+
+        if (scalarOutputs.length) {
+          const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+          scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
+            caption: scalarOutput.options['caption'] ?? scalarOutput.name,
+            value: lastCall.outputs[scalarOutput.name] ?? '',
+            units: scalarOutput.options['units'] ?? '',
+          })));
+        }
+
+        const tabControl = this.tabsElem;
+
+        for (const tabLabel of this.inputTabsLabels) {
+          for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+            const nonGridViewers = this.dfToViewerMapping[inputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+            if (nonGridViewers.length === 0) continue;
+
+            tabControl.currentPane = tabControl.getPane(tabLabel);
+            await new Promise((r) => setTimeout(r, 100));
+
+            const visibleTitle = inputProp.options.caption || inputProp.name;
+            const currentDf = lastCall.inputs[inputProp.name];
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
                 exportWorkbook,
-                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
                 viewer.root,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
               );
+            };
+          }
+        }
+
+        for (const tabLabel of this.outputTabsLabels) {
+          for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+            const nonGridViewers = this.dfToViewerMapping[outputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+            if (nonGridViewers.length === 0) continue;
+
+            tabControl.currentPane = tabControl.getPane(tabLabel);
+            await new Promise((r) => setTimeout(r, 100));
+
+            const visibleTitle = outputProp.options.caption || outputProp.name;
+            const currentDf = lastCall.outputs[outputProp.name];
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.type === DG.VIEWER.STATISTICS) {
+                const length = currentDf.columns.length;
+                const stats = DG.DataFrame.fromColumns([
+                  DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
+                  DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
+                  DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
+                  DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
+                  DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
+                  DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
+                  DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
+                ]);
+                dfToSheet(
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
+                  stats,
+                  currentDf.columns.length + 2,
+                  (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                );
+              } else {
+                await plotToSheet(
+                  exportWorkbook,
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook))!,
+                  viewer.root,
+                  currentDf.columns.length + 2,
+                  (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                );
+              }
             }
+          }
+        }
+
+        const buffer = await exportWorkbook.xlsx.writeBuffer();
+
+        return new Blob([buffer], {type: BLOB_TYPE});
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
+    if (format === 'DataUrl images') {
+      const jsonText = {} as Record<string, Record<number, {dataUrl: string, width: number, height: number}>>;
+
+      const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+      const tabControl = this.tabsElem;
+
+      await DG.Utils.loadJsCss(['/js/common/html2canvas.min.js']);
+      //@ts-ignore
+      const loadedHtml2canvas: typeof html2canvas = window.html2canvas;
+
+      for (const tabLabel of this.tabsLabels.filter((label) => this.inputTabsLabels.includes(label))) {
+        for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+          const nonGridViewers = this.dfToViewerMapping[inputProp.name]
+            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
+            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+          if (nonGridViewers.length === 0) continue;
+
+          tabControl.currentPane = tabControl.getPane(tabLabel);
+          await new Promise((r) => setTimeout(r, 100));
+
+          for (const [i, viewer] of nonGridViewers.entries()) {
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
+
+            if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
+
+            jsonText[inputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
+          }
+        }
+      }
+
+      for (const tabLabel of this.tabsLabels.filter((label) => this.outputTabsLabels.includes(label))) {
+        for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+          const nonGridViewers = this.dfToViewerMapping[outputProp.name]
+            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
+            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+          if (nonGridViewers.length === 0) continue;
+
+          tabControl.currentPane = tabControl.getPane(tabLabel);
+          await new Promise((r) => setTimeout(r, 100));
+
+          for (const [i, viewer] of nonGridViewers.entries()) {
+            const dataUrl = (await loadedHtml2canvas(viewer.root, {logging: false})).toDataURL();
+
+            if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
+
+            jsonText[outputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
           }
         };
       }
-    };
-    const buffer = await exportWorkbook.xlsx.writeBuffer();
+      return new Blob([JSON.stringify(jsonText)], {type: 'text/plain'});
+    }
 
-    return new Blob([buffer], {type: BLOB_TYPE});
+    throw new Error('Format is not supported');
   };
 
+  richFunctionViewSupportedFormats() {
+    return ['Excel', 'DataUrl images'];
+  }
+
+  richFunctionViewExportExtensions() {
+    return {
+      'Excel': 'xlsx',
+      'DataUrl images': 'txt',
+    };
+  }
+
   exportConfig = {
-    supportedExtensions: this.defaultSupportedExportExtensions(),
-    supportedFormats: this.defaultSupportedExportFormats(),
-    export: this.defaultExport,
+    supportedExtensions: this.richFunctionViewExportExtensions(),
+    supportedFormats: this.richFunctionViewSupportedFormats(),
+    export: this.richFunctionExport,
     filename: this.defaultExportFilename,
   };
 }
-
-const getSheetName = (name: string, direction: DIRECTION) => {
-  const idealName = `${name}`;
-  return (idealName.length > 31) ? name.substring(0, 32) : idealName;
-};
-
-const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
-  sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
-  scalars.forEach((scalar) => {
-    sheet.addRow([scalar.caption, scalar.value, scalar.units]);
-  });
-
-  sheet.getColumn(1).width = Math.max(
-    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
-  ) * 1.2;
-  sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
-  sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
-};
-
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column: number = 0, row: number = 0) => {
-  for (let i= 0; i < df.columns.names().length; i++) {
-    sheet.getCell(1 + row, 1 + i + column).value = df.columns.byIndex(i).name;
-    sheet.getColumn(1 + i + column).width = Math.max(
-      ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
-      df.columns.byIndex(i).name.length,
-    ) * 1.2;
-  }
-  for (let dfColumn = 0; dfColumn < df.columns.length; dfColumn++) {
-    for (let i = 0; i < df.rowCount; i++)
-      sheet.getCell(i + 2 + row, 1 + column+dfColumn).value = df.columns.byIndex(dfColumn).get(i);
-  }
-};
-
-const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
-  const canvas = await html2canvas(plot as HTMLElement, {logging: false});
-  const dataUrl = canvas.toDataURL('image/png');
-
-  const imageId = exportWb.addImage({
-    base64: dataUrl,
-    extension: 'png',
-  });
-  sheet.addImage(imageId, {
-    tl: {col: columnForImage, row: rowForImage},
-    ext: {width: canvas.width, height: canvas.height},
-  });
-};

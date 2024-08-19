@@ -4,10 +4,21 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
         </encoder>
     </appender>
-    <root level="debug">
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="STDOUT" />
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="ASYNC" />
     </root>
+
     <logger name="spark" level="warn" />
     <logger name="org.eclipse.jetty" level="warn" />
     <logger name="com.wisecoders.dbschema" level="warn" />
+    <logger name="org.neo4j" level="warn" />
 </configuration>

@@ -7,7 +7,7 @@ table rows into nodes by categories in columns. Each column forms a new
 hierarchy level. For example, a tree viewer is commonly used to display sales by
 location.
 
-![Tree viewer](tree-viewer.png)
+![Tree viewer](img/tree-viewer.png)
 
 >Note: To use a tree viewer, install the package [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
 
@@ -16,6 +16,9 @@ location.
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 1. In the dialog, select **Tree viewer**.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Tree');`
+
 When you add a tree viewer, Datagrok chooses two categorical columns with the
 least number of categories. They form the initial hierarchy of the tree viewer.
 
@@ -23,7 +26,7 @@ least number of categories. They form the initial hierarchy of the tree viewer.
 
 You can set the tree hierarchy and customize a tree viewer. To do that, click
 the **Gear** icon on top of the viewer and use the **Data** and **Misc** info
-panels on the **Context Pane** to manage the tree viewer’s settings.
+panels on the **Context Pane** to manage the tree viewer's settings.
 
 For example, you can:
 
@@ -48,19 +51,19 @@ A tree viewer responds to data filters but has limited interaction in rows
 selection. For the node to be selected, you need to select all rows comprising
 the node.
 
-![Tree viewer](tree-viewer.gif "Tree viewer")
+![Tree viewer](img/tree-viewer.gif "Tree viewer")
 
 ## Viewer controls
 
-|      Action                           |         Control             |
-|-------------------------------------|-----------------------|
-| Expand/collapse branch        | Click the node       |
-| Add node to selection           | Shift+click the node|
-| Toggle node selection           | Ctrl+click the node |
+| Action                 | Control              |
+|------------------------|----------------------|
+| Expand/collapse branch | Click the node       |
+| Add node to selection  | Shift+click the node |
+| Toggle node selection  | Ctrl+click the node  |
 
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Network viewer](network-diagram.md)
-* BiostructureViewer
-* PhyloTreeViewer
+* [Network diagram](network-diagram.md) viewer
+* [Dendrogram](./dendrogram) viewer
+* [PhylocanvasGL](./phylocanvas-gl) viewer

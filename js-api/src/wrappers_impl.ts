@@ -1,7 +1,7 @@
 import {Property} from "./entities";
 import {FLOAT_NULL, TYPE, TYPES_SCALAR} from "./const";
-import {TypedEventArgs} from "./viewer";
 import dayjs from "dayjs";
+import { TypedEventArgs } from "./widgets";
 
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params
@@ -50,6 +50,8 @@ export function toJs(dart: any, check: boolean = false): any {
     return new TypedEventArgs(dart);
   } else if (type === TYPE.DATE_TIME) {
     return dayjs(dart);
+  } else if (type === TYPE.BYTE_ARRAY) {
+    return dart;
   }
 
   let wrapper = (<any>window).grok_GetWrapper(dart);
@@ -72,8 +74,8 @@ function isPlainObject(value: any) {
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
-  // if (x instanceof dayjs.Dayjs)
-  //   return x.valueOf();
+  if (x instanceof dayjs)
+    return (<any>window).grok_DayJs_To_DateTime(x.valueOf());
   if (typeof x.toDart === 'function')
     return x.toDart();
   if (typeof x.dart !== 'undefined')

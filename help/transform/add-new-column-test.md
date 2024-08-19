@@ -60,9 +60,9 @@ expression (mathematical function, constants, platform objects properties and fu
 1. Re-open [*"Add new column"*](add-new-column.md) dialog
 
 1. Add "Height" column to *"Formula"* field. Enter ```$``` to call drop-down list of columns or drag column from
-   anywhere in platform ([Column Manager](../explore/column-manager.md)
+   anywhere in platform ([Column Manager](../datagrok/navigation/column-manager.md)
    , [Table](../datagrok/table.md),
-   [Context panel](../datagrok/navigation.md#context-panel))
+   [Context panel](../datagrok/navigation/panels/panels.md#context-panel))
 
 * Type of new column was automatically defined as *double* (*"Height"* column type)
 * Values of new column are equal to values of *"Height"* column in preview
@@ -79,7 +79,7 @@ expression (mathematical function, constants, platform objects properties and fu
 
 1. Use math functions in  *"Formula"* field (Abs(), Acos(), Min(), Max(), Log(), etc.)
 
-* Values of new column are calculated depending on entered funtions
+* Values of new column are calculated depending on entered functions
 
 1. Add columns of different types. Use different combinations of column types and entered values in formula.
 

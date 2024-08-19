@@ -17,7 +17,7 @@ export class OverviewView extends UaView {
     this.name = 'Overview';
   }
 
-  async initViewers() : Promise<void> {
+  async initViewers(path?: string) : Promise<void> {
     this.root.className = 'grok-view ui-box';
     const uniqueUsersViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
@@ -58,10 +58,10 @@ export class OverviewView extends UaView {
     let usersSelection: DG.BitSet;
 
     function query(filter: UaFilter) {
-      df = grok.data.query('UsageAnalysis:PackagesUsageOverview', {...filter});
+      df = grok.functions.call('UsageAnalysis:PackagesUsageOverview', {...filter});
       df.then((df) => {
-        packagesSelection = DG.BitSet.create(df.rowCount, (i) => true);
-        usersSelection = DG.BitSet.create(df.rowCount, (i) => true);
+        packagesSelection = DG.BitSet.create(df.rowCount, (_) => true);
+        usersSelection = DG.BitSet.create(df.rowCount, (_) => true);
       });
     }
     query(this.uaToolbox.getFilter());
@@ -87,14 +87,14 @@ export class OverviewView extends UaView {
           'stackColumnName': '',
           'showStackSelector': false,
           'title': getPackagesViewerName(),
-          'rowSource': 'All',
+          'rowSource': DG.RowSet.All,
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          packagesSelection.init((i) => viewer.dataFrame.get('package', i) == args.args.categories[0]);
-          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
-          userStatsViewer.viewer!.props.rowSource = 'Filtered';
+          packagesSelection.init((i) => viewer.dataFrame.get('package', i) === args.args.options.categories[0]);
+          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.options.categories[0]);
+          userStatsViewer.viewer!.props.rowSource = DG.RowSet.Filtered;
           viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
           PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
         });
@@ -104,13 +104,13 @@ export class OverviewView extends UaView {
             skipEvent = false;
             return;
           }
-          if (userStatsViewer.viewer!.props.rowSource != 'All') {
+          if (userStatsViewer.viewer!.props.rowSource != DG.RowSet.All) {
             packagesSelection.setAll(true);
-            userStatsViewer.viewer!.props.rowSource = 'All';
+            userStatsViewer.viewer!.props.rowSource = DG.RowSet.All;
             userStatsViewer.viewer!.props.title = getUsersViewerName();
-          } else if (packageStatsViewer.viewer!.props.rowSource != 'All') {
+          } else if (packageStatsViewer.viewer!.props.rowSource != DG.RowSet.All) {
             usersSelection.setAll(true);
-            packageStatsViewer.viewer!.props.rowSource = 'All';
+            packageStatsViewer.viewer!.props.rowSource = DG.RowSet.All;
             packageStatsViewer.viewer!.props.title = getPackagesViewerName();
           } else {
             skipEvent = false;
@@ -143,33 +143,33 @@ export class OverviewView extends UaView {
           'showCategorySelector': false,
           'showStackSelector': false,
           'title': getUsersViewerName(),
-          'legendVisibility': 'Never',
-          'onClick': 'Select',
-          'rowSource': 'All',
+          'legendVisibility': DG.VisibilityMode.Never,
+          'onClick': DG.RowGroupAction.Select,
+          'rowSource': DG.RowSet.All
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          usersSelection.init((i) => viewer.dataFrame.get('user', i) == args.args.categories[0]);
-          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
-          packageStatsViewer.viewer!.props.rowSource = 'Filtered';
+          usersSelection.init((i) => viewer.dataFrame.get('user', i) == args.args.options.categories[0]);
+          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.options.categories[0]);
+          packageStatsViewer.viewer!.props.rowSource = DG.RowSet.Filtered;
           viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
           viewer.dataFrame.selection.copyFrom(viewer.dataFrame.filter);
           PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
         });
-        viewer.root.onclick =(me) => {
+        viewer.root.onclick =(_) => {
           //resetViewers(skipEvent, viewer.table);
           if (skipEvent) {
             skipEvent = false;
             return;
           }
-          if (packageStatsViewer.viewer!.props.rowSource != 'All') {
+          if (packageStatsViewer.viewer!.props.rowSource != DG.RowSet.All) {
             usersSelection.setAll(true);
-            packageStatsViewer.viewer!.props.rowSource = 'All';
+            packageStatsViewer.viewer!.props.rowSource = DG.RowSet.All;
             packageStatsViewer.viewer!.props.title = getPackagesViewerName();
-          } else if (userStatsViewer.viewer!.props.rowSource != 'All') {
+          } else if (userStatsViewer.viewer!.props.rowSource != DG.RowSet.All) {
             packagesSelection.setAll(true);
-            userStatsViewer.viewer!.props.rowSource = 'All';
+            userStatsViewer.viewer!.props.rowSource = DG.RowSet.All;
             userStatsViewer.viewer!.props.title = getUsersViewerName();
           } else {
             skipEvent = false;
@@ -204,9 +204,9 @@ export class OverviewView extends UaView {
       cardsView.textContent = '';
       for (const k of Object.keys(counters)) {
         cardsView.append(ui.div([ui.divText(k), ui.wait(async () => {
-          const fc = await grok.data.callQuery(counters[k], filter);
-          const valuePrev = fc.outputs.count1;
-          const valueNow = fc.outputs.count2;
+          const fc: DG.DataFrame = await grok.functions.call(counters[k], filter);
+          const valuePrev = fc.get('count1', 0);
+          const valueNow = fc.get('count2', 0);
           const d = valueNow - valuePrev;
           return ui.div([ui.divText(`${valueNow}`),
             ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : d < 0 ? 'ua-card-minus' : ''})]);

@@ -1,5 +1,5 @@
 #name: Curate
-#description: curating a molecules set for structural data homogenization
+#description: Standardizes the dataset
 #top-menu: Chem | Transform | Curate...
 #language: python
 #sample: chem/chem_standards.csv

@@ -23,7 +23,7 @@ SQL queries via HiveSever2 JDBC driver.
 | `num`, `int`, `double` | =           | =100                       |
 |                        | >           | >1.02                      |
 |                        | >=          | >=4.1                      |
-|                        | <=          | <=100                      |
+|                        | \<=          | \<=100                      |
 |                        | !=          | !=5                        |
 |                        | in          | in (1, 3, 10.2)            |
 |                        | min-max     | 1.5-10.0                   |
@@ -48,19 +48,19 @@ SQL queries via HiveSever2 JDBC driver.
 
 ## Supported output types
 
-| Type                                 | Supported              |
-|--------------------------------------|------------------------|
-| TINYINT, SMALLINT                    | :white_check_mark:     |
-| INT, BIGINT                          | :white_check_mark:     |
-| FLOAT, DOUBLE, DECIMAL               | :white_check_mark:     |
-| TIMESTAMP, DATE, INTERVAL            | :white_check_mark:     |
-| STRING, VARCHAR, CHAR                | :white_check_mark:     |
-| BOOLEAN                              | :white_check_mark:     |
-| ARRAY<data_type>                     | :white_check_mark: (1) |
-| MAP<primitive_type, data_type>       | :white_check_mark: (1) |
-| STRUCT<col_name : data_type  ...>    | :white_check_mark: (1) |
-| UNIONTYPE<data_type, data_type, ...> | not tested             |
-| BINARY                               | not tested             |
+| Type                                  | Supported              |
+|---------------------------------------|------------------------|
+| TINYINT, SMALLINT                     | :white_check_mark:     |
+| INT, BIGINT                           | :white_check_mark:     |
+| FLOAT, DOUBLE, DECIMAL                | :white_check_mark:     |
+| TIMESTAMP, DATE, INTERVAL             | :white_check_mark:     |
+| STRING, VARCHAR, CHAR                 | :white_check_mark:     |
+| BOOLEAN                               | :white_check_mark:     |
+| ARRAY\<data_type>                     | :white_check_mark: (1) |
+| MAP\<primitive_type, data_type>       | :white_check_mark: (1) |
+| STRUCT\<col_name : data_type  ...>    | :white_check_mark: (1) |
+| UNIONTYPE\<data_type, data_type, ...> | not tested             |
+| BINARY                                | not tested             |
 
 * (1) supported as a string
 

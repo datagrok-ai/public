@@ -2,49 +2,66 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export class HelmWebEditor {
-  host: any;
-  editor: any;
+import {Unsubscribable} from 'rxjs';
+
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {
+  App, Editor, HelmType, IHelmWebEditor, HelmEditor, IHelmDrawOptions
+} from '@datagrok-libraries/bio/src/helm/types';
+
+import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
+
+import {_package} from './package';
+
+declare const scil: ScilModule;
+declare const JSDraw2: JSDraw2Module;
+declare const org: OrgHelmModule;
+
+export class HelmWebEditor implements IHelmWebEditor {
+  editor: HelmEditor;
+  host: HTMLDivElement;
+
   w = 200;
   h = 100;
-  constructor() {
-    this.host = ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
-    this.editor = new JSDraw2.Editor(this.host, {width: this.w, height: this.h, viewonly: true});
+  private subs: Unsubscribable[];
+
+  constructor(
+    host?: HTMLDivElement,
+    drawOptions?: Partial<IHelmDrawOptions>,
+    private logger: ILogger = _package.logger
+  ) {
+    this.host = host ?? ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
+
+    const styleBackup = {width: this.host.style.width, height: this.host.style.height, overflow: this.host.style.overflow};
+    this.editor = new JSDraw2.Editor(this.host, {
+      width: this.w, height: this.h, viewonly: true,
+      drawOptions: drawOptions
+    });
+    this.host.style.width = styleBackup.width;
+    this.host.style.height = styleBackup.height;
+    this.host.style.overflow = styleBackup.overflow;
+
+    this.subs = [];
+    this.subs.push(ui.onSizeChanged(this.host).subscribe(this.hostOnSizeChanged.bind(this)));
+  }
+
+  protected toLog(): string {
+    return `Helm: HelmWebEditor<#>`;
+  }
+
+  private lastSize: { width: number, height: number } = {width: -1, height: -1};
+
+  private hostOnSizeChanged(value: any): void {
+    const size = {width: value.target.clientWidth, height: value.target.clientHeight};
+    if (this.lastSize.width != size.width || this.lastSize.height != size.height) {
+      const logPrefix = `${this.toLog()}.hostOnSizeChanged()`;
+      this.logger.debug(`${logPrefix}`);
+      this.editor.setSize(this.host.clientWidth, this.host.clientHeight);
+    }
+    this.lastSize = size;
   }
 
   resizeEditor(w: number, h: number) {
     this.editor.setSize(w, h);
   }
-
-  createWebEditor(value: string) {
-    const editorView = ui.div();
-    org.helm.webeditor.MolViewer.molscale = 0.8;
-    const webEditor = new scil.helm.App(editorView, {
-      showabout: false,
-      mexfontsize: '90%',
-      mexrnapinontab: true,
-      topmargin: 20,
-      mexmonomerstab: true,
-      sequenceviewonly: false,
-      mexfavoritefirst: true,
-      mexfilter: true
-    });
-    const sizes = webEditor.calculateSizes();
-    webEditor.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
-    let s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
-    //@ts-ignore
-    scil.apply(webEditor.sequence.style, s);
-    //@ts-ignore
-    scil.apply(webEditor.notation.style, s);
-    s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + webEditor.toolbarheight) + 'px'};
-    //@ts-ignore
-    scil.apply(webEditor.properties.parent.style, s);
-    webEditor.structureview.resize(sizes.rightwidth, sizes.bottomheight + webEditor.toolbarheight);
-    webEditor.mex.resize(sizes.topheight - 80);
-    setTimeout(function() {
-      webEditor.canvas.helm.setSequence(value, 'HELM');
-    }, 200);
-    return {editorDiv: editorView, webEditor: webEditor};
-  }
 }
-

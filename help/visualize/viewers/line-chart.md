@@ -2,6 +2,11 @@
 title: "Line chart"
 ---
 
+Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 
+
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Line chart');`
+
 General:
 
 |                       |                 |
@@ -24,5 +29,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Line chart](https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart)

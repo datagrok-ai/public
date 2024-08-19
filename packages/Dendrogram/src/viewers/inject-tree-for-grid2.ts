@@ -12,8 +12,8 @@ import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
 import {
-  PROPS as D_PROPS,
-  PROPS_CATS as D_PROPS_CATS,
+  PROPS as _D_PROPS,
+  PROPS_CATS as _D_PROPS_CATS,
 } from './dendrogram';
 import {RectangleTreeHoverType} from './tree-renderers/rectangle-tree-placer';
 import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
@@ -60,7 +60,7 @@ export function injectTreeForGridUI2(
     // TODO: Get max from tree height
     //@ts-ignore
     const treeHeight: number = (treeRoot as MarkupNodeType).subtreeLength;
-    cutSlider = ui.sliderInput('', 0, 0, treeHeight);
+    cutSlider = ui.input.slider('', {value: 0, min: 0, max: treeHeight});
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
       el.style.width = '100%';
@@ -101,23 +101,6 @@ export function injectTreeForGridUI2(
 
   // initial alignment tree with grid
   alignGridWithTree();
-
-  // -- Inject properties --
-
-  try {
-    const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
-      (obj) => {
-        return obj;
-      },
-      (obj, value) => {
-        obj = value;
-      },
-      1);
-    lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
-    DG.Property.registerAttachedProperty('GridLook', lineWidthProperty);
-  } catch (err: any) {
-    console.warn(err);
-  }
 
   // -- Handling events --
 
@@ -206,8 +189,8 @@ export function injectTreeForGridUI2(
           renderer.selectedNodes
             .map((sn) => th.getNodeList(sn).map((n) => n.name))
             .flat());
-        console.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
-          `nodeNameSet = ${JSON.stringify([...nodeNameSet])}`);
+        // console.debug('Dendrogram: Dendrogram.rendererOnSelectionChanged(), ' +
+        //   `nodeNameSet = ${JSON.stringify([...nodeNameSet])}`);
 
         grid.dataFrame.selection.init(
           (rowI) => {

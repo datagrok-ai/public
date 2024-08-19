@@ -1,6 +1,8 @@
 import {DockView, View, ViewBase} from "./view";
 import {TabControl, TabPane} from "../widgets";
-let api = <any>window;
+import {IDartApi} from "../api/grok_api.g";
+
+const api: IDartApi = <any>window;
 
 class EmptyView extends View {
   constructor() {
@@ -68,8 +70,7 @@ export class MultiView extends ViewBase {
       let factory = this._getFactory(this._options?.viewFactories![name]!);
       this._views.set(name, (<ViewFactory>factory)()!);
     }
-    let view = this._views.get(name)!;
-    return view;
+    return this._views.get(name)!;
   }
 
   get name(): string {
@@ -86,10 +87,12 @@ export class MultiView extends ViewBase {
     this.toolbox = x.toolbox;
     this.setRibbonPanels(x.getRibbonPanels());
     this.name = x.name;
-    if (x instanceof DockView) {
-      console.log('bingo');
-      x.initDock();
+
+    if (x instanceof View)
       x._onAdded();
+
+    if (x instanceof DockView) {
+      x.initDock();
       x._handleResize();
     }
   }

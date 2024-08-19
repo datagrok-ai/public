@@ -118,9 +118,9 @@ previous calculations in following sessions. All of the above snippets are summa
 ```js
 const STORAGE_NAME = 'user-data-storage-demo';
 let v = grok.shell.newView('demo: user data storage');
-let age = ui.intInput('Age', 30);
-let sex = ui.choiceInput('Sex', 'Male', ['Male', 'Female']);
-let music = ui.multiChoiceInput('Music genres', null, ['Classic', 'Rock', 'Pop', 'Jazz']);
+let age = ui.input.int('Age', {value: 30});
+let sex = ui.input.choice('Sex', {value: 'Male', items: ['Male', 'Female']});
+let music = ui.input.multiChoice('Music genres', {value: null, items: ['Classic', 'Rock', 'Pop', 'Jazz']});
 let inputs = [age, sex, music];
 v.append(ui.inputs(inputs));
 

@@ -2,6 +2,7 @@ package grok_connect;
 
 import static spark.Spark.*;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -10,23 +11,19 @@ import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.table_query.TableQuery;
-import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.Property;
-import grok_connect.utils.PropertyAdapter;
-import grok_connect.utils.ProviderManager;
-import grok_connect.utils.Settings;
-import grok_connect.utils.SettingsManager;
+import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
 import serialization.BufferAccessor;
 import serialization.DataFrame;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
 import grok_connect.handlers.QueryHandler;
@@ -42,6 +39,7 @@ public class GrokConnect {
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
+    private static final String LOG_LEVEL_PREFIX = "LogLevel";
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
@@ -49,9 +47,12 @@ public class GrokConnect {
     public static void main(String[] args) {
         try {
             properties = getInfo();
+            setGlobalLogLevel();
             PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
             PARENT_LOGGER.info("Grok Connect initializing");
             PARENT_LOGGER.info(getStringLogMemory());
+            PARENT_LOGGER.trace("HELLO FROM TRACE");
+
             providerManager = new ProviderManager();
             port(DEFAULT_PORT);
             connectorsModule();
@@ -73,10 +74,10 @@ public class GrokConnect {
         });
 
         post("/query", (request, response) -> {
-        BufferAccessor buffer;
-        DataQueryRunResult result = new DataQueryRunResult();
-        result.log = "";// use builder instead
-        FuncCall call = null;
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            result.log = "";// use builder instead
+            FuncCall call = null;
             try {
                 call = gson.fromJson(request.body(), FuncCall.class);
                 call.log = "";
@@ -110,14 +111,10 @@ public class GrokConnect {
                 buffer = new BufferAccessor(result.blob);
                 buffer.bufPos = result.blob.length;
 
-            } catch (Throwable ex) {
-                buffer = packException(result,ex);
-                if (ex instanceof OutOfMemoryError) {
-                    PARENT_LOGGER.error("SEVER", ex);
-                    needToReboot = true;
-                } else {
-                    PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                }
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }
             finally {
                 if (call != null)
@@ -138,7 +135,12 @@ public class GrokConnect {
             DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
             DataProvider provider = providerManager.getByName(connection.dataSource);
             response.type(MediaType.TEXT_PLAIN);
-            return provider.testConnection(connection);
+            try {
+                provider.testConnection(connection);
+                return DataProvider.CONN_AVAILABLE;
+            } catch (GrokConnectException e) {
+                return e.getMessage();
+            }
         });
 
         post("/query_table_sql", (request, response) -> {
@@ -148,7 +150,7 @@ public class GrokConnect {
                 TableQuery tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
                 query = provider.queryTableSql(connection, tableQuery);
-            } catch (Throwable ex) {
+            } catch (Exception ex) {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
                 buildExceptionResponse(response, printError(ex));
             }
@@ -163,9 +165,10 @@ public class GrokConnect {
                 DataProvider provider = providerManager.getByName(connection.dataSource);
                 DataFrame dataFrame = provider.getSchemas(connection);
                 buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
-                PARENT_LOGGER.debug(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buffer = packException(result, ex);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }
             prepareResponse(result, response, buffer);
             return response;
@@ -179,9 +182,10 @@ public class GrokConnect {
                 DataProvider provider = providerManager.getByName(connection.dataSource);
                 DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
                 buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                        ? (Exception) ex.getCause() : ex);
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
-                buffer = packException(result, ex);
             }
             prepareResponse(result, response, buffer);
             return response;
@@ -201,8 +205,8 @@ public class GrokConnect {
 
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
-            providerManager.getQueryMonitor().cancelStatement(call.id);
-            providerManager.getQueryMonitor().addCancelledResultSet(call.id);
+            QueryMonitor.getInstance().cancelStatement(call.id);
+            QueryMonitor.getInstance().addCancelledResultSet(call.id);
             response.status(HttpURLConnection.HTTP_OK);
             return response;
         });
@@ -210,7 +214,6 @@ public class GrokConnect {
         post("/set_settings", (request, response) -> {
             Settings settings = gson.fromJson(request.body(), Settings.class);
             SettingsManager.getInstance().setSettings(settings);
-            ConnectionPool.getInstance().setTimer();
             response.status(HttpURLConnection.HTTP_OK);
             return response;
         });
@@ -247,19 +250,17 @@ public class GrokConnect {
         return buffer;
     }
 
-    public static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
+    public static BufferAccessor packException(DataQueryRunResult result, Exception ex) {
         Map<String, String> exception = printError(ex);
         result.errorMessage = exception.get("errorMessage");
         result.errorStackTrace = exception.get("errorStackTrace");
         return new BufferAccessor();
     }
 
-
     public static Map<String, String> printError(Throwable ex) {
-        String errorMessage = ex.toString();
-        StringWriter stackTrace = new StringWriter();
-        ex.printStackTrace(new PrintWriter(stackTrace));
-        String errorStackTrace = stackTrace.toString();
+        String errorMessage = ex.getMessage();
+        String errorStackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
         return new HashMap<String, String>() {{
             put("errorMessage", errorMessage);
             put("errorStackTrace", errorStackTrace);
@@ -309,6 +310,16 @@ public class GrokConnect {
             return properties;
         } catch (IOException e) {
             throw new RuntimeException("Something went wrong when getting info", e);
+        }
+    }
+
+    private static void setGlobalLogLevel() {
+        Optional<String> level = System.getProperties().stringPropertyNames().stream()
+                .filter(name -> name.startsWith(LOG_LEVEL_PREFIX))
+                .findFirst();
+        if (level.isPresent()) {
+            String property = System.getProperty(level.get());
+            PARENT_LOGGER.setLevel(Level.toLevel(property));
         }
     }
 }

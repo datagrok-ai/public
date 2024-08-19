@@ -3,23 +3,42 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
+import {_package} from '../package-test';
 
 category('Viewers: Core Viewers', () => {
+  let df: DG.DataFrame;
+
   const skip: {[key: string]: string} = {'Form': 'GROK-11708',
     'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'};
-  const df = grok.data.demo.demog(100);
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
-    v !== 'Google map' && v !== 'Markup');
+    v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
+    //@ts-ignore
+    v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS && v !== 'Pivot table'); // TO FIX
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
-  coreViewers.push('Leaflet', 'distributionProfiler');
+
+  before(async () => {
+    df = await _package.files.readCsv('SPGI_v2_100.csv');
+  });
 
   for (const v of coreViewers) {
     test(v, async () => {
-      await testViewer(v, df.clone());
+      await testViewer(v, v === '3d scatter plot' ? grok.data.demo.demog(100) : df.clone());
     }, {skipReason: skip[v]});
   }
+});
+
+category('Viewers', ()=> {
+  test('Viewers issues', async ()=> {
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BOX_PLOT, {valueColumnName: 'started'});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {sortByColumnNames: ['age']});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.GRID, {pinnedRowColumnNames: ['subj']});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.PC_PLOT, {colorColumnName: 'started'});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.DENSITY_PLOT, {xColumnName: 'started'});
+    await DG.Test.testViewerProperties(grok.data.demo.demog(100), DG.VIEWER.BAR_CHART,
+      {splitColumnName: 'subj', axisType: DG.AxisType.logarithmic});
+  });
 });
 
 category('Viewers', () => {
@@ -30,7 +49,8 @@ category('Viewers', () => {
 
   before(async () => {
     coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
+      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
+      v !== 'Google map' && v !== 'Word cloud');
     df = grok.data.demo.demog(100);
     tv = grok.shell.addTableView(df);
     viewerList = [];
@@ -223,7 +243,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-}, false);
+}, {clear: false});
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

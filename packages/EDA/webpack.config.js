@@ -1,21 +1,30 @@
 const path = require('path');
-const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, ''); 
+const mode = 'development';
 
 module.exports = {
-  mode: 'development',
+  cache: {
+    type: 'filesystem',
+  },
+  mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

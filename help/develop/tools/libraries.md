@@ -37,7 +37,7 @@ _Links:_
 ## TypeScript
 
 As we recommend [TypeScript](https://www.typescriptlang.org/) as a language for package development, there's an option
-to [create a package](../getting-started.md)
+to [create a package](../onboarding/getting-started.md)
 with a `--ts` flag. Among other things, it adds two new dependencies: `typescript` (provides the language support)
 and `ts-loader` (a file loader for `webpack`). Likely, these are not the only libraries you will use when writing in
 TypeScript. For example, if one of the libraries you want to work with has not been typed yet, check out the
@@ -60,7 +60,7 @@ and [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
 find useful such projects as
 [NGL](https://www.npmjs.com/package/ngl), [RDKit](https://www.npmjs.com/package/@rdkit/rdkit),
 and [OpenChemLib](https://www.npmjs.com/package/openchemlib), but first look at what solutions already exist to
-integrate with them (see the [Cheminformatics](../domains/chem/cheminformatics.md)
+integrate with them (see the [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)
 page).
 
 _Links:_

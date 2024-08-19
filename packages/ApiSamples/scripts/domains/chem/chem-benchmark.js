@@ -1,16 +1,14 @@
-//name: chemBenchmark
-//language: javascript
-
 // https://stackoverflow.com/a/47593316
+
 function mulberry32(a) {
-    return function() {
-      var t = a += 0x6D2B79F5;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    }
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
 }
-var rand = mulberry32(42); // seed = 42
+let rand = mulberry32(42); // seed = 42
 
 const randomInt = (min, max) => min + Math.floor((max - min) * rand());
 const range = (l, r) => new Array(r - l).fill().map((_, k) => k + l);
@@ -18,7 +16,7 @@ const range = (l, r) => new Array(r - l).fill().map((_, k) => k + l);
 function getIdxRandomSubset(N, n) {
   let arr = range(0, N);
   let shuffled = arr.slice(0);
-  let i = arr.length, temp, index;
+  let i = arr.length; let temp; let index;
   while (i--) {
     index = randomInt(0, i + 1);
     temp = shuffled[index];
@@ -39,7 +37,7 @@ let caseCntr = 0;
 async function testCase(title, f) {
   let msg = await DG.timeAsync(++caseCntr + '. ' + title, f);
   if (typeof msg === 'string')
-  	console.log("   " + msg);
+    console.log('   ' + msg);
 }
 
 (async () => {
@@ -73,26 +71,26 @@ async function testCase(title, f) {
 
   rowsInd = getIdxRandomSubarray(nSearch, nRender);
   await testCase(`Rendering a ${rowsInd.length} random molecules`, () => {
-    for (i of rowsInd) {
+    for (i of rowsInd) 
       render(i);
-    }
+    
   });
 
   rowsInd = getIdxRandomSubarray(nSearch, nScroll);
   await testCase(`Horizontal scrolling (${rowsInd.length} random molecules, ${tScroll} times)`, () => {
     for (let t = 0; t < tScroll; ++t) {
-      for (let i of rowsInd) {
+      for (let i of rowsInd) 
         render(i);
-      }
+      
     }
   });
 
   rowsInd = getIdxRandomSubarray(nSearch, nScroll + tScroll);
   await testCase(`Vertical scrolling (${nScroll} random molecules, ${tScroll} times)`, () => {
     for (let t = 0; t < tScroll; ++t) {
-      for (let i of rowsInd.slice(t, t + nScroll)) {
+      for (let i of rowsInd.slice(t, t + nScroll)) 
         render(i);
-      }
+      
     }
   });
 
@@ -100,7 +98,7 @@ async function testCase(title, f) {
     'c1ccccc1', // Benzene https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL277500/ 
     'CC(=O)Oc1ccccc1C(=O)O', // Aspirin https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL25/
     'CCCCCCCCCCCCCCCCCC(=O)O', // Stearic acid https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL46403/
-    'NCCCC[C@H](N)C(=O)O' // Lusine https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL8085/
+    'NCCCC[C@H](N)C(=O)O', // Lusine https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL8085/
   ];
   
   const searchForNames = ['Benzene', 'Aspirin', 'Stearic acid', 'Lusine'];
@@ -109,17 +107,20 @@ async function testCase(title, f) {
     await grok.chem.searchSubstructure(col));
   
   
-  for (let i = 0; i < searchFor.length; ++i)
+  for (let i = 0; i < searchFor.length; ++i) {
     await testCase(`Substructure search, searching ${searchForNames[i]} in ${nSearch} molecules`, async () => {
-      let s = await grok.chem.searchSubstructure(col, searchFor[i]); return `Found ${s.trueCount} molecules for ${searchFor[i]}`; });
+      let s = await grok.chem.searchSubstructure(col, searchFor[i]);
+      return `Found ${s.trueCount} molecules for ${searchFor[i]}`;
+    });
+  }
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
     await grok.chem.getSimilarities(col));
   const queryIdx = getIdxRandomSubset(nSearch, nSample);
   await testCase(`Similarity scoring, search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
-    for (let i of queryIdx) {
+    for (let i of queryIdx) 
       await grok.chem.getSimilarities(col, col.get(i));
-    }
+    
   });
   
   await testCase(`Substructure search (server), searching benzene in ${nSearch} molecules`, async () =>
@@ -128,10 +129,9 @@ async function testCase(title, f) {
     await grok.chem.searchSubstructureServer(col, searchFor[1]), false);
   
   /*
-  await testCase(`Similarity scoring (server), search for ${queryIdx.length} samples in ${nSearch} molecules`, async () => {
+  await testCase(`Similarity scoring (server), search for ${
+    queryIdx.length} samples in ${nSearch} molecules`, async () => {
     await grok.chem.findSimilarServer(col, searchFor[0]);
   });
   */
-
-
 })();

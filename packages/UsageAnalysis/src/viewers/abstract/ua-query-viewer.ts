@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
 import ColorHash from 'color-hash';
-import {data} from "datagrok-api/grok";
 
 const colorHash = new ColorHash();
 
@@ -15,10 +14,9 @@ export abstract class UaQueryViewer extends UaViewer {
   getDataFrame?: () => Promise<DG.DataFrame>;
   processDataFrame?: (t: DG.DataFrame) => DG.DataFrame;
   dataFrame?: Promise<DG.DataFrame>;
-  staticFilter: Object = {};
+  // staticFilter: Object = {};
   filter: Object = {};
   viewer: DG.Viewer | undefined;
-
   activated = false;
 
   protected constructor(name: string, options: {queryName?: string, createViewer: (t: DG.DataFrame) => DG.Viewer,
@@ -46,9 +44,9 @@ export abstract class UaQueryViewer extends UaViewer {
         this.getDataFrame!().then(this.postQuery.bind(this)).then(resolve.bind(this));
         return;
       }
-      grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
+      grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
         if (dataFrame.columns.byName('count') != null)
-          dataFrame.columns.byName('count').tags['format'] = '#';
+          dataFrame.columns.byName('count').meta.format = '#';
         const userColumn = dataFrame.columns.byName('user');
         if (userColumn != null) {
           const users: {[key: string]: string} = {};
@@ -66,6 +64,10 @@ export abstract class UaQueryViewer extends UaViewer {
       dataFrame = this.processDataFrame!(dataFrame);
     this.viewer ??= this.createViewer(dataFrame);
     this.viewer.dataFrame = dataFrame;
+    this.viewer.setOptions({
+      markerMinSize: 10,
+      markerMaxSize: 30,
+    });
     this.root.appendChild(this.viewer!.root);
     this.viewer!.dataFrame = dataFrame ?? this.viewer!.dataFrame;
     this.viewer!.root.style.display = 'flex';

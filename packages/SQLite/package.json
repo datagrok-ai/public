@@ -2,10 +2,10 @@
   "name": "@datagrok/sqlite",
   "friendlyName": "SQLite",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Support for importing and previewing SQLite files.",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "datagrok-api": "^1.6.5",
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^4.2.13",
     "file-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest"
@@ -57,5 +57,5 @@
   "canView": [
     "All users"
   ],
-  "category": "Development"
+  "category": "Data Access"
 }

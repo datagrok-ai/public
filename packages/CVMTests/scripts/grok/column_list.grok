@@ -1,0 +1,9 @@
+#name: Grok Column List
+#description: column list input
+#language: grok
+#input: dataframe df
+#input: column_list cols
+#output: dataframe result
+
+DeleteColumns(df, [columns[0]])
+result = df

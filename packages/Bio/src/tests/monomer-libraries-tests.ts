@@ -5,7 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import {test, after, before, category, expect} from '@datagrok-libraries/utils/src/test';
 
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {
+  getUserLibSettings, setUserLibSettings, setUserLibSettingsForTests
+} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 
 category('monomerLibraries', () => {
@@ -15,20 +17,51 @@ category('monomerLibraries', () => {
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+    userLibrariesSettings = getUserLibSettings();
   });
 
   after(async () => {
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
+    await setUserLibSettings(userLibrariesSettings);
   });
 
   test('default', async () => {
     // Clear settings to test default
-    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, {}, true);
-    await monomerLibHelper.loadLibraries(true); // test defaultLib
+    await setUserLibSettings({exclude: [], explicit: []});
+    await monomerLibHelper.loadMonomerLib(true); // test defaultLib
 
     // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
-    const currentMonomerLib = monomerLibHelper.getBioLib();
+    const currentMonomerLib = monomerLibHelper.getMonomerLib();
     expect(currentMonomerLib.getPolymerTypes().length > 0, true);
+  });
+
+  test('forTests', async () => {
+    await setUserLibSettingsForTests();
+    await monomerLibHelper.loadMonomerLib(true); // test defaultLib
+
+    // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
+    const currentMonomerLib = monomerLibHelper.getMonomerLib();
+    // HELMCoreLibrary.json checks
+    expect(currentMonomerLib.getPolymerTypes().length, 2);
+    expect(currentMonomerLib.getMonomerSymbolsByType('PEPTIDE').length, 322);
+    expect(currentMonomerLib.getMonomerSymbolsByType('RNA').length, 383);
+  });
+
+  test('empty', async () => {
+    // exclude all monomer libraries for empty set
+    const libSettings = await getUserLibSettings();
+    const libFileManager = await monomerLibHelper.getFileManager();
+
+    let libFnList = libFileManager.getValidLibraryPaths();
+    if (libFnList.length === 0)
+      libFnList = await libFileManager.getValidLibraryPathsAsynchronously();
+
+    libSettings.exclude = libFnList;
+    libSettings.explicit = [];
+    await setUserLibSettings(libSettings);
+
+    await monomerLibHelper.loadMonomerLib(true);
+    const currentMonomerLib = monomerLibHelper.getMonomerLib();
+    const polymerTypes = currentMonomerLib.getPolymerTypes();
+    expect(polymerTypes.length === 0, true);
   });
 });

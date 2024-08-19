@@ -11,23 +11,23 @@ Platform provide ability to display different columns values in different colors
 
 1. Enable color-coding from **Context Menu | Color coding | On** for *Age* column
 
-* Values ​​in *Age* column painted in different colors
+* Values   in *Age* column painted in different colors
 
 1. Enable color-coding from **Context Menu | Color coding | On** for *Sex* column
 
-* Values ​​in *Sex* column painted in different colors
+* Values   in *Sex* column painted in different colors
 
 1. Enable color-coding from **Context Menu | Color coding | On** for *Control* column
 
-* Values ​​in *Control* column painted in different colors
+* Values   in *Control* column painted in different colors
 
 1. Enable color-coding from **Context Menu | Color coding | On** for *Started* column
 
-* Values ​​in *Started* column painted in different colors
+* Values   in *Started* column painted in different colors
 
 1. Change color scheme from **Context Menu | Color coding | Color scheme** for table
 
-* Value colors ​​in *Age* and *Started* columns changed according to chosen color scheme
+* Value colors   in *Age* and *Started* columns changed according to chosen color scheme
 
 1. Open **Properties** dialog for *Sex* column
 

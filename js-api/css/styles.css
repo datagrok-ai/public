@@ -1,23 +1,61 @@
+/* deprecated style, is used for backward compatibility, will be removed in API version 1.18.0 */
 .sketch-link {
-    border: 1px solid var(--grey-2);
-    height: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-left: 0px;
-    margin-left: 0px;
-  }
+}
+
+.chem-sketch-link {
+  color: var(--blue-1);
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 0px;
+  margin-left: 0px;
+}
   
 
-.sketcher-host {
+.chem-sketcher-host {
   width: 100%!important;
   height: 100%!important;
 }
 
-.clear-button {
+.chem-clear-sketcher-button {
   position: absolute;
   right: 0px;
   top: 0px;
   font-size: 10px;
   visibility: hidden;
+}
+
+.chem-invalid-molecule-warning {
+  color: var(--red-3);
+  position: relative;
+  left: 60px;
+  bottom: 60px;
+}
+
+.chem-sketcher-loader-show {
+  position: absolute!important;
+  top: 10px!important;
+  left: 7px!important;
+}
+
+.chem-sketcher-loader-hide {
+  display: none!important;
+}
+
+.chem-sketcher-filter-options {
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  gap: 10px;
+}
+
+.chem-external-sketcher-canvas {
+  min-width: 100px;
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.ui-input-root.ui-input-textarea.ui-input-code > .d4-editor {
+  border: 1px solid var(--grey-2);
 }

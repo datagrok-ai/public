@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: grok-connect
+  name: grok-connect
+  namespace: datagrok
+spec:
+  ports:
+    - name: "grok-connect"
+      port: 1234
+      targetPort: 1234
+  selector:
+    service: grok-connect

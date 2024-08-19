@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
-import {splitterAsFasta, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const FASTA_LINE_WIDTH = 60;
 
@@ -20,25 +20,25 @@ export function saveAsFastaUI() {
     .find((gcol: DG.GridColumn) => gcol.name.toLowerCase().indexOf('id') !== -1);
   const idDefaultValue = defaultIdGCol ? [defaultIdGCol.name] : [];
 
-  const idGColListInput = ui.multiChoiceInput('Seq id columns', idDefaultValue,
-    idGColList.map((gcol: DG.GridColumn) => gcol.name));
+  const idGColListInput = ui.input.multiChoice('Seq id columns', {value: idDefaultValue,
+    items: idGColList.map((gcol: DG.GridColumn) => gcol.name)});
 
   const seqGColList: DG.GridColumn[] = wu.count(0).take(grid.columns.length)/* range rom 0 to grid.columns.length */
     .map((colI: number) => grid.columns.byIndex(colI)!)
     .filter((gc: DG.GridColumn) => {
       const col: DG.Column | null = gc.column;
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
-        return uh.isFasta();
+        const sh = SeqHandler.forColumn(col);
+        return sh.isFasta();
       }
       return false;
     }).toArray();
 
   const seqDefaultValue = seqGColList.length > 0 ? seqGColList[0].name : [];
-  const seqColInput = ui.choiceInput('Seq column', seqDefaultValue,
-    seqGColList.map((gCol: DG.GridColumn) => gCol.name));
+  const seqColInput = ui.input.choice('Seq column', {value: seqDefaultValue,
+    items: seqGColList.map((gCol: DG.GridColumn) => gCol.name)});
 
-  const lineWidthInput = ui.intInput('FASTA line width', FASTA_LINE_WIDTH);
+  const lineWidthInput = ui.input.int('FASTA line width', {value: FASTA_LINE_WIDTH});
 
   ui.dialog({title: 'Save as FASTA'})
     .add(ui.inputs([
@@ -73,21 +73,20 @@ export function saveAsFastaUI() {
  * @param {number} lineWidth - FASTA line width
  * @param {string} lineSeparator - FASTA line separator
  * @return {string} FASTA content
-*/
+ */
 export function saveAsFastaDo(
   idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
 ): string {
-  const splitter: SplitterFunc = splitterAsFasta;
-
+  const sh = SeqHandler.forColumn(seqCol);
   const fastaLines: string[] = [];
 
-  for (let rowI: number = 0; rowI < seqCol.length; rowI++) {
+  for (let rowIdx: number = 0; rowIdx < seqCol.length; rowIdx++) {
     // multiple identifiers separated by vertical bars
     // https://en.wikipedia.org/wiki/FASTA_format
 
-    const seqId: string = idColList.map((col) => col.get(rowI).toString()).join('|');
-    const seq: string = seqCol.get(rowI);
-    const seqLineList: string[] = wrapSequence(seq, splitter, lineWidth);
+    const seqId: string = idColList.map((col) => col.get(rowIdx).toString()).join('|');
+    const srcSS = sh.getSplitted(rowIdx);
+    const seqLineList: string[] = wrapSequence(srcSS, lineWidth);
 
     fastaLines.push(`>${seqId}${lineSeparator}`);
     for (const line of seqLineList)
@@ -99,16 +98,16 @@ export function saveAsFastaDo(
 }
 
 /* split sequence for monomers to prevent wrapping monomer partially */
-export function wrapSequence(seq: string, splitter: SplitterFunc, lineWidth: number = FASTA_LINE_WIDTH): string[] {
-  const seqMonomerList = splitter(seq);
+export function wrapSequence(srcSS: ISeqSplitted, lineWidth: number = FASTA_LINE_WIDTH): string[] {
   let seqPos: number = 0;
-  const seqLength: number = seqMonomerList.length;
+  const seqLength: number = srcSS.length;
 
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine: string[] = seqMonomerList.slice(seqPos, seqPos + lineWidth);
-    const seqLineTxt: string = seqLine.map((m) => m.length > 1 ? `[${m}]` : m).join('');
+    const seqLine = wu(srcSS.originals).slice(seqPos, seqPos + lineWidth).toArray();
+    const seqLineTxt: string = seqLine.map((om) => om.length > 1 ? `[${om}]` : om)
+      .reduce((a, b) => a + b, '');
     seqLineList.push(seqLineTxt);
     seqPos += seqLine.length;
   }

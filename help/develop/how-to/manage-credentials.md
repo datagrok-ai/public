@@ -2,9 +2,9 @@
 title: "Manage credentials"
 ---
 
-[Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
+[Security credentials](../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,
 database connections typically require a pair of login and password, whereas web services normally expect a token or an
-access key. You can associate such data with two types of [entities](../../datagrok/objects.md) within the
+access key. You can associate such data with two types of [entities](../../datagrok/concepts/objects.md) within the
 platform: [packages](../develop.md#packages)
 and [connections](../../access/access.md#data-connection). This article describes how to transfer this information to the
 platform and common practices to keep it secure.
@@ -23,7 +23,7 @@ set the relevant credentials. This is done by sending a POST request
 to `${GROK_HOST}/api/credentials/for/${PACKAGE_NAME}`. The headers should contain an API key for authorization (
 available on your profile page, e.g., [https://public.datagrok.ai/u](https://public.datagrok.ai/u)), and the type of
 data in the request body should be `json`. For example, the following code pushes a login/password pair to
-Datagrok's [credentials storage](https://datagrok.ai/help/govern/security#credentials-storage):
+Datagrok's [credentials storage](../../govern/access-control/access-control.md#credentials-management-system):
 
 ```javascript
 let credentials = { login: 'login', password: 'password' };
@@ -104,7 +104,7 @@ There are many ways to specify credentials for a database connection, namely:
 
 See also:
 
-* [Security](../../govern/security.md#credentials)
+* [Security](../../govern/access-control/access-control.md#credentials-management-system)
 * [How to access data](access-data.md)
 * [Packages](../develop.md)
 * [Data connection](../../access/access.md#data-connection)

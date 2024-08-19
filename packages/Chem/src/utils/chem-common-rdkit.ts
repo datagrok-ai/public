@@ -6,17 +6,18 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {isMolBlock} from './chem-common';
+import {hexToPercentRgb, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
+import { ISubstruct } from '../rendering/rdkit-cell-renderer';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
 export let moduleInitialized = false;
 
-const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
+export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
   clearBackground: false,
   offsetx: 0,
   offsety: 0,
@@ -86,7 +87,7 @@ export function getRdKitWebRoot() {
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
   ctx.lineWidth = 1;
-  ctx.strokeStyle = '#EFEFEF';
+  ctx.strokeStyle = '#DBDCDF';
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(width, height);
@@ -158,7 +159,7 @@ export function drawRdKitReactionToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
-  options = {normalizeDepiction: true, straightenDepiction: true}) {
+  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null) {
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;
@@ -191,33 +192,40 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     mol.set_new_coords(true);
 
-  if (options.normalizeDepiction ?? true)
-    !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
+  const molHasOwnCoords = (mol.has_coords() > 0);
+  if (molHasOwnCoords) {
+    mol.normalize_depiction(0);
+    mol.straighten_depiction(true);
+  }
 
-  if (options.straightenDepiction ?? true)
-    !isMol ? mol.straighten_depiction(false) : mol.straighten_depiction(true);
-
+  let scaffoldMol: RDMol | null = null;
   try {
-    const scaffoldMol = scaffoldMolString == null ? null :
-      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
-        getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
-    let substructJson = '{}';
-    if (scaffoldMol) {
-      try {
-        substructJson = mol.get_substruct_match(scaffoldMol);
-      } catch (e) {
-        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
+    let substruct: ISubstruct | null = null;
+    if (scaffoldStruct)
+      substruct = scaffoldStruct;
+    else {
+      let substructJson = scaffoldStruct ?? '{}';
+      scaffoldMol = scaffoldMolString == null ? null :
+        (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
+          getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+      if (scaffoldMol) {
+        try {
+          substructJson = mol.get_substruct_match(scaffoldMol);
+        } catch (e) {
+          console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
+        }
+        if (substructJson === '')
+          substructJson = '{}';
       }
-      if (substructJson === '')
-        substructJson = '{}';
+      substruct = JSON.parse(substructJson);
     }
-    const substruct = JSON.parse(substructJson);
     drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
   } finally {
     mol?.delete();
+    scaffoldMol?.delete();
   }
 }
 
@@ -237,4 +245,74 @@ export function checkMoleculeValid(molecule: string): any {
     return null;
   }
   return mol;
+}
+
+
+export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule, col?: string, addHs?: boolean): ISubstruct | null {
+  let mol = getMolSafe(molecule, {}, rdkit).mol;
+  let substruct: ISubstruct | null = null;
+  let uncommonAtomsBest: number[] = [];
+  let uncommonBondsBest: number[] = [];
+  const highlightAtomColors: { [key: string]: number[] } = {};
+  const highlightBondColors: { [key: string]: number[] } = {};
+  try {
+    if (mol) {
+      if (addHs) {
+        const molblockWithHs = mol.add_hs();
+        mol = getMolSafe(molblockWithHs, {}, rdkit).mol;
+      }
+      if(mol) {
+        let rdKol: number[] | null = null;
+        if (col)
+          rdKol = hexToPercentRgb(col);
+        let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
+        let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+        if (mcsMol) {
+          const matchedAtomsAndBondsList: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(mcsMol!));
+          let errorRateTotal = Number.MAX_SAFE_INTEGER;
+          for (let i = 0; i < matchedAtomsAndBondsList.length; i++) {
+            let uncommonAtomsSingle = [...uncommonAtoms];
+            let uncommonBondsSingle = [...uncommonBonds];
+            if (matchedAtomsAndBondsList[i].atoms)
+              uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => { return a - b; }));
+            if (matchedAtomsAndBondsList[i].bonds)
+              uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => { return a - b; }));
+  
+            let errorRate = 0;
+            for (let j = 0; j < uncommonBondsSingle.length - 1; j++) {
+              if (Math.abs(uncommonBondsSingle[j] - uncommonBondsSingle[j + 1]) > 1)
+                errorRate++;
+            }
+            if (errorRate < errorRateTotal) {
+              errorRateTotal = errorRate;
+              uncommonAtomsBest = uncommonAtomsSingle;
+              uncommonBondsBest = uncommonBondsSingle;
+            }
+          }
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonAtomsBest.length; i++)
+            highlightAtomColors[uncommonAtomsBest[i].toString()] = rdKol;
+        }
+        if (rdKol) {
+          for (let i = 0; i < uncommonBondsBest.length; i++)
+            highlightBondColors[uncommonBondsBest[i].toString()] = rdKol;
+        }
+        return { atoms: uncommonAtomsBest, bonds: uncommonBondsBest, highlightAtomColors, highlightBondColors };
+      }
+    }
+  } catch {
+    //do nothing, if molecule is invalid - return empty substruct obj
+  } finally {
+    mol?.delete();
+  }
+  return substruct;
+}
+
+function getArraysDifference(largerArr: number[], smallerArr: number[]) {
+  const diffArr: number[] = [];
+  let counter = 0;
+  for (let i = 0; i < largerArr.length; i++)
+    largerArr[i] === smallerArr[counter] ? counter++ : diffArr.push(largerArr[i]);
+  return diffArr;
 }

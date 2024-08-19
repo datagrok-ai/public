@@ -26,5 +26,5 @@ watch icon in the left bottom corner) to access previously used aggregation opti
 
 See also:
 
-* [Aggregation functions](aggregation-functions.md)
+* [Aggregation functions](functions/aggregation-functions.md)
 * [JS API: Aggregations](https://public.datagrok.ai/js/samples/data-frame/aggregation)

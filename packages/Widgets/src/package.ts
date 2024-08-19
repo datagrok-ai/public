@@ -1,7 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {TYPE} from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {RadioButtonFilter} from './filters/radio-button-filter';
@@ -42,8 +41,8 @@ export function tableSummary() {
 
 //name: inputDemo
 export function inputDemo() {
-  var medication = { name: 'Aspirin', quantity: '20 mg'};
-  var fooProp = DG.Property.fromOptions({name: 'quantity', type: DG.TYPE.STRING, semType: 'foo'});
+  const medication = {name: 'Aspirin', quantity: '20 mg'};
+  const fooProp = DG.Property.fromOptions({name: 'quantity', type: DG.TYPE.STRING, semType: 'foo'});
 
   ui.dialog()
     .add(ui.input.form(medication, [DG.Property.js('name', DG.TYPE.STRING), fooProp]))
@@ -66,8 +65,8 @@ export class FooInput extends DG.JsInputBase<string> {
 
   constructor() {
     super();
-    $(this.valueEditor).on('input', (e) => { this.fireInput(); this.fireChanged(); });
-    $(this.unitsEditor).on('input', (e) => { this.fireInput(); this.fireChanged(); });
+    $(this.valueEditor).on('input', (e) => {this.fireInput(); this.fireChanged();});
+    $(this.unitsEditor).on('input', (e) => {this.fireInput(); this.fireChanged();});
   }
 
   getInput(): HTMLElement {
@@ -78,14 +77,14 @@ export class FooInput extends DG.JsInputBase<string> {
     return this.valueEditor.value + ' ' + this.unitsEditor.value;
   }
 
-  getStringValue(): string { return this.value; }
-  setStringValue(value: string) { this.value = value; }
+  getStringValue(): string {return this.value;}
+  setStringValue(value: string) {this.value = value;}
 
   setValue(value: string): void {
     if (value == this.getValue())
       return;
 
-    let values = value.split(' ');
+    const values = value.split(' ');
     this.valueEditor.value = values[0];
     this.unitsEditor.value = values.length > 1 ? values[1] : '';
     this.fireChanged();

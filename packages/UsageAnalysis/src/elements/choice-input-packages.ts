@@ -11,9 +11,10 @@ export class ChoiceInputPackages {
   field: DG.InputBase;
 
   static async construct() {
-    const field = ui.choiceInput('Packages', [], []);
+    const field = ui.input.choice('Packages');
 
     field.input.setAttribute('multiple', '');
+    field.input.querySelectorAll('option').forEach((o) => {o.selected = false;});
     const choices = new Choices(field.input, {
       addItems: true,
       removeItems: true,
@@ -49,7 +50,7 @@ export class ChoiceInputPackages {
 
   getSelectedPackages(): string[] {
     const packages = this.choices?.getValue(true) as string[];
-    if (packages && packages.length > 0)
+    if (packages && packages.length > 0 && packages[0] !== '[]')
       return packages;
     else
       return ['all'];

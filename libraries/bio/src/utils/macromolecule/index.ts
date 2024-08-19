@@ -12,18 +12,19 @@ export {
   NOTATION,
   ALPHABET,
   ALIGNMENT,
+  candidateAlphabets,
+  positionSeparator
 } from './consts';
 
 export {
-  getSplitter,
   splitterAsFasta,
   getSplitterWithSeparator,
   splitterAsHelm,
-  getStats,
   getAlphabet,
   getAlphabetSimilarity,
   monomerToShort,
   pickUpPalette,
   pickUpSeqCol,
   getPaletteByType,
+  MonomerToShortFunc
 } from './utils';

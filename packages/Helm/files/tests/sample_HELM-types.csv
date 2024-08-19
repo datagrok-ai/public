@@ -1,0 +1,5 @@
+Helm,Protein,RNA,DNA
+PEPTIDE1{I.H.A.N.T.Thr_PO3H2.Aca.D-Tyr_Et}$$$$,IHANTK,ACGU,ACGT
+RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$,KHAQTRT,CGUG,CGGT
+RNA1{d(A)p.d(C)p.d(G)p.d(U)p}$$$$,IHANTKT,CCGU,ACCT
+RNA1{d(A)p.d(C)p.d(G)p.d(U)p}|PEPTIDE1{I.H.A.N.T.Thr_PO3H2}$$$$,PQRHLF,UAAA,CTAA

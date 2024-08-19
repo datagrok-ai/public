@@ -1,23 +1,34 @@
 const path = require('path');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
   entry: {
-    package: './src/package.ts'
+    package: ['./src/package.ts'],
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts',
+    },
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: {'url': false},
+    extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.js', '.json'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' },
-      {
-        test: /\.js$/,
-        enforce: 'pre',
-        use: ['source-map-loader'],
-      },
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
+      {test: /\.css$/, use: ['style-loader', 'css-loader']}
     ],
   },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
@@ -32,7 +43,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'powergrid',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

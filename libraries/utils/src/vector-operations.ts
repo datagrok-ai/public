@@ -23,7 +23,7 @@ export function assert(condition: boolean = false, message: string = 'Assertion 
  * @return {Coordinates} A two-dimensional filled with the value given.
  * @todo Might be slow since used Array.map. Probably needs performance revision.
  */
-function initCoordinates(dimension1: number, dimension2: number, fill: number = 0): Coordinates {
+export function initCoordinates(dimension1: number, dimension2: number, fill: number = 0): Coordinates {
   return new Array(dimension1).fill(fill).map(() => (new Vector(dimension2).fill(fill)));
 }
 
@@ -137,10 +137,16 @@ export function fillRandomMatrix(dimension1: number, dimension2: number, scale: 
  * @return {number} Euclidean distance between the given vectors.
  */
 export function calculateEuclideanDistance(p: Vector, q: Vector): number {
-  const diff = vectorAdd(p, q, -1);
-  const sqdiff = vectorSquare(diff);
-  const sqdiffSumm = itemsSum(sqdiff);
-  return Math.sqrt(sqdiffSumm);
+  let result = 0;
+  const len = p.length;
+
+  if (len !== q.length)
+    throw new Error('The dimensionality of the vectors must match');
+  
+  for (let i = 0; i < len; ++i)
+    result += (p[i] - q[i]) ** 2;
+  
+  return Math.sqrt(result);
 }
 
 /**
@@ -265,25 +271,26 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
 }
 
 /**
- * Returns normalized vector
+ * Returns normalized vector.
+ * 
+ * @export
  * @param {Vector} data numerical array
  */
 export function normalize(data: Vector): Vector {
-  let mean = 0;
-  let std = 0;
+  const len = data.length;
+  let sum = 0;
+  let sumOfSquares = 0;
 
-  for (let i = 0; i < data.length; ++i)
-    mean += data[i];
+  for (let i = 0; i < len; ++i) {
+    sum += data[i];
+    sumOfSquares += data[i] ** 2;
+  }
 
-  mean /= data.length;
+  const mean = sum / len;
+  const stdDevInverse = 1.0 / Math.sqrt(sumOfSquares / len - mean ** 2);
 
-  for (let i = 0; i < data.length; ++i)
-    std += (data[i] - mean) * (data[i] - mean);
-
-  std = Math.sqrt(std / data.length);
-
-  for (let i = 0; i < data.length; ++i)
-    data[i] = (data[i] - mean) / std;
+  for (let i = 0; i < len; ++i)
+    data[i] = (data[i] - mean) * stdDevInverse;
 
   return data;
 }

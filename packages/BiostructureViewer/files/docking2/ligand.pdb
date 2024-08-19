@@ -1,0 +1,69 @@
+REMARK   4 XXXX COMPLIES WITH FORMAT V. 2.0
+REMARK  Name = C4-12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ATOM      1  C   LIG     1     -23.564 -11.358  24.174  0.00  0.00      liga C  
+ATOM      2  C   LIG     1     -23.131 -12.838  23.898  0.00  0.00      liga C  
+ATOM      3  C   LIG     1     -23.396 -13.699  25.177  0.00  0.00      liga C  
+ATOM      4  C   LIG     1     -23.991 -13.415  22.774  0.00  0.00      liga C  
+ATOM      5  C   LIG     1     -25.489 -13.166  22.840  0.00  0.00      liga C  
+ATOM      6  C   LIG     1     -25.803 -11.665  23.041  0.00  0.00      liga C  
+ATOM      7  C   LIG     1     -23.490 -14.124  21.751  0.00  0.00      liga C  
+ATOM      8  C   LIG     1     -22.034 -14.439  21.553  0.00  0.00      liga C  
+ATOM      9  C   LIG     1     -21.186 -14.203  22.828  0.00  0.00      liga C  
+ATOM     10  C   LIG     1     -19.679 -14.157  22.449  0.00  0.00      liga C  
+ATOM     11  C   LIG     1     -19.061 -15.408  21.786  0.00  0.00      liga C  
+ATOM     12  C   LIG     1     -17.528 -15.171  21.949  0.00  0.00      liga C  
+ATOM     13  C   LIG     1     -17.359 -13.949  22.909  0.00  0.00      liga C  
+ATOM     14  C   LIG     1     -18.734 -13.880  23.645  0.00  0.00      liga C  
+ATOM     15  C   LIG     1     -19.120 -12.476  24.197  0.00  0.00      liga C  
+ATOM     16  C   LIG     1     -20.616 -12.440  24.628  0.00  0.00      liga C  
+ATOM     17  C   LIG     1     -18.784 -14.962  24.776  0.00  0.00      liga C  
+ATOM     18  C   LIG     1     -21.606 -12.854  23.487  0.00  0.00      liga C  
+ATOM     19  C   LIG     1     -25.095 -11.151  24.315  0.00  0.00      liga C  
+ATOM     20  O   LIG     1     -27.221 -11.436  23.107  0.00  0.00      liga O  
+ATOM     21  H   LIG     1     -27.634 -11.874  23.844  0.00  0.00      liga H  
+ATOM     22  C   LIG     1     -16.115 -14.011  23.845  0.00  0.00      liga C  
+ATOM     23  C   LIG     1     -14.775 -13.693  23.223  0.00  0.00      liga C  
+ATOM     24  N   LIG     1     -13.845 -13.117  23.875  0.00  0.00      liga N  
+ATOM     25  O   LIG     1     -12.735 -13.040  23.007  0.00  0.00      liga O  
+ATOM     26  C   LIG     1     -13.049 -13.601  21.841  0.00  0.00      liga C  
+ATOM     27  O   LIG     1     -12.255 -13.699  20.918  0.00  0.00      liga O  
+ATOM     28  C   LIG     1     -14.466 -14.079  21.812  0.00  0.00      liga C  
+ATOM     29  F   LIG     1     -14.576 -15.422  21.618  0.00  0.00      liga F  
+ATOM     30  F   LIG     1     -15.204 -13.382  20.904  0.00  0.00      liga F  
+TER      31      LIG     1 
+CONECT    1   19
+CONECT    1    2
+CONECT    2    4
+CONECT    2    3
+CONECT    2   18
+CONECT    4    5
+CONECT    4    7
+CONECT    5    6
+CONECT    6   19
+CONECT    6   20
+CONECT    7    8
+CONECT    8    9
+CONECT    9   10
+CONECT    9   18
+CONECT   10   14
+CONECT   10   11
+CONECT   11   12
+CONECT   12   13
+CONECT   13   14
+CONECT   13   22
+CONECT   14   15
+CONECT   14   17
+CONECT   15   16
+CONECT   16   18
+CONECT   20   21
+CONECT   22   23
+CONECT   23   24
+CONECT   23   28
+CONECT   24   25
+CONECT   25   26
+CONECT   26   27
+CONECT   26   28
+CONECT   28   29
+CONECT   28   30

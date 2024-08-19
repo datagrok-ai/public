@@ -1,8 +1,8 @@
-let view = grok.shell.addTableView(grok.data.demo.geo(10000));
-let leaflet = view.addViewer('Leaflet');
-leaflet.setOptions({
+const view = grok.shell.addTableView(grok.data.demo.geo(1000));
+const map = view.addViewer('Map');
+map.setOptions({
   latitudeColumnName: 'lat',
-  longitudeColumnName: 'lng'
+  longitudeColumnName: 'lng',
 });
 
-grok.shell.info(leaflet.props.getProperties().map((p) => p.name).join(', '));
+grok.shell.info(map.props.getProperties().map((p) => p.name).join(', '));

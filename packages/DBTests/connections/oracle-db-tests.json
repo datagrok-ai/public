@@ -4,13 +4,13 @@
   "friendlyName": "OracleDBTests",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 1522,
+    "port": 15212,
     "db": "XEPDB1"
   },
   "credentials" : {
     "parameters" : {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "OIfJztF2aflc7nOzSaxZRjuL8ltBk"
     }
   },
   "dataSource": "Oracle",

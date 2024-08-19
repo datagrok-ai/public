@@ -24,12 +24,12 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-	wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
-	apt install -y ./mafft.deb; \
-	rm -rf mafft.deb; \
+    wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
+    apt install -y ./mafft.deb; \
+    rm -rf mafft.deb; \
     wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \
     unzip -q PepSeA.zip -d /opt ; \
-	rm -rf PepSeA.zip; \
+    rm -rf PepSeA.zip; \
     chown -R grok:grok /opt/PepSeA-main ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
     apt-get clean ; \
@@ -55,9 +55,61 @@ def distout():\n\
     if distout_output is None:\n\
         raise FileNotFoundError("distance matrix is not found")\n\
 \n\
-    return distout_output\n' >> /opt/PepSeA-main/alignment/api.py;
+    return distout_output\n\
+\n\
+from fastapi import Request, HTTPException\n\
+import sys\n\
+import ujson as json\n\
+from io import StringIO\n\
+from subprocess import CalledProcessError\n\
+\n\
+@api.middleware("http")\n\
+async def error_to_json_middleware(request: Request, call_next):\n\
+    sys.stderr = temp_stderr = StringIO()\n\
+    response = None\n\
+    try:\n\
+        response = await call_next(request)\n\
+    finally:\n\
+        sys.stderr = sys.__stderr__\n\
+        stderr_msg = temp_stderr.getvalue()\n\
+        if len(stderr_msg) > 0 and response and response.headers["content-type"] == "application/json":\n\
+            response_body = [chunk async for chunk in response.body_iterator]\n\
+            response_str = "".join(((s.decode() if isinstance(s, bytes) else str(s)) for s in response_body))\n\
+            response_obj = json.loads(response_str)\n\
+            response_obj.update({"pepsea-stderr": stderr_msg})\n\
+            headers = {}\n\
+            for header_name in response.headers:\n\
+                if header_name != "content-length" and header_name != "content-type":\n\
+                    headers[header_name] = response.headers[header_name]\n\
+            json_response = JSONResponse(status_code=response.status_code, headers=headers, content=response_obj)\n\
+            return json_response\n\
+    return response\n\
+\n\
+\n\
+def pepsea_json_response(err_msg: str):\n\
+    return JSONResponse(status_code=500, content={\n\
+        "pepsea-error": err_msg,\n\
+    })\n\
+\n\
+\n\
+@api.exception_handler(CalledProcessError)\n\
+async def called_process_error_handler(request: Request, ex: CalledProcessError):\n\
+    s = ex.stderr\n\
+    err_msg = s.decode() if isinstance(s, bytes) else str(ex.stderr)\n\
+    sys.__stderr__.write("called_process_error_handler() {0}: {1}\\n".format(type(ex).__name__, err_msg))\n\
+    return pepsea_json_response(err_msg)\n\
+\n\
+\n\
+@api.exception_handler(Exception)\n\
+async def base_exception_handler(request: Request, ex: Exception):\n\
+    err_msg = str(ex)\n\
+    sys.__stderr__.write("base_exception_handler() {0}: {1}\\n".format(type(ex).__name__, err_msg))\n\
+    return pepsea_json_response(err_msg)\n\
+\n' >> /opt/PepSeA-main/alignment/api.py;
 
+# It is important to run docker container as user and not as root
 USER grok:grok
+
 
 # Command source does not work for Docker, cause it will apply only to one layer
 # The PATH works better for Docker

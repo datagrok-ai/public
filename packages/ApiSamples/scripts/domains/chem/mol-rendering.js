@@ -1,5 +1,4 @@
 // Different ways to render a molecule using the openchemlib library
-//
 // For more details, visit https://github.com/cheminfo/openchemlib-js
 
 grok.shell.newView('chem rendering').root.appendChild(ui.div([

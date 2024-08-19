@@ -154,6 +154,11 @@ export class TimelinesViewer extends EChartViewer {
     if (!this.initialized) return;
     if (property.name === 'axisPointer')
       this.option.tooltip.axisPointer.type = property.get(this);
+      if (property.name === 'table') {
+        this.updateTable();
+        this.onTableAttached();
+        this.render();
+      }
     else if (property.name === 'showZoomSliders') {
       (this.option.dataZoom as echarts.EChartOption.DataZoom[]).forEach((z) => {
         if (z.type === 'slider') (<echarts.EChartOption.DataZoom.Slider>z).show = this.showZoomSliders;
@@ -228,6 +233,14 @@ export class TimelinesViewer extends EChartViewer {
     }, <Indexable>{});
   }
 
+  _testColumns() {
+    const columns = this.dataFrame.columns.toList();
+    const strColumns = columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING)
+      .sort((a, b) => a.categories.length - b.categories.length);
+    const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
+    return (strColumns!.length >= 1 && numColumns!.length >= 1);
+  }
+
   onTableAttached(): void {
     this.init();
 
@@ -240,7 +253,7 @@ export class TimelinesViewer extends EChartViewer {
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
     if (strColumns.length < 1 || numColumns.length < 1) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
 
@@ -453,6 +466,11 @@ export class TimelinesViewer extends EChartViewer {
   updateLegend(column: DG.Column): void {
     $(this.legendDiv).empty();
     const legend = DG.Legend.create(column);
+    legend.onViewerLegendChanged = () => {
+      const filteredIdxs = legend.filterBy;
+      const legendLabels = this.legendDiv.innerText.split('\n');
+      this.updateOnLegendChange(filteredIdxs, legendLabels);
+    }
     this.legendDiv.appendChild(legend.root);
     $(legend.root).addClass('charts-legend');
   }
@@ -523,7 +541,7 @@ export class TimelinesViewer extends EChartViewer {
     else
       this.removeTimeOptions();
 
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+    for (const i of this.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName!, i);
       const color = this.colorByColumnName ? colorCategories![colorBuf![i]] : this.defaultColor;
       let start = startColumn ? this.getSafeValue(this.columnData.startColumnName!, i) : null;
@@ -640,10 +658,20 @@ export class TimelinesViewer extends EChartViewer {
     this.updateContainers();
     if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
         (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {
-      this.showErrorMessage('Not enough data to produce the result.');
+      this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
     this.option.series[0].data = this.getSeriesData();
+    this.updateZoom();
+    this.chart.setOption(this.option);
+  }
+
+  updateOnLegendChange(filteredIdxs: number[], legendLabels: string[]): void {
+    const filteredNames = filteredIdxs.map(idx => legendLabels[idx]);
+    const data = this.getSeriesData();
+    this.option.series[0].data = data.filter((item: any) => {
+      return filteredNames.includes(item[3][0]);
+    });
     this.updateZoom();
     this.chart.setOption(this.option);
   }

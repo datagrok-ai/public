@@ -1,6 +1,6 @@
-version: "3"
 services:
   datagrok:
+    privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     environment:
       GROK_PARAMETERS: |
@@ -23,12 +23,14 @@ services:
         aliases:
           - datagrok
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+        restart: false
     volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
     restart: unless-stopped
-    profiles: ["all", "datagrok"]
+    profiles: [ "all", "datagrok" ]
 
   grok_spawner:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-latest}
@@ -46,7 +48,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    profiles: ["all", "grok_spawner"]
+    profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
@@ -57,7 +59,7 @@ services:
     ports:
       - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped
-    profiles: ["all", "grok_connect"]
+    profiles: [ "all", "grok_connect" ]
 
   cvm_nginx:
     image: datagrok/cvm_nginx:latest
@@ -69,49 +71,44 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: ["all", "nginx", "cvm", "chem", "jupyter_notebook", "notebook", "scripting",
-               "grok_compute", "jupyter_kernel_gateway", "jkg", "h2o"]
-
-  grok_compute:
-    image: datagrok/grok_compute:${GROK_COMPUTE_VERSION:-latest}
-    environment:
-      GROK_COMPUTE_NUM_CORES: 2
-    networks:
-      datagrok:
-        aliases:
-          - grok_compute
-    restart: unless-stopped
-    profiles: ["all", "cvm", "chem", "grok_compute"]
+    profiles: [ "all", "nginx", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_notebook:
-    image: datagrok/jupyter_notebook:latest
+    image: datagrok/jupyter_notebook:${GROK_JUPYTER_NOTEBOOK_VERSION:-latest}
     networks:
       datagrok:
         aliases:
           - jupyter_notebook
     restart: unless-stopped
-    profiles: ["all", "cvm", "jupyter_notebook", "notebook"]
+    profiles: [ "all", "cvm", "jupyter_notebook", "notebook" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:latest
+    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
     networks:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "dbServer": "database",
+          "dbPort": "5432",
+          "db": "datagrok",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "isolatesCount": 1,
+          "deployDemo": false,
+          "deployTestDemo": false,
+          "datlasApiUrl": "http://datagrok:8082",
+          "jupyterToken": "4b8ed936cf61a1c5e37a8b3a845599941c272de6e29330a0",
+          "capabilities": ["jupyter"]
+        }
     restart: unless-stopped
-    profiles: ["all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg"]
-
-  h2o:
-    image: datagrok/h2o:latest
-    ports:
-      - "${DATAGROK_H2O_PORT:-54321}:54321/tcp"
-      - "${DATAGROK_H2O_HELPER_PORT:-5005}:5005/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - h2o
-    restart: unless-stopped
-    profiles: ["all", "cvm", "modeling", "h2o"]
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: false
+    profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
     image: postgres:12.9
@@ -127,8 +124,30 @@ services:
     volumes:
       - datagrok_db:/var/lib/postgresql/data
     command: postgres -c 'max_connections=1000'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    profiles: [ "all", "db" ]
+
+  pg_rdkit:
+    image: mcs07/postgres-rdkit
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DATAGROK_DB_RDKIT_PORT:-54329}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - pgsql_rdkit
+    volumes:
+      - datagrok_postgres_rdkit:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=1000'
     restart: on-failure
-    profiles: ["all", "db"]
+    profiles: [ "postgres_rdkit" ]
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
@@ -143,7 +162,7 @@ services:
     volumes:
       - datagrok_demo_postgres_northwind:/var/lib/postgresql/data
     restart: on-failure
-    profiles: ["demo", "postgres_northwind", "northwind"]
+    profiles: [ "demo", "postgres_northwind", "northwind" ]
 
   chembl:
     image: datagrok/demo_db_chembl:12.9-rdkit2022032-32
@@ -158,7 +177,7 @@ services:
     volumes:
       - datagrok_demo_postgres_chembl:/var/lib/postgresql/data
     restart: on-failure
-    profiles: ["demo", "postgres_chembl", "chembl"]
+    profiles: [ "demo", "postgres_chembl", "chembl" ]
 
   unichem:
     image: datagrok/demo_db_postgres:12-1.1.0
@@ -173,7 +192,7 @@ services:
     volumes:
       - datagrok_demo_postgres_unichem:/var/lib/postgresql/data
     restart: on-failure
-    profiles: ["demo", "postgres_unichem", "unichem"]
+    profiles: [ "demo", "postgres_unichem", "unichem" ]
 
   starbucks:
     image: datagrok/demo_db_postgres:latest-1.1.0
@@ -188,7 +207,7 @@ services:
     volumes:
       - datagrok_demo_postgres_starbucks:/var/lib/postgresql/data
     restart: on-failure
-    profiles: ["demo", "postgres_starbucks", "starbucks"]
+    profiles: [ "demo", "postgres_starbucks", "starbucks" ]
 
   world:
     image: datagrok/demo_db_postgres:12-1.1.0
@@ -203,7 +222,36 @@ services:
     volumes:
       - datagrok_demo_postgres_world:/var/lib/postgresql/data
     restart: on-failure
-    profiles: ["demo", "postgres_world", "world"]
+    profiles: [ "demo", "postgres_world", "world" ]
+
+  mlflow:
+    image: datagrok/mlflow:2.9.2
+    command: >-
+      mlflow server
+        --backend-store-uri file:/data/mlruns
+        --default-artifact-root mlflow-artifacts:/
+        --artifacts-destination /data/mlartifacts
+        --host 0.0.0.0 --port 5000
+        --expose-prometheus /data/mlflow_metrics
+        --serve-artifacts
+    volumes:
+      - datagrok_mlflow_artifact:/data/mlartifacts
+      - datagrok_mlflow_backend:/data/mlruns
+      - datagrok_mlflow_prom:/data/mlflow_metrics
+    ports:
+      - "${DATAGROK_MLFLOW_PORT:-5555}:5000/tcp"
+    #    --backend-store-uri postgresql://postgres:postgres@database:5432/mlflow
+    #    depends_on:
+    #      db:
+    #        condition: service_healthy
+    #        restart: false
+    networks:
+      datagrok:
+        aliases:
+          - mlflow
+    restart: on-failure
+    platform: linux/amd64
+    profiles: [ "ml", "mlflow" ]
 
 volumes:
   datagrok_db:
@@ -214,6 +262,10 @@ volumes:
   datagrok_demo_postgres_starbucks:
   datagrok_demo_postgres_world:
   datagrok_demo_postgres_unichem:
+  datagrok_postgres_rdkit:
+  datagrok_mlflow_artifact:
+  datagrok_mlflow_backend:
+  datagrok_mlflow_prom:
 
 networks:
   datagrok:

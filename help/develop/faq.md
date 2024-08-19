@@ -1,5 +1,6 @@
 ---
-title: Frequently asked questions
+title: FAQs
+sidebar_position: 11
 ---
 
 *Question:*
@@ -46,7 +47,7 @@ We currently use a combination of events for synchronization and saving state
 while filtering to dataFrame to initiate new viewers from this state:
 
 * `d4-filter-criteria-changed` to notify other filters.
-* `dataFrame.rows.filterStates` to store the filter’s state - this array is
+* `dataFrame.rows.filterStates` to store the filter's state - this array is
 emptied before each call of `onRowsFiltering`, and filters add their states
 while filtering.
 

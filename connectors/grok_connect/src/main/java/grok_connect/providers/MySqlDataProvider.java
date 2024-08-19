@@ -1,31 +1,27 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
-
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.*;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
 public class MySqlDataProvider extends JdbcDataProvider {
-    public MySqlDataProvider(ProviderManager providerManager) {
-        super(providerManager);
-        driverClassName = "com.mysql.cj.jdbc.Driver";
 
+    public MySqlDataProvider() {
+        driverClassName = "com.mysql.cj.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
@@ -84,7 +80,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.getDb();
         StringColumn column = new StringColumn(new String[]{db});
         column.name = "TABLE_SCHEMA";
@@ -141,5 +137,12 @@ public class MySqlDataProvider extends JdbcDataProvider {
             statement.setObject(n + i, lst.get(i));
         }
         return lst.size() - 1;
+    }
+
+    @Override
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

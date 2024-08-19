@@ -1,5 +1,4 @@
-import {Options} from '../../utils/src/type-declarations';
-//import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Returns the error function erf(x).
@@ -79,18 +78,16 @@ export function kendallsTau(x: number[], y: number[]): Options {
         // neither array has a tie
         n1 = n1 + 1;
         n2 = n2 + 1;
-        if (aa > 0) {
+        if (aa > 0)
           iss = iss + 1;
-        } else {
+        else
           iss = iss - 1;
-        }
       } else {
-        if (a1) {
+        if (a1)
           n1 = n1 + 1;
-        }
-        if (a2) {
+
+        if (a2)
           n2 = n2 + 1;
-        }
       }
     }
   }

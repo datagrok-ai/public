@@ -2,45 +2,85 @@
 
 ## Tabular formats
 
-| Extension  | Description                                      | Source |
-|------------|--------------------------------------------------|--------|
-| .txt       | Plain text                                       | Core   |
-| .csv       | Comma-separated values                           | Core   |
-| .tsv       | Tab-separated values                             | Core   |
-| .xml       | Extensible Markup Language                       | Core   |
-| .json      | JavaScript Object Notation                       | Core   |
-| .HTML      | HyperText Markup Language                        | Core   |
-| .xlsx      | Excel                                            | Core   |
-| .edf       | European Data Format                             | Core   |
-| .sas7bdat  | SAS database file                                | Core   |
-| .kml, .kmz | Keyhole Markup Language (geographic annotations) | Core   |
-| .kxl       | KeyCreator eXtensible Language                   | Core   |<!--check!!!-->
-| .rds, .rda | R Data Format                                    | Core   |
-| .h5        | Hierarchical Data Format                         | Core   |
-| .nc        | NetCDF                                           | Core   |
-| .mat       | MATLAB MAT                                       | Core   |
-| .d42       | Datagrok [project](../../datagrok/project.md)       | Core   |
-| .zip       | ZIP archive (for supported types)                | Core   |
-| .gz, .gzip | gzip                                             | Core   |
-| .tar       | Tape archive                                     | Core   |
-| .ipynb     | Jupyter Notebook                                 | Core   |
-| netCDF     | network Common Data Form                         | Core   | <!--check!!!-->
+| Extension  | Description                                      | Source                 |
+|------------|--------------------------------------------------|------------------------|
+| .txt       | Plain text                                       | Core                   |
+| .csv       | Comma-separated values                           | Core                   |
+| .tsv       | Tab-separated values                             | Core                   |
+| .xml       | Extensible Markup Language                       | Core                   |
+| .json      | JavaScript Object Notation                       | Core                   |
+| .HTML      | HyperText Markup Language                        | Core                   |
+| .xlsx      | Excel                                            | Core                   |
+| .edf       | European Data Format                             | Core                   |
+| .sas7bdat  | SAS database file                                | Core                   |
+| .kml, .kmz | Keyhole Markup Language (geographic annotations) | [GIS]                  |
+| .kxl       | KeyCreator eXtensible Language                   | Core   <!--check!!!--> |
+| .rds, .rda | R Data Format                                    | Core                   |
+| .h5        | Hierarchical Data Format                         | Core                   |
+| .nc        | NetCDF                                           | Core                   |
+| .mat       | MATLAB MAT                                       | Core                   |
+| .d42       | Datagrok [project](../../datagrok/concepts/project/project.md) | Core                   |
+| .zip       | ZIP archive (for supported types)                | Core                   |
+| .gz, .gzip | gzip                                             | Core                   |
+| .tar       | Tape archive                                     | Core                   |
+| .ipynb     | Jupyter Notebook                                 | Core                   |
+| netCDF     | network Common Data Form                         | Core  <!--check!!!-->  |
 
-## Molecular structure formats
+## Molecule structure formats
 
-| Extension | Description                        | Source             |
-|-----------|------------------------------------|--------------------|
-| .cif      | Crystallographic Information File  | [NglViewer] plugin |
-| .pdb      | Protein Data Bank                  | [NglViewer] plugin |
-| .pqr      | PQR                                | [NglViewer] plugin |
-| .gro      | GROMACS                            | [NglViewer] plugin |
-| .sdf      | Structure-data file                | [NglViewer] plugin |
-| .mol      | MDL Molfile                        | [NglViewer] plugin |
-| .mol2     | SYBYL molecule representation      | [NglViewer] plugin |
-| .mmtf     | Macromolecular Transmission Format | [NglViewer] plugin |
+| Extension | Description                                                   | Source |
+|-----------|---------------------------------------------------------------|--------|
+| .sdf      | Structure-data file                                           | [Chem] |
+| .mol      | MDL Molfile                                                   | [Chem] |
+| .mol2     | SYBYL molecule representation                                 | [Chem] |
+
+## Molecule3D structure formats
+
+| Extension | Description                                                   | Source               | Viewer         |
+|-----------|---------------------------------------------------------------|----------------------|----------------|
+| .brix     | (preview) Electron Density Map                                | [BiostructureViewer] |                |
+| .ccp4     | Collaborative Computational Project Number 4 electron density | [BiostructureViewer] | [NGL]          |
+| .cif      | (preview) Crystallographic Information File                   | [BiostructureViewer] |                |
+| .cifCore  | Crystallographic Information Core File                        | [BiostructureViewer] | [Biostructure] |
+| .cns      | Density ?                                                     | [BiostructureViewer] | [NGL]          |
+| .cub      | (preview) Orbital/Density Values on a 3D Grid                 | [BiostructureViewer] |                |
+| .cube     | (preview) Orbital/Density Values on a 3D Grid                 | [BiostructureViewer] |                |
+| .dsn6     | (preview) Ribbons FRODO Map                                   | [BiostructureViewer] |                |
+| .dx       | (preview) Chemical Spectroscopy Format                        | [BiostructureViewer] |                |
+| .dxbin    | (preview) .dxbin                                              | [BiostructureViewer] |                |
+| .ent      | (preview) Brookhaven PDB Molecule                             | [BiostructureViewer] |                |
+| .gro      | GROMACS                                                       | [BiostructureViewer] | [Biostructure] |
+| .mcif     | (preview) Macromolecular Crystallographic Information File    | [BiostructureViewer] |                |
+| .mmCif    | Macromolecular Crystallographic Information File              | [BiostructureViewer] | [Biostructure] |
+| .mmtf     | Macromolecular Transmission Format                            | [BiostructureViewer] | [NGL]          |
+| .mrc      | (preview) Electron Density Map                                | [BiostructureViewer] |                |
+| .obj      | Wavefront .obj file                                           | [BiostructureViewer] | [NGL]          |
+| .parm7    | (preview) AMBER Parameter/Topology File                       | [BiostructureViewer] |                |
+| .pdb      | Protein Data Bank                                             | [BiostructureViewer] | [Biostructure] |
+| .pdbqt    | Protein Data Bank, Partial Charge (Q), & Atom Type (T)        | [BiostructureViewer] | [Biostructure] |
+| .ply      | Polygon file format                                           | [BiostructureViewer] | [NGL]          |
+| .psf      | (preview) Protein Structure File                              | [BiostructureViewer] |                |
+| .sd       | (preview) Structure-Data                                      | [BiostructureViewer] |                |
+| .prmtop   | Parameter / Topology (AMBER)                                  | [BiostructureViewer] | [NGL]          |
+| .top      | Gromacs Topology File                                         | [BiostructureViewer] | [NGL]          |
+| .xplor    | (preview) Electron Density Map                                | [BiostructureViewer] |                |
+| .xyz      | (preview) Cartesian Coordinates Format                        | [BiostructureViewer] |                |
+
+## Macromolecule formats
+
+| Extension | Description                                    | Source |
+|-----------|------------------------------------------------|--------|
+| .fasta    | FASTA format (fa, fna, ffn, faa, frn, fa, fst) | [Bio]  |
+
+Note: The platform detector will also be able to recognize the semantic type of Macromolecule in files that are in [Tabular format](#tabular-formats).
 
 See also:
 
-[NglViewer]: https://github.com/datagrok-ai/public/tree/master/packages/NglViewer#readme
+[Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
+[BiostructureViewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>
+[NGL]: ../../visualize/viewers/ngl.md
+[Biostructure]: ../../visualize/viewers/biostructure.md
+
+[GIS]: https://github.com/datagrok-ai/public/tree/master/packages/GIS#readme
 
 [//]: # ([Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme)

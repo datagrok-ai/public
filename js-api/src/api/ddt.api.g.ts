@@ -15,6 +15,8 @@ export class Tags {
 
   static Tooltip = '.tooltip';
 
+  static TooltipShowLabels = '.tooltip-show-labels';
+
   static TooltipVisibility = '.tooltip-visibility';
 
   static TooltipForm = '.tooltip-form';
@@ -41,6 +43,12 @@ export class Tags {
 
   static ColorCodingSchemeMin = '.color-coding-scheme-min';
 
+  static ColorCodingMatchType = '.color-coding-match-type';
+
+  static ColorCodingFallbackColor = '.color-coding-fallback-color';
+
+  static ShowMarkersAlways = '.show-markers-always';
+
   static DefaultAxisType = '.default-axis-type';
 
   static MarkerCoding = '.marker-coding';
@@ -66,6 +74,8 @@ export class Tags {
 
   static Format = 'format';
 
+  static FormatFormula = '%formatFormula';
+
   static TooltipType = '.tooltip-type';
 
   static Markup = 'markup';
@@ -87,6 +97,10 @@ export class Tags {
   static IgnoreCustomFilter = '.ignore-custom-filter';
 
   static CustomFilterType = '.custom-filter-type';
+
+  static UseAsFilter = '.use-as-filter';
+
+  static PickupColumnsTags = '.pickup-column-tags';
 
   static Charts = '.charts';
 
@@ -146,7 +160,7 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
-  static DataQueryCall = '.DataQuery.query.call';
+  static DataQueryFinished = '.DataQuery.query.finished';
 
   static Presentation = '.presentation';
 
@@ -179,10 +193,14 @@ export class Tags {
 
   static ValueValidators = '.value-validators';
 
+  /// Applies to default filters for string columns only.
+  /// When specified, treats the split strings as separate values in the filter
   static MultiValueSeparator = '.multi-value-separator';
 
+  /// Name to be shown in the UI
   static FriendlyName = 'friendlyName';
 
+  /// Whether users can rename this table from the UI
   static AllowRename = '.allow-rename';
 
   /// Applies to columns or dataframes.
@@ -198,11 +216,93 @@ export class Tags {
   /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
   static IncludeInBinaryExport = '.includeInBinaryExport';
 
+  /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
+  static LinkClickBehavior = '.linkClickBehavior';
+
+  /// Pipe-separated path that defines where this column is within the hierarchy
+  /// Used for dynamic forms construction, etc
+  static Hierarchy = 'hierarchy';
+
+  /// Links column and db property
+  static DbPropertyName = 'dbPropertyName';
+
+  /// Links column and db property schema
+  static DbPropertySchema = 'dbPropertySchema';
+
+  /// Specifies the column that has entity key
+  static DbPropertyReference = 'dbPropertyReference';
+
+  /// Specifies entity type that reference entity had
+  static DbPropertyReferenceType = 'dbPropertyReferenceType';
+
+}
+export class FuncOptions {
+  /// Fully qualified name of the function that edits corresponding function calls
+  static Editor = 'editor';
+
+  /// Shows the function in the 'Action' pane
+  static Action = 'action';
+
+  /// Shows the function in the toolbox
+  static Toolbox = 'toolbox';
+
+  static AutostartImmediate = 'autostartImmediate';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Comma-separated list of key-value pairs that represent
+  /// required tags for a column to be picked up by the renderer.
+  static CellRendererColumnTags = 'columnTags';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Cell type (name of the renderer to be used in the UI).
+  static CellRendererCellType = 'cellType';
+
+  /// Applies to [FuncTypes.ValueEditor]. Refers to [Types].
+  static InputPropertyType = 'propertyType';
+
+  /// Applies to [FuncTypes.ValueEditor].
+  static SemType = 'semType';
+
+  /// Applies to [FuncTypes.Panel]
+  static VisibilityCondition = 'condition';
+
+  /// Demo path, such as 'Viewers | Radar'
+  static DemoPath = 'demoPath';
+
+  /// Path in the browse tree, such as 'Oligo'
+  static BrowsePath = 'browsePath';
+
+  /// Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>)
+  static ViewerPath = 'viewerPath';
+
+  /// When set to 'true', the function is shown in the grid context menu: Add | Summary Columns | ...
+  static GridChart = 'gridChart';
+
+  /// Boolean value that controls whether a function should be executed when the input changes.
+  static RunOnInput = 'runOnInput';
+
+  /// Boolean value that controls whether a function should be executed when the function preview opens.
+  /// Applicable to models as well.
+  static RunOnOpen = 'runOnOpen';
+
+  /// When set to 'true', the function is higher-priority to be set in Filters Panel
+  static PrimaryFilter = 'primaryFilter';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static InspectorPanel = 'inspectorPanel';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static Cache = 'cache';
+
+  /// Cron string that specifies when the cache is invalidated
+  static CacheInvalidateOn = 'cache.invalidateOn';
+
+  /// Specifies the position of the viewer (top, bottom, left, right, fill, auto)
+  static ViewerPosition = 'viewerPosition';
+
 }
 export class FuncParamOptions {
   static SemType = 'semType';
-
-  static Columns = 'columns';
 
   static Category = 'category';
 
@@ -235,5 +335,25 @@ export class FuncParamOptions {
   static Editor = 'editor';
 
   static Nullable = 'nullable';
+
+  static Separators = 'separators';
+
+  static Layout = 'layout';
+
+  static EditorParam = 'editorParam';
+
+  /// Column filter.
+  /// Applies to dataframes and columns
+  /// Example: `{columns: numerical}`
+  static Columns = 'columns';
+
+  /// A viewer that visualizes the result
+  /// Example: `viewer: Line chart(x: "time", y: "temperature")`
+  static Viewer = 'viewer';
+
+  /// Works together with choices. When set to "all", changing of the choice
+  /// would trigger propagation of this choice's default values for other parameters.
+  /// Example: Compute/cars.js
+  static PropagateChoice = 'propagateChoice';
 
 }

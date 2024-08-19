@@ -1,7 +1,5 @@
 package grok_connect.utils;
 
-import com.google.gson.annotations.*;
-
 
 public class Prop {
     public String editor;

@@ -3,7 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_package, getPdbHelper} from '../package';
+import {BiostructureProps} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {PdbHelper} from '../utils/pdb-helper';
+
+import {_package} from '../package';
 
 /** The app for biostructureViewer */
 export class BiostructureViewerApp {
@@ -23,7 +27,7 @@ export class BiostructureViewerApp {
   }
 
   static async loadData(): Promise<[DG.DataFrame]> {
-    const ph: IPdbHelper = await getPdbHelper();
+    const ph: IPdbHelper = await PdbHelper.getInstance();
     const pdbStr: string = await _package.files.readAsText('samples/1bdq.pdb');
     const pdbDf: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');
     return [pdbDf];
@@ -45,7 +49,7 @@ export class BiostructureViewerApp {
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {})) as DG.JsViewer;
+    const viewer: DG.Viewer<BiostructureProps> = (await this.view.dataFrame.plot.fromType('Biostructure', {}));
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
   }
 }

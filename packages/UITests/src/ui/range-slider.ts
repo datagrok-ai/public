@@ -54,4 +54,4 @@ category('UI: Range slider', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

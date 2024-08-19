@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit} from './shared';
+import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit,
+  SparklineType, isSummarySettingsBase} from './shared';
 
 
 class it {
@@ -18,10 +19,11 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
-    // ...{radius: 10,},
-  };
+  return isSummarySettingsBase(gc.settings) ? gc.settings :
+    (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
+      ...getSettingsBase(gc, SparklineType.Radar),
+      // ...{radius: 10,},
+    };
 }
 
 
@@ -129,16 +131,16 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings = gc.settings;
+    const settings: RadarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.Radar] ??= getSettings(gc);
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
-      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      ui.input.columns('Сolumns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame, onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gc.grid.invalidate();
+        }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
     ]);
   }

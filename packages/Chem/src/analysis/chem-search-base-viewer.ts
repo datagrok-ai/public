@@ -3,13 +3,19 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
-import {Fingerprint} from '../utils/chem-common';
+import { Subject, Subscription } from 'rxjs';
+import { AVAILABLE_FPS } from '../constants';
+import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
 
-const BACKGROUND = 'background';
-const TEXT = 'text';
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
 export const MAX_LIMIT = 50;
+export enum RowSourceTypes {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  FilteredSelected = 'FilteredSelected',
+}
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -18,7 +24,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   limit: number;
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
-  fingerprintChoices = [Fingerprint.Morgan];
+  fingerprintChoices = AVAILABLE_FPS;
+  rowSourceChoices = [RowSourceTypes.All, RowSourceTypes.Filtered, RowSourceTypes.Selected, RowSourceTypes.FilteredSelected];
   sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
@@ -29,7 +36,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   initialized: boolean = false;
   metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
-  applyColorTo: string;
+  renderCompleted = new Subject<void>();
+  isComputing = false;
+  rowSource: string;
+  error = '';
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -37,18 +47,17 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
+    this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
       {description: 'Adds selected fields from the grid to similarity search viewer'});
-    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT],
-      description: 'Applies to data added via Molecule Properties control (color-code the column in the grid first)'});
     if (col) {
       this.moleculeColumn = col;
       this.moleculeColumnName = col.name!;
     }
     const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
-    this.metricsDiv = ui.divH([ui.divText(header)], 'similarity-header');
+    this.metricsDiv = ui.divH([ui.divText(header)], 'chem-similarity-header');
   }
 
   init(): void {
@@ -71,16 +80,21 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
           await this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) => await this.render(false)));
+        .subscribe(async (_: any) => 
+          await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
+      this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
+        .subscribe(async (_: any) => 
+          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
         .subscribe(async (_: any) => await this.render(false)));
-      this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      this.moleculeColumnName ??= this.moleculeColumn?.name!;
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
     await this.render(true);
   }
+
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
@@ -89,9 +103,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (this.metricsProperties.includes(property.name))
       this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
-      const col = this.dataFrame.col(property.get(this))!;
-      if (col.semType === DG.SEMTYPE.MOLECULE)
-        this.moleculeColumn = col;
+      const col = this.dataFrame.col(property.get(this));
+      this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
       this.limit = MAX_LIMIT;
@@ -114,33 +127,30 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.metricsDiv!.appendChild(metricsButton);
   }
 
-  async render(computeData = true) {
+  async render(computeData = true): Promise<void> {
+    try {
+      await this.renderInternal(computeData);
+    } finally {
+      if (this.isComputing) {
+        this.isComputing = false;
+        this.renderCompleted.next();
+      }
+    }
+  }
+
+  async renderInternal(compute = true) {
 
   }
 
   beforeRender() {
-    if (!this.initialized)
-      return false;
-    if (this.dataFrame && this.moleculeColumnName &&
-          this.dataFrame.col(this.moleculeColumnName)!.semType !== DG.SEMTYPE.MOLECULE) {
-      grok.shell.error(`${this.moleculeColumnName} is not Molecule type`);
-      return false;
-    }
-    return true;
-  }
-
-  pickTextColorBasedOnBgColor(bgColor: string, lightColor: string, darkColor: string) {
-    const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
-    const r = parseInt(color.substring(0, 2), 16); // hexToR
-    const g = parseInt(color.substring(2, 4), 16); // hexToG
-    const b = parseInt(color.substring(4, 6), 16); // hexToB
-    return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186) ?
-      darkColor : lightColor;
+    return this.initialized && this.dataFrame;
   }
 
   createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement {
     const propsDict: {[key: string]: any} = {};
-    const grid = grok.shell.tv.grid;
+    if (!grok.shell.tv)
+      return ui.div();
+    const grid = grok.shell.tv?.grid;
     if (similarity) {
       if (refMolecule)
         propsDict['Reference'] = {val: ''};
@@ -149,29 +159,31 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     for (const col of this.moleculeProperties) {
       propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
-      const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE];
-      if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF)
-        propsDict[col].color = grid.cell(col, idx).color;
+      const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.meta.colors.getType();
+      if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
+        propsDict[col].color = grid?.cell(col, idx).color;
+        propsDict[col].isTextColorCoded = grid?.col(col)?.isTextColorCoded;
+      }
     }
     //const item = ui.divH([], 'similarity-prop-item');
     const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
-      const label = ui.divText(`${labelName}`, 'similarity-prop-label');
-      const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
+      const label = ui.divText(`${labelName}`, 'chem-similarity-prop-label');
+      const value = ui.divText(`${propsDict[key].val}`, 'chem-similarity-prop-value');
       ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
-        const bgColor = DG.Color.toHtml(propsDict[key].color);
-        if (this.applyColorTo === BACKGROUND) {
-          value.style.backgroundColor = bgColor,
-          value.style.color = this.pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000'); ;
+        const color = DG.Color.toHtml(propsDict[key].color);
+        if (!propsDict[key].isTextColorCoded) {
+          value.style.backgroundColor = color,
+          value.style.color = DG.Color.toHtml(DG.Color.getContrastColor(propsDict[key].color));
         } else
-          value.style.color = bgColor;
+          value.style.color = color;
       }
       const item = ui.divH([
         label,
         value,
-      ], 'similarity-prop-item');
+      ], 'chem-similarity-prop-item');
       div.append(item);
     }
     return div;
@@ -187,5 +199,40 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     return this.moleculeColumn!.dataFrame.columns.names()
       .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
+  }
+
+  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator) {
+    this.error = error;
+    this.clearResults();
+    this.root.append(ui.divText(this.error));
+    this.root.classList.add(`chem-malformed-molecule-error`);
+    progressBar?.close();
+  }
+
+  clearResults() {
+    if (this.root.hasChildNodes())
+      this.root.removeChild(this.root.childNodes[0]);
+  }
+
+  getRowSourceIndexes(): DG.BitSet {
+    const bitset = DG.BitSet.create(this.dataFrame.rowCount);
+    switch(this.rowSource) {
+      case RowSourceTypes.All:
+        bitset.setAll(true);
+        break;
+      case RowSourceTypes.Filtered:
+        bitset.copyFrom(this.dataFrame.filter);
+        break;
+      case RowSourceTypes.Selected:
+        bitset.copyFrom(this.dataFrame.selection);
+        break;
+      case RowSourceTypes.FilteredSelected:
+        const filterCopy = DG.BitSet.create(this.dataFrame.rowCount).copyFrom(this.dataFrame.filter);
+        bitset.copyFrom(filterCopy.and(this.dataFrame.selection));
+        break;
+      default:
+        break;
+    }
+    return bitset;
   }
 }

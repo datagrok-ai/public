@@ -1,6 +1,4 @@
-//name: chemTestCanvasMol
-//description: Test rendering a single molecule to a canvas with an optional SMARTS-scaffold
-//language: javascript
+// Test rendering a single molecule to a canvas with an optional SMARTS-scaffold
 
 (async () => {
   let root = ui.div();
@@ -22,7 +20,7 @@
     0, 0, width, height, canvas2,
     'CN1CCC(O)(CC1)c2ccccc2');
   ui
-  .dialog({title:'Test molecule'})
-  .add(root)
-  .show();
+    .dialog({title: 'Test molecule'})
+    .add(root)
+    .show();
 })();

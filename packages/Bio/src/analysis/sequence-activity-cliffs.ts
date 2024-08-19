@@ -2,12 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {getSplitter, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -58,7 +62,7 @@ export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
 }
 
 export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const tooltipElement = ui.divH([]);
+  const tooltipElement = ui.divH([], {style: {gap: '10px'}});
   const columnNames = ui.divV([
     ui.divText(params.seqCol.name),
     ui.divText(params.activityCol.name),
@@ -67,7 +71,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   columnNames.style.display = 'flex';
   columnNames.style.justifyContent = 'space-between';
   tooltipElement.append(columnNames);
-  params.line.mols.forEach((molIdx: number, _idx: number) => {
+  params.points.forEach((molIdx: number) => {
     const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
     activity.style.display = 'flex';
     activity.style.justifyContent = 'left';
@@ -95,20 +99,16 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
   propPanel.append(ui.divText(params.seqCol.name, {style: {fontWeight: 'bold'}}));
 
-  const sequencesArray = new Array<string>(2);
   const activitiesArray = new Array<number>(2);
-  params.line.mols.forEach((molIdx, idx) => {
-    sequencesArray[idx] = params.seqCol.get(molIdx);
+  params.points.forEach((molIdx, idx) => {
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-  const units = params.seqCol.getTag(DG.TAGS.UNITS);
-  const separator = params.seqCol.getTag(bioTAGS.separator);
-  const splitter = getSplitter(units, separator);
-  const subParts1 = splitter(sequencesArray[0]);
-  const subParts2 = splitter(sequencesArray[1]);
-  const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
+  const sh = SeqHandler.forColumn(params.seqCol);
+  const subParts1 = sh.getSplitted(params.points[0]); // splitter(sequencesArray[0], {uh, rowIdx: -1});
+  const subParts2 = sh.getSplitted(params.points[1]); // splitter(sequencesArray[1], {uh, rowIdx: -1});
+  const canvas = createDifferenceCanvas(subParts1, subParts2, sh.units, molDifferences);
   propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
 
   propPanel.append(createDifferencesWithPositions(molDifferences));
@@ -127,14 +127,15 @@ function createPropPanelField(name: string, value: number): HTMLDivElement {
 }
 
 export function createDifferenceCanvas(
-  subParts1: string[],
-  subParts2: string[],
+  subParts1: ISeqSplitted,
+  subParts2: ISeqSplitted,
   units: string,
   molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, subParts1, subParts2, units, true, molDifferences);
+  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30,
+    wu(subParts1.canonicals).toArray(), wu(subParts2.canonicals).toArray(), units, true, molDifferences);
   return canvas;
 }
 
@@ -163,7 +164,7 @@ export function createLinesGrid(df: DG.DataFrame, colNames: string[]): DG.Grid {
   const seqDiffCol = DG.Column.string('seq_diff', df.rowCount)
     .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
   seqDiffCol.semType = 'MacromoleculeDifference';
-  seqDiffCol.setTag(DG.TAGS.UNITS, df.col(colNames[0])!.getTag(DG.TAGS.UNITS));
+  seqDiffCol.meta.units = df.col(colNames[0])!.meta.units;
   seqDiffCol.setTag(bioTAGS.separator, df.col(colNames[0])!.getTag(bioTAGS.separator));
   df.columns.add(seqDiffCol);
   const grid = df.plot.grid();

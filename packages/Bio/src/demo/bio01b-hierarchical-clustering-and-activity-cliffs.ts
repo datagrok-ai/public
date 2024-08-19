@@ -6,15 +6,15 @@ import {_package, activityCliffs} from '../package';
 import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import * as lev from 'fastest-levenshtein';
-import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {getClusterMatrixWorker} from '@datagrok-libraries/math';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
-const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
+const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
 export async function demoBio01bUI() {
   let treeHelper: ITreeHelper;
@@ -27,9 +27,8 @@ export async function demoBio01bUI() {
   const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
 
   try {
-    const demoScript = new DemoScript(
-      'Activity Cliffs',
-      'Activity Cliffs analysis on Macromolecules data');
+    const demoScript = new DemoScript('Activity Cliffs', 'Activity Cliffs analysis on Macromolecules data', false,
+      {autoStartFirstStep: true});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
@@ -51,9 +50,10 @@ export async function demoBio01bUI() {
         delay: 2000,
       })
       .step('Find activity cliffs', async () => {
+        const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, dimRedMethod)) as DG.ScatterPlotViewer;
+          80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs
@@ -65,13 +65,14 @@ export async function demoBio01bUI() {
         delay: 2000,
       })
       .step('Cluster sequences', async () => {
-        const seqCol: DG.Column<string> = df.getCol('sequence');
-        const seqList = seqCol.toList();
-        const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
-          const levDistance = lev.distance(aSeq, bSeq);
-          return levDistance / ((aSeq.length + bSeq.length) / 2);
-        });
-        const treeRoot = await treeHelper.hierarchicalClusteringByDistance(distance, 'ward');
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence clustering...`);
+
+        const distance = await treeHelper.calcDistanceMatrix(df, ['sequence']);
+        const clusterMatrix = await getClusterMatrixWorker(
+          distance!.data, df.rowCount, 1,
+        );
+        const treeRoot = treeHelper.parseClusterMatrix(clusterMatrix);
+        progressBar.close();
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
 
         // adjust for visual

@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 
@@ -21,10 +22,17 @@ export class EChartViewer extends DG.JsViewer {
 
     //common properties
     this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
-
-    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    this.addRowSourceAndFormula();
+    const chartDiv = ui.div([], {style: {position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}});
+    chartDiv.style.cssText += 'overflow: hidden!important;';
     this.root.appendChild(chartDiv);
-    this.chart = echarts.init(chartDiv);
+    const warn = console.warn.bind(console);
+    console.warn = () => {};
+    try {
+      this.chart = echarts.init(chartDiv);
+    } finally {
+      console.warn = warn;
+    }
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
   }
 
@@ -39,11 +47,17 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
-
+    this.addSelectionOrDataSubs();
     this.render();
+  }
+
+  onSourceRowsChanged() {
+    this.render();
+  }
+
+  addSelectionOrDataSubs() {
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
   }
 
   prepareOption() {}
@@ -65,5 +79,11 @@ export class EChartViewer extends DG.JsViewer {
 
   getSeriesData() {
     throw new Error('Method not implemented.');
+  }
+
+  updateTable() {
+    const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
+    if (dataFrame)
+      this.dataFrame = dataFrame!;
   }
 }

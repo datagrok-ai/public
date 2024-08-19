@@ -1,11 +1,16 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {CandidateSimType, CandidateType, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
-import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION, TAGS} from './consts';
-import {UnitsHandler} from '../units-handler';
+import {
+  CandidateSimType,
+  CandidateType, GAP_SYMBOL,
+  ISeqSplitted,
+  MonomerFreqs,
+  SeqColStats, SeqSplittedBase,
+  SplitterFunc
+} from './types';
+import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION} from './consts';
+import {GapOriginals, SeqHandler} from '../seq-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 import {SeqPalette} from '../../seq-palettes';
@@ -13,30 +18,94 @@ import {AminoacidsPalettes} from '../../aminoacids';
 import {NucleotidesPalettes} from '../../nucleotides';
 import {UnknownSeqPalettes} from '../../unknown';
 
+export class StringListSeqSplitted implements ISeqSplitted {
+  get length(): number { return this.mList.length; }
+
+  get canonicals() { return this.mList; }
+
+  get originals() { return this.mList; }
+
+  isGap(posIdx: number): boolean {
+    return this.getOriginal(posIdx) === this.gapOriginalMonomer;
+  }
+
+  getCanonical(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.mList[posIdx];
+  }
+
+  getOriginal(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.mList[posIdx];
+  }
+
+  constructor(
+    private readonly mList: SeqSplittedBase,
+    private readonly gapOriginalMonomer: string
+  ) {}
+}
+
+export class FastaSimpleSeqSplitted implements ISeqSplitted {
+  get length(): number { return this.seqS.length; }
+
+  get canonicals() { return this.seqS; }
+
+  get originals() { return this.seqS; }
+
+  isGap(posIdx: number): boolean {
+    return this.getOriginal(posIdx) === GapOriginals[NOTATION.FASTA];
+  }
+
+  getCanonical(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    if (this.isGap(posIdx))
+      return GAP_SYMBOL;
+    return this.seqS[posIdx];
+  }
+
+  getOriginal(posIdx: number): string {
+    if (this.length <= posIdx)
+      throw new Error('Index out of bounds');
+    return this.seqS[posIdx];
+  }
+
+  constructor(
+    private readonly seqS: string
+  ) {}
+}
+
 /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
  * @param {DG.Column} seqCol
  * @param {number} minLength
  * @param {SplitterFunc} splitter
  * @return { SeqColStats }, sameLength: boolean } stats of column sequences
  */
-export function getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+export function getStatsForCol(seqCol: DG.Column<string>, minLength: number, splitter: SplitterFunc): SeqColStats {
+  const cats = seqCol.categories;
+  const splitted: Iterable<ISeqSplitted> = wu.enumerate(seqCol.getRawData())
+    .map(([catI, rowIdx]) => splitter(cats[catI]));
+  return getStats(splitted, minLength);
+}
+
+function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColStats {
   const freq: { [m: string]: number } = {};
   let sameLength = true;
   let firstLength = null;
 
-  for (const seq of seqCol.categories) {
-    const mSeq = splitter(seq);
-
+  for (const mSeq of splitted) {
     if (firstLength == null)
       firstLength = mSeq.length;
     else if (mSeq.length !== firstLength)
       sameLength = false;
 
     if (mSeq.length >= minLength) {
-      for (const m of mSeq) {
-        if (!(m in freq))
-          freq[m] = 0;
-        freq[m] += 1;
+      for (const cm of mSeq.canonicals) {
+        if (!(cm in freq))
+          freq[cm] = 0;
+        freq[cm] += 1;
       }
     }
   }
@@ -44,38 +113,71 @@ export function getStats(seqCol: DG.Column, minLength: number, splitter: Splitte
 }
 
 /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol.
- * @param {any} seq object with sequence
+ * @param seq object with sequence
+ * @param getMonomer Source of the {@link seq} string
  * @return {string[]} array of monomers
  */
-export function splitterAsFasta(seq: any): string[] {
-  return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
+export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
+  const mmList = wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
     .map((ma: RegExpMatchArray) => {
-      const m: string = ma[0];
-      const mRes = m.length > 1 ? ma[1] : m;
-      return mRes;
+      return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
     }).toArray();
-}
+
+  return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.FASTA]);
+
+
+  // return new Proxy(splittedList as object, {
+  //   get(target: string[], p: string | symbol, receiver: any): any {
+  //     const k = 11;
+  //   }
+  // }) as ISeqSplitted;
+};
+
+export const splitterAsFastaSimple: SplitterFunc = (seq: string): ISeqSplitted => {
+  return !!seq ? new FastaSimpleSeqSplitted(seq) : new StringListSeqSplitted([], GapOriginals[NOTATION.FASTA]);
+};
 
 /** Gets method to split sequence by separator
- * @param {string} separator
+ * @param separator Monomer separator
  * @param limit
  * @return {SplitterFunc}
  */
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
   return (seq: string) => {
-    return seq.split(separator, limit);
+    if (!seq)
+      return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
+    else {
+      let mmList: string[];
+      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
+      if (limit !== undefined) {
+        mRe.lastIndex = 0;
+        mmList = new Array<string>(Math.ceil(limit));
+
+        let mEa: RegExpExecArray | null = null;
+        let mI = 0;
+        while ((mEa = mRe.exec(seq)) !== null && mI < limit) {
+          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
+        }
+        mmList.splice(mI);
+      } else
+        mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
+
+      return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.SEPARATOR]);
+    }
   };
 }
 
 const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
 const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
 
+
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * @param {string} seq Source string of HELM notation
+ * @param {ISeqSource} src Source of the {@link seq} string
  * @return {string[]}
  */
-export function splitterAsHelm(seq: any): string[] {
+export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
   helmRe.lastIndex = 0;
   const ea: RegExpExecArray | null = helmRe.exec(seq.toString());
   const inSeq: string | null = ea ? ea[2] : null;
@@ -90,10 +192,13 @@ export function splitterAsHelm(seq: any): string[] {
   };
 
   const mmList: string[] = inSeq ? inSeq.split('.') : [];
-  return mmList.map(mmPostProcess);
-}
+  return new StringListSeqSplitted(mmList.map(mmPostProcess), GapOriginals[NOTATION.HELM]);
+};
 
-/** Get splitter method to split sequences to monomers
+/** Func type to shorten a {@link monomerLabel} with length {@link limit} */
+export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
+
+/** Get splitter method to split sequences to monomers (required for MacromoleculeDifferenceCellRenderer)
  * @param {string} units
  * @param {string} separator
  * @param limit
@@ -112,40 +217,30 @@ export function getSplitter(units: string, separator: string, limit: number | un
   // TODO: Splitter for HELM
 }
 
-/** Generate splitter function for sequence column
- * @param {DG.Column} col
- * @return {SplitterFunc} Splitter function
- */
-export function getSplitterForColumn(col: DG.Column): SplitterFunc {
-  if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
-    throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
-
-  const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(TAGS.separator);
-  return getSplitter(units, separator);
-}
-
-const longMonomerPartRe: RegExp = /(\w+)/g;
+const longMonomerPartRe: RegExp = /([^\W_]+)/g;
 
 /** Convert long monomer names to short ones */
 export function monomerToShort(amino: string, maxLengthOfMonomer: number): string {
+  if (amino.length <= maxLengthOfMonomer)
+    return amino;
+  //const kebabAmino = amino.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? '-' : '') + $);
   const shortAminoMatch: RegExpMatchArray | null = amino.match(longMonomerPartRe);
   const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
   const shortAmino = shortAminoMatch?.[0] ?? ' ';
-  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
+  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer - 1) + '…';
 }
 
 /** */
 export function getAlphabet(alphabet: ALPHABET): Set<string> {
   switch (alphabet) {
-    case ALPHABET.DNA:
-      return Alphabets.fasta.dna;
-    case ALPHABET.RNA:
-      return Alphabets.fasta.rna;
-    case ALPHABET.PT:
-      return Alphabets.fasta.peptide;
-    default:
-      throw new Error(`Unsupported alphabet '${alphabet}'.`);
+  case ALPHABET.DNA:
+    return Alphabets.fasta.dna;
+  case ALPHABET.RNA:
+    return Alphabets.fasta.rna;
+  case ALPHABET.PT:
+    return Alphabets.fasta.peptide;
+  default:
+    throw new Error(`Unsupported alphabet '${alphabet}'.`);
   }
 }
 
@@ -184,9 +279,8 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
   if (maxSim > 0) {
     const sim = candidatesSims.find((cs) => cs.similarity === maxSim)!;
     alphabetName = sim.name;
-  } else {
+  } else
     alphabetName = ALPHABET.UN;
-  }
   return alphabetName;
 }
 
@@ -198,10 +292,10 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
 export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const uh: UnitsHandler = new UnitsHandler(seqCol);
-    alphabet = uh.alphabet;
+    const sh: SeqHandler = SeqHandler.forColumn(seqCol);
+    alphabet = sh.alphabet;
   } else {
-    const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
+    const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);
     alphabet = detectAlphabet(stats.freq, candidateAlphabets);
   }
 
@@ -211,21 +305,21 @@ export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPale
 
 export function getPaletteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
-    case ALPHABET.PT:
-      return AminoacidsPalettes.GrokGroups;
-    case ALPHABET.DNA:
-    case ALPHABET.RNA:
-      return NucleotidesPalettes.Chromatogram;
+  case ALPHABET.PT:
+    return AminoacidsPalettes.GrokGroups;
+  case ALPHABET.DNA:
+  case ALPHABET.RNA:
+    return NucleotidesPalettes.Chromatogram;
     // other
-    default:
-      return UnknownSeqPalettes.Color;
+  default:
+    return UnknownSeqPalettes.Color;
   }
 }
 
-export function pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
+export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   let resCol: DG.Column | null = semTypeColList.find((col) => {
-    const units = col.getTag(DG.TAGS.UNITS);
+    const units = col.meta.units;
     return units ? units.indexOf('MSA') !== -1 : false;
   }) ?? null;
   if (!resCol && semTypeColList.length > 0)

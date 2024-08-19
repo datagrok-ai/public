@@ -1,0 +1,316 @@
+name,id,parent_id,is_group,test_case,status
+Projects,a089924a-55e0-47b9-9de8-061292a6b70b,,true,,
+Browser,94a057af-eb28-468d-9620-f89b879dc5d5,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Open a ""Projects"" view for ""Data"" section on Sidebar
+2. Use search to find the ""demog"" project
+3. Open ""Share"" dialog for the ""demog"" project from its context menu
+4. Check ""Details"" for the ""demog"" project from its context menu
+5. Check all tabs on Property Panel for ""demog"" project
+
+* it is possible to use any other project that currently exists on the tested instance for testing",
+Uploading,3f87ade9-1f24-4c0f-81fe-f449b676ecae,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Add the table in Datagrok (from anywhere: files, queries, local storage, etc.)
+2. Click on “Share” section on Sidebar
+3. Click “Upload” button near “Scratchpad” project
+4. Enter a name for the new project
+5. Enter description for the new project
+6. Turn on the “Presentation mode” switch
+7. Click “OK”
+8. Click “OK” in “Share dialog”",
+Opening,1f174c90-09d4-4e30-b64e-2866d720e871,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Find the project you upload in the previous step (1.2)
+2. Check all attributes added to the project (sharing, description, name, picture)
+3. Double-click on it project
+4. Note that it should open in presentation mode
+5. Press F7 to exit from presentation mode
+6. Open “Sharing” section on sidebar to see open project 
+7. Call context menu on sidebar and Close All",
+Deleting,f618d7b2-9e05-4d8e-a72e-b496b902375b,a089924a-55e0-47b9-9de8-061292a6b70b,false,"1. Find the project you upload in the previous steps (1.2)
+2. Call context menu 
+3. Click on “Delete project” and then YES in confirmation dialog
+4. Check that the project has been deleted and is no longer present in the project gallery",
+Connections,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,,true,,
+Adding,c228ae1b-bc04-455d-9f87-c6a9c4e4aa99,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Open context menu for ""PostgreSQL” and click on “Add new connection”
+3. Enter ""test_postgres"" to ""Name"" field
+4. Fill other fields with following data: Server = localhost, DB = northwind , login = datagrok, password = ********
+5. Click on “Test” button
+6. Click OK button",
+Edit,b78f1550-1308-4257-9aa8-fca0c06a0b76,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Open context menu for connection created in the previous step (2.1)
+2. Click on ""Edit connection"" from context menu
+3. Change name to ""new_test_postgres"" on click OK
+4. Change other parameters of ""new_test_postgres"" connection with arbitrary data and save changes
+
+* Repeat scenarios 2.1-2.2 for connections to different DB sources (Oracle, MariaDB, PostresNet, MySQLm MS SQL)",
+Browser,1b913561-3fd6-41c9-b304-8b5daa91f26b,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Click on “Manage” section on sidebar and then click on “Connections”
+2. Type ""new_test"" in the search field to search for the connection created in the previous step (2.2)
+3. Check all tabs on Property Panel for connection
+4. Expand “Filter” tab on Toolbox and check its content 
+5. Expand “Actions” tab on Toolbox and check its content",
+Delete,577f0a79-4c3f-4092-a9d8-71e7cb43ce0b,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Find connections you create in the previous steps (2.1)
+2. Call context menu  for for each of them
+3. Click on “Delete” and then YES in confirmation dialog
+4. Check that connections has been deleted and is no longer present in the connections browser",
+Import SWAGGER,73cb3419-858f-4da1-8208-950399de3df7,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Find the ""openweathermap.yaml"" file in the Swaggers package (https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
+2. Drag-and-drop  ""openweathermap.yaml"" file from your local storage to browser tab with opened “Datagrok”
+3. Click on “Data” section on sidebar and then click on “Webservices”
+4. Make sure the OpenWeatherMap connection is created and follows the description in the Swagger File",
+Schema,bd56a036-27f6-4b03-8c17-95080df22cde,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand the ""PostgreSQL"" and call the context menu for ""northwond"" connection
+3. Click on “Browse schema” from context menu
+4. Expand “View” and “Tables” sections on Toolbox
+5. Check that the structures presented in schema view can be interacted with as with DB Tables (from its context menu)",
+Sparql,52914108-7099-4764-ac99-e20a5524339b,3f116a21-ced4-43a6-bbf0-b1668ff8b7e7,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Call context menu for “Sparql” provider and click on “Add new connection”
+3. Enter ""test_sparql"" to ""Name"" field
+4. Fill other fields with following data: Endpoint = http://data.ontotext.com/repositories/data-last , Requires Server = true, Prefixes field left empty
+5. Click on “Test” button
+6. Click OK
+
+* Repeat scenarios 2.2-2.4 for Sparql type connection",
+Queries,6c8030e2-e8b8-4329-897f-aee13c859b00,,true,,
+Adding,a9c33174-68f8-4088-af38-20616d5b5be4,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Open context menu for ""PostgreSQL\northwind” and click on “Add query”
+3. Enter ""test_query"" to ""Name"" field
+4. Enter query text to corresponding field (select * from products)
+5. Click on “Play” button on toolbar
+6. Click on “Run query…” from “Actions” tab on Toolbox
+7. Click “Save” button on toolbar",
+Edit,5810c7e7-8b4a-44bd-ad2d-0950b2402d39,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Open context menu for query created in the previous step (3.1)
+2. Click on ""Edit…"" from context menu
+3. Change name to ""new_test_query"" 
+4. Change the query test to: select * from orders
+5. Click on “Play” button on toolbar
+6. Click on “Run query…” from “Actions” tab on Toolbox
+7. Click “Save” button on toolbar
+
+* Repeat scenarios 3.1-3.2 for queries to different DB sources (Oracle, MariaDB, PostresNet, MySQLm MS SQL)",
+Browser,21ab83ba-d95d-4642-b133-a82ec990d2d9,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Click on “Data” section on sidebar and then click on “Queries”
+2. Type ""new_test"" in the search field to search for the connection created in the previous step (3.2)
+3. Check all tabs on Property Panel for query
+4. Expand “Filters” tab on Toolbox and check its content",
+Deleting,a5c98344-acda-43b5-a567-3e6b99cd5b81,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Find queries you create in the previous steps (3.1), in queries browser or on “Databases” view
+2. Call context menu  for for each of them
+3. Click on “Delete” and then YES in confirmation dialog
+4. Check that queries has been deleted and is no longer present",
+Transformations,981efe68-c220-4ac6-b7c8-33fa6efd0e76,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand ""PostgreSQL > northwind” and then open context menu for “Products” query
+3. Click on “Edit…” from context menu 
+4. Click on “Transformation” tab in Query View (opened in previous step)
+5. Click on “Add new column” from actions list and add column which is equal to the “productid” column from the table (${productid})
+6. Open Cluster dialog from “ML | Custer…” menu
+7. Click OK in Cluster dialog with default parameters
+8. Make sure that the actions from steps 6 and 7 are added to the transformation script
+9. Click on “Play” button from toolbar
+10.  Click on “Run query…” from “Actions” tab on Toolbox
+11. Click on “Save” button on toolbar
+12. Run the query saved in step 11 
+13. Make sure that the functions added to the transformation script are executed for the returned dataframe",
+Parameterized queries,861295f4-122b-4316-8b0a-5840c65a703f,6c8030e2-e8b8-4329-897f-aee13c859b00,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand ""PostgreSQL > northwind” and click “Orders” query
+3. Open “Run” tab on Property Panel for “Orders” query
+4. Run query with default parameters from Property Panel
+5. Expand ""Source"" tab on Toolbox for table view
+6. Change the parameters (arbitrarily) directly from table view and click on the ""Refresh"" button",
+Scripts,f47980df-a0d3-40d8-bc63-4df1ff56396c,,true,,
+Create,939fef1d-7049-4778-86a8-903385a488a1,f47980df-a0d3-40d8-bc63-4df1ff56396c,false,"1. Open “Functions” section on sidebar and then click on “Scripts” item
+2. Expand “Actions” tab on Toolbox
+3. Click on “New R script” action
+4. Click on “Open script sample table” icon on toolbar (*)
+5. Click on “Signature editor” button on toolbar
+6. Set “Name” field in signature editor to “test_R_script”
+7. Click on “Parameters” tab
+8. Click on “ADD PARAMETER +” button to add new parameter
+9. Set next attributes for new parameter in parameters table: direction = “output”, name = “new_param”, type = “string”
+10. Click on “Open function editor” button on toolbar
+11. Click on “Play” button on toolbar
+12. Click on “Save” button on toolbar
+13. Click on “x” icon to close script view",
+Edit,e2b39a42-c06f-4ed9-9895-85ddb40119e6,f47980df-a0d3-40d8-bc63-4df1ff56396c,false,"1. Open “Functions” section on sidebar and then click on “Scripts” item
+2. Find ""test_R_scrip"" script  from step 5.1
+3. Double click on  ""test_R_scrip"" script
+4. Add add the expression ""new_param=”test”"" to script body
+5. Click on “Save” button on toolbar
+6. Click on “x” icon to close script view",
+Run,0a78fba9-f8db-465c-93b8-364fbb1be6e8,f47980df-a0d3-40d8-bc63-4df1ff56396c,false,"1. Open “Functions” section on sidebar and then click on “Scripts” item
+2. Find ""test_R_scrip"" script  from step 5.1 and open context menu for its
+3. Click on “Run” from context menu
+4. Click “OK” in parameters dialog
+5. Open Datagrok console (Alt + C)
+6. Enter the following expression into the console: {your namespace}:Test(""cars""). Where {your namespace} equal to your platform login
+7. Execute the command entered in the console",
+Browser,f97cc2b0-fa63-4f4a-bac1-50e9f8b3ca86,f47980df-a0d3-40d8-bc63-4df1ff56396c,false,"1. Click on “Functions” section on sidebar and then click on “Scripts”
+2. Type ""test_R_script"" in the search field to search for the connection created in the previous step (5.1)
+3. Check all tabs on Property Panel for script
+4. Expand “Filters” tab on Toolbox and check its content",
+Delete,78b9c2d7-a0eb-41c9-b0f4-f8b6738ff6c5,f47980df-a0d3-40d8-bc63-4df1ff56396c,false,"1. Click on “Functions” section on sidebar and then click on “Scripts”
+2. Find script you create in the previous steps (5.1)
+3. Call context menu fo it
+4. Click on “Delete” and then YES in confirmation dialog
+5. Check that script has been deleted and is no longer present
+
+* Repeat steps 5.1-5.5 for scripts in other languages ​​(Python, Julia, Octave, NodeJS)",
+Models,2098837b-0b6c-469d-abda-bc3ff8d91c0f,,true,,
+Train,34256124-915e-4045-a9ac-c88eb206241f,2098837b-0b6c-469d-abda-bc3ff8d91c0f,false,"1. Open “demog” table in Datagrok
+2. Expand “Models” tab on Toolbox
+3. Click on “Train” button 
+4. Select “H2O” for “Model Engine” field
+5. Enter “test_h2o_model” to “Name” field
+6. Select “SEX” column for “Predict” field
+7. Select “HEIGHT” and “WEIGHT” columns for “Features” field
+8. Click on “TRAIN” button",
+Apply,306676a6-f799-4daa-ba7f-35582088a42c,2098837b-0b6c-469d-abda-bc3ff8d91c0f,false,"1. Open table view for “demog” table
+2. Expand “Models” tab on Toolbox
+3. Click on “Play” icon near “test_h2o_model”
+4. After end of applying process, make sure that the column with the predict is added to the table",
+Browser,afc80f24-3b6f-4c86-90f3-5c84d70ce0a7,2098837b-0b6c-469d-abda-bc3ff8d91c0f,false,"1. Click on “Functions” section on sidebar and then click on “Models”
+2. Type ""test_h2o_model"" in the search field to search for the connection created in the previous step (6.1)
+3. Check all tabs on Property Panel for model
+4. Expand “Filters” tab on Toolbox and check its content 
+5. Click on “Train” button from “Action” tab on Toolbox
+6. Return to Models browser view
+7. Select multiple models from the browser (You can select models with clicking on them while holding down the CTRL key)
+8. Open “Commands” tab on property panel for secreted models group
+9. Click on “Compare” from “Commands” tab on property panel",
+Delete,46b50b8d-46df-4980-93db-86d36b80726c,2098837b-0b6c-469d-abda-bc3ff8d91c0f,false,"1. Click on “Functions” section on sidebar and then click on “Models”
+2. Find model you train in the previous steps (6.1)
+3. Call context menu fo it
+4. Click on “Delete” and then YES in confirmation dialog
+5. Check that model has been deleted and is no longer present
+
+* Repeat steps 6.1-6.4 for model using “Caret” engine",
+Viewers,18c6e08b-1a3e-45a0-ae74-0cd3febebb1f,,true,,
+Viewers,7eeaa2ac-7a18-4d1b-825b-dbd67c6a0238,18c6e08b-1a3e-45a0-ae74-0cd3febebb1f,false,"1. Open “demog” table
+2. Click on “Scatter plot” icon from “Viewers” section on Toolbox
+3. Change viewer parameters, which are represented by selectors on it
+4. Add all main viewers from “Viewers” tab on Toolbox and arbitrarily change their parameters
+5. Click on “Share” section on Sidebar
+6. Click on “Upload” button for “Scratchpad” project 
+7. Serialize to project table with view that has all the main viewers added 
+8. Close open tables
+9. Open new project created in step 7",
+Notebooks,3e993d43-2c70-496b-9999-45a09dd69c76,,true,,
+Create,55354e18-cf88-4ff4-a70c-7a8298e6eed8,3e993d43-2c70-496b-9999-45a09dd69c76,false,"1. Open “demog” table
+2. Call context menu to table view title 
+3. Click on “Open in Notebook” from context menu
+4. Click on “HTML” button on toolbar
+5. Click on “Download” button on toolbar and download the created notebook in all suggested formats",
+Edit,aba4347a-abee-407d-b889-907568f072b8,3e993d43-2c70-496b-9999-45a09dd69c76,false,"1. Click on “Functions” section on sidebar and then click on “Notebooks”
+2. Find notebook you create in the previous steps (8.1) by “demog” name (named according to the names of the tables for which they were created)
+3. Open  “demog” notebook by double-clicking on it
+4. Click on “Edit” button on toolbar
+5. Add to Notebook body to next code: 
+race= PostgresqlProducts['race']
+race.describe()
+6. Click on “Play” button on toolbar",
+Browser,ad62dba6-54b6-4b7c-8275-5f972218b4fe,3e993d43-2c70-496b-9999-45a09dd69c76,false,"1. Click on “Functions” section on sidebar and then click on “Notebooks”
+2. Type ""demog"" in the search field to search for the connection created in the previous step (8.1)
+3. Check all tabs on Property Panel for Notebook
+4. Expand “Filters” tab on Toolbox and check its content 
+5. Click on “New Notebook” from “Actions” tab on Toolbox",
+Delete,3daed550-a33a-49fc-a0d6-1c1a89e09389,3e993d43-2c70-496b-9999-45a09dd69c76,false,"1. Click on “Functions” section on sidebar and then click on “Notebooks”
+2. Find Notebook you crate in the previous steps (8.1)
+3. Call context menu fo it
+4. Click on “Delete” and then YES in confirmation dialog
+5. Check that notebook has been deleted and is no longer present",
+Advanced,8d570327-c699-4b52-b3a3-3b2ee2c87716,6c8030e2-e8b8-4329-897f-aee13c859b00,true,,
+Content,9b6ace20-d03a-4b5b-83ca-36cd9165656f,8d570327-c699-4b52-b3a3-3b2ee2c87716,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand PostreSQL > Northwind > Schemas > public
+3. Click on each table in order in previously chosen scheme (Northwin > public)
+4. Make sure that contents of the ""Content"" and ""Columns"" tabs on the PP are displayed correctly for each table from step 2",
+Columns Inspect,1c1a2fcf-65ab-498b-8fe2-fac3f80db495,8d570327-c699-4b52-b3a3-3b2ee2c87716,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand PostreSQL > Northwind > Schemas > public
+3. Expand each DB table in the tree to DB column level
+4. Select each DB column for each DB table as the current object (click on them)
+5. Make sure there are no errors in the ""General"" and ""Content"" tabs on Property Panel for all DB columns",
+Visual Query,e5e02343-adae-4d4b-860b-d7d17765ba99,8d570327-c699-4b52-b3a3-3b2ee2c87716,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand PostreSQL > Northwind > Schemas > public
+3. Call context menu for “products” DB Table 
+4. Click on “Visual Query” from context menu
+5. Fill “Name” field with “test_visual_query”
+6. Select ""productid"" column for ""Columns"" field, ""suplplierid"" column for ""Rows"" field and select avg(unitprice) for ""Measures"" field
+7. Click on “Play” button on toolbar
+8. Click on ""Run query..."" action on Toolbox
+9. Click on “Save” button on toolbar
+10. Run “test_visual_query” from Databases (double-click on it in tree)",
+New SQL Query,03f7b064-0a5a-4dc5-af39-0a099c11279d,8d570327-c699-4b52-b3a3-3b2ee2c87716,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand PostreSQL > Northwind > Schemas > public
+3. Call context menu for “products” DB Table
+4. Click on “New SQL Query” from context menu
+5. Click on “Play” button on toolbar
+6. Click on ""Run query..."" action on Toolbox",
+Build query,16a3be24-9c37-45ad-ba87-4ea53606e21c,8d570327-c699-4b52-b3a3-3b2ee2c87716,false,"1. Open “Data” section on sidebar and then click on “Databases” item
+2. Expand PostreSQL > Northwind > Schemas > public
+3. Call context menu for “products” DB Table
+4. Click on “Build query…” from context menu
+5. Click on checkbox for “products” table to select all columns 
+6. Click on ""Save as query"" from dialog menu (this menu is located under the chevron “V” in the lower left corner of the dialog)
+7. Click on ""Add result to workspace"" from dialog menu (“V” chevron on “Build query” dialog)
+
+* Repeat scenarios 4.1-4.5 for PostgresNet, MySql, MS SQL, MariaDB, ORACLE providers",
+Chem,326be3d8-972c-4e92-b7d2-954fe7a6474c,,true,,
+Info Panels,b1a681f8-de81-4495-98cd-5cfa97992af9,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem/smiles.csv)
+2. Click on chem structure from “smiles” column 
+3. Check that all necessary panels are displayed on the Property Panel (Gasteiger Partial Charges, Structure 3D, Structure 2D, Toxicity, Identifiers, Structural Alerts, Drug Likeness, Properties, Chem Descriptors)
+4. Expand each panel on Property Panel
+5. Make sure the content for each panel is displayed correctly",
+R Groups analysis,aab5138d-72d0-4e34-83bb-f8efcb1d6171,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem/smiles.csv)
+2. Open “R-groups analysis” dialog from Chem top-menu
+3. Click on MCS button
+4. Mark “Visual analysis” checkbox 
+5. Click OK button",
+Activity Cliffs,48a8453f-5f03-4a47-b6e5-316c5c48c78b,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Open “Activity cliffs” dialog from Chem top-menu
+3. Click OK to run dialog with default parameters
+4. Open “Activity cliffs” dialog from Chem top-menu again
+5. Change “Similarity” and “Method name” parameters arbitrarily
+6. Click OK to run dialog with edited parameters",
+Chemical Space,c35f8015-6a5e-4fbb-9304-791565c485b9,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Open “Chemical space” dialog from Chem top-menu
+3. Click OK to run dialog with default parameters
+4. Open “Chemical space” dialog from Chem top-menu again
+5. Change “Similarity metric” and “Method name” parameters arbitrarily
+6. Click OK to run dialog with edited parameters",
+Sketcher,9913b303-eaa8-445f-8fb8-7e6c2213d161,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Open “Sketcher” dialog from Chem top-menu
+3. Draw an arbitrary structure
+4. Expand “Actions” tab on Property Panel
+5. Click on “Add to Favorites” action from “Actions” tab on Property Panel
+6. Click on “Select” button
+7. Click on “Filter” button
+8. Clear the sketcher field (click on the corresponding icon in sketcher tools panel)
+9. Enter “C1CCCCC1” to molecular input field
+10. Click on hamburger menu button near input field
+11. Check the content in “Recent” and “Favorites” menu
+12. Click on “Copy as SMILES”
+13. Check clipboard against step 12
+14. Click on “Copy as MOLBLOC”
+15. Check clipboard against step 14
+16. Repeat steps 1-15 for all available sketcher types for selection from hamburger  menu",
+Map Identifiers,1a5b8954-bfdc-4583-846f-f1bfe7c3f320,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Click on “smiles” column title
+3. Expand on “Actions” tab on Property Panel
+4. Click on “Chem | Map Identifiers...“ action from “Actions” tab on Property Panel
+5. Select an arbitrary value for the ""To Source"" field
+6. Click OK in Map Identifiers dialog
+7. Make sure that the column with the conversion result (map identifiers) is added to the table",
+To Inchi,87bd6ba8-ad5b-47df-8c9b-ba3bc2998e10,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Click on “smiles” column title
+3. Expand on “Actions” tab on Property Panel
+4. Click on “Chem | To Inchi“ action from “Actions” tab on Property Panel
+5. Click on “Chem | To Inchi Keys“ action from “Actions” tab on Property Panel
+6. Make sure the conversion results columns are added to the table",
+Similarity Search,107eaf86-df2a-49dc-938c-040b75b4eef9,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Click on “Similarity Search” from Chem top-menu
+3. Click on structures inside “Similarity Search” viewer
+4. Open “Similarity Search” viewer properties (Click on corresponding icon on the title of the viewer)
+5. Change arbitrarily the values ​​of parameters ""Fingerprint"" and ""Distance metric""",
+Diversity Search,b8542e02-9307-4bca-b97d-0db1496e7488,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Click on “Diversity Search” from Chem top-menu
+3. Click on structures inside “Similarity Search” viewer
+4. Open “Diversity Search” viewer properties (Click on corresponding icon on the title of the viewer)
+5. Change arbitrarily the values ​​of parameters ""Fingerprint"" and ""Distance metric""",
+Structural Alerts,6865ba8e-124f-4b64-b47d-ace1c8cd8fbc,326be3d8-972c-4e92-b7d2-954fe7a6474c,false,"1. Open “smiles” table (For example from Files -> Demo Files/chem)
+2. Click on “smiles” column title
+3. Expand on “Actions” tab on Property Panel
+4. Click on “Chem | Structural Alerts“ action from “Actions” tab on Property Panel
+5. Check all checkboxes in dialog
+6. Click OK button
+7. Make sure columns (8 pieces) with structural alerts are added to the table",

@@ -6,40 +6,76 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 import * as grok from 'datagrok-api/grok';
-import wu from 'wu';
-import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
-import {Subject, Subscription} from 'rxjs';
-import {updateDivInnerHTML} from '../utils/ui-utils';
-import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {debounceTime} from 'rxjs/operators';
 
-export class BioSubstructureFilter extends DG.Filter {
-  bioFilter: FastaFilter | SeparatorFilter | HelmFilter | null = null;
+import wu from 'wu';
+import $ from 'cash-dom';
+import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
+
+import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
+
+import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
+import {updateDivInnerHTML} from '../utils/ui-utils';
+import {BioFilterBase, BioFilterProps, IBioFilter, IFilterProps} from './bio-substructure-filter-types';
+import {HelmBioFilter} from './bio-substructure-filter-helm';
+
+import {_package} from '../package';
+
+const FILTER_SYNC_EVENT: string = 'bio-substructure-filter';
+
+class FilterState {
+  constructor(
+    public readonly props: IFilterProps,
+    public readonly filterId: number,
+    public readonly dataFrameId: string,
+    public readonly columnName: string,
+    public readonly bitset: DG.BitSet | null,
+  ) {}
+}
+
+export class SeparatorFilterProps extends BioFilterProps {
+  constructor(
+    substructure: string,
+    public readonly separator?: string,
+  ) {
+    super(substructure, false);
+    this.readOnly = true;
+  }
+}
+
+export class BioSubstructureFilter extends DG.Filter implements IRenderer {
+  bioFilter: IBioFilter | null = null;
   bitset: DG.BitSet | null = null;
-  loader: HTMLDivElement = ui.loader();
-  onBioFilterChangedSubs?: Subscription;
+  readonly loader: HTMLDivElement;
   notation: string | undefined = undefined;
+
+  readonly logger: ILogger;
+  readonly filterSyncer: PromiseSyncer;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
 
   set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
 
   get filterSummary(): string {
-    return this.bioFilter!.substructure;
+    return this.bioFilter!.filterSummary;
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering && this.bioFilter!.substructure !== '';
+    return super.isFiltering && (this.bioFilter?.isFiltering ?? false);
   }
 
   get isReadyToApplyFilter(): boolean {
     return !this.calculating && this.bitset != null;
   }
 
-  get _debounceTime(): number {
+  get debounceTime(): number {
     if (this.column == null)
       return 1000;
     const length = this.column.length;
@@ -48,40 +84,93 @@ export class BioSubstructureFilter extends DG.Filter {
     const msecMax = 1000;
     if (length < minLength) return 0;
     if (length > maxLength) return msecMax;
-    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
+    const res = Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
+    return res;
   }
-
-  //column name setter overload
 
   constructor() {
     super();
     this.root = ui.divV([]);
+    this.loader = ui.loader();
     this.calculating = false;
+    this.filterSyncer = new PromiseSyncer(this.logger = _package.logger);
+
+    return new Proxy(this, {
+      set(target: any, key, value) {
+        if (key === 'column') {
+          const k = 42;
+        }
+        target[key] = value;
+        return true;
+      }
+    });
   }
 
+  private static filterCounter: number = -1;
+  private readonly filterId: number = ++BioSubstructureFilter.filterCounter;
+
+  private filterToLog(): string { return `BioSubstructureFilter<${this.filterId}>`; }
+
+  private viewSubs: Unsubscribable[] = [];
+
   attach(dataFrame: DG.DataFrame): void {
-    super.attach(dataFrame);
-    this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-    this.columnName ??= this.column?.name;
-    this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
-    this.bioFilter = this.notation === NOTATION.FASTA ?
-      new FastaFilter() : this.notation === NOTATION.SEPARATOR ?
-        new SeparatorFilter(this.column!.getTag(bioTAGS.separator)) : new HelmFilter();
-    this.root.appendChild(this.bioFilter!.filterPanel);
-    this.root.appendChild(this.loader);
+    const superAttach = super.attach.bind(this);
+    const logPrefix = `${this.filterToLog()}.attach()`;
+    this.filterSyncer.sync(logPrefix, async () => {
+      superAttach(dataFrame);
 
-    this.onBioFilterChangedSubs?.unsubscribe();
+      if (!this.column) {
+        if (this.columnName)
+          this.column = this.dataFrame!.getCol(this.columnName);
+        else
+          this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+      }
+      const sh = SeqHandler.forColumn(this.column!);
+      this.columnName ??= this.column?.name;
+      this.notation ??= this.column?.meta.units!;
 
-    let onChangedEvent: any = this.bioFilter.onChanged;
-    onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
-    this.onBioFilterChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onInputChanged());
+      this.bioFilter = this.notation === NOTATION.FASTA ?
+        new FastaBioFilter() : this.notation === NOTATION.SEPARATOR ?
+          new SeparatorBioFilter(this.column!.getTag(bioTAGS.separator)) : new HelmBioFilter();
+      this.root.appendChild(this.bioFilter!.filterPanel);
+      this.root.appendChild(this.loader);
+      await this.bioFilter.attach(); // may await waitForElementInDom
+
+      this.viewSubs.push(DG.debounce(this.bioFilter!.onChanged, this.debounceTime)
+        .subscribe(this.bioFilterOnChangedDebounced.bind(this)));
+      this.viewSubs.push(grok.events.onResetFilterRequest
+        .subscribe(this.grokEventsOnResetFilterRequest.bind(this)));
+      this.viewSubs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT)
+        .subscribe(this.filterOnSync.bind(this)));
+    });
   }
 
   detach() {
-    super.detach();
+    const superDetach = super.detach.bind(this);
+    const logPrefix = `${this.filterToLog()}.detach()`;
+    this.filterSyncer.sync(logPrefix, async () => {
+      for (const sub of this.viewSubs) sub.unsubscribe();
+      this.viewSubs = [];
+      superDetach(); // requests this.isFiltering
+      if (this.bioFilter) this.bioFilter.detach();
+      this.bioFilter = null;
+    });
   }
 
+  // -- Sync -
+
+  private filterOnSync(state: FilterState): void {
+    if (state.filterId === this.filterId) return;
+    if (state.dataFrameId !== this.dataFrame!.id || state.columnName !== this.columnName) return;
+
+    this.bioFilter!.props = state.props;
+  }
+
+  // -- Layout --
+
   applyFilter(): void {
+    const logPrefix = `${this.filterToLog()}.applyFilter()`;
+    this.logger.debug(`${logPrefix}, IN`);
     if (this.bitset && !this.isDetached)
       this.dataFrame?.filter.and(this.bitset);
   }
@@ -90,8 +179,10 @@ export class BioSubstructureFilter extends DG.Filter {
    * @return {any} - filter state
    */
   saveState(): any {
+    const logPrefix = `${this.filterToLog()}.saveState()`;
     const state = super.saveState();
-    state.bioSubstructure = this.bioFilter?.substructure;
+    this.logger.debug(`${logPrefix}, super.state = ${JSON.stringify(state)}`);
+    state.props = this.bioFilter!.saveProps();
     return state;
   }
 
@@ -99,99 +190,186 @@ export class BioSubstructureFilter extends DG.Filter {
    * @param {any} state - filter state
    */
   applyState(state: any): void {
+    const logPrefix = `${this.filterToLog()}.applyState()`;
     super.applyState(state); //column, columnName
-    if (state.bioSubstructure)
-      this.bioFilter!.substructure = state.bioSubstructure;
 
-    const that = this;
-    if (state.bioSubstructure)
-      setTimeout(function() { that._onInputChanged(); }, 1000);
+    this.filterSyncer.sync(logPrefix, async () => {
+      if (state.props && this.bioFilter)
+        this.bioFilter.props = DG.toJs(state.props ?? {});
+    });
   }
+
+  private fireFilterSync(): void {
+    const logPrefix = `${this.filterToLog()}.fireFilterSync()`;
+    _package.logger.debug(`${logPrefix}, ` +
+      `bioFilter = ${!!this.bioFilter ? this.bioFilter.constructor.name : 'null'}` +
+      (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter!.saveProps())}` : ''));
+
+    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, new FilterState(
+      this.bioFilter!.props, this.filterId, this.dataFrame!.id, this.columnName!, this.bitset));
+  }
+
+  // -- Handle events
 
   /**
    * Performs the actual filtering
    * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
    * that would simply apply the bitset synchronously.
    */
-  async _onInputChanged(): Promise<void> {
+  bioFilterOnChangedDebounced(): void {
+    if (!this.dataFrame) return; // Debounced event can be handled postponed
+    const logPrefix = `${this.filterToLog()}.bioFilterOnChangedDebounced()`;
+    _package.logger.debug(`${logPrefix}, start, ` +
+      `isFiltering = ${this.isFiltering}, ` +
+      `props = ${JSON.stringify(this.bioFilter!.saveProps())}`);
+
     if (!this.isFiltering) {
       this.bitset = null;
-      this.dataFrame?.rows.requestFilter();
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
-      // some other filter is already filtering for the exact same thing
+      this.dataFrame!.rows.requestFilter();
       return;
-    } else {
+    }
+
+    // some other filter is already filtering for the exact same thing
+    if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`))
+      return;
+
+    this.filterSyncer.sync(logPrefix, async () => {
       this.calculating = true;
       try {
-        this.bitset = await this.bioFilter?.substrucrureSearch(this.column!)!;
+        _package.logger.debug(`${logPrefix}, before substructureSearch`);
+        this.bitset = await this.bioFilter?.substructureSearch(this.column!)!;
+        _package.logger.debug(`${logPrefix}, after substructureSearch`);
         this.calculating = false;
+        this.fireFilterSync();
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
+        _package.logger.debug(`${logPrefix}, end`);
       }
-    }
+    });
+  }
+
+  grokEventsOnResetFilterRequest(): void {
+    const logPrefix = `${this.filterToLog()}.grokEventsOnResetFilterRequest()`;
+    _package.logger.debug(`${logPrefix}`);
+    this.bioFilter?.resetFilter();
+  }
+
+  // -- IRenderer --
+
+  private _onRendered = new Subject<void>();
+
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    const logPrefix = `${this.filterToLog()}.invalidate(${caller ? ` <- ${caller} ` : ''})`;
+    this.filterSyncer.sync(logPrefix, async () => {
+      // TODO: Request re-render
+      this._onRendered.next();
+    });
+  }
+
+  async awaitRendered(timeout: number = 10000): Promise<void> {
+    const callLog = `awaitRendered( ${timeout} )`;
+    const logPrefix = `${this.filterToLog()}.${callLog}`;
+    await delay(10);
+    await testEvent(this.onRendered, () => {
+      this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
+    }, () => {
+      this.invalidate(callLog);
+    }, timeout, `${logPrefix} timeout`);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.filterSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }
 
-abstract class BioFilterBase {
-  onChanged: Subject<any> = new Subject<any>();
+export class FastaBioFilter extends BioFilterBase<BioFilterProps> {
+  readonly emptyProps = new BioFilterProps('');
 
-  get filterPanel() {
-    return new HTMLElement();
-  }
-
-  get substructure() {
-    return '';
-  }
-
-  set substructure(s: string) {
-  }
-
-  async substrucrureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
-    return null;
-  }
-}
-
-class FastaFilter extends BioFilterBase {
   readonly substructureInput: DG.InputBase<string>;
+
+  get type(): string { return 'FastaBioFilter'; }
 
   constructor() {
     super();
 
-    this.substructureInput = ui.stringInput('', '', () => {
-      this.onChanged.next();
-    }, {placeholder: 'Substructure'});
+    this.substructureInput = ui.input.string('', {
+      value: '', onValueChanged: () => {
+        this.props = new BioFilterProps(this.substructureInput.value);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Substructure'
+    });
+  }
+
+  public applyProps() {
+    if (this.substructureInput.value !== this.props.substructure)
+      this.substructureInput.value = this.props.substructure;
   }
 
   get filterPanel() {
     return this.substructureInput.root;
   }
 
-  get substructure() {
-    return this.substructureInput.value;
+  get isFiltering(): boolean { return this.substructureInput.value !== ''; }
+
+  async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return linearSubstructureSearch(this.props.substructure, column);
   }
 
-  set substructure(s: string) {
-    this.substructureInput.value = s;
-  }
+  async attach(): Promise<void> {}
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    return await linearSubstructureSearch(this.substructure, column);
+  async detach(): Promise<void> {
+    await super.detach();
   }
 }
 
-export class SeparatorFilter extends FastaFilter {
+export class SeparatorBioFilter extends BioFilterBase<SeparatorFilterProps> {
+  readonly emptyProps = new SeparatorFilterProps('', undefined);
+
+  readonly substructureInput: DG.InputBase<string>;
   readonly separatorInput: DG.InputBase<string>;
   colSeparator = '';
 
-  constructor(separator: string) {
+  get type(): string { return 'SeparatorBioFilter'; }
+
+  constructor(colSeparator: string) {
     super();
 
-    this.separatorInput = ui.stringInput('', '', () => {
-      this.onChanged.next();
-    }, {placeholder: 'Separator'});
-    this.colSeparator = separator;
-    this.separatorInput.value = separator;
+    this.substructureInput = ui.input.string('', {
+      value: '', onValueChanged: () => {
+        this.props = new SeparatorFilterProps(this.substructureInput.value, this.props.separator);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Substructure'
+    });
+    this.separatorInput = ui.input.string('', {
+      value: this.colSeparator = colSeparator, onValueChanged: () => {
+        const separator: string | undefined = !!this.separatorInput.value ? this.separatorInput.value : undefined;
+        this.props = new SeparatorFilterProps(this.props.substructure, separator);
+        if (!this._propsChanging) this.onChanged.next();
+      }, placeholder: 'Separator'
+    });
+  }
+
+  applyProps(): void {
+    if (this.substructureInput.value !== this.props.substructure)
+      this.substructureInput.value = this.props.substructure;
+
+    const separatorValue = this.props.separator ?? this.colSeparator;
+    if (this.separatorInput.value !== separatorValue)
+      this.separatorInput.value = separatorValue;
+  }
+
+  get filterSummary(): string {
+    const sep: string = this.props.separator ? this.props.separator : this.colSeparator;
+    return `${this.props.substructure}, {sep}`;
+  };
+
+  get isFiltering(): boolean { return this.props.substructure !== ''; };
+
+  resetFilter(): void {
+    this.props = new SeparatorFilterProps('');
   }
 
   get filterPanel() {
@@ -211,76 +389,13 @@ export class SeparatorFilter extends FastaFilter {
     this.substructureInput.value = s;
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    return await linearSubstructureSearch(this.substructure, column, this.colSeparator);
-  }
-}
-
-export class HelmFilter extends BioFilterBase {
-  helmEditor: any;
-  _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
-  helmSubstructure = '';
-
-  constructor() {
-    super();
-    this.init();
+  async substructureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return linearSubstructureSearch(this.substructure, column, this.colSeparator);
   }
 
-  async init() {
-    this.helmEditor = await grok.functions.call('HELM:helmWebEditor');
-    await ui.tools.waitForElementInDom(this._filterPanel);
-    this.updateFilterPanel();
-    this._filterPanel.addEventListener('click', (_event: MouseEvent) => {
-      const {editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure);
-      //@ts-ignore
-      ui.dialog({showHeader: false, showFooter: true})
-        .add(editorDiv)
-        .onOK(() => {
-          const helmString = webEditor.canvas.getHelm(true)
-            .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-          this.helmSubstructure = helmString;
-          this.updateFilterPanel(this.substructure);
-          setTimeout(() => { this.onChanged.next(); }, 10);
-        }).show({modal: true, fullScreen: true});
-    });
-    ui.onSizeChanged(this._filterPanel).subscribe((_) => {
-      const helmString = this.helmEditor
-        .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-      this.updateFilterPanel(helmString);
-    });
-  }
+  async attach(): Promise<void> {}
 
-  get filterPanel() {
-    return this._filterPanel;
-  }
-
-  get substructure() {
-    return this.helmSubstructure;
-  }
-
-  set substructure(s: string) {
-    this.helmEditor.editor.setHelm(s);
-  }
-
-  updateFilterPanel(helmString?: string) {
-    const width = this._filterPanel.parentElement!.clientWidth < 100 ? 100 :
-      this._filterPanel.parentElement!.clientWidth;
-    const height = width / 2;
-    if (!helmString) {
-      const editDiv = ui.divText('Click to edit', 'helm-substructure-filter');
-      updateDivInnerHTML(this._filterPanel, editDiv);
-    } else {
-      updateDivInnerHTML(this._filterPanel, this.helmEditor.host);
-      this.helmEditor.editor.setHelm(helmString);
-      this.helmEditor.resizeEditor(width, height);
-    }
-  }
-
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
-    ui.setUpdateIndicator(this._filterPanel, true);
-    await delay(10);
-    const res = await helmSubstructureSearch(this.substructure, column);
-    ui.setUpdateIndicator(this._filterPanel, false);
-    return res;
+  async detach(): Promise<void> {
+    await super.detach();
   }
 }

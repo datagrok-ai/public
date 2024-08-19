@@ -79,17 +79,30 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
       const rightBottomP: DG.Point = treeToCanvas(new DG.Point(currentHeight + node.branch_length!, maxIndex));
       if (leftTop.y <= canvasPoint.y && canvasPoint.y <= rightBottomP.y) {
         let res: RectangleTreeHoverType<TNode> | null = null;
-        const beginP: DG.Point = treeToCanvas(new DG.Point(currentHeight, node.index));
+        //const beginP: DG.Point = treeToCanvas(new DG.Point(currentHeight, node.index));
         const endP: DG.Point = treeToCanvas(new DG.Point(currentHeight + node.branch_length!, node.index));
         const nodeR: number = nodeSize * dpr / 2; // in canvas pixels
-        const lineR: number = lineWidth * 1.5 * dpr / 2;
+        //const lineR: number = lineWidth * 1.5 * dpr / 2;
+        // if (
+        //   // node stick
+        //   (Math.abs(canvasPoint.y - beginP.y) < lineR &&
+        //     beginP.x - lineR <= canvasPoint.x && canvasPoint.x <= endP.x + lineR) ||
+        //   // leaf tip
+        //   (isLeaf(node) &&
+        //     (Math.pow((endP.x - canvasPoint.x) / nodeR, 2) + Math.pow((endP.y - canvasPoint.y) / nodeR, 2)) < 1)
+        // )
+        //   res = {nodeHeight: currentHeight, node: node as TNode};
+
+        // if (!res) {
+        //   for (const childNode of (node.children ?? [])) {
+        //     res = getNodeInt(childNode, canvasPoint, currentHeight + node.branch_length!);
+        //     if (res) break;
+        //   }
+        // }
+        // this way, the nodes are checked bottom up, so the highest node in the tree is selected.
         if (
-          // node stick
-          (Math.abs(canvasPoint.y - beginP.y) < lineR &&
-            beginP.x - lineR <= canvasPoint.x && canvasPoint.x <= endP.x + lineR) ||
-          // leaf tip
-          (isLeaf(node) &&
-            (Math.pow((endP.x - canvasPoint.x) / nodeR, 2) + Math.pow((endP.y - canvasPoint.y) / nodeR, 2)) < 1)
+          isLeaf(node) &&
+          (Math.pow((endP.x - canvasPoint.x) / nodeR, 2) + Math.pow((endP.y - canvasPoint.y) / nodeR, 2)) < 1
         )
           res = {nodeHeight: currentHeight, node: node as TNode};
 
@@ -99,6 +112,9 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
             if (res) break;
           }
         }
+        if (!res && leftTop.x <= canvasPoint.x && canvasPoint.x <= rightBottomP.x)
+          res = {nodeHeight: currentHeight, node: node as TNode};
+
         return res;
       }
       return null;

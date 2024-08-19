@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
-category('DataFrame', () => {
+category('DataFrame: Methods: Join', () => {
   test('join.inPlace.fullTargetColumnList', async () => {
     const tgtDf1: DG.DataFrame = DG.DataFrame.fromCsv(`id,length
 id1,48

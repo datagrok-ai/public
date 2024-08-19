@@ -3,7 +3,7 @@
 
 # Tests: Scripting
 
-[Scripting](scripting.md) is an integration mechanism with R, a language for statistical computing.
+[Scripting](scripting/scripting.mdx) is an integration mechanism with R, a language for statistical computing.
 
 R Scripting combines fast interactive visualizations and other features of the system with thousands of statistical
 packages and visualizations available in R.
@@ -66,7 +66,7 @@ Use this test scenario to run scripts on OpenCPU and Jupyter servers.
 
 See also:
 
-* [Scripting](scripting.md)
-* [Scripting tutorial](../_internal/tutorials/scripting.md)
-* [Script browser test](../datagrok/script-browser-test.md)
+* [Scripting](scripting/scripting.mdx)
+* [Scripting tutorial](../_internal/tutorials/scripting/scripting.mdx)
+* [Script browser test](/help/datagrok/script-browser-test.md)
 * [Scripting auto test](scripting-test.side)

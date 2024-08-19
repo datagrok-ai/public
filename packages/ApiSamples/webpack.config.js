@@ -2,6 +2,9 @@ const path = require('path');
 
 module.exports = {
   mode: 'development',
+  cache: {
+    type: 'filesystem',
+  },
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name: `apisamples_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',

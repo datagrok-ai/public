@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import * as rxjs from 'rxjs';
 import {
   AGG,
@@ -9,7 +11,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColumnAggregationType, JOIN_TYPE, LINK_CLICK_BEHAVIOR
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -24,31 +26,22 @@ import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
+import {IDartApi} from "./api/grok_api.g";
 
 declare let grok: any;
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 type ColumnId = number | string | Column;
+type MatchType = 'contains' | 'starts with' | 'ends with' | 'equals' | 'regex';
 
 
-/** Column CSV export options */
-export interface ColumnCsvExportOptions {
-  /** Custom column format to be used */
-  format: string;
-
-  /** Additional options */
-  [index: string]: any;
+/** Column name -> format */
+export interface ColumnsFormatCsvExportOptions {
+  [index: string]: string;
 }
-
-
-/** Column name -> options */
-export interface ColumnsCsvExportOptions {
-  [index: string]: ColumnCsvExportOptions;
-}
-
 
 /** Csv export options to be used in {@link DataFrame.toCsv} */
 export interface CsvExportOptions {
@@ -68,21 +61,30 @@ export interface CsvExportOptions {
   /** Whether only selected columns are included. False if not specified. */
   selectedColumnsOnly?: boolean;
 
+  /** Whether only visible columns are included. False if not specified. */
+  visibleColumnsOnly?: boolean;
+
   /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
   filteredRowsOnly?: boolean;
 
   /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
   selectedRowsOnly?: boolean;
 
+  /** Explicitly defined order of rows. Mutually exclusive with [selectedRowsOnly] or [filteredRowsOnly]. */
+  rowIndexes?: number[];
+
   /** Column order */
   columns?: string[];
 
-  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  /** Expands qualified numbers into two columns: `qual(column)` and `column` */
   qualifierAsColumn?: boolean;
+
+  /// Saves MOLBLOCKS as SMILES.
+  moleculesAsSmiles?: boolean;
 
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
-  columnOptions?: ColumnsCsvExportOptions;
+  columnFormats?: ColumnsFormatCsvExportOptions;
 }
 
 
@@ -131,7 +133,7 @@ export class DataFrame {
   }
 
   /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
-  static fromProperties(properties: Property[], rows: number = 0) {
+  static fromProperties(properties: Property[], rows: number = 0): DataFrame {
     let df = DataFrame.create(rows);
     for (let p of properties)
       df.columns.addNew(p.name, <ColumnType>p.propertyType);
@@ -282,9 +284,30 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format. */
-  toCsv(options?: CsvExportOptions): string {
-    return api.grok_DataFrame_ToCsv(this.dart, options);
+  /** Exports the content to comma-separated-values format.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  toCsv(options?: CsvExportOptions, grid?: Grid): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options, grid?.dart);
+  }
+
+  /** Exports the content to comma-separated-values format asynchronously with converting the molblock columns to smiles if specified.
+   * @param {CsvExportOptions} options
+   * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
+   * */
+  async toCsvEx(options?: CsvExportOptions, grid?: Grid): Promise<string> {
+    return api.grok_DataFrame_ToCsvEx(this.dart, options, grid?.dart);
+  }
+
+  /** Exports the content to JSON format */
+  toJson(): any[] {
+    return Array.from({length: this.rowCount}, (_, idx) =>
+      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+        entry[colName] = this.get(colName, idx);
+        return entry;
+      }, {})
+    );
   }
 
   /** Exports dataframe to binary */
@@ -302,15 +325,8 @@ export class DataFrame {
 
   /** Current row.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentRow(): Row {
-    return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart));
-  }
-
-  /** Current row.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentRow(idx) {
-    api.grok_DataFrame_Set_CurrentRowIdx(this.dart, idx);
-  }
+  get currentRow(): Row { return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart)); }
+  set currentRow(row: Row) { api.grok_DataFrame_Set_CurrentRowIdx(this.dart, row.idx); }
 
   /** Index of the current row. */
   get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.dart); }
@@ -413,6 +429,10 @@ export class DataFrame {
    * */
   append(t2: DataFrame, inPlace: boolean = false, columnsToAppend: string[] | null = null): DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
+  }
+
+  appendMerge(t: DataFrame): void {
+    api.grok_DataFrame_Append_Merge(this.dart, t.dart);
   }
 
   _event(event: string): Observable<any> {
@@ -521,6 +541,10 @@ export class DataFrame {
   getTableInfo(): TableInfo {
     return toJs(api.grok_DataFrame_Get_TableInfo(this.dart));
   }
+
+  _exportReopen(): DataFrame {
+    return toJs(api.grok_DataFrame_ExportAndReopen(this.dart));
+  }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
@@ -582,7 +606,6 @@ export class Column<T = any> {
   public dart: any;
   public temp: any;
   public tags: any;
-  private _dialogs: ColumnDialogHelper | undefined;
   private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
@@ -618,7 +641,7 @@ export class Column<T = any> {
    * @param length - Column length (should match row count of the data frame )
    *
    * {@link DataFrame.create}
-   * {@see COLUMN_TYPE}
+   * @see COLUMN_TYPE
    */
   static fromType(type: ColumnType, name?: string | null, length: number = 0): Column {
     return toJs(api.grok_Column_FromType(type, name, length));
@@ -634,6 +657,17 @@ export class Column<T = any> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
+  /** [array] will be not be copied and will be used as column's storage */
+  static fromFloat64Array(name: string, array: Float64Array, length: number | null = null): Column<number> {
+    return toJs(api.grok_Column_FromFloat64Array(name, array, length));
+  }
+
+  /** Creates BigIntColumn from BigInt64Array / BigUint64Array */
+  static fromBigInt64Array(name: string, array: BigInt64Array | BigUint64Array) {
+    return this.fromList(TYPE.BIG_INT as ColumnType, name, Array.from(array, (v: any, _) =>
+      (<any>window).grok_BigIntJs_To_BigInt(v.toString())));
+  }
+
   /**
    * Creates a {@link Column} from the list of values.
    * @param {string} type
@@ -641,10 +675,22 @@ export class Column<T = any> {
    * @param {object[]} list
    * @returns {Column} */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
+    if (type === TYPE.DATE_TIME)
+      list = list.map((v) => v?.valueOf());
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 
-  /** Creates a {Column} from the bitset.
+  /**
+   * Crates a {@link Column} of string type from categories and indexes
+   * @param name
+   * @param categories
+   * @param indexes
+   */
+  static fromIndexes(name: string, categories: string[], indexes: Int32Array): Column {
+    return toJs(api.grok_Column_FromIndexes(name, categories, indexes));
+  }
+
+  /** Creates a {@link Column} from the bitset.
    * @param {string} name
    * @param {BitSet} bitset
    * @returns {Column} */
@@ -722,6 +768,18 @@ export class Column<T = any> {
     return col;
   }
 
+  /** Is the column numerical (float, int, bigint, qnum)
+  * @type {boolean}*/
+  get isNumerical(): boolean {
+    return api.grok_Column_Get_Is_Numerical(this.dart);
+  }
+
+  /** Is the column categorical (string, boolean)
+  * @type {boolean}*/
+  get isCategorical(): boolean {
+    return api.grok_Column_Get_Is_Categorical(this.dart);
+  }
+
   /** Column data type.
    * @type {string} */
   get type(): ColumnType {
@@ -781,10 +839,9 @@ export class Column<T = any> {
     return api.grok_Column_Get_Version(this.dart);
   }
 
+  // Obsolete. Recommended method is "meta.dialogs".
   get dialogs(): ColumnDialogHelper {
-    if (this._dialogs == undefined)
-      this._dialogs = new ColumnDialogHelper(this);
-    return this._dialogs;
+    return this.meta.dialogs;
   }
 
   // Obsolete. Recommended method is "meta.colors".
@@ -803,13 +860,22 @@ export class Column<T = any> {
    * @returns {Column}
    * */
   init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
-    let type = typeof valueInitializer;
-    if (type === 'function')
+    let initType = typeof valueInitializer;
+    if (initType === 'function' && this.type === DG.TYPE.DATA_FRAME){
+      // @ts-ignore
+      api.grok_Column_Init(this.dart, (i) => toDart(valueInitializer(i)));
+    }
+    else if (initType === 'function')
       api.grok_Column_Init(this.dart, valueInitializer);
-    else if (type === 'number' || type === 'string' || type === 'boolean')
+
+    else if (initType === 'number' || initType === 'string' || initType === 'boolean')
       api.grok_Column_SetAllValues(this.dart, valueInitializer);
     return this;
   }
+
+  /** Performs deep cloning, optionally taking mask of the rows to be included.
+   * Note that the cloned colum is not added to this column's dataframe. */
+  clone(mask?: BitSet): Column<T> { return new Column(api.grok_Column_Clone(this.dart, toDart(mask))); }
 
   /** FOR EXPERT USE ONLY!
    *
@@ -817,7 +883,7 @@ export class Column<T = any> {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
-   * {Float32Array} for floats, {@link FLOAT_NULL} represents null.
+   * {Float32Array} or {Float64Array} for floats depending on doublePrecision parameter, {@link FLOAT_NULL} represents null.
    * {Float64Array} for qnums, {@link FLOAT_NULL} represents null.
    * {Float64Array} for datetime, in microseconds since epoch, {@link FLOAT_NULL} represents null.
    * {Int32Array} for strings indexes of {@link categories}.
@@ -859,6 +925,13 @@ export class Column<T = any> {
     return api.grok_Column_GetString(this.dart, i);
   }
 
+  /** Returns i-th value as number
+   * @param {number} i
+   * @returns {number} */
+  getNumber(i: number): number {
+    return api.grok_Column_GetNumber(this.dart, i);
+  }
+
   /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
    *  Returns true if text was successfully parsed and set, otherwise false.
    *  Examples: dateColumn.setString('April 1, 2020');
@@ -888,9 +961,7 @@ export class Column<T = any> {
     return api.grok_Column_IsNone(this.dart, i);
   }
 
-  /** Gets the value of the specified tag.
-   *  @param {string} tag
-   *  @returns {string} */
+  /** Returns the value of the specified tag, or null if the tag is not present. */
   getTag(tag: string): string {
     return api.grok_Column_Get_Tag(this.dart, tag);
   }
@@ -972,8 +1043,7 @@ export class Column<T = any> {
       return null;
     if (type == null)
       type = this.type;
-    return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
-      this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_Column_ApplyFormula(this.dart, formula, type, treatAsString);
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType]. */
@@ -995,7 +1065,25 @@ export class Column<T = any> {
   aggregate(type: ColumnAggregationType): any {
     return api.grok_Column_Aggregate(this.dart, type);
   }
+
+  /** @returns {Float32Array} - typed array of float values representing the column.
+   * Does not guarantee to perform a copy of the underlying data. */
+  asDoubleList(): Float32Array {
+    return api.grok_Column_AsDoubleList(this.dart);
+  }
 }
+
+
+export class FloatColumn extends Column<number> {
+  get doublePrecision(): boolean {
+    return api.grok_FloatColumn_GetDoublePrecision(this.dart);
+  }
+  set doublePrecision(enableDoublePrecision: boolean) {
+    api.grok_FloatColumn_SetDoublePrecision(this.dart, enableDoublePrecision);
+  }
+}
+
+
 export class BigIntColumn extends Column<BigInt> {
   /**
    * Gets [i]-th value.
@@ -1004,6 +1092,7 @@ export class BigIntColumn extends Column<BigInt> {
     let v = api.grok_BigIntColumn_GetValue(this.dart, row);
     if (v == null)
       return null;
+
     return BigInt(v);
   }
 
@@ -1014,6 +1103,7 @@ export class BigIntColumn extends Column<BigInt> {
     api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
   }
 }
+
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
   /**
@@ -1045,7 +1135,21 @@ export class ObjectColumn extends Column<any> {
    * Gets [i]-th value.
    */
   get(row: number): any | null {
-    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+    return toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
+
+export class DataFrameColumn extends Column<DataFrame> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): DataFrame | null {
+    return toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+
+  toList(): Array<DataFrame> {
+    return api.grok_Column_ToList(this.dart).map((x: any) => toJs(x));
   }
 }
 
@@ -1057,7 +1161,7 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column. */
+  /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
   /** Column with the corresponding name (case-insensitive). */
@@ -1111,6 +1215,22 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
+  get dateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_DateTime(this.dart));
+  }
+
+  get numericalNoDateTime(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_NumericalNoDateTime(this.dart));
+  }
+
+  get boolean(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Boolean(this.dart));
+  }
+
+  get selected(): Iterable<Column> {
+    return _toIterable(api.grok_ColumnList_Selected(this.dart));
+  }
+
   /** Array containing column names. */
   names(): string[] { return api.grok_ColumnList_Names(this.dart); }
 
@@ -1157,13 +1277,14 @@ export class ColumnList {
    * @param {string} expression
    * @param {ColumnType} type
    * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
+   * @param {bool} subscribeOnChanges - if true, the column will be recalculated when the source columns change
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false, subscribeOnChanges: boolean = true): Promise<Column> {
+    return api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, subscribeOnChanges);
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString);
   }
 
   /** Creates and adds a string column. */
@@ -1191,7 +1312,7 @@ export class ColumnList {
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
-  /** Creates and adds a boolean column
+  /** Creates and adds a byte array column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
@@ -1281,17 +1402,10 @@ export class ValueMatcher {
     return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
   }
 
-  /** @returns {ValueMatcher} */
-  static numerical(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static string(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static dateTime(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
-
-  /** @returns {ValueMatcher} */
-  static bool(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_BoolMatcher(pattern)); }
+  static numerical(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Numerical(pattern)); }
+  static string(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_String(pattern)); }
+  static dateTime(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_DateTime(pattern)); }
+  static bool(pattern: string): ValueMatcher { return new ValueMatcher(api.grok_ValueMatcher_Bool(pattern)); }
 
   get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
   get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
@@ -1322,6 +1436,14 @@ export class RowList {
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
+  get mouseOverRowFunc(): IndexPredicate {
+    return api.grok_RowList_MouseOverRowFunc(this.dart);
+  }
+
+  where(indexPredicate: IndexPredicate) {
+    return _toIterable(api.grok_RowList_Where(this.dart, indexPredicate));
+  }
+
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.
@@ -1333,7 +1455,7 @@ export class RowList {
   /** Removes specified rows
    * @param {RowPredicate} rowPredicate */
   removeWhere(rowPredicate: RowPredicate): void {
-    api.grok_RowList_RemoveWhere(this.dart, rowPredicate);
+    api.grok_RowList_RemoveWhereIdx(this.dart, (i: number) => rowPredicate(this.get(i)));
   }
 
   /** Removes specified rows
@@ -1477,8 +1599,12 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
-  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
+  get value(): any { return toJs(api.grok_Cell_Get_Value(this.dart)); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, toDart(x)); }
+
+  /** String representation of the value, if both [column] and [row] are defined;
+     otherwise, empty string. */
+  get valueString(): string { return api.grok_Cell_Get_ValueString(this.dart); }
 
   /** Whether the cell is empty */
   isNone(): boolean { return this.column.isNone(this.rowIndex); }
@@ -1496,19 +1622,19 @@ export class Cell {
 export class BitSet {
   public dart: any;
 
-  /** Creates a {BitSet} from the specified Dart object. */
+  /** Creates a {@link BitSet} from the specified Dart object. */
   constructor(dart: any) {
     this.dart = dart;
   }
 
-  /** Creates a {BitSet} from the string representing the bitset.
+  /** Creates a {@link BitSet} from the string representing the bitset.
    * @param {string} zerosOnes - A string containing '1' and '0'.
    * @returns {BitSet} */
   static fromString(zerosOnes: string): BitSet {
     return new BitSet(api.grok_BitSet_FromString(zerosOnes));
   }
 
-  /** Creates a {BitSet} from the ArrayBuffer representing the bitset.
+  /** Creates a {@link BitSet} from the ArrayBuffer representing the bitset.
    * @param {ArrayBuffer} buffer - An array containing 1 and 0.
    * @param {Number} bitLength - count of bits.
    * @returns {BitSet} */
@@ -1518,7 +1644,7 @@ export class BitSet {
     return new BitSet(api.grok_BitSet_FromBytes(buffer, bitLength));
   }
 
-  /** Creates a {BitSet} of the specified length with all bits set to false.
+  /** Creates a {@link BitSet} of the specified length with all bits set to false.
    * @param {number} length - Number of bits.
    * @param {Function} f - when specified, Sets all bits by setting i-th bit to the results of f(i)
    * @returns {BitSet} */
@@ -1681,7 +1807,7 @@ export class BitSet {
     return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
-  /** Copies the content from the other {BitSet}. */
+  /** Copies the content from the other {@link BitSet}. */
   copyFrom(b: BitSet, notify: boolean = true): BitSet {
     api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
@@ -1715,7 +1841,7 @@ export class BitSet {
 }
 
 
-/** Represents basic descriptive statistics calculated for a {Column}.
+/** Represents basic descriptive statistics calculated for a {@link Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
   private readonly dart: any;
@@ -1730,6 +1856,11 @@ export class Stats {
    * @returns {Stats} */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
+  }
+
+  /** Calculates statistics for the array of values. */
+  static fromValues(values: number[] | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array): Stats {
+    return new Stats(api.grok_Stats_FromValues(values));
   }
 
   /** Total number of values (including missing values). */
@@ -1859,8 +1990,8 @@ export class GroupByBuilder {
 
   /** Performs the aggregation
    *  @returns {DataFrame} */
-  aggregate(): DataFrame {
-    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart));
+  aggregate(options?: {autoName?: boolean}): DataFrame {
+    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart, options?.autoName ?? false));
   }
 
   /**
@@ -2199,6 +2330,7 @@ export class DataFramePlotHelper {
 
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  tile(options: object | null = null): Grid { return DG.Viewer.tile(this.df, options); }
   form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
   histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
   bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
@@ -2226,7 +2358,7 @@ export class ColumnDialogHelper {
 
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
-    let formula = this.column.getTag('formula');
+    let formula = this.column.meta.formula;
     // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
@@ -2264,11 +2396,11 @@ export class ColumnColorHelper {
   }
 
   /** Enables linear color-coding on a column.
-   * @param range - list of palette colors.
+   * @param range - list of palette colors (ARGB integers; see {@link Color}).
    * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
    * Use the same numeric representation as [Column.min] and [Column.max].
    */
-  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
+  setLinear(range: number[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
@@ -2278,10 +2410,14 @@ export class ColumnColorHelper {
       this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
-  setCategorical(colorMap: {} | null = null): void {
+  setCategorical(colorMap: {} | null = null, options: {fallbackColor: string | number, matchType?: MatchType} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.CATEGORICAL;
     if (colorMap != null)
       this.column.tags[DG.TAGS.COLOR_CODING_CATEGORICAL] = JSON.stringify(colorMap);
+    if (options?.fallbackColor != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_FALLBACK_COLOR] = JSON.stringify(options.fallbackColor);
+    if (options?.matchType != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_MATCH_TYPE] = options.matchType;
   }
 
   setConditional(rules: {[index: string]: number | string}  | null = null): void {
@@ -2293,6 +2429,10 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  setDisabled(): void {
+    this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.OFF;
   }
 
   getColor(i: number): number {
@@ -2312,7 +2452,11 @@ export class ColumnMarkerHelper {
   }
 
   assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
-    this.setMarkerCoding(category, marker);
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
     return this;
   }
 
@@ -2320,27 +2464,41 @@ export class ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
-  reset(): ColumnMarkerHelper {
-    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
+  // Obsolete. Recommended method is "assign".
+  setMarkerCoding(category: string, marker: MarkerCodingType): void {
+    let jsonTxt: string | null = this.column.getTag(TAGS.MARKER_CODING);
+    const jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(TAGS.MARKER_CODING, jsonTxt);
+  }
+
+  setAll(categoryMarkerMap: {[key: string]: MarkerCodingType}): ColumnMarkerHelper {
+    for (const [category, marker] of Object.entries(categoryMarkerMap))
+      this.assign(category, marker);
     return this;
   }
 
-  setMarkerCoding(category: string, marker: string): void {
-    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
-    let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
-    jsonMap[category] = marker;
-    jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
+  reset(): ColumnMarkerHelper {
+    this.column.tags[TAGS.MARKER_CODING] = '{}';
+    return this;
   }
 }
 
 export class ColumnMetaHelper {
   private readonly column: Column;
+  private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
+  }
+
+  get dialogs(): ColumnDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new ColumnDialogHelper(this.column);
+    return this._dialogs;
   }
 
   get colors(): ColumnColorHelper {
@@ -2355,14 +2513,54 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  /** Specifies the data format of the dataframe column. See also [GridColumn.format] */
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+  set format(x: string | null) { this.column.tags[TAGS.FORMAT] = x; }
 
+  /** Returns the maximum amount of significant digits detected in the column. */
+  get sourcePrecision(): number | null { return this.column.getTag(TAGS.SOURCE_PRECISION) != null ? +this.column.getTag(TAGS.SOURCE_PRECISION) : null; }
+
+  /** When set, uses the formula to calculate the column values. */
+  get formula(): string | null { return this.column.getTag(TAGS.FORMULA); }
+  set formula(x: string | null) { this.column.tags[TAGS.FORMULA] = x; }
+
+  /** Specifies the units of the dataframe column. */
+  get units(): string | null { return this.column.getTag(TAGS.UNITS); }
+  set units(x: string | null) { this.column.tags[TAGS.UNITS] = x; }
+
+
+  /** When set, switches the cell editor to a combo box that only allows to choose specified values.
+   * Applicable for string columns only.
+   * See also {@link autoChoices}. */
+  get choices(): string[] | null { return JSON.parse(this.column.getTag(TAGS.CHOICES)); }
+  set choices(x: string[] | null) { this.column.tags[TAGS.CHOICES] = x != null ? JSON.stringify(x) : null; }
+
+  /** When set to 'true', switches the cell editor to a combo box that only allows to choose values
+   * from a list of already existing values in the column.
+   * Applicable for string columns only.
+   * See also {@link choices}. */
+  get autoChoices(): boolean { return this.column.getTag(TAGS.AUTO_CHOICES) == null ? false :
+    this.column.getTag(TAGS.AUTO_CHOICES).toLowerCase() == 'true'; }
+  set autoChoices(x: boolean) { this.column.setTag(TAGS.AUTO_CHOICES, x.toString()); }
+
+  /** Specifies the behavior of link click (open in new tab, open in context panel, custom). Open in new tab is used by default. */
+  get linkClickBehavior() : LINK_CLICK_BEHAVIOR {
+    return this.column.getTag(TAGS.LINK_CLICK_BEHAVIOR) as LINK_CLICK_BEHAVIOR ?? LINK_CLICK_BEHAVIOR.OPEN_IN_NEW_TAB;
+  }
+  set linkClickBehavior(x: LINK_CLICK_BEHAVIOR) { this.column.setTag(TAGS.LINK_CLICK_BEHAVIOR, x); }
+
+  /** Specifies whether the column is exported as part of the CSV file. Defaults to true. */
   get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
   set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
 
+  /** Specifies whether the column is exported as part of the binary file. Defaults to true. */
   get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
   set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
+
+  /** When specified, column filter treats the split strings as separate values.
+   * See also: https://datagrok.ai/help/visualize/viewers/filters#column-tags */
+  get multiValueSeparator(): string { return this.column.getTag(Tags.MultiValueSeparator); }
+  set multiValueSeparator(x) { this.column.setTag(Tags.MultiValueSeparator, x); }
 }

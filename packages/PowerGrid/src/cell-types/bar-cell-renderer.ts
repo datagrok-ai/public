@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {TYPE} from 'datagrok-api/dg';
 
 
 interface BarCellSettings {
@@ -8,8 +7,8 @@ interface BarCellSettings {
 }
 
 const BarCellSettingsProperties = {
-  color: DG.Property.js('color', TYPE.STRING),
-  radius: DG.Property.js('radius', TYPE.STRING),
+  color: DG.Property.js('color', DG.TYPE.STRING),
+  radius: DG.Property.js('radius', DG.TYPE.STRING),
 };
 
 export class BarCellRenderer extends DG.GridCellRenderer {

@@ -1,29 +1,38 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {ColorType, MARKER_TYPE} from "./const";
-import {Point, Rect, GridCell} from "./grid";
+import {MARKER_TYPE, ViewerType} from './const';
+import {Point, Rect} from './grid';
+import {IDartApi} from './api/grok_api.g';
+import * as rxjs from 'rxjs';
+import {StreamSubscription} from './events';
+import {DataFrame} from './dataframe';
+import {TableView} from './views/view';
 
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 declare global {
   interface CanvasRenderingContext2D {
-
     setFillStyle(fill: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
 
     setStrokeStyle(stroke: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
 
     roundRect(x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D
 
-    line(x1: number, y1: number, x2: number, y2: number, color: ColorType): CanvasRenderingContext2D;
+    line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.
-     * @param pa: Array of points
      */
     polygon(pa: Point[]): CanvasRenderingContext2D;
+  }
 
+  interface HTMLCanvasElement {
+    g2(): CanvasRenderingContext2D;
   }
 }
+
+HTMLCanvasElement.prototype.g2 = function() { return this.getContext('2d')!; }
 
 CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
   this.fillStyle = fill;
@@ -105,7 +114,8 @@ export namespace Paint {
 
   /** Renders a marker */
   export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number | string, size: number) {
-    api.grok_Paint_Marker(g, markerType, x, y, color, size);
+    const c: number = typeof color === 'string' ? Color.fromHtml(color) : color;
+    api.grok_Paint_Marker(g, markerType, x, y, c, size);
   }
 
   /** Renders a PNG image from bytes */
@@ -121,7 +131,7 @@ export namespace Paint {
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
-      img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
+      img.src = 'data:image/jpeg;base64,' + window.btoa(r.result as string);
     };
   }
 }
@@ -188,6 +198,27 @@ export class Utils {
     a.download = filename;
     a.click();
   }
+
+  /** Loads the specified common libraries, if they were not loaded already.
+   * Use it in plugins when a big JS dependency is used infrequently,
+   * such as exporting to Excel, or showing a 3d structure.
+   * Example: `loadJsCss(['common/exceljs.min.js', 'common/exceljs.min.css'])` */
+  static async loadJsCss(files: string[]): Promise<null> {
+    return toJs(api.grok_Utils_LoadJsCss(files));
+  }
+
+  static streamToObservable<T = any>(dartStream: any): rxjs.Observable<T> {
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_Stream_Listen(dartStream, function (x: any) {
+          handler(x);
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
+  }
 }
 
 
@@ -220,7 +251,10 @@ export class DartList<T> implements Iterable<T> {
   get(index: number): T { return api.grok_List_Get(this.dart, index); }
 
   /** Sets the value at the given [index] in the list to [value]. */
-  set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
+  set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
+
+  /** Removes the first occurrence of [value] from the list. */
+  remove(value: T) { api.grok_List_Remove(this.dart, value); }
 
   includes(item: T, start?: number) {
     const length = this.length;
@@ -377,14 +411,7 @@ export function _getIterator(dart: any) {
 }
 
 export function _isDartium() {
-  return Array
-    .from(document.getElementsByTagName('script'))
-    .some((s) => {
-      let a = s.getAttribute('src');
-      if (a == null)
-        return null;
-      return a.includes('dart.js');
-    });
+  return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
 }
 
 export function _toJson(x: any) {
@@ -676,6 +703,11 @@ export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
 
+/* Waits [ms] milliseconds */
+export async function delay(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
 
 /** Autotest-related helpers */
 export namespace Test {
@@ -693,4 +725,40 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+
+  export function getTestDataGeneratorByType(type: string) {
+    return api.grok_Test_GetTestDataGeneratorByType(type);
+  }
+
+  export function getInputTestDataGeneratorByType(inputType: string) {
+    return api.grok_Test_GetInputTestDataGeneratorByType(inputType);
+  }
+
+  export async function testViewerProperties(df: DataFrame, viewerType: ViewerType, properties: { [key: string]: any}): Promise<TableView> {
+    const tv = TableView.create(df, true);
+    const viewer = tv.addViewer(viewerType);
+    viewer.setOptions(properties);
+    await delay(1000);
+    return tv;
+  }
+
+  export async function testViewer(viewerType: ViewerType) {
+    await api.grok_Test_RunViewerTest(viewerType);
+  }
+}
+
+// Completer class based on https://stackoverflow.com/a/67007151
+export class Completer<T> {
+	public readonly promise: Promise<T>;
+	public complete: (value: (PromiseLike<T> | T)) => void;
+	public reject: (reason?: any) => void;
+
+	public constructor() {
+    this.complete = (_) => {};
+    this.reject = (_) => {};
+    this.promise = new Promise<T>((resolve, reject) => {
+        this.complete = resolve;
+        this.reject = reject;
+    })
+	}
 }

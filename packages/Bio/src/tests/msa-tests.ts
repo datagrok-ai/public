@@ -6,11 +6,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
-import {awaitContainerStart} from './utils';
-//import * as grok from 'datagrok-api/grok';
-
-export const _package = new DG.Package();
-
+import {awaitContainerStart} from '../utils/docker';
 
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
@@ -76,48 +72,46 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrect', async () => {
     await _testMsaIsCorrect(fromCsv, toCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectLong', async () => {
     await _testMsaIsCorrect(longFromCsv, longToCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  }, {skipReason: 'GROK-13221'});
+  }, {timeout: 60000 /* docker */});
 
   test('isCorrectHelmLong', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  }, {skipReason: 'GROK-13221'});
+  }, {timeout: 60000 /* docker */});
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(
       SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectSeparatorLong', async () => {
     await _testMSAOnColumn(
       SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 });
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+  await grok.data.detectSemanticTypes(srcDf);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
   const srcCol: DG.Column = srcDf.getCol('seq')!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: srcCol}) as unknown as string;
-  if (semType)
-    srcCol.semType = semType;
+  expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
   const tgtCol: DG.Column = tgtDf.getCol('seq')!;
-  const msaCol: DG.Column = await runKalign(srcCol, true);
-  expectArray(msaCol.toList(), tgtCol.toList());
+  const resCol: DG.Column = await runKalign(srcCol, true);
+  expectArray(resCol.toList(), tgtCol.toList());
 }
 
 async function _testMSAOnColumn(
@@ -125,25 +119,20 @@ async function _testMSAOnColumn(
   srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
 ): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+  await grok.data.detectSemanticTypes(srcDf);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
-  const srcSeqCol = srcDf.getCol('seq')!;
   const tgtCol = tgtDf.getCol('seq')!;
   const srcCol: DG.Column = srcDf.getCol('seq')!;
-  const semType: string = await grok.functions
-    .call('Bio:detectMacromolecule', {col: srcCol}) as unknown as string;
-  if (semType)
-    srcCol.semType = semType;
-
-  await grok.data.detectSemanticTypes(srcDf);
-  expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(srcSeqCol.getTag(DG.TAGS.UNITS), srcNotation);
+  expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
+  expect(srcCol.meta.units, srcNotation);
   if (alphabet)
-    expect(srcSeqCol.getTag(bioTAGS.alphabet), alphabet);
+    expect(srcCol.getTag(bioTAGS.alphabet), alphabet);
 
-  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol, pepsea: {method: pepseaMethod}});
+  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcCol, pepsea: {method: pepseaMethod}});
   expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(msaSeqCol.getTag(DG.TAGS.UNITS), tgtNotation);
+  expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+  expect(msaSeqCol.meta.units, tgtNotation);
   expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
   if (alphabet)
     expect(msaSeqCol.getTag(bioTAGS.alphabet), alphabet);

@@ -2,8 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {BiostructureProps} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {PROPS as msPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+
 import {_package} from '../package';
-import {PROPS as msPROPS} from '../viewers/molstar-viewer';
 
 export class MolstarViewerApp {
   private readonly appFuncName: string;
@@ -47,9 +49,9 @@ export class MolstarViewerApp {
 
     const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {
+    const viewer: DG.Viewer<BiostructureProps> = (await this.view.dataFrame.plot.fromType('Biostructure', {
       [msPROPS.pdb]: pdbStr,
-    })) as DG.JsViewer;
+    }));
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Molstar', 0.4);
   }
 }

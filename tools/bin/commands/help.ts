@@ -128,7 +128,7 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--catchUnhandled] [--report]
+[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--catchUnhandled] [--report] [--record] [--verbose] [--platform]
 
 --category          Specify a category name to run tests for
 --host              Host alias as in the config file
@@ -138,6 +138,10 @@ Options:
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
+--record            Records the test execution process in mp4 format
+--verbose           Prints detailed information about passed and skipped tests in the console
+--platform          Runs only platform tests (applicable for ApiTests package only)
+--core              Runs package & core tests (applicable  for DevTools package only)
 
 Run package tests
 
@@ -157,12 +161,12 @@ Options:
 --npm     Unlinks local packages and runs \`npm i\`
 `;
 
-const HELP_MIGRATE = `
-Usage: grok migrate
+// const HELP_MIGRATE = `
+// Usage: grok migrate
 
-Switch to \`grok\` tools by copying your keys to the config
-file and converting your scripts in the \`package.json\` file
-`;
+// Switch to \`grok\` tools by copying your keys to the config
+// file and converting your scripts in the \`package.json\` file
+// `;
 
 export const help = {
   add: HELP_ADD,
@@ -174,5 +178,5 @@ export const help = {
   link: HELP_LINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
-  help: HELP
+  help: HELP,
 };

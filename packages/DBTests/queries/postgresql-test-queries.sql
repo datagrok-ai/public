@@ -113,7 +113,69 @@ select
 from generate_series(1, @num) s(i)
 --end
 
---friendlyName: ChemblPerfGenerated
+--friendlyName: Compounds
 --connection: PostgresChemblTest
 select * from compound_structures
+--end
+
+--name: PostgresqlTableNormal
+--friendlyName: PostgresqTableNormal
+--connection: PostgreSQLDBTests
+SELECT * FROM Test_Normal;
+--end
+
+--name: PostgresqlTableWide
+--friendlyName: PostgresqlTableWide
+--connection: PostgreSQLDBTests
+SELECT * FROM Test_Wide;
+--end
+
+--name: PostgresqlTableLong
+--friendlyName: PostgresqlTableLong
+--connection: PostgreSQLDBTests
+SELECT * FROM Test_Long;
+--end
+
+--name: PostgresqlCompressionIntOn
+--friendlyName: PostgresqlCompressionIntOn
+--connection: PostgreSQLDBTests
+SELECT pg_sleep(3);
+--batch
+SELECT * FROM COMPRESS_INT;
+--end
+
+--name: TestForColumnsOnEmptyResult
+--friendlyName: TestForColumnsOnEmptyResult
+--connection: PostgreSQLDBTests
+SELECT * FROM mock_data WHERE id > 30;
+--end
+
+--name: TestCreateTable
+--friendlyName: TestCreateTable
+--connection: PostgreSQLDBTests
+CREATE TABLE tmp_table_test (id bigint, name varchar);
+--end
+
+--name: TestInsertData
+--friendlyName: TestInsertData
+--connection: PostgreSQLDBTests
+INSERT INTO tmp_table_test VALUES (1, 'TEST');
+--end
+
+--name: TestUpdateData
+--friendlyName: TestUpdateData
+--connection: PostgreSQLDBTests
+UPDATE tmp_table_test SET name = 'test' WHERE id = 1;
+--end
+
+--name: TestDropTable
+--friendlyName: TestDropTable
+--connection: PostgreSQLDBTests
+DROP TABLE tmp_table_test;
+--end
+
+--name: SimpleSelect
+--friendlyName: SimpleSelect
+--connection: PostgreSQLDBTests
+SELECT 1;
 --end

@@ -6,6 +6,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
+import grok_connect.utils.GrokConnectException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -43,8 +44,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     @Test
     public void testConnection_notOk() {
         connection.parameters.put(DbCredentials.PORT, (double) 1);
-        String result = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
-        Assertions.assertTrue(result.startsWith("ERROR"));
+        Assertions.assertThrows(GrokConnectException.class, () -> provider.testConnection(connection));
     }
 
     @DisplayName("Test of getSchemas() method with correct DataConnection")
@@ -52,7 +52,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.ClickHouseObjectsMother#getSchemas_ok")
     public void getSchemas_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @Disabled
@@ -85,7 +85,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @DisplayName("Parameters support for datetime")

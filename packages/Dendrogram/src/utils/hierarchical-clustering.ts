@@ -16,8 +16,9 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
 
   const availableColNames = (table: DG.DataFrame): string[] => {
     return table.columns.toList()
-      .filter(
-        (col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === DG.SEMTYPE.MACROMOLECULE,
+      .filter((col) =>
+        col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT ||
+        col.semType === DG.SEMTYPE.MACROMOLECULE || col.semType === DG.SEMTYPE.MOLECULE
       ).map((col) => col.name);
   };
 
@@ -26,21 +27,22 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   };
 
   const onTableInputChanged = (table: DG.DataFrame) => {
-    const newColInput = ui.columnsInput('Features', table, onColNamesChange, {available: availableColNames(table)});
+    const newColInput = ui.input.columns('Features', {table: table,
+      onValueChanged: (input) => onColNamesChange(input.value), available: availableColNames(table)});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
     currentSelectedColNames = [];
   };
 
-  const tableInput = ui.tableInput('Table', currentTableView, grok.shell.tables, onTableInputChanged);
-  const columnsInput = ui.columnsInput('Features', currentTableView!,
-    onColNamesChange,
-    {available: availableColNames(currentTableView!)});
+  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables,
+    onValueChanged: (input) => onTableInputChanged(input.value)});
+  const columnsInput = ui.input.columns('Features', {table: currentTableView!,
+    onValueChanged: (input) => onColNamesChange(input.value), available: availableColNames(currentTableView!)});
   const columnsInputDiv = ui.div([columnsInput]);
 
-  const distanceInput = ui.choiceInput('Distance', DistanceMetric.Euclidean, Object.values(DistanceMetric));
-  const linkageInput = ui.choiceInput('Linkage', LinkageMethod.Ward, Object.values(LinkageMethod));
+  const distanceInput = ui.input.choice('Distance', {value: DistanceMetric.Euclidean, items: Object.values(DistanceMetric)});
+  const linkageInput = ui.input.choice('Linkage', {value: LinkageMethod.Ward, items: Object.values(LinkageMethod)});
 
   const verticalDiv = ui.divV([
     tableInput.root,
@@ -70,6 +72,7 @@ export async function hierarchicalClusteringUI(
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string,
   neighborWidth: number = 300,
+  options?: {tableView?: DG.TableView}
 ): Promise<void> {
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
@@ -78,7 +81,7 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = grok.shell.getTableView(df.name);
+  let tv: DG.TableView = options ? options.tableView ?? grok.shell.getTableView(df.name) : grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);
@@ -139,7 +142,14 @@ export async function hierarchicalClusteringUI(
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
     loaderNB.close();
     injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
-
+    const viewRemoveSub = grok.events.onViewRemoved.subscribe((view) => {
+      if (view === tv) {
+        try {
+          viewRemoveSub.unsubscribe();
+          loaderNB.close();
+        } catch {}
+      };
+    });
     tv.grid.invalidate();
   } catch (err) {
     console.error(err);

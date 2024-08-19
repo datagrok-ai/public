@@ -1,13 +1,11 @@
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
-import {BitArrayMetrics, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
-import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as grok from 'datagrok-api/grok';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getMonomerSubstitutionMatrix} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export interface ISequenceSpaceResult {
@@ -15,80 +13,50 @@ export interface ISequenceSpaceResult {
   coordinates: DG.ColumnList;
 }
 
-export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  // code deprecated since seqCol is encoded
-  /*    let preparedData: any;
-  if (!(spaceParams.seqCol!.tags[DG.TAGS.UNITS] === 'HELM')) {
-    const sep = spaceParams.seqCol.getTag(UnitsHandler.TAGS.separator);
-    const sepFinal = sep ? sep === '.' ? '\\\.' : sep : '-';
-    const regex = new RegExp(sepFinal, 'g');
-    if (Object.keys(AvailableMetrics['String']).includes(spaceParams.similarityMetric))
-      preparedData = spaceParams.seqCol.toList().map((v: string) => v.replace(regex, '')) as string[];
-    else
-      preparedData = spaceParams.seqCol.toList().map((v: string) => v.replace(regex, '')) as string[];
-  } else {
-    preparedData = spaceParams.seqCol.toList();
-  }  */
-
-  const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
-    spaceParams.seqCol.toList(),
-    spaceParams.methodName,
-    spaceParams.similarityMetric as StringMetrics | BitArrayMetrics,
-    spaceParams.options);
-  const cols: DG.Column[] = spaceParams.embedAxesNames.map(
-    (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
-  return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
-}
-
-export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  if (spaceParams.seqCol.version !== spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    //we expect only string columns here
-    await invalidateMols(spaceParams.seqCol as unknown as DG.Column<string>, false);
-
-  const result = await grok.functions.call('Chem:getChemSpaceEmbeddings', {
-    col: spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
-    methodName: spaceParams.methodName,
-    similarityMetric: spaceParams.similarityMetric,
-    xAxis: spaceParams.embedAxesNames[0],
-    yAxis: spaceParams.embedAxesNames[1],
-    options: spaceParams.options,
-  });
-  return result;
-}
-
-export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const nc = new NotationConverter(spaceParams.seqCol);
-  if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)) {
-    let distanceFName = MmDistanceFunctionsNames.LEVENSHTEIN;
-    let seqList = spaceParams.seqCol.toList();
-    if (nc.isSeparator()) {
-      const fastaCol = nc.convert(NOTATION.FASTA);
-      seqList = fastaCol.toList();
-      const uh = new UnitsHandler(fastaCol);
-      distanceFName = uh.getDistanceFunctionName();
-    } else {
-      distanceFName = nc.getDistanceFunctionName();
+export async function getEncodedSeqSpaceCol(
+  seqCol: DG.Column, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, fingerprintType: string = 'Morgan'
+): Promise<{ seqList: string[], options: { [_: string]: any } }> {
+// encodes sequences using utf characters to also support multichar and non fasta sequences
+  const rowCount = seqCol.length;
+  const sh = SeqHandler.forColumn(seqCol);
+  const encList = Array<string>(rowCount);
+  let charCodeCounter = 1; // start at 1, 0 is reserved for null.
+  const charCodeMap = new Map<string, string>();
+  const seqColCats = seqCol.categories;
+  const seqColRawData = seqCol.getRawData();
+  for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
+    const catI = seqColRawData[rowIdx];
+    const seq = seqColCats[catI];
+    if (seq === null || seqCol.isNone(rowIdx)) {
+      //@ts-ignore
+      encList[rowIdx] = null;
+      continue;
     }
-    for (let i = 0; i < seqList.length; i++) {
-      // toList puts empty values in array and it causes downstream errors. replace with null
-      seqList[i] = spaceParams.seqCol.isNone(i) ? null : seqList[i];
+    encList[rowIdx] = '';
+    const splittedSeq = sh.getSplitted(rowIdx);
+    for (let j = 0; j < splittedSeq.length; j++) {
+      const char = splittedSeq.getCanonical(j);
+      if (!charCodeMap.has(char)) {
+        charCodeMap.set(char, String.fromCharCode(charCodeCounter));
+        charCodeCounter++;
+      }
+      encList[rowIdx] += charCodeMap.get(char)!;
     }
-    const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
-      seqList,
-      spaceParams.methodName,
-      distanceFName,
-      spaceParams.options,
-      true);
-    const cols: DG.Column[] = spaceParams.embedAxesNames.map(
-      (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
-    return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
-  } else {
-    return await sequenceSpaceByFingerprints(spaceParams);
   }
-}
+  let options = {} as mmDistanceFunctionArgs;
+  if (
+    similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE ||
+    similarityMetric === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH
+  ) {
+    const monomers = Array.from(charCodeMap.keys());
+    const monomerRes = await getMonomerSubstitutionMatrix(monomers, fingerprintType);
 
-export function getEmbeddingColsNames(df: DG.DataFrame) {
-  const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
-  return axes.map((it) => `${it}_${colNameInd}`);
+    const monomerHashToMatrixMap: { [_: string]: number } = {};
+    Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
+      monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
+    });
+    // sets distance function args in place.
+    options = {scoringMatrix: monomerRes.scoringMatrix, alphabetIndexes: monomerHashToMatrixMap};
+  }
+  return {seqList: encList, options};
 }

@@ -14,7 +14,7 @@ export async function loadFileAsBytes(name: string): Promise<Uint8Array> {
 
 export async function dfFromColWithOneCategory(colName: string, value: string, length: number): Promise<DG.DataFrame> {
   const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, length);
-  col.init((i) => value);
+  col.init((_) => value);
   return DG.DataFrame.fromColumns([col]);
 }
 export async function createTableView(tableName: string): Promise<DG.TableView> {
@@ -35,8 +35,13 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const bitset: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
-  const bitsetString = bitset.toBinaryString();
+  const bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
+  expect(bitSet !== null, true);
+  checkBitSetIndices(bitSet, trueIndices);
+}
+
+export function checkBitSetIndices(bitSet: DG.BitSet, trueIndices: number[]) {
+  const bitsetString = bitSet.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
     expect(bitsetArray[trueIndices[k]] === '1', true);
@@ -62,6 +67,61 @@ export async function _testSearchSubstructureAllParameters(foo: any): Promise<vo
   await foo({});
   await foo();
 }
+
+export const malformedMolblock = `
+Accelrys05311914342D 1   1.00000     0.00000     0
+
+ 22 26  0     0  0            999 V2000
+    0.4617   -1.1749    0.0000 C   0  0  0  0  0  0           0  0  0
+    0.4617    0.0063    0.0000 C   0  0  0  0  0  0           0  0  0
+   -0.5668   -1.7639    0.0000 C   0  0  0  0  0  0           0  0  0
+   -1.5729   -1.1749    0.0000 C   0  0  0  0  0  0           0  0  0
+   -0.5668    0.5986    0.0000 O   0  0  0  0  0  0           0  0  0
+   -1.5729    0.0063    0.0000 C   0  0  0  0  0  0           0  0  0
+   -2.5886   -1.7639    0.0000 C   0  0  0  0  0  0           0  0  0
+    1.4774    0.5986    0.0000 C   0  0  0  0  0  0           0  0  0
+   -2.5886    0.5986    0.0000 C   0  0  0  0  0  0           0  0  0
+   -3.6075   -1.1749    0.0000 C   0  0  0  0  0  0           0  0  0
+    1.4774    1.7799    0.0000 C   0  0  0  0  0  0           0  0  0
+    2.4803    2.3721    0.0000 C   0  0  0  0  0  0           0  0  0
+   -0.5668   -2.9484    0.0000 O   0  0  0  0  0  0           0  0  0
+   -3.6075    0.0063    0.0000 C   0  0  0  0  0  0           0  0  0
+    3.5279    1.7799    0.0000 C   0  0  0  0  0  0           0  0  0
+    2.5059    0.0063    0.0000 C   0  0  0  0  0  0           0  0  0
+    1.4774   -1.7639    0.0000 O   0  0  0  0  0  0           0  0  0
+    3.5279    0.5986    0.0000 C   0  0  0  0  0  0           0  0  0
+   -2.5886   -2.9484    0.0000 O   0  0  0  0  0  0           0  0  0
+    2.4803    3.4101    0.0000 O   0  0  0  0  0  0           0  0  0
+   -4.6328    0.5986    0.0000 O   0  0  0  0  0  0           0  0  0
+    4.5691    2.3721    0.0000 O   0  0  0  0  0  0           0  0  0
+  2  1  2  0     0  0
+  2  3  2  0     0  0
+  2  4  2  0     0  0
+  3  1  1  0     0  0
+  4  3  1  0     0  0
+  5  2  1  0     0  0
+  6  5  1  0     0  0
+  7  4  1  0     0  0
+  8  2  1  0     0  0
+  9  6  1  0     0  0
+ 10  7  2  0     0  0
+ 11  8  2  0     0  0
+ 12 11  1  0     0  0
+ 13  3  2  0     0  0
+ 14  9  2  0     0  0
+ 15 18  1  0     0  0
+ 16  8  1  0     0  0
+ 17  1  1  0     0  0
+ 18 16  2  0     0  0
+ 19  7  1  0     0  0
+ 20 12  1  0     0  0
+ 21 14  1  0     0  0
+ 22 15  1  0     0  0
+  6  4  2  0     0  0
+ 15 12  2  0     0  0
+ 14 10  1  0     0  0
+M  END
+`
 
 export const molV2000 = `
 Accelrys05311914342D 1   1.00000     0.00000     0

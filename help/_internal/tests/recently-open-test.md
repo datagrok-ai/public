@@ -23,15 +23,15 @@ History of open views is saved in platform. This history is available on "Welcom
 
 * Selected script is open on script editing view
 
-1. Open "Models Browser" view from **Tools | Predictive Modeling | Browse models**
+1. Open "Models Browser" view from **ML | Models | Browse models**
 
 * "Models" tab is open
 
-1. Open "Train Model" view from **Tools | Predictive Modeling | Train**
+1. Open "Train Model" view from **ML | Models | Train**
 
 * "Train Model" tab is open
 
-1. Open "Train Model" view from **Tools | Predictive Modeling | Train**
+1. Open "Train Model" view from **ML | Models | Train**
 
 * "Train Model" tab is open
 

@@ -1,0 +1,34 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Mappings:
+  Images:
+    Datagrok:
+      domain: "docker.io"
+      repo: "datagrok/datagrok"
+    GrokConnect:
+      domain: "docker.io"
+      repo: "datagrok/grok_connect"
+    GrokSpawner:
+      domain: "docker.io"
+      repo: "datagrok/grok_spawner"
+    JKG:
+      domain: "docker.io"
+      repo: "datagrok/jupyter_kernel_gateway"
+    JN:
+      domain: "docker.io"
+      repo: "datagrok/jupyter_notebook"
+    H2o:
+      domain: "docker.io"
+      repo: "datagrok/h2o"
+    Kaniko:
+      domain: "gcr.io"
+      repo: "kaniko-project/executor"
+      version: "v1.12.1"
+    Searchdomain:
+      domain: "docker.io"
+      repo: "docker/ecs-searchdomain-sidecar"
+      version: "1.0"
+    Smtp:
+      domain: "docker.io"
+      repo: "datagrok/smtp"
+      version: "1.0.0"

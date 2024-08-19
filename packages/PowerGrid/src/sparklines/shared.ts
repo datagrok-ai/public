@@ -14,18 +14,26 @@ export interface SummarySettingsBase {
 }
 
 
-export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn): Type {
-  return gc.settings ??= {
-    columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
-      .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
-  };
+/// Utility method for old summary columns format support
+export function isSummarySettingsBase(obj: any): obj is SummarySettingsBase {
+  return (obj as SummarySettingsBase).columnNames !== undefined;
+}
+
+export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn,
+  sparklineType: SparklineType): Type {
+  return isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[sparklineType] ??= {
+      columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
+        .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
+    };
 }
 
 export enum SparklineType {
   BarChart = 'barchart',
   PieChart = 'piechart',
   Radar = 'radar',
-  Sparkline = 'sparkline'
+  Sparkline = 'sparkline',
+  Form = 'smartform'
 }
 
 export const sparklineTypes: string[] = [
@@ -33,6 +41,7 @@ export const sparklineTypes: string[] = [
   SparklineType.PieChart,
   SparklineType.Radar,
   SparklineType.Sparkline,
+  SparklineType.Form
 ];
 
 export function distance(p1: DG.Point, p2: DG.Point): number {
@@ -49,12 +58,14 @@ export class Hit {
 export function createTooltip(cols: DG.Column[], activeColumn: number, row: number): HTMLDivElement[] {
   const arr: HTMLDivElement[] = [];
   for (let i = 0; i < cols.length; i++) {
+    if (cols[i] === null)
+      continue;
     arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
       style: {
         margin: '0 10px 0 0',
         fontWeight: (activeColumn == i) ? 'bold' : 'normal',
       }
-    }), ui.divText(`${Math.floor(cols[i].get(row) * 100) / 100}`, {
+    }), ui.divText(`${Math.floor(cols[i].getNumber(row) * 100) / 100}`, {
       style: {
         fontWeight: (activeColumn == i) ? 'bold' : 'normal',
       }

@@ -1,25 +1,26 @@
 package grok_connect.providers;
 
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.ClickHouseBigIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
-import java.lang.reflect.Array;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import serialization.Types;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
 
 public class ClickHouseProvider extends JdbcDataProvider {
-    public ClickHouseProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public ClickHouseProvider() {
         driverClassName = "com.clickhouse.jdbc.ClickHouseDriver";
-
         descriptor = new DataSource();
         descriptor.type = "ClickHouse";
         descriptor.description = "Query ClickHouse database";
@@ -27,6 +28,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.nameBrackets = "\"";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#^(int(8|16|32))$", serialization.Types.INT);
             put("#^(uint(8|16))$", serialization.Types.INT);
@@ -55,6 +57,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return "jdbc:clickhouse://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+
     @Override
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns";
@@ -62,15 +65,14 @@ public class ClickHouseProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        String whereClause = String.format(" WHERE%s%s%s",
-                db == null ? "" : String.format(" c.table_catalog = '%s'", db),
-                schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
-                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
+        String whereClause = String.format(" WHERE%s%s",
+                schema == null ? "" : String.format(" c.table_schema = '%s'", schema),
+                table == null ? "" : String.format("%s c.table_name = '%s'", schema == null ? "" : " AND", table));
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "if(t.table_type ='VIEW', toInt8(1), toInt8(0)) as is_view FROM information_schema.columns c "
                         + "JOIN information_schema.tables t ON t.table_name = c.table_name%s"
-                , db == null && schema == null && table == null ? "" : whereClause);
+                , schema == null && table == null ? "" : whereClause);
     }
 
     @Override
@@ -113,54 +115,17 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return type == Types.BIGINT
-                || typeName.equalsIgnoreCase("UInt32")
-                || typeName.equalsIgnoreCase("UInt64")
-                || typeName.equalsIgnoreCase("UInt128")
-                || typeName.equalsIgnoreCase("UInt256")
-                || typeName.equalsIgnoreCase("Int64")
-                || typeName.equalsIgnoreCase("Int128")
-                || typeName.equalsIgnoreCase("Int256");
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BIG_INT, new ClickHouseBigIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 
     @Override
-    protected boolean isDecimal(int type, String typeName, int scale) {
-        return type == Types.DECIMAL;
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return type == Types.INTEGER
-                || type == Types.SMALLINT
-                || type == Types.TINYINT
-                || typeName.equalsIgnoreCase("UInt16")
-                || typeName.equalsIgnoreCase("UInt8");
-    }
-
-    @Override
-    protected Object convertArrayType(Object value) {
-        if (value == null) {
-            return Arrays.toString(new Object[]{});
-        }
-        return getStringArrayRepresentation(value);
-    }
-
-    private String getStringArrayRepresentation(Object array) {
-        int length = Array.getLength(array);
-        StringBuilder builder = new StringBuilder("[");
-        for (int i = 0; i < length; i++) {
-            Object o = Array.get(array, i);
-            if (o.getClass().isArray()) {
-                builder.append(getStringArrayRepresentation(o));
-            } else {
-                builder.append(o);
-            }
-            if (i != length - 1) {
-                builder.append(", ");
-            }
-        }
-        builder.append("]");
-        return builder.toString();
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        statement.setTimestamp(parameterIndex, ts);
     }
 }

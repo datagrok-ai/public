@@ -8,16 +8,15 @@ import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
-const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
+const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
 export async function demoBio01UI() {
   let view: DG.TableView;
   let df: DG.DataFrame;
 
   try {
-    const demoScript = new DemoScript(
-      'Similarity, Diversity',
-      'Sequence similarity tracking and evaluation dataset diversity');
+    const demoScript = new DemoScript('Similarity, Diversity',
+      'Sequence similarity tracking and evaluation dataset diversity', false, {autoStartFirstStep: true});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
@@ -38,10 +37,11 @@ export async function demoBio01UI() {
         delay: 2000,
       })
       .step('Find the most similar sequences to the current one', async () => {
-        const simViewer = await df.plot.fromType('Sequence Similarity Search', {
+        const simViewer = new SequenceSimilarityViewer(true);
+        view.addViewer(simViewer, {
           moleculeColumnName: 'sequence',
           similarColumnLabel: 'Similar to current',
-        }) as SequenceSimilarityViewer;
+        });
         view.dockManager.dock(simViewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.35);
       }, {
         description: `Add 'Sequence Similarity Search' viewer.`,

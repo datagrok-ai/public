@@ -6,6 +6,9 @@ Unlike [scatter plot](scatter-plot.md) that visualizes each individual data poin
 and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it
 contains.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Density plot');`
+
 General:
 
 |             |              |
@@ -18,5 +21,5 @@ See also:
 
 * [Viewers](../viewers/viewers.md)
 * [Scatter Plot](scatter-plot.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Density plot](https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot)

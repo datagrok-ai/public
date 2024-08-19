@@ -6,12 +6,10 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class VirtuosoDataProvider extends JdbcDataProvider {
-    public VirtuosoDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public VirtuosoDataProvider() {
         driverClassName = "virtuoso.jdbc4.Driver";
 
         descriptor = new DataSource();
@@ -76,12 +74,7 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
 
     @Override
     public String limitToSql(String query, Integer limit) {
-        return query.replaceFirst("select", String.format("select top %s", limit));
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return type == java.sql.Types.OTHER && precision >= 19 && scale == 0;
+        return query + "top " + limit.toString() + " ";
     }
 
     @Override

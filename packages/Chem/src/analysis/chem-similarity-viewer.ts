@@ -7,9 +7,7 @@ import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
@@ -55,7 +53,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         })
         .show();
     });
-    this.sketchButton.classList.add('similarity-search-edit');
+    this.sketchButton.classList.add('chem-similarity-search-edit');
     this.sketchButton.classList.add('chem-mol-view-icon');
     this.updateMetricsLink(this, {});
   }
@@ -70,22 +68,35 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
-  async render(computeData = true): Promise<void> {
+  async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
+    if (this.moleculeColumn && this.dataFrame) {
+      if (this.moleculeColumn.type !== DG.TYPE.STRING) {
+        this.closeWithError('Incorrect target column type');
+        return;
+      }
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
-      this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect && this.followCurrentRow) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyOrMalformedValue()) {
-          progressBar.close();
+      this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+      if (computeData && (!this.gridSelect && this.followCurrentRow || this.isEditedFromSketcher)) {
+        this.isComputing = true;
+        this.error = '';
+        this.root.classList.remove(`chem-malformed-molecule-error`);
+        this.targetMoleculeIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+        if (DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
+          this.closeWithError(`Empty molecule cannot be used for similarity search`, progressBar);
           return;
         }
         try {
+          const rowSourceIdxs = this.getRowSourceIndexes();
+          rowSourceIdxs.set(this.targetMoleculeIdx, true);
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
             this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
-            this.fingerprint as Fingerprint);
+            this.fingerprint as Fingerprint, rowSourceIdxs);
+          if (!df) {
+            this.closeWithError(`Malformed molecule cannot be used for similarity search`, progressBar);
+            return;
+          }
           this.molCol = df.getCol('smiles');
           this.idxs = df.getCol('indexes');
           this.scores = df.getCol('score');
@@ -97,6 +108,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
       } else if (this.gridSelect)
         this.gridSelect = false;
+      if (this.error) {
+        this.closeWithError(this.error, progressBar);
+        return;
+      }
       this.clearResults();
       const panel = [];
       const grids = [];
@@ -107,8 +122,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const label = this.sketchButton;
           const grid = ui.div([
             renderMolecule(
-              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label]);
+              this.targetMolecule, { width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height }),
+            label], { style: { position: 'relative' } });
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
@@ -123,9 +138,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
           const grid = ui.div([
             renderMolecule(
-              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+              this.molCol?.get(i), { width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height }),
             label,
-            molProps]);
+            molProps], { style: { position: 'relative' } });
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
             divClass += ' d4-current';
@@ -135,7 +150,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             divClass += ' d4-current';
             grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
-          if (this.dataFrame!.selection.get(idx)) {
+          if (this.dataFrame?.selection.get(idx)) {
             divClass += ' d4-selected';
             if (divClass == 'd4-flex-col d4-selected')
               grid.style.backgroundColor = '#f8f8df';
@@ -164,23 +179,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       progressBar.close();
     }
   }
-
-  isEmptyOrMalformedValue(): boolean {
-    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
-    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
-    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
-    if (moleculeError) {
-      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
-      this.clearResults();
-      return true;
-    }
-    return false;
-  }
-
-  clearResults() {
-    if (this.root.hasChildNodes())
-      this.root.removeChild(this.root.childNodes[0]);
-  }
 }
 
 export async function chemSimilaritySearch(
@@ -191,9 +189,12 @@ export async function chemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,
-) : Promise<DG.DataFrame> {
-  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
-  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
+  rowSourceIndexes: DG.BitSet,
+) : Promise<DG.DataFrame | null> {
+  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => {return null;});
+  if (!targetFingerprint)
+    return null; //returning null in case target molecule is malformed
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, false);
   malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 
@@ -218,7 +219,7 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse)
+    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse && rowSourceIndexes.get(idx))
     .sort(compare);
   const molsList = [];
   const scoresList = [];

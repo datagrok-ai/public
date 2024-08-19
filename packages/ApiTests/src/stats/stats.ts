@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 // import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-category('Stats', () => {
+category('Stats: fromColumn', () => {
   const t = DG.DataFrame.create(3);
   t.columns.add(DG.Column.fromInt32Array('number', Int32Array.from([12, 10, 15])));
   t.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([3, 4, 5])));
@@ -87,5 +87,27 @@ category('Stats', () => {
     t.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([3])));
     const stats = DG.Stats.histogramsByCategories(t.getCol('number'), t.getCol('population'));
     expect(stats.toString(), '1,0,0,0,0,0,0,0,0,0');
+  });
+});
+
+category('Stats: fromValues', () => {
+  const floatArr = new Float32Array([1.5, 2.3, 3.7, 4.8, 5.23]);
+  const intArr = new Int8Array([1, 2, 3, 4, 5]);
+  const jsArr = [1, 2, 3, 4, 5];
+  
+  const floatStats = DG.Stats.fromValues(floatArr);
+  const intStats = DG.Stats.fromValues(intArr);
+  const jsStats = DG.Stats.fromValues(jsArr);
+
+  test('avg float', async () => {
+    expect(floatStats.avg, 3.50600004196167);
+  });
+  
+  test('avg int', async () => {
+    expect(intStats.avg, 3);
+  });
+  
+  test('avg js', async () => {
+    expect(jsStats.avg, 3);
   });
 });

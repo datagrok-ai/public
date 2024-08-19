@@ -109,13 +109,13 @@ scenarios common to all viewers were identified:
 
 3. Select *"Age"* column in "Size" selector on [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"*
+    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values   of *"Age"*
       column
     * Under "Size" selector only columns with numerical types are represented
 
 4. Drag *"Sex"* column from grid to "Color" selector on [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values ​​of *"Age"*
+    * Points on [Scatter Plot](../viewers/scatter-plot.md) displayed in different sizes depending on values   of *"Age"*
       column
     * When dragging column, "Colort" selector on [Scatter Plot](../viewers/scatter-plot.md)
       is highlighted
@@ -130,7 +130,7 @@ scenarios common to all viewers were identified:
 
 7. Open properties for [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Viewer properties are displayed on [Context Panel](../../datagrok/navigation.md#context-panel)
+    * Viewer properties are displayed on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 8. Check performance and impact of changing properties on [Scatter Plot](../viewers/scatter-plot.md)
 

@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 
+import {delay} from '@datagrok-libraries/utils/src/test';
+
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
@@ -66,14 +68,12 @@ export function isDialogPresent(dialogTitle: string): boolean {
 }
 
 export function checkDialog(dialogTitle: string): boolean {
-  let check = false;
-  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
-    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
-      check = true;
-      break;
-    }
+  const dialogs = DG.Dialog.getOpenDialogs();
+  for (const d of dialogs) {
+    if (d.title === dialogTitle)
+      return true;
   }
-  return check;
+  return false;
 }
 
 export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
@@ -159,4 +159,48 @@ export async function waitForElement(selector: string, error: string, wait=3000)
       subtree: true,
     });
   });
+}
+
+/**
+ * Universal test for apps
+ * @param  {DG.Func} app App function
+ * @param  {DG.DockNode} TM
+ * @return {Promise<void>}
+ */
+export async function testApp(app: DG.Func, TM: DG.DockNode): Promise<void> {
+  // const nodes = [...grok.shell.dockManager.rootNode.children];
+  // const lastNode = nodes[0];
+  // console.log(nodes);
+  const apps = ['Molecular Descriptors', 'Enamine Store'];
+  const views = [...grok.shell.views].length;
+  grok.shell.lastError = '';
+  // console.log([...grok.shell.dockManager.rootNode.children]);
+  try {
+    await app.apply();
+    await delay(1000);
+    if (grok.shell.lastError)
+      throw new Error(await grok.shell.lastError);
+    const nodes = [...grok.shell.dockManager.rootNode.children];
+    if ([...grok.shell.views].length === views && nodes[nodes.length - 1].dart.a.a === 'fill')
+      throw new Error('App did not load');
+    // console.log([...grok.shell.dockManager.rootNode.children]);
+  } finally {
+    grok.shell.closeAll();
+    DG.Balloon.closeAll();
+    grok.shell.windows.showHelp = false;
+    const nodes = [...grok.shell.dockManager.rootNode.children];
+    if (nodes[nodes.length - 1].dart.a.a !== 'fill' && !apps.includes(app.friendlyName)) {
+      nodes.forEach((n) => {
+        if (!String(n.dart.a.a).startsWith('horizontal_splitter'))
+          grok.shell.dockManager.close(n);
+      });
+    }
+    // console.log(grok.shell.lastError);
+    // const newNodes = [...grok.shell.dockManager.rootNode.children];
+    // console.log(newNodes);
+    // const newLastNode = nodes[0];
+    // console.log(lastNode === newLastNode);
+    // if (nodes.length !== newNodes.length)
+    // newNodes.forEach((n) => grok.shell.dockManager.close(n));
+  }
 }

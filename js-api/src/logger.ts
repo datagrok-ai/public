@@ -1,8 +1,13 @@
 import {LOG_LEVEL} from './const';
 import {toDart} from './wrappers';
 import {Package} from './entities';
+import {IDartApi} from "./api/grok_api.g";
+import dayjs from "dayjs";
+import {Accordion} from "./widgets";
+import {toJs} from "./wrappers";
+import {DataFrame} from "./dataframe";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string};
 
@@ -12,6 +17,7 @@ type LoggerPutCallback = (logRecord: LogMessage) => void;
 export class Logger {
   putCallback?: LoggerPutCallback;
   private readonly dart: any;
+  private static consoleLogs: object[] = [];
 
   constructor(putCallback?: LoggerPutCallback, options?: {staticLogger?: boolean, params?: object}) {
     this.putCallback = putCallback;
@@ -27,7 +33,7 @@ export class Logger {
     return new Logger(undefined, {staticLogger: true});
   }
 
-  static translateStackTrace(stackTrace: string): string {
+  static translateStackTrace(stackTrace: string): Promise<string> {
      return api.grok_Log_TranslateStackTrace(stackTrace);
   }
 
@@ -62,7 +68,11 @@ export class Logger {
   }
 
   /** Reports error record to Datagrok **/
-  error(message: string, params?: object, stackTrace?: string): void {
+  error(message: any, params?: object, stackTrace?: string): void {
+    if (message instanceof Error) {
+      stackTrace ??= message.stack;
+      message = message.message;
+    }
     this._log({level: LOG_LEVEL.ERROR, message, params, stackTrace});
   }
 
@@ -71,6 +81,41 @@ export class Logger {
       this.putCallback(msg);
     msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
+  }
+
+  static getConsoleOutput(): string {
+    return JSON.stringify(this.consoleLogs, null, 2);
+  }
+
+  static interceptConsoleOutput(): void {
+    const regex = new RegExp('(?:\\d{4}-\\d{2}-\\d{2})?(?:[ T]\\d{2}:\\d{2}:\\d{2})?[.,]\\d{3}');
+    const intercept = (f: (message?: any, ...optionalParams: any[]) => void) => {
+      const std = f.bind(console);
+      return (...args: any[]) => {
+        try {
+          let message = args.map((x) => `${x}`).join(' ');
+          let time = dayjs().utc().valueOf();
+          if (regex.test(message)) {
+            const result = regex.exec(message);
+            if (result && result.length > 0) {
+              time = dayjs(result[0]).utc().valueOf();
+              message = message.replace(regex, '');
+            }
+          }
+          this.consoleLogs.push({'time': time, 'message': message});
+        } catch (_) {}
+        std(...args);
+      }
+    };
+
+    console.log = intercept(console.log);
+    console.info = intercept(console.info);
+    console.warn = intercept(console.warn);
+    console.error = intercept(console.error);
+  }
+
+  static set autoReportOptions(options: {[key: string]: any}) {
+    api.grok_Set_AutoReport_Options(toDart(options));
   }
 }
 

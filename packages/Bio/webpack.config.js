@@ -1,8 +1,15 @@
 const path = require('path');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production')
+  console.warn(`Building Bio in '${mode}' mode.`);
+
 module.exports = {
-  mode: 'development',
+  // ...(mode === 'production' ? {cache: {type: 'filesystem'}} : {}),
+  cache: {type: 'filesystem'},
+  mode: mode,
   entry: {
     package: ['./src/package.ts'],
     test: {
@@ -13,7 +20,7 @@ module.exports = {
   },
   resolve: {
     fallback: {'url': false},
-    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
+    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
   },
   module: {
     rules: [
@@ -22,12 +29,15 @@ module.exports = {
       {test: /\.css$/, use: ['style-loader', 'css-loader']},
     ],
   },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
   devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
+    'openchemlib/full': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
@@ -36,7 +46,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'bio',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

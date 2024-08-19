@@ -1,0 +1,10 @@
+#name: Kilograms to pounds
+#description: Converts kilograms to pounds.
+#language: grok
+#tags: demo, panel
+#condition: x.column.isNumerical && x.value != null
+#input: cell x {type:numerical}
+#output: double result
+#test: KilogramsToPounds(ApiTests:getCell(ApiTests:getDT(), 0, 'weight')) == 443.56953727203364
+
+result = x.value * 2.20462

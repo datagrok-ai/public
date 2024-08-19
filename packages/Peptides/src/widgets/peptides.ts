@@ -1,46 +1,52 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as uuid from 'uuid';
-
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ILogoSummaryTable, LogoSummaryTable} from '../viewers/logo-summary';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {MCL_INPUTS} from './settings';
 
-/** Peptide analysis widget.
- *
- * @param {DG.DataFrame} df Working table
- * @param {DG.Column} col Aligned sequence column
- * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
-  { host: HTMLElement, callback: () => Promise<boolean> } {
+export type DialogParameters = { host: HTMLElement, callback: () => Promise<boolean> };
+
+/**
+ * Peptides analysis parameters UI
+ * @param df - Dataframe with peptides
+ * @param [col] - Peptides column
+ * @return - UI host and analysis start callback
+ */
+export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): DialogParameters {
+  const mclOptions = new type.MCLSettings();
   const logoHost = ui.div();
-  // logoHost.style.alignContent = 'center';
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
-    const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
-    const potentialCol = DG.Utils.firstOrNull(sequenceColumns);
+    // Building UI for starting analysis from dialog (top menu)
+    const potentialCol = DG.Utils.firstOrNull(
+      df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE));
     if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
+    else if (potentialCol.stats.missingValueCount !== 0)
+      grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
-    seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
+
+    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: () => {
       const seqCol = seqColInput!.value;
-      if (!(seqCol.getTag(DG.TAGS.SEMTYPE) === DG.SEMTYPE.MACROMOLECULE)) {
-        grok.shell.warning('Peptides analysis only works with macromolecules');
-        seqColInput!.value = potentialCol;
-      }
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: seqCol.name});
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-      //TODO: add when new version of datagrok-api is available
-    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
+      if (seqCol.stats.missingValueCount !== 0)
+        grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -65,55 +71,126 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     };
   }
 
+  // Activity column properties
   let scaledCol: DG.Column<number>;
-
-  const defaultActivityColumn: DG.Column<number> | null =
-    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);
-  ;
+  const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') ||
+    DG.Utils.firstOrNull(df.columns.numerical);
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
-  const activityScalingMethod = ui.choiceInput(
-    'Scaling', C.SCALING_METHODS.NONE, Object.values(C.SCALING_METHODS),
-    async (currentMethod: C.SCALING_METHODS): Promise<void> => {
-      scaledCol = scaleActivity(activityColumnChoice.value!, currentMethod);
+  const activityScalingMethod = ui.input.choice(
+    'Scaling', {value: C.SCALING_METHODS.NONE, items: Object.values(C.SCALING_METHODS),
+      onValueChanged: async (input): Promise<void> => {
+        scaledCol = scaleActivity(activityColumnChoice.value!, input.value);
 
-      const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
-        filteringEnabled: false,
-        valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
-        legendVisibility: 'Never',
-        showXAxis: true,
-        showColumnSelector: false,
-        showRangeSlider: false,
-        showBinSelector: false,
-      });
-      histogramHost.lastChild?.remove();
-      histogramHost.appendChild(hist.root);
-    }) as DG.InputBase<C.SCALING_METHODS | null>;
-  activityScalingMethod.setTooltip('Function to apply for each value in activity column');
+        const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
+          filteringEnabled: false, valueColumnName: C.COLUMNS_NAMES.ACTIVITY, legendVisibility: 'Never', showXAxis: true,
+          showColumnSelector: false, showRangeSlider: false, showBinSelector: false,
+        });
+        histogramHost.lastChild?.remove();
+        histogramHost.appendChild(hist.root);
+      }}) as DG.InputBase<C.SCALING_METHODS | null>;
+  activityScalingMethod.setTooltip('Activity column transformation method');
 
   const activityScalingMethodState = (): void => {
-    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
-      DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
-    activityScalingMethod.fireChanged();
+    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) && activityColumnChoice.value!.stats.min > 0;
+    activityScalingMethod.value = C.SCALING_METHODS.NONE;
+    if (activityColumnChoice.value!.stats.missingValueCount !== 0)
+      grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  //TODO: add when new version of datagrok-api is available
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
-  const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
+    onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
+  activityColumnChoice.setTooltip('Numerical activity column');
+  const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: () => {
+    if (clustersColumnChoice.value) {
+      generateClustersInput.value = false;
+      generateClustersInput.fireChanged();
+    }
+  }});
+  clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
+  // clustering input
+  const generateClustersInput = ui.input.bool('Generate clusters', {value: true, onValueChanged: () => {
+    if (generateClustersInput.value) {
+      //@ts-ignore
+      clustersColumnChoice.value = null;
+      clustersColumnChoice.fireChanged();
+    }
+  }});
+  generateClustersInput
+    .setTooltip('Generate clusters column based on MCL embeddings for Logo Summary Table');
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
+  generateClustersInput.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, () => {
-    if (targetColumnChoice.value?.type !== DG.COLUMN_TYPE.STRING) {
-      grok.shell.warning('Target column should be of string type');
-      targetColumnChoice.value = null;
-    }
-  });
-  targetColumnChoice.nullable = true;
 
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, generateClustersInput];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
+
+  // ### MCL INPUTS ###
+  const similarityThresholdInput = ui.input.float(MCL_INPUTS.THRESHOLD, {
+    value: mclOptions.threshold, nullable: false, onValueChanged: () => mclOptions.threshold = similarityThresholdInput.value ?? mclOptions.threshold,
+  });
+  similarityThresholdInput.setTooltip('Threshold for similarity between two sequences to create edges');
+
+  const inflationInput = ui.input.float(MCL_INPUTS.INFLATION, {
+    value: mclOptions.inflation, nullable: false, onValueChanged: () => mclOptions.inflation = inflationInput.value ?? mclOptions.inflation,
+  });
+  inflationInput.setTooltip('Inflation value for MCL algorithm');
+
+  const maxIterationsInput = ui.input.int(MCL_INPUTS.MAX_ITERATIONS, {
+    value: mclOptions.maxIterations, nullable: false, onValueChanged: () => mclOptions.maxIterations = maxIterationsInput.value ?? mclOptions.maxIterations,
+  });
+  maxIterationsInput.setTooltip('Maximum iterations for MCL algorithm');
+
+  // disable input if there is no gpu
+  const useWebGPUInput = ui.input.bool(MCL_INPUTS.USE_WEBGPU, {
+    value: mclOptions.useWebGPU, onValueChanged: () => mclOptions.useWebGPU = useWebGPUInput.value,
+  });
+  useWebGPUInput.enabled = false;
+  mclOptions.webGPUDescriptionPromise.then(() => {
+    if (mclOptions.webGPUDescription !== type.webGPUNotSupported) {
+      useWebGPUInput.setTooltip(`Use WebGPU for MCL algorithm (${mclOptions.webGPUDescription})`);
+      useWebGPUInput.enabled = true;
+    } else {
+      useWebGPUInput.setTooltip(type.webGPUNotSupported);
+      useWebGPUInput.enabled = false;
+      useWebGPUInput.value = false;
+    }
+  });
+
+  const minClusterSizeInput = ui.input.int(MCL_INPUTS.MIN_CLUSTER_SIZE, {
+    value: mclOptions.minClusterSize, nullable: false, onValueChanged: () => mclOptions.minClusterSize = minClusterSizeInput.value ?? mclOptions.minClusterSize,
+  });
+  minClusterSizeInput.setTooltip('Minimum cluster size for MCL algorithm');
+
+  const mclDistanceFunctionInput= ui.input.choice(MCL_INPUTS.DISTANCE_FUNCTION,
+    {value: mclOptions.distanceF, items: [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+      MmDistanceFunctionsNames.HAMMING, MmDistanceFunctionsNames.LEVENSHTEIN], nullable: false,
+    onValueChanged: () => mclOptions.distanceF = mclDistanceFunctionInput.value}) as DG.ChoiceInput<MmDistanceFunctionsNames>;
+  const mclGapOpenInput = ui.input.float(MCL_INPUTS.GAP_OPEN, {value: mclOptions.gapOpen,
+    onValueChanged: () => mclOptions.gapOpen = mclGapOpenInput.value ?? mclOptions.gapOpen});
+  const mclGapExtendInput = ui.input.float(MCL_INPUTS.GAP_EXTEND, {value: mclOptions.gapExtend,
+    onValueChanged: () => mclOptions.gapExtend = mclGapExtendInput.value ?? mclOptions.gapExtend});
+  const mclFingerprintTypesInput: DG.ChoiceInput<string> = ui.input.choice(MCL_INPUTS.FINGERPRINT_TYPE, {value: mclOptions.fingerprintType,
+    items: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], nullable: false,
+    onValueChanged: () => mclOptions.fingerprintType = mclFingerprintTypesInput.value}) as DG.ChoiceInput<string>;
+
+
+  const mclInputs = [similarityThresholdInput, inflationInput, maxIterationsInput, minClusterSizeInput,
+    mclDistanceFunctionInput, mclFingerprintTypesInput, mclGapOpenInput, mclGapExtendInput, useWebGPUInput];
+
+  const mclInputsHost = ui.form(mclInputs);
+  mclInputsHost.style.display = 'none';
+
+  const settingsIcon = ui.icons.settings(() => {
+    mclInputsHost.style.display = mclInputsHost.style.display === 'none' ? 'flex' : 'none';
+    mclInputsHost.classList.remove('ui-form-condensed');
+  }, 'Adjust clustering parameters');
+  settingsIcon.style.fontSize = '16px';
+  generateClustersInput.root.appendChild(settingsIcon);
+  // ### END MCL INPUTS ###
+
 
   const bitsetChanged = df.filter.onChanged.subscribe(() => activityScalingMethodState());
 
@@ -122,17 +199,18 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value);
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, {addSequenceSpace: false, addMCL: true,
+          useEmbeddingsClusters: generateClustersInput.value ?? false, mclSettings: mclOptions});
       return model !== null;
     }
     return false;
   };
 
   let bottomHeight = 'auto';
-  const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
+  const inputElements: HTMLElement[] = [ui.divV(inputsList)];
   $(inputElements[0]).find('label').css('width', 'unset');
   if (typeof col !== 'undefined') {
-    const startBtn = ui.button('Launch SAR', startAnalysisCallback);
+    const startBtn = ui.button('Launch SAR', startAnalysisCallback, '');
     startBtn.style.alignSelf = 'center';
     inputElements.push(startBtn);
     bottomHeight = '215px';
@@ -149,65 +227,128 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     ui.splitH([
       ui.splitV(inputElements),
       histogramHost,
-    ], {style: {height: bottomHeight}}),
+    ], {style: {height: bottomHeight, minWidth: '500px', maxWidth: '600px'}}),
+    mclInputsHost,
   ]);
-  mainHost.style.maxWidth = '400px';
   return {host: mainHost, callback: startAnalysisCallback};
 }
 
+type AnalysisOptions = {
+  addSequenceSpace?: boolean,
+  useEmbeddingsClusters?: boolean,
+  addMCL?: boolean,
+  mclSettings?: type.MCLSettings,
+};
+
+/**
+ * Creates dataframe to use in analysis, model instance and adds viewers
+ * @param activityColumn - Activity column
+ * @param peptidesCol - Peptides column
+ * @param clustersColumn - Clusters column or null
+ * @param sourceDf - Source dataframe
+ * @param scaledCol - Scaled activity column
+ * @param scaling - Activity scaling method
+ * @param options - Additional options
+ * @return - Peptides model instance or null
+ */
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
-  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  targetColumn: DG.Column<string> | null = null): Promise<PeptidesModel | null> {
-  const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
-  let model = null;
-  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
-    //prepare new DF
-    const newDf = DG.DataFrame.create(currentDf.rowCount);
-    const newDfCols = newDf.columns;
-    newDfCols.add(scaledCol);
-    for (const col of currentDf.columns)
-      newDfCols.add(col);
-
-    newDf.name = 'Peptides analysis';
-    const settings: type.PeptidesSettings = {
-      sequenceColumnName: peptidesCol.name,
-      activityColumnName: activityColumn.name,
-      scaling: scaling,
-      isBidirectional: false,
-      columns: {},
-      maxMutations: 1,
-      minActivityDelta: 0,
-      showDendrogram: false,
-    };
-    if (targetColumn !== null)
-      settings.targetColumnName = targetColumn.name;
-
-    if (clustersColumn) {
-      const clusterCol = newDf.getCol(clustersColumn.name);
-      if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
-        newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      settings.clustersColumnName = clustersColumn.name;
-    }
-    newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
-
-    let monomerType = 'HELM_AA';
-    if (peptidesCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
-      const sampleSeq = peptidesCol.get(0)!;
-      monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
-    } else {
-      const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
-      monomerType = alphabet === 'DNA' || alphabet === 'RNA' ? 'HELM_BASE' : 'HELM_AA';
-    }
-    const dfUuid = uuid.v4();
-    newDf.setTag(C.TAGS.UUID, dfUuid);
-    newDf.setTag('monomerType', monomerType);
-    model = PeptidesModel.getInstance(newDf);
-    // await model.addViewers();
-    if (clustersColumn) await model.addLogoSummaryTable();
-    await model.addMonomerPosition();
-    await model.addMostPotentResidues();
-  } else
+  clustersColumn: DG.Column | null, sourceDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
+  options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
+  let model: PeptidesModel | null = null;
+  if (activityColumn.type !== DG.COLUMN_TYPE.FLOAT && activityColumn.type !== DG.COLUMN_TYPE.INT &&
+    activityColumn.type !== DG.COLUMN_TYPE.QNUM
+  ) {
     grok.shell.error('The activity column must be of numeric type!');
+    return model;
+  }
+  const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
+
+  // Prepare new DF
+  const newDf = DG.DataFrame.create(sourceDf.rowCount);
+  newDf.name = 'Peptides analysis';
+  const newDfCols = newDf.columns;
+  newDfCols.add(scaledCol);
+  for (const col of sourceDf.columns) {
+    if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+      if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
+        col.name = sourceDf.columns.getUnusedName(col.name);
+
+
+      newDfCols.add(col);
+    }
+  }
+
+  const settings: type.PeptidesSettings = {
+    sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
+    columns: {}, showDendrogram: false, showSequenceSpace: false,
+    sequenceSpaceParams: new type.SequenceSpaceParams(!!options.useEmbeddingsClusters && !clustersColumn),
+    mclSettings: options.mclSettings ?? new type.MCLSettings(),
+  };
+
+  if (clustersColumn) {
+    const clusterCol = newDf.getCol(clustersColumn.name);
+    if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
+      newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+  }
+  newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
+
+  const bitset = DG.BitSet.create(sourceDf.rowCount,
+    (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
+
+  // Cloning dataframe with applied filter. If filter is not applied, cloning is
+  // needed anyway to allow filtering on the original dataframe
+  model = PeptidesModel.getInstance(newDf.clone(bitset));
+  model.init(settings);
+  if (clustersColumn) {
+    const lstProps: ILogoSummaryTable = {
+      clustersColumnName: clustersColumn.name, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+      activityColumnName: activityColumn.name,
+    };
+    await model.addLogoSummaryTable(lstProps);
+  }
+  await model.addMonomerPosition();
+  await model.addMostPotentResidues();
+
+  // FIXME: enable by default for tests
+  if (options.addSequenceSpace ?? false) {
+    await model.addSequenceSpace({clusterCol: clustersColumn, clusterEmbeddings: options.useEmbeddingsClusters});
+    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+      const clusterCol = model._sequenceSpaceCols
+        .find((col) => model!.df.col(col) && model!.df.col(col)?.type === DG.COLUMN_TYPE.STRING);
+      if (clusterCol) {
+        const lstProps: ILogoSummaryTable = {
+          clustersColumnName: clusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+          activityColumnName: activityColumn.name,
+        };
+        await model.addLogoSummaryTable(lstProps);
+        setTimeout(() => {
+          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
+          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
+        }, 100);
+      }
+    }
+  } else if (options.addMCL ?? false) {
+    await model.addMCLClusters();
+    if (!clustersColumn && (options.useEmbeddingsClusters ?? false)) {
+      const mclClusterCol = model._mclCols
+        .find(
+          (col) => model?.df.col(col) && col.toLowerCase().startsWith('cluster') && !col.toLowerCase().includes('size'),
+        );
+      if (mclClusterCol) {
+        const lstProps: ILogoSummaryTable = {
+          clustersColumnName: mclClusterCol, sequenceColumnName: peptidesCol.name, activityScaling: scaling,
+          activityColumnName: activityColumn.name,
+        };
+        await model.addLogoSummaryTable(lstProps);
+        setTimeout(() => {
+          model && (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render &&
+          (model?.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable)?.render();
+        }, 100);
+      }
+    }
+  }
+
+
   progress.close();
   return model;
 }

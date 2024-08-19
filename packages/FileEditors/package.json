@@ -1,0 +1,60 @@
+{
+  "name": "@datagrok/file-editors",
+  "friendlyName": "File Editors",
+  "version": "1.0.0",
+  "author": {
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
+  },
+  "description": "Support for previewing and opening text file formats (PDF, DOCX)",
+  "dependencies": {
+    "datagrok-api": "^1.16.5",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "^4.2.13",
+    "pdfjs-dist": "3.8.162",
+    "docx-preview": "^0.1.18"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "style-loader": "^3.3.0",
+    "css-loader": "^6.4.0"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-fileeditorss": "webpack && grok publish",
+    "release-fileeditors": "webpack && grok publish --release",
+    "build-fileeditors": "webpack",
+    "build": "webpack",
+    "debug-fileeditors-dev": "webpack && grok publish dev",
+    "release-fileeditors-dev": "webpack && grok publish dev --release",
+    "debug-fileeditors-public": "webpack && grok publish public",
+    "release-fileeditors-public": "webpack && grok publish public --release",
+    "debug-fileeditors-release": "webpack && grok publish release",
+    "release-fileeditors-release": "webpack && grok publish release --release",
+    "debug-fileeditors-test": "webpack && grok publish test",
+    "release-fileeditors-test": "webpack && grok publish test --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Data Access",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/FileEditors"
+  }
+}

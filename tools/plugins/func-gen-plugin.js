@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { parse } = require('@babel/parser');
+const {parse} = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
-const { reservedDecorators, getFuncAnnotation, generateImport, generateExport } = require('../bin/utils/func-generation');
+const {reservedDecorators, getFuncAnnotation, generateImport, generateExport} = require('../bin/utils/func-generation');
 
 
 class FuncGeneratorPlugin {
@@ -28,7 +28,7 @@ class FuncGeneratorPlugin {
           sourceType: 'module',
           plugins: ['typescript', [
             'decorators',
-            { decoratorsBeforeExport: true },
+            {decoratorsBeforeExport: true},
           ]],
         });
         const functions = [];
@@ -43,9 +43,9 @@ class FuncGeneratorPlugin {
           const content = fs.readFileSync(this.options.outputPath, 'utf-8');
           const output = content ? this._insertImports(content, imports) : imports.join('\n');
           fs.writeFileSync(this.options.outputPath, output, 'utf-8');
-        } else {
+        } else 
           fs.writeFileSync(this.options.outputPath, imports.join('\n'), 'utf-8');
-        }
+        
   
         fs.appendFileSync(this.options.outputPath, functions.join('\n'), 'utf-8');
       }
@@ -63,11 +63,11 @@ class FuncGeneratorPlugin {
       const files = fs.readdirSync(dir);
       for (const file of files) {
         const fullPath = path.join(dir, file);
-        if (fs.statSync(fullPath).isDirectory()) {
+        if (fs.statSync(fullPath).isDirectory()) 
           findFiles(fullPath);
-        } else if (extPattern.test(file) && !excludedFiles.includes(file)) {
+        else if (extPattern.test(file) && !excludedFiles.includes(file)) 
           tsFiles.push(fullPath);
-        }
+        
       }
     }
 
@@ -127,15 +127,15 @@ class FuncGeneratorPlugin {
   }
 
   _insertImports(content, imports) {
-    const ast = parse(content, { sourceType: 'module', plugins: ['typescript', 'decorators'] });
+    const ast = parse(content, {sourceType: 'module', plugins: ['typescript', 'decorators']});
     let lastImportLoc = null;
     traverse(ast, {
       ImportDeclaration(nodePath) {
         lastImportLoc = nodePath.node.end + 1;
-      }
+      },
     });
-    return lastImportLoc === null ? imports.join('\n') + content
-      : content.slice(0, lastImportLoc) + imports.join('\n') +
+    return lastImportLoc === null ? imports.join('\n') + content :
+      content.slice(0, lastImportLoc) + imports.join('\n') +
       (content[lastImportLoc] === '\n' ? '' : '\n') +
       content.slice(lastImportLoc, content.length);
   }

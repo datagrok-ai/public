@@ -19,4 +19,4 @@ Use this dialog to change the data type of a column.
 
 See also:
 
-* [Column](../datagrok/table.md#column)
+* [Column](../datagrok/concepts/table.md#column)

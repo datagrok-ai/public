@@ -1,9 +1,8 @@
 // An example of using diversity search.
-//
 // https://datagrok.ai/help/domains/chem/descriptors
 
 grok.chem.descriptors(grok.data.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
-  .then(function (table) {
+  .then(function(table) {
     grok.shell.addTableView(table);
   });
 

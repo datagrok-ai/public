@@ -1,30 +1,30 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.7.3",
+  "version": "1.36.7",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
+  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.7.3",
+    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/compute-utils": "^1.36.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.14.0",
-    "dayjs": "latest",
-    "rxjs": "^6.5.5",
+    "datagrok-api": "^1.18.6",
+    "rxjs": "^6.6.7",
     "source-map-loader": "^4.0.1",
     "ts-loader": "latest",
     "typescript": "latest",
-    "wu": "latest"
+    "exceljs": "^4.3.0"
   },
   "devDependencies": {
-    "@types/wu": "latest",
+    "@types/lodash.clonedeepwith": "^4.5.9",
     "@typescript-eslint/eslint-plugin": "^5.1.0",
     "@typescript-eslint/parser": "^5.1.0",
     "css-loader": "^6.5.1",
@@ -53,15 +53,14 @@
     "release-compute-compose": "grok publish compose --release",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
   },
-  "sources": [
-    "common/exceljs.min.js",
-    "common/html2canvas.min.js"
-  ],
   "canEdit": [
     "Developers"
   ],
   "canView": [
     "All users"
   ],
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "meta": {
+    "dartium": false
+  }
 }

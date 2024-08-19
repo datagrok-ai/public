@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
   "friendlyName": "PowerGrid",
-  "version": "1.1.23",
+  "version": "1.3.1",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -13,27 +13,35 @@
     "directory": "packages/PowerGrid"
   },
   "dependencies": {
-    "@datagrok-libraries/gridext": "^1.3.43",
+    "datagrok-tools": "latest",
+    "@datagrok-libraries/gridext": "^1.3.68",
+    "@datagrok-libraries/utils": "^4.2.13",
     "@types/wu": "latest",
     "cash-dom": "latest",
-    "datagrok-api": "^1.13.11",
-    "dayjs": "latest"
+    "datagrok-api": "../../js-api",
+    "dayjs": "latest",
+    "wu": "latest"
   },
   "devDependencies": {
+    "@types/node": "latest",
+    "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.20.0",
     "@typescript-eslint/parser": "^5.20.0",
     "eslint": "latest",
     "eslint-config-google": "latest",
     "source-map-loader": "^4.0.1",
-    "ts-loader": "latest",
+    "ts-loader": "^9.2.5",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "css-loader": "latest",
+    "style-loader": "latest"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "link-all": "npm link datagrok-api @datagrok-libraries/gridext",
+    "link-all": "npm link datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils",
+    "link-gridext": "npm link @datagrok-libraries/gridext",
     "link-api": "npm link datagrok-api ",
     "debug-powergrid": "grok publish",
     "release-powergrid": "grok publish --release",
@@ -46,7 +54,7 @@
     "debug-powergrid-public": "grok publish public",
     "release-powergrid-public": "grok publish public --release",
     "debug-powergrid-local": "tsc && webpack && grok publish local",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
     "Developers"
@@ -54,5 +62,5 @@
   "canView": [
     "All users"
   ],
-  "category": "Development"
+  "category": "General"
 }

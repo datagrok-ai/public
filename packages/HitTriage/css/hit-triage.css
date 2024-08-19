@@ -2,3 +2,98 @@
     width: initial !important;
     height: initial !important;
 }
+
+.hit-triage-compute-dialog-pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header {
+    border: none;
+    border-left: 4px solid transparent;
+    border-radius: 1px;
+    padding: 4px 8px;
+    min-height: 28px;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header.selected {
+    border-left: 4px solid var(--blue-1);
+    background-color: #f2f2f5;
+}
+
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header>span {
+    padding: 0 4px;
+}
+
+table.hit-triage-table {
+    margin: 10px;
+    width: calc(100% - 20px);
+}
+
+.hit-triage-table-container {
+    max-width: 600px;
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+.hit-triage-error-div {
+    color: red;
+    text-align: start;
+}
+
+.mx-5 {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.hit-triage-new-template-functions-input > .ui-box {
+    height: 300px;
+}
+
+.hit-triage-new-template-functions-input {
+    max-height: 200px;
+    max-width: unset !important;
+    overflow-y: scroll;
+}
+
+
+.hit-triage-new-template-functions-input > .d4-tab-host {
+    width: 100% !important;
+}
+
+.hit-triage-compute-dialog-host {
+    max-height: 550px;
+    max-width: 800px;
+    min-width: 550px;
+}
+
+.hit-triage-compute-dialog-descriptors-group {
+    margin-left: 16px;
+}
+
+.oy-scroll {
+    overflow-y: scroll;
+}
+
+.d4-ribbon-name .ui-breadcrumbs {
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+	flex-wrap: nowrap;
+    padding: 0;
+}
+
+.d4-ribbon-name .ui-breadcrumbs i {
+	padding: 0 6px;
+	font-size: 10px;
+	font-weight: bold;
+}
+
+.d4-ribbon-name .ui-breadcrumbs-element:first-child {
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -13,9 +13,12 @@ There are two ways to add a trellis plot, visualized below:
 * create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
   on `Viewer | Use in Trellis`
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Trellis plot');`
+
 ![Trellis Plot](../../uploads/gifs/trellis-plot.gif "Trellis Plot")
 
-![viewers-as-trellis](../viewers-as-trellis.gif)
+![viewers-as-trellis](img/viewers-as-trellis.gif)
 
 Typically, you want the data split by one or two columns. Use combo boxes on top of the control for that. Note that you
 can split data by one column per dimension.
@@ -24,7 +27,7 @@ To change the inner viewer type, click on the viewer icon in the left top corner
 the "gear" icon next to it.
 
 Trellis Plot automatically picks up element renderers for rendering categories. For instance, this is how it looks for
-chemical structures after performing [R-Group Analysis](../../domains/chem/r-group-analysis.md):
+chemical structures after performing [R-Group Analysis](../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis):
 
 ![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
 
@@ -35,6 +38,6 @@ chemical structures after performing [R-Group Analysis](../../domains/chem/r-gro
 See also:
 
 * [Viewers](viewers.md)
-* [Table view](../../datagrok/table-view.md)
-* [R-Group analysis](../../domains/chem/r-group-analysis.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
+* [R-Group analysis](../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis)
 * [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)

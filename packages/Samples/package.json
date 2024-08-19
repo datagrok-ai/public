@@ -1,0 +1,55 @@
+{
+  "name": "@datagrok/samples",
+  "friendlyName": "Samples",
+  "version": "1.0.4",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
+  },
+  "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Samples"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.2.13",
+    "datagrok-api": "^1.13.0",
+    "rxjs": "^6.5.5",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "@datagrok/api-tests": "^1.7.12",
+    "@datagrok/dendrogram": "latest"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-demo": "grok publish public --release",
+    "release-demo": "grok publish localhost --release",
+    "build-demo": "webpack",
+    "build": "tsc && webpack",
+    "debug-demo-dev": "grok publish dev",
+    "release-demo-dev": "grok publish dev --release",
+    "debug-demo-public": "grok publish public",
+    "release-demo-public": "grok publish public --release",
+    "debug-demo-local": "grok publish local",
+    "release-demo-local": "grok publish local --release",
+    "test": "grok test"
+  },
+  "canView": [
+    "All users"
+  ],
+  "canEdit": [
+    "Administators",
+    "Developers"
+  ]
+}

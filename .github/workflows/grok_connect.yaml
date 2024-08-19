@@ -18,8 +18,10 @@ jobs:
   build:
     name: Build maven
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-m
     if: needs.common-check.outputs.continue == 'true'
+    permissions:
+      checks: write
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}
@@ -30,7 +32,10 @@ jobs:
         with:
           timezoneLinux: "Europe/Kyiv"
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ./connectors
       - name: Set up JDK 8
         uses: actions/setup-java@v2
         with:
@@ -75,12 +80,15 @@ jobs:
 
   docker:
     name: Build Docker
-    needs: [build, common-check]
-    runs-on: ubuntu-20.04
+    needs: [ build, common-check ]
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ./connectors
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -104,14 +112,9 @@ jobs:
             echo "tar=${tar}" >> $GITHUB_OUTPUT
             echo "dest=type=docker,dest=/tmp/${tar}" >> $GITHUB_OUTPUT
 
-            platform_add='linux/arm64'
-            echo "platform_add=${platform_add}" >> $GITHUB_OUTPUT
-            tar_add="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform_add#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
-            echo "tar_add=${tar_add}" >> $GITHUB_OUTPUT
-            echo "dest_add=type=docker,dest=/tmp/${tar_add}" >> $GITHUB_OUTPUT
             echo "tags=datagrok/grok_connect:${{ needs.build.outputs.version }}-${commit_sha}" >> $GITHUB_OUTPUT
           else
-            echo "platform=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+            echo "platform=linux/amd64" >> $GITHUB_OUTPUT
             if [[ ${{ needs.build.outputs.latest }} == 'true' ]]; then
               echo "cache_to=type=registry,ref=datagrok/grok_connect:cache,mode=max" >> $GITHUB_OUTPUT
               echo "tags=datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}" >> $GITHUB_OUTPUT
@@ -127,6 +130,7 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v3
+        id: build-push
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
@@ -144,6 +148,7 @@ jobs:
 
       - name: Build and push bleeding-edge
         if: github.ref == 'refs/heads/master'
+        id: bleeding-edge
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
@@ -161,34 +166,61 @@ jobs:
 
       - name: Upload Artifact
         if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
-        uses: actions/upload-artifact@v2
+        id: docker-artifact
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.param.outputs.tar }}
           path: /tmp/${{ steps.param.outputs.tar }}
           retention-days: 7
 
-      - name: Build and push additional platform
-        uses: docker/build-push-action@v3
-        if: steps.param.outputs.platform_add != '' && steps.param.outputs.dest_add != ''
-        with:
-          context: ./connectors
-          platforms: ${{ steps.param.outputs.platform_add }}
-          push: false
-          tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
-          cache-from: type=registry,ref=datagrok/grok_connect:cache
-          cache-to: ${{ steps.param.outputs.cache_to }}
-          outputs: ${{ steps.param.outputs.dest_add }}
-          build-args: |
-            BRANCH=${{ steps.param.outputs.branch }}
-            COMMIT_PUBLIC=${{ github.sha }}
-          labels: |
-            BRANCH=${{ steps.param.outputs.branch }}
-            COMMIT_PUBLIC=${{ github.sha }}
+      - name: Prepare Slack Message
+        if: steps.docker-artifact.outcome == 'skipped' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-      - name: Upload Artifact
-        if: github.ref != 'refs/heads/master' && steps.param.outputs.tar_add != ''
-        uses: actions/upload-artifact@v2
+          if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
+            SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edge* is published to Docker Hub"
+          else
+            SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
+          fi
+
+          echo SLACK_MESSAGE_HEADER=$SLACK_MESSAGE_HEADER >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-user.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
         with:
-          name: ${{ steps.param.outputs.tar_add }}
-          path: /tmp/${{ steps.param.outputs.tar_add }}
-          retention-days: 7
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}

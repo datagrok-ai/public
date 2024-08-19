@@ -1,8 +1,14 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production')
+  console.warn(`Building '${packageName}' in '${mode}' mode.`);
+
 module.exports = {
-  mode: 'development',
+  // ...(mode !== 'production' ? {} : {cache: {type: 'filesystem'}}),
+  cache: {type: 'filesystem'},
+  mode: mode,
   entry: {
     package: './src/package.ts',
     test: {
@@ -12,20 +18,22 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: {'url': false},
+    extensions: ['.ts', '.tsx', '.js', '.wasm', '.mjs', '.json'],
+    alias: {
+      'vendor/helm-web-editor': mode === 'production' ?
+        path.resolve(__dirname, 'vendor', 'helm-web-editor.production.js') :
+        path.resolve(__dirname, 'vendor', 'helm-web-editor.development.js'),
+    },
+  },
+  devServer: {
+    contentBase: './dist',
   },
   module: {
     rules: [
-      {
-        test: /\.ts(x?)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-        exclude: /node_modules/,
-      },
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: [/node_modules/]},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: [/node_modules/]},
+      {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: [/node_modules/]},
     ],
   },
   devtool: 'source-map',

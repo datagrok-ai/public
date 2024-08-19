@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {sequenceSpaceTopMenu} from '../package';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 export async function _testSequenceSpaceReturnsResult(
   df: DG.DataFrame, algorithm: DimReductionMethods, colName: string,
@@ -14,6 +15,10 @@ export async function _testSequenceSpaceReturnsResult(
   if (semType)
     col.semType = semType;
 
-  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true);
+  const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
+  if (!preprocessingFunc)
+    throw new Error('Preprocessing function not found');
+  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true,
+    preprocessingFunc, {[BYPASS_LARGE_DATA_WARNING]: true});
   expect(sp != null, true);
 }

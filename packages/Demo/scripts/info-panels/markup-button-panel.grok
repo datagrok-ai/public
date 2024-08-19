@@ -1,9 +1,0 @@
-#name: Markup Button Demo
-#description: Panel that contains a markup button
-#language: grok
-#tags: demo, panel
-#condition: table.name == "demog"
-#input: dataframe table
-#output: string markup {action:markup}
-
-markup = "#{button(\ntext = \"Open File...\",\nonClick = \"CmdOpenLocalFile()\")}"

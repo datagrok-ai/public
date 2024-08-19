@@ -1,0 +1,58 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Service version"
+        Parameters:
+          - DatagrokVersion
+          - GrokConnectVersion
+          - GrokSpawnerVersion
+          - JKGVersion
+          - JNVersion
+          - H2oVersion
+    ParameterLabels:
+      DatagrokVersion:
+        default: 'Datagrok Version'
+      GrokConnectVersion:
+        default: 'Grok Connect Version'
+      GrokSpawnerVersion:
+        default: 'Grok Spawner Version'
+      JKGVersion:
+        default: 'Jupyter Kernel Gateway Version'
+      JNVersion:
+        default: 'Jupyter Notebook Version'
+      H2oVersion:
+        default: 'H2O Version'
+Parameters:
+  DatagrokVersion:
+    Type: String
+    Default: 1.19.1
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable|bleeding-edge"
+    Description: Enter Datagrok docker image version.
+  GrokConnectVersion:
+    Type: String
+    Default: 2.1.17
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Grok Connect docker image version.
+  GrokSpawnerVersion:
+    Type: String
+    Default: 1.7.0
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Grok Spawner docker image version.
+  JKGVersion:
+    Type: String
+    Default: 1.9.0
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
+  JNVersion:
+    Type: String
+    Default: 1.1.1
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Datagrok Jupyter Notebook docker image version.
+  H2oVersion:
+    Type: String
+    Default: 1.1.1
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Datagrok H2O docker image version. 

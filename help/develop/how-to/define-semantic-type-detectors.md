@@ -3,8 +3,8 @@ title: "Define semantic type detectors"
 ---
 
 Datagrok helps you get the most out of your data by encoding its meaning into
-[semantic types](../../discover/semantic-types.md). In addition to the types that
-are [automatically detected](../../discover/semantic-types.md#automatic-semantic-type-detection)
+[semantic types](../../govern/catalog/semantic-types.md). In addition to the types that
+are [automatically detected](../../govern/catalog/semantic-types.md#automatic-semantic-type-detection)
 by the platform, you can define your own semantic types. This can serve multiple purposes: from custom rendering and
 viewers to info panels and predictive models.
 
@@ -90,7 +90,7 @@ of nulls, which won't add any helpful insights to the data profile.
 See also:
 
 * [JavaScript Development](../develop.md)
-* [Semantic types](../../discover/semantic-types.md)
+* [Semantic types](../../govern/catalog/semantic-types.md)
 * [JavaScript API Samples: Override standard semantic types](https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection)
 * [JavaScript API Samples: Column statistics](https://public.datagrok.ai/js/samples/data-frame/stats)
 * [How to add an info panel](add-info-panel.md)

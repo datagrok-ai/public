@@ -4,6 +4,9 @@ title: "Matrix plot"
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Matrix plot');`
+
 General:
 
 |             |                     |
@@ -20,5 +23,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: Matrix plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)

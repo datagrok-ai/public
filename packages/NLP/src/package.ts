@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -5,6 +6,10 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
+import {getMarkedString, setStemmingCash, getClosest, stemmColumn} from './stemming-tools/stemming-tools';
+import {modifyMetric, runTextEmdsComputing} from './stemming-tools/stemming-ui';
+import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/constants';
+import '../css/stemming-search.css';
 
 export const _package = new DG.Package();
 
@@ -13,10 +18,10 @@ let translate: AWS.Translate;
 //let comprehendMedical;
 
 // UI components for the `Translation` panel
-const sourceLangInput = ui.choiceInput('', 'Undetermined', [...Object.keys(lang2code), 'Undetermined', 'Other']);
-const targetLangInput = ui.choiceInput('', 'English', [...Object.keys(lang2code), 'Choose...']);
+const sourceLangInput = ui.input.choice('', {value: 'Undetermined', items: [...Object.keys(lang2code), 'Undetermined', 'Other']});
+const targetLangInput = ui.input.choice('', {value: 'English', items: [...Object.keys(lang2code), 'Choose...']});
 const headerDiv = ui.divH([sourceLangInput.root, targetLangInput.root], 'nlp-header-div');
-const translationArea = ui.textInput('', '');
+const translationArea = ui.input.textArea('', {value: ''});
 translationArea.input.classList.add('nlp-translation-area');
 const mainDiv = ui.divV([headerDiv, translationArea.root], 'nlp-main-div');
 const mainWidget = new DG.Widget(mainDiv);
@@ -188,4 +193,132 @@ export async function initAWS() {
   });
   translate = new AWS.Translate();
   //comprehendMedical = new AWS.ComprehendMedical();
+}
+
+//top-menu: ML | Text Embeddings...
+//name: Compute Text Embeddings
+//description: Compute text embeddings using UMAP
+export function computeEmbds(): void {
+  runTextEmdsComputing();
+}
+
+//name: Stem Column
+//tags: dim-red-preprocessing-function
+//meta.supportedSemTypes: Text
+//meta.supportedDistanceFunctions: Common Items
+//input: column col {semType: Text}
+//input: string metric
+//input: int minimumCharactersCount = 1 {defaultValue: 1; min: 0; max: 100; optional: true}
+//output: object result
+export function stemColumnPreprocessingFunction(col: DG.Column, metric: string, minimumCharactersCount: number) {
+  const stemRes = stemmColumn(col, minimumCharactersCount);
+  const entries = stemRes.indices.toList();
+  const options = {mostCommon: stemRes.mostCommon};
+  return {entries, options};
+}
+
+//name: Radial Coloring
+//tags: dim-red-postprocessing-function
+//input: column col1
+//input: column col2
+export function radialColoring(col1: DG.Column, col2: DG.Column) {
+  const df = col1.dataFrame;
+  if (!df)
+    return;
+  const rowCount = df.rowCount;
+
+  const markerSize = new Float32Array(rowCount);
+  const markerColor = new Float32Array(rowCount);
+
+  const xMean = col1.stats.avg;
+  const xStd = col1.stats.stdev + TINY; // TINY is added to prevent division by zero
+  const xRaw = col1.getRawData();
+  const yMean = col2.stats.avg;
+  const yStd = col2.stats.stdev + TINY;
+  const yRaw = col2.getRawData();
+
+  let xNorm: number;
+  let yNorm: number;
+  let radius: number;
+  let angle: number;
+
+  // Marker size & color are specified using polar coordinates
+  for (let i = 0; i < rowCount; ++i) {
+    // get normalized embeddings
+    xNorm = (xRaw[i] - xMean) / xStd;
+    yNorm = (yRaw[i] - yMean) / yStd;
+
+    // compute polar coordinates
+    radius = Math.sqrt(xNorm**2 + yNorm**2);
+    angle = Math.acos(xNorm / (radius + TINY)) * (yNorm > 0 ? 1 : -1);
+
+    // heuristics
+    markerSize[i] = radius;
+    markerColor[i] = Math.sin(1.0 / (TINY + Math.log(radius + TINY))) * Math.sin(POLAR_FREQ * angle);
+  }
+
+  const sizeCol = DG.Column.fromFloat32Array('embeddings size', markerSize);
+  const colorCol = DG.Column.fromFloat32Array('embeddings color', markerColor);
+
+  sizeCol.name = df.columns.getUnusedName(sizeCol.name);
+  colorCol.name = df.columns.getUnusedName(colorCol.name);
+
+  df.columns.add(sizeCol);
+  df.columns.add(colorCol);
+  const tv = grok.shell.tableView(df.name);
+  if (!tv)
+    return;
+  const colNames = [col1.name, col2.name];
+  for (const v of tv.viewers) {
+    if (v instanceof DG.ScatterPlotViewer && colNames.includes(v.props.xColumnName) && colNames.includes(v.props.yColumnName)) {
+      v.props.sizeColumnName = sizeCol.name;
+      v.props.colorColumnName = colorCol.name;
+      return;
+    }
+  }
+}
+
+//name: Distance
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function distance(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+
+  setStemmingCash(df, source);
+
+  const uiElem = ui.label('Edit');
+  uiElem.classList.add('nlp-stemming-edit');
+  uiElem.onclick = () => modifyMetric(df);
+  ui.tooltip.bind(uiElem, 'Edit text similarity measure');
+  const wgt = new DG.Widget(uiElem);
+
+  return wgt;
+}
+
+//name: Similar
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function similar(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
+
+  setStemmingCash(df, source);
+
+  const closest = getClosest(df, queryIdx, CLOSEST_COUNT);
+
+  const uiElements = [] as HTMLElement[];
+
+  for (let i = 0; i < closest.length; ++i) {
+    const uiElem = ui.inlineText(getMarkedString(closest[i], queryIdx, source.get(closest[i])));
+    uiElements.push(uiElem);
+    uiElements.push(ui.divText(DELIMETER));
+  }
+
+  return new DG.Widget(ui.divV(uiElements));
 }

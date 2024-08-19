@@ -10,7 +10,7 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[-a-zA-Z0-9 ]+))[:|] )((?:\w)+.*)$/,
+      headerPattern: /^(?:(?:[Cc]loses )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[-a-zA-Z0-9 ]+))[:|] )((?:\w)+.*)$/,
       headerCorrespondence: ['references', 'scope', 'subject'],
       issuePrefixes: ['GROK-', '#']
     }
@@ -25,7 +25,7 @@ const Configuration = {
    */
   rules: {
     "header-max-length": [1, "always", 70],
-    "body-full-stop": [1, "never", '.'],
+    "body-full-stop": [0, "never", '.'],
     "body-leading-blank": [2, "always"],
     "body-empty": [0, "never"],
     "body-max-length": [0, "always", "Infinity"],
@@ -38,7 +38,7 @@ const Configuration = {
     "footer-max-line-length": [1, "always", 70],
     "footer-min-length": [0, "always", 0],
     "header-case": [0, "always", "sentence-case"],
-    "header-full-stop": [1, "never", "."],
+    "header-full-stop": [0, "never", "."],
     "header-max-length": [1, "always", 80],
     "header-min-length": [2, "always", 1],
     "references-empty": [1, "never"],
@@ -49,7 +49,7 @@ const Configuration = {
     "scope-min-length": [2, "always", 1],
     "subject-case": [0, "always", ['sentence-case']],
     "subject-empty": [2, "never"],
-    "subject-full-stop": [2, "never", "."],
+    "subject-full-stop": [0, "never", "."],
     "subject-max-length": [1, "always", 60],
     "subject-min-length": [2, "always", 1],
     "subject-exclamation-mark": [0, "never"],

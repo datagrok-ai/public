@@ -1,5 +1,6 @@
 ---
 title: "Cluster data"
+sidebar_position: 5
 ---
 
 Clustering is the task of grouping a set of objects in such a way that objects in the same group
@@ -14,7 +15,7 @@ cluster. This results in a partitioning of the data space into _Voronoi cells_.
 ## Run
 
 * Open table
-* Run from menu: **Tools** | **Data Science** | **Cluster...**
+* Run from menu: **ML** | **Cluster** | **Cluster...**
 * Select numerical feature columns that will be used for clustering
 * Select number of required clusters. Integer number 1..n
 * Set **"Show scatter plot"** to open scatter plot after clustering

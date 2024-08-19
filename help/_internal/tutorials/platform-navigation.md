@@ -51,4 +51,4 @@ parameters
 
 See also:
 
-* [Data import](../../access/files/files.mdx)
+* [Data import](../../access/files/files.md)

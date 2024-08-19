@@ -65,8 +65,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
   updateRiskAssessmentDataframe() {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(this.aeDf.clone(this.aeDf.filter), study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"-100-0":"#0000FF","0-100":"#FF0000"}`;
+    this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).meta.colors.setConditional({'-100-0': '#0000FF', '0-100': '#FF0000'});
     this.updateRiskAssessmentDfOnPropPanel();
   }
 
@@ -91,13 +90,15 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.volcanoPlot.meta.formulaLines.addLine({
       formula: `\${${this.volcanoPlotYAxis}} = ${-Math.log10(this.pValueLimit)}`,
       color: '#00ff00',
-      width: 0.5
+      width: 0.5,
+      showOnPlot: false
     });
 
     this.volcanoPlot.meta.formulaLines.addLine({
       formula: `\${${this.volcanoPlotXAxis}} = 0`,
       color: '#00ff00',
-      width: 0.5
+      width: 0.5,
+      showOnPlot: false
     });
 
     updateDivInnerHTML(this.riskAssessmentDiv, ui.splitV([this.volcanoPlot.root]))
@@ -114,7 +115,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     const treatmentArmPane = (arm, armToCheck, name) => {
       acc.addPane(name, () => {
         //@ts-ignore
-        const armChoices = ui.multiChoiceInput('', this[arm], this.treatmentArmOptions);
+        const armChoices = ui.input.multiChoice('', {value: this[arm], items: this.treatmentArmOptions});
         armChoices.onChanged((v) => {
           if (this[armToCheck].filter(it => armChoices.value.includes(it)).length) {
             grok.shell.error(`Some products are selected for both treatment arms. One product can be selected only for one treatment arm.`);
@@ -137,7 +138,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     });
 
     acc.addPane('Parameters', () => {
-      let pValue = ui.stringInput('Significance level', this.pValueLimit.toString());
+      const pValue = ui.input.string('Significance level', {value: this.pValueLimit.toString()});
       pValue.onChanged((v) => {
         this.pValueLimit = parseFloat(pValue.value);
         if (!isNaN(this.pValueLimit)) {
@@ -145,7 +146,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
           this.updateVolcanoPlot();
         }
       });
-      let sizeChoices = ui.choiceInput('Marker size', Object.keys(this.sizeOptions)[0], Object.keys(this.sizeOptions));
+      const sizeChoices = ui.input.choice('Marker size', {value: Object.keys(this.sizeOptions)[0],
+        items: Object.keys(this.sizeOptions)});
       sizeChoices.onChanged((v) => {
         this.volcanoPlotMarkerSize = this.sizeOptions[sizeChoices.value];
         this.volcanoPlot.setOptions({ size: this.volcanoPlotMarkerSize });
@@ -171,7 +173,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   private setConfIntLineOptions(lines: DG.FormulaLine[], formula: string, color: string, width: number, max: number, min: number) {
-    const line: DG.FormulaLine = { type: 'line', formula: formula, color: color, width: width, min: min, max: max };
+    const line: DG.FormulaLine = { type: 'line', formula: formula, color: color, width: width, min: min, max: max, showOnPlot: false };
     lines.push(line);
   }
 

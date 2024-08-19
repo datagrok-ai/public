@@ -38,12 +38,12 @@ etc.
 
 Sometimes, you want more than a table to be returned. Data jobs let you get results from multiple queries
 at once, massage the data using transformations, and apply any visualizations on top of it. Just as data queries, data
-jobs can be parameterized as well. The output of the data job is a [project](../datagrok/project.md), which is
+jobs can be parameterized as well. The output of the data job is a [project](../datagrok/concepts/project/project.md), which is
 essentially a dashboard.
 
 ## Security
 
-We take the issue of security and access privileges very seriously, and the concepts of access control and users’ roles
+We take the issue of security and access privileges very seriously, and the concepts of access control and users' roles
 and privileges are at the heart at the system. Each system entity (such as `Data Source`, `Data Connection`
 , `Data Query`, or `Data Job`)
 has a list of possible actions associated with it, such as `view`, `edit`, or `publish`. The platform has a flexible

@@ -8,6 +8,14 @@
     flex-grow: 1;
 }
 
+.ui-form.ui-form-condensed .typeahead-standalone.ui-input-root {
+    padding: 0;
+}
+
+.ui-form.ui-form-condensed > .ui-input-root > .typeahead-standalone .tt-hint {
+    line-height: 1.25;
+}
+
 .typeahead-standalone .ui-input-editor{
     position: relative;
     z-index: 1;

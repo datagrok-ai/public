@@ -24,17 +24,18 @@ jobs:
   codeql:
     name: CodeQL static analysis
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     permissions:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: 'javascript'
+          trap-caching: false
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
       - name: Perform CodeQL Analysis

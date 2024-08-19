@@ -1,12 +1,13 @@
 ---
 title: "Function roles"
+sidebar_position: 5
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
 Typically, each function type has a special tag denoting what the function does, for example:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](../visualize/dashboard.md)
+* `#dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` for [package initialization](#package-initialization)
 * `#autostart` for [automatic execution at platform startup](#autostart)
@@ -29,7 +30,7 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../datagrok/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/concepts/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
 a template:
 
 ```shell
@@ -119,7 +120,7 @@ are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../access/files/files.mdx). The platform provides a way
+File viewers are used in Datagrok's [file share browser](../access/files/files.md). The platform provides a way
 to define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 

@@ -52,10 +52,10 @@ export async function _testCumulativeEnrollment() {
   const df = await readDataframe('dm.csv');
   const cumulativeEnrDf = cumulativeEnrollemntByDay(df, SUBJ_REF_STDT, SUBJECT_ID, 'CUMULATIVE_ENROLLMENT');
   expect(cumulativeEnrDf.rowCount, 5);
-  const date = cumulativeEnrDf.get(SUBJ_REF_STDT, 0)
-  expect(date.date(), 4);
-  expect(date.month(), 7);
-  expect(date.year(), 2012);
+  const date = cumulativeEnrDf.get(SUBJ_REF_STDT, 1)
+  expect(date.date(), 12);
+  expect(date.month(), 1);
+  expect(date.year(), 2013);
   expect(cumulativeEnrDf.get('CUMULATIVE_ENROLLMENT', 4), 6);
 }
 

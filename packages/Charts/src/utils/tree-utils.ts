@@ -3,15 +3,16 @@ import * as grok from 'datagrok-api/grok';
 
 import * as utils from './utils';
 
-
 export class TreeUtils {
+
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
-    visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
-      aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
-    const data: treeDataType = {
+    visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): TreeDataType {
+    const data: TreeDataType = {
       name: 'All',
       value: 0,
       path: null,
+      label: {},
       children: [],
     };
 
@@ -37,12 +38,12 @@ export class TreeUtils {
     const columns = aggregated.columns.byNames(splitByColumnNames);
     const propNames = aggregations.map((a) => a.propertyName);
     const aggrColumns = aggregated.columns.byNames(propNames);
-    const parentNodes: (treeDataType | null)[] = columns.map((_) => null);
+    const parentNodes: (TreeDataType | null)[] = columns.map((_) => null);
 
     const selectedPaths: string[] = [];
     const selectedNodeStyle = { color: DG.Color.toRgb(DG.Color.selectedRows) };
 
-    const markSelectedNodes = (node: treeDataType): boolean => {
+    const markSelectedNodes = (node: TreeDataType): boolean => {
       if (selectedPaths.includes(node.path!)) {
         node.itemStyle = selectedNodeStyle;
         return true;
@@ -83,13 +84,14 @@ export class TreeUtils {
         }
       }
 
-      function updatePropMeta(node: treeDataType) {
+      function updatePropMeta(node: TreeDataType) {
         for (const prop of propNames) {
           if (!node.path) {
             data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
             continue;
           }
-          node[prop] = node[prop] ?? paths[node.path][prop];
+          if (paths[node.path])
+            node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
@@ -103,20 +105,31 @@ export class TreeUtils {
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
+      if (idx === -1)
+        continue;
       const value = countCol.get(i);
       const aggrValues = aggrColumns.reduce((obj, col) =>
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
-      if (aggregated.selection.get(i))
+
+      if (aggregated.selection.get(i) && !selection)
         selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
+        const value = columns[colIdx].get(i);
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        const name = columns[colIdx].getString(i);
-        const node: treeDataType = {
+        const name = value ? value.toString() : '';
+        const node: TreeDataType = {
+          semType: columns[colIdx].semType,
           name: name,
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+        const colorCodingType = columns[colIdx].meta.colors.getType();
+        if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
+          node.itemStyle = {
+            color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
+          };
+        }
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 
@@ -142,8 +155,8 @@ export class TreeUtils {
     return data;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
+  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
+    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
     return tree.children;
   }
 
@@ -177,6 +190,6 @@ export class TreeUtils {
   }
 }
 
-export type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[],
+export type TreeDataType = { name: string, value: number, semType?: null | string, path?: null | string, label?: {}, children?: TreeDataType[],
   itemStyle?: { color?: string }, [prop: string]: any };
-export type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };
+export type AggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

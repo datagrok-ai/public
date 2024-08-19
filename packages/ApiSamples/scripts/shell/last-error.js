@@ -1,7 +1,3 @@
-//name: shellLastError
-//description: Hello world script
-//language: javascript
-
 // First uncomment this errorneous line in the script:
 // 2 ++ 2;
 // Hit save the script like that, you should now see an error.

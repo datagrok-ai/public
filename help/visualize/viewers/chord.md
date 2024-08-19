@@ -10,12 +10,15 @@ between the data points as arcs connecting the data.
 The chord width represents the strength of the flow
 between the entities.
 
-![Chord viewer](chord-viewer.png)
+![Chord viewer](img/chord-viewer.png)
 
 ## Creating a Chord viewer
 
 To create a **Chord** viewer, navigate to the **Main Menu**
 and select **Add > Javascript Viewers > Chord**.
+
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Chord')`
 
 When you add a chord viewer in Datagrok, the platform selects three columns:
 
@@ -35,7 +38,7 @@ You can set the "Source," "Target," and "Chord length" columns,
 and customize visualization options.
 To do that, click the **Gear** icon on top of the viewer and use the **Data**
 and **Misc** info pane
-on the **Context Panel** to manage the viewer’s settings.
+on the **Context Panel** to manage the viewer's settings.
 
 For example, you can:
 

@@ -3,19 +3,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {initSearch, powerSearch} from './search/power-search';
+import {powerSearch} from './search/power-search';
 import {widgetHost, getSettings, UserWidgetsSettings} from './utils';
 
-export function welcomeView() {
+export function welcomeView(): DG.View | undefined {
   let searchStr = null;
   if (window.location.pathname == '/search' && window.location.search.startsWith('?')) {
     const params = new URLSearchParams(window.location.search.slice(1));
     searchStr = params.get('q') ?? '';
   }
-
-  // let's not add this view if the platform was opened via a specific link
-  if (searchStr == null && window.location.pathname != '/' && window.location.pathname != '/login.html')
-    return;
 
   const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
@@ -29,10 +25,10 @@ export function welcomeView() {
   const searchHost = ui.block([], 'power-pack-search-host');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
   const viewHost = ui.div([widgetsHost, searchHost]);
-  const view = grok.shell.newView(
-    'Welcome',
-    [inputHost, viewHost],
-    'power-pack-welcome-view');
+  const view = DG.View.create();
+  view.root.appendChild(inputHost);
+  view.root.appendChild(viewHost);
+  view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
 
@@ -41,6 +37,8 @@ export function welcomeView() {
       if (!settings[f.name] || settings[f.name].ignored) {
         const widgetHeader = ui.div();
         f.apply({'header': widgetHeader}).then(function(w: DG.Widget) {
+          if (!w)
+            return;
           w.factory = f;
           widgetsHost.appendChild(widgetHost(w, widgetHeader));
         }).catch((e) => {
@@ -49,8 +47,6 @@ export function welcomeView() {
       }
     }
   });
-
-  initSearch();
 
   function doSearch(s: string) {
     input.value = s;
@@ -66,4 +62,5 @@ export function welcomeView() {
 
   if (searchStr != null)
     doSearch(searchStr);
+  return view;
 }

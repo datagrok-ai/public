@@ -2,7 +2,6 @@ package grok_connect.providers;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +15,9 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 
 public class Db2DataProvider extends JdbcDataProvider {
-    public Db2DataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public Db2DataProvider() {
         driverClassName = "com.ibm.db2.jcc.DB2Driver";
 
         descriptor = new DataSource();
@@ -110,10 +107,5 @@ public class Db2DataProvider extends JdbcDataProvider {
             statement.setObject(n + i, lst.get(i));
         }
         return lst.size() - 1;
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return type == Types.SMALLINT || type == Types.INTEGER || type == Types.TINYINT;
     }
 }

@@ -26,8 +26,7 @@ class CurvesPackageDetectors extends DG.Package {
   //output: string semType
   detectFit(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
-      return s.includes('series') && s.includes('points') && s.includes('parameters') &&
-        s.includes('fitLineColor') && s.includes('pointColor') && s.includes('showCurveConfidenceInterval');
+      return s.includes('series') && s.includes('points') && s.includes('fitFunction');
     }, 1)) {
       col.semType = FIT_SEM_TYPE;
       return col.semType;

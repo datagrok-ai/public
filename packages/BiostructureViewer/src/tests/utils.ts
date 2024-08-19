@@ -2,11 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
 import {PdbEntry} from '../pdb-entry';
-import {byId} from '../viewers/molstar-viewer';
+import {byId} from '../viewers/molstar-viewer/utils';
 
-export const _packageName = 'BiostructureViewer';
+;
 const _examplePDBID = '2V0A';
 
 /**
@@ -57,4 +57,10 @@ export async function _testMolstarViewerIsOpening() {
     noException = false;
   }
   expect(noException, true);
+}
+
+export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {
+  await delay(0);
+  await testEvent(grid.onAfterDrawContent, () => {},
+    () => { grid.invalidate(); }, timeout);
 }

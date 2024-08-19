@@ -1,6 +1,6 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
@@ -10,7 +10,7 @@ import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 //input: string path {optional: true}
 //output: dataframe result
 export async function getTable(name: string, path: string): Promise<DG.DataFrame> {
-  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'Demo:Files/', true, name))[0];
+  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'System:DemoFiles/', true, name))[0];
   const str = await file.readAsString();
   const result = DG.DataFrame.fromCsv(str);
   return result;
@@ -34,6 +34,15 @@ export function getDT(rows: number = 20, name: any = 'demog'): DG.DataFrame {
   return df;
 }
 
+//name: getCell [get table cell]
+//input: dataframe table
+//input: int rowIndex
+//input: string columnName
+//output: cell x
+export function getCell(table: DG.DataFrame, rowIndex: number, columnName: string): DG.Cell {
+  return table.cell(rowIndex, columnName);
+}
+
 //name: expectTable
 //shortName: expectTable
 //input: dataframe actual
@@ -42,6 +51,14 @@ export function getDT(rows: number = 20, name: any = 'demog'): DG.DataFrame {
 export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): boolean {
   _expectTable(actual, expected);
   return true;
+}
+
+//name: dummyPackageFunctionWithDefaultValue
+//input: string a = "test"
+//output: int c
+export function dummyPackageFunctionWithDefaultValue(a: string) {
+  const c = a.length;
+  return c;
 }
 
 //name: dummyPackageFunction
@@ -58,7 +75,22 @@ export function dummyPackageFunction(a: number, b: number) {
 //output: int count 
 //output: dataframe tableOut
 export function dummyDataFrameFunction(table: DG.DataFrame) {
-  const count = table.rowCount;
-  const tableOut = table;
-  return {tableOut, count};
+  return {'tableOut': table, 'count': table.rowCount};
+}
+
+//name: testStringAsync
+//input: int a
+//output: int b
+export async function testIntAsync(a: number): Promise<number> {
+  return new Promise((r) => r(a + 10));
+}
+
+//name: CustomStringInput
+//input: object params
+//output: object input
+export function CustomStringInput(params: any) {
+  const defaultInput = ui.input.string('Custom input', {value: ''});
+  defaultInput.root.style.backgroundColor = 'aqua';
+  defaultInput.input.style.backgroundColor = 'aqua';
+  return defaultInput;
 }

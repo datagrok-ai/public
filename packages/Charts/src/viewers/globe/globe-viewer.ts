@@ -47,6 +47,7 @@ export class GlobeViewer extends DG.JsViewer {
     this.pointRadius = this.float('pointRadius', 15);
     this.pointAltitude = this.float('pointAltitude', 50);
     this.autorotation = this.bool('autorotation', true);
+    this.addRowSourceAndFormula();
 
     this.rScale = scaleLinear([0, 100], [0, 1]);
     this.points = [];
@@ -64,7 +65,8 @@ export class GlobeViewer extends DG.JsViewer {
     this.renderer = new THREE.WebGLRenderer({alpha: true});
     this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}img/globe/night-sky.png)`;
     this.renderer.setSize(this.width, this.height);
-    this.root.appendChild(this.renderer.domElement);
+    if (this._testColumns())
+      this.root.appendChild(this.renderer.domElement);
 
     this.scene = new THREE.Scene();
     this.scene.add(this.globe);
@@ -92,6 +94,7 @@ export class GlobeViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.init();
+    this.filter = this.dataFrame.filter;
     this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name || '';
     this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name || '';
     if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
@@ -100,13 +103,13 @@ export class GlobeViewer extends DG.JsViewer {
     if (magnitudeColumn !== null) this.magnitudeColumnName = magnitudeColumn.name;
     else {
       const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
-      this.magnitudeColumnName = numColumns[0].name;
+      if (numColumns.length !== 0)
+        this.magnitudeColumnName = numColumns[0].name;
       grok.shell.info(`Cannot find magnitude column, use ${this.magnitudeColumnName} column instead`);
     }
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
       const width = this.root.parentElement!.clientWidth;
       const height = this.root.parentElement!.clientHeight;
@@ -166,7 +169,7 @@ export class GlobeViewer extends DG.JsViewer {
 
     const magData = mag.getRawData();
     const colorByColData = colorByCol.getRawData();
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+    for (const i of this.filter.getSelectedIndexes()) {
       this.points.push({
         lat: lat[i],
         lng: lon[i],
@@ -176,7 +179,19 @@ export class GlobeViewer extends DG.JsViewer {
     }
   }
 
+  _testColumns() {
+    const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
+    return numColumns.length >= 1;
+  }
+
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+
   render() {
+    if (!this._testColumns()) {
+      this._showErrorMessage('The Globe viewer requires a minimum of 1 numerical column.');
+      return;
+    }
+
     this.getCoordinates();
     this.globe!
       .pointsData(this.points)

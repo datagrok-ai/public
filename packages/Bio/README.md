@@ -1,14 +1,14 @@
 # Bio
 
-Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/develop#packages) for the
-[Datagrok](https://datagrok.ai) platform with an extensive toolset supporting SAR analisys for small molecules
+Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/#packages) for the
+[Datagrok](https://datagrok.ai) platform with an extensive toolset supporting SAR analysis for small molecules
 and antibodies.
 
 ## Notations
 
 [@datagrok/bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) can ingest data in multiple file
 formats (such as fasta or csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
-nucleotide and amino acid sequences. The sequences are automatically detected and classified, while preserving their
+nucleotide and amino acid sequences. The sequences are automatically detected and classified while preserving their
 initial notation. Datagrok allows you to convert sequences between different notations as well.
 
 ![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
@@ -16,19 +16,19 @@ initial notation. Datagrok allows you to convert sequences between different not
 See:
 
 * [detectMacromolecule()](../Bio/detectors.js)
-* [class NotationConverter](../../libraries/bio/src/utils/notation-converter.ts)
+* [class SeqHandler](../../libraries/bio/src/utils/seq-handler.ts)
 
 ## Atomic-Level structures from sequences
 
 For linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful
-for better visual inspection of sequence and duplex comparison. Structure at atomic level could be saved in available
+for better visual inspection of sequence and duplex comparison. Structure at the atomic level could be saved in available
 notations.
 
 ![Datagrok-generated atom structure for the ATGCATGC sequence](../../help/uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
 
 You can easily run this feature for any sequence data using the Bio package and accessing it from the top menu.
 
-![Restoring structure atomic level](../../help/uploads/macromolecules/restoreStructures.gif)
+![Restoring structure atomic level](../../help/uploads/macromolecules/restore-structures-800.gif)
 
 See:
 
@@ -36,11 +36,10 @@ See:
 
 ## MSA
 
-For multiple-sequence alignment, Datagrok uses the “kalign” that relies on Wu-Manber string-matching algorithm
+For multiple-sequence alignment, Datagrok uses the “kalign” that relies on the Wu-Manber string-matching algorithm
 [Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).pdf](https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf).
-“kalign“ is suited for sequences containing only natural monomers. Sequences of a particular column can be analyzed
-using MSA algorithm available at the top menu. Aligned sequences can be inspected for base composition
-at the position of MSA result. User is also able to specify custom gap open, gap extend and terminal gap penalties for alignment.
+“kalign“ is suited for sequences containing only natural monomers. Sequences of a particular column can be analyzed using the MSA algorithm available at the top menu. Aligned sequences can be inspected for base composition
+at the position of the  MSA result. User is also able to specify custom gap open, gap extend and terminal gap penalties for alignment.
 
 ![MSA and base composition analysis](
 ../../help/uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
@@ -53,7 +52,7 @@ See:
 
 Splitting to monomers allows splitting aligned sequences in separate monomers.
 
-![Splitting to monomers](../../help/uploads/macromolecules/splitting-to-monomers.gif)
+![Splitting to monomers](../../help/uploads/macromolecules/splitting-to-monomers-800.gif)
 
 See:
 
@@ -71,11 +70,11 @@ The most helpful feature for exploration analysis with WebLogo in Datagrok is it
 on a dataset. Mouse click on a particular residue in a specific position will select rows of the dataset
 with sequences containing that residue at that position.
 
-You must specify the tag ```semType``` with value ```Macromolecule``` and tag `alphabet` of choice ('PT', 'DNA', 'RNA')
+You must specify the tag `semType` with the value `Macromolecule` and tag `alphabet` of choice ('PT', 'DNA', 'RNA')
 for the data column with multiple alignment sequences, it is mandatory to select the palette for monomers' colors.
 
 You can customize the look of the viewer with properties. Properties ```startPosition``` and ```endPosition```)
-allow to display multiple alignment partially. If property  ```startPosition``` (```endPosition```)
+allow to display multiple alignments partially. If property ```startPosition``` (```endPosition```)
 is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
 ### General
@@ -109,9 +108,9 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 
 See also:
 
-* [WebLogo](../../libraries/)
-* [Viewers](../../help/visualize/viewers.md)
-* [Table view](../../help/datagrok/table-view.md)
+* [WebLogo](../../help/visualize/viewers/web-logo.md)
+* [Viewers](../../help/visualize/viewers/viewers.md)
+* [Table view](../../help/datagrok/concepts/table.md)
 
 ## Sequence space
 
@@ -119,27 +118,27 @@ Datagrok allows visualizing multidimensional sequence space using a dimensionali
 Several distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE.
 The sequences are projected to 2D space closer if they correspond to similar structures, and farther
 otherwise. The tool for analyzing molecule collections is called 'Sequence space' and exists in
-the Bio package. Depending on the sequence type, different distance functions will be used, like [Levenstein](https://en.wikipedia.org/wiki/Levenshtein_distance) for DNA/RNA, [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) for Proteins and [Hamming](https://en.wikipedia.org/wiki/Hamming_distance) for already aligned sequences. The process is conducted in web-workers and is parallelized, which yields very fast and non interupting computing.
+the Bio package. Depending on the sequence type, different distance functions will be used, like [Levenstein](https://en.wikipedia.org/wiki/Levenshtein_distance) for DNA/RNA, [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) for Proteins and [Hamming](https://en.wikipedia.org/wiki/Hamming_distance) for already aligned sequences. The process is conducted by web-workers and is parallelized, which yields very fast and non-interrupting computing.
 
 To launch the analysis from the top menu, select Bio | Structure | Sequence space.
 
-![Sequence space](../../help/uploads/macromolecules/sequence_space.gif)
+![Sequence space](../../help/uploads/macromolecules/sequence_space-800.gif)
 
 See:
 
-* [sequenceSpace()](src/utils/sequence-space.ts)
+* [sequenceSpace()](src/analysis/sequence-space.ts)
 
 ## Sequence activity cliffs
 
 Activity cliffs tool finds pairs of sequences where small changes in the sequence yield significant
-changes in activity or any other numerical property. open the tool from a top menu by selecting.
-Similarity cutoff and similarity metric are configurable. As in Sequence space, you can select
+changes in activity or any other numerical property. Open the tool from the top menu by selecting.
+Similarity cutoff and similarity metrics are configurable. As in Sequence space, you can select
 from different dimensionality reduction algorithms.
-A custom scatter plot with cliffs will be added to the right side of the grid. User has an option to show only cliffs and also to inspect them and highligh differences between simmilar sequences.  
+A custom scatter plot with cliffs will be added to the right side of the grid. The user has the option to show only cliffs and also to inspect them and highlight differences between similar sequences.  
 
 To launch the analysis from the top menu, select Bio | SAR | Sequence Activity Cliffs.
 
-![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open.gif)
+![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open-800.gif)
 
 See:
 
@@ -147,16 +146,36 @@ See:
 
 ## Similarity Search
 
-Similarity Search tool allows user to find sequences that are most similar to target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences, and then uses it to find most similar ones to the selection. Upon selecting similar sequences from the docked grid bellow, detailed difference will be shown in the context panel.
+Similarity Search tool allows users to find sequences that are most similar to the target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences and then uses it to find the most similar ones to the selection. Upon selecting similar sequences from the docked grid below, detailed differences will be shown in the context panel.
 
-To launch the searcg from the top menu, select Bio | Search | Similarity Search
+To launch the search from the top menu, select Bio | Search | Similarity Search
 
-![Running similarity search](../../help/uploads/macromolecules/similarity_search.gif)
+![Running similarity search](../../help/uploads/macromolecules/similarity_search-800.gif)
 
 ## Diversity Search
 
-Diversity Search tool allows user to find sequences that are most diverse in given dataset. The tool can be accessed from the top menu of bio. By default, number of diverse sequneces will be 10.
+Diversity Search tool allows users to find sequences that are most diverse in the given dataset. The tool can be accessed from the top menu of bio. By default, the number of diverse sequences will be 10.
 
 To launch the search from the top menu, select Bio | Search | Diversity Search
 
-![Running diversity search](../../help/uploads/macromolecules/diversity_search.gif)
+![Running diversity search](../../help/uploads/macromolecules/diversity_search-800.gif)
+
+## Sequence scoring
+
+Sequence scoring allows users to calculate sequence identity and similarity scores, given the reference sequence and add the results as a column. Sequence scoring functionality can be found in the top menu: Bio → Calculate.
+
+### Identity
+
+The identity score represents a fraction of the identical monomers in corresponding positions.
+
+Identity scoring can be found in the top menu: **Bio → Calculate → Identity...**.
+
+![Running identity scoring](../../help/uploads/macromolecules/identity_scoring-800.gif)
+
+### Similarity
+
+The similarity score represents the sum of fingerprint similarity of monomers in corresponding positions.
+
+Similarity scoring can be found in the top menu: **Bio → Calculate → Similarity...**.
+
+![Running similarity scoring](../../help/uploads/macromolecules/similarity_scoring-800.gif)

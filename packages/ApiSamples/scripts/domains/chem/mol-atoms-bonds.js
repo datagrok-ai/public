@@ -1,5 +1,4 @@
 // Atom manipulations
-//
 // Original example: http://www.cheminfo.org/Chemistry/Cheminformatics/OpenChemLib_js/index.html
 // For more details, visit https://github.com/cheminfo/openchemlib-js
 
@@ -31,7 +30,7 @@ for (let i = 0; i < m.getAllAtoms(); i++) {
   atom.queryFeatures = m.getAtomQueryFeatures(i);
   atom.radical = m.getAtomRadical(i);
   atom.x = m.getAtomX(i);
-  atom.y = m.getAtomY(i)
+  atom.y = m.getAtomY(i);
   atom.z = m.getAtomZ(i);
   atom.allConnected = m.getAllConnAtoms(i);
   atom.hydrogens = m.getAllHydrogens(i);

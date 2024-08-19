@@ -9,4 +9,4 @@ export const tutorials = [
 ];
 
 export const dataTransformation = new Track('Data transformation',
-  tutorials.map((t) => new t()), '');
+  tutorials.map((t) => new t()), 'https://datagrok.ai/help/transform/');

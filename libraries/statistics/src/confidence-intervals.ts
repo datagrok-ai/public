@@ -15,11 +15,11 @@ export type Confidence = {
  */
 export function getConfidence(x: number[], confidenceLevel: number = 0.05, parametric: boolean = true):
   Confidence {
-  if (x.length <= 1) 
-    throw "vector is too short";
+  if (x.length <= 1)
+    throw new Error('StatisticsError: Vector is too short');
 
   if (confidenceLevel >=1 || confidenceLevel <=0)
-    throw "incorrect confidence level";
+    throw new Error('StatisticsError: Incorrect confidence level');
 
   if (parametric) {
     const average = jStat.mean(x);
@@ -31,16 +31,16 @@ export function getConfidence(x: number[], confidenceLevel: number = 0.05, param
     const res:Confidence = {
       central: average,
       top: average + interval,
-      bottom: average - interval
-    };  
+      bottom: average - interval,
+    };
 
     return res;
   } else {
     const res:Confidence = {
       central: jStat.median(x),
       top: jStat.percentile(x, 1 - confidenceLevel/2),
-      bottom: jStat.percentile(x, confidenceLevel/2)
-    };  
+      bottom: jStat.percentile(x, confidenceLevel/2),
+    };
 
     return res;
   }

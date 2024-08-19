@@ -31,6 +31,10 @@ export class ColorUtils {
     return 0x60dcdca0;
   }
 
+  static get mouseOverRow(): number {
+    return 0xFFAAAAAA;
+  }
+
   static get sortArrow(): number {
     return 0xFF0000A0;
   }

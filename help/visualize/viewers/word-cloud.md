@@ -6,7 +6,7 @@ Word cloud (a tag cloud) shows the frequency of individual words using font size
 and color. Use it to see the most popular concepts, highlight important textual
 data points, compare data, etc.
 
-![Word Cloud](word-cloud.png "Word Cloud")
+![Word Cloud](img/word-cloud.png "Word Cloud")
 
 ## Adding
 
@@ -21,6 +21,9 @@ Another variant:
 Initially, the viewer picks up the first string column in the corresponding
 table and builds a word cloud.
 
+> Developers: To add the viewer from the console, use:
+ `grok.shell.tv.addViewer('Word cloud');`
+
 ## Settings
 
 To configure a word cloud, click the **Gear** icon on top of the viewer and use
@@ -34,12 +37,12 @@ properties
 
 ## Interactivity
 
-A word cloud viewer doesn’t respond to the row selection and data filtering. You
+A word cloud viewer doesn't respond to the row selection and data filtering. You
 can use it to filter other viewers.
 
-![Word Cloud](word-cloud.gif)
+![Word Cloud](img/word-cloud.gif)
 
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)

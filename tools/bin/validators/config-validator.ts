@@ -1,4 +1,4 @@
-import { ValidationResult } from '../utils/interfaces';
+import {ValidationResult} from '../utils/interfaces';
 
 
 export function validateConf(config: any): ValidationResult {
@@ -46,9 +46,9 @@ export function validateConf(config: any): ValidationResult {
   if (hasDefault) {
     vr.value = true;
     vr.message = '';
-  } else {
+  } else 
     vr.message += `The default server "${defaultServer}" is not in the server list.`;
-  }
+  
 
   return vr;
 }

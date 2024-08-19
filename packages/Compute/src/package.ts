@@ -2,13 +2,26 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelHandler} from './model-handler';
-import {_functionParametersGrid} from './function-parameters-grid';
-import {ModelCatalogView} from './model-catalog-view';
+import {filter} from 'rxjs/operators';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {RichFunctionView} from "@datagrok-libraries/compute-utils";
-import './css/model-card.css';
-import { ImportScriptGeneratorApp } from './import-script-generator/view';
+import {
+  ComputationView as ComputationViewInst,
+  RichFunctionView as RichFunctionViewInst, 
+  PipelineView as PipelineViewInst,
+  CompositionPipeline as CompositionPipelineViewInst,
+  UiUtils, 
+} from "@datagrok-libraries/compute-utils";
+import { 
+  ValidationInfo, 
+  makeAdvice as makeAdviceInst, 
+  makeValidationResult as makeValidationResultInst,
+  makeRevalidation as makeRevalidationInst,
+  mergeValidationResults as mergeValidationResultsInst,
+} from '@datagrok-libraries/compute-utils/shared-utils/validation';
+import {ModelCatalogView, ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
+import {
+  testPipeline as testPipelineInst
+} from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -19,21 +32,10 @@ export function openModelFromFuncall(funccall: DG.FuncCall) {
   ModelHandler.openModelFromFunccall(funccall);
 }
 
-//name: Import Script Generator
-//description: Creates and registers a new script based on the input config
-//tags: higher-order function, app
-//meta.icon: icons/flux.png
-export function importScriptGenerator(){
-  const app = new ImportScriptGeneratorApp();
-  app.name = 'Import Script Gen'
-  grok.shell.addView(app);
-  app.root.classList.remove('ui-panel');
-}
-
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
-//output: viewer
+//output: viewer result
 export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
@@ -43,7 +45,7 @@ export function OutliersSelection() {
 //input: funccall call
 //output: view result
 export function RichFunctionViewEditor(call: DG.FuncCall) {
-  return RichFunctionView.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
+  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
 }
 
 //name: PipelineStepEditor
@@ -51,68 +53,7 @@ export function RichFunctionViewEditor(call: DG.FuncCall) {
 //input: funccall call
 //output: view result
 export function PipelineStepEditor(call: DG.FuncCall) {
-  return RichFunctionView.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
-}
-
-/*//output: widget result
-//tags: dashboard
-export function modelsWidget(): DG.Widget {
-  return new ModelsWidget();
-}*/
-
-/* eslint-disable */
-
-//description: A spreadsheet that lets you interactively edit parameters and evaluate functions
-//tags: functionAnalysis
-//input: func f
-//output: view result
-export function functionParametersGrid(f: DG.Func): DG.View {
-  return _functionParametersGrid(f);
-}
-
-//name: hof
-//description: some description
-//sidebar: @compute
-export function hof() {
-  console.log('hof');
-  let f: DG.Func = DG.Func.byName('Sin');
-  let v: DG.View = functionParametersGrid(f);
-  v.parentCall = grok.functions.getCurrentCall();
-  //v.parentView = v.parentCall?.aux['view'];
-  grok.shell.addView(v);
-}
-
-
-//name: hof2
-//tags:
-//description: some description 2 2 2
-//sidebar: @compute
-//meta.icon: package1.png
-export function hof2() {
-  console.log('hof2');
-
-  let f: DG.Func = DG.Func.byName('Sin');
-  let v: DG.View = functionParametersGrid(f);
-
-  v.root.appendChild(ui.narrowForm([
-    ui.switchInput('test', true),
-    ui.boolInput('test', true)]));
-  v.root.appendChild(ui.form([
-    ui.switchInput('test', true),
-    ui.boolInput('test', true)]));
-  v.parentCall = grok.functions.getCurrentCall(); // hof2 call itself
-  v.parentView = v.parentCall.parentCall?.aux['view']; // modelCatalog view
-  let path = v.parentCall.parentCall?.aux['url']; // uri if called from model catalog
-  // grok.shell.info(path);
-
-
-  let path2 = v.parentCall?.aux['url']; // uri if called directly (if app)
-  // grok.shell.info(path2);
-
-  v.basePath = '/' + v.parentCall.func.name;
-  v.path = '/';
-
-  grok.shell.addView(v);
+  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
 }
 
 //name: renderRestPanel
@@ -155,19 +96,75 @@ function getCookie(name: string): string | undefined{
   return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
+//name: CustomDataUploader
+//input: func func
+//output: object uploadedCalls
+export async function CustomDataUploader(func: DG.Func) {
+  await new Promise((r) => setTimeout(r, 1000));
 
-//tags: autostart
-//meta.autostartImmediate: true
-export function autostart() {
+  const dummyFunccall = await func.prepare({
+    'ambTemp': 22,
+    'initTemp': 100,
+    'desiredTemp': 30,
+    'area': 0.06,
+    'heatCap': 4200,
+    'heatTransferCoeff': 8.3,
+    'simTime': 21600,
+    }).call();
+    
+  return [dummyFunccall]
+}
 
+//name: CustomUploader
+//input: object params
+//output: widget uploadWidget
+//output: funccall uploadFuncCall
+export async function CustomUploader(params: {func: DG.Func}) {
+  const uploadFunc = await grok.functions.eval('Compute:CustomDataUploader') as DG.Func;
+  const uploadFuncCall = uploadFunc.prepare({func: params.func})
+  const uploadBtn = ui.bigButton('Click me to get mock calls', () => uploadFuncCall.call());
+
+  const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
+    ui.label('This part of dialog comes from my custom data uploader'),
+    ui.divH([uploadBtn], {style: {'justify-content': 'center'}})
+  ])]));  
+
+  const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, true);
+  })
+
+  const unsetLoadingSub = grok.functions.onAfterRunAction.pipe(
+    filter((call) => call.id === uploadFuncCall.id)
+  ).subscribe(() => {
+    ui.setUpdateIndicator(uploadBtn, false);
+  })
+
+  dummyWidget.subs.push(setLoadingSub, unsetLoadingSub)
+
+  return {uploadWidget: dummyWidget, uploadFuncCall};
+}
+
+//name: CustomCustomizer
+//input: object params
+export function CustomCustomizer(params: {defaultView: DG.TableView}) {
+  const comparisonView = params.defaultView;
+  comparisonView.scatterPlot({
+    "xColumnName": "Initial temperature",
+    "yColumnName": "Time to cool",
+  });
 }
 
 //tags: init
 export function init() {
   if (initCompleted)
     return;
-  DG.ObjectHandler.register(new ModelHandler());
 
+  if (!(DG.ObjectHandler.list().find((handler) => handler.type === "Model"))) {
+    DG.ObjectHandler.register(new ModelHandler());
+  }  
+  
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null)
@@ -178,52 +175,181 @@ export function init() {
     if (!restPane)
       acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
   });
-/*
-  let modelsList = ui.waitBox(async () => {
-    let models = await grok.dapi.scripts
-      .filter('#model')
-      .list();
-    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '165%'}});
-
-    let props = ['domain', 'modality'];
-    let mtree: { model: DG.Func}[] = models.map((m) => { return {model: m}});
-    mtree.forEach((m: {model: DG.Func}) => {
-      props.forEach((k) => {
-        (<any>m)[k] = m.model.options[k];
-      });
-    });
-
-    let tree = DG.TreeViewNode.fromItemCategories(mtree,
-      props,
-      { itemToElement: (x) => ui.render(x.model, {onClick: (_) => ModelHandler.openModel(x.model)}), itemToValue: (x) => x.model, removeEmpty: true }).root
-
-    return ui.tabControl({
-      'LIST': list,
-      'TREE': tree
-    }).root;
-  });*/
 
   initCompleted = true;
 }
 
+let startUriLoaded = false;
+
 //name: Model Catalog
 //tags: app
-//sidebar: @compute
+//output: view v
 export function modelCatalog() {
-  let modelsView = ModelHandler.findModelCatalogView();
-  if (modelsView == null) {
-    let view = new ModelCatalogView();
-    view.name = 'ModelHub';
-    let parser = document.createElement('a');
-    parser.href = window.location.href;
-    let pathSegments = parser.pathname.split('/');
+  // Separately process direct link access
+  const startOptionalPart = grok.shell.startUri.indexOf('?');
+  const startPathSegments = grok.shell.startUri
+    .substring('https://'.length, startOptionalPart > 0 ? startOptionalPart: undefined)
+    .split('/');
+
+  if (!startUriLoaded && startPathSegments.includes('Compute')) {
+    const view = ModelCatalogView.findOrCreateCatalogView('Model Catalog', 'modelCatalog', _package);
+
     grok.shell.addView(view);
-    // console.log(parser.href);
-    if (pathSegments.length > 3) {
-      grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
-        if (lst.length == 1)
+    startUriLoaded = true;
+
+    if (startPathSegments.length > 3) {
+      grok.dapi.functions.filter(`shortName = "${startPathSegments[3]}" and #model`).list().then((lst) => {
+        if (lst.length == 1) {
           ModelHandler.openModel(lst[0]);
+        }
       });
     }
-  } else grok.shell.v = modelsView;
+
+    return;
+  }
+
+  const optionalPart = window.location.href.indexOf('?');
+  const pathSegments = window.location.href
+    .substring('https://'.length, optionalPart > 0 ? optionalPart: undefined)
+    .split('/');
+
+  if (pathSegments.includes('browse')) {
+    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
+
+    // If there is existing view, then switch on it
+    if (view) {
+      grok.shell.v = view;
+    }
+
+    // Always return new with no subscribtions to show in Browse tree
+    const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
+    return newView;
+  }
+
+   // Separately process double-clicking on Model Catalog card
+  if (pathSegments.includes('apps')) {
+    const view = ModelCatalogView.findModelCatalogView('modelCatalog');
+
+    // If there is existing view, then switch on it
+    if (view) {
+      grok.shell.v = view;
+    } else {
+      const newView = ModelCatalogView.createModelCatalogView('Model Catalog', 'modelCatalog', _package);
+      grok.shell.addView(newView);
+    }
+  }
 }
+
+
+//name: SimTimeValidator
+//input: object params
+//output: object validator
+export function SimTimeValidator(params: any) {
+  const {reasonableMin, reasonableMax} = params;
+  return (val: number) => {
+    return makeValidationResultInst({
+      warnings: val < reasonableMin || val > reasonableMax ? [`Minimum reasonable time is ${reasonableMin}. Maximum reasonable time is ${reasonableMax}`]: undefined,
+      errors: val < 0 ? [`Time should be strictly positive`]: undefined,
+    });
+  };
+}
+
+//name: DesiredTempValidator
+//input: object params
+//output: object validator
+export function DesiredTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const ambTemp = info.funcCall.inputs['ambTemp'];
+    const initTemp = info.funcCall.inputs['initTemp'];
+    return makeValidationResultInst({
+      errors: [
+        ...(val < ambTemp) ? [makeAdviceInst(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
+          {actionName: 'Set desired equal to ambient', action: () => info.funcCall.inputs['desiredTemp'] = ambTemp }
+        ])]: [],
+        ...(val > initTemp) ? [`Desired temperature cannot be higher than initial temperature (${initTemp})`]: [],
+      ]
+    });
+  };
+}
+
+//name: InitialTempValidator
+//input: object params
+//output: object validator
+export function InitialTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const ambTemp = info.funcCall.inputs['ambTemp'];
+    return makeValidationResultInst({
+      errors: [
+        ...(val < ambTemp) ? [`Initial temperature cannot be less than ambient temperature (${ambTemp}).`]: [],
+      ]
+    });
+  };
+}
+
+//name: AmbTempValidator
+//input: object params
+//output: object validator
+export function AmbTempValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    const initTemp = info.funcCall.inputs['initTemp'];
+    return makeValidationResultInst({
+      errors: [
+        ...(val > initTemp) ? [`Ambient temperature cannot be higher than initial temperature (${initTemp})`]: [],
+      ]
+    });
+  };
+}
+
+//name: HeatCapValidator
+//input: object params
+//output: object validator
+export function HeatCapValidator(params: any) {
+  return (val: number, info: ValidationInfo) => {
+    return makeValidationResultInst({
+      errors: [
+        ...val <= 0 ? ['Heat capacity must be greater than zero.']: []
+      ],
+      notifications: [
+        makeAdviceInst(`Heat capacity is only dependent on the object material.`, [
+          {actionName: 'Google it', action: () => { window.open(`http://google.com`)}}
+        ]),
+      ]
+    });
+  };
+}
+
+//name: CustomStringInput
+//input: object params
+//output: object input
+export function CustomStringInput(params: any) {
+  const defaultInput = ui.input.string('Custom input', {value:''});
+  defaultInput.root.style.backgroundColor = 'aqua';
+  defaultInput.input.style.backgroundColor = 'aqua';
+  return defaultInput;
+}
+
+//name: ObjectCoolingSelector
+//input: object params
+//output: object input
+export function ObjectCoolingSelector(params: any) {
+  return UiUtils.historyInputJSON(
+    'Previous run',
+    'ObjectCooling',
+  );
+}
+
+//// Compute-utils API section
+
+export const testPipeline = testPipelineInst;
+export const CompView = ComputationViewInst;
+export const RFV = RichFunctionViewInst;
+export const Pipeline = PipelineViewInst;
+export const CompositionPipeline = CompositionPipelineViewInst;
+export const makeValidationResult = makeValidationResultInst;
+export const makeAdvice = makeAdviceInst;
+export const makeRevalidation = makeRevalidationInst;
+export const mergeValidationResults = mergeValidationResultsInst;
+export const fileInput = UiUtils.fileInput;
+export const historyInput = UiUtils.historyInput;
+export const historyInputJSON = UiUtils.historyInputJSON;
+export const historyPanel = UiUtils.historyPanel;

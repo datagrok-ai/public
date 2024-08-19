@@ -15,7 +15,6 @@ import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //ZIP utilities
 //import JSZip from 'jszip';
-import {DataFrame, InputBase} from 'datagrok-api/dg';
 
 //USEFUL
 // contents = fs.readFileSync(detectorsPath, 'utf8');
@@ -66,13 +65,13 @@ function uiCensusDialog(): DG.Dialog {
 
   const inputGrid = DG.Viewer.grid(data2, inputGridStyle);
 
-  const inpSearch: DG.InputBase<string> = ui.stringInput('Search', '');
-  const inpLocation: DG.InputBase<string> = ui.stringInput('Location', '');
-  const choinpPeriod: DG.InputBase<string | null> = ui.choiceInput('Period', '', ['1990', '1991']);
+  const inpSearch: DG.InputBase<string> = ui.input.string('Search', {value: ''});
+  const inpLocation: DG.InputBase<string> = ui.input.string('Location', {value: ''});
+  const choinpPeriod: DG.InputBase<string | null> = ui.input.choice('Period', {value: '', items: ['1990', '1991']});
   const txtDatasets = ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}});
   const arr = [inpSearch, inpLocation, choinpPeriod, txtDatasets, inputGrid.root];
 
-  const inputs = ui.inputs(arr as Iterable<InputBase<any>>, 'ui-form-condensed');
+  const inputs = ui.div(arr, 'ui-form-condensed');
   const title = ui.h2('1990 Population Esimates - 1990-2000 Intercensal Esimates: United States, Nevada');
 
   const description = ui.p('Monthly Intercensal Esimates...');
@@ -251,6 +250,7 @@ export async function getCensusInfo() {
 
   htmlStyle = {style: {'border': 'none', 'width': '100%', 'min-height': '95px'}};
   infoDataset = ui.box(null, htmlStyle);
+  // @ts-ignore
   infoDataset.style.height = '100%';
 
   htmlStyle = {style: {'width': '100%'}};
@@ -281,7 +281,7 @@ export async function getCensusInfo() {
         if (censusRes.toLowerCase().includes('error'))
           throw new Error(censusRes);
 
-        const df = DataFrame.fromCsv(censusRes);
+        const df = DG.DataFrame.fromCsv(censusRes);
         grok.shell.addTableView(df);
       } catch (e) {
         grok.shell.error(`Census request error: ${e}`);
@@ -369,7 +369,8 @@ export function gisViewer(): GisViewer {
 }
 
 //name: gisKMZAndKMLFileViewer
-//tags: fileViewer, fileViewer-kmz, fileViewer-kml
+//tags: fileViewer
+//meta.fileViewer: kmz,kml
 //input: file file
 //output: view result
 export async function gisKMZAndKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
@@ -476,7 +477,8 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 }
 
 //name: gisGeoJSONFileViewer
-//tags: fileViewer, fileViewer-geojson, fileViewer-topojson, fileViewer-json
+//tags: fileViewer
+//meta.fileViewer: geojson, topojson, json
 //input: file file
 //output: view result
 export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {

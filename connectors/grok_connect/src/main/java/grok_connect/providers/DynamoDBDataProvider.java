@@ -5,7 +5,6 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,8 +20,7 @@ public class DynamoDBDataProvider extends JdbcDataProvider {
             "GOVCLOUDWEST"
     ));
 
-    public DynamoDBDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public DynamoDBDataProvider() {
         driverClassName = "cdata.jdbc.amazondynamodb.AmazonDynamoDBDriver";
 
         descriptor = new DataSource();
@@ -40,7 +38,6 @@ public class DynamoDBDataProvider extends JdbcDataProvider {
                 "When specified, this connection string overrides all other parameters. Example: "
                         + "'jdbc:amazondynamodb:AWSAccessKey=[Your access key];AWSSecretKey=[Your secret key];"
                         + "Domain=[Your domain];AWSRegion=[Your region];'" , new Prop("textarea")));
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = new ArrayList<>();
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_KEY,

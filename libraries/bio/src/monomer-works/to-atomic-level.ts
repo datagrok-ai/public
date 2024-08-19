@@ -2,133 +2,31 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {
-  HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, HELM_RGROUP_FIELDS,
-} from '../utils/const';
-import {ALPHABET, NOTATION, TAGS} from '../utils/macromolecule/consts';
-import {SplitterFunc} from '../utils/macromolecule/types';
-import {getSplitter} from '../utils/macromolecule/utils';
-import {NotationConverter} from '../utils/notation-converter';
-import {IMonomerLib, Monomer} from '../types';
+import wu from 'wu';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {UnitsHandler} from '../utils/units-handler';
 
-// interface for typed arrays, like Float32Array and Uint32Array
-interface ITypedArray {
-  length: number;
-  [key: number]: any;
-}
+import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
+import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
+import {IMonomerLib, Monomer} from '../types';
+import {SeqHandler} from '../utils/seq-handler';
+import {
+  getFormattedMonomerLib,
+  keepPrecision
+} from './to-atomic-level-utils';
+import {seqToMolFileWorker} from './seq-to-molfile';
+import {Atoms, Bonds, ITypedArray, MolGraph, MonomerMetadata, NumberWrapper, Point} from './types';
+import {SplitterFunc} from '../utils/macromolecule';
 
-// constants for parsing molfile V2000
-const V2K_RGP_SHIFT = 8;
-const V2K_RGP_LINE = 'M  RGP';
-const V2K_A_LINE = 'A  ';
-
-// constants for parsing/reconstruction of molfile V3000
-const V3K_COUNTS_SHIFT = 14;
-const V3K_IDX_SHIFT = 7;
-const V3K_HEADER_FIRST_LINE = '\nDatagrok macromolecule handler\n\n';
-const V3K_HEADER_SECOND_LINE = '  0  0  0  0  0  0            999 V3000\n';
-const V3K_BEGIN_CTAB_BLOCK = 'M  V30 BEGIN CTAB\n';
-const V3K_END_CTAB_BLOCK = 'M  V30 END CTAB\n';
-const V3K_BEGIN_COUNTS_LINE = 'M  V30 COUNTS ';
-const V3K_COUNTS_LINE_ENDING = ' 0 0 0\n';
-const V3K_BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM\n';
-const V3K_END_ATOM_BLOCK = 'M  V30 END ATOM\n';
-const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
-const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
-const V3K_BOND_CONFIG = ' CFG=';
-const V3K_BEGIN_DATA_LINE = 'M  V30 ';
-const V3K_END = 'M  END';
-
-const PRECISION_FACTOR = 10_000; // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates
-
-// symbols for the corresponding monomers in HELM library
-const DEOXYRIBOSE = 'd';
-const RIBOSE = 'r';
-const PHOSPHATE = 'p';
-
-const OXYGEN = 'O';
-const HYDROGEN = 'H';
-
-/** Stores necessary data about atoms of a monomer parsed from Molfile */
-type Atoms = {
-  /** Element symbols for monomer's atoms */
-  atomTypes: string[],
-  /** Cartesian coordiantes of monomer's atoms */
-  x: Float32Array,
-  y: Float32Array,
-  /** V3K atom line may contain keyword args */
-  kwargs: string[],
-}
-
-/** Stores necessary data about bonds of a monomer parsed from Molfile */
-type Bonds = {
-  /** bond types for all lines of Molfile bond block */
-  bondTypes: Uint32Array,
-  /** Indices of all atom pairs, indexing starting from 1  */
-  atomPairs: number[][],
-  /** If a bond has CFG=... keyword argument, it is parsed and sotred as a
-   * value of the map, with the key being the bond's index  */
-  bondConfiguration: Map<number, number>,
-  /** V3K bond line may contain keyword args */
-  kwargs: Map<number, string>,
-}
-
-/** Metadata associated with the monomer necessary to restore the resulting molfile */
-type MonomerMetadata = {
-  /** terminal nodes: 0-th corresponds to the "leftmost" one, 1st, to the "rightmost",
-   * e.g. N-terminus and C-terminus in peptides */
-  terminalNodes: number[],
-  /** r-group nodes: 0-th corresponds to the "leftmost" one, 1st, to the "rightmost" */
-  rNodes: number[],
-  /** shift from the origin to the next backbone, null for branch monomers */
-  backboneShift: number[] | null,
-  /** shift from the origin to the next branch, null for branch monomers */
-  branchShift: number[] | null
-}
-
-type MolGraph = {
-  atoms: Atoms,
-  bonds: Bonds,
-  meta: MonomerMetadata,
-}
-
-type Point = {
-  x: number,
-  y: number
-}
-
-/** Helper structure wrapping common arguments to several functions */
-type LoopVariables = {
-  i: number,
-  nodeShift: number,
-  bondShift: number,
-  backbonePositionShift: number[],
-  backboneAttachNode: number; // node to which the next backbone is attached
-  branchPositionShift: number[],
-  branchAttachNode: number,
-  flipFactor: number,
-  // todo: should we consider representations other than planar?
-}
-
-/** Helper structure wrapping common arguments to several functions */
-type LoopConstants = {
-  sugar: MolGraph | null,
-  phosphate: MolGraph | null,
-  seqLength: number,
-  atomCount: number,
-  bondCount: number,
-}
-
-/** Helper structure to simulate pointer to number  */
-type NumberWrapper = {
-  value: number | null // null if there is no branch attach node
-}
+import {monomerWorksConsts as C} from './consts';
 
 // todo: verify that all functions have return types
 
-/** Convert Macromolecule column into Molecule column storing molfile V3000 with the help of a monomer library  */
+/** Convert Macromolecule column into Molecule column storing molfile V3000 with the help of a monomer library
+ * @param {DG.DataFrame} df - DataFrame containing the column to be converted
+ * @param {DG.Column} seqCol - Column containing the macromolecule sequence
+ * @param {IMonomerLib} monomerLib - Monomer library
+ */
 export async function _toAtomicLevel(
   df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib
 ): Promise<{ col: DG.Column | null, warnings: string [] }> {
@@ -145,26 +43,25 @@ export async function _toAtomicLevel(
   }
 
   let srcCol: DG.Column<string> = seqCol;
-  const seqUh = new UnitsHandler(seqCol);
+  const seqUh = SeqHandler.forColumn(seqCol);
 
   // convert 'helm' to 'separator' units
   if (seqUh.isHelm()) {
-    const converter = new NotationConverter(seqCol);
-    srcCol = converter.convert(NOTATION.SEPARATOR, '.');
+    srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
-  const srcUh = new UnitsHandler(srcCol);
-  const alphabet = srcUh.alphabet;
+  const srcSh = SeqHandler.forColumn(srcCol);
+  const alphabet = srcSh.alphabet;
 
   // determine the polymer type according to HELM specifications
   let polymerType: HELM_POLYMER_TYPE;
   // todo: an exception from dart comes before this check if the alphabet is UN
-  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN) {
+  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN)
     polymerType = HELM_POLYMER_TYPE.PEPTIDE;
-  } else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA) {
+  else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA)
     polymerType = HELM_POLYMER_TYPE.RNA;
-  } else {
+  else {
     const msg: string = `Unexpected column's '${srcCol.name}' alphabet '${alphabet}'.`;
     return {col: null, warnings: [msg]};
   }
@@ -173,19 +70,8 @@ export async function _toAtomicLevel(
   const monomersDict = await getMonomersDictFromLib(monomerSequencesArray, monomerLib, polymerType, alphabet);
   const srcColLength = srcCol.length;
 
-  const molfileList: string[] = new Array<string>(srcColLength);
-  const molfileWarningList = new Array<string>(0);
-  for (let rowI = 0; rowI < srcColLength; ++rowI) {
-    try {
-      const monomerSeq = monomerSequencesArray[rowI];
-      molfileList[rowI] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType);
-    } catch (err: any) {
-      const errMsg: string = err instanceof Error ? err.message : err.toString();
-      const msg: string = `Cannot get molfile of row #${rowI}: ${errMsg}.`;
-      molfileWarningList.push(msg);
-    }
-  }
-
+  const {molfileList, molfileWarningList} =
+    await seqToMolFileWorker(monomerSequencesArray, monomersDict, alphabet, polymerType, srcColLength);
   if (molfileWarningList.length > 0.05 * srcColLength)
     throw new Error('Too many errors getting molfiles.');
 
@@ -194,62 +80,46 @@ export async function _toAtomicLevel(
   const resColName = df.columns.getUnusedName(name);
   const resCol = DG.Column.fromStrings(resColName, molfileList);
   resCol.semType = DG.SEMTYPE.MOLECULE;
-  resCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
+  resCol.meta.units = DG.UNITS.Molecule.MOLBLOCK;
 
   return {col: resCol, warnings: molfileWarningList};
 }
 
-/** Get a mapping of peptide symbols to HELM monomer library
- * objects with selected fields.
- */
-function getFormattedMonomerLib(
-  monomerLib: IMonomerLib, polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
-): Map<string, any> {
-  const map = new Map<string, any>();
-  for (const monomerSymbol of monomerLib.getMonomerSymbolsByType(polymerType)) {
-    const it: Monomer = monomerLib.getMonomer(polymerType, monomerSymbol)!;
-    if (
-      polymerType === HELM_POLYMER_TYPE.RNA &&
-      (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
-        alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === DEOXYRIBOSE ||
-        alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === RIBOSE ||
-        it[HELM_FIELDS.SYMBOL] === PHOSPHATE) ||
-      polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
-      it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
-    ) {
-      const monomerObject: { [key: string]: any } = {};
-      HELM_CORE_FIELDS.forEach((field) => {
-        //@ts-ignore
-        monomerObject[field] = it[field];
-      });
-      map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
-    }
-  }
-  return map;
-}
-
-/** Get jagged array of monomer symbols for the dataframe  */
-function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
-  const columnLength = macroMolCol.length;
-  const result: string[][] = new Array(columnLength);
+/** Get jagged array of monomer symbols for the dataframe
+ * @param {DG.Column} macroMolCol - Column with macro-molecules
+ * @return {string[]} - Jagged array of monomer symbols for the dataframe */
+export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
+  const rowCount = macroMolCol.length;
+  const result: string[][] = new Array(rowCount);
 
   // split the string into monomers
-  const colUnits = macroMolCol.getTag(DG.TAGS.UNITS);
-  const separator = macroMolCol.getTag(TAGS.separator);
-  const splitterFunc: SplitterFunc = getSplitter(colUnits, separator);
+  const sh = SeqHandler.forColumn(macroMolCol);
 
-  for (let row = 0; row < columnLength; ++row) {
-    const macroMolecule = macroMolCol.get(row);
-    // todo: handle the exception case when macroMolecule is null
-    result[row] = macroMolecule ? splitterFunc(macroMolecule).filter((monomerCode) => monomerCode !== '') : [];
+  let containsEmptyValues = false;
+
+  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+    const seqSS = sh.getSplitted(rowIdx);
+    containsEmptyValues ||= seqSS.length === 0;
+    result[rowIdx] = wu(seqSS.canonicals)
+      .filter((cm) => !sh.isGap(cm)).map((cm) => cm).toArray();
   }
+
+  if (containsEmptyValues)
+    grok.shell.warning(`Some values in the "${macroMolCol.name}" column are empty`);
+
   return result;
 }
 
+
 /** Get a mapping of monomer symbols to MolGraph objects. Notice, the
  * transformation from molfile V2000 to V3000 takes place,
- * with the help of async function call from Chem (RdKit module) */
-async function getMonomersDictFromLib(
+ * with the help of async function call from Chem (RdKit module)
+ * @param {string[]} monomerSequencesArray - Jagged array of monomer symbols for the dataframe
+ * @param {IMonomerLib} monomerLib - Monomer library
+ * @param {HELM_POLYMER_TYPE} polymerType - Polymer type
+ * @param {ALPHABET} alphabet - Alphabet
+ * @return {Map<string, MolGraph>} - Mapping of monomer symbols to MolGraph objects*/
+export async function getMonomersDictFromLib(
   monomerSequencesArray: string[][], monomerLib: IMonomerLib, polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Promise<Map<string, MolGraph>> {
   // todo: exception - no gaps, no empty string monomers
@@ -266,7 +136,7 @@ async function getMonomersDictFromLib(
   // because adding branch monomers for nucleobases relies on these data
   if (polymerType === HELM_POLYMER_TYPE.RNA) {
     const symbols = (alphabet === ALPHABET.RNA) ?
-      [RIBOSE, PHOSPHATE] : [DEOXYRIBOSE, PHOSPHATE];
+      [C.RIBOSE, C.PHOSPHATE] : [C.DEOXYRIBOSE, C.PHOSPHATE];
     for (const sym of symbols)
       addMonomerToDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
   }
@@ -279,9 +149,10 @@ async function getMonomersDictFromLib(
         addMonomerToDict(monomersDict, sym, formattedMonomerLib,
           moduleRdkit, polymerType, pointerToBranchAngle);
       } catch (err: any) {
-        const errTxt = errorToConsole(err);
-        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
-        const errMsg = `Сan't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        const errTxt = err instanceof Error ? err.message : err.toString();
+        const errStack = err instanceof Error ? err.stack : undefined;
+        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n${errTxt}\n${errStack}`);
+        const errMsg = `Can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
         throw new Error(errMsg);
       }
     }
@@ -290,19 +161,13 @@ async function getMonomersDictFromLib(
   return monomersDict;
 }
 
-function getAngleBetweenSugarBranchAndOY(molGraph: MolGraph): number {
-  const x = molGraph.atoms.x;
-  const y = molGraph.atoms.y;
-  const rNode = molGraph.meta.rNodes[2] - 1;
-  const terminalNode = molGraph.meta.terminalNodes[2] - 1;
-
-  const xShift = x[rNode] - x[terminalNode];
-  const yShift = y[rNode] - y[terminalNode];
-
-  return Math.atan(yShift / xShift) + Math.PI / 2;
-}
-
-/** Adds MolGraph object for 'sym' to the monomers dict when necessary  */
+/** Adds MolGraph object for 'sym' to the monomers dict when necessary
+ * @param {Map<string, MolGraph>} monomersDict - Monomers dictionary
+ * @param {string} sym - Monomer symbol
+ * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {any} moduleRdkit - RDKit module
+ * @param {HELM_POLYMER_TYPE} polymerType - Polymer type
+ * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle*/
 function addMonomerToDict(
   monomersDict: Map<string, MolGraph>, sym: string,
   formattedMonomerLib: Map<string, any>, moduleRdkit: any,
@@ -313,40 +178,50 @@ function addMonomerToDict(
       getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
     if (monomerData)
       monomersDict.set(sym, monomerData);
-    else
+    else {
+      // todo: handle exception
       throw new Error(`Monomer with symbol '${sym}' is absent the monomer library`);
-    // todo: handle exception
+    }
   }
 }
 
 /** Construct the MolGraph object for specified monomerSymbol: the associated
- * graph is adjusted in XY plane and filled with default R-groups */
+ * graph is adjusted in XY plane and filled with default R-groups
+ * @param {string} monomerSymbol - Monomer symbol
+ * @param {Map<string, any>} formattedMonomerLib - Formatted monomer library
+ * @param {any} moduleRdkit - RDKit module
+ * @param {HELM_POLYMER_TYPE} polymerType - Polymer type
+ * @param {NumberWrapper} pointerToBranchAngle - Pointer to branch angle
+ * @return {MolGraph | null} - MolGraph object or null if monomerSymbol is absent in the library*/
 function getMolGraph(
   monomerSymbol: string, formattedMonomerLib: Map<string, any>,
   moduleRdkit: any, polymerType: HELM_POLYMER_TYPE,
   pointerToBranchAngle: NumberWrapper
 ): MolGraph | null {
-  if (!formattedMonomerLib.has(monomerSymbol)) {
+  if (!formattedMonomerLib.has(monomerSymbol))
     return null;
-  } else {
+  else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
     const capGroups = parseCapGroups(libObject[HELM_FIELDS.RGROUPS]);
     const capGroupIdxMap = parseCapGroupIdxMap(libObject[HELM_FIELDS.MOLFILE]);
-    const molfileV3K = convertMolfileToV3K(removeRGroupLines(libObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
+    //in case molfile is molV2000 need to convert it to molV3000
+    const molfileV3K = libObject[HELM_FIELDS.MOLFILE].includes('V3000') ? libObject[HELM_FIELDS.MOLFILE] :
+      convertMolfileToV3K(removeRGroupLines(libObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
 
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
     const bonds = parseBondBlock(molfileV3K, counts.bondCount);
     const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+    const steabs = getAbsStereocenters(molfileV3K);
 
-    const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
+    const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta, stereoAtoms: steabs};
 
-    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
       adjustPeptideMonomerGraph(monomerGraph);
-    } else { // nucleotides
-      if (monomerSymbol === RIBOSE || monomerSymbol === DEOXYRIBOSE)
+    else { // nucleotides
+      if (monomerSymbol === C.RIBOSE || monomerSymbol === C.DEOXYRIBOSE)
         adjustSugarMonomerGraph(monomerGraph, pointerToBranchAngle);
-      else if (monomerSymbol === PHOSPHATE)
+      else if (monomerSymbol === C.PHOSPHATE)
         adjustPhosphateMonomerGraph(monomerGraph);
       else
         adjustBaseMonomerGraph(monomerGraph, pointerToBranchAngle);
@@ -360,6 +235,22 @@ function getMolGraph(
   }
 }
 
+function getAbsStereocenters(molfileV3K: string): number[] {
+  let collection: number[] = [];
+  let indexCollection = molfileV3K.indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
+
+  while (indexCollection !== -1) {
+    indexCollection += 28;
+    const collectionEnd = molfileV3K.indexOf(')', indexCollection);
+    //using slice(1) because first digit in brackets is a number of stereo atoms
+    collection = collection.concat(molfileV3K.substring(indexCollection, collectionEnd).split(' ')
+      .slice(1).map((it) => parseInt(it)));
+    indexCollection = collectionEnd;
+    indexCollection = molfileV3K.indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
+  }
+  return collection;
+}
+
 function setShiftsAndTerminalNodes(
   polymerType: HELM_POLYMER_TYPE, monomerGraph: MolGraph, monomerSymbol: string
 ): void {
@@ -368,7 +259,7 @@ function setShiftsAndTerminalNodes(
     setShifts(monomerGraph, polymerType);
     removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
   } else { // nucleotides
-    if (monomerSymbol === RIBOSE || monomerSymbol === DEOXYRIBOSE) {
+    if (monomerSymbol === C.RIBOSE || monomerSymbol === C.DEOXYRIBOSE) {
       // remove R2
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
       // set terminalNode2 (oxygen) as new R2
@@ -381,7 +272,7 @@ function setShiftsAndTerminalNodes(
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
       // remove the branching r-group
       removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
-    } else if (monomerSymbol === PHOSPHATE) {
+    } else if (monomerSymbol === C.PHOSPHATE) {
       monomerGraph.meta.terminalNodes[0] = monomerGraph.meta.rNodes[0];
       shiftCoordinates(
         monomerGraph,
@@ -396,7 +287,14 @@ function setShiftsAndTerminalNodes(
   }
 }
 
-// todo: sdoc
+
+/**
+ * Get monomer metadata object
+ * @param {Atoms} atoms - Atoms object
+ * @param {Bonds} bonds - Bonds object
+ * @param {string[]} capGroups - Cap groups
+ * @param {Map<number, number>} capGroupIdxMap - Cap group index map
+ * @return {MonomerMetadata}*/
 function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], capGroupIdxMap?: Map<number, number>
 ): MonomerMetadata {
   const meta: MonomerMetadata = {
@@ -413,8 +311,9 @@ function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], ca
   return meta;
 }
 
-/** Parse element symbols for R-groups from the HELM monomer library R-groups
- * field  */
+/** Parse element symbols for R-groups from the HELM monomer library R-group field
+ * @param {any[]} rGroupObjList - R-group object list
+ * @return {Map<number, number>} - Cap group index map*/
 export function parseCapGroups(rGroupObjList: any[]): string[] {
   // specifically for HELMCoreLibrary
   // considered only monoatomic rgroups
@@ -432,7 +331,11 @@ export function parseCapGroups(rGroupObjList: any[]): string[] {
   return capGroupsArray;
 }
 
-/** Substitute the cap group elements instead of R# */
+
+/** Substitute the cap group elements instead of R#
+ * @param {Atoms} atoms - Atoms object
+ * @param {string[]} capGroups - Cap groups
+ * @param {Map<number, number>} capGroupIdxMap - Cap group index map*/
 function substituteCapGroups(
   atoms: Atoms, capGroups: string[], capGroupIdxMap: Map<number, number>
 ): void {
@@ -479,7 +382,9 @@ function setTerminalNodes(bonds: Bonds, meta: MonomerMetadata): void {
   }
 }
 
-/** Sets shifts in 'meta' attribute of MolGraph  */
+/** Sets shifts in 'meta' attribute of MolGraph
+ * @param {MolGraph} molGraph - MolGraph object
+ * @param {HELM_POLYMER_TYPE} polymerType - Polymer type*/
 function setShifts(molGraph: MolGraph, polymerType: HELM_POLYMER_TYPE): void {
   if (molGraph.meta.rNodes.length > 1) {
     molGraph.meta.backboneShift = getShiftBetweenNodes(
@@ -496,34 +401,38 @@ function setShifts(molGraph: MolGraph, polymerType: HELM_POLYMER_TYPE): void {
   }
 }
 
-/** Returns the pair [xShift, yShift] for specified node indices */
+/** Returns the pair [xShift, yShift] for specified node indices
+ * @param {MolGraph} molGraph - MolGraph object
+ * @param {number} rightNodeIdx - Right node index
+ * @param {number} leftNodeIdx - Left node index
+ * @return {number[]} - Shift between nodes*/
 function getShiftBetweenNodes(
   molGraph: MolGraph, rightNodeIdx: number, leftNodeIdx: number
 ): number[] {
   return [
-    keepPrecision(
-      molGraph.atoms.x[rightNodeIdx] -
-      molGraph.atoms.x[leftNodeIdx]
-    ),
-    keepPrecision(
-      molGraph.atoms.y[rightNodeIdx] -
-      molGraph.atoms.y[leftNodeIdx]
-    ),
+    keepPrecision(molGraph.atoms.x[rightNodeIdx] - molGraph.atoms.x[leftNodeIdx]),
+    keepPrecision(molGraph.atoms.y[rightNodeIdx] - molGraph.atoms.y[leftNodeIdx]),
   ];
 }
 
+
 /** Helper function necessary to build a correct V3000 molfile out of V2000 with
- * specified r-groups*/
+ * specified r-groups
+ * @param {string} molfileV2K - V2000 molfile
+ * @return {string} - V2000 molfile without R-group lines*/
 function removeRGroupLines(molfileV2K: string): string {
-  let begin = molfileV2K.indexOf(V2K_A_LINE, 0);
+  let begin = molfileV2K.indexOf(C.V2K_A_LINE, 0);
   if (begin === -1)
-    begin = molfileV2K.indexOf(V2K_RGP_LINE);
-  const end = molfileV2K.indexOf(V3K_END, begin);
+    begin = molfileV2K.indexOf(C.V2K_RGP_LINE);
+  const end = molfileV2K.indexOf(C.V3K_END, begin);
   return molfileV2K.substring(0, begin) + molfileV2K.substring(end);
 }
 
-/** V2000 to V3000 converter  */
-function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
+/** V2000 to V3000 converter
+ * @param {string} molfileV2K - V2000 molfile
+ * @param {any} moduleRdkit - RDKit module
+ * @return {string} - V3000 molfile*/
+export function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
   // The standard Chem converter is not used here because it relies on creation of moduleRdkit on each iteration
   const molObj = moduleRdkit.get_mol(molfileV2K);
   const molfileV3K = molObj.get_v3Kmolblock();
@@ -531,20 +440,23 @@ function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
   return molfileV3K;
 }
 
-/** Parse V3000 bond block and construct the Bonds object */
-function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
+/** Parse V3000 bond block and construct the Bonds object
+ * @param {string} molfileV3K - V3000 molfile
+ * @param {number} bondCount - Number of bonds
+ * @return {Bonds} - Bonds object*/
+export function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
   const bondTypes: Uint32Array = new Uint32Array(bondCount);
   const atomPairs: number[][] = new Array(bondCount);
   const bondConfiguration = new Map<number, number>();
   const kwargs = new Map<number, string>();
 
-  let begin = molfileV3K.indexOf(V3K_BEGIN_BOND_BLOCK);
+  let begin = molfileV3K.indexOf(C.V3K_BEGIN_BOND_BLOCK);
   begin = molfileV3K.indexOf('\n', begin);
   let end = begin;
   for (let i = 0; i < bondCount; ++i) {
     // parse bond type and atom pair
     const parsedValues: number[] = new Array(3);
-    begin = molfileV3K.indexOf(V3K_BEGIN_DATA_LINE, end) + V3K_IDX_SHIFT;
+    begin = molfileV3K.indexOf(C.V3K_BEGIN_DATA_LINE, end) + C.V3K_IDX_SHIFT;
     end = molfileV3K.indexOf(' ', begin);
     for (let k = 0; k < 3; ++k) {
       begin = end + 1;
@@ -557,7 +469,7 @@ function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
     // parse keyword arguments
     const endOfLine = molfileV3K.indexOf('\n', begin);
     let lineRemainder = molfileV3K.slice(end, endOfLine);
-    let beginCfg = lineRemainder.indexOf(V3K_BOND_CONFIG);
+    let beginCfg = lineRemainder.indexOf(C.V3K_BOND_CONFIG);
     if (beginCfg !== -1) {
       beginCfg = lineRemainder.indexOf('=', beginCfg) + 1;
       let endCfg = lineRemainder.indexOf(' ', beginCfg);
@@ -565,7 +477,7 @@ function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
         endCfg = lineRemainder.length;
       const bondConfig = parseInt(lineRemainder.slice(beginCfg, endCfg));
       bondConfiguration.set(i, bondConfig);
-      const removedSubstring = V3K_BOND_CONFIG + bondConfig.toString();
+      const removedSubstring = C.V3K_BOND_CONFIG + bondConfig.toString();
       lineRemainder = lineRemainder.replace(removedSubstring, '');
     }
     if (!lineRemainder)
@@ -582,12 +494,19 @@ function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
 
 /** Constructs mapping of r-group nodes to default capGroups, all numeration starting from 1.
  * According to https://pubs.acs.org/doi/10.1021/ci3001925, R1 and R2 are the chain extending attachment points,
- * while R3 is the branching attachment point. */
-function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
+ * while R3 is the branching attachment point.
+ * @param {string} molfile - V2000 or V3000 molfile
+ * @return {Map<number, number>} - Map of r-group nodes to default capGroups*/
+export function parseCapGroupIdxMap(molfile: string): Map<number, number> {
+  const isMolV3K = molfile.includes('V3000');
+  return isMolV3K ? parseCapGroupIdxMapV3K(molfile) : parseCapGroupIdxMapV2K(molfile);
+}
+
+export function parseCapGroupIdxMapV2K(molfileV2K: string): Map<number, number> {
   const capGroupIdxMap = new Map<number, number>();
 
   // parse A-lines (RNA)
-  let begin = molfileV2K.indexOf(V2K_A_LINE, 0);
+  let begin = molfileV2K.indexOf(C.V2K_A_LINE, 0);
   let end = begin;
   while (begin !== -1) {
     // parse the rNode to which the cap group is attached
@@ -600,14 +519,14 @@ function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
     const capGroup = parseInt(molfileV2K.substring(begin, end).replace(/^R/, ''));
     capGroupIdxMap.set(rNode, capGroup);
 
-    begin = molfileV2K.indexOf(V2K_A_LINE, end);
+    begin = molfileV2K.indexOf(C.V2K_A_LINE, end);
   }
 
   // parse RGP lines (may be more than one in RNA monomers)
-  begin = molfileV2K.indexOf(V2K_RGP_LINE, 0);
+  begin = molfileV2K.indexOf(C.V2K_RGP_LINE, 0);
   end = molfileV2K.indexOf('\n', begin);
   while (begin !== -1) {
-    begin += V2K_RGP_SHIFT;
+    begin += C.V2K_RGP_SHIFT;
     end = molfileV2K.indexOf('\n', begin);
     const rgpStringParsed = molfileV2K.substring(begin, end)
       .replaceAll(/\s+/g, ' ')
@@ -621,16 +540,32 @@ function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
       else
         capGroupIdxMap.set(rgpIndicesArray[i], rgpIndicesArray[i + 1]);
     }
-    begin = molfileV2K.indexOf(V2K_RGP_LINE, end);
+    begin = molfileV2K.indexOf(C.V2K_RGP_LINE, end);
   }
   return capGroupIdxMap;
 }
 
-function parseAtomAndBondCounts(molfileV3K: string): { atomCount: number, bondCount: number } {
+export function parseCapGroupIdxMapV3K(molfileV3K: string): Map<number, number> {
+  const capGroupIdxMap = new Map<number, number>();
+  const regex = /M  V30 (\d+) R#.+RGROUPS=\((\d+) (\d+)\).*/gm;
+  let res;
+  while ((res = regex.exec(molfileV3K)) !== null) {
+      // This is necessary to avoid infinite loops with zero-width matches
+      if (res.index === regex.lastIndex) {
+          regex.lastIndex++;
+      }     
+      // index 1 matches array is the atom number, index 3 is R group number
+      capGroupIdxMap.set(parseInt(res[1]), parseInt(res[3]));
+  }
+  
+  return capGroupIdxMap;
+}
+
+export function parseAtomAndBondCounts(molfileV3K: string): { atomCount: number, bondCount: number } {
   molfileV3K = molfileV3K.replaceAll('\r', ''); // to handle old and new sdf standards
 
   // parse atom count
-  let begin = molfileV3K.indexOf(V3K_BEGIN_COUNTS_LINE) + V3K_COUNTS_SHIFT;
+  let begin = molfileV3K.indexOf(C.V3K_BEGIN_COUNTS_LINE) + C.V3K_COUNTS_SHIFT;
   let end = molfileV3K.indexOf(' ', begin + 1);
   const numOfAtoms = parseInt(molfileV3K.substring(begin, end));
 
@@ -643,19 +578,22 @@ function parseAtomAndBondCounts(molfileV3K: string): { atomCount: number, bondCo
 }
 
 /** Parse V3000 atom block and return Atoms object. NOTICE: only atomTypes, x, y
- * and kwargs fields are set in the return value, with other fields dummy */
+ * and kwargs fields are set in the return value, with other fields dummy initialized.
+ * @param {string} molfileV3K - V3000 molfile
+ * @param {number} atomCount - number of atoms in the molecule
+ * @return {Atoms} - Atoms object */
 function parseAtomBlock(molfileV3K: string, atomCount: number): Atoms {
   const atomTypes: string[] = new Array(atomCount);
   const x: Float32Array = new Float32Array(atomCount);
   const y: Float32Array = new Float32Array(atomCount);
   const kwargs: string[] = new Array(atomCount);
 
-  let begin = molfileV3K.indexOf(V3K_BEGIN_ATOM_BLOCK); // V3000 atoms block
+  let begin = molfileV3K.indexOf(C.V3K_BEGIN_ATOM_BLOCK); // V3000 atoms block
   begin = molfileV3K.indexOf('\n', begin);
   let end = begin;
 
   for (let i = 0; i < atomCount; i++) {
-    begin = molfileV3K.indexOf(V3K_BEGIN_DATA_LINE, begin) + V3K_IDX_SHIFT;
+    begin = molfileV3K.indexOf(C.V3K_BEGIN_DATA_LINE, begin) + C.V3K_IDX_SHIFT;
     end = molfileV3K.indexOf(' ', begin); // skip the idx row
 
     // parse atom type
@@ -689,11 +627,12 @@ function parseAtomBlock(molfileV3K: string, atomCount: number): Atoms {
   };
 }
 
-/** Remove hydrogen nodes */
+/** Remove hydrogen nodes
+ * @param {MolGraph} monomerGraph - monomer graph*/
 function removeHydrogen(monomerGraph: MolGraph): void {
   let i = 0;
   while (i < monomerGraph.atoms.atomTypes.length) {
-    if (monomerGraph.atoms.atomTypes[i] === HYDROGEN) {
+    if (monomerGraph.atoms.atomTypes[i] === C.HYDROGEN) {
       removeNodeAndBonds(monomerGraph, i + 1); // i + 1 because molfile node indexing starts from 1
       --i;
       // monomerGraph.atoms.atomTypes[i] = 'Li';
@@ -703,7 +642,9 @@ function removeHydrogen(monomerGraph: MolGraph): void {
 }
 
 /** Remove node 'removedNode' and the associated bonds. Notice, numeration of
- * nodes in molfiles starts from 1, not 0 */
+ * nodes in molfiles starts from 1, not 0
+ * @param {MolGraph} monomerGraph - monomer graph
+ * @param {number} removedNode - node to be removed*/
 function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void {
   if (typeof removedNode !== 'undefined') {
     const removedNodeIdx = removedNode - 1;
@@ -788,7 +729,9 @@ function spliceTypedArray<T extends ITypedArray>(
   return result;
 }
 
-/** Adjust the peptide MolGraph to default/standardized position  */
+
+/** Adjust the peptide MolGraph to default/standardized position
+ * @param {MolGraph} monomer - monomer graph*/
 function adjustPeptideMonomerGraph(monomer: MolGraph): void {
   const centeredNode = monomer.meta.terminalNodes[0] - 1; // node indexing in molfiles starts from 1
   const rotatedNode = monomer.meta.rNodes[0] - 1;
@@ -870,9 +813,8 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   if (sugarBranchToOYAngle) {
     rotateCenteredGraph(monomer.atoms,
       Math.PI - baseBranchToOYAngle + sugarBranchToOYAngle);
-  } else {
+  } else
     throw new Error('The value of sugarBranchToOYAngle is null');
-  }
 
   // scale graph in case its size does not fit the scale of phosphate and sugar
   // todo: consider extending to other monomer types
@@ -900,7 +842,9 @@ function getEuclideanDistance(p1: Point, p2: Point): number {
 }
 
 /** Flip carboxyl group with the radical in a peptide monomer in case the
- * carboxyl group is in the lower half-plane */
+ * carboxyl group is in the lower half-plane
+ * @param {MolGraph}monomer - peptide monomer
+ * @param {number}doubleBondedOxygen - index of the double-bonded oxygen atom*/
 function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): void {
   // verify that the carboxyl group is in the lower half-plane
   if (monomer.atoms.y[monomer.meta.rNodes[1] - 1] < 0 &&
@@ -916,14 +860,18 @@ function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): 
   }
 }
 
-/** Finds angle between OY and the ray joining origin with (x, y) */
+
+/** Finds angle between OY and the ray joining origin with (x, y)
+ * @param {number}x
+ * @param {number}y
+ * @return {number} angle in radians*/
 function findAngleWithOY(x: number, y: number): number {
   let angle;
-  if (x === 0) {
+  if (x === 0)
     angle = y > 0 ? 0 : Math.PI;
-  } else if (y === 0) {
+  else if (y === 0)
     angle = x > 0 ? -Math.PI / 2 : Math.PI / 2;
-  } else {
+  else {
     const tan = y / x;
     const atan = Math.atan(tan);
     angle = (x < 0) ? Math.PI / 2 + atan : -Math.PI / 2 + atan;
@@ -931,12 +879,18 @@ function findAngleWithOY(x: number, y: number): number {
   return angle;
 }
 
-/** Finds angle between OX and the ray joining origin with (x, y) */
+/** Finds angle between OX and the ray joining origin with (x, y)
+ * @param {number}x
+ * @param {number}y
+ * @return {number} angle in radians
+ */
 function findAngleWithOX(x: number, y: number): number {
   return findAngleWithOY(x, y) + Math.PI / 2;
 }
 
-/**  Rotate the graph around the origin by 'angle' */
+/**  Rotate the graph around the origin by 'angle'
+ * @param {Atoms}atoms - atoms of the graph
+ * @param {number}angle - angle in radians*/
 function rotateCenteredGraph(atoms: Atoms, angle: number): void {
   if (angle !== 0) {
     const x = atoms.x;
@@ -953,17 +907,21 @@ function rotateCenteredGraph(atoms: Atoms, angle: number): void {
   }
 }
 
-/** Flip monomer graph around OX axis preserving stereometry */
+/** Flip monomer graph around OX axis preserving stereometry
+ * @param {MolGraph}monomer - monomer graph*/
 function flipMonomerAroundOX(monomer: MolGraph): void {
   flipMolGraph(monomer, true);
 }
 
-/** Flip monomer graph around OY axis preserving stereometry */
+/** Flip monomer graph around OY axis preserving stereometry
+ * @param {MolGraph}monomer - monomer graph*/
 function flipMonomerAroundOY(monomer: MolGraph): void {
   flipMolGraph(monomer, false);
 }
 
-/** Flip graph around a specified axis: 'true' corresponds to OX, 'false' to OY */
+/** Flip graph around a specified axis: 'true' corresponds to OX, 'false' to OY
+ * @param {MolGraph}molGraph - graph to flip
+ * @param {boolean}axis - axis to flip around*/
 function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
   if (axis) { // flipping around OX
     const y = molGraph.atoms.y;
@@ -983,9 +941,23 @@ function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
   }
 }
 
+function getAngleBetweenSugarBranchAndOY(molGraph: MolGraph): number {
+  const x = molGraph.atoms.x;
+  const y = molGraph.atoms.y;
+  const rNode = molGraph.meta.rNodes[2] - 1;
+  const terminalNode = molGraph.meta.terminalNodes[2] - 1;
+
+  const xShift = x[rNode] - x[terminalNode];
+  const yShift = y[rNode] - y[terminalNode];
+
+  return Math.atan(yShift / xShift) + Math.PI / 2;
+}
+
 /** Flips double-bonded 'O' in carbonyl group with 'OH' in order for the monomers
  * to have standard representation simplifying their concatenation. The
- * monomer must already be adjusted with adjustPeptideMonomerGraph in order for this function to be implemented  */
+ * monomer must already be adjusted with adjustPeptideMonomerGraph in order for this function to be implemented
+ * @param {MolGraph}monomer - peptide monomer
+ * @param {number}doubleBondedOxygen - index of the double-bonded oxygen atom*/
 function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void {
   const x = monomer.atoms.x;
   // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
@@ -994,22 +966,30 @@ function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void 
 }
 
 /** Determine the number of node (starting from 1) corresponding to the
- * double-bonded oxygen of the carbonyl group  */
+ * double-bonded oxygen of the carbonyl group
+ * @param {MolGraph}monomer - peptide monomer
+ * @return {number} index of the double-bonded oxygen atom*/
 function findDoubleBondedCarbonylOxygen(monomer: MolGraph): number {
   const bondsMap = constructBondsMap(monomer);
   let doubleBondedOxygen = 0;
+  const sentinel = monomer.atoms.atomTypes.length;
   let i = 0;
   // iterate over the nodes bonded to the carbon and find the double one
   while (doubleBondedOxygen === 0) {
     const node = bondsMap.get(monomer.meta.terminalNodes[1])![i];
-    if (monomer.atoms.atomTypes[node - 1] === OXYGEN && node !== monomer.meta.rNodes[1])
+    if (monomer.atoms.atomTypes[node - 1] === C.OXYGEN && node !== monomer.meta.rNodes[1])
       doubleBondedOxygen = node;
     i++;
+    if (i > sentinel)
+      throw new Error(`Search for double-bonded Oxygen in ${monomer} has exceeded the limit of ${sentinel}`);
   }
   return doubleBondedOxygen;
 }
 
-/** Swap the Cartesian coordinates of the two specified nodes in MolGraph  */
+/** Swap the Cartesian coordinates of the two specified nodes in MolGraph
+ * @param {MolGraph}monomer - monomer graph
+ * @param {number}nodeOne - index of the first node
+ * @param {number}nodeTwo - index of the second node*/
 function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
   const nodeOneIdx = nodeOne - 1;
   const nodeTwoIdx = nodeTwo - 1;
@@ -1023,7 +1003,9 @@ function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
   y[nodeTwoIdx] = tmpY;
 }
 
-/** Maps a node to the list of nodes bound to it */
+/** Maps a node to the list of nodes bound to it
+ * @param {MolGraph}monomer - monomer graph
+ * @return {Map<number, Array<number>>} map of nodes to the list of nodes bound to them*/
 function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   const map = new Map<number, Array<number>>();
   for (const atomPairs of monomer.bonds.atomPairs) {
@@ -1039,7 +1021,10 @@ function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   return map;
 }
 
-/** Shift molGraph in the XOY plane  */
+/** Shift molGraph in the XOY plane
+ * @param {MolGraph}molGraph - graph to shift
+ * @param {number}xShift - shift along X axis
+ * @param {number}yShift - shift along Y axis*/
 function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): void {
   const x = molGraph.atoms.x;
   const y = molGraph.atoms.y;
@@ -1050,304 +1035,8 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
   }
 }
 
-/** Translate a sequence of monomer symbols into Molfile V3000 */
-function monomerSeqToMolfile(
-  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
-  alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
-): string {
-  if (monomerSeq.length === 0) {
-    // throw new Error('monomerSeq is empty');
-    return '';
-  }
 
-  // define atom and bond counts, taking into account the bond type
-  const getAtomAndBondCounts = getResultingAtomBondCounts;
-  const {atomCount, bondCount} = getAtomAndBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
-
-  // create arrays to store lines of the resulting molfile
-  const molfileAtomBlock = new Array<string>(atomCount);
-  const molfileBondBlock = new Array<string>(bondCount);
-
-  let addMonomerToMolblock; // todo: types?
-
-  let sugar = null;
-  let phosphate = null;
-
-  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
-    addMonomerToMolblock = addAminoAcidToMolblock;
-  } else { // nucleotides
-    addMonomerToMolblock = addNucleotideToMolblock;
-    sugar = (alphabet === ALPHABET.DNA) ? monomersDict.get(DEOXYRIBOSE) : monomersDict.get(RIBOSE);
-    phosphate = monomersDict.get(PHOSPHATE);
-  }
-  const v: LoopVariables = {
-    i: 0,
-    nodeShift: 0,
-    bondShift: 0,
-    backbonePositionShift: new Array<number>(2).fill(0),
-    branchPositionShift: new Array<number>(2).fill(0),
-    backboneAttachNode: 0,
-    branchAttachNode: 0,
-    flipFactor: 1,
-  };
-
-  const C: LoopConstants = {
-    sugar: sugar!,
-    phosphate: phosphate!,
-    seqLength: monomerSeq.length,
-    atomCount: atomCount,
-    bondCount: bondCount,
-  };
-
-  for (v.i = 0; v.i < C.seqLength; ++v.i) {
-    const monomer = monomersDict.get(monomerSeq[v.i])!;
-    addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, C);
-  }
-
-  capResultingMolblock(molfileAtomBlock, molfileBondBlock, v, C);
-
-  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
-
-  // todo: possible optimization may be achieved by replacing .join('') with +=
-  // since counterintuitively joining an array into a new string is reportedly
-  // slower than using += as below
-
-  let result = '';
-  result += V3K_HEADER_FIRST_LINE;
-  result += V3K_HEADER_SECOND_LINE;
-  result += V3K_BEGIN_CTAB_BLOCK;
-  result += molfileCountsLine;
-  result += V3K_BEGIN_ATOM_BLOCK;
-  result += molfileAtomBlock.join('');
-  result += V3K_END_ATOM_BLOCK;
-  result += V3K_BEGIN_BOND_BLOCK;
-  result += molfileBondBlock.join('');
-  result += V3K_END_BOND_BLOCK;
-  result += V3K_END_CTAB_BLOCK;
-  result += V3K_END;
-
-  // return molfileParts.join('');
-  return result;
-}
-
-/** Cap the resulting (after sewing up all the monomers) molfile with 'O' */
-function capResultingMolblock(
-  molfileAtomBlock: string[], molfileBondBlock: string[],
-  v: LoopVariables, C: LoopConstants
-): void {
-  // add terminal oxygen
-  const atomIdx = v.nodeShift + 1;
-  molfileAtomBlock[C.atomCount] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-  OXYGEN + ' ' + keepPrecision(v.backbonePositionShift[0]) + ' ' +
-  v.flipFactor * keepPrecision(v.backbonePositionShift[1]) + ' ' + '0.000000 0' + '\n';
-
-  // add terminal bond
-  const firstAtom = v.backboneAttachNode;
-  const secondAtom = atomIdx;
-  molfileBondBlock[C.bondCount] = V3K_BEGIN_DATA_LINE + v.bondShift + ' ' +
-  1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
-}
-
-function addAminoAcidToMolblock(monomer: MolGraph, molfileAtomBlock: string[],
-  molfileBondBlock: string[], v: LoopVariables
-): void {
-  v.flipFactor = (-1) ** (v.i % 2); // to flip every even monomer over OX
-  addBackboneMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v);
-}
-
-function addBackboneMonomerToMolblock(
-  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables
-): void {
-  // todo: remove these comments to the docstrings of the corr. functions
-  // construnct the lines of V3K molfile atom block
-  fillAtomLines(monomer, molfileAtomBlock, v);
-
-  // construct the lines of V3K molfile bond block
-  fillBondLines(monomer, molfileBondBlock, v);
-
-  // peptide bond
-  fillChainExtendingBond(monomer, molfileBondBlock, v);
-
-  // update branch variables if necessary
-  if (monomer.meta.branchShift !== null && monomer.meta.terminalNodes.length > 2)
-    updateBranchVariables(monomer, v);
-
-  // update loop variables
-  updateChainExtendingVariables(monomer, v);
-}
-
-function addNucleotideToMolblock(
-  nucleobase: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
-): void {
-  // construnct the lines of V3K molfile atom block corresponding to phosphate
-  // and sugar
-  if (v.i === 0) {
-    addBackboneMonomerToMolblock(C.sugar!, molfileAtomBlock, molfileBondBlock, v);
-  } else {
-    for (const monomer of [C.phosphate, C.sugar])
-      addBackboneMonomerToMolblock(monomer!, molfileAtomBlock, molfileBondBlock, v);
-  }
-
-  addBranchMonomerToMolblock(nucleobase, molfileAtomBlock, molfileBondBlock, v);
-}
-
-function addBranchMonomerToMolblock(
-  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables
-): void {
-  fillBranchAtomLines(monomer, molfileAtomBlock, v);
-  fillBondLines(monomer, molfileBondBlock, v);
-  fillBackboneToBranchBond(monomer, molfileBondBlock, v);
-
-  // C-N bond
-  const bondIdx = v.bondShift;
-  const firstAtom = v.branchAttachNode;
-  const secondAtom = monomer.meta.terminalNodes[0] + v.nodeShift;
-  molfileBondBlock[bondIdx - 1] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
-    1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
-
-  // update loop variables
-  v.bondShift += monomer.bonds.atomPairs.length + 1;
-  v.nodeShift += monomer.atoms.atomTypes.length;
-}
-
-function updateChainExtendingVariables(monomer: MolGraph, v: LoopVariables): void {
-  v.backboneAttachNode = v.nodeShift + monomer.meta.terminalNodes[1];
-  v.bondShift += monomer.bonds.atomPairs.length + 1;
-
-  v.nodeShift += monomer.atoms.atomTypes.length;
-  v.backbonePositionShift[0] += monomer.meta.backboneShift![0]; // todo: non-null check
-  v.backbonePositionShift[1] += v.flipFactor * monomer.meta.backboneShift![1];
-}
-
-function updateBranchVariables(monomer: MolGraph, v: LoopVariables): void {
-  v.branchAttachNode = v.nodeShift + monomer.meta.terminalNodes[2];
-  for (let i = 0; i < 2; ++i)
-    v.branchPositionShift[i] = v.backbonePositionShift[i] + monomer.meta.branchShift![i];
-}
-
-function fillAtomLines(monomer: MolGraph, molfileAtomBlock: string[], v: LoopVariables): void {
-  for (let j = 0; j < monomer.atoms.atomTypes.length; ++j) {
-    const atomIdx = v.nodeShift + j + 1;
-    molfileAtomBlock[v.nodeShift + j] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-      monomer.atoms.atomTypes[j] + ' ' +
-      keepPrecision(v.backbonePositionShift[0] + monomer.atoms.x[j]) + ' ' +
-      keepPrecision(v.backbonePositionShift[1] + v.flipFactor * monomer.atoms.y[j]) +
-      ' ' + monomer.atoms.kwargs[j];
-  }
-}
-
-// todo: remove as quickfix
-function fillBranchAtomLines(monomer: MolGraph, molfileAtomBlock: string[], v: LoopVariables): void {
-  for (let j = 0; j < monomer.atoms.atomTypes.length; ++j) {
-    const atomIdx = v.nodeShift + j + 1;
-    molfileAtomBlock[v.nodeShift + j] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-      monomer.atoms.atomTypes[j] + ' ' +
-      keepPrecision(v.branchPositionShift[0] + monomer.atoms.x[j]) + ' ' +
-      keepPrecision(v.branchPositionShift[1] + v.flipFactor * monomer.atoms.y[j]) +
-      ' ' + monomer.atoms.kwargs[j];
-  }
-}
-
-function fillBondLines(monomer: MolGraph, molfileBondBlock: string[], v: LoopVariables): void {
-  // construct the lines of V3K molfile bond block
-  for (let j = 0; j < monomer.bonds.atomPairs.length; ++j) {
-    const bondIdx = v.bondShift + j + 1;
-    const firstAtom = monomer.bonds.atomPairs[j][0] + v.nodeShift;
-    const secondAtom = monomer.bonds.atomPairs[j][1] + v.nodeShift;
-    let bondCfg = '';
-    if (monomer.bonds.bondConfiguration.has(j)) {
-      // flip orientation when necessary
-      let orientation = monomer.bonds.bondConfiguration.get(j);
-      if (v.flipFactor < 0)
-        orientation = (orientation === 1) ? 3 : 1;
-      bondCfg = ' CFG=' + orientation;
-    }
-    const kwargs = monomer.bonds.kwargs.has(j) ?
-      ' ' + monomer.bonds.kwargs.get(j) : '';
-    molfileBondBlock[v.bondShift + j] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
-      monomer.bonds.bondTypes[j] + ' ' +
-      firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
-  }
-}
-
-function fillChainExtendingBond(monomer: MolGraph, molfileBondBlock: string[], v: LoopVariables): void {
-  if (v.backboneAttachNode !== 0) {
-    const bondIdx = v.bondShift;
-    const firstAtom = v.backboneAttachNode;
-    const secondAtom = monomer.meta.terminalNodes[0] + v.nodeShift;
-    molfileBondBlock[v.bondShift - 1] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
-      1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
-  }
-}
-
-// todo: remove
-function fillBackboneToBranchBond(branchMonomer: MolGraph, molfileBondBlock: string[], v: LoopVariables): void {
-  const bondIdx = v.bondShift;
-  const firstAtom = v.branchAttachNode;
-  const secondAtom = branchMonomer.meta.terminalNodes[0] + v.nodeShift;
-  molfileBondBlock[bondIdx - 1] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
-    1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
-}
-
-/** Compute the atom/bond counts for the resulting molfile, depending on the
- * type of polymer (peptide/nucleotide) */
-function getResultingAtomBondCounts(
-  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
-  alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
-): { atomCount: number, bondCount: number } {
-  let atomCount = 0;
-  let bondCount = 0;
-
-  // sum up all the atoms/nodes provided by the sequence
-  for (const monomerSymbol of monomerSeq) {
-    if (monomerSymbol === '') continue; // Skip for gap/empty monomer in MSA
-    const monomer = monomersDict.get(monomerSymbol)!;
-    atomCount += monomer.atoms.x.length;
-    bondCount += monomer.bonds.bondTypes.length;
-  }
-
-  // add extra values depending on the polymer type
-  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
-    // add the rightmost/terminating cap group 'OH' (i.e. 'O')
-    atomCount += 1;
-    // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
-    bondCount += monomerSeq.length;
-  } else { // nucleotides
-    const sugar = (alphabet === ALPHABET.DNA) ?
-      monomersDict.get(DEOXYRIBOSE)! : monomersDict.get(RIBOSE)!;
-    const phosphate = monomersDict.get(PHOSPHATE)!;
-
-    // add phosphate per each pair of nucleobase symbols
-    atomCount += (monomerSeq.length - 1) * phosphate.atoms.x.length;
-
-    // add sugar per each nucleobase symbol
-    atomCount += monomerSeq.length * sugar.atoms.x.length;
-
-    // add the leftmost cap group 'OH' (i.e. 'O')
-    atomCount += 1;
-
-    // add bonds from phosphate monomers
-    bondCount += (monomerSeq.length - 1) * phosphate.bonds.bondTypes.length;
-
-    // add bonds from sugar monomers
-    bondCount += monomerSeq.length * sugar.bonds.bondTypes.length;
-
-    // exclude the first chain-extending bond O-P (absent, no 'leftmost' phosphate)
-    bondCount -= 1;
-
-    // add chain-extending and branch bonds (O-P, C-O and C-N per each nucleotide)
-    bondCount += monomerSeq.length * 3;
-  }
-
-  return {atomCount, bondCount};
-}
-
-/** Keep precision upon floating point operations over atom coordinates */
-function keepPrecision(x: number): number {
-  return Math.round(PRECISION_FACTOR * x) / PRECISION_FACTOR;
-}
-
-function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
+export function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   // counts line
   const atomType = molGraph.atoms.atomTypes;
   const x = molGraph.atoms.x;
@@ -1361,7 +1050,7 @@ function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   const bondCount = molGraph.bonds.bondTypes.length;
 
   // todo rewrite using constants
-  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+  const molfileCountsLine = C.V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + C.V3K_COUNTS_LINE_ENDING;
 
   // atom block
   let molfileAtomBlock = '';
@@ -1378,7 +1067,7 @@ function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
     //   coordinate[k] = formatted.join('.');
     // }
 
-    const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+    const atomLine = C.V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
       coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
     molfileAtomBlock += atomLine;
   }
@@ -1391,24 +1080,24 @@ function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
     const secondAtom = atomPair[i][1];
     const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
     const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
-    const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
+    const bondLine = C.V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
       firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
     molfileBondBlock += bondLine;
   }
 
   const molfileParts = [
-    V3K_HEADER_FIRST_LINE,
-    V3K_HEADER_SECOND_LINE,
-    V3K_BEGIN_CTAB_BLOCK,
+    C.V3K_HEADER_FIRST_LINE,
+    C.V3K_HEADER_SECOND_LINE,
+    C.V3K_BEGIN_CTAB_BLOCK,
     molfileCountsLine,
-    V3K_BEGIN_ATOM_BLOCK,
+    C.V3K_BEGIN_ATOM_BLOCK,
     molfileAtomBlock,
-    V3K_END_ATOM_BLOCK,
-    V3K_BEGIN_BOND_BLOCK,
+    C.V3K_END_ATOM_BLOCK,
+    C.V3K_BEGIN_BOND_BLOCK,
     molfileBondBlock,
-    V3K_END_BOND_BLOCK,
-    V3K_END_CTAB_BLOCK,
-    V3K_END,
+    C.V3K_END_BOND_BLOCK,
+    C.V3K_END_CTAB_BLOCK,
+    C.V3K_END,
   ];
   const resultingMolfile = molfileParts.join('');
   // console.log(resultingMolfile);
@@ -1430,7 +1119,8 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
     const capGroups = parseCapGroups(monomerLibObject[HELM_FIELDS.RGROUPS]);
     const capGroupIdxMap = parseCapGroupIdxMap(monomerLibObject[HELM_FIELDS.MOLFILE]);
 
-    const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomerLibObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
+    const molfileV3K = monomerLibObject[HELM_FIELDS.MOLFILE].includes('V3000') ? monomerLibObject[HELM_FIELDS.MOLFILE] :
+      convertMolfileToV3K(removeRGroupLines(monomerLibObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
 
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
@@ -1447,14 +1137,17 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
   return symbolToCappedMolfileMap;
 }
 
-/** Get the V3K molfile corresponding to the capped Monomer (default cap groups)  */
+/** Get the V3K molfile corresponding to the capped Monomer (default cap groups)
+ * @param {Monomer} monomer
+ * @return {string} V3K molfile*/
 export function capPeptideMonomer(monomer: Monomer): string {
   const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'getRdKitModule'});
   const moduleRdkit = funcList[0].apply();
 
   const capGroups = parseCapGroups(monomer[HELM_FIELDS.RGROUPS]);
   const capGroupIdxMap = parseCapGroupIdxMap(monomer[HELM_FIELDS.MOLFILE]);
-  const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
+  const molfileV3K = monomer[HELM_FIELDS.MOLFILE].includes('V3000') ? monomer[HELM_FIELDS.MOLFILE] :
+    convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
   const counts = parseAtomAndBondCounts(molfileV3K);
 
   const atoms = parseAtomBlock(molfileV3K, counts.atomCount);

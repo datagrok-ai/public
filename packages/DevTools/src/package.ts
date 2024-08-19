@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {scriptEditor} from './script-editor';
+import {initScriptEditor} from './script-editor';
 import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
@@ -13,7 +13,6 @@ import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detecto
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
-
 export let c: DG.FuncCall;
 
 //name: renderDevPanel
@@ -44,7 +43,7 @@ export function describeCurrentObj(): void {
   });
 
   grok.events.onContextMenu.subscribe((args) => {
-    if (args.args.context instanceof DG.Viewer)
+    if (args.args.context instanceof DG.Viewer && (args.args.context as DG.Viewer).type !== DG.VIEWER.GRID)
       addToJSContextCommand(args);
   });
 }
@@ -54,7 +53,7 @@ export function describeCurrentObj(): void {
 export function _scriptEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
-      scriptEditor(view);
+      initScriptEditor(view);
   });
 }
 
@@ -82,13 +81,13 @@ export async function testManager(): Promise<void> {
 }
 
 //name: TestDetectors
-//top-menu: Tools | Dev | Test Detectors
+//top-menu: Tools | Dev | Test | Detectors...
 export function testDetectors() {
   _testDetectorsDialog();
 }
 
 //name: TestDetectorsStandard
-//top-menu: Tools | Dev | Test Detectors Standard
+//top-menu: Tools | Dev | Test | Detectors Standard
 export async function TestDetectorsStandard() {
   const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
   const df = await _testDetectorsStandard(detectorsArray);

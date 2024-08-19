@@ -1,8 +1,7 @@
 // grid.getVisibleBounds
 
 let grid = grok.shell.addTableView(grok.data.demo.demog()).grid;
-
-setInterval(() => {
+grid.onAfterDrawContent.subscribe(() => setTimeout(() => {
   let g = grid.canvas.getContext('2d');
 
   g.strokeStyle = 'green';
@@ -12,5 +11,5 @@ setInterval(() => {
   g.strokeStyle = 'blue';
   for (let cell of grid.columns.byName('age').getVisibleCells())
     g.strokeRect(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height);
-
-}, 1000);
+  
+}, 300));

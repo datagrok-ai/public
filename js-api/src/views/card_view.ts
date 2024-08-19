@@ -1,7 +1,8 @@
 import {View} from "./view";
 import {ObjectHandler} from "../../ui";
 import {toJs} from "../wrappers";
-let api = <any>window;
+import {IDartApi} from "../api/grok_api.g";
+const api: IDartApi = <any>window;
 
 export enum RENDER_MODE {
   BRIEF = "Brief",
@@ -17,7 +18,7 @@ export enum RENDER_MODE {
  *
  */
 export class CardView extends View {
-  dart: any;
+  declare dart: any;
 
   constructor(dart: any) {
     super(dart);

@@ -8,7 +8,6 @@ category('ML', () => {
   test('Cluster', async () => {
     const data = await _package.files.readCsv('datasets/xclara.csv');
     const resultDf = await grok.ml.cluster(data, ['V1', 'V2'], 3);
-
     expect(resultDf.getCol('clusters').categories.length, 3);
   });
 
@@ -17,7 +16,6 @@ category('ML', () => {
     const resultDf = await grok.ml.pca(
       data, ['wheel.base', 'length', 'width', 'height', 'city.mpg', 'price'], 2, true, true,
     );
-
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA0'), true);
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA1'), true);
   });

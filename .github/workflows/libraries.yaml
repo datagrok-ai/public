@@ -23,26 +23,39 @@ jobs:
   metadata:
     name: Check changes
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     outputs:
       publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
     steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            ./libraries
+      - name: Get changed files
+        uses: tj-actions/changed-files@v42
+        id: changed-files
+        with:
+          files: 'libraries/**'
+          separator: "\n"
+          dir_names: true
+          dir_names_max_depth: 2
+          safe_output: false
       - name: Generate matrix
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.libraries }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
-              commit="$(git log --format="%H" -n 1 --no-merges)"
-            else
-              commit=${{ github.sha }}
-            fi
-            CHANGED_LIBS="$(git diff-tree -m --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_LIBS="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_LIBS="${{ github.event.inputs.libraries }}"
           fi
@@ -52,38 +65,49 @@ jobs:
           for LIB in $(echo ${CHANGED_LIBS} | sort -u); do
             DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
+              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\""
+              current_version="$(jq -r '.version' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
+
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
-              if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                build='false'
-              else
-                build='true'
+              job_name='Check'
+              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
+                job_name='Build'
               fi
-              if [ -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
-                test='false'
-              else
-                test='true'
+              if [ ! -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
+                job_name='Build, test'
               fi
 
-              name="$(jq -r '.name' "${DIR}/package.json")"
-              current_version="$(jq -r '.version' "${DIR}/package.json")"
+              name="$(jq -r .name "${DIR}/package.json")"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
-              unpublished_deps=${unpublished_deps}
-              if [[ $npm_version != ${current_version} ]]; then
-                if [[ $unpublished_deps == "" ]]; then
-                  CHANGED_VERSION='true'
-                  packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
+              MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
+              if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+                if [[ $npm_version != ${current_version} ]]; then
+                  if [[ $unpublished_deps == "" ]]; then
+                    MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                    packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
+                    MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
+                    job_name+=' and publish to NPM'
+                  else
+                    echo "Library $LIB version ${current_version} has unpublished dependencies: $unpublished_deps"
+                    echo "::notice title=${LIB}::Version ${current_version} has unpublished dependencies and is not going to be published"
+                  fi
                 else
-                  CHANGED_VERSION='false'
+                  echo "Library $LIB version ${current_version} is already published"
+                  echo "::notice title=${LIB}::Version ${current_version} is already published"
                 fi
               else
-                CHANGED_VERSION='false'
-                packages=''
+                  echo "It is an actions for PR. Publish will be skipped."
+                  echo "::notice title=${LIB}::It is an actions for PR. Publish will be skipped."
               fi
 
-              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\", \"name\": \"${name}\", \"version\":\"$current_version\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\", \"unpublished_deps\": \"${unpublished_deps}\", \"packages\":\"$packages\"}"
+              MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
+              MATRIX_PUBLISH_JSON+="}"
             fi
           done
 
@@ -102,19 +126,30 @@ jobs:
         run: |
           echo -e "publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}"
           echo -e "continue: ${{ steps.generate-matrix.outputs.continue }}"
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
 
   publish:
-    name: Build and publish to npm
-    needs: [metadata, common-check]
+    name: "${{ matrix.project }}: ${{ matrix.job_name }}"
+    needs: [ metadata, common-check ]
     if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            ./libraries
+            ./js-api
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |
@@ -122,12 +157,14 @@ jobs:
             echo "::error title=${{ matrix.project }}: failed properties check::Library should be in '@datagrok-libraries' scope. Change library name to '@datagrok-libraries/<name>' in ${{ matrix.project }}/package.json"
             exit 1
           fi
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
+          cache: 'npm'
+          cache-dependency-path: |
+            libraries/${{ matrix.project }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -138,38 +175,120 @@ jobs:
           crnt=$(pwd)
           for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
             cd $(awk -F'=' '{print $2}' <<<$dep)
+            unpublished_deps_deep="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
+            for dep_deep in $(echo -e ${unpublished_deps_deep}); do
+              crnt_deep=$(pwd)
+              echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep_deep)"
+              cd $(awk -F'=' '{print $2}' <<<$dep_deep)
+              npm install
+              npm run build
+              cd $crnt_deep
+            done
             echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
             npm install
+            npm run build
             cd $crnt
           done
+        working-directory: libraries/${{ matrix.project }}
+      - name: unpublished dependencies in package-lock.json
+        id: package-lock
+        if: ${{ matrix.unpublished_deps == '' }}
+        run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
         working-directory: libraries/${{ matrix.project }}
       - run: npm install
         working-directory: libraries/${{ matrix.project }}
       - run: npm run test
         working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.build == 'true' }}
+        if: ${{ matrix.build == 'build' }}
+      - name: Install datagrok tools
+        id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - name: grok check
+        run: grok check
+        id: grok_check
+        working-directory: libraries/${{ matrix.project }}
       - name: npm publish
+        id: publish
         run: npm publish --access public
-        if: matrix.changed_version == 'true' && github.ref == 'refs/heads/master'
+        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
+      - name: Prepare Slack Message
+        if: steps.publish.outcome == 'success'
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "libraries/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-user.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: Commit package-lock.json
         continue-on-error: true
-        if: ${{ matrix.changed_version == 'true' }}
+        if: steps.publish.outcome == 'success' || steps.package-lock.outcome == 'success'
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
-            git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json $skip_ci
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
             count=0
             retries=10
             until git push; do
@@ -190,18 +309,24 @@ jobs:
         if: ${{ matrix.packages != '' }}
         id: commit
         run: |
+          name="$(jq -r '.name' "libraries/${{ matrix.project }}/package.json")"
+          echo "name=$name" >> $GITHUB_OUTPUT
+          author="$(jq -r '.author.email' "libraries/${{ matrix.project }}/package.json")"
+          echo "author=$author" >> $GITHUB_OUTPUT
           crnt=$(pwd)
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull
           changed=""
           for package in ${{ matrix.packages }}; do
             cd packages/$package
-            sed -i -e 's#"${{ matrix.name }}": "../../libraries/${{ matrix.project }}"#"${{ matrix.name }}": "^${{ matrix.version }}"#g' package.json
+            sed -i -e 's#"${name}": "../../libraries/${{ matrix.project }}"#"${name}": "^${{ matrix.version }}"#g' package.json
             if [ -n "$(git status -s package.json)" ]; then
               changed+="$package "
               npm install
               git add package.json
               git add package-lock.json
-              git commit -m "GitHub Actions: Update package $package ${{ matrix.name }} dependency
+              git commit -m "GitHub Actions: Update package $package ${name} dependency
 
               Workflow ${{ github.workflow }} ${{ github.run_number }}
               https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -235,7 +360,15 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "Github Actions: Failed update for library ${{ matrix.project }}"
-          to: ${{ matrix.author }}
+          to: ${{ steps.commit.outputs.author }}
           from: monitoring@grok.datagrok.ai
-          body: "Failed to update ${{ matrix.name }} dependency for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body: "Failed to update library ${{ matrix.project }} (${{ steps.commit.outputs.name }}) for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

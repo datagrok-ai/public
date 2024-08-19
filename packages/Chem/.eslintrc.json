@@ -16,7 +16,7 @@
     "no-irregular-whitespace": "error",
     "no-unexpected-multiline": "error",
     "valid-jsdoc": [
-      "error",
+      "off",
       {
         "requireParamDescription": false,
         "requireReturnDescription": false,
@@ -37,12 +37,8 @@
     "no-throw-literal": "error",
     "no-with": "error",
     "prefer-promise-reject-errors": "error",
-    "no-unused-vars": [
-      "error",
-      {
-        "args": "none"
-      }
-    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "array-bracket-newline": "off",
     "array-bracket-spacing": [
       "error",
@@ -151,10 +147,10 @@
       "error",
       2
     ],
-    "max-len": [
-      "error",
-      120
-    ],
+    "max-len": ["error", 120],
+    "max-params": ["warn", 7],
+    "max-lines-per-function": ["warn", 100],
+    "max-lines": ["warn", 300],
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",

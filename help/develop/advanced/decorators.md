@@ -5,7 +5,7 @@ title: "Class decorators"
 # Class decorators
 
 Package functions are typically registered in the main package file `package.ts`. Each function has a special
-[parameter annotation](../../datagrok/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
+[parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
 You can use [class decorators](https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators) to register
 such package functions as:
 
@@ -108,6 +108,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 See also:
 
 * [Function roles](../function-roles.md)
-* [Parameter annotation](../../datagrok/functions/func-params-annotation.md)
+* [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md)
 * [JavaScript development](../develop.md)
 * [TypeScript class decorators](https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators)

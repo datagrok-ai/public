@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd ../../libraries/bio
+./cleanup && npm i && npm run build && npm link
+
+cd -
+npm link @datagrok-libraries/bio

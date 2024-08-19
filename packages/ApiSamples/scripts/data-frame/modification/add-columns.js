@@ -20,4 +20,4 @@ t.columns.addNewString('string');
 t.columns.addNewDateTime('datetime');
 t.columns.addNewQnum('qnum');
 
-grok.shell.add(t);
+grok.shell.addTableView(t);

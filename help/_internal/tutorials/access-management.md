@@ -1,7 +1,7 @@
 <!-- TITLE: Use Cases: Access management -->
 <!-- SUBTITLE: -->
 
-# Use cases: Aaccess management
+# Use cases: Access management
 
 Owner: Alexander
 
@@ -33,7 +33,7 @@ Expected:
 
 * Executes normally and returns a result
 * Script appears in the script browser
-* Audit record appears that links script execution with the dataset (available under both dataset’s and script’s
+* Audit record appears that links script execution with the dataset (available under both dataset's and script's
   Activity pane in properties)
 
 5. Click ‘Share’, enter recipients, OK

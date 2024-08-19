@@ -237,3 +237,35 @@ WHERE chembl_id IN (
   SELECT unnest(@chemblIds)
 );
 --end
+
+--name: MolregnoInfo
+--connection: Chembl
+--tags: panel, widget
+--input: string molregno {semType: molregno}
+SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
+FROM compound_structures s
+LEFT JOIN drug_mechanism d
+ON s.molregno = d.molregno
+LEFT JOIN molecule_synonyms m
+ON s.molregno = m.molregno
+LEFT JOIN research_companies r
+ON m.res_stem_id = r.res_stem_id
+WHERE s.molregno = CAST(@molregno as INTEGER)
+--end
+
+--name: ChemblInfo
+--connection: Chembl
+--tags: panel, widget
+--input: string chemblId {semType: CHEMBL_ID}
+SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
+FROM molecule_dictionary md
+LEFT JOIN compound_structures s
+ON md.molregno = s.molregno
+LEFT JOIN drug_mechanism d
+ON s.molregno = d.molregno
+LEFT JOIN molecule_synonyms m
+ON s.molregno = m.molregno
+LEFT JOIN research_companies r
+ON m.res_stem_id = r.res_stem_id
+WHERE md.chembl_id = @chemblId
+--end

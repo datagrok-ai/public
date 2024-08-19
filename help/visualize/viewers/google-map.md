@@ -10,11 +10,11 @@ Marker settings".
 
 In case the dataset contains geographical data (such as addresses), but does not contain longitude and latitude
 coordinates, you might want to extract coordinates using one of
-the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), such as #{cmd(AddressToCoordinates)}.
+the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), such as #\{cmd(AddressToCoordinates)}.
 
 ![Google Map](../../uploads/viewers/google-map.png "Google Map")
 
-![Map big data](google-map-city-perf.gif "Map big data")
+![Map big data](img/google-map-city-perf.gif "Map big data")
 
 ## Videos
 
@@ -22,9 +22,9 @@ the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), suc
 
 See also:
 
-* \#{cmd(AddressToCoordinates)}
-* \#{cmd(IpToCoordinates)}
-* \#{cmd(AddressToCoordinates)}
+* \#\{cmd(AddressToCoordinates)}
+* \#\{cmd(IpToCoordinates)}
+* \#\{cmd(AddressToCoordinates)}
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Google Map](https://public.datagrok.ai/js/samples/ui/viewers/types/google-map)

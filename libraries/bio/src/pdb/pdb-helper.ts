@@ -13,6 +13,12 @@ export type PdbResDataFrameType = DG.DataFrame & {
 
 export interface IPdbHelper {
   pdbToDf(pdb: string, name: string): Promise<PdbResDataFrameType>;
+
+  parsePdbqt(pdbqtStr: string, molColName?: string): DG.DataFrame;
+
+  molToPdb(mol: string): Promise<string>;
+
+  pdbqtToMol(pdbqt: string): Promise<string>;
 }
 
 export async function getPdbHelper(): Promise<IPdbHelper> {

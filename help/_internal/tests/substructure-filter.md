@@ -99,5 +99,5 @@ Pre-requisites: Open table with molecules (e.g. "smiles.csv")
 
 See also:
 
-* [Cheminformatics](../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)
 * [Filters](../../visualize/viewers/filters.md

@@ -1,32 +1,29 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-import com.datastax.oss.driver.api.core.data.GettableByIndex;
-import com.datastax.oss.driver.internal.core.data.DefaultUdtValue;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.CassandraBigIntColumnManager;
+import grok_connect.managers.integer_column.CassandraIntColumnManager;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.PatternMatcher;
-import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.*;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
@@ -35,8 +32,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     private static final String DEFAULT_EXCEPTION_MESSAGE = "Cassandra doesn't support this feature";
     private static final String NULL_MESSAGE = "Cassandra doesn't have explicit null type";
 
-    public CassandraDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public CassandraDataProvider() {
         driverClassName = "com.wisecoders.dbschema.cassandra.JdbcDriver";
 
         descriptor = new DataSource();
@@ -48,9 +44,6 @@ public class CassandraDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.KEYSPACE));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
@@ -102,7 +95,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         String keySpace = conn.get(DbCredentials.KEYSPACE);
         return String.format("jdbc:cassandra://%s%s%s", conn.getServer(), port,
-                keySpace == null || keySpace.isEmpty() ? "" : String.format("/%s", keySpace));
+                GrokConnectUtil.isEmpty(keySpace) ? "" : String.format("/%s", keySpace));
     }
 
     @Override
@@ -111,9 +104,9 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.get(DbCredentials.KEYSPACE);
-        if (db != null && !db.isEmpty()) {
+        if (GrokConnectUtil.isNotEmpty(db)) {
             StringColumn column = new StringColumn(new String[]{db});
             column.name = "TABLE_SCHEMA";
             DataFrame dataFrame = new DataFrame();
@@ -125,7 +118,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+            throws QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.get(DbCredentials.KEYSPACE), schema, table);
@@ -135,12 +128,14 @@ public class CassandraDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        String keySpace = db == null || db.isEmpty() ? schema : db;
+        String keySpace = GrokConnectUtil.isEmpty(db) ? schema : db;
+        boolean isEmptyKeySpace = GrokConnectUtil.isEmpty(keySpace);
+        boolean isEmptyTable = GrokConnectUtil.isEmpty(table);
         String whereClause = String.format(" where%s%s",
-                keySpace == null || keySpace.isEmpty() ? "" : String.format(" keyspace_name = '%s'", keySpace),
-                table == null || table.isEmpty() ? "" : String.format("%s table_name = '%s'", keySpace == null || keySpace.isEmpty() ? "" : " and", table));
+                isEmptyKeySpace ? "" : String.format(" keyspace_name = '%s'", keySpace),
+                isEmptyTable ? "" : String.format("%s table_name = '%s'", isEmptyKeySpace ? "" : " and", table));
         return String.format("select keyspace_name as table_schema, table_name,  column_name, type as data_type "
-                + "from system_schema.columns%s;", (keySpace == null || keySpace.isEmpty()) && (table == null || table.isEmpty()) ? "" : whereClause );
+                + "from system_schema.columns%s;", isEmptyKeySpace && isEmptyTable ? "" : whereClause );
     }
 
     @Override
@@ -148,11 +143,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String _query = matcher.colName +  " LIKE @" + param.name;
-        List<Object> values = matcher.values;
+        List<String> values = matcher.values;
         String value = null;
-        if (values.size() > 0) {
-            value = ((String) values.get(0)).toLowerCase();
-        }
+        if (values.size() > 0)
+            value = values.get(0).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
@@ -254,62 +248,17 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return !typeName.equalsIgnoreCase("varint") && ((type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT));
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("varint");
-    }
-
-    @Override
-    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
-        try {
-            statement.setObject(parameterIndex, localDateTime.toLocalDate());
-            return localDateTime.toString();
-        } catch (SQLException e) {
-            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
-                    parameterIndex), e);
-        }
+        statement.setObject(parameterIndex, localDateTime.toLocalDate());
     }
 
     @Override
-    protected Object convertArrayType(Object value) {
-        if (value instanceof GettableByIndex) {
-            return convertComplexType(value);
-        } else {
-            return value.toString();
-        }
-    }
-
-    @Override
-    protected boolean isArray(int type, String typeName) {
-        return typeName.startsWith("Tuple") || typeName.startsWith("UDT") || typeName.startsWith("List");
-    }
-
-    private String convertComplexType(Object value) {
-        GettableByIndex complex = (GettableByIndex) value;
-        StringBuilder builder = new StringBuilder("{");
-        for (int i = 0; i < complex.size(); i++) {
-            Object object = complex.getObject(i);
-            if (object instanceof GettableByIndex) {
-                builder.append(convertComplexType(object));
-            } else {
-                if (value instanceof DefaultUdtValue) {
-                    String fieldName = ((DefaultUdtValue) value).getType()
-                            .getFieldNames().get(i).toString();
-                    builder.append(fieldName).append("=");
-                }
-                builder.append(object);
-            }
-            if (i != complex.size() - 1) {
-                builder.append(", ");
-            }
-        }
-        builder.append("}");
-        return builder.toString();
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BIG_INT, new CassandraBigIntColumnManager());
+        defaultManagersMap.put(Types.INT, new CassandraIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

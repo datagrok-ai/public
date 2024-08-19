@@ -17,7 +17,7 @@ let searchFunctions = DG.Func.find({tags: ['search'], returnType: 'list'});
 let searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widget'});
 
 export function initSearch() {
-  grok.dapi.queries.list().then((qs) => queries = qs);
+  //grok.dapi.queries.list().then((qs) => queries = qs);
   initTemplates();
 }
 
@@ -27,11 +27,12 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
+  regexEntitiesSearch(s, host);
   projectsSearch(s, host);
   functionEvaluationsSearch(s, host);
   searchFunctionsSearch(s, host);
-  queriesEntitiesSearch(s, host);
-  queriesSearch(s, host);
+/*  queriesEntitiesSearch(s, host);
+  queriesSearch(s, host);*/
   templatesSearch(s, host);
   widgetsSearch(s, host);
   specificWidgetsSearch(s, host);
@@ -42,8 +43,12 @@ export function powerSearch(s: string, host: HTMLDivElement): void {
 /// Example: functions
 function viewsSearch(s: string, host: HTMLDivElement): boolean {
   if (DG.View.ALL_VIEW_TYPES.includes(s)) {
-    host.appendChild(DG.View.createByType(s).root);
-    return true;
+    try {
+      host.appendChild(DG.View.createByType(s).root);
+      return true;
+    } catch (x) {
+      return false;
+    }
   }
   return false;
 }
@@ -52,6 +57,32 @@ function queriesEntitiesSearch(s: string, host: HTMLDivElement): void {
   s = s.toLowerCase();
   host.appendChild(ui.list(queries.filter((q) => q.name.toLowerCase().includes(s))));
 }
+
+
+function regexEntitiesSearch(s: string, host: HTMLDivElement): void {
+  const ids = s.split(/,\s*/);
+  const semValues = ids.map(id => DG.SemanticValue.parse(id));
+  if (semValues.length < 1 || semValues[0]?.semType == null)
+    return;
+
+  if (semValues.every(sv => sv?.semType && sv.semType == semValues[0].semType) && DG.ObjectHandler.forEntity(semValues[0])) {
+    const itemsPanel = ui.div([], {style: {'display': 'flex', 'flex-wrap': 'wrap'}});
+    const panel = ui.divV([
+      ui.span([
+        `${semValues.length} ${semValues[0].semType} ${semValues.length == 1 ? 'object. ' : 'objects. '}`,
+        ui.link('Open table', () => {
+          const df = DG.DataFrame.create(semValues.length);
+          df.columns.addNewString(semValues[0].semType).init(i => semValues[i].value);
+          grok.shell.addTable(df);
+        })], {style: {'margin-bottom': '10px'}}),
+      itemsPanel
+    ]);
+    for (let sv of semValues)
+      itemsPanel.append(DG.ObjectHandler.forEntity(sv)!.renderCard(sv));
+    host.append(panel);
+  }
+}
+
 
 function projectsSearch(s: string, host: HTMLDivElement): void {
   if (s.length < 3)

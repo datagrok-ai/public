@@ -18,7 +18,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. Alternately click on columns in ["Column Manager"](column-manager.md)
 
 * Selected column is highlighted in [table](../datagrok/table.md)
-* Selected column is shown on [Context Panel](../datagrok/navigation.md#context-panel)
+* Selected column is shown on [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Call context menu for column in ["Column Manager"](column-manager.md)
 
@@ -30,7 +30,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. With ```Shift``` held down, select all columns from ["Column Manager"](column-manager.md)
 
 * In context menu, submenu appears whose actions apply to all selected columns (tittle like *"n selected columns"*)
-* [Context Panel](../datagrok/navigation.md#context-panel) displays actions related to all selected columns
+* [Context Panel](../datagrok/navigation/panels/panels.md#context-panel) displays actions related to all selected columns
 
 1. Expand "Add stats" submenu from the context menu
 
@@ -38,11 +38,11 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 * First block contains items "All" (for add all attributes), "Selected" and "Filtered", which work correctly
 * Second block with "Histogram" item for add the histogram for numerical columns (for non-numeric columns cells are
   empty)
-* Third block contains standart columns stats (min, max, avg, etc.)
+* Third block contains standard columns stats (min, max, avg, etc.)
 
 1. Click on "All" item from "Add stats" submenu from the context menu
 
-* All colimns attributes are added to ["Column Manager"](column-manager.md)
+* All columns attributes are added to ["Column Manager"](column-manager.md)
 * "All" item and and all attributes in list marked with icon "✓"
 * If attribute is not available for a specific column, the corresponding cell is empty
 

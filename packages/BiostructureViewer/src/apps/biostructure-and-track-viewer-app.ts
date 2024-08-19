@@ -3,8 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_package, getPdbHelper} from '../package';
+
 import {BiostructureAndTrackViewer} from '../viewers/twins/molstar-twin-viewer';
+import {PdbHelper} from '../utils/pdb-helper';
+
+import {_package} from '../package';
 
 /** The app for biostructure viewer and biotrack viewer */
 export class BiostructureAndTrackViewerApp {
@@ -24,7 +27,7 @@ export class BiostructureAndTrackViewerApp {
   }
 
   static async loadData(): Promise<[DG.DataFrame]> {
-    const ph: IPdbHelper = await getPdbHelper();
+    const ph: IPdbHelper = await PdbHelper.getInstance();
     const pdbStr: string = await _package.files.readAsText('samples/1bdq.pdb');
     const pdbDf: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');
     return [pdbDf];

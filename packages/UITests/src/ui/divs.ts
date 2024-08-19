@@ -7,7 +7,7 @@ import {checkHTMLElement} from './utils';
 category('UI: Div', () => {
   const htmlElement = ui.divText('test');
   let v: DG.View;
-  const divs: {[key: string]: {'element': HTMLDivElement, 'selectors': string[]}} = {
+  const divs: {[key: string]: {'element': HTMLElement, 'selectors': string[]}} = {
     'block': {'element': ui.block([htmlElement]), 'selectors': ['.ui-div', '.ui-block']},
     'block25': {'element': ui.block25([htmlElement]), 'selectors': ['.ui-div', '.ui-block', '.ui-block-25']},
     'block50': {'element': ui.block50([htmlElement]), 'selectors': ['.ui-div', '.ui-block', '.ui-block-50']},
@@ -24,10 +24,10 @@ category('UI: Div', () => {
     'splitH': {'element': ui.splitH([htmlElement, htmlElement]), 'selectors': ['.ui-box', '.ui-split-h']},
     'splitV': {'element': ui.splitV([htmlElement, htmlElement]), 'selectors': ['.ui-box', '.ui-split-v']},
     'buttonsInput': {'element': ui.buttonsInput(), 'selectors': ['.ui-input-root', '.ui-input-buttons']},
-    'form': {'element': ui.form(), 'selectors': ['.ui-form']},
+    'form': {'element': ui.form([]), 'selectors': ['.ui-form']},
     'image': {'element': ui.image('https://dev.datagrok.ai/favicon.png', 42, 42), 'selectors': ['.ui-image']},
-    'inputs': {'element': ui.inputs([ui.floatInput('test', 42)]), 'selectors': ['.ui-form']},
-    'narrowForm': {'element': ui.narrowForm(), 'selectors': ['.ui-form', '.ui-form-condensed']},
+    'inputs': {'element': ui.inputs([ui.input.float('test', {value: 42})]), 'selectors': ['.ui-form']},
+    'narrowForm': {'element': ui.narrowForm([ui.input.string('First name', {value: 'Arthur'})]), 'selectors': ['.ui-form', '.ui-form-condensed']},
     'loader': {'element': ui.loader(), 'selectors': ['.grok-loader']},
     'wait': {'element': ui.wait(async ()=> ui.div()), 'selectors': ['.grok-wait']},
     'waitBox': {'element': ui.waitBox(async ()=> ui.div()), 'selectors': ['.grok-wait', '.ui-box']},

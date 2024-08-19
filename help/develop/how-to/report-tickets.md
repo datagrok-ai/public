@@ -25,10 +25,7 @@ epics. Here we provide recommendations for each item:
   (enhancement of existing functionality or UI), and _new feature_ (requesting
   new capability or software feature).
 * **Title (Summary)**. Start the title with the platform module or package name,
-  then name unexpected behavior for a bug and a new feature name or improvement
-  summary for an enhancement. If relevant, use a hierarchical representation of
-  the issue location: list modules and submodules in their logical order using
-  the “|” symbol.
+  then name unexpected behavior for a bug and a new feature name or improvement SWsummary for an enhancement. 
 
 |Issue type|Formula|Example|
 |----------|-------|-------|
@@ -66,7 +63,7 @@ should include the following items:
     or project.
   * **Attachment (optional)**. You are welcome to attach screenshots, GIFs,
   recorded videos, etc. to complete the issue description.
-* **Due date**. Set the due date according to the priority, client’s request, or
+* **Due date**. Set the due date according to the priority, client's request, or
 corresponding workstream date. Generally, medium-priority issues should be
 done within two weeks, high-priority within a week, and the highest-priority
 tickets within a few days.
@@ -82,11 +79,11 @@ find out whom to assign.
 
 ## Managing tickets
 
-To track the actual state of the platform, it’s important to keep tickets’ status up to date. Also, use status to interact with other participants in the process:
+To track the actual state of the platform, it's important to keep tickets' status up to date. Also, use status to interact with other participants in the process:
 
 * Set **In Progress** status when you start working on the issue.
 * Use **Testing** or **In Review** status when you or your college is testing or reviewing your work on the issue.
-* Set the status to **Ready for QA** if you think your work is done and it’s time for the QA engineer to test it.
+* Set the status to **Ready for QA** if you think your work is done and it's time for the QA engineer to test it.
 If there are no errors or comments, the QA engineer sets the Done status for the ticket.
 
->Note: Write meaningful commits, and don’t forget to mention the issue number. For details, see the [commit message policy](../advanced/git-policy.mdx).
+>Note: Write meaningful commits, and don't forget to mention the issue number. For details, see the [commit message policy](../dev-process/git-policy.mdx).

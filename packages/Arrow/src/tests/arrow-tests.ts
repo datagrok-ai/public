@@ -1,61 +1,69 @@
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {Table, tableFromIPC} from 'apache-arrow'
-import { Buffer } from 'buffer';
+import {before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
+import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-//@ts-ignore
-import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from '../arrow1';
+import {default as init} from "parquet-wasm";
+import {fromFeather, fromParquet} from "../api/api";
 
-category('Arrow', () => {
-  let bytes_arrow;
-  let arrow;
-  let table_arrow: any;
-  let bytes_parquet;
-  let table_parquet: any;
+const expectedColumns = ['pclass', 'survived', 'name', 'sex', 'age',
+  'sibsp', 'parch', 'ticket', 'fare', 'cabin',
+  'embarked', 'boat', 'body', 'home.dest'
+];
+
+category('Parquet', () => {
+  let dfFromParquet: DG.DataFrame | null;
 
   before(async () => {
-    bytes_arrow = await _package.files.readAsBytes('titanic.feather');
-    arrow = Buffer.from(bytes_arrow);
-    table_arrow = tableFromIPC(arrow);
-    await init(_package.webRoot + 'dist/arrow1_bg.wasm');
-    bytes_parquet = await _package.files.readAsBytes('titanic.parquet');
-    table_parquet = tableFromIPC(readParquet(bytes_parquet));
+    await init(_package.webRoot + 'dist/parquet_wasm_bg.wasm');
+    const bytesParquet = await _package.files.readAsBytes('titanic.parquet');
+    dfFromParquet = fromParquet(bytesParquet);
   });
 
-  test('feather file column names', async () => {
-    const expectedTables = ['pclass', 'survived', 'name', 'sex', 'age', 
-                            'sibsp', 'parch', 'ticket', 'fare', 'cabin',
-                            'embarked', 'boat', 'body', 'home.dest'
-                          ];
-    expect(table_arrow.schema.fields.map((table_arrow: any) => table_arrow.name).toString(), expectedTables.toString());
+  test('fromParquet: column names', async () => {
+    for (const colName of expectedColumns)
+      expect(dfFromParquet?.columns.contains(colName), true);
   });
 
-  test('feather file column types', async () => {
-    expect(table_arrow.getChild('pclass')?.type.toString(), 'Int32');
-    expect(table_arrow.getChild('name')?.type.toString(), 'Dictionary<Int32, Utf8>');
-    expect(table_arrow.getChild('age')?.type.toString(), 'Float64');
+  test('fromParquet: column types', async () => {
+    expect(dfFromParquet?.getCol('pclass').type, DG.COLUMN_TYPE.INT);
+    expect(dfFromParquet?.getCol('name').type, DG.COLUMN_TYPE.STRING);
+    expect(dfFromParquet?.getCol('age').type, DG.COLUMN_TYPE.FLOAT);
   });
 
-  test('feather file number of rows and columns', async () => {
-    expect(table_arrow.numCols, 14);
-    expect(table_arrow.numRows, 1310);
+  test('fromParquet: number of rows and columns', async () => {
+    expect(dfFromParquet?.columns.length, 14);
+    expect(dfFromParquet?.rowCount, 1311);
   });
   
-  test('parquet file column names', async () =>{
-    const expectedTables = ['pclass', 'survived', 'name', 'sex', 'age', 
-                            'sibsp', 'parch', 'ticket', 'fare', 'cabin',
-                            'embarked', 'boat', 'body', 'home.dest'
-                          ];
-    expect(table_parquet.schema.fields.map((table_parquet: any) => table_parquet.name).toString(), expectedTables.toString());
+  test('fromParquet: serialization', async () => {
+    expectTable(dfFromParquet!, dfFromParquet?._exportReopen() ?? DG.DataFrame.create());
+  });
+});
+
+category('Feather', () => {
+  let dfFromArrow: DG.DataFrame | null;
+
+  before(async () => {
+    const bytesArrow = await _package.files.readAsBytes('titanic.feather');
+    dfFromArrow = fromFeather(bytesArrow);
   });
 
-  test('parquet file column types', async () => {
-    expect(table_parquet.getChild('pclass')?.type.toString(), 'Int32');
-    expect(table_parquet.getChild('name')?.type.toString(), 'Dictionary<Int32, Utf8>');
-    expect(table_parquet.getChild('age')?.type.toString(), 'Float64');
+  test('fromFeather: column names', async () => {
+    for (const colName of expectedColumns)
+      expect(dfFromArrow?.columns.contains(colName), true);
   });
 
-  test('parquet file number of rows and columns', async () => {
-    expect(table_parquet.numCols, 14);
-    expect(table_parquet.numRows, 1310);
+  test('fromFeather: column types', async () => {
+    expect(dfFromArrow?.getCol('pclass').type, DG.COLUMN_TYPE.INT);
+    expect(dfFromArrow?.getCol('name').type, DG.COLUMN_TYPE.STRING);
+    expect(dfFromArrow?.getCol('age').type, DG.COLUMN_TYPE.FLOAT);
+  });
+
+  test('fromFeather: number of rows and columns', async () => {
+    expect(dfFromArrow?.columns.length, 14);
+    expect(dfFromArrow?.rowCount, 1311);
+  });
+
+  test('fromFeather: serialization', async () => {
+    expectTable(dfFromArrow!, dfFromArrow?._exportReopen() ?? DG.DataFrame.create());
   });
 });

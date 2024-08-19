@@ -17,6 +17,9 @@ among many categories. Use a treemap to spot irregularities or patterns.
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Treemap** icon and click it.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Treemap');`
+
 Initially, the viewer picks up the first categorical column in the corresponding
 table and builds a treemap.
 
@@ -42,7 +45,7 @@ example, you can:
 * Synchronizes current record upon clicking on the point
 * Click on the rectangle selects rows
 
-![Treemap](tree-map.gif)
+![Treemap](img/tree-map.gif)
 
 ## Viewer controls
 
@@ -58,5 +61,5 @@ example, you can:
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
+* [Table view](../../datagrok/navigation/views/table-view.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

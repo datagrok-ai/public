@@ -1,4 +1,4 @@
-import {before, awaitCheck, category, test, delay} from '@datagrok-libraries/utils/src/test';
+import {before, after, awaitCheck, category, test, delay} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
@@ -12,6 +12,7 @@ category('GUI: Dialogs', () => {
 
   before(async () => {
     df = grok.data.demo.demog(100);
+    grok.shell.windows.simpleMode = true;
   });
 
   test('missingValuesImputation', async () => {
@@ -31,7 +32,7 @@ category('GUI: Dialogs', () => {
     let okButtonInSelectColumn = returnDialog('Select columns...')?.root
       .getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButtonInSelectColumn.click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1), 'error while selectiong impute columns', 1000;
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === 1, 'error while selectiong impute columns', 1000);
     const dataField: DG.Column[] = [];
     dataField.push(demog.col('SEX') as DG.Column);
     dataField.push(demog.col('RACE') as DG.Column);
@@ -61,14 +62,14 @@ category('GUI: Dialogs', () => {
     demog = grok.data.demo.demog();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 1', 1000);
     isDialogPresent('Random Data');
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
     await awaitCheck(() => demog.col('normal') !== null, '"normal" col not added to table', 5000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 2', 1000);
     isDialogPresent('Random Data');
     setDialogInputValue('Random Data', 'Distribution', 'log-normal');
@@ -77,7 +78,7 @@ category('GUI: Dialogs', () => {
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
     await awaitCheck(() => demog.col('log-normal') !== null, '"log-normal" col not added to table', 5000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 3', 1000);
     setDialogInputValue('Random Data', 'Distribution', 'binomial');
     await delay(100);
@@ -85,7 +86,7 @@ category('GUI: Dialogs', () => {
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
     await awaitCheck(() => demog.col('binomial') !== null, '"binomial" col not added to table', 5000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 4', 1000);
     setDialogInputValue('Random Data', 'Distribution', 'poisson');
     await delay(100);
@@ -93,7 +94,7 @@ category('GUI: Dialogs', () => {
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
     await awaitCheck(() => demog.col('poisson') !== null, '"poisson" col not added to table', 5000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 5', 1000);
     setDialogInputValue('Random Data', 'Distribution', 'uniform');
     await delay(100);
@@ -106,7 +107,7 @@ category('GUI: Dialogs', () => {
     isColumnPresent(demog.columns, 'poisson');
     isColumnPresent(demog.columns, 'uniform');
     isColumnPresent(demog.columns, 'log-normal');
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 6', 1000);
     isDialogPresent('Random Data');
     returnDialog('Random Data')!.input('Show histogram').input.click();
@@ -120,7 +121,7 @@ category('GUI: Dialogs', () => {
       if (viewer.type === 'Histogram')
         throw new Error('Histogram did not disappear after clicking on the "Cancel" button');
     });
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    grok.shell.topMenu.find('Ml').find('Tools').find('random Data...').click();
     await awaitCheck(() => checkDialog('Random Data'), 'Dialog is not open 7', 1000);
     isDialogPresent('Random Data');
     returnDialog('Random Data')!.input('Show histogram').input.click();
@@ -165,5 +166,9 @@ category('GUI: Dialogs', () => {
     okButton!.click();
     await awaitCheck(() => Array.from(v.dockManager.rootNode.children).length > 1,
       'Multivariate Analysis is not done', 12000);
+  });
+
+  after(async () => {
+    grok.shell.windows.simpleMode = false;
   });
 });

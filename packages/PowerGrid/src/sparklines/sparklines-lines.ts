@@ -7,7 +7,8 @@ import {
   SummarySettingsBase,
   Hit,
   distance,
-  createTooltip
+  createTooltip,
+  isSummarySettingsBase
 } from './shared';
 
 const minDistance = 5;
@@ -26,7 +27,7 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const cols = constants.cols;
   const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
   const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
-  const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+  const r: number = settings.globalScale ? (cols[col].getNumber(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
     (b.top + b.height) - b.height * r);
@@ -38,10 +39,11 @@ interface SparklineSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= true;
-  return gc.settings;
+  const settings: SparklineSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
+  settings.globalScale ??= false;
+  settings.colorCode ??= true;
+  return settings;
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
@@ -68,10 +70,17 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     cols: cols
   };
 
-
   const MousePoint = new DG.Point(e.offsetX, e.offsetY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) /
     b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
+  if (activeColumn >= cols.length || activeColumn === -1) {
+    return {
+      isHit: false,
+      row: -1,
+      cols: [],
+      activeColumn: -1
+    };
+  }
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
   return {
@@ -109,7 +118,6 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     g.strokeStyle = 'lightgrey';
     g.lineWidth = 1;
 
-
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 
@@ -145,8 +153,8 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= {globalScale: true};
-    const settings: SparklineSettings = gridColumn.settings;
+    const settings: SparklineSettings = isSummarySettingsBase(gridColumn.settings) ? gridColumn.settings :
+      gridColumn.settings[SparklineType.Sparkline] ??= getSettings(gridColumn);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
@@ -166,14 +174,15 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
     colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
 
+    const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gridColumn.grid.invalidate();
-      }, {
-        available: names(gridColumn.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
+      ui.input.columns('Сolumns', {value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
+        table: gridColumn.grid.dataFrame,
+        onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gridColumn.grid.invalidate();
+        }, available: names(gridColumn.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput,
     ]);

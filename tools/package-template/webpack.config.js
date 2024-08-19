@@ -2,9 +2,12 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
-  mode: 'development',
+  cache: {
+    type: 'filesystem',
+  },
+  mode: 'production',
   entry: {
-    package: './src/package.js'
+    package: './src/package.js',
   },
   devtool: 'source-map',
   externals: {

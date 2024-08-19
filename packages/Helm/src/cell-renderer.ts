@@ -2,11 +2,32 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {findMonomers, parseHelm, getParts} from './utils';
-import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import wu from 'wu';
+
+import {HelmMol, ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {getGridCellRendererBack} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
+import {findMonomers, parseHelm, removeGapsFromHelm} from './utils';
+import {HelmMonomerPlacer} from './helm-monomer-placer';
+import {getHoveredMonomerFallback, getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './utils/get-hovered';
+import {JSDraw2Module} from './types';
 
+import {_package} from './package';
+
+declare const JSDraw2: JSDraw2Module;
+
+const enum tempTAGS {
+  helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
+  helmMaxLengthWords = 'helm-maxLengthWords',
+
+  helmPlacer = 'bio-helmPlacer',
+}
+
+/** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
+ * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
+ */
 export class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
 
@@ -18,104 +39,124 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     try {
-      const maxLengthWordsSum = gridCell.cell.column.temp['helm-sum-maxLengthWords'];
-      const maxIndex = Object.values(gridCell.cell.column.temp['helm-maxLengthWords']).length - 1;
-      const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
-      let left = 0;
-      let right = maxIndex;
-      let found = false;
-      maxLengthWordsSum[maxIndex + 1] = argsX + 1;
-      let mid = 0;
-      if (argsX > maxLengthWordsSum[0]) {
-        while (!found) {
-          mid = Math.floor((right + left) / 2);
-          if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
-            left = mid;
-            found = true;
-          } else if (argsX < maxLengthWordsSum[mid]) {
-            right = mid - 1;
-          } else if (argsX > maxLengthWordsSum[mid + 1]) {
-            left = mid + 1;
+      const [_gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
+      const helmPlacer = temp['rendererBack'];
+      /* Can not do anything without tableColumn */
+      if (!tableCol) return;
+
+      /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
+      const argsX = e.offsetX - gcb.x;
+      const argsY = e.offsetY - gcb.y;
+
+      const monomerLib = _package.monomerLib;
+      const editorMol: HelmMol | null = helmPlacer.getEditorMol(gridCell.tableRowIndex!);
+      let seqMonomer: ISeqMonomer | null;
+      let missedMonomers: Set<string> = new Set<string>(); // of .size = 0
+      if (editorMol) {
+        const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, editorMol, gridCell.bounds.height);
+        seqMonomer = hoveredAtom ? getSeqMonomerFromHelmAtom(hoveredAtom) : null;
+      } else {
+        const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value as string);
+        const monomerList = parseHelm(seq);
+        missedMonomers = findMonomers(monomerList, monomerLib);
+        const parsedMonomers = new Set<string>(monomerList);
+        seqMonomer = getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
+        if (seqMonomer && !parsedMonomers.has(seqMonomer.symbol)) seqMonomer = null;
+        if (seqMonomer) {
+          const textSize = helmPlacer.monomerTextSizeMap[seqMonomer.symbol];
+          if (textSize) {
+            const textBaseLine = gcb.height / 2 -
+              (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
+            const textTop = textBaseLine - textSize.fontBoundingBoxAscent;
+            const textBottom = textBaseLine + textSize.fontBoundingBoxDescent;
+            if (argsY < textTop || textBottom < argsY) seqMonomer = null;
           }
-          if (left == right)
-            found = true;
         }
       }
-      left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
-      const monomers = findMonomers(gridCell.cell.value);
-      const s: string = gridCell.cell.value ?? '';
-      const subParts: string[] = parseHelm(s);
-      const allParts: string[] = getParts(subParts, s);
-      const tooltipMessage: HTMLElement[] = [];
-      for (let i = 0; i < allParts.length; ++i) {
-        if (monomers.has(allParts[i])) {
-          tooltipMessage[i] = ui.divV([
-            ui.divText(`Monomer ${allParts[i]} not found.`),
-            ui.divText('Open the Context Panel, then expand Manage Libraries')
-          ]);
+
+      if (seqMonomer) {
+        if (!missedMonomers.has(seqMonomer.symbol)) {
+          const tooltipElements: HTMLElement[] = [ui.div(seqMonomer.symbol)];
+          const monomerDiv = monomerLib ? monomerLib.getTooltip(seqMonomer.polymerType, seqMonomer.symbol) :
+            ui.divText('Monomer library is not available.');
+          tooltipElements.push(monomerDiv);
+          ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
+        } else {
+          ui.tooltip.show(ui.divV([
+            ui.divText(`Monomer '${seqMonomer.symbol}' not found.`),
+            ui.divText('Open the Context Panel, then expand Manage Libraries'),
+          ]), e.x + 16, e.y + 16);
         }
-      }
-      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
-        ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) :
+      } else if (missedMonomers.size == 0) {
         ui.tooltip.hide();
+        return;
+      } else { // seqMonomer == null && missedMonomers.size > 0
+        const mmStrList = wu(missedMonomers.keys()).toArray().sort()
+          .filter((_, i) => i < 3);
+        const missedMonomersStr = mmStrList.join(', ') + (missedMonomers.size > 3 ? ', ...' : '');
+        ui.tooltip.show(ui.divV([ui.divText('Monomers missed in monomer libraries:'),
+          ui.divText(missedMonomersStr)
+        ]), e.x + 16, e.y + 16);
+      }
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
+    } finally {
+      e.preventDefault();
+      e.stopPropagation();
     }
   }
+
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
-    const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
-    const undefinedColor = 'rgb(100,100,100)';
-    const grayColor = '#808080';
-    const monomers = findMonomers(gridCell.cell.value);
-    const s: string = gridCell.cell.value ?? '';
-    const subParts: string[] = parseHelm(s);
-    if (monomers.size == 0 && grid) {
-      const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
-      host.setAttribute('dataformat', 'helm');
-      host.setAttribute('data', gridCell.cell.value);
-      gridCell.element = host;
-      //@ts-ignore
-      const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-      return;
-    } else {
-      if (!grid) {
-        const r = window.devicePixelRatio;
-        h = 28;
-        g.canvas.height = h*r;
-        g.canvas.style.height = `${h}px`;
-      }
-      w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.font = '12px monospace';
-      g.textBaseline = 'top';
-      let x1 = x;
-      const maxLengthWords: any = {};
-      const maxLengthWordSum: any = {};
-      const allParts: string[] = getParts(subParts, s);
-      for (let i = 0; i < allParts.length; ++i) {
-        maxLengthWords[i] = allParts[i].length * 7;
-        const color = monomers.has(allParts[i]) ? 'red' : grayColor;
-        g.fillStyle = undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
+    g.save();
+    try {
+      const [gridCol, tableCol, temp] =
+        getGridCellRendererBack<string, HelmMonomerPlacer>(gridCell);
+      /* Can not do anything without tableColumn containing temp */
+      if (!tableCol) return;
+      let helmPlacer = temp['rendererBack'];
+      if (!helmPlacer) helmPlacer = temp['rendererBack'] = new HelmMonomerPlacer(gridCol, tableCol);
+
+      const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
+      const missedColor = 'red';
+      const monomerColor: string = '#404040';
+      const frameColor: string = '#C0C0C0';
+
+      const seq: string = !gridCell.cell.value ? '' : removeGapsFromHelm(gridCell.cell.value);
+      const monomerList = parseHelm(seq);
+      const monomers: Set<string> = new Set<string>(monomerList);
+      const monomerLib = _package.monomerLib;
+      const missedMonomers: Set<string> = findMonomers(monomerList, monomerLib);
+
+      if (missedMonomers.size == 0) {
+        // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
+        const host = gridCell.element = ui.div([],
+          {style: {width: `${w - 2}px`, height: `${h - 2}px`, margin: `${1}px`, backgroundColor: '#FFE0E0'}});
+        host.setAttribute('dataformat', 'helm');
+        host.setAttribute('data', seq /* gaps skipped */);
+        // if grid has neighbour to the left, then shift host to the left
+        if (host.parentElement && (gridCell.grid?.canvas?.offsetLeft ?? 0) > 0) {
+          host.parentElement.style.left =
+            `${(gridCell.grid?.canvas?.offsetLeft ?? 0) + host.parentElement.offsetLeft}px`;
+        }
+
+        // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
+        const editor = new JSDraw2.Editor(host,
+          {width: w, height: h, skin: 'w8', viewonly: true});
+        helmPlacer.setEditorMol(gridCell.tableRowIndex!, editor.m);
+
+        helmPlacer.skipCell(gridCell.tableRowIndex!);
+        return;
       }
 
-      maxLengthWordSum[0] = maxLengthWords[0];
-      for (let i = 1; i < allParts.length; i++)
-        maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
-
-      gridCell.cell.column.temp = {
-        'helm-sum-maxLengthWords': maxLengthWordSum,
-        'helm-maxLengthWords': maxLengthWords
-      };
+      if (missedMonomers.size > 0)
+        throw new Error('Unexpected missed monomers');
+    } finally {
       g.restore();
-      return;
     }
   }
 }

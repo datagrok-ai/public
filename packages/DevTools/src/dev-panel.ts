@@ -15,14 +15,15 @@ import {
 } from './constants';
 
 
-function getGroupInput(editor: DG.InputBase<string>, type: string): HTMLElement {
+function getGroupInput(codeMirror: CodeMirror.EditorFromTextArea, type: string): HTMLElement {
   const items = tags[type];
-  const inp = ui.choiceInput('See snippets:', items.length ? items[0] : null, items, async (tag: string) => {
-    const snippets = await loadSnippets(type, tag);
-    const container = $('.dt-dev-pane-container > .dt-snippet-section');
-    container.empty();
-    container.append(formSnippetSection(editor, snippets));
-  });
+  const inp = ui.input.choice('See snippets:', {value: items.length ? items[0] : null, items: items,
+    onValueChanged: async (input) => {
+      const snippets = await loadSnippets(type, input.value);
+      const container = $('.dt-dev-pane-container > .dt-snippet-section');
+      container.empty();
+      container.append(formSnippetSection(codeMirror, snippets));
+    }});
   return inp.root;
 }
 
@@ -38,7 +39,8 @@ function format(s: string): string {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-function formSnippetSection(editor: DG.InputBase<string>, snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
+function formSnippetSection(codeMirror: CodeMirror.EditorFromTextArea,
+  snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
   const snippetNames = snippets.map((s) => ui.divText(format(s.friendlyName), {classes: 'd4-link-action'}));
   const lineEndRegex = /\r\n|\r|\n/;
   const paramAnnotationRegex = /^\/\/(name|tags|language|help-url):.+/;
@@ -50,7 +52,7 @@ function formSnippetSection(editor: DG.InputBase<string>, snippets: DG.Script[],
         continue;
       s += line + '\n';
     }
-    editor.value = s;
+    codeMirror.setValue(s);
   }));
   if (snippetNames.length > count) {
     const rest = snippetNames.splice(count);
@@ -67,7 +69,8 @@ function getViewerScript(viewer: DG.Viewer): string {
   const options = viewer.getOptions(false)['look'];
   delete options['#type'];
   const type = viewerConst[viewer.type];
-  const script = `grok.shell.v.addViewer(${type ? `DG.VIEWER.${type}` : `'${viewer.type}'`}, ${JSON.stringify(options, null, 2)});`;
+  const script = `grok.shell.v.addViewer(${type ? `DG.VIEWER.${type}` :
+    `'${viewer.type}'`}, ${JSON.stringify(options, null, 2)});`;
   return `<pre><code>${script}</code></pre>`;
 }
 
@@ -95,49 +98,29 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
   if (snippets.length === 0 && !template)
     return DG.Widget.fromRoot(ui.divText(`Unsupported entity: ${type}.`, {style: {color: 'var(--failure)'}}));
 
-
   let links = helpUrls[type] || [];
   links = Object.keys(links).map((key) => key === 'additional' ?
     Object.keys(links[key]).map((title) => ui.link(title, links[key][title], 'Open wiki reference')) :
     ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
 
-  const editor = ui.textInput('', template);
-  (editor.input as HTMLInputElement).style.height = '200px';
-  (editor.input as HTMLInputElement).style.overflow = 'hidden';
+  const editor = ui.input.textArea('', {value: template});
+  const codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
+    mode: 'javascript',
+    readOnly: false,
+    lineNumbers: false,
+    showCursorWhenSelecting: false,
+    lineWrapping: true,
+  });
+  setTimeout(() => codeMirror.refresh(), 0);
+  codeMirror.getWrapperElement().classList.add('dt-cd-wrapper');
 
-  setTimeout(function() {
-    const codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
-      readOnly: false,
-      lineNumbers: false,
-      showCursorWhenSelecting: false,
-      lineWrapping: true,
-      mode: 'javascript',
-    });
-    editor.onChanged(() => codeMirror.setValue(editor.value));
-
-    //@ts-ignore
-    codeMirror.display.wrapper.style.marginTop = '10px';
-    //@ts-ignore
-    codeMirror.display.wrapper.style.width = '100%';
-    //@ts-ignore
-    codeMirror.display.wrapper.style.height = '200px';
-    //@ts-ignore
-    codeMirror.display.wrapper.style.border = '1px solid var(--grey-1)';
-    //@ts-ignore
-    codeMirror.display.wrapper.style.borderRadius = '2px';
-  }, 300);
-  /*
-
-  */
   const playBtn = ui.button(ui.iconFA('play'), () => {
-    eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
+    eval(`(async () => {\n${codeMirror.getValue()}\n})()`); // TODO: script approval
   }, 'Run');
   $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
 
   const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
-    const input = editor.input as HTMLInputElement;
-    input.select();
-    navigator.clipboard.writeText(input.value);
+    navigator.clipboard.writeText(codeMirror.getValue());
     const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
     clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
     setTimeout(() => {
@@ -148,11 +131,11 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
   $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
   const editorBtn = ui.button(ui.iconFA('external-link-square'), () => {
-    grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, {script: editor.value}));
+    grok.shell.addView(DG.View.createByType(DG.View.JS_EDITOR, {script: codeMirror.getValue()}));
   }, 'Open in editor');
   $(editorBtn).addClass('dt-snippet-editor-icon dt-editor-icon');
 
-  const resetBtn = ui.button(ui.iconFA('redo'), () => editor.value = template, 'Reset');
+  const resetBtn = ui.button(ui.iconFA('redo'), () => codeMirror.setValue(template), 'Reset');
   $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
 
   const topEditorBtn = ui.button(ui.iconFA('edit'), () => {
@@ -170,8 +153,8 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], {style: {'align-items': 'baseline'}}),
     ...links.map((link: HTMLAnchorElement | HTMLAnchorElement[]) =>
       Array.isArray(link) ? ui.div([ui.divText('See also:'), ...link]) : link),
-    ...((type in tags) ? [getGroupInput(editor, type)] : []),
-    ui.div(formSnippetSection(editor, snippets), 'dt-snippet-section'),
+    ...((type in tags) ? [getGroupInput(codeMirror, type)] : []),
+    ui.div(formSnippetSection(codeMirror, snippets), 'dt-snippet-section'),
     ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
   ], 'dt-dev-pane-container'));
 }

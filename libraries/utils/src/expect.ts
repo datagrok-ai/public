@@ -25,6 +25,9 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'String', predicate: stringPredicate, checker: eqChecker},
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
   {name: 'Float', predicate: floatPredicate, checker: floatChecker},
+  {name: 'Map', predicate: mapPredicate, checker: mapChecker},
+  {name: 'Set', predicate: setPredicate, checker: setChecker},
+  {name: 'ArrayBuffer', predicate: arrayBufferPredicate, checker: arrayBufferChecker},
   {name: 'Array', predicate: arrayPredicate, checker: arrayChecker},
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
@@ -104,6 +107,49 @@ function floatChecker(actual: any, expected: any, state: Readonly<ExpectRunnerSt
 }
 
 
+function mapPredicate(actual: any, expected: any) {
+  return (actual instanceof Map && expected instanceof Map);
+}
+
+function mapChecker(actual: Map<any, any>, expected: Map<any, any>,
+  _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker
+): CheckerError[] {
+  const errors: CheckerError[] = [];
+  if (actual.size !== expected.size) {
+    const err = {msg: `Maps are of different size: actual map size is ${actual.size} ` +
+      `and expected map size is ${expected.size}`};
+    errors.push(err);
+  }
+  for (const k of expected.keys()) {
+    const aval = actual.get(k);
+    const exval = expected.get(k);
+    checkDeep([String(k)], aval, exval)
+  }
+  return errors;
+}
+
+
+function setPredicate(actual: any, expected: any) {
+  return (actual instanceof Set && expected instanceof Set);
+}
+
+function setChecker(actual: Set<any>, expected: Set<any>,
+  _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker
+): CheckerError[] {
+  const errors: CheckerError[] = [];
+  if (actual.size !== expected.size) {
+    const err = {msg: `Sets are of different size: actual set size is ${actual.size} ` +
+      `and expected set size is ${expected.size}`};
+    errors.push(err);
+  }
+  for (const exval of expected.values()) {
+    const aval = actual.has(exval);
+    checkDeep([String(exval)], aval, true);
+  }
+  return errors;
+}
+
+
 function arrayPredicate(actual: any, expected: any) {
   return (actual instanceof Array && expected instanceof Array);
 }
@@ -150,10 +196,20 @@ function dataframeChecker(actual: DG.DataFrame, expected: DG.DataFrame,
     for (let i = 0; i < expected.rowCount; i++) {
       const actualValue = actualColumn.get(i);
       const expectedValue = column.get(i);
-      checkDeep([column.name], actualValue, expectedValue);
+      checkDeep([column.name, String(i)], actualValue, expectedValue);
     }
   }
   return errors;
+}
+
+
+function arrayBufferPredicate(actual: any, expected: any) {
+  return (actual instanceof ArrayBuffer && expected instanceof ArrayBuffer);
+}
+
+function arrayBufferChecker(actual: ArrayBuffer, expected: ArrayBuffer,
+  state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker) {
+  return arrayChecker(Array.from(new Uint8Array(actual)), Array.from(new Uint8Array(expected)), state, checkDeep);
 }
 
 

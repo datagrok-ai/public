@@ -1,159 +1,79 @@
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-let topmenuToggle = ui.div([
-    ui.iconFA('window-maximize')
-], 'windows-manager-toggle');
+const window = grok.shell.windows;
 
-let propertiesToggle = ui.div([
-    ui.iconFA('sliders-h')
-], 'windows-manager-toggle');
+const topmenuToggle = ui.div([ui.iconFA('window-maximize')], 'windows-manager-toggle');
+const toolboxToogle = ui.div([ui.iconFA('ballot')], 'windows-manager-toggle');
+const propertiesToggle = ui.div([ui.iconFA('sliders-h')], 'windows-manager-toggle');
+const helpToggle = ui.div([ui.iconFA('info')], 'windows-manager-toggle');
+const vairablesToggle = ui.div([ui.iconFA('value-absolute')], 'windows-manager-toggle');
+const consoleToggle = ui.div([ui.iconFA('terminal')], 'windows-manager-toggle');
+const presentationToggle = ui.div([ui.iconFA('presentation')], 'windows-manager-toggle');
 
-let helpToggle = ui.div([
-    ui.iconFA('info')
-], 'windows-manager-toggle');
+presentationToggle.addEventListener('click', ()=> {
+  window.presentationMode ? window.presentationMode = false : window.presentationMode = true;
+  setToggleState(window.presentationMode, presentationToggle);
+});
 
-let vairablesToggle = ui.div([
-    ui.iconFA('value-absolute')
-], 'windows-manager-toggle');
-
-let consoleToggle = ui.div([
-    ui.iconFA('terminal')
-], 'windows-manager-toggle');
+toolboxToogle.addEventListener('click', ()=> {
+  window.showToolbox ? window.showToolbox = false : window.showToolbox = true;
+  setToggleState(window.showToolbox, toolboxToogle);
+});
 
 topmenuToggle.addEventListener('click', ()=> {
-    if (grok.shell.windows.simpleMode) {
-        topmenuToggle.classList.add('active');
-        grok.shell.windows.simpleMode = false;
-    } else {
-        topmenuToggle.classList.remove('active');
-        grok.shell.windows.simpleMode = true;
-    }
+  window.simpleMode ? window.simpleMode = false : window.simpleMode = true;
+  window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
 });
 
 propertiesToggle.addEventListener('click', ()=> {
-    if (grok.shell.windows.showProperties) {
-        propertiesToggle.classList.remove('active');
-        grok.shell.windows.showProperties = false;
-    } else {
-        propertiesToggle.classList.add('active');
-        grok.shell.windows.showProperties = true;
-    }
+  window.showProperties ? window.showProperties = false : window.showProperties = true;
+  setToggleState(window.showProperties, propertiesToggle);
 });
 
 helpToggle.addEventListener('click', ()=> {
-    if (grok.shell.windows.showHelp) {
-        helpToggle.classList.remove('active');
-        grok.shell.windows.showHelp = false;
-    } else {
-        helpToggle.classList.add('active');
-        grok.shell.windows.showHelp = true;
-    }
+  window.showHelp ? window.showHelp = false : window.showHelp = true;
+  setToggleState(window.showHelp, helpToggle);
 });
 
 vairablesToggle.addEventListener('click', ()=> {
-    if (grok.shell.windows.showVariables) {
-        vairablesToggle.classList.remove('active');
-        grok.shell.windows.showVariables = false;
-    } else {
-        vairablesToggle.classList.add('active');
-        grok.shell.windows.showVariables = true;
-    }
+  window.showVariables ? window.showVariables = false : window.showVariables = true;
+  setToggleState(window.showVariables, vairablesToggle);
 });
 
 consoleToggle.addEventListener('click', ()=> {
-    if (grok.shell.windows.showConsole) {
-        consoleToggle.classList.remove('active');
-        grok.shell.windows.showConsole = false;
-    } else {
-        consoleToggle.classList.add('active');
-        grok.shell.windows.showConsole = true;
-    }
+  window.showConsole ? window.showConsole = false : window.showConsole = true;
+  setToggleState(window.showConsole, consoleToggle);
 });
 
-let windows = [
-    { 
-        'state': grok.shell.windows.simpleMode,
-        'root': topmenuToggle 
-    },
-    { 
-        'state': grok.shell.windows.showProperties,
-        'root': propertiesToggle 
-    },
-    {
-        'state': grok.shell.windows.showHelp,
-        'root': helpToggle
-    },
-    {
-        'state': grok.shell.windows.showVariables,
-        'root': vairablesToggle
-    },
-    {
-        'state': grok.shell.windows.showConsole,
-        'root': consoleToggle
-    }
-];
-
-export function windowsSidebar() {
-
-    try {
-        document.getElementsByClassName('windows-manager-sidebar')[0].remove();
-    }catch {
-
-    }
-
-    for (let i=0; i<windows.length; i++){
-        if(windows[i].state){
-            windows[i].root.classList.add('active')
-        }else{
-            windows[i].root.classList.remove('active')
-        }
-    }   
-
-    if (grok.shell.windows.simpleMode) {
-        topmenuToggle.classList.remove('active');
-    }
-
-    let root = ui.div([
-        ui.tooltip.bind(topmenuToggle,'Top menu'),
-        ui.tooltip.bind(propertiesToggle,'Context panel'), 
-        ui.tooltip.bind(helpToggle, 'Help'),
-        ui.tooltip.bind(vairablesToggle, 'Variables'),
-        ui.tooltip.bind(consoleToggle, 'Console')
-    ]);
-    root.className = 'windows-manager-sidebar';
-
-    document.getElementsByClassName('layout-toolbox-workarea-wrapper')[0].append(root);
+function setToggleState(v: boolean, toggle: HTMLDivElement) {
+  return (v ? toggle.className = 'windows-manager-toggle active' : toggle.className = 'windows-manager-toggle');
 }
 
-export function windowsStatusbar() {
-    try {
-        document.getElementsByClassName('windows-manager-sidebar')[0].remove();
-    }catch {
-
-    }
-
-    for (let i=0; i<windows.length; i++){
-        if(windows[i].state){
-            windows[i].root.classList.add('active')
-        }else{
-            windows[i].root.classList.remove('active')
-        }
-    }   
-
-    if (grok.shell.windows.simpleMode) {
-        topmenuToggle.classList.remove('active');
-    }
-    
-    let root = ui.div([
-        ui.tooltip.bind(topmenuToggle,'Top menu'), 
-        ui.tooltip.bind(propertiesToggle,'Context panel'), 
-        ui.tooltip.bind(helpToggle, 'Help'),
-        ui.tooltip.bind(vairablesToggle, 'Variables'),
-        ui.tooltip.bind(consoleToggle, 'Console')
-    ]);
-    root.className = 'windows-manager-statusbar';
-
-    document.getElementsByClassName('d4-global-status-panel')[0].append(root);
+function setButtonsToggleState() {
+  window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
+  setToggleState(window.showToolbox, toolboxToogle);
+  setToggleState(window.showProperties, propertiesToggle);
+  setToggleState(window.showHelp, helpToggle);
+  setToggleState(window.showVariables, vairablesToggle);
+  setToggleState(window.showConsole, consoleToggle);
+  setToggleState(window.presentationMode, presentationToggle);
 }
+
+export function windowsManagerPanel() {
+  const root = ui.div([
+    ui.tooltip.bind(topmenuToggle, ()=>{ return ui.div(['Tabs ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(toolboxToogle, ()=>{ return ui.div(['Toolbox ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(propertiesToggle, ()=>{ return ui.div(['Context Panel ', ui.span(['F4'], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(helpToggle, ()=>{ return ui.div(['Context Help ', ui.span(['F1'], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(vairablesToggle, ()=>{ return ui.div(['Variables ', ui.span(['ALT+V'], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(consoleToggle, ()=>{ return ui.div(['Console ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(presentationToggle, ()=>{ return ui.div(['Presentation mode ', ui.span(['F7'], {style:{color:'var(--grey-4)'}})])}),
+  ]);
+
+  root.className = 'windows-manager-statusbar';
+  document.getElementsByClassName('d4-global-status-panel')[0]?.append(root);
+  setButtonsToggleState();
+}
+
+grok.events.onEvent('grok-panels-changed').subscribe((_) => setButtonsToggleState());

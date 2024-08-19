@@ -5,9 +5,9 @@ title: "Develop custom viewers"
 Developers can extend Datagrok with special visual components bound to data, which are called
 [viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
-via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
+via [Datagrok JavaScript API](../packages/js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
-[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
+[scripting](../../compute/scripting/scripting.mdx) internally, so the code runs on the server, which makes it less
 interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../develop.md#packages) creation. Packages are convenient units for
@@ -73,7 +73,7 @@ our [JavaScript API documentation](https://datagrok.ai/js-api/classes/dg.JsViewe
 ### External dependencies
 
 Just like regular `npm` packages, Datagrok packages may have dependencies. Typically you would list them in
-your [package.json](../develop.md#package.json) file and get them locally via `npm install`. For instance, we will use a
+your [package.json](../develop.md#packagejson) file and get them locally via `npm install`. For instance, we will use a
 JavaScript library called [D3](https://d3js.org/) to create a bar chart. In this case, the `dependencies` field will
 look as follows:
 
@@ -85,7 +85,7 @@ look as follows:
 ```
 
 Some libraries, such as [datagrok-api](https://www.npmjs.com/package/datagrok-api), are marked as external modules in a
-package's [webpack configuration](../develop.md#webpack.config.js). This means that they will not be included in a
+package's [webpack configuration](../develop.md#webpackconfigjs). This means that they will not be included in a
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 
@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [context panel](../../datagrok/navigation.md#context-panel). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation/panels/panels.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 
@@ -432,7 +432,7 @@ plt.xlabel(valueColumnName)
 plt.show()
 ```
 
-This is how a scripting viewer might look in Python. As with regular [scripts](../../compute/scripting.md), we start by
+This is how a scripting viewer might look in Python. As with regular [scripts](../../compute/scripting/scripting.mdx), we start by
 annotating parameters in the header. The `viewers` tag implies that this script generates a visualization and can be
 used for search in [Script Browser](https://public.datagrok.ai/scripts?q=%23viewers). Then come the input parameters
 similar to the ones we provided in the JavaScript viewer's [properties](#properties). Notice that the names follow the
@@ -454,7 +454,7 @@ In terms of annotation, there are certain syntax constructs worthy of note:
   *numerical, categorical, dateTime*
 * for string properties, `{choices: ["mean", "count", "sum"]}` lists possible options
 
-This kind of annotation is typical for scripts, so refer to the [dedicated article](../../compute/scripting.md)
+This kind of annotation is typical for scripts, so refer to the [dedicated article](../../compute/scripting/scripting.mdx)
 for further explanation. The last parameter to mention is the output: scripting viewers must return
 `graphics` object. To see the produced bar chart, modify the `showChart` function, publish your package and
 run `AwesomePackage:showChart()` from the console:
@@ -483,7 +483,7 @@ chart pinned to the right.
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
-mode. This also means that users can persist this viewer as part of a [project](../../datagrok/project.md).
+mode. This also means that users can persist this viewer as part of a [project](../../datagrok/concepts/project/project.md).
 
 ![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 
@@ -499,18 +499,20 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //meta.toolbox: true
 //meta.trellisable: true
 //meta.viewerPath: Subcategory Name | Friendly Viewer Name
+//meta.viewerPosition: bottom
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`, and
-`meta.viewerPath`, can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and
-replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox
-in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner viewer of
-[DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in the top
-menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
+The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`,
+`meta.viewerPath` and `meta.viewerPosition` can be used. The `meta.icon` parameter accepts a path to a viewer icon file
+in the package and replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your
+viewer to the toolbox in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner
+viewer of [DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in
+the top menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`. The `meta.viewerPosition`
+parameter specifies the position of the viewer. It can be either top, bottom, left, right, fill or auto.
 
 :::tip
 
@@ -584,7 +586,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 See also:
 
-* [Datagrok JavaScript API](../js-api.md)
+* [Datagrok JavaScript API](../packages/js-api.md)
 * [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 * [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)

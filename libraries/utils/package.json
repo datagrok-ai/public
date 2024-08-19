@@ -3,12 +3,16 @@
   "publishConfig": {
     "access": "public"
   },
+  "author": {
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
+  },
   "fullName": "Utils",
-  "version": "4.0.11",
+  "version": "4.2.27",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.13.16",
+    "datagrok-api": "^1.20.0",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "latest"
@@ -28,6 +32,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "build": "tsc",
+    "build-utils": "git clean -f -X -d ./src  && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

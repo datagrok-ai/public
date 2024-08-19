@@ -9,8 +9,7 @@ utilizing these mechanisms in the package code.
 ## Adding unit tests
 
 We use a custom test framework that is similar to `Jest`, and it supports
-Datagrok API. To learn more about that, see our [guide for
-packages](https://github.com/datagrok-ai/public/blob/master/packages/GUIDE.MD#tests).
+Datagrok API. To learn more about that, see our [guide for packages](https://github.com/datagrok-ai/public/blob/master/packages/GUIDE.MD#tests).
 
 To add tests for local testing, run the following command:
 
@@ -53,9 +52,7 @@ category('Examples', () => {
 
 Next, make sure to import your test files in `src/package-test.ts`. After that,
 build and publish your package. There are several options to runs the tests:
-[locally using datagrok-tools](test-packages.md#local-testing), via [DG
-console](test-packages.md#running-tests-in-the-platform-console), and via [Test
-manager](test-packages.md#test-manager). All public packages in the
+[locally using datagrok-tools](test-packages.md#local-testing), via [DG console](test-packages.md#running-tests-in-the-platform-console), and via [Test manager](test-packages.md#test-manager). All public packages in the
 [repository](../../collaborate/public-repository.md) are tested using GitHub
 Actions on every commit. There is an option to trigger GitHub Actions
 [manually](test-packages.md#trigger-github-actions-manually), if something goes
@@ -79,10 +76,10 @@ test('Skipped', async () => {
 
 ## Testing functions
 
-Every package utilizes the concept of [functions](../../datagrok/functions/functions.md).
+Every package utilizes the concept of [functions](../../datagrok/concepts/functions/functions.md).
 Tests cases can be added directly to a function's annotation. Afterwards, the metadata
 is used to test package functions automatically. Use the `test` parameter to add
-test cases. A test is essentially any [grok script](../../datagrok/grok-script.md)
+test cases. A test is essentially any [grok script](../under-the-hood/grok-script.md)
 expression that will be evaluated to a boolean value. Here are some examples:
 
 ```ts
@@ -103,7 +100,7 @@ the `test` annotation:
 | Parameter type | Support | Input/output example                                                                                                         |
 |----------------|---------|------------------------------------------------------------------------------------------------------------------------------|
 | int            | &check; | `test: f(123) == 246`                                                                                                        |
-| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`                                                                                         |
+| double         | &check; | `test: 10 \< f(12.5) && f(12.5) \< 20`                                                                                         |
 | bool           | &check; | `test: f(true)`,<br />`test: returnsBool()`                                                                                  |
 | string         | &check; | `test: f("a") == "b"` (use `""` for strings)                                                                                 |
 | datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br />`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
@@ -118,5 +115,5 @@ See also:
 
 - [Packages](../develop.md#packages)
 - [Package testing](test-packages.md)
-- [Grok script](../../datagrok/grok-script.md)
+- [Grok script](../under-the-hood/grok-script.md)
 - [Instructions for datagrok-tools](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools)

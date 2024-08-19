@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: grok-connect
+  name: grok-connect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: grok-connect
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: grok-connect
+        network: "datagrok"
+    spec:
+      containers:
+        - image: datagrok/grok_connect:latest
+          imagePullPolicy: Always
+          name: grok-connect
+          ports:
+            - containerPort: 1234
+      restartPolicy: Always

@@ -3,18 +3,18 @@ package grok_connect.providers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class AthenaDataProvider extends JdbcDataProvider {
-    public AthenaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public AthenaDataProvider() {
         driverClassName = "com.simba.athena.jdbc.Driver";
 
         Property encode = new Property(Property.STRING_TYPE, DbCredentials.S3OutputEncOption,
@@ -55,6 +55,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
         }};
         descriptor.canBrowseSchema = true;
         descriptor.defaultSchema = "default";
+        descriptor.nameBrackets = "\"\"";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("tinyint", Types.INT);
             put("smallint", Types.INT);
@@ -84,24 +85,25 @@ public class AthenaDataProvider extends JdbcDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String formatString;
         String vpc = conn.get(DbCredentials.VPC_ENDPOINT);
-        if (vpc == null || vpc.isEmpty()) {
-            formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;User=%s;"
-            + "Password=%s;S3OutputLocation=%s;%s%s";
-        } else {
-            formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;User=%s;Password=%s;S3OutputLocation=%s;%s%s";
-        }
-        String accessKey = conn.credentials.parameters.get(DbCredentials.ACCESS_KEY).toString();
-        String secretKey = conn.credentials.parameters.get(DbCredentials.SECRET_KEY).toString();
-        String encode = conn.get(DbCredentials.S3OutputEncOption);
-        String database = conn.getDb();
+        if (GrokConnectUtil.isEmpty(vpc))
+            formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;";
+        else
+            formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;";
         return String.format(formatString,
-                conn.get(DbCredentials.REGION_ID),
-                accessKey,
-                secretKey,
-                conn.get(DbCredentials.S3OutputLocation),
-                database == null || database.isEmpty() ? "" : String.format("Schema=%s;", database),
-                encode == null || encode.isEmpty() ? "" : String.format("S3OutputEncOption=%s;", encode)
-                );
+                conn.get(DbCredentials.REGION_ID));
+    }
+
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        Properties properties = new Properties();
+        setIfNotNull(properties, "User", (String )conn.credentials.parameters.get(DbCredentials.ACCESS_KEY));
+        setIfNotNull(properties, "Password", (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
+        if (!conn.hasCustomConnectionString()) {
+            setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
+            setIfNotNull(properties, "Schema", conn.getDb());
+            setIfNotNull(properties, "S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
+        }
+        return properties;
     }
 
     @Override
@@ -115,7 +117,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
             add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
-        if (table != null)
+        if (GrokConnectUtil.isNotEmpty(table))
             filters.add("c.table_name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);

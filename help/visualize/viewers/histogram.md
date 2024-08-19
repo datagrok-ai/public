@@ -4,6 +4,9 @@ title: "Histogram"
 
 A histogram is a graphical representation of the distribution of numerical data.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Histogram');`
+
 General:
 
 |                  |                        |
@@ -24,5 +27,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/views/table-view.md)
 * [JS API: Histogram](https://public.datagrok.ai/js/samples/ui/viewers/types/histogram)

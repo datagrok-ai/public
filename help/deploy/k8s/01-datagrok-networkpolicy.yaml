@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  namespace: datagrok
+  name: datagrok
+spec:
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              network: "datagrok"
+  podSelector:
+    matchLabels:
+      network: "datagrok"

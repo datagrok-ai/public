@@ -1,10 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import {_package} from '../package';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+
+import {_package} from '../package';
+import {MolstarViewer} from '../viewers/molstar-viewer';
+import {awaitGrid} from '../tests/utils';
 
 const pdbCsvFn: string = 'pdb_data.csv';
 const pdbColName: string = 'pdb';
@@ -15,7 +19,23 @@ export async function demoBio07NoScript(): Promise<void> {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
 
-    const df = await _package.files.readCsv(pdbCsvFn);
+    let csv: string;
+    let df: DG.DataFrame;
+    try {
+      csv = await _package.files.readAsText(pdbCsvFn);
+      if (!csv)
+        throw new Error('Data file is empty.');
+      df = DG.DataFrame.fromCsv(csv);
+    } catch (err: any) {
+      grok.shell.warning(`Error reading file '${pdbCsvFn}': ${err.toString()}`);
+      // fallback on empty data
+      const idCol = DG.Column.fromStrings('id', []);
+      const pdbIdCol = DG.Column.fromStrings('pdb_id', []);
+      const pdbCol = DG.Column.fromStrings('pdb', []);
+      pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
+      df = DG.DataFrame.fromColumns([idCol, pdbIdCol, pdbCol]);
+    }
+
     const view = grok.shell.addTableView(df);
     view.grid.columns.byName('id')!.width = 0;
 
@@ -23,7 +43,7 @@ export async function demoBio07NoScript(): Promise<void> {
     const pdbStr: string = df.currentCell.value;
     const viewer = (await df.plot.fromType('Biostructure', {
       pdb: pdbStr,
-    }));
+    })) as unknown as MolstarViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.5);
 
     grok.shell.windows.showHelp = true;
@@ -33,6 +53,8 @@ export async function demoBio07NoScript(): Promise<void> {
       // @ts-ignore
       grok.shell.windows.help.showHelp(viewer.helpUrl);
     }
+
+    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
   } finally {
     pi.close();
   }

@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "HitTriage",
-  "version": "0.0.3",
+  "version": "1.2.0",
   "author": {
-    "name": "Andrew Skalkin",
-    "email": "askalkin@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
-  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps. Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application.",
+  "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage.",
   "sources": [
     "css/hit-triage.css"
   ],
@@ -16,12 +16,21 @@
     "directory": "packages/HitTriage"
   },
   "dependencies": {
-    "datagrok-api": "^1.0.0",
+    "@datagrok-libraries/compute-utils": "^1.8.3",
+    "@datagrok-libraries/utils": "^4.2.13",
+    "cash-dom": "latest",
+    "css-loader": "^6.5.1",
+    "datagrok-api": "^1.19.2",
+    "source-map-loader": "^4.0.1",
+    "style-loader": "^3.3.1",
     "ts-loader": "latest",
+    "rxjs": "^6.5.5",
     "typescript": "latest",
-    "cash-dom": "latest"
+    "uuid": "^9.0.0",
+    "typeahead-standalone": "4.14.1"
   },
   "devDependencies": {
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",
@@ -40,7 +49,9 @@
     "debug-hittriage-dev": "grok publish dev",
     "release-hittriage-dev": "grok publish dev --release",
     "debug-hittriage-public": "grok publish public",
-    "release-hittriage-public": "grok publish public --release"
+    "release-hittriage-public": "grok publish public --release",
+    "link-all": "npm link datagrok-api @datagrok-libraries/compute-utils @datagrok-libraries/utils",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
     "Developers"

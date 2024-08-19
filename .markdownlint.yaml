@@ -6,7 +6,7 @@ noInlineConfig: false
 extends: null
 
 # MD001/heading-increment/header-increment - Heading levels should only increment by one level at a time
-MD001: true
+MD001: false
 
 # MD002/first-heading-h1/first-header-h1 - First heading should be a top-level heading
 MD002: false
@@ -17,9 +17,9 @@ MD003:
   style: "consistent"
 
 # MD004/ul-style - Unordered list style
-MD004:
-  # List style
-  style: "consistent"
+MD004: false
+#  # List style
+#  style: "consistent"
 
 # MD005/list-indent - Inconsistent indentation for list items at the same level
 MD005: true
@@ -57,27 +57,27 @@ MD010:
 MD011: true
 
 # MD012/no-multiple-blanks - Multiple consecutive blank lines
-MD012:
-  # Consecutive blank lines
-  maximum: 1
+MD012: false
+#  # Consecutive blank lines
+#  maximum: 1
 
 # MD013/line-length - Line length
 MD013: false
 
 # MD014/commands-show-output - Dollar signs used before commands without showing output
-MD014: true
+MD014: false
 
 # MD018/no-missing-space-atx - No space after hash on atx style heading
 MD018: true
 
 # MD019/no-multiple-space-atx - Multiple spaces after hash on atx style heading
-MD019: true
+MD019: false
 
 # MD020/no-missing-space-closed-atx - No space inside hashes on closed atx style heading
 MD020: true
 
 # MD021/no-multiple-space-closed-atx - Multiple spaces inside hashes on closed atx style heading
-MD021: true
+MD021: false
 
 # MD022/blanks-around-headings/blanks-around-headers - Headings should be surrounded by blank lines
 MD022:
@@ -92,7 +92,7 @@ MD023: true
 # MD024/no-duplicate-heading/no-duplicate-header - Multiple headings with the same content
 MD024:
   # Only check sibling headings
-  allow_different_nesting: false
+  allow_different_nesting: true
   # Only check sibling headings
   siblings_only: false
 
@@ -105,12 +105,12 @@ MD025: false
 #  front_matter_title: "^\\s*title\\s*[:=]"
 
 # MD026/no-trailing-punctuation - Trailing punctuation in heading
-MD026:
-  # Punctuation characters
-  punctuation: ".,;:!。，；：！"
+MD026: false
+#  # Punctuation characters
+#  punctuation: ".,;:!。，；：！"
 
 # MD027/no-multiple-space-blockquote - Multiple spaces after blockquote symbol
-MD027: true
+MD027: false
 
 # MD028/no-blanks-blockquote - Blank line inside blockquote
 MD028: true
@@ -131,13 +131,15 @@ MD030:
   # Spaces for multi-line ordered list items
   ol_multi: 1
 
+# askalkin requested to disable it
 # MD031/blanks-around-fences - Fenced code blocks should be surrounded by blank lines
-MD031:
-  # Include list items
-  list_items: true
+MD031: false
+#  # Include list items
+#  list_items: true
 
+# askalkin requested to disable it
 # MD032/blanks-around-lists - Lists should be surrounded by blank lines
-MD032: true
+MD032: false
 
 # MD033/no-inline-html - Inline HTML
 MD033: false
@@ -146,20 +148,20 @@ MD033: false
 MD034: true
 
 # MD035/hr-style - Horizontal rule style
-MD035:
-  # Horizontal rule style
-  style: "consistent"
+MD035: false
+#  # Horizontal rule style
+#  style: "consistent"
 
 # MD036/no-emphasis-as-heading/no-emphasis-as-header - Emphasis used instead of a heading
-MD036:
-  # Punctuation characters
-  punctuation: ".,;:!?。，；：！？"
+MD036: false
+#  # Punctuation characters
+#  punctuation: ".,;:!?。，；：！？"
 
 # MD037/no-space-in-emphasis - Spaces inside emphasis markers
-MD037: true
+MD037: false
 
 # MD038/no-space-in-code - Spaces inside code span elements
-MD038: true
+MD038: false
 
 # MD039/no-space-in-links - Spaces inside link text
 MD039: true
@@ -193,33 +195,36 @@ MD044:
 MD045: false
 
 # MD046/code-block-style - Code block style
-MD046:
-  # Block style
-  style: "consistent"
+MD046: false
+#  # Block style
+#  style: "consistent"
 
 # MD047/single-trailing-newline - Files should end with a single newline character
-MD047: true
+MD047: false
 
 # MD048/code-fence-style - Code fence style
-MD048:
-  # Code fence style
-  style: "consistent"
+MD048: false
+#  # Code fence style
+#  style: "consistent"
 
-# MD049/emphasis-style - Emphasis style should be consistent
-MD049:
-  # Emphasis style should be consistent
-  style: "consistent"
+## MD049/emphasis-style - Emphasis style should be consistent
+#MD049:
+#  # Emphasis style should be consistent
+#  style: "consistent"
+MD049: false
 
+## MD050/strong-style - Strong style should be consistent
+#MD050:
+#  # Strong style should be consistent
+#  style: "consistent"
 # MD050/strong-style - Strong style should be consistent
-MD050:
-  # Strong style should be consistent
-  style: "consistent"
+MD050: false
 
 # MD051/link-fragments - Link fragments should be valid
 MD051: true
 
 # MD052/reference-links-images - Reference links and images should use a label that is defined
-MD052: true
+MD052: false
 
 # MD053/link-image-reference-definitions - Link and image reference definitions should be needed
 MD053: false

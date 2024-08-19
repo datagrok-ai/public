@@ -24,6 +24,9 @@ async function groupsTest() {
 
   // Delete subgroup
   await grok.dapi.groups.delete(demoSubGroup);
+
+  // Delete Demo group
+  await grok.dapi.groups.delete(demoGroup);
 }
 
 groupsTest();

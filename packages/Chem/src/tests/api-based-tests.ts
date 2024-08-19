@@ -5,26 +5,23 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import {isColumnPresent} from './gui-utils';
-
 
 category('server features', () => {
   test('descriptors', async () => {
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_500K.zip") :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('System:AppData/Chem/tests/smiles_500K.zip') :
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
-    grok.shell.addTableView(t);
 
-    isColumnPresent(grok.shell.t.columns, 'MolWt');
-    isColumnPresent(grok.shell.t.columns, 'NumAromaticCarbocycles');
-    isColumnPresent(grok.shell.t.columns, 'NumHAcceptors');
-    isColumnPresent(grok.shell.t.columns, 'NumHeteroatoms');
-    isColumnPresent(grok.shell.t.columns, 'NumRotatableBonds');
-    isColumnPresent(grok.shell.t.columns, 'RingCount');
-  });
+    expect(t.columns.contains('MolWt'), true);
+    expect(t.columns.contains('NumAromaticCarbocycles'), true);
+    expect(t.columns.contains('NumHAcceptors'), true);
+    expect(t.columns.contains('NumHeteroatoms'), true);
+    expect(t.columns.contains('NumRotatableBonds'), true);
+    expect(t.columns.contains('RingCount'), true);
+  }, {benchmark: true, stressTest: true});
 
   test('sketcher', async () => {
     const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
@@ -42,7 +39,7 @@ category('chem exported', () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
   });
 
-  test('substructureSearch', async () => {
+  test('substructureSearch_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const trueIndices = [0, 2];
     const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);

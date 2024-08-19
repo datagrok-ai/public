@@ -1,11 +1,14 @@
+import * as rxjs from 'rxjs';
 import {toJs} from './wrappers';
 import {_toIterable} from './utils';
 import {DockType} from './const';
-import { Viewer } from './viewer';
+import {Viewer} from './viewer';
+import {IDartApi} from "./api/grok_api.g";
+import {StreamSubscription} from "./events";
 
 
 declare let DG: any;
-let api = <any>window;
+const api: IDartApi = <any>window;
 
 /**
  * Dock node.
@@ -113,7 +116,7 @@ export class DockManager {
    * 3D view in a modeling package, etc.)
    */
   get documentContainer(): DockContainer {
-    return new DockContainer(api.grok_DockManaget_Get_DocumentContainer(this.dart));
+    return new DockContainer(api.grok_DockManager_Get_DocumentContainer(this.dart));
   }
 
   /**
@@ -145,11 +148,13 @@ export class DockManager {
   /**
    * Finds the node of an element.
    * @param {HTMLElement} element - Element to find the node for.
-   * @returns {DockNode}
+   * @returns {DockNode} if node is found, undefined otherwise.
    * */
-  findNode(element: HTMLElement): DockNode {
+  findNode(element: HTMLElement): DockNode | undefined {
     return toJs(api.grok_DockManager_FindNode(this.dart, element));
   }
+
+  get onClosed(): rxjs.Observable<HTMLElement> { return api.grok_DockManager_OnElementClosed(this.dart); }
 
   // /**
   //  * Docks the element relative to the reference node.

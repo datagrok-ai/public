@@ -1,34 +1,39 @@
 import * as rxjs from 'rxjs';
+import {Observable} from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
-import { toJs } from './wrappers';
-import { Observable } from "rxjs";
+import {filter} from 'rxjs/operators';
+import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
-import {Accordion, Dialog, InputBase} from "./widgets";
-import { View, ViewLayout } from './views/view';
-import { Viewer } from "./viewer";
-import { Column } from "./dataframe";
+import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
+import {View, ViewInfo, ViewLayout} from './views/view';
+import {Viewer} from "./viewer";
+import {Column, DataFrame} from "./dataframe";
+import {GridCell} from "./grid";
+import {IDartApi} from "./api/grok_api.g";
 
-let api = <any>window;
+const api: IDartApi = <any>window;
+
 
 export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
 
-export function __obs(eventId: string, object: any = null): Observable<any> {
+export function __obs<T = any>(eventId: string, object: any = null): Observable<T> {
   if (object == null) {
-    let observable = rxjs.fromEventPattern(
+    return rxjs.fromEventPattern(
       function (handler) {
         return api.grok_OnEvent(eventId, function (x: any) {
-          handler(toJs(x));
+          const jso = toJs(x);
+          handler(jso);
         });
       },
       function (handler, dart) {
         new StreamSubscription(dart).cancel();
       }
     );
-    return observable;
-  } else {
-    let o2 = rxjs.fromEventPattern(
+  }
+  else {
+    return rxjs.fromEventPattern(
       function (handler) {
         return api.grok_OnObjectEvent(object, eventId, function (x: any) {
           handler(toJs(x));
@@ -38,7 +43,6 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
         new StreamSubscription(dart).cancel();
       }
     );
-    return o2;
   }
 }
 
@@ -48,7 +52,7 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
  * @returns {rxjs.Observable}
  * */
 export function observeStream(dartStream: any): Observable<any> {
-  let observable = rxjs.fromEventPattern(
+  return rxjs.fromEventPattern(
     function (handler) {
       return api.grok_Stream_Listen(dartStream, function (x: any) {
         handler(toJs(x));
@@ -58,7 +62,6 @@ export function observeStream(dartStream: any): Observable<any> {
       new StreamSubscription(dart).cancel();
     }
   );
-  return observable;
 }
 
 
@@ -106,9 +109,9 @@ export class Events {
   get onDialogShown(): rxjs.Observable<Dialog> { return __obs('d4-dialog-showed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/global-events} */
-  get onTableAdded(): rxjs.Observable<any> { return __obs('d4-table-added'); }
+  get onTableAdded(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs('d4-table-added'); }
 
-  get onTableRemoved(): rxjs.Observable<any> { return __obs('d4-table-removed'); }
+  get onTableRemoved(): rxjs.Observable<EventData<DataFrameArgs>> { return __obs('d4-table-removed'); }
 
   get onQueryStarted(): rxjs.Observable<any> { return __obs('d4-query-started'); }
 
@@ -129,13 +132,13 @@ export class Events {
   get onResetFilterRequest(): rxjs.Observable<any> { return __obs('d4-reset-filter-request'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutGenerated(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-generated'); }
+  get onViewLayoutGenerated(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-generated'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutApplying(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applying'); }
+  get onViewLayoutApplying(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-applying'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
-  get onViewLayoutApplied(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applied'); }
+  get onViewLayoutApplied(): rxjs.Observable<ViewInfo> { return __obs('d4-view-layout-applied'); }
 
   /** File in the file share has been edited and saved by the user. */
   get onFileEdited(): rxjs.Observable<FileInfo> { return __obs('grok-file-edited'); }
@@ -171,6 +174,12 @@ export class Events {
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
+
+  get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
+
+  get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
+    return __obs<TreeViewNode>('d4-tree-view-node-added').pipe(filter(n => n.rootNode.tag == 'Browse' ));
+  }
 }
 
 /*
@@ -214,7 +223,7 @@ export class StreamSubscription {
   cancel(): void { api.grok_Subscription_Cancel(this.dart); }
 }
 
-/** Event arguments. {@see args} contains event details.
+/** @see Event arguments. {@link args} contains event details.
  *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
 export class EventData<TArgs = any> {
   public dart: any;
@@ -245,9 +254,9 @@ export class EventData<TArgs = any> {
   }
 
   /** Event details. */
-  get args(): { [index: string]: TArgs } {
+  get args(): TArgs {
     let x = api.grok_EventData_Get_Args(this.dart);
-    let result: { [index: string]: any } = {};
+    let result: any = {};
     for (const property in x)
       if (x.hasOwnProperty(property))
         result[property] = toJs(x[property]);
@@ -318,4 +327,17 @@ export class ColumnsArgs extends EventData {
   set columns(list: Column[]) {
     api.grok_ColumnsArgs_Set_Columns(this.dart, list);
   }
+}
+
+export interface GridCellArgs {
+  gridCell: GridCell;
+  link: string;
+}
+
+export interface DataFrameArgs {
+  dataFrame: DataFrame;
+}
+
+export interface InputArgs {
+  input: InputBase;
 }

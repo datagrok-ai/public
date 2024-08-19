@@ -129,3 +129,48 @@ export async function _trainAndAnalyzeLSSVMInWebWorker(gamma, kernel, kernelPara
   });
 }
 
+export function _fitLinearRegressionParamsWithDataNormalizing(features, featureAvgs, featureStdDevs, targets, targetsAvg, targetsStdDev, paramsCount) {
+  return callWasm(EDA, 'fitLinearRegressionParamsWithDataNormalizing', [features, featureAvgs, featureStdDevs, targets, targetsAvg, targetsStdDev, paramsCount]);
+}
+
+export async function _fitLinearRegressionParamsWithDataNormalizingInWebWorker(features, featureAvgs, featureStdDevs, targets, targetsAvg, targetsStdDev, paramsCount) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/fitLinearRegressionParamsWithDataNormalizingWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['fitLinearRegressionParamsWithDataNormalizing'].arguments,[features, featureAvgs, featureStdDevs, targets, targetsAvg, targetsStdDev, paramsCount]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['fitLinearRegressionParamsWithDataNormalizing'], e.data));
+    }
+  });
+}
+
+export function _fitLinearRegressionParams(features, targets, paramsCount) {
+  return callWasm(EDA, 'fitLinearRegressionParams', [features, targets, paramsCount]);
+}
+
+export async function _fitLinearRegressionParamsInWebWorker(features, targets, paramsCount) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/fitLinearRegressionParamsWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['fitLinearRegressionParams'].arguments,[features, targets, paramsCount]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['fitLinearRegressionParams'], e.data));
+    }
+  });
+}
+
+export function _fitSoftmax(features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols) {
+  return callWasm(EDA, 'fitSoftmax', [features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols]);
+}
+
+export async function _fitSoftmaxInWebWorker(features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/fitSoftmaxWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['fitSoftmax'].arguments,[features, featureAvgs, featureStdDevs, targets, classesCount, iterCount, learningRate, penalty, tolerance, paramsRows, paramsCols]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['fitSoftmax'], e.data));
+    }
+  });
+}
+

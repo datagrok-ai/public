@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
-import { addInchiKeys, addInchis } from '../panels/inchi';
+import {addInchiKeys, addInchis} from '../panels/inchi';
 
 
 const csvForInchi = `smiles
@@ -16,27 +16,28 @@ CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`;
 category('column panel', () => {
   test('inchi', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip");
+      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
       addInchis(df, df.col('smiles')!);
-    } else
+    } else {
       await testInchiPanel('addInchisTopMenu', 'inchi', 'inchi',
         'InChI=1S/C22H22BrNO2/c1-26-22-12-9-19(13-21(22)25)16-24(14-17-5-3-2-4-6-17)15-18-7-10-20(23)11-8-18/h2-13,25H,14-16H2,1H3');
-  });
+    }
+  }, {benchmark: true});
 
   test('add inchi keys', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip");
+      const df = await grok.data.files.openTable('System:AppData/Chem/tests/smiles_200K.zip');
       addInchiKeys(df, df.col('smiles')!);
     } else
       await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys', 'inchi_key', 'BRJLNESNMQYEGX-UHFFFAOYSA-N');
-  });
+  }, {benchmark: true});
 });
 
 async function testInchiPanel(funcName: string, tableName: string, newColName: string, expected: string) {
   const t = DG.DataFrame.fromCsv(csvForInchi);
   t.name = tableName;
   const v = grok.shell.addTableView(t);
-  await awaitCheck(() => v.name === tableName, undefined, 1000);
+  await awaitCheck(() => v.dataFrame.name === tableName, undefined, 2000);
   await grok.functions.call(`Chem:${funcName}`, {table: t, molecules: t.columns.byName('smiles')});
   await delay(1000);
   expect(t.columns.names().includes(newColName), true, `${newColName} column has not been added`);

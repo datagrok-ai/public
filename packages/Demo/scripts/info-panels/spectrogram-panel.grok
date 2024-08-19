@@ -1,9 +1,0 @@
-#name: Spectrogram
-#description: Panel that contains graphics produced by the R script
-#language: grok
-#tags: demo, panel,dsp
-#input: column signal {type:numerical}
-#output: graphics pic
-#condition: "F3" == signal.name
-
-pic = Demo:Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)

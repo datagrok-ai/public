@@ -131,7 +131,7 @@ modified
 
 #### Initialize values with a function
 
-It's handy to set all column values in a single batch. This is possile with `.init` function:
+It's handy to set all column values in a single batch. This is possible with `.init` function:
 
 ```javascript
 let df = DG.DataFrame.fromCsv(
@@ -313,11 +313,11 @@ column is modified.
 
 Computing popular statistics, such as average `.avg`, median `.med` or standard deviation `.stdev`, is more efficient
 when done altogether. If that's the case you need, it's possible to get all such statistics using a `.`, which returns
-an istance of [`Stats`][130] class.
+an instance of [`Stats`][130] class.
 
 Run `Stats` example: [Link][129].
 
-### Numerical and categotical columns
+### Numerical and categorical columns
 
 Currently, columns of types `BOOL` and `STRING` are considered as categorical, s.t. they represent values from a
 discrete set. Columns of types `INT` and `FLOAT` are considered as numerical, s.t. they represent values from a
@@ -346,7 +346,7 @@ Check
 
 ### Construct
 
-Dataframes may be obtained through the JavaSript or TypeScript code in various ways:
+Dataframes may be obtained through the JavaScript or TypeScript code in various ways:
 
 [//]: # (TODO: Add links where they are missed)
 
@@ -497,7 +497,7 @@ To add, remove or replace columns in a dataframe:
   `<TypeName>` at the end of the column list
 * `.addNewVirtual` adds a new [virtual column][135] at the end of the column list
 * `.replace(oldColumn, newColumn)`  substitutes inside a dataframe an `oldColumn` passed as an object with a `newColumn`
-  . The column remains avaialble by `oldColumn`, but it is no longer part of the dataframe
+  . The column remains available by `oldColumn`, but it is no longer part of the dataframe
 
 Examples:
 
@@ -648,13 +648,13 @@ property setter).
 
 [106]: #access-and-modify-column-values "Accessing and modifying column values"
 
-[107]: ../../datagrok/table-view.md "Table Views"
+[107]: ../../datagrok/navigation/views/table-view.md "Table Views"
 
-[108]: ../../discover/tags.md#format "Values of a format tag"
+[108]: ../../govern/catalog/tags.md#format "Values of a format tag"
 
-[109]: ../../discover/semantic-types.md "Semantic types"
+[109]: ../../govern/catalog/semantic-types.md "Semantic types"
 
-[110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
+[110]: ../../datagrok/solutions/domains/chem/chem.md "Cheminformatics overview"
 
 [111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
 
@@ -682,7 +682,7 @@ property setter).
 
 [124]: ../how-to/customize-grid.md#color-coding "Color coding"
 
-[125]: #numerical-and-categotical-columns "Numerical and categorical columns"
+[125]: #numerical-and-categorical-columns "Numerical and categorical columns"
 
 [126]: https://public.datagrok.ai/js/samples/data-frame/modification/manipulate "Manipulating dataframes"
 

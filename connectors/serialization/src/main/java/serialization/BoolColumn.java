@@ -1,31 +1,32 @@
 package serialization;
 
-
-import java.util.Arrays;
-import java.util.Objects;
-
 // Bool column.
 public class BoolColumn extends Column<Boolean> {
     private static final String TYPE = Types.BOOL;
 
     private int[] data;
 
-    public String getType() {
-        return TYPE;
-    }
-    
-    public void empty() {
-        length = 0;
-        data = new int[100]; 
-    }
-
     public BoolColumn() {
-        data = new int[100];
+        data = new int[initColumnSize];
     }
 
     public BoolColumn(Boolean[] values) {
-        data = new int[100];
+        data = new int[initColumnSize];
         addAll(values);
+    }
+
+    public BoolColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new int[initColumnSize];
+    }
+
+    public String getType() {
+        return TYPE;
+    }
+
+    public void empty() {
+        length = 0;
+        data = new int[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {
@@ -53,6 +54,18 @@ public class BoolColumn extends Column<Boolean> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    /**
+     * don't use this method, should be used from complexTypeColumn
+     */
+    @Override
+    public void set(int index, Boolean value) {
+        if (index != length - 1) {
+            throw new IllegalArgumentException("Can set only penultimate element");
+        }
+        length--;
+        add(value);
     }
 
     public boolean isNone(int idx) {

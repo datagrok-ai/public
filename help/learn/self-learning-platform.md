@@ -9,19 +9,19 @@ behavior.
 
 Think about Netflix's movie recommendation engine, but instead of dealing with just two entities (
 users and movies) and one relation (user's score for the movie) we have a much more complex case. We got dozen of
-different [entity types](../datagrok/objects.md)
+different [entity types](../datagrok/concepts/objects.md)
 (such as [query](../access/access.md#data-query), [viewer](../visualize/viewers/viewers.md), etc), connected with different relations
-(such as '[query](../access/access.md#data-query) `ran_by` [user](../govern/user.md)') and restricted by different constraints.
+(such as '[query](../access/access.md#data-query) `ran_by` [user](../govern/access-control/users-and-groups#users)') and restricted by different constraints.
 
 When enabled, the self-learning component uses various AI techniques to spot patterns in usage, and provide users with
 actionable insights. These might include suggestions to visualize currently open dataset in a specific way, predict
-properties based on [prediction model](predictive-modeling.md) trained by someone else, create a derived column (such as
+properties based on [prediction model](learn.md) trained by someone else, create a derived column (such as
 BMI in case your dataset contains weight and height), or many other actions. Note that the platform would give you
 suggestions that are based not solely on your activity, but on the activity of other users as well. This facilitates
 spreading organization's knowledge across different departments and time zones.
 
 See also:
 
-* [Predictive modeling](predictive-modeling.md)
+* [Predictive modeling](learn.md)
 * [Data queries](../access/access.md#data-query)
-* [Projects](../datagrok/project.md)
+* [Projects](../datagrok/concepts/project/project.md)

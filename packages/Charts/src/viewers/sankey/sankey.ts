@@ -72,6 +72,7 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
     this.valueColumnName = this.string('valueColumnName');
+    this.addRowSourceAndFormula();
 
     this.initialized = false;
   }
@@ -90,29 +91,50 @@ export class SankeyViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+  _testColumns() {
+    const columns = this.dataFrame.columns.toList();
+    const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
+    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+    return (strColumns!.length >= 2 && numColumns!.length >= 1);
+  }
+
   onTableAttached() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
     this.init();
 
-    const columns = this.dataFrame.columns.toList();
-    const strColumns = columns.filter((col) => col.type === 'string');
-    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-    this.sourceColumnName = strColumns[0].name;
-    this.targetColumnName = strColumns[1].name;
-    this.valueColumnName = numColumns[0].name;
+    if (this._testColumns()) {
+      const columns = this.dataFrame.columns.toList();
+      const strColumns = columns.filter((col) => col.type === 'string' && col.categories.length <= 50);
+      const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+
+      this.sourceColumnName = strColumns[0].name;
+      this.targetColumnName = strColumns[1].name;
+      this.valueColumnName = numColumns[0].name;
+    }
 
     this.prepareData();
     this.render();
   }
 
+  onSourceRowsChanged() {
+    this.render();
+  }
+
   prepareData() {
+    if (!this._testColumns())
+      return;
+
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
-    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+    const selectedIndexes = this.filter.getSelectedIndexes();
+    const { rowCount } = this.dataFrame;
+    const filteredIndexList = selectedIndexes.length > 0 
+    ? selectedIndexes 
+    : Array.from({ length: rowCount }, (_, index) => index);
+
 
     const sourceList = new Array<string>(filteredIndexList.length);
     const targetList = new Array<string>(filteredIndexList.length);
@@ -132,8 +154,8 @@ export class SankeyViewer extends DG.JsViewer {
       .map((node: string, index: number) => ({node: index, name: node}));
 
     const links: Link[] = [];
-    const rowCount = filteredIndexList.length;
-    for (let i = 0; i < rowCount; i++) {
+    const filteredRowCount = filteredIndexList.length;
+    for (let i = 0; i < filteredRowCount; i++) {
       const source = nodes.findIndex((node) => node.name === sourceList[i]);
       const target = nodes.findIndex((node) => node.name === targetList[i]);
       if (source === -1 || target === -1)
@@ -164,10 +186,18 @@ export class SankeyViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+
   render() {
+    $(this.root).empty();
+    if (!this._testColumns()) {
+      // eslint-disable-next-line max-len
+      this._showErrorMessage('The Sankey viewer requires a minimum of 2 categorical (less than 50 unique categories) and 1 numerical columns.');
+      return;
+    }
+
     this.prepareData();
 
-    $(this.root).empty();
     const width = this.root.parentElement!.clientWidth - this.margin!.left - this.margin!.right;
     const height = this.root.parentElement!.clientHeight - this.margin!.top - this.margin!.bottom;
 
@@ -179,14 +209,14 @@ export class SankeyViewer extends DG.JsViewer {
 
     const svg = select(this.root).append('svg')
       .attr('width', width + this.margin!.left + this.margin!.right)
-      .attr('height', height + this.margin!.top + this.margin!.bottom)
+      .attr('height', Math.abs(height + this.margin!.top + this.margin!.bottom))
       .append('g')
       .attr('transform', `translate(${this.margin!.left}, ${this.margin!.top})`);
 
     const nodeGroup = svg.append('g').attr('class', 'node');
 
-    const dataFrameSourceColumn = this.dataFrame.getCol('source');
-    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+    const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
+    const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
 
     const nodes = nodeGroup
       .selectAll('rect')
@@ -194,7 +224,7 @@ export class SankeyViewer extends DG.JsViewer {
       .join('rect')
       .attr('x', (d) => d.x0!)
       .attr('y', (d) => d.y0!)
-      .attr('height', (d) => d.y1! - d.y0!)
+      .attr('height', (d) => Math.abs(d.y1! - d.y0!))
       .attr('width', (d) => d.x1! - d.x0!)
       .attr('fill', (d: any) => DG.Color.toRgb(this.color!(d.name)))
       .on('mouseover', (event, d: any) => {

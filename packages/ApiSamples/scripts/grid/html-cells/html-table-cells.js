@@ -7,6 +7,6 @@ let t = DG.DataFrame.fromColumns([
     '<input type="range">'
   ])
 ]);
-t.col('test').tags['cell.renderer'] = 'html';
+t.col('test').tags[DG.TAGS.CELL_RENDERER] = 'html';
 
 grok.shell.addTableView(t);

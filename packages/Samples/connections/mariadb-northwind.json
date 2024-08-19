@@ -1,0 +1,23 @@
+{
+  "#type": "DataConnection",
+  "name": "MariaDBNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 33061
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "plVOtOmIoidbCKSk3ynk41S1685r17ESrdJN"
+    }
+  },
+  "dataSource": "MariaDB",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

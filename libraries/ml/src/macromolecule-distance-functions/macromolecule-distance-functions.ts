@@ -11,11 +11,13 @@ import {mmDistanceFunctionType} from './types';
 export enum MmDistanceFunctionsNames {
     HAMMING = 'Hamming',
     LEVENSHTEIN = 'Levenshtein',
-    NEEDLEMANN_WUNSCH = 'Needlemann-Wunsch'
+    NEEDLEMANN_WUNSCH = 'Needlemann-Wunsch',
+    MONOMER_CHEMICAL_DISTANCE = 'Monomer chemical distance'
 };
 
 export const mmDistanceFunctions: Record<MmDistanceFunctionsNames, (value?: any) => mmDistanceFunctionType> = {
   [MmDistanceFunctionsNames.HAMMING]: hamming,
   [MmDistanceFunctionsNames.LEVENSHTEIN]: levenstein,
-  [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: needlemanWunch
+  [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: needlemanWunch,
+  [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]: hamming
 };

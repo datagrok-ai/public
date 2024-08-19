@@ -1,0 +1,62 @@
+{
+  "name": "@datagrok/docking",
+  "friendlyName": "Docking",
+  "fullName": "Docking",
+  "version": "1.0.3",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
+  "description": "Integrates Datagrok with molecular docking algorithms and tools.",
+  "dependencies": {
+    "@datagrok-libraries/bio": "^5.39.13",
+    "@datagrok-libraries/utils": "^4.2.22",
+    "datagrok-api": "^1.20.0",
+    "cash-dom": "latest",
+    "dayjs": "^1.11.4",
+    "rxjs": "^6.5.5",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@datagrok/biostructure-viewer": "^1.0.26",
+    "@types/wu": "latest",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "9.4.2",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "debug-docking": "webpack && grok publish ",
+    "release-docking": "webpack && grok publish --release",
+    "build-docking": "webpack",
+    "build": "webpack",
+    "debug-docking-dev": "grok publish dev --rebuild",
+    "release-docking-dev": "grok publish dev --rebuild --release",
+    "debug-docking-local": "grok publish local --rebuild",
+    "release-docking-local": "grok publish local --rebuild --release",
+    "debug-docking-local2": "grok publish local2 --rebuild",
+    "release-docking-local2": "grok publish local2 --rebuild --release",
+    "debug-docking-release.datagrok.ai": "grok publish release.datagrok.ai --rebuild",
+    "release-docking-release.datagrok.ai": "grok publish release.datagrok.ai --rebuild --release",
+    "debug-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild",
+    "release-docking-test.datagrok.ai": "grok publish test.datagrok.ai --rebuild --release",
+    "debug-docking-sandbox": "grok publish sandbox --rebuild",
+    "release-docking-sandbox": "grok publish sandbox --rebuild --release",
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/bio run build && npm run build"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Docking"
+  }
+}

@@ -4,9 +4,9 @@ import * as grok from 'datagrok-api/grok';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
-// export default ;
 
 export interface Indexable { [key: string]: any }
+
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);

@@ -9,14 +9,25 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: #2596, Fix for test data in the utils library
   detectPdb(col) {
-    let res = null;
     if (DG.Detector.sampleCategories(col,
-      (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+      // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+      (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+    )) {
+      col.meta.units = 'pdb';
+      return 'Molecule3D';
+    } else if (DG.Detector.sampleCategories(col,
+      (s) => s.match(/^MODEL/m) && s.match(/^ENDMDL/m) &&
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+      1)
     ) {
-      res = 'Molecule3D';
+      col.meta.units = 'pdbqt';
+      return 'Molecule3D';
     }
-    return res;
+
+    return null;
   }
 
   //tags: semTypeDetector
@@ -39,16 +50,32 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   autostart() {
     this.logger.debug('BsV: detectors.js: autostart()');
 
+    this.autostartContextMenu();
+  }
+
+  autostartContextMenu() {
+    const logPrefix = 'BsV: detectors.js: autostartContextMenu()';
+    this.logger.debug(`${logPrefix}, start`);
     grok.events.onContextMenu.subscribe((event) => {
-      if (event.args.item && event.args.item.__proto__.constructor.name == 'FileInfo') {
-        const fi = event.args.item;
-        if (fi.extension.toLowerCase() == 'pdb') {
-          const contextMenu = event.args.menu;
-          contextMenu.item('Open table residues', async () => {
-            await grok.functions.call('BiostructureViewer:openPdbResidues', {fi: fi});
-          });
+      this.logger.debug(`${logPrefix}, onContextMenu, start`);
+      if (event.args.item) {
+        const item = event.args.item;
+        // TODO: TreeViewNode.value is not real DG.FileInfo (no extension property)
+        // if (item instanceof DG.TreeViewNode)
+        //   item = item.value;
+
+        if (item && (
+          (item instanceof DG.GridCell || item.constructor.name === 'GridCell') ||
+          (item instanceof DG.FileInfo || item.constructor.name === 'FileInfo'))
+        ) {
+          grok.functions.call('BiostructureViewer:addContextMenu', {event: event})
+            .catch((err) => {
+              this.logger.error('addContextMenu must not throw any exception');
+              this.logger.error(error);
+            });
         }
       }
+      this.logger.debug(`${logPrefix}, onContextMenu, end`);
     });
   }
 }

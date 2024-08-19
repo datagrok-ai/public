@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+import {PdbHelper} from '../utils/pdb-helper';
 
 /** The app for .pdb file handler, builds up PdbResDataFrame */
 export class BiostructureApp {
@@ -10,12 +12,14 @@ export class BiostructureApp {
 
   constructor() {}
 
+  /** {@link df} created with pdbToDf() */
   async init(df: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);
   }
 
   async loadData(df: DG.DataFrame): Promise<void> {
+    const ph: IPdbHelper = await PdbHelper.getInstance();
     await this.setData(df);
   }
 

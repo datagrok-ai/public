@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -13,21 +11,16 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.*;
 import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
 public class ImpalaDataProvider extends JdbcDataProvider {
-    public ImpalaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
-        driverClassName = "com.cloudera.impala.jdbc.Driver";
 
+    public ImpalaDataProvider() {
+        driverClassName = "com.cloudera.impala.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "Impala";
         descriptor.description = "Query Impala database";
@@ -40,9 +33,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
                     + "'default' will be used"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -97,10 +87,10 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String schema = connection.get(DbCredentials.SCHEMA);
         String columnName = "TABLE_SCHEMA";
-        if (schema != null && !schema.isEmpty()) {
+        if (GrokConnectUtil.isNotEmpty(schema)) {
             StringColumn column = new StringColumn(new String[]{schema});
             column.name = columnName;
             DataFrame dataFrame = new DataFrame();
@@ -115,7 +105,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+            throws QueryCancelledByUser, GrokConnectException {
         if (table == null) {
             return handleNoTable(connection);
         }
@@ -124,7 +114,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        schema = db == null || db.isEmpty() ? schema : db;
+        schema = GrokConnectUtil.isEmpty(db) ? schema : db;
         return String.format("SHOW COLUMN STATS %s.%s", schema, table);
     }
 
@@ -148,24 +138,20 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         String schema = (String)conn.parameters.get(DbCredentials.SCHEMA);
-        schema = schema == null ? "/" + descriptor.defaultSchema : "/" + schema;
+        schema = GrokConnectUtil.isEmpty(schema) ? "/" + descriptor.defaultSchema : "/" + schema;
         return String.format("jdbc:impala://%s%s%s", conn.getServer(), port, schema);
     }
 
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = new Properties();
-        if (!conn.hasCustomConnectionString()) {
-            if (conn.ssl()) {
-                properties.setProperty("SSL", "1");
-            }
-            String login = conn.credentials.getLogin();
-            String password = conn.credentials.getPassword();
-            if (login != null && !login.isEmpty() && password != null && !password.isEmpty()) {
+        if (!conn.hasCustomConnectionString() && conn.ssl())
+            properties.setProperty("SSL", "1");
+        if (conn.credentials != null) {
+            setIfNotNull(properties, "UID", conn.credentials.getLogin());
+            setIfNotNull(properties, "PWD", conn.credentials.getPassword());
+            if (properties.contains("UID"))
                 properties.setProperty("AuthMech", "3");
-                properties.setProperty("UID", login);
-                properties.setProperty("PWD", password);
-            }
         }
         return properties;
     }
@@ -175,13 +161,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) ||
-                (type == java.sql.Types.SMALLINT);
-    }
-
-    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = "SHOW TABLES;";
@@ -197,7 +177,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     private DataFrame getSingleTableInfo(DataConnection connection, String table) throws GrokConnectException,
-            QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {
+            QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String currentSchema = connection.get(DbCredentials.SCHEMA);

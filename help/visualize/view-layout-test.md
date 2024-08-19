@@ -4,7 +4,7 @@
 # Tests: View layout
 
 [View Layout](view-layout.md) contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagrok/navigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
 (**View | Layout | Open Gallery**).
@@ -22,7 +22,7 @@ choose **Clone**.
 * New view created for *"demog"* table
 * New view is called *"demog copy"*
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Add each one available [Viewer](../visualize/viewers/viewers.md) for *"demog"* table
 
@@ -35,7 +35,7 @@ choose **Clone**.
 * New view is called *"demog copy"*
 * On *"demog copy"* view there are added viewers with modified style properties.
 
-1. Remove view *"demog copy"* from [Workspace](../datagrok/workspace.md)
+1. Remove view *"demog copy"* from Workspace
 
 1. Clear *"demog"* view from menu **View | Layout | Clear** or **View | Reset** from context menu to *demog* tab or use
    keyboard ```Ctrl + Shift + R```
@@ -44,13 +44,13 @@ choose **Clone**.
 
 1. Change row sorting by *Age* column to decrease
 
-* Table is sorted by values ​​of *Age* column descending
+* Table is sorted by values   of *Age* column descending
 
 1. Enable Color Coding for *Sex* column
 
-* Values ​​in *Sex* column are highlighted in different colors
+* Values   in *Sex* column are highlighted in different colors
 
-1. Set filter for values ​​only equals ```Asian``` in "Race" column
+1. Set filter for values   only equals ```Asian``` in "Race" column
 
 * Filter ```"Race" = Asian``` in applied *"demog"* table
 
@@ -77,10 +77,10 @@ choose **Clone**.
 
 1. Change row sorting by *Age* column to decrease
 
-* Table is sorted by values ​​of *Age* column descending
+* Table is sorted by values   of *Age* column descending
 
 1. Save received view to Layouts Gallery from menu **View | Layout | Save to Gallery** or use ```Ctrl + S``` or use
-   **SAVE** button in "Layouts" tab on [Toolbox](../datagrok/navigation.md#toolbox)
+   **SAVE** button in "Layouts" tab on Toolbox
 
 1. Open Layouts Gallery from **View | Layout | Open Gallery** or use ```Ctrl + L```
 
@@ -88,7 +88,7 @@ choose **Clone**.
 
 1. Restart **Grok** platform and open *"demog"* table in new session
 
-1. Open "Layouts" tab on [Toolbox](../datagrok/navigation.md#toolbox)
+1. Open "Layouts" tab on **Toolbox**
 
 * Saved layout in step 19 is offered in "Layouts" tab.
 
@@ -106,5 +106,5 @@ choose **Clone**.
 See also:
 
 * [View layout](view-layout.md)
-* [Table view](../datagrok/table-view.md)
-* [Self-learning platform](../learn/self-learning-platform.md)
+* [Table view](../datagrok/navigation/views/table-view.md)
+* [Self-learning platform](../govern/catalog/self-learning-platform.md)

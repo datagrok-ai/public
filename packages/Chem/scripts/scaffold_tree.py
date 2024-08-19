@@ -6,12 +6,12 @@
 #input: string smilesColumn
 #input: int ringCutoff = 10 [Ignore molecules with # rings > N]
 #input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
-#output: string result
+#output: blob result
 
 import scaffoldgraph as sg
 import networkx as nx
 import json
-from rdkit.Chem import MolToMolBlock, MolFromSmiles
+from rdkit.Chem import MolToMolBlock, MolFromSmiles, CanonSmiles
 
 #function that recursively adds child_nodes to hierarchies depending on the prev_scaffold value
 def recurs_append_nodes(key, value, node, obj):
@@ -29,7 +29,8 @@ def find_nodes(tree, nodes, scaffold):
     for i in range(len(nodes)):
         predecessors = list(nx.bfs_tree(tree, nodes[i], reverse=True))
         if len(predecessors) > 1 and predecessors[1] == scaffold:
-            scaffold_nodes.append(nodes[i])
+            if CanonSmiles(scaffold) != CanonSmiles(nodes[i]):
+                scaffold_nodes.append(nodes[i])
     return scaffold_nodes
 
 #function that returns the scaffold parent
@@ -138,6 +139,5 @@ tree = sg.ScaffoldTree.from_dataframe(
     discharge_and_deradicalize=dischargeAndDeradicalize,
 )
 
-res = get_json_representation(tree)
-json_result = json.dumps(res)
-result = json_result.replace("\\n", "\n")
+json_tree = get_json_representation(tree)
+result = json.dumps(json_tree).encode('utf-8')

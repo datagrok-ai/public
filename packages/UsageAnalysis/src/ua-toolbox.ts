@@ -17,10 +17,11 @@ export class UaToolbox {
   groupsInput: ChoiceInputGroups;
   packagesInput: ChoiceInputPackages;
   filterStream: BehaviorSubject<UaFilter>;
-  dateFromDD: DG.InputBase = ui.stringInput('From', '');
-  dateToDD: DG.InputBase = ui.stringInput('To', '');
-  usersDD: DG.InputBase = ui.stringInput('Users', '');
-  packagesDD: DG.InputBase = ui.stringInput('Packages', '');
+  dateFromDD: DG.InputBase = ui.input.string('From', {value: ''});
+  dateToDD: DG.InputBase = ui.input.string('To', {value: ''});
+  usersDD: DG.InputBase = ui.input.string('Users', {value: ''});
+  packagesDD: DG.InputBase = ui.input.string('Packages', {value: ''});
+  viewHandler: ViewHandler;
   private _backToView: string = 'Packages';
   set backToView(value: string) {
     this._backToView = value;
@@ -32,14 +33,14 @@ export class UaToolbox {
   }
 
   backButton?: HTMLButtonElement;
-  formDD: HTMLDivElement;
+  formDD: HTMLElement;
   drilldown: UaView | null = null;
   filters: DG.AccordionPane;
 
-  static async construct() {
+  static async construct(viewHandler: ViewHandler) {
     const date = 'this week';
     const packages = ['all'];
-    const dateInput = ui.stringInput('Date', date);
+    const dateInput = ui.input.string('Date', {value: date});
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
     const groupsInput = await ChoiceInputGroups.construct();
@@ -50,18 +51,18 @@ export class UaToolbox {
       groups: groups,
       packages: packages,
     }));
-    return new UaToolbox(dateInput, groupsInput, packagesInput, filterStream);
+    return new UaToolbox(dateInput, groupsInput, packagesInput, filterStream, viewHandler);
   }
 
   private constructor(dateInput: DG.InputBase, groupsInput: ChoiceInputGroups,
-    packagesInput: ChoiceInputPackages, filterStream: BehaviorSubject<UaFilter>) {
+    packagesInput: ChoiceInputPackages, filterStream: BehaviorSubject<UaFilter>, viewHandler: ViewHandler) {
     this.rootAccordion = ui.accordion();
     this.formDD = ui.div();
     this.dateInput = dateInput;
     this.groupsInput = groupsInput;
     this.packagesInput = packagesInput;
     this.filterStream = filterStream;
-
+    this.viewHandler = viewHandler;
     this.filters = this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
@@ -90,7 +91,7 @@ export class UaToolbox {
       const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
       closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
       this.backButton = ui.button(`🠔 back`, () => {
-        ViewHandler.changeTab(this._backToView);
+        this.viewHandler.changeTab(this._backToView);
         this.exitDrilldown();
       }, 'Back to previous tab');
       this.backButton.classList.add('ua-back-button');
@@ -101,7 +102,7 @@ export class UaToolbox {
     }, true);
     this.filters.root.before(this.formDD);
 
-    ViewHandler.UA.tabs.onTabChanged.subscribe((_) => {
+    this.viewHandler.view.tabs.onTabChanged.subscribe((_) => {
       if (this.formDD.style.display === 'block') this.exitDrilldown();
       if (this.checkLabels()) {
         this.formDD.style.display = 'block';
@@ -140,9 +141,9 @@ export class UaToolbox {
 
   applyFilter() {
     this.filterStream.next(this.getFilter());
-    ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
-    ViewHandler.getInstance().setUrlParam('users', this.groupsInput.getSelectedGroups().join(','), true);
-    ViewHandler.getInstance().setUrlParam('packages', this.packagesInput.getSelectedPackages().join(','), true);
+    this.viewHandler.setUrlParam('date', this.dateInput.value, true);
+    this.viewHandler.setUrlParam('users', this.groupsInput.getSelectedGroups().join(','), true);
+    this.viewHandler.setUrlParam('packages', this.packagesInput.getSelectedPackages().join(','), true);
   }
 
   setDate(value: string) {

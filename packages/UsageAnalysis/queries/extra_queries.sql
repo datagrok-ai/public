@@ -1,5 +1,5 @@
 --name: GetUsersInGroups
---input: list groups
+--input: list<string> groups
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups where name = any(@groups)

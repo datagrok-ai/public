@@ -1,12 +1,33 @@
-name: "IaaC script Security Scan"
+name: "IaC"
 
 on:
+  #  workflow_dispatch: { }
   push:
     paths:
-      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+      - 'help/deploy/**'
+      - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
   pull_request:
     paths:
-      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+      - 'help/deploy/**'
+      - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
 
 jobs:
   common-check:
@@ -15,22 +36,277 @@ jobs:
     with:
       run_trigger: ${{ github.event_name }}
 
-  iac:
+  changed-files:
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
-    name: Security check for IaaC scripts
+    name: Get changes
+    outputs:
+      all_changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
+      - name: Get changed files
+        uses: tj-actions/changed-files@v37
+        id: changed-files
+        with:
+          files: help/deploy/**
+          files_ignore: |
+            help/deploy/**/*.md
+            help/deploy/**/*.mdx
+            help/deploy/**/_category_.yml
+            help/deploy/**/*.gif
+            help/deploy/**/*.jpg
+            help/deploy/**/*.JPG
+            help/deploy/**/*.jpeg
+            help/deploy/**/*.png
+            help/deploy/**/*.svg
+            help/deploy/**/*.bmp
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
+
+  template_cfn:
+    needs:
+      - common-check
+      - changed-files
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation') && github.event_name != 'pull_request'
+    name: Templates CFN
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Run contract with Snyk to check Infrastructure as Code files for issues
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.WRITE_TOKEN }}
+          sparse-checkout: |
+            help/deploy
+            .github
+      - name: Set up Python
+        uses: actions/setup-python@v4
+      - name: Run merge script
+        working-directory: ./help/deploy/aws/cloudformation/templates
+        run: |
+          pip install pyyaml deepmerge argparse
+          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-r53-marketplace.yml
+          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-dns-marketplace.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-dns-marketplace.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-r53-marketplace.yml
+          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-r53-basic.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../vpc-fargate-r53-basic.yml
+          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-dns-basic.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i dns.template.yml -i basic.template.yml -i versions.template.yml -o ../vpc-fargate-dns-basic.yml
+      - name: Commit IaC scripts
+        id: git
+        continue-on-error: true
+        run: |
+          git config --global user.name '${{ github.event.pusher.name }}'
+          git config --global user.email '${{ github.event.pusher.email }}'
+          git pull
+          continue=false
+          if [ -n "$(git status -s help/deploy/aws/cloudformation)" ]; then
+            git add help/deploy/aws/cloudformation
+            git commit -m "GitHub Actions: Update IaC scripts
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
+            continue=true
+          fi
+          if [[ "${continue}" == "true" ]]; then
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+
+
+  snyk:
+    needs: common-check
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true'
+    name: Snyk
+    steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
+      - name: Get changed files
+        uses: tj-actions/changed-files@v37
+        id: changed-files
+        with:
+          files: |
+            help/deploy/**
+            !help/deploy/**/templates/**
+            !help/deploy/**/*.md
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
+      - name: Snyk check
         uses: snyk/actions/iac@master
+        id: snyk
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
           sarif: true
-          file: 'help/develop/admin/deploy/cloudformation/cloudformation.json'
-      - uses: github/codeql-action/upload-sarif@v1
+          file: ${{ steps.changed-files.outputs.all_changed_files }}
+#      - uses: github/codeql-action/upload-sarif@v2
+#        if: steps.snyk.outcome == 'success'
+#        with:
+#          sarif_file: snyk.sarif
+
+  #  checkov:
+  #    needs: common-check
+  #    runs-on: ubuntu-22.04
+  #    if: needs.common-check.outputs.continue == 'true'
+  #    name: Checkov
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #        if: ${{ github.event_name == 'pull_request' }}
+  #        name: Checkout PR branch
+  #        with:
+  #          ref: ${{ github.head_ref }}
+  #
+  #      - uses: actions/checkout@v4
+  #        if: ${{ github.event_name != 'pull_request' }}
+  #        name: Checkout
+  #        with:
+  #          fetch-depth: 0
+  #
+  #      - name: Set up Python 3.8 for Checkov
+  #        uses: actions/setup-python@v1
+  #        with:
+  #          python-version: 3.8
+  #
+  #      - name: Test with Checkov
+  #        id: checkov
+  #        uses: bridgecrewio/checkov-action@v12.1347.0
+  #        with:
+  #          download_external_modules: true
+
+  validate_cfn:
+    needs:
+      - common-check
+      - changed-files
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
+    name: Validate CFN
+    steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          sarif_file: snyk.sarif
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+          sparse-checkout: |
+            help/deploy
+            .github
+
+      - name: Testing with CFN Lint Command
+        uses: scottbrenner/cfn-lint-action@v2
+
+      - name: Print the Cloud Formation Linter Version & run Linter.
+        run: |
+          shopt -s globstar # enable globbing
+          cfn-lint --version
+          cfn-lint -t ./help/deploy/aws/cloudformation/*.yml
+
+  validate_tf:
+    needs:
+      - common-check
+      - changed-files
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'terraform')
+    name: Validate TF
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        provider: [ aws ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          sparse-checkout: |
+            help/deploy
+            .github
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ">=1.2.0"
+
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        working-directory: help/deploy/${{ matrix.provider }}/terraform
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend=false
+        working-directory: help/deploy/${{ matrix.provider }}/terraform
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: help/deploy/${{ matrix.provider }}/terraform
+
+      - uses: actions/cache@v2
+        name: Cache TFLint plugin dir
+        with:
+          path: ~/.tflint.d/plugins
+          key: ${{ matrix.os }}-tflint-${{ hashFiles('.tflint.hcl') }}
+
+      - uses: terraform-linters/setup-tflint@v2
+        name: Setup TFLint
+        with:
+          tflint_version: v0.47.0
+
+      - name: Run TFLint
+        run: |
+          tflint --init
+          tflint -f compact
+        working-directory: help/deploy/${{ matrix.provider }}/terraform
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

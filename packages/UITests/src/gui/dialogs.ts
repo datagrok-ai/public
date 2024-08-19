@@ -38,7 +38,7 @@ category('GUI: Dialogs', () => {
       const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
         .find((el) => el.textContent === 'OK') as HTMLElement;
       okButton.click();
-      await awaitCheck(() => grok.shell.v.name === 'result', 'Aggregation table was not created', 5000);
+      await awaitCheck(() => grok.shell.v.name.toLowerCase() === 'result', 'Aggregation table was not created', 5000);
       grok.shell.v.close();
     } finally {
       grok.shell.windows.showColumns = false;
@@ -46,10 +46,11 @@ category('GUI: Dialogs', () => {
   });
 
   test('cluster', async () => {
+    grok.shell.windows.simpleMode = true;
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 1', 1000);
     isDialogPresent('Cluster Data');
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -57,7 +58,7 @@ category('GUI: Dialogs', () => {
     okButton.click();
     await awaitCheck(() => demog.col('clusters') !== null, 'cannot find clusters column', 3000);
     isColumnPresent(demog.columns, 'clusters');
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 2', 1000);
     isDialogPresent('Cluster Data');
     returnDialog('Cluster Data')!.input('Show scatter plot').input.click();
@@ -74,7 +75,7 @@ category('GUI: Dialogs', () => {
     });
     if (demog.col('clusters (2)') !== null)
       throw new Error('cluster (2) column did not disappear after clicking on the "Cancel" button');
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 3', 1000);
     isDialogPresent('Cluster Data');
     setDialogInputValue('Cluster Data', 'Normalize', 'Z-scores'); await delay(100);
@@ -164,7 +165,7 @@ category('GUI: Dialogs', () => {
     const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;
     okButton.click();
-    await awaitCheck(() => grok.shell.v.name.includes('result'), 'result table is not created', 3000);
+    await awaitCheck(() => grok.shell.v.name.toLowerCase().includes('result'), 'result table is not created', 3000);
     expect(grok.shell.t.columns.length, 3);
     expect(grok.shell.t.rowCount, 1000);
     grok.shell.v.close();

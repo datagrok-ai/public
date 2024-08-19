@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { filter, map } from 'rxjs/operators';
-import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval } from 'rxjs';
-import wu from "wu";
+import {filter, map} from 'rxjs/operators';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
+import {interval} from 'rxjs';
+import wu from 'wu';
 
 
 export class VirtualScreeningTutorial extends Tutorial {
@@ -27,7 +27,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
   prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
-  helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#curation';
 
   protected async _run(): Promise<void> {
     // Save the view with experimental data
@@ -70,8 +70,8 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.action('Transform the column "Ki" according to the formula "9 - Log10(${Ki})" and click "OK"',
       this.t!.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
         return col.name === activityColName &&
-          col.tags.has(DG.TAGS.FORMULA) &&
-          formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
+          col.meta.formula !== null &&
+          formulaRegex.test(col.meta.formula);
       }))), null, pKiInfo);
 
     const descriptors = ['MolWt', 'HeavyAtomMolWt', 'NumValenceElectrons', 'NumRadicalElectrons',
@@ -88,7 +88,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'EState_VSA5', 'EState_VSA6', 'EState_VSA7', 'EState_VSA8', 'EState_VSA9', 'VSA_EState1',
       'VSA_EState10', 'VSA_EState2', 'VSA_EState3', 'VSA_EState4', 'VSA_EState5', 'VSA_EState6',
       'VSA_EState7', 'VSA_EState8', 'VSA_EState9', 'PMI1', 'PMI2', 'PMI3', 'NPR1', 'NPR2', 'RadiusOfGyration',
-      'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex'];
+      'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex', 'AvgIpc'];
 
     const computeDescriptors = async (descriptors: string[], hasHistory = false) => {
       if (!hasHistory) this.title('Compute molecular descriptors');
@@ -144,18 +144,18 @@ export class VirtualScreeningTutorial extends Tutorial {
 
       await this.action('Select groups "Descriptors" (excluding "ExactMolWt"), "GraphDescriptors", ' +
         '"MolSurf", "EState VSA" and "Descriptors 3D" and press the "OK" button',
-        grok.functions.onAfterRunAction.pipe(filter((call) => {
-          const inputs = call.inputs.get('descriptors');
-          return call.func.name === 'ChemDescriptors' &&
+      grok.functions.onAfterRunAction.pipe(filter((call) => {
+        const inputs = call.inputs.get('descriptors');
+        return call.func.name === 'chemDescriptors' &&
             descriptors.length == inputs.length &&
             descriptors.every((d) => inputs.includes(d));
-        })), groupHints, hasHistory ? descriptorDlgHistory : groupDescription);
+      })), groupHints, hasHistory ? descriptorDlgHistory : groupDescription);
     };
 
     await computeDescriptors(descriptors);
 
-    this.title('Train a model to predict activity based on molecule structure')
-    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
+    this.title('Train a model to predict activity based on molecule structure');
+    const pmv = await this.openViewByType('Click on "ML | Models | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -206,7 +206,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await this.action(`Find "${screeningData.name}" in the tables tab`, grok.events.onCurrentViewChanged.pipe(
       filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
-      tabPaneHints, generatedDataInfo);
+    tabPaneHints, generatedDataInfo);
 
     await computeDescriptors(descriptors, true);
 
@@ -221,7 +221,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await this.action(`Open "${screeningData.name}"`, grok.events.onCurrentViewChanged.pipe(
       filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
-      tabPaneHints);
+    tabPaneHints);
 
     const sortInfo = `Sort the values in the <b>${predictedColName}</b> column in descending order by double-clicking ` +
       'the column header. Drag the column to the left if you want it to be closer to the columns with molecules.';
@@ -234,7 +234,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.action('Click on the most active compound', screeningData.onCurrentCellChanged.pipe(
       filter(() => screeningData.currentCol.name === curatedMolColName &&
         outcomeCol.get(screeningData.currentCell.rowIndex) === outcomeCol.max)),
-      null, 'It should be in the first row after sorting. Make sure to pick the curated form.');
+    null, 'It should be in the first row after sorting. Make sure to pick the curated form.');
     const firstIndex = screeningData.currentCell.rowIndex;
 
     const filterDescription = 'Find the funnel icon <i class="grok-icon far fa-filter grok-icon-filter"></i> ' +
@@ -242,9 +242,9 @@ export class VirtualScreeningTutorial extends Tutorial {
     const filters = await this.openPlot('filters', (x) => x.type === DG.VIEWER.FILTERS, filterDescription);
 
     const filterColumns = filters.props.columnNames;
-    if (!filterColumns.includes(curatedMolColName)) {
+    if (!filterColumns.includes(curatedMolColName)) 
       filters.setOptions({columnNames: [curatedMolColName]});
-    }
+    
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -253,8 +253,9 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', interval(1000).pipe(
       map(() => wu(screeningData.rows.filters).toArray()),
-      filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))), // TODO: check if this string replacement is ok
-      sketcherInput, 'As you might have noticed, some of the most potent molecules in the data happen ' +
+      // TODO: check if this string replacement is ok
+      filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))),
+    sketcherInput, 'As you might have noticed, some of the most potent molecules in the data happen ' +
       'to have them. The next step is to identify the scaffolds at the core of these molecules and look ' +
       'them up in the ChEMBL database that contains bioactive molecules with drug-like properties.');
 

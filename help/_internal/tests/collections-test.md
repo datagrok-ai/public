@@ -11,13 +11,13 @@ Collections are sets of entities for which you can perform same actions.
 
 1. Click on "Demog" project
 
-* "Demog" project selected on [Context Panel](../../datagrok/navigation.md#context-panel)
+* "Demog" project selected on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 
 1. Click with ```CTRL``` on "Demo" project
 
 * Projects "Demog" and "Demo" added to collection
-* [Context Panel](../../datagrok/navigation.md#context-panel) switched to "2 projects"
-* Actions and commands on [Context Panel](../../datagrok/navigation.md#context-panel) concern both projects from collection
+* [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) switched to "2 projects"
+* Actions and commands on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) concern both projects from collection
 
 1. Expand "Items" tab
 
@@ -78,8 +78,8 @@ Collections are sets of entities for which you can perform same actions.
 1. Select "northwind" (PostgreSQL) and "AirNow" (Web) for collection by clicking with ```CTRL```
 
 * Connections "northwind" (PostgreSQL) and "AirNow" (Web) added to collection
-* [Context Panel](../../datagrok/navigation.md#context-panel) switched to "2 connections"
-* Actions and commands on [Context Panel](../../datagrok/navigation.md#context-panel) concern both connections from
+* [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) switched to "2 connections"
+* Actions and commands on [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel) concern both connections from
   collection
 
 1. Expand "Items" tab

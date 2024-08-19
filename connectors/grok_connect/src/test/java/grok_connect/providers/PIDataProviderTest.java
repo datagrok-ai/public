@@ -5,7 +5,6 @@ import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,10 +26,8 @@ class PIDataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
         ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
-        Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
         provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
@@ -50,9 +47,7 @@ class PIDataProviderTest {
     @DisplayName("Tests of testConnection(DataConnection conn)")
     @Test
     public void testConnection() {
-        String expected = DataProvider.CONN_AVAILABLE;
-        String actual = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
     }
 
     @DisplayName("test queries")

@@ -1,6 +1,7 @@
-name: JS API Package
+name: JS API
 on:
   workflow_dispatch: { }
+
   push:
     paths:
       - 'js-api/**'
@@ -17,12 +18,13 @@ jobs:
   version:
     name: Check version
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       current_version: ${{ steps.check-version.outputs.current_version }}
       name: ${{ steps.check-version.outputs.name }}
+      job_name: ${{ steps.check-version.outputs.job_name }}
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
       latest: ${{ steps.check-version.outputs.latest }}
@@ -30,7 +32,12 @@ jobs:
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ./js-api
+            ./packages
+            ./libraries
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -38,23 +45,33 @@ jobs:
           name="$(jq -r '.name' package.json)"
           current_version="$(jq -r '.version' package.json)"
           npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+          job_name="Build"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
+            echo "Package $name version ${current_version} already published"
+            echo "::notice title=${name}::Version ${current_version} is already published"
           else
-            changed_version='true'
-
-            latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
-            newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
-            if [[ "${newest_version}" == "${current_version}" ]]; then
-              echo "latest=true" >> $GITHUB_OUTPUT
-              if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
-                echo "replace_dep=true" >> $GITHUB_OUTPUT
+            echo "NPM response for ${current_version}: $npm_version"
+            if [[ ${{ github.ref }} == 'refs/heads/master' ]] || [[ ${{ github.ref }} == "refs/heads/release/"* ]]; then
+              changed_version='true'
+              job_name="Build and publish to NPM"
+              latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
+              newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
+              if [[ "${newest_version}" == "${current_version}" ]]; then
+                echo "latest=true" >> $GITHUB_OUTPUT
+                if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
+                  echo "replace_dep=true" >> $GITHUB_OUTPUT
+                fi
+              else
+                echo "latest=false" >> $GITHUB_OUTPUT
               fi
             else
-              echo "latest=false" >> $GITHUB_OUTPUT
+                echo "It is an actions for development branch. Publish will be skipped"
+                echo "::notice title=${name}::It is an actions for development branch. Publish will be skipped"
             fi
           fi
           echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
+          echo "job_name=${job_name}" >> $GITHUB_OUTPUT
           echo "current_version=${current_version}" >> $GITHUB_OUTPUT
           echo "name=${name}" >> $GITHUB_OUTPUT
 
@@ -129,20 +146,32 @@ jobs:
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
-    name: Build and publish to npm
-    runs-on: ubuntu-20.04
-    needs: [version, common-check] 
+    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
+    runs-on: ubuntu-22.04
+    needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'
+    env:
+      HOST: GitHubAction
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            ./js-api
+            ./.github
+            ./docker
+            ./packages/ApiTests
+            ./docusaurus
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            docusaurus/package-lock.json
+            js-api/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -153,7 +182,190 @@ jobs:
         working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
+      - name: Run datagrok stand
+        id: datagrok-stand
+        env:
+          DATAGROK_VERSION: 'bleeding-edge'
+          GROK_SPAWNER_VERSION: 'bleeding-edge'
+          GROK_CONNECT_VERSION: 'bleeding-edge'
+        run: |
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          profiles='--profile datagrok --profile db --profile grok_connect --profile grok_spawner'
+          echo "Run datagrok stand with profiles ${profiles}"
+          docker system prune -af --volumes
+          # Skip initial setup in CI
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
+          sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.js-api.debug.docker-compose.yaml
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "docker/localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
+          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
+          echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify about version used for tests"
+          echo "::notice title=js-api::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+      - name: Install datagrok tools
+        id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - name: Wait for Datagrok to become available
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
+          do
+            sleep 1
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\nRetrying..."
+          done
+          curl -s http://127.0.0.1:8080/api/info/server
+          curl -s http://127.0.0.1:8080/api/admin/health
+      - name: Create configuration for grok command-line tool
+        run: |
+          grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
+          cat /home/runner/.grok/config.yaml
+      - name: Install ApiTests dependencies
+        run: npm install
+        working-directory: ./packages/ApiTests
+      - name: Build ApiTests
+        run: npm run build
+        working-directory: ./packages/ApiTests
+      - name: Publish ApiTests
+        run: grok publish ${HOST}
+        working-directory: ./packages/ApiTests
+
+      - name: Wait for published docker to become available
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "docker ps" 'ApiTests'
+          do
+            sleep 1
+            echo -e "\nContainer for ApiTests did not start yet..."
+            docker ps -a
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+            echo -e "\nRetrying..."
+          done
+
+          echo -e "\nGet admin session token...\n"
+          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+          echo -e "\nGet ALL containers from datlas API...\n"
+          curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+
+      - name: Run ApiTests
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-ApiTests
+        run: |
+          test_result=$(npm run test -- --record --csv --skip-build --skip-publish | grep 'Test result : ' | awk -F' : ' '{printf "• *"; printf $4; printf "* - "; printf $5; printf " - "; printf $3; print " ms"}' || true)
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo "Test failures"
+            echo -e "${test_result}"
+            echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+            exit 1
+          fi
+        working-directory: packages/ApiTests
+      - name: Upload ApiTests results
+        if: steps.test-ApiTests.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ApiTests.test-results
+          path: |
+            packages/ApiTests/test-record.mp4
+            packages/ApiTests/test-report.csv
+            packages/ApiTests/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      #      - name: Install DBTests dependencies
+      #        run: npm install
+      #        working-directory: ./packages/DBTests
+      #      - name: Run DBTests
+      #        continue-on-error: true
+      #        timeout-minutes: 15
+      #        id: test-DBTests
+      #        run: |
+      #          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+      #          if [ -z "$test_result" ]; then
+      #            echo "All tests finished successfully"
+      #          else
+      #            echo "Test failures"
+      #            echo -e "${test_result}"
+      #            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+      #            exit 1
+      #          fi
+      #        working-directory: packages/DBTests
+      #      - name: Upload DBTests results
+      #        if: steps.test-DBTests.outcome != 'skipped'
+      #        uses: actions/upload-artifact@v3
+      #        with:
+      #          name: DBTests.test-results
+      #          path: |
+      #            packages/DBTests/test-record.mp4
+      #            packages/DBTests/test-report.csv
+      #            packages/DBTests/test-console-output.log
+      #          retention-days: 14
+      #          if-no-files-found: warn
+
+      - name: Prepare Slack Message
+        #        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
+        if: ${{ steps.test-ApiTests.outcome == 'failure' }}
+        id: slack-prepare
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1 | sed -e 's/"/\\"/g')>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+          if [ -z "$SLACK_MESSAGE_BODY" ]; then
+            SLACK_MESSAGE_BODY='Test results are empty. Probably it was caused by timeout. Check the job output for more information'
+          fi
+          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
+
+      - name: Send test report to Slack
+        id: slack
+        if: ${{ steps.slack-prepare.outcome == 'success' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+#
       - name: npm publish
+        id: publish
         run: |
           tag=""
           if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
@@ -164,6 +376,45 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
+      - name: Commit js-api version json for compatibility-tool
+        if: ${{ steps.publish.outcome == 'success' }}
+        working-directory: docusaurus
+        run: |
+          npm install
+          version=${{ needs.version.outputs.current_version }}
+          npx ts-node parser.ts $version         
+          if [ -n "$(git status -s static/versions)" ]; then
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git pull
+            git add ./static/versions
+            git commit -m 'GitHub Actions: js-api version updated by Compatibility tool
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
@@ -193,9 +444,26 @@ jobs:
             done
           fi
 
+#      - name: Slack Notification
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ steps.publish.outcome }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
+#      - name: Slack Failed-Cancelled Notification
+#        if: failure() || cancelled()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
+
   libraries:
     name: Check libraries
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.version.outputs.replace_lib_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
@@ -207,14 +475,22 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            ./js-api
+            ./.github
+            ./libraries/${{ matrix.library }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            libraries/${{ matrix.library }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -225,7 +501,8 @@ jobs:
         run: |
           sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
-      - run: npm install
+      - name: npm install
+        run: rm -rf package-lock.json && npm install
         working-directory: libraries/${{ matrix.library }}
       - name: Commit package.json
         if: needs.version.outputs.changed_version == 'true'
@@ -256,6 +533,7 @@ jobs:
               fi
             done
           fi
+
       - name: Send mail
         if: always() && steps.commit.outcome == 'failure'
         uses: dawidd6/action-send-mail@v3
@@ -271,9 +549,17 @@ jobs:
           body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
 
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}
   packages:
     name: Check packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.version.outputs.replace_pack_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
@@ -285,14 +571,23 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
+          sparse-checkout: |
+            ./js-api
+            ./.github
+            ./libraries
+            ./packages/${{ matrix.package }}
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: |
+            js-api/package-lock.json
+            packages/${{ matrix.package }}/package-lock.json
       - name: Upgrade npm
         run: npm install -g npm@x
       - name: npm version
@@ -303,7 +598,8 @@ jobs:
         run: |
           sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
-      - run: npm install
+      - name: npm install
+        run: rm -rf package-lock.json && npm install
         working-directory: packages/${{ matrix.package }}
       - name: Commit package.json
         if: needs.version.outputs.changed_version == 'true'
@@ -348,3 +644,11 @@ jobs:
           from: monitoring@grok.datagrok.ai
           body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
+#      - name: Slack Failed Notification
+#        if: failure()
+#        uses: act10ns/slack@v2.1.0
+#        with:
+#          status: ${{ job.status }}
+#          steps: ${{ toJson(steps) }}
+#          config: ".github/config/slack.yml"
+#          webhook-url: ${{ secrets.SLACK_WEBHOOK_REPORT }}

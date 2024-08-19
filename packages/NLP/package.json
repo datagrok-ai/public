@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/nlp",
   "fullName": "NLP",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "author": {
-    "name": "Diana Onufriienko",
-    "email": "donufriienko@datagrok.ai"
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
   },
   "description": "Natural Language Processing Package",
   "repository": {
@@ -13,9 +13,11 @@
     "directory": "packages/NLP"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^4.2.13",
     "aws-sdk": "^2.762.0",
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "^1.20.0",
+    "stemmer": "^2.0.1",
+    "umap-js": "^1.3.3",
     "util": "^0.12.3"
   },
   "devDependencies": {

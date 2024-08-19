@@ -1,17 +1,20 @@
 import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
-import {__obs, _sub, EventData, StreamSubscription} from './events';
-import {_identityInt32, _toIterable} from './utils';
+import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
+import {_identityInt32, _toIterable, MapProxy} from './utils';
 import {Observable} from 'rxjs';
-import {RangeSlider} from './widgets';
+import {Color, RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
-import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
+import {IFormSettings, IGridSettings} from "./interfaces/d4";
+import {IDartApi} from "./api/grok_api.g";
 
 
-let api = <any>window;
+const api: IDartApi = <any>window;
 let _bytes = new Float64Array(4);
+
+export type ColorType = number | string;
 
 export interface IPoint {
   x: number;
@@ -26,6 +29,11 @@ export class Point implements IPoint {
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
+  }
+
+  /** Creates a point from an [x, y] array */
+  static fromXY(xy: number[]): Point {
+    return new Point(xy[0], xy[1]);
   }
 
   /** Distance to the specified point. */
@@ -73,6 +81,22 @@ export class Rect {
     let minX = Math.min(x1, x2);
     let minY = Math.min(y1, y2);
     return new Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
+  }
+
+  static fromXYArrays(x: number[], y: number[]): Rect {
+    let minX = x[0];
+    let minY = y[0];
+    let maxX = x[0];
+    let maxY = y[0];
+  
+    for (let i = 1; i < x.length; i++) {
+      minX = Math.min(minX, x[i]);
+      minY = Math.min(minY, y[i]);
+      maxX = Math.max(maxX, x[i]);
+      maxY = Math.max(maxY, y[i]);
+    }
+  
+    return new Rect(minX, minY, maxX - minX, maxY - minY);
   }
 
   static fromDart(dart: any): Rect {
@@ -553,8 +577,8 @@ export class GridCell {
   /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
   get documentBounds(): Rect {
     const r = this.bounds;
-    this.grid.root.offsetLeft
-    return this.bounds;
+    const clientRect = this.grid.root.getBoundingClientRect();
+    return new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
   }
 
   /** Returns grid cell renderer. */
@@ -565,6 +589,9 @@ export class GridCell {
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
+
+  /** Sets the grid cell value and fires onCellValueEdited if notify is true */
+  setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
@@ -601,14 +628,20 @@ export class GridColumn {
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
 
+  /** Cell style used for rendering data cells */
+  get contentCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_ContentCellStyle(this.dart); }
+
+  /** Cell style used for rendering header cells */
+  get headerCellStyle(): GridCellStyle { return api.grok_GridColumn_Get_HeaderCellStyle(this.dart); }
+
   /** Column width in pixels.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
   get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
   set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
   /** Background column as a 4-byte ARGB number. */
-  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
-  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
+  get backColor(): Color { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: Color) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */
@@ -651,8 +684,8 @@ export class GridColumn {
   set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
-  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
-  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipColumns(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipColumns(this.dart, x); }
 
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
@@ -677,8 +710,14 @@ export class GridColumn {
   /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
+  /** Returns null if column is editable, or the reason of not being editable, otherwise */
+  checkEditable(): string { return api.grok_GridColumn_CheckEditable(this.dart); }
+
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** Number of pixels required to render the longest element in the column. */
+  getDataWidth(): number { return api.grok_GridColumn_GetDataWidth(this.dart); }
 
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
@@ -739,7 +778,7 @@ export class GridColumnList {
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
-export class FormViewer extends Viewer<IFormLookSettings> {
+export class FormViewer extends Viewer<IFormSettings> {
   constructor(dart: any) {
     super(dart);
   }
@@ -791,7 +830,7 @@ export class Form {
 
 
 /** High-performance, flexible spreadsheet control */
-export class Grid extends Viewer<IGridLookSettings> {
+export class Grid extends Viewer<IGridSettings> {
 
   constructor(dart: any) {
     super(dart);
@@ -895,6 +934,11 @@ export class Grid extends Viewer<IGridLookSettings> {
     return this;
   }
 
+  /** Returns the order of rows in the table. */
+  getRowOrder(): Int32Array {
+    return api.grok_Grid_GetRowOrder(this.dart);
+  }
+
   /** Sets the order or rows in the table.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
    * Also, @see sortIndexes */
@@ -995,6 +1039,8 @@ export class Grid extends Viewer<IGridLookSettings> {
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
 
+  get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
+
   /** Returns currently visible cells */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
     return _toIterable(api.grok_Grid_GetVisibleCells(this.dart, column?.dart))
@@ -1005,6 +1051,10 @@ export class Grid extends Viewer<IGridLookSettings> {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
 }
+
+
+export type HorzAlign = 'right' | 'center' | 'left';
+export type VertAlign = 'top' | 'center' | 'bottom';
 
 
 /** Represents grid cell style. */
@@ -1023,13 +1073,24 @@ export class GridCellStyle {
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
+  get horzAlign(): HorzAlign | null { return api.grok_GridCellStyle_Get_HorzAlign(this.dart); }
+  set horzAlign(x: HorzAlign | null) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+
+  get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
+  set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
+
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
+
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }
   set textColor(x: number) { api.grok_GridCellStyle_Set_TextColor(this.dart, x); }
+  get textColorHtml(): string { return Color.toHtml(this.textColor); }
 
   /** Background color (RGBA-encoded) */
   get backColor(): number { return api.grok_GridCellStyle_Get_BackColor(this.dart); }
   set backColor(x: number) { api.grok_GridCellStyle_Set_BackColor(this.dart, x); }
+  get backColorHtml(): string { return Color.toHtml(this.backColor); }
 
   /** DOM Element to put in the cell */
   get element(): HTMLElement { return api.grok_GridCellStyle_Get_Element(this.dart); }
@@ -1085,6 +1146,8 @@ export class CanvasRenderer {
 
 
 export class GridCellRenderer extends CanvasRenderer {
+  clip: boolean = true;
+
   get name(): string {
     throw 'Not implemented';
   }
@@ -1096,7 +1159,18 @@ export class GridCellRenderer extends CanvasRenderer {
   renderSettings(gridColumn: GridColumn): Element | null { return null; }
 
   renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
-    this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    try {
+      if (this.clip) {
+        g.save()
+        g.rect(x, y, w, h);
+        g.clip();
+      }
+      this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
+    }
+    finally {
+      if (this.clip)
+        g.restore();
+    }
   }
 
   static register(renderer: any): void {
@@ -1140,9 +1214,11 @@ export class GridCellRendererProxy extends GridCellRenderer {
 
 export class SemanticValue<T = any> {
   private readonly dart: any;
+  public tags: {[key: string]: any};
 
   constructor(dart: any) {
     this.dart = dart;
+    this.tags = new MapProxy(api.grok_SemanticValue_Get_Tags(this.dart), 'tags');
   }
 
   static fromValueType(value: any, semType: SemType | null, units?: string) {
@@ -1151,6 +1227,16 @@ export class SemanticValue<T = any> {
       v.units = units;
     return v;
   }
+
+  static fromTableCell(cell: Cell) {
+    return new SemanticValue(api.grok_SemanticValue_FromTableCell(cell.dart));
+  }
+
+  static fromGridCell(gridCell: GridCell) {
+    return new SemanticValue(api.grok_SemanticValue_FromGridCell(gridCell.dart));
+  }
+
+  static parse(s: string): SemanticValue { return api.grok_SemanticValue_Parse(s); }
 
   get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: T) { api.grok_SemanticValue_Set_Value(this.dart, x); }
@@ -1167,9 +1253,11 @@ export class SemanticValue<T = any> {
   setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(this.dart, name, toDart(value)); }
 
   get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
+  set cell(x: Cell) { api.grok_SemanticValue_Set_Cell(this.dart, toDart(x)); }
 
-  get gridCell(): GridCell { return this.getMeta('gridCell'); }
-  set gridCell(gc: GridCell) { this.setMeta('gridCell', gc); }
+  get gridCell(): GridCell { return api.grok_SemanticValue_Get_GridCell(this.dart); }
+  set gridCell(x: GridCell) { api.grok_SemanticValue_Set_GridCell(this.dart, toDart(x)); }
 
-  get viewer(): Viewer { return this.getMeta('viewer'); }
+  get viewer(): Viewer { return api.grok_SemanticValue_Get_Viewer(this.dart); }
+  set viewer(x: Viewer) { api.grok_SemanticValue_Set_Viewer(this.dart, toDart(x)); }
 }

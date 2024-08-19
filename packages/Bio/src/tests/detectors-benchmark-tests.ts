@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, getAlphabet, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 category('detectorsBenchmark', () => {
   let detectFunc: DG.Func;
@@ -22,42 +22,39 @@ category('detectorsBenchmark', () => {
 
   test('fastaDnaShorts50Few50', async () => {
     await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
-  },
-  {skipReason: '#1192'});
+  });
 
   test('fastaDnaShorts50Many1E6', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
-  },
-  {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+  });
 
   test('fastaDnaLong1e6Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
-  },
-  {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+  });
 
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
-  }, {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+  });
 
   test('separatorDnaShorts50Many1E6', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
-  },
-  { /* skipReason: 'slow transmit large dataset to detector' */});
+    await detectMacromoleculeBenchmark(20, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+  });
 
   test('separatorDnaLong1e6Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
-  },
-  {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(20, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+  });
 
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
-    return await benchmark<DG.FuncCall, DG.Column>(10,
-      (): DG.FuncCall => {
+    return await benchmark<DG.FuncCall, DG.Column>(maxET,
+      async (): Promise<DG.FuncCall> => {
         const col: DG.Column = generate(notation, [...getAlphabet(alphabet)], length, count, separator);
         const funcCall: DG.FuncCall = detectFunc.prepare({col: col});
+        // warm-up Bio
+        await testDetector(funcCall);
         return funcCall;
       },
       async (funcCall: DG.FuncCall): Promise<DG.Column> => {
@@ -79,23 +76,23 @@ category('detectorsBenchmark', () => {
     let seqMerger: (seqMList: string[], separator?: string) => string;
 
     switch (notation) {
-      case NOTATION.FASTA:
-        seqMerger = (seqMList: string[]): string => {
-          let res: string = '';
-          for (let j = 0; j < seqMList.length; j++) {
-            const m = seqMList[j];
-            res += m.length == 1 ? m : `[${m}]`;
-          }
-          return res;
-        };
-        break;
-      case NOTATION.SEPARATOR:
-        seqMerger = (seqMList: string[], separator?: string): string => {
-          return seqMList.join(separator);
-        };
-        break;
-      default:
-        throw new Error(`Not supported notation '${notation}'.`);
+    case NOTATION.FASTA:
+      seqMerger = (seqMList: string[]): string => {
+        let res: string = '';
+        for (let j = 0; j < seqMList.length; j++) {
+          const m = seqMList[j];
+          res += m.length == 1 ? m : `[${m}]`;
+        }
+        return res;
+      };
+      break;
+    case NOTATION.SEPARATOR:
+      seqMerger = (seqMList: string[], separator?: string): string => {
+        return seqMList.join(separator);
+      };
+      break;
+    default:
+      throw new Error(`Not supported notation '${notation}'.`);
     }
 
     const buildSeq = (alphabet: string[], length: number): string => {
@@ -116,10 +113,10 @@ category('detectorsBenchmark', () => {
 
   type TgtType = { semType: string, notation: NOTATION, alphabet: ALPHABET, separator?: string };
 
-  function testDetector(funcCall: DG.FuncCall): DG.Column {
+  async function testDetector(funcCall: DG.FuncCall): Promise<DG.Column> {
     //const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
-    funcCall.callSync();
-    const semType = funcCall.getOutputParamValue();
+    await funcCall.call();
+    const semType = funcCall.getOutputParamValue() as string;
 
     const col: DG.Column = funcCall.inputs.col as unknown as DG.Column;
     if (semType) col.semType = semType;
@@ -127,20 +124,20 @@ category('detectorsBenchmark', () => {
   }
 
   function checkDetectorRes(col: DG.Column, tgt: TgtType): void {
-    const uh = new UnitsHandler(col);
-    expect(col.semType, tgt.semType);
-    expect(uh.notation, tgt.notation);
-    expect(uh.alphabet, tgt.alphabet);
-    expect(uh.separator, tgt.separator);
+    const sh = SeqHandler.forColumn(col);
+    expect(col.semType === tgt.semType, true);
+    expect(sh.notation === tgt.notation, true);
+    expect(sh.alphabet === tgt.alphabet, true);
+    expect(sh.separator === tgt.separator, true);
   }
 });
 
 
 //Returns ET [ms] of test()
 async function benchmark<TData, TRes>(
-  maxET: number, prepare: () => TData, test: (data: TData) => Promise<TRes>, check: (res: TRes) => void,
+  maxET: number, prepare: () => Promise<TData>, test: (data: TData) => Promise<TRes>, check: (res: TRes) => void,
 ): Promise<number> {
-  const data: TData = prepare();
+  const data: TData = await prepare();
 
   const t1: number = Date.now();
   // console.profile();
@@ -155,9 +152,8 @@ async function benchmark<TData, TRes>(
     const errMsg = `ET ${resET} ms is more than max allowed ${maxET} ms.`;
     console.error(errMsg);
     throw new Error(errMsg);
-  } else {
+  } else
     console.log(`ET ${resET} ms is OK.`);
-  }
 
   return resET;
 }

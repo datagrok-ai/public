@@ -7,8 +7,10 @@ import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getEncodedSeqSpaceCol} from './sequence-space';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   diverseColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
@@ -22,13 +24,13 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     this.diverseColumnLabel = this.string('diverseColumnLabel', null);
   }
 
-  async render(computeData = true): Promise<void> {
+  override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame) {
       if (computeData && this.moleculeColumn) {
-        const uh = new UnitsHandler(this.moleculeColumn);
-        await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
+        const sh = SeqHandler.forColumn(this.moleculeColumn);
+        await (sh.isFasta() ? this.computeByMM() : this.computeByChem());
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
           `diverse (${this.moleculeColumnName})`;
@@ -38,7 +40,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
         resDf.onCurrentRowChanged.subscribe(
-          (_) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
+          (_: any) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
         updateDivInnerHTML(this.root, resDf.plot.grid().root);
         this.computeCompleted.next(true);
       }
@@ -58,7 +60,11 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByMM() {
-    const distanceMatrixData = await calcMmDistanceMatrix(this.moleculeColumn!);
+    const encodedSequences =
+      (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
+    const distanceMatrixService = new DistanceMatrixService(true, false);
+    const distanceMatrixData = await distanceMatrixService.calc(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN);
+    distanceMatrixService.terminate();
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),

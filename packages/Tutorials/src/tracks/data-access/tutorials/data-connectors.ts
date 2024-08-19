@@ -13,7 +13,7 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
-  get steps() { return 13; }
+  get steps() { return 12; }
   
   demoTable: string = '';
   helpUrl: string = '';
@@ -29,31 +29,26 @@ export class DataConnectorsTutorial extends Tutorial {
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +
       'Each tree branch corresponds to a provider and shows connections to the given data source.';
 
-    await this.openViewByType(
-      'Find "Data | Databases" in the sidebar to open the tree of connections',
-      DG.View.DATABASES, this.getSidebarHints('Data', DG.View.DATABASES), dbViewInfo
-    );
-
     const providerRoot = $('.d4-tree-view-group').filter((idx, el) => {
       const label = $(el).find('.d4-tree-view-group-label')[0];
       return (label?.textContent ?? '').startsWith('Postgres');
     })[0];
 
-    const dlg = await this.openDialog('Create a connection to PostgreSQL server', 'Add new connection',
-      providerRoot, 'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+    const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
 
     await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"', 'Name', 'Starbucks');
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
     await this.dlgInputAction(dlg, 'Set "Db" to "starbucks"', 'Db','starbucks');
     await this.dlgInputAction(dlg, 'Set "Login" to "datagrok"', 'Login', 'datagrok');
-    await this.dlgInputAction(dlg, 'Set "Password" to "datagrok"', 'Password', 'datagrok');
+    await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === 'Starbucks')[0],
-      'Open the context menu on PostgreSQL | Starbucks and click "Add query..."');
+      'Open the context menu on Postgres | Starbucks and click "Add query..."');
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));

@@ -4,13 +4,30 @@ import * as DG from 'datagrok-api/dg';
 import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {_package} from '../package';
 import {addCopyIcon} from '../utils/ui-utils';
 import {MESSAGE_MALFORMED} from '../constants';
+import {calculateDescriptors, getDescriptorsTree} from "../docker/api";
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 let descriptors: any;
+
+export async function openDescriptorsDialogDocker() {
+  const table: DG.DataFrame = grok.shell.t;
+  if (!table) throw new Error('There is no open table');
+  openDescriptorsDialog(await getSelected(), async (selected: string[], molecules: DG.Column | undefined) => {
+    if (molecules) {
+      const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
+      try {
+        await calculateDescriptors(table, molecules, selected);
+      } catch (e) {
+        throw e;
+      } finally {
+        prog.close();
+      }
+    }
+  }, table);
+}
 
 /** Adds descriptors to table */
 export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
@@ -131,33 +148,39 @@ export function getDescriptorsApp(): void {
   });
 }
 
+type onOk = (selectedDescriptors: string[], molecules?: DG.Column) => void;
+
 //description: Open descriptors selection dialog
-function openDescriptorsDialog(selected: any, onOK: any): void {
-  _package.files.readAsText('constants/descriptors_const.json').then((res) => {
-    descriptors = JSON.parse(res);
-  });
+function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFrame): void {
   const tree = ui.tree();
-  tree.root.style.maxHeight = '400px';
+  tree.root.style.width = '300px';
+  tree.root.style.minWidth = 'max-content';
+  tree.root.style.overflowY = 'unset';
 
   const groups: { [_: string]: any } = {};
   const items: DG.TreeViewNode[] = [];
   const selectedDescriptors: { [_: string]: string } = {};
+
+  const countLabel = ui.label('0 checked');
+  countLabel.style.marginLeft = '24px';
+  countLabel.style.display = 'inline-flex';
+
+  function setCount(count: number) {
+    countLabel.textContent = `${count} checked`;
+  }
 
   const checkAll = (val: boolean) => {
     for (const g of Object.values(groups))
       g.checked = val;
     for (const i of items)
       i.checked = val;
+    setCount(val ? items.length : 0);
   };
 
   const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
   selectAll.style.marginLeft = '6px';
   selectAll.style.marginRight = '12px';
   const selectNone = ui.label('None', {classes: 'd4-link-label', onClick: () => checkAll(false)});
-
-  const countLabel = ui.label('0 checked');
-  countLabel.style.marginLeft = '24px';
-  countLabel.style.display = 'inline-flex';
 
   const keys = Object.keys(descriptors);
   for (const groupName of keys) {
@@ -181,7 +204,7 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
       items.push(item);
 
       item.checkBox!.onchange = (_e) => {
-        countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+        setCount(items.filter((i) => i.checked).length);
         if (item.checked)
           selectedDescriptors[item.text] = groupName;
       };
@@ -212,10 +235,19 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
     countLabel.textContent = `${keys.length} checked`;
   };
 
-  ui.dialog('Chem Descriptors')
+  const dialog = ui.dialog('Descriptors');
+  let columnSelector: DG.InputBase;
+  if (dataFrame) {
+    //@ts-ignore
+    columnSelector = ui.input.column('Molecules', {table: dataFrame, value: dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)
+      .find((_) => true) ?? null, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+    columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
+    dialog.add(columnSelector.root);
+  }
+  dialog
     .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
-    .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
+    .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name']), columnSelector?.value))
     .show()
     .history(
       () => saveInputHistory(),
@@ -225,6 +257,8 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
 //description: Get selected descriptors
 async function getSelected() : Promise<any> {
+  if (!descriptors)
+    descriptors = await getDescriptorsTree();
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {

@@ -1,0 +1,23 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 18124
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "1q7vemZFzzmNaETzt8P4FRSl7PLCPaKGY9gH"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

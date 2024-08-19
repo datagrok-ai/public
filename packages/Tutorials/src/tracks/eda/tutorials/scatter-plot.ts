@@ -61,7 +61,7 @@ export class ScatterPlotTutorial extends Tutorial {
       'A number of points under the selection rectangle is shown right there.';
     await this.action('Select points', this.t!.onSelectionChanged, null, selection);
 
-    const deselection = `Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift</b>.`;
+    const deselection = `To remove selection, press <b>Escape</b>.`;
     await this.action('Deselect points', this.t!.onSelectionChanged, null, deselection);
   }
 }

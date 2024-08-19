@@ -6,7 +6,8 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit
+  Hit,
+  isSummarySettingsBase
 } from './shared';
 
 const minH = 0.05;
@@ -17,10 +18,11 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= false;
-  return gc.settings;
+  const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+    gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
+  settings.globalScale ??= false;
+  settings.colorCode ??= false;
+  return settings;
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
@@ -38,11 +40,11 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     row: row,
     cols: cols,
   };
-  if ((activeColumn > cols.length) || (activeColumn < 0))
+  if ((activeColumn >= cols.length) || (activeColumn < 0))
     return answer;
   const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
   const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
-  const scaled = settings.globalScale ? (cols[activeColumn]?.get(row) - gmin) / (gmax - gmin) :
+  const scaled = settings.globalScale ? (cols[activeColumn].getNumber(row) - gmin) / (gmax - gmin) :
     cols[activeColumn]?.scale(row);
   const bb = b
     .getLeftPart(cols.length, activeColumn)
@@ -86,7 +88,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       if (!cols[i].isNone(row)) {
         const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
         g.setFillStyle(DG.Color.toRgb(color));
-        const scaled = settings.globalScale ? (cols[i]?.get(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
+        const scaled = settings.globalScale ? (cols[i].getNumber(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
@@ -97,8 +99,8 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings: BarChartSettings = gc.settings;
+    const settings: BarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
+      gc.settings[SparklineType.BarChart] ??= getSettings(gc);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
@@ -118,14 +120,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
     colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
 
+    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Columns', gc.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gc.grid.invalidate();
-      }, {
-        available: names(gc.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      ui.input.columns('Columns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
+        table: gc.grid.dataFrame, onValueChanged: (input) => {
+          settings.columnNames = names(input.value);
+          gc.grid.invalidate();
+        }, available: names(gc.grid.dataFrame.columns.numerical),
       }),
       colorCodeNormalizeInput
     ]);

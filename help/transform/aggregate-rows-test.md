@@ -32,7 +32,7 @@
 
 1. Use "Remove others" from context menu for one value from each field
 
-* Values ​​besides one for which "Remove others" was called are deleted from dialog fields
+* Values   besides one for which "Remove others" was called are deleted from dialog fields
 
 1. Click on "History" button and return previous states
 

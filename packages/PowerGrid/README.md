@@ -44,8 +44,26 @@ We are working to get that fixed.
 
 ![image-url-detection](images/image-url-detection.png)
 
+### Forms viewer
+
+**Forms viewer** shows rows in forms positioned side-by-side.
+It is useful for quick exploration of the selection, as well as for comparison between current,
+mouse-over, and selected rows.
+
+To change which fields are shown, use the **Fields** property in the options.
+Drag-and-drop columns to reorder. Choose which rows to show by setting the
+following properties: `Show Current Row`, `Show Mouse Over Row`, and `Show Selected Rows`.
+Green color stripe on top of the form indicates current row, grey one indicates mouse-over row.
+
+The viewer also works together with the grid:
+* To select or deselect rows, Ctrl+click the form.
+* To go to a particular cell in a grid, click on a field
+* To make a column current, click on the column name.
+
+![Forms viewer](../../help/visualize/viewers/forms.gif)
+
 See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)
 * [Develop custom cell renderers](https://datagrok.ai/help/develop/how-to/custom-cell-renderers)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Packages](https://datagrok.ai/help/develop/#packages)

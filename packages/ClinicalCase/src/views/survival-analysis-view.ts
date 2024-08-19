@@ -54,17 +54,17 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.updateEndpointOptions();
     this.covariatesOptions = [ AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD] ].filter(it => study.domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];
-    this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[0], Object.keys(this.endpointOptions));
+    this.endpointChoices = ui.input.choice('Endpoint', {value: Object.keys(this.endpointOptions)[0], items: Object.keys(this.endpointOptions)});
     this.endpointChoices.onChanged((v) => {
       this.endpoint = this.endpointChoices.value;
     });
 
-    this.covariatesChoices = ui.multiChoiceInput('Covariates', null, this.covariatesOptions);
+    this.covariatesChoices = ui.input.multiChoice('Covariates', {value: null, items: this.covariatesOptions});
     this.covariatesChoices.onChanged((v) => {
       this.covariates = this.covariatesChoices.value;
     });
 
-    this.confIntChoices = ui.choiceInput('Confidence', this.confIntervals[0], this.confIntervals);
+    this.confIntChoices = ui.input.choice('Confidence', {value: this.confIntervals[0], items: this.confIntervals});
     this.confIntChoices.onChanged((v) => {
       this.confInterval = this.confIntChoices.value;
       this.updateSurvivalPlot();
@@ -83,14 +83,13 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.tabControl.addPane('Dataset', () =>
       ui.splitV([
         ui.splitH([
-          ui.box(ui.panel([
-            ui.inputs([
+          ui.box(ui.div([
+            ui.div([
               this.endpointChoices,
               this.covariatesChoices,
-              //@ts-ignore
               ui.buttonsInput([this.createSurvivalDataframe])
-            ] as Iterable<InputBase<any>>)
-          ]), { style: { maxWidth: '300px' } }),
+            ], {classes: 'ui-form'})
+          ]), { style: { maxWidth: '300px' }}),
           ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
         ])
       ]));
@@ -98,11 +97,10 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
       this.tabControl.addPane('Survival Chart', () => ui.splitV([
       ui.splitH([
         ui.box(ui.panel([
-          ui.inputs([
+          ui.div([
             this.confIntChoices,
-            //@ts-ignore
             this.strataChoicesDiv,
-          ] as Iterable<InputBase<any>>)
+          ], {classes: 'ui-form'})
         ]), { style: { maxWidth: '300px' } }),
         this.survivalPlotDiv
       ])
@@ -213,7 +211,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   private updateStrataChoices(){
-    this.strataChoices = ui.choiceInput('Strata', this.survivalOptions[ 0 ], this.survivalOptions);
+    this.strataChoices = ui.input.choice('Strata', {value: this.survivalOptions[0], items: this.survivalOptions});
     this.strataChoices.onChanged((v) => {
       this.strata = this.strataChoices.value;
       this.updateSurvivalPlot();
@@ -223,7 +221,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   private updatePlotCovariatesChoices(){
     this.plotCovariatesChoices = ui.divH([], {style: {'margin-left': '20px'}});
     this.covariates.forEach(it => {
-      let covariateCheckbox = ui.boolInput(`${it}`, false);
+      let covariateCheckbox = ui.input.bool(`${it}`, {value: false});
       this.plotCovariatesChoices.append(covariateCheckbox.root);
       covariateCheckbox.onChanged((v) => {
         covariateCheckbox.value ? 
@@ -232,7 +230,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
         this.updateCovariatesPlot();
       });
     })
-/*     this.plotCovariatesChoices = ui.multiChoiceInput(' ', null, this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID));
+/*     this.plotCovariatesChoices = ui.input.multiChoice(' ', {value: null, items: this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID)});
     this.plotCovariatesChoices.onChanged((v) => {
       this.plotCovariates = this.plotCovariatesChoices.value;
       this.updateCovariatesPlot();

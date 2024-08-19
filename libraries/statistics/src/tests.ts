@@ -11,52 +11,51 @@ type testStats = {
 
 type Population = number[] | Float32Array | Int32Array;
 
-export function tTest(arr1: Population, arr2: Population, devKnown=false, devEqual=false): testStats {
-  const m1: number = jStat.mean(arr1);
-  const m2: number = jStat.mean(arr2);
-  const v1: number = jStat.variance(arr1);
-  const v2: number = jStat.variance(arr2);
-  const n1 = arr1.length;
-  const n2 = arr2.length;
+export function tTest(sample1: Population, sample2: Population, devKnown=false, devEqual=false): testStats {
+  if (sample1.length <= 1 || sample2.length <= 1)
+    throw new Error(`StatisticsError: Wrong sample size; expected at least 2, got ${Math.min(sample1.length, sample2.length)})`);
 
-  let wv1;
-  let wv2;
-  let wv;
-  let Z;
-  let K;
+  const mean1: number = jStat.mean(sample1);
+  const mean2: number = jStat.mean(sample2);
+  const variance1: number = jStat.variance(sample1);
+  const variance2: number = jStat.variance(sample2);
+  const length1 = sample1.length;
+  const length2 = sample2.length;
+
   let pMore;
   let pLess;
   let pTot;
 
   if (!devKnown) {
     if (!devEqual) {
-      wv1 = v1 / n1;
-      wv2 = v2 / n2;
-      Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
-      K = Math.pow((wv1 + wv2), 2) / (wv1 * wv1 / (n1 - 1) + wv2 * wv2 / (n2 - 1));
+      const sampleVariance1 = variance1 / length1;
+      const sampleVariance2 = variance2 / length2;
+      const criticalValue = (mean1 - mean2) / Math.sqrt(sampleVariance1 + sampleVariance2);
+      const dof = Math.pow((sampleVariance1 + sampleVariance2), 2) /
+        (Math.pow(sampleVariance1, 2) / (length1 - 1) + Math.pow(sampleVariance2, 2) / (length2 - 1));
 
-      pLess = jStat.studentt.cdf(Z, K);
+      pLess = jStat.studentt.cdf(criticalValue, dof);
       pMore = 1 - pLess;
       pTot = 2 * (pLess < pMore ? pLess : pMore);
     } else {
-      K = n1 + n2 - 2;
-      wv = (v1 * (n1 - 1) + v2 * (n2 - 1)) / K;
-      Z = Math.sqrt(n1 * n2 / (n1 + n2)) * (m1 - m2) / wv;
+      const dof = length1 + length2 - 2;
+      const totalVariance = (variance1 * (length1 - 1) + variance2 * (length2 - 1)) / dof;
+      const criticalValue = Math.sqrt(length1 * length2 / (length1 + length2)) * (mean1 - mean2) / totalVariance;
 
-      pMore = 1 - jStat.studentt.cdf(Z, K);
-      pLess = jStat.studentt.cdf(Z, K);
+      pMore = 1 - jStat.studentt.cdf(criticalValue, dof);
+      pLess = jStat.studentt.cdf(criticalValue, dof);
       pTot = 2 * (pLess < pMore ? pLess : pMore);
     }
   } else {
-    wv1 = v1 / n1;
-    wv2 = v2 / n2;
-    Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
+    const sampleVariance1 = variance1 / length1;
+    const sampleVariance2 = variance2 / length2;
+    const criticalValue = (mean1 - mean2) / Math.sqrt(sampleVariance1 + sampleVariance2);
 
-    pLess = jStat.normal.pdf(Z, 0, 1);
+    pLess = jStat.normal.pdf(criticalValue, 0, 1);
     pMore = 1 - pLess;
     pTot = 2 * (pLess < pMore ? pLess : pMore);
   }
-  return {'p-value': pTot, 'Mean difference': m1 - m2, 'p-value more': pMore, 'p-value less': pLess};
+  return {'p-value': pTot, 'Mean difference': mean1 - mean2, 'p-value more': pMore, 'p-value less': pLess};
 }
 
 export function uTest(x: number[], y: number[], continuity=true): testStats {
@@ -81,9 +80,9 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
 
   let numerator = U - mu;
 
-  if (continuity) {
+  if (continuity)
     numerator -= 0.5;
-  }
+
 
   const z = numerator / s;
 

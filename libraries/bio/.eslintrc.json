@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2022": true
+    "es2020": true
   },
   "extends": [
     "google"
@@ -15,26 +15,33 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "indent": ["error", 2, {"SwitchCase": 1}],
+    "indent": ["error", 2, {"SwitchCase": 0}],
     "max-len": ["error", 120],
+    "no-throw-literal": "error",
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": [
+      "warn", {"varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}
+    ],
     "require-jsdoc": "off",
-    "valid-jsdoc": "off",
+    "valid-jsdoc": "warn",
     "spaced-comment": "off",
     "linebreak-style": "off",
-    "curly": ["error", "multi-or-nest", "consistent"],
-    "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
-    "block-spacing": [2, "always"],
-    "comma-dangle": [
+    "curly": [
       "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
       {
-        "arrays": "only-multiline",
-        "functions": "never",
-        "objects": "only-multiline",
-        "imports": "only-multiline"
+        "allowSingleLine": true
       }
     ],
-    "guard-for-in": "off"
+    "block-spacing": [2, "always"],
+    "comma-dangle": "off",
+    "comma-spacing": "error",
+    "comma-style": "error",
+    "guard-for-in": "off",
+    "space-infix-ops": "error"
   }
 }

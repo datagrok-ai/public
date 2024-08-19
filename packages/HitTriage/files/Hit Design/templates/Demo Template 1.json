@@ -1,0 +1,49 @@
+{
+  "name": "Demo Template 1",
+  "key": "DMT1",
+  "campaignFields": [
+    { "name": "Chemist", "type": "String", "required": true },
+    { "name": "Supervisor", "type": "String", "required": true },
+    { "name": "Target molecules", "type": "Number", "required": true },
+    { "name": "Deadline", "type": "Date", "required": true }
+  ],
+  "stages": [
+    "Consideration",
+    "Processing",
+    "Synthesis",
+    "Testing",
+    "Ready for production"
+  ],
+  "compute": {
+    "descriptors": { "enabled": true, "args": ["MolWt"] },
+    "functions": [
+      {
+        "name": "addChemPropertiesColumns",
+        "package": "Chem",
+        "args": {
+          "MW": false,
+          "HBA": false,
+          "HBD": false,
+          "logP": false,
+          "logS": false,
+          "PSA": false,
+          "rotatableBonds": false,
+          "stereoCenters": true,
+          "moleculeCharge": false
+        }
+      },
+      {
+        "name": "addChemRisksColumns",
+        "package": "Chem",
+        "args": {
+          "mutagenicity": true,
+          "tumorigenicity": true,
+          "irritatingEffects": false,
+          "reproductiveEffects": false
+        }
+      },
+      { "name": "chemblMolregno", "package": "Chembl", "args": {} }
+    ]
+  },
+  "submit": { "fName": "demoFileSubmit1", "package": "HitTriage" }
+}

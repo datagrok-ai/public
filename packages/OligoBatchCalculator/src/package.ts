@@ -159,6 +159,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
 
 //name: Oligo Batch Calculator
 //tags: app
+//meta.browsePath: Oligo
 export async function OligoBatchCalculatorApp(): Promise<void> {
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
@@ -255,7 +256,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + SYNTHESIZERS.GCRS +
           '\', please see table below to see list of valid codes';
       }
-    };
+    }
 
     const moleColumnName = (units.value == UNITS.MICRO_MOLE || units.value == UNITS.MILLI_GRAM) ?
       UNITS.MICRO_MOLE : UNITS.NANO_MOLE;
@@ -300,9 +301,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     });
   }
 
-  const inputSequences = ui.textInput('', DEFAULT_INPUT, (txt: string) => render(txt));
-  const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
-  const units = ui.choiceInput('', UNITS.OPTICAL_DENSITY, Object.values(UNITS), () => render(inputSequences.value));
+  const inputSequences = ui.input.textArea('', {value: DEFAULT_INPUT, onValueChanged: (input) => render(input.value)});
+  const yieldAmount = ui.input.float('', {value: 1, onValueChanged: () => render(inputSequences.value)});
+  const units = ui.input.choice('', {value: UNITS.OPTICAL_DENSITY, items: Object.values(UNITS), onValueChanged: () => render(inputSequences.value)});
 
   await render(DEFAULT_INPUT);
 
@@ -369,9 +370,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   view.box = true;
   view.path = '/apps/OligoBatchCalculator/';
   view.setRibbonPanels([[
-    ui.switchInput('Show additional modifications', true, (v: boolean) => {
-      (v) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide();
-    }).root,
+    ui.input.toggle('Show additional modifications', {value: true, onValueChanged: (input) => {
+      (input.value) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide();
+    }}).root,
   ]]);
 
   editModification(additionalModsDf, additionaModifsGrid);

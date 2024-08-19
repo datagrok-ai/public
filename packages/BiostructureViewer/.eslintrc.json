@@ -11,18 +11,16 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "indent": ["error", 2],
+    "indent": ["error", 2, {"SwitchCase": 0}],
     "max-len": ["error", 120],
+    "no-throw-literal": "error",
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": [
-      "warn",
-      { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_" }
-    ],
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "require-jsdoc": "off",
     "valid-jsdoc": "warn",
     "spaced-comment": "off",
     "linebreak-style": "off",
-    "curly": ["error", "multi-or-nest", "consistent"],
+    "curly": ["error", "multi-or-nest"],
     "brace-style": [
       "error",
       "1tbs",
@@ -31,7 +29,7 @@
       }
     ],
     "block-spacing": [2, "always"],
-    "comma-dangle": "off",
+    "comma-dangle": ["off"],
     "comma-spacing": "error",
     "comma-style": "error",
     "guard-for-in": "off",

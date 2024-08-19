@@ -19,4 +19,4 @@ let sp = DG.Viewer.scatterPlot(grok.data.demo.randomWalk(20, 2), {
 });
 grok.shell.newView('View', [sp]);
 
-sp.onAfterDrawScene.subscribe(_ => renderLines(sp));
+sp.onAfterDrawScene.subscribe((_) => renderLines(sp));

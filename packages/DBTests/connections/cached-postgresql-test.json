@@ -1,0 +1,20 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgreSQLDBTestsCached",
+  "friendlyName": "PostgreSQLDBTestsCached",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54327,
+    "db": "test",
+    "cacheResults": true,
+    "cacheInvalidateSchedule": "0 1 * * *"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "qIeiENPOd03FVRJQbuJC99n9349uxs5Lv2uG"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Test data"
+}

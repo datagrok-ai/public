@@ -3,28 +3,21 @@ package grok_connect.providers;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.bson.Document;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -61,11 +54,9 @@ class MongoDbDataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
         ProviderManager providerManager = new ProviderManager();
-        ProviderManager spy = Mockito.spy(providerManager);
-        Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = spy.getByName(type.getProperties().get("providerName").toString());
+        GrokConnect.providerManager = providerManager;
+        provider = providerManager.getByName(type.getProperties().get("providerName").toString());
         initDatabase("src/test/resources/scripts/mongodb/mocks.json", COLLECTION_1);
         initDatabase("src/test/resources/scripts/mongodb/one_line.json", COLLECTION_2);
     }
@@ -86,9 +77,7 @@ class MongoDbDataProviderTest {
     @DisplayName("Tests of testConnection(DataConnection conn)")
     @Test
     public void testConnection() {
-        String expected = DataProvider.CONN_AVAILABLE;
-        String actual = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
     }
 
     @DisplayName("Mongo all types")

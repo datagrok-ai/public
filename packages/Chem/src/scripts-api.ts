@@ -15,6 +15,14 @@ export async function findRGroups(
   return await grok.functions.call('Chem:FindRGroups', {molecules, df, core, prefix});
 }
 
+export async function findRGroupsWithCore(
+  molecules: string,
+  df: DG.DataFrame,
+  core: string,
+  onlyMatchAtRGroups: boolean): Promise<DG.DataFrame> {
+  return await grok.functions.call('Chem:FindRGroupsWithCore', {molecules, df, core, onlyMatchAtRGroups});
+}
+
 export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }
@@ -31,7 +39,7 @@ export async function generateScaffoldTree(
   data: DG.DataFrame,
   smilesColumn: string,
   ringCutoff: number = 0,
-  dischargeAndDeradicalize: boolean = false) : Promise<string> {
+  dischargeAndDeradicalize: boolean = false) : Promise<DG.FileInfo> {
   return await grok.functions.call('Chem: GenerateScaffoldTree', {
     data, smilesColumn, ringCutoff, dischargeAndDeradicalize,
   });

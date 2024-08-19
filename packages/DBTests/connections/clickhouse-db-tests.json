@@ -4,13 +4,13 @@
   "friendlyName": "ClickHouseDBTests",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 8126,
+    "port": 18125,
     "db": "test"
   },
   "credentials" : {
     "parameters" : {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "kNjsC8q830WHUBNC8VndhojSR4GAdqryiZhY"
     }
   },
   "dataSource": "ClickHouse",

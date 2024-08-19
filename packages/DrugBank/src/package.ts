@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {drugNameMoleculeConvert, searchWidget} from './widgets';
+import {SEARCH_TYPE, drugNameMoleculeConvert, searchWidget} from './widgets';
 
 export const _package = new DG.Package();
 
@@ -24,7 +24,7 @@ export async function initDrugBank(): Promise<void> {
 //output: widget result
 //condition: true
 export async function drugBankSubstructureSearchPanel(mol: string): Promise<DG.Widget> {
-  return mol ? searchWidget(mol, 'substructure', dbdf) : new DG.Widget(ui.divText('SMILES is empty'));
+  return mol ? searchWidget(mol, SEARCH_TYPE.SUBSTRUCTURE, dbdf) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Databases | DrugBank | Similarity Search
@@ -33,7 +33,7 @@ export async function drugBankSubstructureSearchPanel(mol: string): Promise<DG.W
 //output: widget result
 //condition: true
 export async function drugBankSimilaritySearchPanel(mol: string): Promise<DG.Widget> {
-  return mol ? searchWidget(mol, 'similarity', dbdf) : new DG.Widget(ui.divText('SMILES is empty'));
+  return mol ? searchWidget(mol, SEARCH_TYPE.SIMILARITY, dbdf) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Drug Name Molecule

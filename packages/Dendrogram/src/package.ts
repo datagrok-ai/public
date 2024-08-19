@@ -7,12 +7,12 @@ import {Dendrogram} from './viewers/dendrogram';
 import {TreeHelper} from './utils/tree-helper';
 import {DendrogramApp} from './apps/dendrogram-app';
 import {HierarchicalClusteringApp} from './apps/hierarchical-clustering-app';
-import {hierarchicalClusteringDialog} from './utils/hierarchical-clustering';
+import {hierarchicalClusteringDialog, hierarchicalClusteringUI} from './utils/hierarchical-clustering';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
 import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
 import {TreeForGridCutApp} from './apps/tree-for-grid-cut-app';
 import {DendrogramService} from './utils/dendrogram-service';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {HierarchicalClusteringSequencesApp} from './apps/hierarchical-clustering-sequences-app';
@@ -66,8 +66,8 @@ export function getDendrogramService(): IDendrogramService {
 
 //name: generateTreeDialog
 export function generateTreeDialog() {
-  const sizeInput = ui.intInput('Tree size (node count)', 10000);
-  const filenameInput = ui.stringInput('File name', 'tree-gen-10000');
+  const sizeInput = ui.input.int('Tree size (node count)', {value: 10000});
+  const filenameInput = ui.input.string('File name', {value: 'tree-gen-10000'});
 
   return ui.dialog('Generate tree')
     .add(ui.divV([sizeInput, filenameInput]))
@@ -209,6 +209,22 @@ export async function hierarchicalClusteringSequencesApp(): Promise<void> {
   }
 }
 
+//name: Hierarchical Clustering
+//description: Calculates hierarchical clustering on features and injects tree to grid
+//input: dataframe df
+//input: column_list colNameList
+//input: string distance = 'euclidean' {choices: ['euclidean', 'manhattan']}
+//input: string linkage = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}
+export async function hierarchicalClustering(
+  df: DG.DataFrame,
+  colNameList: DG.ColumnList,
+  distance: DistanceMetric = DistanceMetric.Euclidean,
+  linkage: string,
+): Promise<void> {
+  await hierarchicalClusteringUI(df, colNameList.names(), distance, linkage);
+}
+
+
 // -- File handlers --
 
 //name: importNwk
@@ -229,7 +245,8 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 
 // -- File preview --
 
-//tags: fileViewer, fileViewer-nwk, fileViewer-newick
+//tags: fileViewer
+//meta.fileViewer: nwk,newick
 //input: file file
 //output: view preview
 export async function previewNewick(file: DG.FileInfo) {
@@ -255,10 +272,24 @@ export async function previewNewick(file: DG.FileInfo) {
 
 // -- Top menu --
 
-//top-menu: ML | Hierarchical Clustering ...
+//top-menu: Bio | Analyze | Hierarchical Clustering...
 //name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
-export async function hierarchicalClustering(): Promise<void> {
+export async function hierarchicalClusteringSequences(): Promise<void> {
+  hierarchicalClusteringDialog();
+}
+
+//top-menu: Chem | Analyze | Hierarchical Clustering...
+//name: Hierarchical Clustering
+//description: Calculates hierarchical clustering on features and injects tree to grid
+export async function hierarchicalClusteringMolecules(): Promise<void> {
+  hierarchicalClusteringDialog();
+}
+
+//top-menu: ML | Cluster | Hierarchical Clustering...
+//name: Hierarchical Clustering
+//description: Calculates hierarchical clustering on features and injects tree to grid
+export async function hierarchicalClustering2(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 

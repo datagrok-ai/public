@@ -6,8 +6,6 @@ import {welcomeView} from './welcome-view';
 import {compareColumns} from './compare-columns';
 import {AddNewColumnDialog} from './dialogs/add-new-column';
 import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/formula-lines';
-import {DistributionProfilerViewer} from './distribution-profiler';
-import {SystemStatusWidget} from './widgets/system-status-widget';
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
@@ -17,9 +15,8 @@ import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wi
 import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
-import {TableView, VIEWER} from 'datagrok-api/dg';
-import {windowsSidebar} from './windows-manager';
-import {windowsStatusbar} from './windows-manager';
+import {windowsManagerPanel} from './windows-manager';
+import {initSearch} from './search/power-search';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -37,25 +34,11 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call);
 }
 
-//name: distributionProfiler
-//tags: viewer
-//output: viewer result
-export function _distributionProfiler(): DistributionProfilerViewer {
-  return new DistributionProfilerViewer();
-}
-
 //name: welcomeView
-//tags: autostart
 //meta.autostartImmediate: true
-export function _welcomeView(): void {
-  if (_properties['showWelcomeView'])
-    welcomeView();
-}
-
-//output: widget result
-//tags: dashboard
-export function systemStatusWidget(): DG.Widget {
-  return new SystemStatusWidget();
+//output: view home
+export function _welcomeView(): DG.View | undefined {
+  return welcomeView();
 }
 
 //output: widget result
@@ -159,43 +142,65 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 // Adds "Formula Lines" menu group to the Scatter Plot context menu:
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
+  let menu;
   if (src instanceof DG.ScatterPlotViewer ||
-     (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
-    const menu = args.args.menu.find('Tools');
-    if (menu != null)
-      menu.item('Formula Lines...', () => {formulaLinesDialog(src);});
-  }
+      (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.LINE_CHART))
+    menu = args.args.menu.find('Tools');
+
+  if (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.TRELLIS_PLOT &&
+      src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
+    menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
+
+  if (menu != null)
+    menu.item('Formula Lines...', () => {formulaLinesDialog(src);});
 });
 
 //tags: init
 export async function powerPackInit() {
+  initSearch();
   _properties = await _package.getProperties();
 }
 
 //description: Windows Manager
-export function windowsManagerSidebar() {
-  windowsSidebar();
+//tags: autostart
+export function windowsManager() {
+  windowsManagerPanel();
 }
 
-//description: Windows Manager
-export function windowsManagerStatusbar() {
-  windowsStatusbar();
+//name: viewerDialog
+//description: Open "Viewer Gallery" dialog
+//input: dynamic tv
+export function viewerDialog(tv: DG.TableView) {
+  if (tv instanceof DG.TableView)
+    return viewersDialog(tv, tv.table!);
 }
 
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery(): void {
-  grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'TableView') {
-      const panel = view.getRibbonPanels();
-      panel[0][1].remove();
+  grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
+  _viewerGallery(grok.shell.v);
+}
 
-      const icon = ui.iconFA('', () => {viewersDialog(view as TableView, (view as TableView).table!);}, 'Add viewer');
-      icon.className = 'grok-icon svg-icon svg-add-viewer';
-
-      const btn = ui.div([icon]);
-      btn.className = 'd4-ribbon-item';
-      panel[0][0].after(btn);
+function _viewerGallery(view: DG.ViewBase): void {
+  if (view?.type == 'TableView') {
+    const panels = view.getRibbonPanels();
+    for (const p of panels) {
+      for (const d of p) {
+        if (d instanceof HTMLDivElement) {
+          if (d.querySelector('.svg-add-viewer')) {
+            const icon = ui.iconFA('',
+              () => {
+                viewersDialog(view as DG.TableView, (view as DG.TableView).table!);
+              }, 'Add viewer');
+            icon.className = 'grok-icon svg-icon svg-add-viewer';
+            const btn = ui.div([icon]);
+            btn.className = 'd4-ribbon-item';
+            p[p.indexOf(d)] = btn;
+          }
+        }
+      }
     }
-  });
+    view.setRibbonPanels(panels);
+  }
 }

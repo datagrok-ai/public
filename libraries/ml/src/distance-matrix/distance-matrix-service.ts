@@ -1,4 +1,5 @@
 import {KnownMetrics} from '../typed-metrics';
+import {DistanceAggregationMethod, DistanceAggregationMethods} from './types';
 
 export class DistanceMatrixService {
     private _workers: Worker[];
@@ -12,11 +13,24 @@ export class DistanceMatrixService {
       this._terminateOnComplete = terminateOnComplete;
     };
 
-    public async calc<T>(values: Array<T> | ArrayLike<T>, fnName: KnownMetrics,
-      normalize = true): Promise<Float32Array> {
+    public async calc(values: ArrayLike<any>, fnName: KnownMetrics,
+      normalize = true, opts?: {[_: string]: any}): Promise<Float32Array> {
+      return await this.calcMulti([values], [fnName], normalize,
+        [opts ?? {}], [1], DistanceAggregationMethods.MANHATTAN);
+    }
+
+    public async calcMulti(
+      values: ArrayLike<any>[], fnNames: KnownMetrics[],
+      normalize = true, opts: {[_: string]: any}[] = [{}],
+      weights: number[] = [1], aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.MANHATTAN
+    ): Promise<Float32Array> {
+      if (values.length < 1)
+        throw new Error('values must contain at least one array');
+      if (fnNames.length !== values.length || opts.length !== values.length || weights.length !== values.length)
+        throw new Error('values, fnNames, weights and opts must have the same length');
       return new Promise(async (resolve, reject) => {
         try {
-          const len = values.length;
+          const len = values[0].length;
           const promises = new Array<Promise<void>>(this._workerCount);
           const totalLength = len * (len - 1) / 2; // size of reduced distance matrix
           this._workerCount = Math.min(this._workerCount, totalLength);
@@ -37,10 +51,12 @@ export class DistanceMatrixService {
               endRow = len - 2 - Math.floor(Math.sqrt(-8 * end + 4 * len * (len - 1) - 7) / 2 - 0.5);
               endCol = end - len * endRow + Math.floor((endRow + 1) * (endRow + 2) / 2);
             }
-            this._workers[i].postMessage({values, fnName, startRow, startCol, chunckSize: end - start});
+            this._workers[i].postMessage(
+              {values, fnNames, startRow, startCol, chunckSize: end - start, opts, weights, aggregationMethod}
+            );
             promises[i] = new Promise((resolveWorker, rejectWorker) => {
               this._workers[i].onmessage = ({data: {error, distanceMatrixData, min, max}}): void => {
-                this._terminateOnComplete && this._workers[i].terminate();
+                this._terminateOnComplete && setTimeout(() => this._workers[i].terminate());
                 if (error) {
                   rejectWorker(error);
                 } else {

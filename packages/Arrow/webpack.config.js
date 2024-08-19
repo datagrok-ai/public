@@ -2,9 +2,15 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
+  cache: {
+    type: 'filesystem',
+  },
   mode: 'development',
+  experiments: {
+    syncWebAssembly: true,
+  },
   entry: {
-    package: ['./src/arrow1_bg.wasm', './src/package.ts'],
+    package: './src/package.ts',
     test: {
       filename: 'package-test.js',
       library: { type: 'var', name: `${packageName}_test` },

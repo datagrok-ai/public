@@ -1,10 +1,10 @@
 # EnamineStore
 
-EnamineStore is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+EnamineStore is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
 It provides integration with the [Enamine Store](https://enaminestore.com), a service for online shopping for the chemical building blocks.
 
 There are two ways to use the integration: as an [application](https://datagrok.ai/help/develop/how-to/build-an-app),
-or as an [info panel](https://datagrok.ai/help/discover/info-panels) for chemical structures.
+or as an [info panel](https://datagrok.ai/help/explore/data-augmentation/info-panels) for chemical structures.
 
 ## Application
 
@@ -25,8 +25,8 @@ Click on a molecule in the 'Enanime Store' panel to open the corresponding page 
 
 See also:
 
-* [Grok API](https://datagrok.ai/help/develop/js-api)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
-* [Web Connectors](https://datagrok.ai/help/access/connectors/web)
+* [Grok API](https://datagrok.ai/help/develop/packages/js-api)
+* [Packages](https://datagrok.ai/help/develop/#packages)
+* [Web Connectors](https://datagrok.ai/help/access/databases/connectors/web)
 * [OpenAPI/Swagger](https://swagger.io/)
-* [Info Panels](https://datagrok.ai/help/discover/info-panels)
+* [Info Panels](https://datagrok.ai/help/explore/data-augmentation/info-panels)

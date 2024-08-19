@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,15 +14,13 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
 public class TeradataDataProvider extends JdbcDataProvider {
-    public TeradataDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public TeradataDataProvider() {
         driverClassName = "com.teradata.jdbc.TeraDriver";
 
         descriptor = new DataSource();
@@ -80,7 +76,7 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.getDb();
         StringColumn column = new StringColumn(new String[]{db});
         column.name = "TABLE_SCHEMA";
@@ -167,13 +163,6 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String addBrackets(String name) {
-        String brackets = descriptor.nameBrackets;
-        return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
-    }
-
-    @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("(REGEXP_SIMILAR(%s, '%s') = 1)", columnName, regexExpression);
     }
@@ -202,12 +191,5 @@ public class TeradataDataProvider extends JdbcDataProvider {
             statement.setObject(n + i, lst.get(i));
         }
         return lst.size() - 1;
-    }
-
-    @Override
-    protected boolean isString(int type, String typeName) {
-        return (type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
-                || (type == java.sql.Types.NCLOB) || typeName.equalsIgnoreCase("JSON");
     }
 }

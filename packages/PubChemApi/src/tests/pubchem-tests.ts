@@ -12,7 +12,7 @@ category('Panels', () => {
       const pubChemId = await smilesToPubChem(molString);
       await buildAccordion(pubChemId);
     }
-  });
+  }, {skipReason: 'GROK-13201: Info panel needs to be refactored'});
 
   test('Substructure Search', async () => {
     for (const molString of molStrings)
@@ -30,10 +30,10 @@ category('Panels', () => {
   });
 
   test('pubChemToSmiles', async () => {
-    expect(await pubChemToSmiles('3334'), 'COC(=O)NC1=NC2=C(N1)C=C(C=C2)SC3=CC=CC=C3');
-    expect(await pubChemToSmiles('44219'), 'CC(=O)OC1=CC=CC=C1C(=O)[O-].C(CC[NH3+])CC(C(=O)O)N');
-    expect(await pubChemToSmiles('2244'), 'CC(=O)OC1=CC=CC=C1C(=O)O');
-    expect(await pubChemToSmiles('12762'), 'C1=CC=C(C=C1)[As](Cl)Cl');
+    expect(await pubChemToSmiles('pubchem:3334'), 'COC(=O)NC1=NC2=C(N1)C=C(C=C2)SC3=CC=CC=C3');
+    expect(await pubChemToSmiles('pubchem:44219'), 'CC(=O)OC1=CC=CC=C1C(=O)[O-].C(CC[NH3+])CC(C(=O)O)N');
+    expect(await pubChemToSmiles('pubchem:2244'), 'CC(=O)OC1=CC=CC=C1C(=O)O');
+    expect(await pubChemToSmiles('pubchem:12762'), 'C1=CC=C(C=C1)[As](Cl)Cl');
   });
 
   test('inchiKeysToSmiles', async () => {

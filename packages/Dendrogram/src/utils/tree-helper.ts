@@ -5,13 +5,15 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {MmDistanceFunctionsNames} from
-  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
+
 type DataNodeDict = { [nodeName: string]: number };
 
 export const enum TAGS {
@@ -51,17 +53,17 @@ export class TreeHelper implements ITreeHelper {
         name = `${nodePrefixV}${NO_NAME_ROOT}`;
       }
 
+      if (!!obj.children) {
+        const childrenCount = obj.children.length;
+        for (let i = 0; i < childrenCount; i++)
+          traverse(obj.children[i], obj);
+      }
+
       nodes.push(name);
       distances.push(obj.branch_length ? obj.branch_length : null);
       // annotations.push(obj.annotation);
       parents.push(parent ? parent!.name : null);
       leafs.push(!obj.children || obj.children.length == 0);
-
-      if (!obj.children) return;
-      const childrenNum = obj.children.length;
-
-      for (let i = 0; i < childrenNum; i++)
-        traverse(obj.children[i], obj);
     }
 
     traverse(obj, null);
@@ -110,31 +112,38 @@ export class TreeHelper implements ITreeHelper {
       }
     }
 
-    return !node ? ';' : `${toNewickInt(node)};`;
+    return !node ? NEWICK_EMPTY : `${toNewickInt(node)};`;
   }
 
-  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getLeafList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
+    if (!list) list = [];
 
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      return ([] as TNode[]).concat(
-        ...(node.children ?? []).map((child) => this.getLeafList(child as TNode)));
+      for (const child of node.children ?? [])
+        this.getLeafList(child as TNode, list);
+      //(node.children ?? []).forEach((child) => this.getLeafList(child as TNode, list));
+      return list;
     }
   }
 
-  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[] {
+  getNodeList<TNode extends NodeType>(node: TNode | null, list?: TNode[]): TNode[] {
     if (!node) return [];
-
+    if (!list) list = [];
     if (isLeaf(node)) {
+      list.push(node);
       return [node]; // node is a leaf
     } else {
-      const childNodeListList: TNode[][] = node.children!
-        .map((child) => { return this.getNodeList(child as TNode); });
-      return ([] as TNode[]).concat(
-        [node],
-        ...childNodeListList);
+      // const childNodeListList: TNode[][] = node.children!
+      //   .map((child) => { return this.getNodeList(child as TNode); });
+      // const childNodeListList: TNode[][] = [];
+      for (const child of node.children!)
+        this.getNodeList(child as TNode, list);
+      list.push(node);
+      return list;
     }
   }
 
@@ -159,9 +168,13 @@ export class TreeHelper implements ITreeHelper {
     if (isLeaf(resNode)) {
       return resNode.name in leaves ? resNode : null;
     } else {
-      resNode.children = node.children!
-        .map((child) => this.filterTreeByLeaves(child, leaves))
-        .filter((child) => child != null) as NodeType[];
+      resNode.children = [];
+      for (const child of node.children!) {
+        const resChild = this.filterTreeByLeaves(child, leaves);
+        if (resChild) resNode.children.push(resChild);
+      }
+      // .map((child) => this.filterTreeByLeaves(child, leaves))
+      // .filter((child) => child != null) as NodeType[];
 
       return resNode.children.length > 0 ? resNode : null;
     }
@@ -174,9 +187,14 @@ export class TreeHelper implements ITreeHelper {
       return node.name in leaves ? [node] : [];
     } else {
       const children: TNode[] = node.children as TNode[] ?? [];
-      const childrenRes: TNode[] = children.map((child) => {
-        return this.getNodesByLeaves(child, leaves);
-      }).flat();
+      const childrenRes: TNode[] = [];
+      for (const child of children) {
+        const childRes = this.getNodesByLeaves(child, leaves);
+        childrenRes.push(...childRes);
+      }
+      //  children.map((child) => {
+      //   return this.getNodesByLeaves(child, leaves);
+      // }).flat();
 
       return (childrenRes.length == children.length &&
         children.every((child, i) => child == childrenRes[i])) ? [node] : childrenRes;
@@ -250,7 +268,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {string}leafColName - name of column with leaf names
    * @param {boolean}removeMissingDataRows - remove rows with missing data
    * @return {[NodeType, string[]]} - tree (root node) of nodes presented in data and list of missed data nodes
-  */
+   */
   setGridOrder(
     tree: NodeType | null, grid: DG.Grid, leafColName?: string,
     removeMissingDataRows: boolean = false,
@@ -475,6 +493,32 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
+  async encodeSequences(seqs: DG.Column): Promise<string[]> {
+    const ncSh = SeqHandler.forColumn(seqs);
+    const seqList = seqs.toList();
+    const seqColLength = seqList.length;
+    let charCodeCounter = 36;
+    const charCodeMap = new Map<string, string>();
+    for (let rowIdx = 0; rowIdx < seqColLength; rowIdx++) {
+      const seq = seqList[rowIdx];
+      if (seqList[rowIdx] === null || seqs.isNone(rowIdx)) {
+        seqList[rowIdx] = null;
+        continue;
+      }
+      seqList[rowIdx] = '';
+      const ss = ncSh.getSplitted(rowIdx);
+      for (let j = 0; j < ss.length; j++) {
+        const char = ss.getCanonical(j);
+        if (!charCodeMap.has(char)) {
+          charCodeMap.set(char, String.fromCharCode(charCodeCounter));
+          charCodeCounter++;
+        }
+        seqList[rowIdx] += charCodeMap.get(char)!;
+      }
+    }
+    return seqList;
+  }
+
   async calcDistanceMatrix(
     df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
   ) {
@@ -485,17 +529,19 @@ export class TreeHelper implements ITreeHelper {
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
-      let isUsingNeedlemanWunsch: boolean = false;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
+        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.Difference, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
         // Use Hamming distance when sequences are aligned
-        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
-
-        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
-          isUsingNeedlemanWunsch = true;
-        values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
+        const seqDistanceFunction: MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN;
+        const encodedSeqs = await this.encodeSequences(col);
+        values = await distanceMatrixService.calc(encodedSeqs, seqDistanceFunction, false);
+      } else if (col.semType === DG.SEMTYPE.MOLECULE) {
+        const fingerPrintCol: DG.Column<DG.BitSet | null> =
+          await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
+        const fingerPrintBitArrayCol = fingerPrintCol.toList().map((bs: DG.BitSet | null) =>
+          bs ? bs.getBuffer() : null);
+        values = await distanceMatrixService.calc(fingerPrintBitArrayCol, IntArrayMetricsNames.TanimotoIntArray, false);
       } else { throw new TypeError('Unsupported column type'); }
 
       if (!out) {
@@ -504,16 +550,15 @@ export class TreeHelper implements ITreeHelper {
           out.normalize();
           if (method === DistanceMetric.Euclidean)
             out.square();
-        } else if (isUsingNeedlemanWunsch) {
-          // we need to normalize as needleman wunsch returns negative and positive values as well
-          out.normalize();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
         newMat.normalize();
         switch (method) {
-        case DistanceMetric.Manhattan:
+        case DistanceMetric.Manhattan: {
           out.add(newMat);
+          break;
+        }
         default:
           newMat.square();
           out.add(newMat);
@@ -528,6 +573,7 @@ export class TreeHelper implements ITreeHelper {
 
     return out;
   }
+
   parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType {
     /*
     clusert matrix is in R format, I.E. the indexings are 1-based.
@@ -543,6 +589,7 @@ export class TreeHelper implements ITreeHelper {
       function subTreeLength(children?: NodeType[]): number {
         return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
       }
+
       if (isLeaf(node))
         return 0;
       else

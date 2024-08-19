@@ -12,6 +12,9 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
   }
 
   getChildRenderer() {return this.m_renderer;}
+  setChildRenderer(renderer: DG.GridCellRenderer | null = null) {
+    this.m_renderer = renderer;
+  }
 
    shouldRenderExternalContent(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, nX: number, nY: number, nW: number, nH: number): boolean {
     return this.m_renderer !== null;

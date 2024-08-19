@@ -1,184 +1,134 @@
 package grok_connect.handlers;
 
-import com.google.gson.reflect.TypeToken;
-import grok_connect.connectors_info.FuncCall;
+import com.google.gson.Gson;
+import grok_connect.connectors_info.DataQueryRunResult;
+import grok_connect.log.EventType;
+import grok_connect.log.QueryLogger;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
-import com.google.gson.Gson;
 import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import grok_connect.GrokConnect;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 import serialization.DataFrame;
 
 public class SessionHandler {
-    public static final String LOG_MESSAGE = "| %s |";
-    private static final Logger LOGGER = LoggerFactory.getLogger(SessionHandler.class);
-    private static final Gson gson = new Gson();
-    private static final int rowsPerChunk = 10000;
+    private static final String COMPLETED_OK = "COMPLETED_OK";
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
-    private static final String SIZE_RECIEVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
-    private static final String LOG_RECIEVED_MESSAGE = "LOG RECEIVED";
-    private static final String DEFAULT_GETTING_RESULT_SET_MESSAGE = "Getting resultSet, %s";
-    private static final String DEFAULT_GOT_RESULT_SET_MESSAGE = "Got resultSet, %s";
-    private static final String DEFAULT_INITIALIZING_SCHEME_MESSAGE = "Initializing scheme, %s";
-    private static final String DEFAULT_FINISHED_INITIALIZATION_SCHEME_MESSAGE = "Finished initialization of scheme, %s";
-    private static final SimpleDateFormat DEFAULT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final String SIZE_RECEIVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
     private final Session session;
     private final ExecutorService threadPool;
+    private final QueryLogger queryLogger;
+    private final Logger logger;
     private Future<DataFrame> fdf;
     private DataFrame dataFrame;
     private Boolean firstTry = true;
     private Boolean oneDfSent = false;
+    private int dfNumber = 1;
     private byte[] bytes;
     private QueryManager queryManager;
-    private int queryMessages = 0;
 
-    SessionHandler(Session session) {
+    SessionHandler(Session session, QueryLogger queryLogger) {
         threadPool = Executors.newCachedThreadPool();
+        this.queryLogger = queryLogger;
+        this.logger = queryLogger.getLogger();
         this.session = session;
+        logger.info("GrokConnect version: {}", GrokConnect.properties.getProperty("version"));
     }
 
-    public void onError(Throwable err) throws Throwable {
-        dataFrame = null; // free some memory, maybe gc is benevolent today
-        Throwable cause = err.getCause(); // we need to get cause, because error is wrapped by runtime exception
-        String message = socketErrorMessage(cause);
+    public void onError(Throwable err) {
+        Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
         if (cause instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
-            LOGGER.error(message);
             GrokConnect.needToReboot = true;
-        } else {
-            LOGGER.debug(message);
         }
-        session.getRemote().sendString(message);
+        if (cause.getClass().equals(GrokConnectException.class))
+            cause = cause.getCause();
+        String message = cause.getMessage();
+        String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
+        logger.error(EventType.ERROR.getMarker(), message, cause);
+        DataQueryRunResult result = new DataQueryRunResult();
+        result.errorMessage = message;
+        result.errorStackTrace = stackTrace;
+        session.getRemote().sendStringByFuture(String.format("ERROR: %s", new Gson().toJson(result)));
         session.close();
-        queryManager.closeConnection();
     }
 
     public void onMessage(String message) throws Throwable {
         if (message.startsWith(MESSAGE_START)) {
+            logger.debug("Received message with json call from the server");
             message = message.substring(6);
-            queryManager = new QueryManager(message);
-            FuncCall query = queryManager.getQuery();
-            if (query.debugQuery) {
-                query.log += String.format(LOG_MESSAGE, GrokConnect.properties.toString());
-                query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_GETTING_RESULT_SET_MESSAGE));
-            }
-            queryManager.initResultSet();
-            if (query.debugQuery) {
-                query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_GOT_RESULT_SET_MESSAGE));
-            }
-            if (queryManager.isResultSetInitialized()) {
-                if (query.debugQuery) {
-                    query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_INITIALIZING_SCHEME_MESSAGE));
+            queryManager = new QueryManager(message, queryLogger);
+            if (queryManager.isDebug) {
+                logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run...");
+                for (int i = 0; i < 2; i++) {
+                    logger.debug("Running #{} dry run {} logging dataframe filling times...", i + 1, i == 0 ? "without" : "with");
+                    queryManager.dryRun(i == 0);
+                    logger.debug("Finished #{} dry run.", i + 1);
                 }
-                queryManager.initScheme();
-                if (query.debugQuery) {
-                    query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_FINISHED_INITIALIZATION_SCHEME_MESSAGE));
-                }
-                dataFrame = queryManager.getSubDF(100);
-            } else {
-                dataFrame = new DataFrame();
+                logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.END), "Dry run finished");
             }
 
-        } else if (message.startsWith(LOG_RECIEVED_MESSAGE)) {
-            session.getRemote().sendString(END_MESSAGE);
+            queryManager.initResultSet(queryManager.getQuery());
+            dataFrame = queryManager.isResultSetInitialized() ? queryManager.getSubDF(dfNumber) : new DataFrame();
+        }
+        else if (message.startsWith(SIZE_RECEIVED_MESSAGE)) {
+            fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
+            Marker start = EventType.SOCKET_BINARY_DATA_EXCHANGE.getMarker(dfNumber, EventType.Stage.START);
+            logger.debug(start, "Sending binary data with id {} to the server...", dfNumber);
+            session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
+            return;
+        }
+        else if (message.startsWith(COMPLETED_OK)) {
+            session.getRemote().sendStringByFuture(END_MESSAGE);
             session.close();
             return;
-        } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
-            fdf = threadPool.submit(() -> queryManager.getSubDF(rowsPerChunk));
-            if (queryManager.getQuery().debugQuery) {
-                queryManager.getQuery().log += String.format(LOG_MESSAGE,
-                        String.format("Sending bytes, start time: %s", LocalDateTime.now()));
-            }
-            session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
-            return;
-        } else {
+        }
+        else {
             if (!message.equals(OK_RESPONSE)) {
                 if (!firstTry)
                     throw new QueryChunkNotSent();
-                else {
+                else
                     firstTry = false;
-                }
             }
             else {
                 firstTry = true;
                 oneDfSent = true;
-                if (queryManager.isResultSetInitialized())
+                if (queryManager.isResultSetInitialized()) {
+                    logger.debug("-- GrokConnect thread is doing nothing. Blocking to receive next dataframe --");
                     dataFrame = fdf.get();
+                    logger.debug("-- Received next dataframe from executing thread --");
+                    if (dataFrame.rowCount != 0) dfNumber++;
+                }
             }
         }
         if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {
-            LOGGER.debug("Calculating dataframe weight");
+            Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERSION.getMarker(dfNumber, EventType.Stage.START);
+            Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERSION.getMarker(dfNumber, EventType.Stage.END);
+            logger.debug(start, "Converting DataFrame with id {} to binary data...", dfNumber);
             bytes = dataFrame.toByteArray();
-            LOGGER.debug("Calculated dataframe weight: {}", bytes.length);
-            session.getRemote().sendString(checksumMessage(bytes.length));
-        } else {
-            queryManager.closeConnection();
-            FuncCall query = queryManager.getQuery();
-            if (query.debugQuery) {
-                session.getRemote().sendString(socketLogMessage(query.log));
-                return;
-            }
-
-            session.getRemote().sendString(END_MESSAGE);
-            session.close();
+            dataFrame = null;
+            logger.debug(finish, "Converted DataFrame with id {} to binary data", dfNumber);
+            logger.debug(EventType.CHECKSUM_SEND.getMarker(dfNumber, EventType.Stage.START), "Sending checksum message. Data size: {}", bytes.length);
+            session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
+        }
+        else {
+            session.getRemote().sendStringByFuture(String.format("COMPLETED %s", dfNumber));
         }
     }
 
-    public String checksumMessage(int i) {
-        return String.format("DATAFRAME PART SIZE: %d", i);
-    }
-
-    public String socketLogMessage(String s) {
-        return "LOG: %s" + s;
-    }
-
-    public QueryManager getQueryManager() {
-        return queryManager;
-    }
-
-    private String getOnMessageLogString(String messageFormat) {
-        String log = String.format(messageFormat, DEFAULT_DATE_FORMAT.format(new Date()));
-        LOGGER.trace(log);
-        return log;
-    }
-
-    private String socketErrorMessage(Throwable th) {
-        Map<String, String> stackTrace = GrokConnect.printError(th);
-        stackTrace.put("log", getFailedQueryInfo());
-        return String.format("ERROR: %s", gson.toJson(stackTrace,
-                new TypeToken<Map<String, String>>() { }.getType()));
-    }
-
-    private String getFailedQueryInfo() {
-        FuncCall query = queryManager.getQuery();
-        return new StringBuilder()
-                .append("Log during execution: ")
-                .append(System.lineSeparator())
-                .append(query.log)
-                .append(System.lineSeparator())
-                .append("Current time: ")
-                .append(System.lineSeparator())
-                .append(LocalDateTime.now())
-                .append(System.lineSeparator())
-                .append("Failed query:")
-                .append(System.lineSeparator())
-                .append(query.func.query)
-                .append(System.lineSeparator())
-                .append("Query parameters:")
-                .append(System.lineSeparator())
-                .append(query.func.getInputParams())
-                .toString();
+    public void onClose() throws SQLException {
+        threadPool.shutdown();
+        if (queryManager != null) queryManager.close();
+        queryLogger.closeLogger();
     }
 }

@@ -1,6 +1,16 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 
+const MAX_IMG_PX_WIDTH = 600;
+const MAX_IMG_PX_HEIGHT = 600;
+const DLG_WINDOW_PADDING_PX = 24;
+
+@grok.decorators.cellRenderer({
+  name: 'imageUrlCellRenderer',
+  cellType: 'ImageUrl',
+})
 export class ImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'ImageUrl'; }
 
@@ -17,8 +27,6 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
-    g.fillText(`image ${gridCell.cell.value}`, x + 3, y + 3);
-
     if (w < 5 || h < 5) return;
     const url = gridCell.cell.value;
     if (url == null) return;
@@ -57,5 +65,29 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     // }
 
     // g.restore();
+  }
+
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
+    const image = new Image();
+    image.src = gridCell.cell.value;
+
+    const srcWidth = image.width;
+    const srcHeight = image.height;
+
+    const dlg = ui.dialog({title: 'Image'})
+      .add(image)
+      .show({resizable: true});
+
+    const dlgContentsBox = dlg.root.getElementsByClassName('d4-dialog-contents dlg-image')[0] as HTMLElement;
+    const nonImgHeight = dlg.root.getElementsByClassName('d4-dialog-header')[0].clientHeight +
+      dlg.root.getElementsByClassName('d4-dialog-footer')[0].clientHeight;
+    const aspectRatio = Math.min((MAX_IMG_PX_WIDTH - DLG_WINDOW_PADDING_PX) / srcWidth,
+      (MAX_IMG_PX_HEIGHT - nonImgHeight - DLG_WINDOW_PADDING_PX) / srcHeight);
+
+    dlgContentsBox.style.width = `${srcWidth * aspectRatio + DLG_WINDOW_PADDING_PX}px`;
+    dlgContentsBox.style.height = `${srcHeight * aspectRatio + DLG_WINDOW_PADDING_PX}px`;
   }
 }

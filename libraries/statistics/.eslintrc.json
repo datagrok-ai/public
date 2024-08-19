@@ -20,7 +20,13 @@
 			120
 		],
 		"require-jsdoc": "off",
-		"spaced-comment": "off"
+		"spaced-comment": "off",
+		"linebreak-style": "off",
+		"brace-style": "off",
+		"curly": [
+			"error",
+			"multi-or-nest"
+		]
 	},
 	"parser": "@typescript-eslint/parser",
 	"plugins": [

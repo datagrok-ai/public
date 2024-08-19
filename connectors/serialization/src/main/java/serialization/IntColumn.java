@@ -1,15 +1,25 @@
 package serialization;
 
-
-import java.util.Arrays;
-import java.util.Objects;
-
 // Integer column.
 public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
-    private static final int None = -2147483648;
+    public static final int None = -2147483648;
 
     private int[] data;
+
+    public IntColumn() {
+        data = new int[initColumnSize];
+    }
+
+    public IntColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new int[initColumnSize];
+    }
+
+    public IntColumn(Integer[] values) {
+        data = new int[initColumnSize];
+        addAll(values);
+    }
 
     public String getType() {
         return TYPE;
@@ -17,16 +27,7 @@ public class IntColumn extends Column<Integer> {
 
     public void empty() {
         length = 0;
-        data = new int[100]; 
-    }
-    
-    public IntColumn() {
-        data = new int[100];
-    }
-
-    public IntColumn(Integer[] values) {
-        data = new int[100];
-        addAll(values);
+        data = new int[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {
@@ -48,6 +49,11 @@ public class IntColumn extends Column<Integer> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, Integer value) {
+        data[index] = value;
     }
 
     @Override

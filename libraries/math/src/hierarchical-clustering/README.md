@@ -5,7 +5,7 @@ the files are contained in ```wasm``` folder and corresponding cpp files are in 
 
 1. Emscripten has to be installed on system and found in global PATH
 
-2. In command line prompt, cd into the ```wasm/cpp``` directory and execute command ```emsdk activate lates``` .  This will init the working directory.
+2. In command line prompt, cd into the ```wasm/cpp``` directory and execute command ```emsdk activate latest``` .  This will init the working directory.
 
 3. Then execute command found in same folder under the name ```emsc command.txt```.
 

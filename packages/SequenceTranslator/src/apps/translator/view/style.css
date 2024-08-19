@@ -1,0 +1,46 @@
+/* Naming convention: class names should begin with st and app name to avoid naming collitions */
+.st-translator-input-table {
+  /* width: 100%; */
+  margin-right: 20px;
+}
+
+.st-translator-input-table td:has(textarea) {
+  width: 100%;
+}
+
+.st-translator-input-table td:has(select) {
+  min-width: 120px;
+  vertical-align: top;
+}
+
+.st-translator-output-table {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 10px;
+}
+
+.st-translator-output-table table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* .st-translator-output-table table tbody tr td { */
+/*   max-width: 20%; */
+/* } */
+
+.st-translator-output-table td {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.st-translator-output-table tr:nth-child(even) {
+  background-color: var(--grey-1);
+}
+
+.st-translator-output-table td:nth-child(odd) {
+  width: 120px;
+  vertical-align: top;
+}
+
+.st-translator-output-table td a {
+  overflow-wrap: break-word;
+}

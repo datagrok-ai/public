@@ -2,16 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import $ from 'cash-dom';
 import wu from 'wu';
-import {Observable, Subject} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
+import * as ngl from 'NGL';
 
-import {TwinPviewer} from './twin-p-viewer';
-import {Unsubscribable} from 'rxjs';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {LoaderParameters, RepresentationParameters} from 'NGL';
-import * as NGL from 'NGL';
 import {intToHtml} from '@datagrok-libraries/utils/src/color';
 import {
   INglViewer,
@@ -19,6 +15,17 @@ import {
   NglPropsDefault,
   RepresentationType,
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+
+import {awaitNgl} from './ngl-viewer-utils';
+import {TwinPviewer} from './twin-p-viewer';
+
+import {_package} from '../package';
+
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -28,6 +35,7 @@ const enum PROPS_CATS {
 
 export const enum PROPS {
   // -- Data --
+  dataJson = 'dataJson',
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
@@ -53,18 +61,20 @@ export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | nu
  * https://nglviewer.org/ngl/api/manual/usage/file-formats.html
  */
 export class NglViewer extends DG.JsViewer implements INglViewer {
+  private readonly logger: ILogger;
   private viewed: boolean = false;
   private _onAfterBuildView = new Subject<void>();
 
   public get onAfterBuildView(): Observable<void> { return this._onAfterBuildView; }
 
   // -- Data --
+  [PROPS.dataJson]: string;
   [PROPS.pdb]: string;
   [PROPS.pdbTag]: string;
   [PROPS.ligandColumnName]: string;
 
   // -- Style --
-  [PROPS.representation]: NGL.StructureRepresentationType;
+  [PROPS.representation]: ngl.StructureRepresentationType;
 
   // -- Behavior --
   [PROPS.showSelectedRowsLigands]: boolean;
@@ -75,9 +85,14 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   constructor() {
     super();
+
     this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
+    this.dataJson = this.string(PROPS.dataJson, defaults.dataJson, {
+      category: PROPS_CATS.DATA, userEditable: false,
+      description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
+    });
     this.pdb = this.string(PROPS.pdb, defaults.pdb,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -87,7 +102,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as NGL.StructureRepresentationType;
+      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as ngl.StructureRepresentationType;
 
     // -- Behaviour --
     this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, defaults.showSelectedRowsLigands,
@@ -100,7 +115,15 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     // --
     this.root.style.textAlign = 'center';
     this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+
+    this.logger = _package.logger;
+    this.viewSyncer = new PromiseSyncer(this.logger);
   }
+
+  private static viewerCounter: number = -1;
+  private readonly viewerId: number = ++NglViewer.viewerCounter;
+
+  private viewerToLog(): string { return `NglViewer<${this.viewerId}>`; }
 
   override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
@@ -111,26 +134,26 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
 
     switch (property.name) {
-    case PROPS.representation:
-      this.updateView();
-      break;
-    case PROPS.showCurrentRowLigand:
-    case PROPS.showSelectedRowsLigands:
-    case PROPS.showMouseOverRowLigand:
-      this.rebuildViewLigands();
-      break;
+      case PROPS.representation:
+        this.updateView();
+        break;
+      case PROPS.showCurrentRowLigand:
+      case PROPS.showSelectedRowsLigands:
+      case PROPS.showMouseOverRowLigand:
+        this.rebuildViewLigands(`onPropertyChanged( name = ${property.name} )`);
+        break;
     }
 
     switch (property.name) {
-    case PROPS.pdb:
-    case PROPS.pdbTag:
-      this.setData('onPropertyChanged');
-      break;
+      case PROPS.pdb:
+      case PROPS.pdbTag:
+        this.setData('onPropertyChanged');
+        break;
     }
   }
 
   // effective PDB value (to plot)
-  private pdbStr: string | null = null;
+  private dataEff: BiostructureData | null = null;
 
   override onTableAttached(): void {
     const superOnTableAttached = super.onTableAttached.bind(this);
@@ -140,20 +163,17 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       .filter((tagName: string) => tagName.startsWith('.')).toArray();
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
-    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
-      superOnTableAttached();
-      await this.setData('onTableAttached');
-    });
+    superOnTableAttached();
+    this.setData('onTableAttached');
   }
 
   override detach(): void {
-    if (this.setDataInProgress) return;
-
+    const callLog = `detach()`;
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
-      await this.viewPromise;
+    this.viewSyncer.sync(callLog, async () => { // detach
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
-        await this.destroyView('detach');
+        await this.destroyView(callLog);
         this.viewed = false;
       }
       superDetach();
@@ -162,61 +182,74 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   // -- Data --
 
-  setData(purpose: string): void {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
-    _package.logger.debug(`NglViewer.setData(purpose='${purpose}') `);
+  private _setDataCallCounter = -1;
 
-    this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData');
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
-      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
+  setData(caller: string): void {
+    const callId = ++this._setDataCallCounter;
+    const callLog = `setData( '${caller}', callId = ${callId} )`;
+    this.viewSyncer.sync(callLog, async () => { // setData
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          await this.destroyView(callLog);
+          this.viewed = false;
+        }
+        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-      // -- PDB data --
-      let pdbTag: string = pdbTAGS.PDB;
-      if (this.pdbTag) pdbTag = this.pdbTag;
-      this.pdbStr = this.dataFrame.getTag(pdbTag);
-      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+        // -- PDB data --
+        this.dataEff = null;
+        let pdbTagName: string = pdbTAGS.PDB;
+        let pdb: string | null = null;
+        if (this.pdbTag) pdbTagName = this.pdbTag;
+        if (this.dataFrame && this.dataFrame.tags.has(pdbTagName)) pdb = this.dataFrame.getTag(pdbTagName);
+        if (this.pdb) pdb = this.pdb;
+        if (pdb && pdb != pdbDefault)
+          this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
+          this.dataEff = BiostructureDataJson.toData(this.dataJson);
 
-      // -- Ligand --
-      if (!this.ligandColumnName) {
-        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        if (molCol)
-          this.ligandColumnName = molCol.name;
+        // -- Ligand --
+        if (this.dataFrame && !this.ligandColumnName) {
+          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+          if (molCol)
+            this.ligandColumnName = molCol.name;
+        }
+
+        if (!this.viewed) {
+          await this.buildView(callLog);
+          this._onAfterBuildView.next();
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const errMsg = err instanceof Error ? err.message : err.toString();
+        const stack = err instanceof Error ? err.stack : undefined;
+        grok.shell.error(errMsg);
+        this.logger.error(errMsg, undefined, stack);
+      } finally {
+        this.setDataInProgress = false;
       }
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
-        this.viewed = true;
-      }
-    }).finally(() => {
-      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
-  private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
+  private viewSyncer: PromiseSyncer;
   private setDataInProgress: boolean = false;
 
   private nglDiv?: HTMLDivElement;
-  private stage?: NGL.Stage;
+  public stage?: ngl.Stage;
 
   private splashDiv?: HTMLDivElement;
 
   private viewSubs: Unsubscribable[] = [];
 
-  private async destroyView(purpose: string): Promise<void> {
-    _package.logger.debug(`NglViewer.destroyView(purpose='${purpose}') `);
-    if (this.pdbStr) {
-      if (this.nglDiv && this.stage) {
-        await this.destroyViewLigands();
-        this.stage.removeAllComponents();
-      }
+  private async destroyView(caller: string): Promise<void> {
+    const callLog = `destroyView( ${caller} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    this.logger.debug(`${callLogPrefix}, start`);
+    if (this.nglDiv && this.stage) {
+      await this.destroyViewLigands();
+      this.stage.removeAllComponents();
     }
 
     for (const sub of this.viewSubs) sub.unsubscribe();
@@ -227,18 +260,35 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       this.splashDiv.remove();
       delete this.splashDiv;
     }
+
+    if (this.nglDiv) {
+      this.logger.debug(`${callLogPrefix}, stage removing`);
+      this.stage!.dispose();
+      delete this.stage;
+      $(this.nglDiv).empty();
+      this.nglDiv.remove();
+      delete this.nglDiv;
+      this.logger.debug(`${callLogPrefix}, stage removed`);
+    }
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
-  private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`NglViewer.buildView(purpose='${purpose}') `);
-    if (this.pdbStr)
-      await this.buildViewWithPdb();
+  private async buildView(caller: string): Promise<void> {
+    const callLog = `buildView( ${caller} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    this.logger.debug(`${callLogPrefix}, start`);
+    if (this.dataEff)
+      await this.buildViewWithPdb(callLog);
     else
-      await this.buildViewWithoutPdb();
+      await this.buildViewWithoutPdb(callLog);
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
-  private async buildViewWithPdb() {
-    if (!this.pdbStr) throw new Error('NglViewer.buildViewWithPdb() pdbStr is empty');
+  private async buildViewWithPdb(caller: string) {
+    const callLog = `buildViewWithPdb( ${caller} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    this.logger.debug(`${callLogPrefix}, start`);
+    if (!this.dataEff) throw new Error(`${callLogPrefix}, ` + 'pdbStr is empty');
 
     if (!this.nglDiv) {
       this.nglDiv = ui.div([], {
@@ -247,48 +297,61 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       });
       this.root.appendChild(this.nglDiv);
 
-      this.stage = new NGL.Stage(this.nglDiv);
+      this.logger.debug(`${callLogPrefix}, stage creating`);
+      this.stage = new ngl.Stage(this.nglDiv);
+      await awaitNgl(this.stage, callLogPrefix);
+      this.logger.debug(`${callLogPrefix}, stage created`);
     }
 
-    const stage: NGL.Stage = this.stage!;
-    const representation: NGL.StructureRepresentationType = this.representation;
-    const pdbStr: string = this.pdbStr;
+    const stage: ngl.Stage = this.stage!;
+    const representation: ngl.StructureRepresentationType = this.representation;
     const df: DG.DataFrame = this.dataFrame;
 
-    const pdbBlob = new Blob([pdbStr], {type: 'text/plain'});
-    await stage.loadFile(pdbBlob, {ext: 'pdb', compressed: false, binary: false, name: '<Name>'});
+    const dataVal: Blob = this.dataEff.binary ? new Blob([this.dataEff.data as Uint8Array]) :
+      new Blob([this.dataEff.data as string], {type: 'text/plain'});
+    await stage.loadFile(dataVal, {
+      ext: this.dataEff.ext, compressed: false, binary: this.dataEff.binary, name: '<Name>',
+      defaultRepresentation: true
+    });
 
     //highlights in NGL
     /* eslint-disable camelcase, prefer-const */
-    let scheme_buffer: string[][] = [];
+    let scheme_buffer: ngl.SelectionSchemeData[] = [];
 
     //TODO: remove - demo purpose only
-    scheme_buffer.push(['#0069a7', `* and :A`]);
-    scheme_buffer.push(['#f1532b', `* and :B`]);
-    scheme_buffer.push(['green', `* and :R`]);
-    scheme_buffer.push(['green', `* and :M`]);
+    scheme_buffer.push(['#0069a7', `* and :A`, undefined]);
+    scheme_buffer.push(['#f1532b', `* and :B`, undefined]);
+    scheme_buffer.push(['green', `* and :R`, undefined]);
+    scheme_buffer.push(['green', `* and :M`, undefined]);
     /* eslint-enable camelcase, prefer-const */
 
-    const schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+    const schemeId = ngl.ColormakerRegistry.addSelectionScheme(scheme_buffer);
     const _schemeObj = {color: schemeId};
 
-    const _repComp = stage.compList[0].addRepresentation(representation, {});
+    // const _repComp = stage.compList[0].addRepresentation(representation, {});
     stage.compList[0].autoView();
 
-    this.viewSubs.push(df.onSelectionChanged.subscribe(this.dataFrameOnSelectionChanged.bind(this)));
-    this.viewSubs.push(df.onCurrentRowChanged.subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
-    this.viewSubs.push(df.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
-
-    await this.buildViewLigands();
+    if (df && this.ligandColumnName) {
+      this.viewSubs.push(df.onSelectionChanged.subscribe(this.dataFrameOnSelectionChanged.bind(this)));
+      this.viewSubs.push(df.onCurrentRowChanged.subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
+      this.viewSubs.push(df.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
+      await this.buildViewLigands(callLog);
+    }
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
-  private async buildViewWithoutPdb() {
+  private async buildViewWithoutPdb(caller: string) {
+    const callLog = `buildViewWithoutPdb( ${caller} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    this.logger.debug(`${callLogPrefix}, start`);
     // preventing recreate nglDiv once again because of GL nature
     if (this.nglDiv) {
+      this.logger.debug(`${callLogPrefix}, stage removing`);
       this.stage!.dispose();
       delete this.stage;
       $(this.nglDiv).empty();
       delete this.nglDiv;
+      this.logger.debug(`${callLogPrefix}, stage removed`);
     }
 
     const fileEl: HTMLInputElement = ui.element('input');
@@ -314,6 +377,8 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.splashDiv = ui.div([fileLink, fileEl],
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
     this.root.appendChild(this.splashDiv);
+
+    this.logger.debug(`${callLogPrefix}, end`);
   }
 
   private updateView() {
@@ -324,6 +389,12 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   // -- Handle events --
+
+  private handleError(err: any): void {
+    const [errMsg, errStack] = errInfo(err);
+    grok.shell.error(errMsg);
+    this.logger.error(errMsg, undefined, errStack);
+  }
 
   private rootOnSizeChanged(_value: any): void {
     const cw: number = this.root.clientWidth;
@@ -343,19 +414,19 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   private dataFrameOnSelectionChanged(_value: any): void {
-    _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
-    if (this.showSelectedRowsLigands) this.rebuildViewLigands();
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
+    if (this.showSelectedRowsLigands) this.rebuildViewLigands('dataFrameSelectionChanged()');
   }
 
   private dataFrameOnCurrentRowChanged(_value: any): void {
-    _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
-    if (this.showCurrentRowLigand) this.rebuildViewLigands();
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnCurrentRowChanged() `);
+    if (this.showCurrentRowLigand) this.rebuildViewLigands('dataFrameOnCurrentRowChanged()');
   }
 
   private dataFrameOnMouseOverRowChanged(_value: any) {
-    _package.logger.debug('NglViewer.dataFrameOnMouseOverRowChanged() ');
+    this.logger.debug(`${this.viewerToLog()}.dataFrameOnMouseOverRowChanged() `);
 
-    if (this.showMouseOverRowLigand) this.rebuildViewLigands();
+    if (this.showMouseOverRowLigand) this.rebuildViewLigands('dataFrameOnMouseOverRowChanged()');
   }
 
   // -- Ligands routines --
@@ -369,11 +440,12 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     return ligandBlob;
   }
 
-  private rebuildViewLigands(): void {
-    this.viewPromise = this.viewPromise.then(async () => {
+  private rebuildViewLigands(caller: string): void {
+    const callLog = `rebuildViewLigands( ${caller} )`;
+    this.viewSyncer.sync(callLog, async () => {
       if (this.viewed) {
         await this.destroyViewLigands();
-        await this.buildViewLigands();
+        await this.buildViewLigands(callLog);
       }
     });
   }
@@ -396,55 +468,89 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   /** Builds up ligands on the stage view */
-  private async buildViewLigands(): Promise<void> {
-    if (!this.stage) throw new Error('The stage is not created'); // return; // There is not PDB data
-    if (!this.ligandColumnName) return;
+  private async buildViewLigands(caller: string): Promise<void> {
+    const callLog = `buildViewLigands( ${caller} )`;
+    const callLogPrefix = `${this.viewerToLog()}.${callLog}`;
+    this.logger.debug(`${callLogPrefix}, start`);
+    try {
+      if (!this.stage) throw new Error('The stage is not created'); // return; // There is not PDB data
+      if (!this.dataFrame || !this.ligandColumnName) return;
 
-    this.ligands.selected = !this.showSelectedRowsLigands ? [] :
-      wu(this.dataFrame.selection.getSelectedIndexes())
-        .map((selRowIdx) => { return {rowIdx: selRowIdx, compIdx: null}; })
-        .toArray();
-    this.ligands.current = !this.showCurrentRowLigand ? null :
-      this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, compIdx: null} : null;
-    this.ligands.hovered = !this.showMouseOverRowLigand ? null :
-      this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, compIdx: null} : null;
+      this.ligands.selected = !this.showSelectedRowsLigands ? [] :
+        wu(this.dataFrame.selection.getSelectedIndexes())
+          .take(25) // Limit selected ligands to display
+          .map((selRowIdx) => { return {rowIdx: selRowIdx, compIdx: null}; })
+          .toArray();
+      this.ligands.current = !this.showCurrentRowLigand ? null :
+        this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, compIdx: null} : null;
+      this.ligands.hovered = !this.showMouseOverRowLigand ? null :
+        this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, compIdx: null} : null;
 
-    const addLigandOnStage = async (rowIdx: number, color: DG.Color | null): Promise<number> => {
-      const ligandBlob = this.getLigandBlobOfRow(rowIdx);
-      const ligandParams: Partial<LoaderParameters> =
-        {ext: 'sdf', compressed: false, binary: false, name: `<Ligand at row ${rowIdx}`};
-      await this.stage!.loadFile(ligandBlob, ligandParams); // assume this all adds last compList
-      const compIdx: number = this.stage!.compList.length - 1;
+      const addLigandOnStage = async (rowIdx: number, color: DG.Color | null): Promise<number> => {
+        const ligandBlob = this.getLigandBlobOfRow(rowIdx);
+        const ligandParams: Partial<ngl.LoaderParameters> =
+          {ext: 'sdf', compressed: false, binary: false, name: `<Ligand at row ${rowIdx}`};
+        await this.stage!.loadFile(ligandBlob, ligandParams); // assume this all adds last compList
+        const compIdx: number = this.stage!.compList.length - 1;
 
-      const params: RepresentationParameters = {
-        ...(color ? {color: intToHtml(color as number)} : {}),
+        const params: Partial<ngl.RepresentationParameters> = {
+          ...(color ? {color: intToHtml(color as number)} : {}),
+        };
+
+        this.stage!.compList[compIdx].addRepresentation(RepresentationType.BallAndStick, params);
+        return compIdx;
       };
 
-      this.stage!.compList[compIdx].addRepresentation(RepresentationType.BallAndStick, params);
-      return compIdx;
-    };
+      const selCount = this.ligands.selected.length;
+      for (const [selectedLigand, selI] of wu.enumerate(this.ligands.selected)) {
+        const color =
+          this.showCurrentRowLigand || this.showMouseOverRowLigand ?
+            (selCount > 1 ? DG.Color.selectedRows : null) :
+            (selCount > 1 ? DG.Color.scaleColor(selI, 0, selCount, 0.5) : null);
 
-    const selCount = this.ligands.selected.length;
-    for (const [selectedLigand, selI] of wu.enumerate(this.ligands.selected)) {
-      const color =
-        this.showCurrentRowLigand || this.showMouseOverRowLigand ?
-          (selCount > 1 ? DG.Color.selectedRows : null) :
-          (selCount > 1 ? DG.Color.scaleColor(selI, 0, selCount, 0.5) : null);
+        selectedLigand.compIdx = await addLigandOnStage(selectedLigand.rowIdx, color);
+      }
+      if (this.ligands.current) {
+        const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
 
-      selectedLigand.compIdx = await addLigandOnStage(selectedLigand.rowIdx, color);
+        this.ligands.current.compIdx = await addLigandOnStage(this.ligands.current.rowIdx, color);
+      }
+      if (this.ligands.hovered) {
+        // TODO: color hovered ligand
+        const color =
+          this.showSelectedRowsLigands || this.showCurrentRowLigand ?
+            DG.Color.mouseOverRows : null;
+
+        this.ligands.hovered.compIdx = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
+      }
+    } catch (err: any) {
+      const [errMsg, errStack] = errInfo(err);
+      throw new Error(`NglViewer.buildViewLigands() error: ${errMsg}`, {cause: err});
+    } finally {
+      this.logger.debug(`${callLogPrefix}, end`);
     }
-    if (this.ligands.current) {
-      const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
+  }
 
-      this.ligands.current.compIdx = await addLigandOnStage(this.ligands.current.rowIdx, color);
-    }
-    if (this.ligands.hovered) {
-      // TODO: color hovered ligand
-      const color =
-        this.showSelectedRowsLigands || this.showCurrentRowLigand ?
-          DG.Color.mouseOverRows : null;
+  // -- IRenderer --
 
-      this.ligands.hovered.compIdx = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
-    }
+  private _onRendered: Subject<void> = new Subject<void>();
+
+  get onRendered(): Observable<void> { return this._onRendered; }
+
+  invalidate(caller?: string): void {
+    this.viewSyncer.sync('invalidate(${caller ? ` <- ${caller} ` : \'\'})', async () => {
+      // update view / render
+      this._onRendered.next();
+    });
+  }
+
+  async awaitRendered(timeout: number | undefined = 5000): Promise<void> {
+    await testEvent(this.onRendered, () => {}, () => {
+      this.invalidate();
+    }, timeout);
+
+    // Rethrow stored syncer error (for test purposes)
+    const viewErrors = this.viewSyncer.resetErrors();
+    if (viewErrors.length > 0) throw viewErrors[0];
   }
 }

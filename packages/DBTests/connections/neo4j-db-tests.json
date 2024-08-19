@@ -4,13 +4,13 @@
   "friendlyName": "Neo4jDBTests",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 7688,
+    "port": 27687,
     "db": "test"
   },
   "credentials" : {
     "parameters" : {
       "login": "neo4j",
-      "password": "datagrok"
+      "password": "HA3BrbTrTP0GVz1NU8cCpJDYp1pDsHYAEl5P"
     }
   },
   "dataSource": "Neo4j",
