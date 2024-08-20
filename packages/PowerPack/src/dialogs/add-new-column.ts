@@ -61,6 +61,7 @@ export class AddNewColumnDialog {
   maxPreviewRowCount: number = 100;
   newColumnBgColor: number = 0xFFFDFFE7; // The same bg-color as the bg-color of tooltips.
   colNamePattern: RegExp = /\${(.+?)}|\$\[(.+?)\]/g;
+  colNamePatternWithoutDollar: RegExp = /{(.+?)}|\[(.+?)\]/g;
   tooltips = {
     name: 'Сolumn name.',
     type: 'Column type. When set to "auto", type is determined based on the expression.',
@@ -290,9 +291,11 @@ export class AddNewColumnDialog {
       override: [this.functionsCompletions(this.columnNames, this.packageNames, this.coreFunctionsNames,
         this.packageFunctionsNames, this.packageFunctionsParams, this.coreFunctionsParams)],
       activateOnCompletion: ({ apply }) => {
+        this.autocompleteEnter = true;
+        if (typeof apply === 'string' && apply.match(this.colNamePatternWithoutDollar))
+          return true;
         this.packageAutocomplete = typeof apply === 'string' && apply.slice(-1) === ':';
         this.functionAutocomplete = !this.packageAutocomplete;
-        this.autocompleteEnter = true;
         return this.packageAutocomplete;
       }
     });
