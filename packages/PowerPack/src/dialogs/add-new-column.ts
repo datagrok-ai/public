@@ -995,9 +995,16 @@ export class AddNewColumnDialog {
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
     packageFunctionsParams: {[key: string]: PropInfo[]}, coreFunctionsParams:  {[key: string]: PropInfo[]}) {
     return (context: CompletionContext) => {
-      let word = context.matchBefore(/[\w|:|$|${|$\[]*/);
+      let word = context.matchBefore(/^[\w|:|$|${|$\[|'|"]*/);
       if (!word || word?.from === word?.to && !context.explicit)
         return null;
+      //check if word is inside quotes
+      const quoteSym = word.text.includes('\'') ? '\'' : word.text.includes('\"') ? '\"' : '';
+      if (quoteSym) {
+        const closingQuote = context.state.doc.length > word.text.length ? context.state.doc.toString().at(word.to) === quoteSym : false;
+        if (closingQuote)
+          return null;
+      }
       let options: Completion[] = [];
       let index = word!.from;
       let filter = true;
