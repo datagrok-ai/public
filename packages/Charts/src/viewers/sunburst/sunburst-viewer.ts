@@ -4,8 +4,9 @@ import * as ui from 'datagrok-api/ui';
 
 import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
-import { delay } from '@datagrok-libraries/utils/src/test';
 import * as echarts from 'echarts';
+import { fromEvent } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -96,75 +97,99 @@ export class SunburstViewer extends EChartViewer {
     }
   }
 
+  private isRowMatch(rowIndex: number, targetName: string): boolean {
+    const { hierarchyColumnNames, dataFrame } = this;
+  
+    return hierarchyColumnNames.some((colName, index) => {
+      const column = dataFrame.getCol(colName);
+      const value = column.get(rowIndex);
+      const formattedValue = this.formatColumnValue(column, value);
+  
+      return formattedValue === targetName;
+    });
+  }
+
+  private formatColumnValue(column: DG.Column, value: any): string {
+    if (column.type === DG.TYPE.DATE_TIME) return value?.toString() ?? '';
+  
+    const format = column.meta.format;
+    if (format && column.type !== 'string' && value != null) {
+      const decimalPlaces = format.split('.')[1]?.length || 0;
+      return value.toFixed(decimalPlaces);
+    }
+  
+    return value?.toString() ?? '';
+  }
+
   initEventListeners(): void {
-    this.chart?.on('click', (params: any) => {
-      const selectedSectors: string[] = [];
-      const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
-      const pathString: string = path.join('|');
+    if (!this.chart) return;
+
+    let selectedSectors: string[] = [];
+    const handleChartClick = (params: any) => {
+      const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
+      const pathString = path.join('|');
+      let isSectorSelected = selectedSectors.includes(pathString);
+  
       if (this.onClick === 'Filter') {
         this.handleDataframeFiltering(path, this.dataFrame);
         return;
       }
-      const isSectorSelected = selectedSectors.includes(pathString);
-      if (params.event.event.shiftKey || params.event.event.ctrlKey || params.event.event.metaKey) {
-        if (!isSectorSelected) {
-          selectedSectors.push(pathString);
-          this.handleDataframeSelection(path, params.event.event);
-        }
-      } else if ((params.event.event.shiftKey && params.event.event.ctrlKey) ||
-        (params.event.event.shiftKey && params.event.event.metaKey)) {
-        if (isSectorSelected) {
-          const index = selectedSectors.indexOf(pathString);
-          selectedSectors.splice(index, 1);
-          this.handleDataframeSelection(path, params.event.event);
-        }
-      } else {
-        this.handleDataframeSelection(path, params.event.event);
+  
+      const event = params.event.event;
+      const isMultiSelect = event.shiftKey || event.ctrlKey || event.metaKey;
+      const isMultiDeselect = (event.shiftKey && event.ctrlKey) || (event.shiftKey && event.metaKey);
+  
+      if (isMultiSelect && !isSectorSelected) {
+        selectedSectors.push(pathString);
+      } else if (isMultiDeselect && isSectorSelected) {
+        selectedSectors = selectedSectors.filter(sector => sector !== pathString);
       }
-    });
-    this.chart?.on('mouseover', async (params: any) => {
+  
+      this.handleDataframeSelection(path, event);
+    };
+  
+    const handleChartMouseover = async (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const bitset = this.filter;
+  
       const matchDf = this.dataFrame.clone();
       matchDf.rows.removeWhere(row => bitset && !bitset.get(row.idx));
-
+  
       this.handleDataframeFiltering(path, matchDf);
       const matchCount = matchDf.filter.trueCount;
-      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-        const { hierarchyColumnNames, dataFrame } = this;
-        for (let j = 0; j < hierarchyColumnNames.length; ++j) {
-          const column = dataFrame.getCol(hierarchyColumnNames[j]);
-          const format = column.meta.format;
-          const value = column.get(i);
-          const isDate = column.type === DG.TYPE.DATE_TIME;
-          if (format && !isDate) {
-            const number = format.indexOf('.');
-            const len = format.length - number - 1;
-            if (value.toFixed(len) === params.name)
-              return true;
-          }
-          if (value && value.toString() === params.name)
-            return true;
-          if (!value && '' === params.name)
-            return true;
-        }
-        return false;
-      }, params.event.event.x, params.event.event.y);
-      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;
-    });
-    this.chart?.on('mouseout', () => ui.tooltip.hide());
-    this.chart!.getDom().ondblclick = (event: MouseEvent) => {
+  
+      const tooltipX = params.event.event.x;
+      const tooltipY = params.event.event.y;
+      const tooltipText = `${matchCount}\n${params.name}`;
+  
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => this.isRowMatch(i, params.name), tooltipX, tooltipY);
+      ui.tooltip.root.innerText = tooltipText;
+    };
+  
+    const handleCanvasDblClick = (event: MouseEvent) => {
       const canvas = this.chart?.getDom().querySelector('canvas');
-      const rect = canvas!.getBoundingClientRect();
-      const scaleX = canvas!.width / rect.width;
-      const scaleY = canvas!.height / rect.height;
-      const clickX = (event.clientX - rect.left) * scaleX;
-      const clickY = (event.clientY - rect.top) * scaleY;
-      if (this.isCanvasEmpty(canvas!.getContext('2d'), clickX, clickY)) {
+      if (!canvas) return;
+  
+      const { left, top, width, height } = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / width;
+      const scaleY = canvas.height / height;
+      const clickX = (event.clientX - left) * scaleX;
+      const clickY = (event.clientY - top) * scaleY;
+  
+      if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY)) {
         this.render();
       }
+  
       this.removeFiltering();
     };
+  
+    this.chart.on('click', handleChartClick);
+    this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.getDom().ondblclick = handleCanvasDblClick;
+    
+    fromEvent(this.chart, 'mouseover')
+      .pipe(debounceTime(200))
+      .subscribe((params: any) => handleChartMouseover(params));
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
@@ -208,13 +233,7 @@ export class SunburstViewer extends EChartViewer {
 
   getSeriesData(): TreeDataType[] | undefined {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    const start = performance.now();
-    console.log(`Start time: ${start}`);
-    const tree = TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
-    const end = performance.now();
-    console.log(`End time: ${end}`);
-    console.log(`Time spent: ${end - start}`);
-    return tree;
+    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
   }
 
   formatLabel(params: any) {
@@ -263,7 +282,7 @@ export class SunburstViewer extends EChartViewer {
     const resultHeight = result.split('\n').length * averageCharHeight;
     if (resultWidth > width || resultHeight > height)
       result = '...';
-    
+
     return result;
   }
 
@@ -281,7 +300,7 @@ export class SunburstViewer extends EChartViewer {
     this.renderQueue = this.renderQueue
       .then(() => this._render());
   }
-
+  
   private async _render() {
     if (!this.hierarchyColumnNames?.length)
       return;
@@ -316,8 +335,6 @@ export class SunburstViewer extends EChartViewer {
     });
     this.chart.setOption(this.option, false, true);
   }
-  
-  
 
   detach() {
     for (const sub of this.subs)
