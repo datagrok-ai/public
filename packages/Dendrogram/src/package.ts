@@ -17,8 +17,9 @@ import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {HierarchicalClusteringSequencesApp} from './apps/hierarchical-clustering-sequences-app';
 import {heatmapDemo} from './demos/heatmapDemo';
+import {DendrogramPackage} from './package-types';
 
-export const _package = new DG.Package();
+export const _package = new DendrogramPackage(/*{debug: true}/**/);
 
 /*
 Scripting parameter types
