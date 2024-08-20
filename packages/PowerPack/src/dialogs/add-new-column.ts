@@ -141,7 +141,10 @@ export class AddNewColumnDialog {
 
     this.uiDialog
       .add(await this.initUiLayout())
-      .onOK(async () => await this.addNewColumnAction())
+      .onOK(async () => {
+        this.codeMirror?.destroy();
+        await this.addNewColumnAction()
+      })
       .show({resizable: true, width: 750, height: 500});
 
     this.uiDialog.onClose.subscribe((_) => {
