@@ -2,9 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {EChartViewer} from '../echart/echart-viewer';
-import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
+import { EChartViewer } from '../echart/echart-viewer';
+import { TreeUtils, TreeDataType } from '../../utils/tree-utils';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import * as echarts from 'echarts';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -32,11 +33,12 @@ export class SunburstViewer extends EChartViewer {
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
     this.hierarchyLevel = 3;
-    this.onClick = <onClickOptions> this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
-    this.inheritFromGrid = this.bool('inheritFromGrid', true, {category: 'Color'});
+    this.onClick = <onClickOptions>this.string('onClick', 'Select', { choices: ['Select', 'Filter'] });
+    this.inheritFromGrid = this.bool('inheritFromGrid', true, { category: 'Color' });
 
     this.option = {
       animation: false,
+      silent: false,
       series: [
         {
           type: 'sunburst',
@@ -62,7 +64,7 @@ export class SunburstViewer extends EChartViewer {
       if (!this.filter.get(index)) {
         return false;
       }
-  
+
       return path.every((segment, j) => {
         const columnValue = this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(index);
         return (columnValue && columnValue.toString() === segment) || (!columnValue && segment === '');
@@ -74,13 +76,13 @@ export class SunburstViewer extends EChartViewer {
     const filterFunction = this.buildFilterFunction(path);
     dataFrame.rows.filter(filterFunction);
   }
-  
+
   buildFilterFunction(path: string[]): (row: any) => boolean {
     return (row) => {
       return path.every((expectedValue, i) => {
         const column = this.dataFrame.getCol(this.hierarchyColumnNames[i]);
         const columnValue = row.get(this.hierarchyColumnNames[i]);
-        const formattedValue = columnValue 
+        const formattedValue = columnValue
           ? (column.type !== 'string' ? columnValue.toString() : columnValue)
           : '';
         return formattedValue === expectedValue;
@@ -95,10 +97,8 @@ export class SunburstViewer extends EChartViewer {
   }
 
   initEventListeners(): void {
-    this.chart.on('click', (params: any) => {
+    this.chart?.on('click', (params: any) => {
       const selectedSectors: string[] = [];
-      if (!params.data.path)
-        return;
       const path: string[] = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const pathString: string = path.join('|');
       if (this.onClick === 'Filter') {
@@ -111,8 +111,8 @@ export class SunburstViewer extends EChartViewer {
           selectedSectors.push(pathString);
           this.handleDataframeSelection(path, params.event.event);
         }
-      } else if ((params.event.event.shiftKey && params.event.event.ctrlKey) || 
-                (params.event.event.shiftKey && params.event.event.metaKey)) {
+      } else if ((params.event.event.shiftKey && params.event.event.ctrlKey) ||
+        (params.event.event.shiftKey && params.event.event.metaKey)) {
         if (isSectorSelected) {
           const index = selectedSectors.indexOf(pathString);
           selectedSectors.splice(index, 1);
@@ -122,7 +122,7 @@ export class SunburstViewer extends EChartViewer {
         this.handleDataframeSelection(path, params.event.event);
       }
     });
-    this.chart.on('mouseover', async (params: any) => {
+    this.chart?.on('mouseover', async (params: any) => {
       const path = params.treePathInfo.slice(1).map((obj: any) => obj.name);
       const bitset = this.filter;
       const matchDf = this.dataFrame.clone();
@@ -150,11 +150,11 @@ export class SunburstViewer extends EChartViewer {
         }
         return false;
       }, params.event.event.x, params.event.event.y);
-      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;  
-    });      
-    this.chart.on('mouseout', () => ui.tooltip.hide());
-    this.chart.getDom().ondblclick = (event: MouseEvent) => {
-      const canvas = this.chart.getDom().querySelector('canvas');
+      ui.tooltip.root.innerText = `${matchCount}\n${params.name}`;
+    });
+    this.chart?.on('mouseout', () => ui.tooltip.hide());
+    this.chart!.getDom().ondblclick = (event: MouseEvent) => {
+      const canvas = this.chart?.getDom().querySelector('canvas');
       const rect = canvas!.getBoundingClientRect();
       const scaleX = canvas!.width / rect.width;
       const scaleY = canvas!.height / rect.height;
@@ -195,7 +195,7 @@ export class SunburstViewer extends EChartViewer {
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
 
-    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => { this.render() }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -208,7 +208,13 @@ export class SunburstViewer extends EChartViewer {
 
   getSeriesData(): TreeDataType[] | undefined {
     const rowSource = this.selectedOptions.includes(this.rowSource!);
-    return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
+    const start = performance.now();
+    console.log(`Start time: ${start}`);
+    const tree = TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.filter, rowSource, this.inheritFromGrid);
+    const end = performance.now();
+    console.log(`End time: ${end}`);
+    console.log(`Time spent: ${end - start}`);
+    return tree;
   }
 
   formatLabel(params: any) {
@@ -223,7 +229,7 @@ export class SunburstViewer extends EChartViewer {
     const r0 = ItemLayoutInfo.r0;
     const startAngle = ItemLayoutInfo.startAngle;
     const endAngle = ItemLayoutInfo.endAngle;
-    const {width, height} = this.calculateRingDimensions(r0, r, startAngle, endAngle);
+    const { width, height } = this.calculateRingDimensions(r0, r, startAngle, endAngle);
 
     const averageCharWidth = 5;
     const averageCharHeight = 10;
@@ -277,23 +283,45 @@ export class SunburstViewer extends EChartViewer {
   }
 
   private async _render() {
-    if (this.hierarchyColumnNames?.some((colName) => !this.dataFrame.columns.names().includes(colName)))
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((value) => this.dataFrame.columns.names().includes(value));
-
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (!this.hierarchyColumnNames?.length)
       return;
-
+  
+    const validColumnNames = this.dataFrame.columns.names();
+    const updatedHierarchyColumnNames = this.hierarchyColumnNames.filter(colName => validColumnNames.includes(colName));
+  
+    if (!updatedHierarchyColumnNames.length)
+      return;
+  
+    const areArraysEqual = this.hierarchyColumnNames.length === updatedHierarchyColumnNames.length &&
+      this.hierarchyColumnNames.every((val, index) => val === updatedHierarchyColumnNames[index]);
+  
+    if (!areArraysEqual)
+      this.hierarchyColumnNames = updatedHierarchyColumnNames;
+  
     const data = await this.getSeriesData();
+  
+    // Reinitialize the chart (needed in order to prevent memory leak)
+    if (this.chart) {
+      this.chart.clear();
+      this.chart.dispose();
+      this.chart = null;
+    }
 
-    this.option.series[0].data = data;
-    this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
-    this.chart.setOption(this.option);
+    this.chart = echarts.init(this.root);
+    this.initEventListeners();
+
+    Object.assign(this.option.series[0], {
+      data,
+      label: { formatter: (params: any) => this.formatLabel(params) },
+    });
+    this.chart.setOption(this.option, false, true);
   }
+  
+  
 
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
     super.detach();
   }
-  
 }
